@@ -21,7 +21,9 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |name| WORKSPACE_FILES.include?(name) || MODULE_FILES.include?(name) }
+        filenames.any? do |name|
+          WORKSPACE_FILES.include?(name) || MODULE_FILES.include?(name) || name.end_with?(".MODULE.bazel")
+        end
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -74,8 +76,19 @@ module Dependabot
       def module_files
         files = T.let([], T::Array[DependencyFile])
 
+        # Fetch explicit MODULE.bazel files
         MODULE_FILES.each do |filename|
           file = fetch_file_if_present(filename)
+          files << file if file
+        end
+
+        # Fetch all *.MODULE.bazel files
+        repo_contents(raise_errors: false).each do |item|
+          next unless item.type == "file"
+          next unless item.name.end_with?(".MODULE.bazel")
+          next if MODULE_FILES.include?(item.name) # Skip if already fetched
+
+          file = fetch_file_if_present(item.name)
           files << file if file
         end
 

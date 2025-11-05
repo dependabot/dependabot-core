@@ -59,6 +59,12 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       it { is_expected.to be(true) }
     end
 
+    context "with a *.MODULE.bazel file" do
+      let(:filenames) { %w(deps.MODULE.bazel README.md) }
+
+      it { is_expected.to be(true) }
+    end
+
     context "without any Bazel files" do
       let(:filenames) { %w(README.md package.json) }
 
@@ -112,6 +118,33 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
 
       it "fetches the MODULE.bazel file" do
         expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+    end
+
+    context "with MODULE.bazel and *.MODULE.bazel files" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_additional_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "deps.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches all MODULE.bazel files including *.MODULE.bazel files" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", "deps.MODULE.bazel")
       end
     end
 
