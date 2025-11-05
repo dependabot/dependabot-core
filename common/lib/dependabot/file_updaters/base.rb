@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/credential"
+require "dependabot/notices"
 
 module Dependabot
   module FileUpdaters
@@ -50,6 +51,11 @@ module Dependabot
       sig { overridable.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         raise NotImplementedError
+      end
+
+      sig { overridable.returns(T::Array[Dependabot::Notice]) }
+      def notices
+        []
       end
 
       private

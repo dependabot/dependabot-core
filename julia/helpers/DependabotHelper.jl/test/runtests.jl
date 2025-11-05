@@ -3,6 +3,10 @@ using JSON
 using DependabotHelper
 
 @testset "DependabotHelper.jl Tests" begin
+    # Define UUIDs once for reuse throughout all tests
+    json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+    example_uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
+    fake_uuid = "00000000-0000-0000-0000-000000000000"
 
     # Include custom registry management tests
     include("test_registry_management.jl")
@@ -13,7 +17,6 @@ using DependabotHelper
         @test haskey(result, "error")
 
         # Test get_latest_version with a known package
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.get_latest_version("JSON", json_uuid)
         @test haskey(result, "version")
 
@@ -26,7 +29,6 @@ using DependabotHelper
         @test haskey(result, "error")
 
         # Test package metadata retrieval
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.get_package_metadata("JSON", json_uuid)
         @test result["name"] == "JSON"
         @test result["uuid"] == "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
@@ -44,7 +46,6 @@ using DependabotHelper
 
     @testset "JSON Interface Tests" begin
         # Test basic JSON parsing and function dispatch
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         test_cases = [
             """{"function": "parse_project", "args": {"project_path": "/nonexistent/Project.toml"}}""",
             """{"function": "get_latest_version", "args": {"package_name": "JSON", "package_uuid": "$json_uuid"}}""",
@@ -108,14 +109,13 @@ using DependabotHelper
 
     @testset "Integration Tests" begin
         # Test that all main functions return proper error handling
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         functions_to_test = [
             () -> DependabotHelper.parse_project("/nonexistent/Project.toml"),
             () -> DependabotHelper.get_latest_version("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
             () -> DependabotHelper.parse_project("/nonexistent/Project.toml"),
             () -> DependabotHelper.get_package_metadata("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
             () -> DependabotHelper.parse_manifest("/nonexistent/Manifest.toml"),
-            () -> DependabotHelper.check_update_compatibility("/nonexistent/Project.toml", "JSON", "0.21.0")
+            () -> DependabotHelper.check_update_compatibility("/nonexistent/Project.toml", "JSON", "0.21.0", json_uuid)
         ]
 
         for test_func in functions_to_test
@@ -177,6 +177,225 @@ using DependabotHelper
                 # The manifest path is returned but the file doesn't exist yet
                 @test basename(found_manifest) == "Manifest.toml"
                 @test !isfile(found_manifest)  # Manifest doesn't exist yet
+            end
+        end
+
+        # Test find_environment_files with workspace setup - WorkspaceOne (simple single member)
+        @testset "find_environment_files with WorkspaceOne" begin
+            # Use the static workspace test structure
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
+            @test isdir(workspace_root)
+
+            root_project = joinpath(workspace_root, "Project.toml")
+            root_manifest = joinpath(workspace_root, "Manifest.toml")
+            @test isfile(root_project)
+            @test isfile(root_manifest)
+
+            member_dir = joinpath(workspace_root, "SubPackage")
+            member_project = joinpath(member_dir, "Project.toml")
+            @test isdir(member_dir)
+            @test isfile(member_project)
+
+            # Note: Workspaces work for one directory deep (this test case)
+            # Julia has a bug preventing deeper nesting (e.g., packages/core/SubPackage)
+            # See: https://github.com/JuliaLang/julia/pull/59849
+
+            # Test that find_environment_files correctly identifies the workspace manifest
+            found_project, found_manifest = DependabotHelper.find_environment_files(member_dir)
+            @test isfile(found_project)
+            @test samefile(found_project, member_project)
+            @test basename(found_project) == "Project.toml"
+
+            # For one-level-deep workspaces, this should work correctly
+            @test isfile(found_manifest)
+            @test samefile(found_manifest, root_manifest)
+        end
+
+        # Test find_environment_files with workspace setup - WorkspaceTwo (multiple members with potential conflicts)
+        @testset "find_environment_files with WorkspaceTwo" begin
+            # WorkspaceTwo has SubPackageA and SubPackageB, both depending on JSON 0.21
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+            @test isdir(workspace_root)
+
+            root_project = joinpath(workspace_root, "Project.toml")
+            root_manifest = joinpath(workspace_root, "Manifest.toml")
+            @test isfile(root_project)
+            @test isfile(root_manifest)
+
+            # Test SubPackageA
+            member_a_dir = joinpath(workspace_root, "SubPackageA")
+            member_a_project = joinpath(member_a_dir, "Project.toml")
+            @test isdir(member_a_dir)
+            @test isfile(member_a_project)
+
+            found_project_a, found_manifest_a = DependabotHelper.find_environment_files(member_a_dir)
+            @test isfile(found_project_a)
+            @test samefile(found_project_a, member_a_project)
+            @test basename(found_project_a) == "Project.toml"
+            @test isfile(found_manifest_a)
+            @test samefile(found_manifest_a, root_manifest)
+
+            # Test SubPackageB
+            member_b_dir = joinpath(workspace_root, "SubPackageB")
+            member_b_project = joinpath(member_b_dir, "Project.toml")
+            @test isdir(member_b_dir)
+            @test isfile(member_b_project)
+
+            found_project_b, found_manifest_b = DependabotHelper.find_environment_files(member_b_dir)
+            @test isfile(found_project_b)
+            @test samefile(found_project_b, member_b_project)
+            @test basename(found_project_b) == "Project.toml"
+            @test isfile(found_manifest_b)
+            @test samefile(found_manifest_b, root_manifest)
+
+            # Both subpackages should share the same manifest
+            @test samefile(found_manifest_a, found_manifest_b)
+        end
+
+        # Test JSON interface for find_environment_files
+        @testset "find_environment_files via JSON interface" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
+            member_dir = joinpath(workspace_root, "SubPackage")
+
+            input = Dict("function" => "find_environment_files", "args" => Dict("directory" => member_dir))
+            result_json = DependabotHelper.run(JSON.json(input))
+            result = JSON.parse(result_json)
+
+            @test haskey(result, "result")
+            @test haskey(result["result"], "project_file")
+            @test haskey(result["result"], "manifest_file")
+            @test endswith(result["result"]["project_file"], "SubPackage/Project.toml")
+            @test endswith(result["result"]["manifest_file"], "WorkspaceOne/Manifest.toml")
+        end
+    end
+
+    @testset "Workspace Conflict Detection Tests" begin
+        # Test that WorkspaceTwo demonstrates the expected workspace behavior
+        # where multiple subpackages share a manifest but may have conflicting requirements
+        @testset "WorkspaceTwo structure verification" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            # Verify root structure
+            @test isdir(workspace_root)
+            @test isfile(joinpath(workspace_root, "Project.toml"))
+            @test isfile(joinpath(workspace_root, "Manifest.toml"))
+
+            # Verify SubPackageA
+            subpkg_a = joinpath(workspace_root, "SubPackageA")
+            @test isdir(subpkg_a)
+            @test isfile(joinpath(subpkg_a, "Project.toml"))
+
+            # Verify SubPackageB
+            subpkg_b = joinpath(workspace_root, "SubPackageB")
+            @test isdir(subpkg_b)
+            @test isfile(joinpath(subpkg_b, "Project.toml"))
+
+            # Parse the project files to verify dependencies
+            result_a = DependabotHelper.parse_project(joinpath(subpkg_a, "Project.toml"))
+            @test !haskey(result_a, "error")
+            @test haskey(result_a, "dependencies")
+            @test isa(result_a["dependencies"], Array)
+
+            # Find JSON dependency in the array
+            json_dep_a = findfirst(d -> d["name"] == "JSON", result_a["dependencies"])
+            @test !isnothing(json_dep_a)
+            @test result_a["dependencies"][json_dep_a]["uuid"] == "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+            @test haskey(result_a["dependencies"][json_dep_a], "requirement")
+            @test result_a["dependencies"][json_dep_a]["requirement"] == "0.21"
+
+            result_b = DependabotHelper.parse_project(joinpath(subpkg_b, "Project.toml"))
+            @test !haskey(result_b, "error")
+            @test haskey(result_b, "dependencies")
+            @test isa(result_b["dependencies"], Array)
+
+            # Find JSON and Dates dependencies
+            json_dep_b = findfirst(d -> d["name"] == "JSON", result_b["dependencies"])
+            @test !isnothing(json_dep_b)
+            dates_dep_b = findfirst(d -> d["name"] == "Dates", result_b["dependencies"])
+            @test !isnothing(dates_dep_b)
+
+            # Both should have the same JSON compat requirement (0.21)
+            @test haskey(result_b["dependencies"][json_dep_b], "requirement")
+            @test result_b["dependencies"][json_dep_b]["requirement"] == "0.21"
+        end
+
+        @testset "WorkspaceTwo manifest resolution" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            # Test that both subpackages correctly identify the shared manifest
+            subpkg_a_dir = joinpath(workspace_root, "SubPackageA")
+            subpkg_b_dir = joinpath(workspace_root, "SubPackageB")
+            root_manifest = joinpath(workspace_root, "Manifest.toml")
+
+            # Both should find the same shared manifest
+            proj_a, manifest_a = DependabotHelper.find_environment_files(subpkg_a_dir)
+            @test isfile(manifest_a)
+            @test samefile(manifest_a, root_manifest)
+
+            proj_b, manifest_b = DependabotHelper.find_environment_files(subpkg_b_dir)
+            @test isfile(manifest_b)
+            @test samefile(manifest_b, root_manifest)
+
+            # They should be the exact same file
+            @test samefile(manifest_a, manifest_b)
+        end
+
+        @testset "WorkspaceTwo update simulation" begin
+            # This test simulates what happens when trying to update one workspace member
+            # when workspace members have conflicting compat requirements
+
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            mktempdir() do tmpdir
+                # Copy the workspace structure to a temp dir for testing
+                tmp_workspace = joinpath(tmpdir, "WorkspaceTwo")
+                cp(workspace_root, tmp_workspace)
+
+                tmp_subpkg_a = joinpath(tmp_workspace, "SubPackageA")
+                tmp_subpkg_b = joinpath(tmp_workspace, "SubPackageB")
+
+                # Step 1: Update SubPackageA compat to allow both 0.21 and 1.x
+                subpkg_a_project = joinpath(tmp_subpkg_a, "Project.toml")
+                project_a_content = read(subpkg_a_project, String)
+                project_a_content = replace(project_a_content, "JSON = \"0.21\"" => "JSON = \"0.21, 1\"")
+                write(subpkg_a_project, project_a_content)
+
+                # Step 2: Try to update manifest to JSON 1.0.0 from SubPackageA
+                # This should FAIL because SubPackageB still only allows 0.21
+                result = DependabotHelper.update_manifest(
+                    tmp_subpkg_a,
+                    Dict{String, Any}(json_uuid => Dict("name" => "JSON", "version" => "1.0.0"))
+                )
+
+                # Step 3: Verify we get an "Uempty intersection between" error
+                @test isa(result, Dict)
+                @test haskey(result, "error")
+                @test occursin("empty intersection between", result["error"])
+
+                # Step 4: Update SubPackageB compat to also allow 0.21 and 1.x
+                subpkg_b_project = joinpath(tmp_subpkg_b, "Project.toml")
+                project_b_content = read(subpkg_b_project, String)
+                project_b_content = replace(project_b_content, "JSON = \"0.21\"" => "JSON = \"0.21, 1\"")
+                write(subpkg_b_project, project_b_content)
+
+                # Step 5: Try to update manifest to JSON 1.0.0 again
+                # Now this should SUCCEED because both packages allow 1.x
+                result = DependabotHelper.update_manifest(
+                    tmp_subpkg_a,
+                    Dict{String, Any}(json_uuid => Dict("name" => "JSON", "version" => "1.0.0"))
+                )
+
+                # Step 6: Verify the update succeeded (no "empty intersection between" error)
+                @test isa(result, Dict)
+                @test !haskey(result, "error")
+                @test haskey(result, "updated_manifest")
+                @test haskey(result, "manifest_content")
+
+                # Verify JSON is present in the dependencies
+                updated_manifest = result["updated_manifest"]
+                @test haskey(updated_manifest, "dependencies")
+                json_dep = findfirst(d -> d["name"] == "JSON", updated_manifest["dependencies"])
+                @test json_dep !== nothing
             end
         end
     end
@@ -280,8 +499,6 @@ using DependabotHelper
 
     @testset "UUID-based Package Lookup Tests" begin
 
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-
         # Test find_package_source_url with both name and UUID
         result_with_uuid = @test_nowarn DependabotHelper.find_package_source_url("JSON", json_uuid)
         @test haskey(result_with_uuid, "source_url")
@@ -289,7 +506,6 @@ using DependabotHelper
         @test result_with_uuid["package_uuid"] == json_uuid
 
         # Test with mismatched UUID (should fail)
-        fake_uuid = "00000000-0000-0000-0000-000000000000"
         result_wrong_uuid = @test_nowarn DependabotHelper.find_package_source_url("JSON", fake_uuid)
         @test haskey(result_wrong_uuid, "error")
 
@@ -303,7 +519,6 @@ using DependabotHelper
     end
 
     @testset "New Package Functions Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test get_available_versions function
         result = @test_nowarn DependabotHelper.get_available_versions("JSON", json_uuid)
@@ -354,7 +569,7 @@ using DependabotHelper
         @test haskey(result, "error")
 
         # Test update_manifest with non-existent file
-        result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
+        result = @test_nowarn DependabotHelper.update_manifest("/nonexistent/Project.toml", Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4")))
         @test haskey(result, "error")
 
         # Test update_manifest with actual manifest update
@@ -415,7 +630,7 @@ using DependabotHelper
 
             # Test args wrapper with JSON.Object (simulating JSON deserialization)
             # This is the main test - ensuring JSON.Object doesn't cause MethodError
-            json_string = """{"project_path": "$tmpdir", "updates": {"JSON": "0.21.1"}}"""
+            json_string = """{"project_path": "$tmpdir", "updates": {"$json_uuid": {"name": "JSON", "version": "0.21.1"}}}"""
             json_args = JSON.parse(json_string)  # This creates JSON.Object types
 
             # Verify we're testing JSON.Object handling
@@ -442,7 +657,6 @@ using DependabotHelper
     end
 
     @testset "URL and Metadata Extraction Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test extract_package_metadata_from_url
         # This function needs a valid source URL, so we'll test error handling first
@@ -458,12 +672,11 @@ using DependabotHelper
 
     @testset "Dependency Resolution Tests" begin
         # Test resolve_dependencies_with_constraints with non-existent project
-        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict("JSON" => "0.21.4"))
+        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4")))
         @test haskey(result, "error")
     end
 
     @testset "Args Wrapper Function Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test get_available_versions args wrapper
         result = @test_nowarn DependabotHelper.get_available_versions(Dict("package_name" => "JSON", "package_uuid" => json_uuid))
@@ -509,7 +722,6 @@ using DependabotHelper
     end
 
     @testset "JSON Interface Extended Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 
         # Test all new functions through the JSON interface
         new_test_cases = [
@@ -558,8 +770,6 @@ using DependabotHelper
     end
 
     @testset "Batch Operations Tests" begin
-        json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-        example_uuid = "7876af07-990d-54b4-ab0e-23690620f79a"
 
         @testset "batch_get_package_info" begin
             # Test with valid packages

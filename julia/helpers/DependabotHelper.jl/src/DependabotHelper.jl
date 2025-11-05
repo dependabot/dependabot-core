@@ -20,10 +20,15 @@ function run()
     result = run(input)
     println(result)
 
-    # Exit with error code if there was an error
+    # Exit with error code only for unexpected errors, not resolver errors
+    # Resolver errors are expected and handled by Ruby - they return a dict with "error" key
     parsed_result = JSON.parse(result)
     if haskey(parsed_result, "error")
-        exit(1)
+        error_msg = parsed_result["error"]
+        # Pkg resolver errors are expected/handled - don't exit with error code
+        if !startswith(error_msg, "Pkg resolver error:")
+            exit(1)
+        end
     end
 end
 
@@ -98,13 +103,25 @@ function run(input::String)
             get_latest_version_with_custom_registries(args["package_name"], args["package_uuid"], Vector{String}(args["registry_urls"]))
         elseif func_name == "get_available_versions_with_custom_registries"
             get_available_versions_with_custom_registries(args["package_name"], args["package_uuid"], Vector{String}(args["registry_urls"]))
+
+        # Environment file detection
+        elseif func_name == "find_environment_files"
+            project_file, manifest_file = find_environment_files(args["directory"])
+            Dict("project_file" => project_file, "manifest_file" => manifest_file)
         else
             Dict("error" => "Unknown function: $func_name")
         end
 
         # Check if the function result itself contains an error
         if isa(function_result, Dict) && haskey(function_result, "error")
-            function_result
+            error_msg = function_result["error"]
+            # Pkg resolver errors are expected/handled by Ruby - wrap them in result
+            # Other errors should fail the process
+            if startswith(error_msg, "Pkg resolver error:")
+                Dict("result" => function_result)
+            else
+                function_result  # Return error dict as-is, will cause exit(1)
+            end
         else
             Dict("result" => function_result)
         end
