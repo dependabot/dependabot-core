@@ -494,7 +494,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     end
 
     context "when dependency-type is used with a supported package manager" do
-      %w[bundler composer hex maven npm_and_yarn pip uv].each do |package_manager|
+      %w(bundler composer hex maven npm_and_yarn pip uv).each do |package_manager|
         context "with #{package_manager}" do
           let(:job) do
             instance_double(
@@ -515,7 +515,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     end
 
     context "when dependency-type is used with an unsupported package manager" do
-      %w[gradle go_modules cargo docker terraform].each do |package_manager|
+      %w(gradle go_modules cargo docker terraform).each do |package_manager|
         context "with #{package_manager}" do
           let(:job) do
             instance_double(
