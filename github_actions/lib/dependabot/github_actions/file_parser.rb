@@ -19,7 +19,6 @@ module Dependabot
   module GithubActions
     class FileParser < Dependabot::FileParsers::Base
       extend T::Set
-      include Dependabot::GithubActions
 
       require "dependabot/file_parsers/base/dependency_set"
 
