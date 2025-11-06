@@ -194,10 +194,11 @@ module Dependabot
         end
         sig { params(dependency_name: String, latest_version: String, latest_version_obj: T.untyped).void }
         def log_existing_pr_for_latest_version(dependency_name, latest_version, latest_version_obj)
-          pr_number = job.existing_pull_requests
-                         .find { |pr| pr.contains_dependency?(dependency_name, latest_version) }
-                         &.pr_number
+          existing_pr = job.existing_pull_requests.find do |pr|
+            pr.contains_dependency?(dependency_name, latest_version, T.must(job.source.directory))
+          end
 
+          pr_number = existing_pr&.pr_number
           pr_number_text = pr_number ? "##{pr_number} " : ""
 
           Dependabot.logger.info(
@@ -276,9 +277,15 @@ module Dependabot
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
 
-          job.existing_pull_requests
-             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
-            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
+          return true if job.existing_pull_requests.any? do |pr|
+            pr.contains_dependency?(checker.dependency.name, latest_version, T.must(job.source.directory))
+          end
+
+          return true if created_pull_requests.any? do |pr|
+            pr.contains_dependency?(checker.dependency.name, latest_version, T.must(job.source.directory))
+          end
+
+          false
         end
 
         sig do
