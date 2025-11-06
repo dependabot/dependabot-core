@@ -36,8 +36,32 @@ module Dependabot
       def current_dependency_files(job)
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
+        current_dir_files = @dependency_file_batch.filter_map do |_path, data|
+          file = data[:file]
+          file_dir = Pathname.new(file.directory).cleanpath.to_s
+          file if file_dir == directory
+        end
+        shared_lockfile_paths = current_dir_files.filter_map do |file|
+          next unless file.respond_to?(:associated_lockfile_path)
+
+          file.associated_lockfile_path
+        end.compact.uniq
+
         files = @dependency_file_batch.filter_map do |_path, data|
-          data[:file] if Pathname.new(data[:file].directory).cleanpath.to_s == directory
+          file = data[:file]
+          file_dir = Pathname.new(file.directory).cleanpath.to_s
+          # Include files that are in the current directory OR files that are shared across multiple directories
+          next file if file_dir == directory
+          next file if file.respond_to?(:shared_across_directories?) && file.shared_across_directories?
+
+          if shared_lockfile_paths.any? &&
+             file.respond_to?(:associated_lockfile_path) &&
+             file.associated_lockfile_path &&
+             shared_lockfile_paths.include?(file.associated_lockfile_path)
+            next file
+          end
+
+          nil
         end
         # This should be prevented in the FileFetcher, but possible due to directory cleaning
         # that all files are filtered out.

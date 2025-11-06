@@ -51,20 +51,36 @@ module Dependabot
       def updated_files_with_julia_helper
         updated_files = []
 
-        SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
+        Dependabot.logger.info("FileUpdater: Starting update for #{dependencies.map(&:name).join(', ')}")
+        Dependabot.logger.info("FileUpdater: Available dependency files: #{dependency_files.map { |f| "#{f.directory}/#{f.name}" }.join(', ')}")
+
+        SharedHelpers.in_a_temporary_repo_directory(project_directory, repo_contents_path) do
           updated_project = updated_project_content
+
           actual_manifest = find_manifest_file
+          Dependabot.logger.info("FileUpdater: Found manifest: #{actual_manifest ? "#{actual_manifest.directory}/#{actual_manifest.name}" : "nil"}")
 
           return project_only_update(updated_project) if actual_manifest.nil?
 
-          # Work directly in the repo directory - no need for another temp directory
-          # This ensures all workspace packages are accessible to Julia's Pkg
+          # For workspace packages, we need to update ALL Project.toml files that share
+          # the same Manifest.toml BEFORE calling the Julia helper. Otherwise the resolver
+          # will fail because some compat entries are updated and others aren't.
+          other_updated_projects = update_workspace_sibling_projects(actual_manifest)
+          Dependabot.logger.info("FileUpdater: Updated #{other_updated_projects.length} sibling projects")
+
           write_temporary_files(updated_project, actual_manifest)
           result = call_julia_helper
+          $stderr.puts "actual_manifest.content length: #{T.must(actual_manifest.content).length}"
+          if result['manifest_content']
+            $stderr.puts "result manifest_content length: #{result['manifest_content'].length}"
+            $stderr.puts "Content changed: #{result['manifest_content'] != actual_manifest.content}"
+          end
+          $stderr.puts "=========================================\n"
 
           return handle_julia_helper_error(result, actual_manifest, updated_project) if result["error"]
 
-          build_updated_files(updated_files, updated_project, actual_manifest, result)
+          build_updated_files(updated_files, updated_project, actual_manifest, result, other_updated_projects)
+          Dependabot.logger.info("FileUpdater: Built #{updated_files.length} updated files: #{updated_files.map { |f| "#{f.directory}/#{f.name}" }.join(', ')}")
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -86,11 +102,9 @@ module Dependabot
       def write_temporary_files(updated_project, actual_manifest)
         File.write(T.must(project_file).name, updated_project)
 
-        # Preserve relative paths (e.g., ../Manifest.toml for workspace packages)
-        # so Julia's Pkg can find and update the correct shared manifest
-        manifest_path = actual_manifest.name
-        FileUtils.mkdir_p(File.dirname(manifest_path)) if manifest_path.include?("/")
-        File.write(manifest_path, actual_manifest.content)
+        manifest_relative_path = relative_path_from_project(actual_manifest)
+        ensure_relative_directory(manifest_relative_path)
+        File.write(manifest_relative_path, T.must(actual_manifest.content))
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
@@ -158,15 +172,22 @@ module Dependabot
           updated_files: T::Array[Dependabot::DependencyFile],
           updated_project: String,
           actual_manifest: Dependabot::DependencyFile,
-          result: T::Hash[String, T.untyped]
+          result: T::Hash[String, T.untyped],
+          other_updated_projects: T::Hash[Dependabot::DependencyFile, String]
         ).void
       end
-      def build_updated_files(updated_files, updated_project, actual_manifest, result)
+      def build_updated_files(updated_files, updated_project, actual_manifest, result, other_updated_projects)
         updated_files << updated_file(file: T.must(project_file), content: updated_project)
+
+        # Add any other workspace Project.toml files that were updated
+        other_updated_projects.each do |project_file_obj, updated_content|
+          updated_files << updated_file(file: project_file_obj, content: updated_content)
+        end
 
         return unless result["manifest_content"]
 
         updated_manifest_content = result["manifest_content"]
+
         return unless updated_manifest_content != actual_manifest.content
 
         manifest_for_update = if result["manifest_path"]
@@ -175,6 +196,100 @@ module Dependabot
                                 actual_manifest
                               end
         updated_files << updated_file(file: manifest_for_update, content: updated_manifest_content)
+      end
+
+      # Update other Project.toml files in the workspace that share the same Manifest.toml
+      # Returns a hash mapping DependencyFile objects to their updated content
+      sig { params(manifest: Dependabot::DependencyFile).returns(T::Hash[Dependabot::DependencyFile, String]) }
+      def update_workspace_sibling_projects(manifest)
+        updated_projects = {}
+
+        Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects: Looking for siblings of #{project_file&.path}")
+        Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects: Manifest is #{manifest.directory}/#{manifest.name}")
+        Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects: Available files: #{dependency_files.map { |f| "#{f.directory}/#{f.name}" }.join(', ')}")
+
+        # Find other Project.toml files that share this manifest
+        dependency_files.each do |file|
+          next unless file.name.match?(/^(Julia)?Project\.toml$/i)
+
+          is_current = file == project_file
+          Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects:   Checking #{file.directory}/#{file.name}: is_current=#{is_current}")
+          next if is_current # Skip the current project
+
+          # Check if this project shares the same manifest by comparing directories
+          # For workspace packages, they're typically siblings under the same parent
+          file_manifest = find_manifest_for_project(file)
+          manifest_matches = file_manifest && file_manifest.name == manifest.name && file_manifest.directory == manifest.directory
+          Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects:     file_manifest=#{file_manifest ? "#{file_manifest.directory}/#{file_manifest.name}" : "nil"}, matches=#{manifest_matches}")
+          next unless manifest_matches
+
+          # Update this project file with the same dependency updates
+          updated_content = update_project_content_for_file(file)
+          content_changed = updated_content != file.content
+          Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects:     content_changed=#{content_changed}")
+          next if updated_content == file.content
+
+          # Write the updated content to disk so Julia helper can see it
+          sibling_relative_path = relative_path_from_project(file)
+          ensure_relative_directory(sibling_relative_path)
+          File.write(sibling_relative_path, updated_content)
+
+          updated_projects[file] = updated_content
+        end
+
+        Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects: Found #{updated_projects.length} siblings to update")
+        updated_projects
+      end
+
+      # Find the manifest file that would be used by a given project file
+      sig { params(project: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def find_manifest_for_project(project)
+        # Look for Manifest.toml in the same directory or parent directories
+        current_dir = project.directory
+
+        # Check same directory first
+        manifest = dependency_files.find do |f|
+          f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i) && f.directory == current_dir
+        end
+        return manifest if manifest
+
+        # Check parent directory (common for workspace packages)
+        parent_dir = File.dirname(current_dir)
+        dependency_files.find do |f|
+          f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i) && f.directory == parent_dir
+        end
+      end
+
+      # Update a project file's content with the same dependency updates
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      def update_project_content_for_file(file)
+        content = T.must(file.content)
+        file_path = file.path.sub(%r{^/}, "")
+
+        Dependabot.logger.info("FileUpdater.update_project_content_for_file: Updating #{file_path}")
+
+        dependencies.each do |dependency|
+          unless dependency_declared_in_dependency_sections?(file, dependency.name)
+            Dependabot.logger.info(
+              "FileUpdater.update_project_content_for_file:   #{dependency.name}: not declared in deps/extras/weakdeps, skipping"
+            )
+            next
+          end
+
+          # Find the new requirement for this dependency
+          # Compare with the full file path since requirements now use full paths
+          new_requirement = dependency.requirements
+                                      .find { |req| T.cast(req[:file], String) == file_path }
+                                      &.fetch(:requirement)
+          new_requirement ||= shared_requirement_for_dependency(dependency)
+
+          Dependabot.logger.info("FileUpdater.update_project_content_for_file:   #{dependency.name}: requirement=#{new_requirement.inspect}")
+          next unless new_requirement
+
+          content = update_dependency_requirement_in_content(content, dependency.name, new_requirement)
+        end
+
+        content
       end
 
       private
@@ -214,46 +329,73 @@ module Dependabot
         # We just need to find it in dependency_files
         project_dir = T.must(project_file).directory
 
-        dependency_files.find do |f|
+        Dependabot.logger.info("FileUpdater.find_manifest_file: Looking for manifest for project_dir=#{project_dir}")
+        Dependabot.logger.info("FileUpdater.find_manifest_file: Available files: #{dependency_files.map { |f| "#{f.directory}/#{f.name} (shared=#{f.shared_across_directories?})" }.join(', ')}")
+
+        result = dependency_files.find do |f|
           # Use basename to get just the filename, not the full path with ../
           is_manifest = File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
-          is_manifest && (f.directory == project_dir || project_dir.start_with?(f.directory))
+          # For workspace packages, manifest can be in parent directory
+          # Check if file directory matches exactly or if project_dir is a subdirectory of file directory
+          matches_dir = f.directory == project_dir || project_dir.start_with?("#{f.directory}/")
+          Dependabot.logger.info("FileUpdater.find_manifest_file:   Checking #{f.directory}/#{f.name}: is_manifest=#{is_manifest}, matches_dir=#{matches_dir}")
+          is_manifest && matches_dir
         end
+
+        Dependabot.logger.info("FileUpdater.find_manifest_file: Result: #{result ? "#{result.directory}/#{result.name}" : 'nil'}")
+        result
       end
 
       sig { params(manifest_path: String).returns(Dependabot::DependencyFile) }
       def manifest_file_for_path(manifest_path)
         # manifest_path is relative to the project directory (e.g., "Manifest.toml" or "../Manifest.toml")
-        # We need to resolve it to find the actual manifest file in dependency_files
+        # Resolve it to a canonical repo-relative path and return a DependencyFile that
+        # references the canonical location (no relative components like "..").
+        # This ensures FileUpdater instances for different subpackages return the same
+        # file identity and allows the updater service to deduplicate correctly.
 
-        # Build the absolute path relative to the project directory
         project_dir = T.must(project_file).directory
-        resolved_manifest_path = File.expand_path(manifest_path, project_dir)
 
-        # Normalize by removing leading "/" to get repo-relative path
-        resolved_manifest_path = resolved_manifest_path.sub(%r{^/}, "")
+        # Resolve the manifest path to an absolute repo-relative path
+        absolute_path = Pathname.new(File.join(project_dir, manifest_path)).cleanpath.to_s
+        repo_relative_path = absolute_path.sub(%r{^/}, "")
 
-        # Find the matching manifest file in dependency_files
+        # Try to find an existing DependencyFile that matches the resolved path
         found_manifest = dependency_files.find do |f|
           next unless f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
 
-          # Construct the full path for this file and normalize it
-          file_path = File.join(f.directory, f.name).sub(%r{^/}, "")
-          file_path == resolved_manifest_path
+          file_full_path = File.join(f.directory, f.name).sub(%r{^/}, "")
+          file_full_path == repo_relative_path
         end
 
-        # If we found the manifest file and the manifest_path matches its name exactly,
-        # return the original file to preserve its metadata
-        return found_manifest if found_manifest && found_manifest.name == manifest_path
-
-        # For workspace cases where manifest_path is relative (e.g., "../Manifest.toml"),
-        # we need to create a new DependencyFile with the relative path as its name,
-        # but copy the content from the found manifest if it exists
-        Dependabot::DependencyFile.new(
-          name: manifest_path,
-          content: found_manifest&.content || "",
-          directory: project_dir
-        )
+        if found_manifest
+          # Return a normalized DependencyFile that uses the manifest's actual directory
+          # and preserves any metadata (like associated manifest paths) so the updater
+          # service continues treating the file as shared across directories.
+          Dependabot::DependencyFile.new(
+            name: File.basename(found_manifest.name),
+            content: found_manifest.content,
+            directory: found_manifest.directory,
+            type: found_manifest.type,
+            support_file: found_manifest.support_file?,
+            vendored_file: found_manifest.vendored_file?,
+            symlink_target: found_manifest.symlink_target,
+            content_encoding: found_manifest.content_encoding,
+            operation: found_manifest.operation,
+            mode: found_manifest.mode,
+            associated_manifest_paths: found_manifest.associated_manifest_paths,
+            associated_lockfile_path: found_manifest.associated_lockfile_path
+          )
+        else
+          # If we couldn't find it, create a canonical DependencyFile using the
+          # resolved repo-relative path components.
+          canonical_dir = "/" + File.dirname(repo_relative_path)
+          Dependabot::DependencyFile.new(
+            name: File.basename(repo_relative_path),
+            content: "",
+            directory: canonical_dir
+          )
+        end
       end
 
       sig { override.void }
@@ -268,8 +410,12 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def project_file
         @project_file ||= T.let(
-          dependency_files.find do |f|
-            f.name.match?(/^(Julia)?Project\.toml$/i)
+          begin
+            project_files = dependency_files.select { |file| file.name.match?(/^(Julia)?Project\.toml$/i) }
+            project_files.find do |file|
+              directory_targets.include?(Pathname.new(file.directory).cleanpath.to_s) ||
+                requirement_targets.include?(file.path.sub(%r{^/}, ""))
+            end || project_files.first
           end,
           T.nilable(Dependabot::DependencyFile)
         )
@@ -280,11 +426,16 @@ module Dependabot
         return T.must(T.must(project_file).content) unless project_file
 
         content = T.must(T.must(project_file).content)
+        project_requirement_path = T.must(project_file).path.sub(%r{^/}, "")
+        project_requirement_name = T.must(project_file).name
 
         dependencies.each do |dependency|
           # Find the new requirement for this dependency
           new_requirement = dependency.requirements
-                                      .find { |req| T.cast(req[:file], String) == T.must(project_file).name }
+                                      .find do |req|
+                                        req_file = T.cast(req[:file], String)
+                                        req_file == project_requirement_path || req_file == project_requirement_name
+                                      end
                                       &.fetch(:requirement)
 
           next unless new_requirement
@@ -329,6 +480,81 @@ module Dependabot
           # Add new [compat] section at the end
           content + "\n[compat]\n#{dependency_name} = \"#{requirement}\"\n"
         end
+      end
+
+      sig { returns(String) }
+      def project_directory
+        T.must(project_file).directory
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      def relative_path_from_project(file)
+        project_path = Pathname.new(project_directory)
+        file_path = Pathname.new(File.join(file.directory, file.name)).cleanpath
+        file_path.relative_path_from(project_path).to_path
+      end
+
+      sig { params(path: String).void }
+      def ensure_relative_directory(path)
+        dir = File.dirname(path)
+        return if dir == "." || dir.start_with?("..")
+
+        FileUtils.mkdir_p(dir)
+      end
+
+      sig { returns(T::Array[String]) }
+      def directory_targets
+        @directory_targets ||= T.let(
+          dependencies.filter_map do |dependency|
+            directory = dependency.metadata[:directory]
+            next unless directory
+
+            Pathname.new(directory).cleanpath.to_s
+          end.uniq,
+          T.nilable(T::Array[String])
+        )
+      end
+
+      sig { returns(T::Array[String]) }
+      def requirement_targets
+        @requirement_targets ||= T.let(
+          dependencies.flat_map do |dependency|
+            dependency.requirements.filter_map do |req|
+              file = req[:file]
+              next unless file
+
+              file.sub(%r{^/}, "")
+            end
+          end.uniq,
+          T.nilable(T::Array[String])
+        )
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
+      def shared_requirement_for_dependency(dependency)
+        unique_requirements = dependency.requirements.filter_map { |req| req[:requirement] }.uniq
+        return nil unless unique_requirements.one?
+
+        unique_requirements.first
+      end
+
+      sig { params(file: Dependabot::DependencyFile, dependency_name: String).returns(T::Boolean) }
+      def dependency_declared_in_dependency_sections?(file, dependency_name)
+        content = T.must(file.content)
+        parsed = TomlRB.parse(content)
+        sections = ["deps", "extras", "weakdeps"]
+
+        sections.any? do |section|
+          table = parsed[section]
+          next false unless table.is_a?(Hash)
+
+          table.key?(dependency_name)
+        end
+      rescue TomlRB::ParseError => e
+        Dependabot.logger.warn(
+          "FileUpdater: Failed to parse #{file.path} while checking dependency declarations: #{e.message}"
+        )
+        true
       end
     end
   end

@@ -137,7 +137,7 @@ module Dependabot
             version: nil, # Julia dependencies don't use locked versions
             requirements: [{
               requirement: requirement_string,
-              file: T.must(project_file).name,
+              file: T.must(project_file).path.sub(%r{^/}, ""),
               groups: groups,
               source: nil
             }],
@@ -150,7 +150,20 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def project_file
         @project_file ||= T.let(
-          get_original_file("Project.toml") || get_original_file("JuliaProject.toml"),
+          begin
+            # For workspace packages, we need to find the Project.toml in the source directory
+            # not just any Project.toml file (there may be multiple in a workspace)
+            source_dir = source&.directory
+            project = if source_dir
+                        dependency_files.find do |f|
+                          (f.name == "Project.toml" || f.name == "JuliaProject.toml") &&
+                            f.directory == source_dir
+                        end
+                      end
+
+            # Fallback to any Project.toml if none found in source directory
+            project || get_original_file("Project.toml") || get_original_file("JuliaProject.toml")
+          end,
           T.nilable(Dependabot::DependencyFile)
         )
       end

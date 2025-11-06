@@ -375,6 +375,27 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when manifest includes workspace metadata" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest.toml",
+          content: fixture("projects", "basic", "Manifest.toml"),
+          directory: "/",
+          associated_manifest_paths: [
+            "/Workspace/SubPackageA/Project.toml",
+            "/Workspace/SubPackageB/Project.toml"
+          ]
+        )
+      end
+
+      it "preserves associated manifest paths" do
+        result = updater.send(:manifest_file_for_path, "../Manifest.toml")
+
+        expect(result.associated_manifest_paths).to eq(manifest_file.associated_manifest_paths)
+        expect(result).to be_shared_across_directories
+      end
+    end
+
     context "when no manifest was originally fetched" do
       let(:dependency_files) { [project_file] }
 
@@ -384,6 +405,90 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(result.name).to eq("Manifest.toml")
         expect(result.directory).to eq(project_file.directory)
       end
+    end
+  end
+
+  describe "#update_project_content_for_file" do
+    subject(:updater) do
+      described_class.new(
+        dependencies: [dependency],
+        dependency_files: dependency_files,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+
+    let(:dependency_files) { [project_a, project_b, workspace_root] }
+    let(:project_a) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        directory: "/Workspace/SubPackageA",
+        content: <<~TOML
+          name = "SubPackageA"
+
+          [compat]
+          JSON = "0.21"
+        TOML
+      )
+    end
+    let(:project_b) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        directory: "/Workspace/SubPackageB",
+        content: <<~TOML
+          name = "SubPackageB"
+
+          [compat]
+          JSON = "0.21"
+        TOML
+      )
+    end
+    let(:workspace_root) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        directory: "/Workspace",
+        content: <<~TOML
+          name = "WorkspacePackage"
+
+          [workspace]
+          projects = ["SubPackageA", "SubPackageB"]
+        TOML
+      )
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "JSON",
+        version: "1.2.0",
+        previous_version: "0.21.0",
+        package_manager: "julia",
+        requirements: [{
+          requirement: "0.21, 1.2",
+          file: "Workspace/SubPackageA/Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        previous_requirements: [{
+          requirement: "0.21",
+          file: "Workspace/SubPackageA/Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        metadata: { julia_uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
+      )
+    end
+
+    it "reuses shared requirement when sibling file lacks explicit entry" do
+      content = updater.send(:update_project_content_for_file, project_b)
+      expect(content).to include('JSON = "0.21, 1.2"')
+    end
+
+    it "skips files that do not declare the dependency" do
+      content = updater.send(:update_project_content_for_file, workspace_root)
+      expect(content).to eq(workspace_root.content)
     end
   end
 

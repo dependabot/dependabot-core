@@ -58,3 +58,74 @@ function get_manifest_file_name(dir::String)
     _, manifest_file = find_environment_files(dir)
     return basename(manifest_file)
 end
+
+"""
+    detect_workspace_files(dir::String)
+
+Detect if the given directory contains a workspace and return all relevant files.
+Returns a dictionary with:
+- "is_workspace": Boolean indicating if this is a workspace root or member
+- "project_files": Array of absolute paths to all Project.toml files (workspace members + root if workspace)
+- "manifest_file": String path to the shared Manifest.toml
+
+If not a workspace, returns the single project and manifest for the directory.
+"""
+function detect_workspace_files(dir::String)
+    if !isdir(dir)
+        error("Directory does not exist: $dir")
+    end
+
+    project_file, manifest_file = find_environment_files(dir)
+
+    # Check if current project is a workspace root
+    project_data = TOML.parsefile(project_file)
+    is_workspace_root = haskey(project_data, "workspace") && haskey(project_data["workspace"], "projects")
+
+    # Use Base.base_project to find the workspace root (if we're a member)
+    base_project_file = Base.base_project(project_file)
+
+    if is_workspace_root || base_project_file !== nothing
+        # This is a workspace - either root or member
+        # Use the base project file (or current if we're the root)
+        workspace_root = base_project_file !== nothing ? base_project_file : project_file
+        workspace_data = TOML.parsefile(workspace_root)
+
+        if haskey(workspace_data, "workspace") && haskey(workspace_data["workspace"], "projects")
+            workspace_members = workspace_data["workspace"]["projects"]
+            project_files = String[]
+
+            # Add the root project file
+            push!(project_files, workspace_root)
+
+            # Add all member project files
+            base_dir = dirname(workspace_root)
+            for member in workspace_members
+                member_dir = joinpath(base_dir, member)
+                if isdir(member_dir)
+                    member_project_file, _ = find_environment_files(member_dir)
+                    push!(project_files, member_project_file)
+                end
+            end
+
+            # Get the shared manifest - use workspace_manifest or fall back to manifest_file
+            workspace_manifest_file = Base.workspace_manifest(project_file)
+            if workspace_manifest_file === nothing
+                # If we're at the root, workspace_manifest returns nothing, so use the direct manifest
+                workspace_manifest_file = manifest_file
+            end
+
+            return Dict(
+                "is_workspace" => true,
+                "project_files" => project_files,
+                "manifest_file" => workspace_manifest_file
+            )
+        end
+    end
+
+    # Not a workspace member, return single project
+    return Dict(
+        "is_workspace" => false,
+        "project_files" => [project_file],
+        "manifest_file" => manifest_file
+    )
+end
