@@ -55,6 +55,7 @@ module Dependabot
       sig { params(other: T.untyped).returns(T::Boolean) }
       def ==(other)
         return false unless other.is_a?(Dependency)
+
         to_h == other.to_h
       end
 
