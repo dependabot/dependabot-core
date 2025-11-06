@@ -34,7 +34,7 @@ module Dependabot
         @name = name
         @version = version
         @removed = removed
-        @directory = directory
+        @directory = normalize_directory(directory)
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -50,6 +50,18 @@ module Dependabot
       sig { returns(T::Boolean) }
       def removed?
         removed
+      end
+
+      private
+
+      sig { params(directory: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_directory(directory)
+        return nil if directory.nil?
+
+        directory.to_s.
+          sub(%r{/*\Z}, "").   # remove trailing slashes
+          sub(%r{\A/*}, "/").  # prefix with a single slash
+          sub(%r{\A/\Z}, "/.") # use `/.` as root
       end
     end
 
@@ -116,12 +128,21 @@ module Dependabot
 
     sig { params(name: String, version: String, dir: String).returns(T::Boolean) }
     def contains_dependency?(name, version, dir)
-      dependencies.any? { |dep| dep.name == name && dep.version == version && dep.directory == dir }
+      normalized_dir = normalize_directory(dir)
+      dependencies.any? { |dep| dep.name == name && dep.version == version && dep.directory == normalized_dir }
     end
 
     sig { returns(T::Boolean) }
     def using_directory?
       dependencies.all? { |dep| !!dep.directory }
+    end
+
+    private
+
+    sig { params(directory: String).returns(String) }
+    def normalize_directory(directory)
+      return "/" if directory == "." || directory == "./"
+      directory
     end
   end
 end
