@@ -34,7 +34,7 @@ module Dependabot
         @name = name
         @version = version
         @removed = removed
-        @directory = normalize_directory(directory)
+        @directory = T.let(normalize_directory(directory), T.nilable(String))
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -52,16 +52,22 @@ module Dependabot
         removed
       end
 
+      sig { params(other: T.untyped).returns(T::Boolean) }
+      def ==(other)
+        return false unless other.is_a?(Dependency)
+        to_h == other.to_h
+      end
+
       private
 
       sig { params(directory: T.nilable(String)).returns(T.nilable(String)) }
       def normalize_directory(directory)
         return nil if directory.nil?
 
-        directory.to_s.
-          sub(%r{/*\Z}, "").   # remove trailing slashes
-          sub(%r{\A/*}, "/").  # prefix with a single slash
-          sub(%r{\A/\Z}, "/.") # use `/.` as root
+        directory.to_s
+                 .sub(%r{/*\Z}, "")    # remove trailing slashes
+                 .sub(%r{\A/*}, "/")   # prefix with a single slash
+                 .sub(%r{\A/\Z}, "/.") # use `/.` as root
       end
     end
 
@@ -84,7 +90,7 @@ module Dependabot
 
         dependencies =
           pr.map do |dep|
-            Dependency.new(
+            PullRequest::Dependency.new(
               name: dep.fetch("dependency-name"),
               version: dep.fetch("dependency-version", nil),
               removed: dep.fetch("dependency-removed", false),
@@ -128,21 +134,13 @@ module Dependabot
 
     sig { params(name: String, version: String, dir: String).returns(T::Boolean) }
     def contains_dependency?(name, version, dir)
-      normalized_dir = normalize_directory(dir)
-      dependencies.any? { |dep| dep.name == name && dep.version == version && dep.directory == normalized_dir }
+      dependency = PullRequest::Dependency.new(name:, version:, directory: dir)
+      dependencies.any?(dependency)
     end
 
     sig { returns(T::Boolean) }
     def using_directory?
       dependencies.all? { |dep| !!dep.directory }
-    end
-
-    private
-
-    sig { params(directory: String).returns(String) }
-    def normalize_directory(directory)
-      return "/" if directory == "." || directory == "./"
-      directory
     end
   end
 end
