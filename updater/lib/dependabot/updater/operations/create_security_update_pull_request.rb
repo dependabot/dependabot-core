@@ -178,7 +178,7 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
-            notices: @notices,
+            notices: @notices
           )
 
           if (existing_pr = existing_pull_request(dependency_change.updated_dependencies))
