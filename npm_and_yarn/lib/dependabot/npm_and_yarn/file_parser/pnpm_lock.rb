@@ -75,8 +75,6 @@ module Dependabot
             end
           end
 
-          origin_file = Pathname.new(@dependency_file.directory).join(@dependency_file.name).to_s
-
           # Add prioritized dependencies to the dependency set.
           dependencies_with_specifiers.each do |dependency_args|
             dependency_set << Dependency.new(
@@ -84,8 +82,7 @@ module Dependabot
               version: dependency_args[:version],
               package_manager: dependency_args[:package_manager],
               requirements: dependency_args[:requirements],
-              subdependency_metadata: dependency_args[:subdependency_metadata],
-              origin_files: [origin_file]
+              subdependency_metadata: dependency_args[:subdependency_metadata]
             )
           end
 
@@ -95,8 +92,7 @@ module Dependabot
               version: dependency_args[:version],
               package_manager: dependency_args[:package_manager],
               requirements: dependency_args[:requirements],
-              subdependency_metadata: dependency_args[:subdependency_metadata],
-              origin_files: [origin_file]
+              subdependency_metadata: dependency_args[:subdependency_metadata]
             )
           end
 

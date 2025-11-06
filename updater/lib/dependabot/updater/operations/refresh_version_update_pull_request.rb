@@ -49,7 +49,7 @@ module Dependabot
           # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
           @notices = T.let([], T::Array[Dependabot::Notice])
 
-          return unless job.source.directory.nil? && job.source.directories&.count == 1
+          return unless job.source.directory.nil? && job.source.directories&.one?
 
           job.source.directory = job.source.directories&.first
         end
@@ -76,12 +76,16 @@ module Dependabot
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
-        sig { returns(Dependabot::Service) }
+
+        sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
         sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+
         # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         sig { returns(T::Array[Dependabot::Notice]) }
         attr_reader :notices
@@ -100,7 +104,7 @@ module Dependabot
         def check_and_update_pull_request(dependencies)
           job_dependencies = T.must(job.dependencies)
 
-          if job_dependencies.count.zero? || dependencies.count != job_dependencies.count
+          if job_dependencies.none? || dependencies.count != job_dependencies.count
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
@@ -134,8 +138,6 @@ module Dependabot
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
-          return close_pull_request(reason: :dependency_removed) if checker.excluded?
-
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
@@ -153,8 +155,7 @@ module Dependabot
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
-            notices: @notices,
-            exclude_paths: job.exclude_paths || []
+            notices: @notices
           )
 
           # Send warning alerts to the API if any warning notices are present.
@@ -184,16 +185,20 @@ module Dependabot
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for creation"
+          )
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }
         def update_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
-                                 "pull request for update")
+          Dependabot.logger.info(
+            "Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
+            "pull request for update"
+          )
 
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
@@ -203,8 +208,10 @@ module Dependabot
           job_dependencies = T.must(job.dependencies)
 
           reason_string = reason.to_s.tr("_", " ")
-          Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job_dependencies.join(', ')} - #{reason_string}")
+          Dependabot.logger.info(
+            "Telling backend to close pull request for " \
+            "#{job_dependencies.join(', ')} - #{reason_string}"
+          )
           service.close_pull_request(job_dependencies, reason)
         end
 
@@ -228,7 +235,6 @@ module Dependabot
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
             update_cooldown: job.cooldown,
-            exclude_paths: job.exclude_paths,
             options: job.experiments
           )
         end

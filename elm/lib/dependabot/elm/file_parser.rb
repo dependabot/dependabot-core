@@ -15,6 +15,7 @@ module Dependabot
   module Elm
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
       DEPENDENCY_TYPES = %w(dependencies test-dependencies).freeze

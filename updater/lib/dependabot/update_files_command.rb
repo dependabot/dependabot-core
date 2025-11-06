@@ -1,9 +1,10 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "base64"
 require "json"
 require "dependabot/base_command"
+require "dependabot/fetched_files"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
@@ -13,6 +14,14 @@ require "github_api/dependency_submission"
 
 module Dependabot
   class UpdateFilesCommand < BaseCommand
+    extend T::Sig
+
+    sig { override.params(fetched_files: Dependabot::FetchedFiles).void }
+    def initialize(fetched_files)
+      @fetched_files = T.let(fetched_files, Dependabot::FetchedFiles)
+    end
+
+    sig { override.void }
     def perform_job
       # We expect the FileFetcherCommand to have been executed beforehand to place
       # encoded files and commit information in the environment, so let's retrieve
@@ -24,37 +33,27 @@ module Dependabot
         begin
           dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
             job: job,
-            job_definition: Environment.job_definition
+            fetched_files: @fetched_files
           )
         rescue StandardError => e
           handle_parser_error(e)
           # If dependency file parsing has failed, there's nothing more we can do,
           # so let's mark the job as processed and stop.
-          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          return service.mark_job_as_processed(base_commit_sha)
         end
 
         # Update the service's metadata about this project
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
-
-        # POC: Emit the dependency data formatted for the GitHub Dependency Submission API
-        #
-        # We only want to run this experiment on Version Updates as Security Updates are downstream of
-        # Dependency Submission so this could create an unhelpful feedback loop.
-        dependency_submission_experiment(dependency_snapshot) unless job.security_updates_only?
 
         # TODO: Pull fatal error handling handling up into this class
         #
         # As above, we can remove the responsibility for handling fatal/job halting
         # errors from Dependabot::Updater entirely.
         begin
-          Dependabot::Updater.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot
-          ).run
+          Dependabot::Updater.new(service:, job:, dependency_snapshot:).run
         rescue Dependabot::DependencyFileNotParseable => e
           handle_dependency_file_not_parseable_error(e)
-          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          return service.mark_job_as_processed(base_commit_sha)
         end
 
         # Wait for all PRs to be created
@@ -63,25 +62,31 @@ module Dependabot
         # Finally, mark the job as processed. The Dependabot::Updater may have
         # reported errors to the service, but we always consider the job as
         # successfully processed unless it actually raises.
-        service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
+        service.mark_job_as_processed(base_commit_sha)
       end
+    end
+
+    sig { override.returns(Dependabot::Job) }
+    def job
+      @job ||= T.let(
+        Job.new_update_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ),
+        T.nilable(Dependabot::Job)
+      )
+    end
+
+    sig { override.returns(T.nilable(String)) }
+    def base_commit_sha
+      @fetched_files.base_commit_sha
     end
 
     private
 
-    def job
-      @job ||= Job.new_update_job(
-        job_id: job_id,
-        job_definition: Environment.job_definition,
-        repo_contents_path: Environment.repo_contents_path
-      )
-    end
-
-    def base_commit_sha
-      Environment.job_definition["base_commit_sha"]
-    end
-
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
+    sig { params(error: StandardError).void }
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -108,12 +113,12 @@ module Dependabot
           # If it isn't, then log all the details and let the application error
           # tracker know about it
           Dependabot.logger.error error.message
-          error.backtrace.each { |line| Dependabot.logger.error line }
+          error.backtrace&.each { |line| Dependabot.logger.error line }
           unknown_error_details = {
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
-            ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+            ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil,
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -142,8 +147,9 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
 
+    sig { params(error: Dependabot::DependencyFileNotParseable).void }
     def handle_dependency_file_not_parseable_error(error)
       error_details = Dependabot.updater_error_details(error)
 
@@ -157,24 +163,6 @@ module Dependabot
         error_type: T.must(error_details).fetch(:"error-type"),
         error_details: T.must(error_details)[:"error-detail"]
       )
-    end
-
-    def dependency_submission_experiment(dependency_snapshot)
-      return unless Dependabot::Experiments.enabled?(:enable_dependency_submission_poc)
-
-      submission = GithubApi::DependencySubmission.new(
-        job_id: job.id.to_s,
-        branch: job.source.branch || "main",
-        sha: dependency_snapshot.base_commit_sha,
-        ecosystem: T.must(dependency_snapshot.ecosystem),
-        dependency_files: dependency_snapshot.dependency_files,
-        dependencies: dependency_snapshot.dependencies
-      )
-
-      # TODO(brrygrdn): Drop this back down to debug logging
-      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-
-      service.create_dependency_submission(dependency_submission: submission)
     end
   end
 end

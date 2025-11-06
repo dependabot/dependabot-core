@@ -23,6 +23,7 @@ module Dependabot
 
     class JobFormatter < ::Logger::Formatter
       extend T::Sig
+
       CLI_ID = "cli"
       UNKNOWN_ID = "unknown_id"
 
@@ -48,11 +49,14 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def job_prefix
-        @job_prefix ||= T.let(begin
-          return nil if @job_id == CLI_ID
+        @job_prefix ||= T.let(
+          begin
+            return nil if @job_id == CLI_ID
 
-          "<job_#{@job_id || UNKNOWN_ID}>"
-        end, T.nilable(String))
+            "<job_#{@job_id || UNKNOWN_ID}>"
+          end,
+          T.nilable(String)
+        )
       end
     end
   end

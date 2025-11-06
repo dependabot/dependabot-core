@@ -15,6 +15,7 @@ module Dependabot
     #
     class Version < Dependabot::Version
       extend T::Sig
+
       # The regex has limits for the 0,255 and 1,255 repetitions to avoid infinite limits which makes codeql angry.
       # A docker image cannot be longer than 255 characters anyways.
       HELM_VERSION_REGEX = /^(?<prefix>[a-z._\-]{0,255})[_\-v]?(?<version>[^+]{1,255})(\+(?<digest>.+))?$/

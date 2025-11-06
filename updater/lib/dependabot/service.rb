@@ -75,8 +75,11 @@ module Dependabot
     end
 
     sig do
-      params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped]),
-             dependency: T.nilable(Dependabot::Dependency)).void
+      params(
+        error_type: T.any(String, Symbol),
+        error_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+        dependency: T.nilable(Dependabot::Dependency)
+      ).void
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
       errors << if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)

@@ -25,12 +25,14 @@ RSpec.describe Dependabot::Clients::Azure do
   let(:username) { "username" }
   let(:password) { "password" }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "dev.azure.com",
-      "username" => username,
-      "password" => password
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "dev.azure.com",
+        "username" => username,
+        "password" => password
+      }
+    )]
   end
   let(:branch) { "master" }
   let(:base_url) { "https://dev.azure.com/org/gocardless" }
@@ -185,8 +187,14 @@ RSpec.describe Dependabot::Clients::Azure do
 
   describe "#create_pull_request" do
     subject(:create_pull_request) do
-      client.create_pull_request("pr_name", "source_branch", "target_branch",
-                                 "", [], nil)
+      client.create_pull_request(
+        "pr_name",
+        "source_branch",
+        "target_branch",
+        "",
+        [],
+        nil
+      )
     end
 
     let(:pull_request_url) { repo_url + "/pullrequests?api-version=5.0" }
@@ -222,9 +230,14 @@ RSpec.describe Dependabot::Clients::Azure do
   describe "#autocomplete_pull_request" do
     subject(:autocomplete_pull_request) do
       client.autocomplete_pull_request(
-        pull_request_id, auto_complete_set_by, merge_commit_message,
-        delete_source_branch, squash_merge, merge_strategy,
-        trans_work_items, ignore_config_ids
+        pull_request_id,
+        auto_complete_set_by,
+        merge_commit_message,
+        delete_source_branch,
+        squash_merge,
+        merge_strategy,
+        trans_work_items,
+        ignore_config_ids
       )
     end
 

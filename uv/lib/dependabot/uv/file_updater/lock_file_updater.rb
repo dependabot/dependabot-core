@@ -18,9 +18,14 @@ module Dependabot
     class FileUpdater
       class LockFileUpdater
         extend T::Sig
+
         require_relative "pyproject_preparer"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
+
+        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
+        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -31,7 +36,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T.nilable(T::Array[String])) }
+        sig { returns(T.nilable(T::Array[T.nilable(String)])) }
         attr_reader :index_urls
 
         sig do
@@ -39,7 +44,7 @@ module Dependabot
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[String])
+            index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
@@ -54,8 +59,10 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_dependency_files
-          @updated_dependency_files ||= T.let(fetch_updated_dependency_files,
-                                              T.nilable(T::Array[Dependabot::DependencyFile]))
+          @updated_dependency_files ||= T.let(
+            fetch_updated_dependency_files,
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
         end
 
         private
@@ -153,8 +160,10 @@ module Dependabot
 
               # Restore the original requires-python if it exists
               if original_requires_python
-                result = result.gsub(/requires-python\s*=\s*["'][^"']+["']/,
-                                     "requires-python = \"#{original_requires_python}\"")
+                result = result.gsub(
+                  /requires-python\s*=\s*["'][^"']+["']/,
+                  "requires-python = \"#{original_requires_python}\""
+                )
               end
 
               result
@@ -203,6 +212,48 @@ module Dependabot
               File.read("uv.lock")
             end
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_uv_error(e)
+        end
+
+        sig do
+          params(
+            error: SharedHelpers::HelperSubprocessFailed
+          )
+            .returns(T.noreturn)
+        end
+        def handle_uv_error(error)
+          error_message = error.message
+          error_message_patterns = ["No solution found when resolving dependencies", "Failed to build"]
+
+          if error_message_patterns.any? { |value| error_message.include?(value) }
+            match_unresolvable_regex = error_message.scan(UV_UNRESOLVABLE_REGEX).last
+            match_failed_to_build_regex = error_message.scan(UV_BUILD_FAILED_REGEX).last
+
+            if match_unresolvable_regex
+              formatted_error = if match_unresolvable_regex.is_a?(Array)
+                                  match_unresolvable_regex.join
+                                else
+                                  match_unresolvable_regex
+                                end
+            end
+
+            if match_failed_to_build_regex
+              formatted_error = if match_failed_to_build_regex.is_a?(Array)
+                                  match_failed_to_build_regex.join
+                                else
+                                  match_failed_to_build_regex
+                                end
+            end
+
+            raise Dependabot::DependencyFileNotResolvable, formatted_error
+          end
+
+          if error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+            raise Dependabot::DependencyFileNotResolvable, error_message
+          end
+
+          raise error
         end
 
         sig { returns(T.nilable(String)) }
@@ -354,7 +405,8 @@ module Dependabot
           @python_requirement_parser ||= T.let(
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
-            ), T.nilable(FileParser::PythonRequirementParser)
+            ),
+            T.nilable(FileParser::PythonRequirementParser)
           )
         end
 
@@ -363,14 +415,17 @@ module Dependabot
           @language_version_manager ||= T.let(
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
-            ), T.nilable(LanguageVersionManager)
+            ),
+            T.nilable(LanguageVersionManager)
           )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
-          @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" },
-                               T.nilable(Dependabot::DependencyFile))
+          @pyproject ||= T.let(
+            dependency_files.find { |f| f.name == "pyproject.toml" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

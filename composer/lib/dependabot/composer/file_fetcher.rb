@@ -5,6 +5,7 @@ require "json"
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Composer
@@ -42,7 +43,13 @@ module Dependabot
         fetched_files << auth_json if auth_json
         fetched_files += artifact_dependencies
         fetched_files += path_dependencies
-        fetched_files
+
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -121,6 +128,8 @@ module Dependabot
               directories.each do |dir|
                 file = File.join(dir, PackageManager::MANIFEST_FILENAME)
 
+                next if Dependabot::FileFiltering.should_exclude_path?(file, "path dependency file", @exclude_paths)
+
                 begin
                   composer_json_files << fetch_file_with_root_fallback(file)
                 rescue Dependabot::DependencyFileNotFound
@@ -158,7 +167,7 @@ module Dependabot
             repos = parsed_composer_json.fetch("repositories", [])
             if repos.is_a?(Hash) || repos.is_a?(Array)
               repos = repos.values if repos.is_a?(Hash)
-              repos = repos.select { |r| r.is_a?(Hash) }
+              repos = repos.grep(Hash)
 
               repos
                 .select { |details| details["type"] == "path" || details["type"] == "artifact" }

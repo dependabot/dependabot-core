@@ -1,0 +1,25 @@
+name = "DependabotHelper"
+uuid = "e7a99c2c-d05a-4768-9b9a-24beacacea09"
+version = "0.1.0"
+authors = ["Ian Butterworth", "contributors"]
+
+[deps]
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[compat]
+Downloads = "1"
+JSON = "1"
+Pkg = "1"
+PrecompileTools = "1.2.1"
+TOML = "1"
+julia = "1.12"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

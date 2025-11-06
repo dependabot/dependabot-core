@@ -66,8 +66,10 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         language: Dependabot::Package::PackageLanguage.new(
           name: "python",
           version: nil,
-          requirement: Dependabot::Python::Requirement.new([">=2.7", "!=3.0.*", "!=3.1.*", "!=3.2.*", "!=3.3.*",
-                                                            "!=3.4.*", "!=3.5.*"])
+          requirement: Dependabot::Python::Requirement.new(
+            [">=2.7", "!=3.0.*", "!=3.1.*", "!=3.2.*", "!=3.3.*",
+             "!=3.4.*", "!=3.5.*"]
+          )
         )
       )
     ]
@@ -78,10 +80,14 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
 
     context "with a valid JSON response" do
       before do
-        stub_request(:get, json_url).to_return(status: 200,
-                                               body: fixture("releases_api", "pypi", "pypi_json_response.json"))
-        stub_request(:get, registry_url).to_return(status: 200,
-                                                   body: fixture("releases_api", "simple", "simple_index.html"))
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "pypi", "pypi_json_response.json")
+        )
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "simple", "simple_index.html")
+        )
       end
 
       it "fetches data from JSON registry first and returns correct package releases" do
@@ -97,10 +103,14 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
 
     context "when JSON response is empty" do
       before do
-        stub_request(:get, json_url).to_return(status: 200,
-                                               body: fixture("releases_api", "pypi", "pypi_json_response_empty.json"))
-        stub_request(:get, registry_url).to_return(status: 200,
-                                                   body: fixture("releases_api", "simple", "simple_index.html"))
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "pypi", "pypi_json_response_empty.json")
+        )
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "simple", "simple_index.html")
+        )
       end
 
       it "falls back to HTML registry and fetches versions correctly" do
@@ -111,6 +121,43 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
         expect(a_request(:get, registry_url)).to have_been_made.once
 
         expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
+      end
+    end
+
+    context "when JSON response contains a malformed version string" do
+      let(:dependency_name) { "google-api-python-client" }
+      let(:json_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
+      let(:registry_url) { "#{registry_base}/google-api-python-client/" }
+
+      before do
+        stub_request(:get, json_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "pypi", "pypi_json_response_with_malformed_version.json")
+        )
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("releases_api", "simple", "simple_index.html")
+        )
+      end
+
+      it "skips the malformed version but continues processing valid versions from JSON" do
+        result = fetch
+
+        expect(result.releases).not_to be_empty
+        expect(a_request(:get, json_url)).to have_been_made.once
+        # Should NOT fall back to HTML since we can process valid versions from JSON
+        expect(a_request(:get, registry_url)).not_to have_been_made
+
+        # Should have only the valid versions (2.184.0 and 2.185.0), not the malformed one
+        version_strings = result.releases.map { |r| r.version.to_s }
+        expect(version_strings).to include("2.184.0", "2.185.0")
+        expect(version_strings).not_to include("1.0beta5prerelease")
+
+        # Verify that valid versions retain their upload_time (released_at)
+        release_version = result.releases.find { |r| r.version.to_s == "2.185.0" }
+        expect(release_version).not_to be_nil
+        expect(release_version.released_at).not_to be_nil
+        expect(release_version.released_at).to be_a(Time)
       end
     end
 

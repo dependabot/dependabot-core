@@ -387,7 +387,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       )
     end
 
-    context "when enable_cooldown_for_composer is enabled" do
+    context "with a valid JSON response" do
       let(:dependency_name) { "illuminate/support" }
       let(:json_url) { "https://repo.packagist.org/p2/#{dependency_name}.json" }
 

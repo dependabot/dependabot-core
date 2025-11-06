@@ -1,0 +1,5 @@
+[workspace]
+members = ["member"]
+
+[workspace.dependencies]
+tokio = { version = "0.1.22", features = ["rt-full"] }

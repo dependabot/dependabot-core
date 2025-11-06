@@ -15,6 +15,7 @@ module Dependabot
   module Maven
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
       private
@@ -166,8 +167,10 @@ module Dependabot
           source&.fetch("url") ||
           # TODO: Move central_repo_url method to a more appropriate place
           # Then we can remove T.nilable from pom_fetcher
-          Dependabot::Maven::FileParser::RepositoriesFinder.new(credentials: credentials,
-                                                                pom_fetcher: nil).central_repo_url
+          Dependabot::Maven::FileParser::RepositoriesFinder.new(
+            credentials: credentials,
+            pom_fetcher: nil
+          ).central_repo_url
       end
 
       sig { returns(String) }

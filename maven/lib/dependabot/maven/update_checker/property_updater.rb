@@ -12,6 +12,7 @@ module Dependabot
     class UpdateChecker
       class PropertyUpdater
         extend T::Sig
+
         require_relative "requirements_updater"
         require_relative "version_finder"
 
@@ -26,8 +27,11 @@ module Dependabot
           ).void
         end
         def initialize(
-          dependency:, dependency_files:, credentials:,
-          ignored_versions:, target_version_details:,
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          target_version_details:,
           update_cooldown: nil
         )
           @dependency       = dependency
@@ -77,8 +81,7 @@ module Dependabot
                 requirements: updated_requirements(dep),
                 previous_version: dep.version,
                 previous_requirements: dep.requirements,
-                package_manager: dep.package_manager,
-                origin_files: dep.origin_files
+                package_manager: dep.package_manager
               )
             end,
             T.nilable(T::Array[Dependabot::Dependency])
@@ -174,6 +177,11 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(String) }
         def updated_version(dep)
+          unless target_version
+            raise "Cannot update property: target version is nil. " \
+                  "This may indicate an issue with version resolution for dependency #{dep.name}"
+          end
+
           T.must(version_string(dep)).gsub("${#{property_name}}", T.must(target_version).to_s)
         end
 

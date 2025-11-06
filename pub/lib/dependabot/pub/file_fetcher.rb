@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 # For details on pub packages, see:
 # https://dart.dev/tools/pub/package-layout#the-pubspec
@@ -31,11 +32,30 @@ module Dependabot
         # Fetch any additional pubspec.yamls in the same git repo for resolving
         # local path-dependencies and workspace packages.
         extra_pubspecs = Dir.glob("**/pubspec.yaml", base: clone_repo_contents)
-        fetched_files += extra_pubspecs.map do |pubspec|
+        fetched_files += extra_pubspecs.filter_map do |pubspec|
           relative_name = Pathname.new("/#{pubspec}").relative_path_from(directory)
+
+          # Skip excluded workspace pubspec files
+          next nil if Dependabot::FileFiltering.should_exclude_path?(
+            relative_name.to_s,
+            "workspace pubspec file",
+            @exclude_paths
+          )
+
           fetch_file_from_host(relative_name)
         end
-        fetched_files.uniq
+
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          file_name = T.cast(file, DependencyFile).name
+          Dependabot::FileFiltering.should_exclude_path?(
+            file_name,
+            "file from final collection",
+            @exclude_paths
+          )
+        end
+
+        filtered_files
       end
 
       private

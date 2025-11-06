@@ -32,7 +32,7 @@ module Dependabot
     sig { returns(T.nilable(Dependabot::Version)) }
     def min_version
       # Select constraints with minimum operators
-      min_constraints = requirements.select { |op, _| MINIMUM_OPERATORS.include?(op) }
+      min_constraints = requirements.select { |op, _version| MINIMUM_OPERATORS.include?(op) }
 
       # Process each minimum constraint using the respective handler
       effective_min_versions = min_constraints.filter_map do |op, version|
@@ -47,7 +47,7 @@ module Dependabot
     sig { returns(T.nilable(Dependabot::Version)) }
     def max_version
       # Select constraints with maximum operators
-      max_constraints = requirements.select { |op, _| MAXIMUM_OPERATORS.include?(op) }
+      max_constraints = requirements.select { |op, _version| MAXIMUM_OPERATORS.include?(op) }
 
       # Process each maximum constraint using the respective handler
       effective_max_versions = max_constraints.filter_map do |op, version|

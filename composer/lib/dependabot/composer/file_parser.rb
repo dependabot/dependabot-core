@@ -20,18 +20,21 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
-      DEPENDENCY_GROUP_KEYS = T.let([
-        {
-          manifest: "require",
-          lockfile: "packages",
-          group: "runtime"
-        },
-        {
-          manifest: "require-dev",
-          lockfile: "packages-dev",
-          group: "development"
-        }
-      ].freeze, T::Array[T::Hash[Symbol, String]])
+      DEPENDENCY_GROUP_KEYS = T.let(
+        [
+          {
+            manifest: "require",
+            lockfile: "packages",
+            group: "runtime"
+          },
+          {
+            manifest: "require-dev",
+            lockfile: "packages-dev",
+            group: "development"
+          }
+        ].freeze,
+        T::Array[T::Hash[Symbol, String]]
+      )
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -225,8 +228,11 @@ module Dependabot
       end
 
       sig do
-        params(name: String, type: String,
-               requirement: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        params(
+          name: String,
+          type: String,
+          requirement: String
+        ).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
       end
       def dependency_source(name:, type:, requirement:)
         return unless lockfile
@@ -243,8 +249,10 @@ module Dependabot
       end
 
       sig do
-        params(package_details: T::Hash[String, T.untyped],
-               requirement: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        params(
+          package_details: T::Hash[String, T.untyped],
+          requirement: String
+        ).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
       end
       def git_dependency_details(package_details, requirement)
         return unless package_details.dig("source", "type") == "git"

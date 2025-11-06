@@ -326,7 +326,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def cooldown_enabled?
-        false
+        true
       end
 
       sig do

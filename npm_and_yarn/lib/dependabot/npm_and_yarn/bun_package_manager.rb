@@ -5,6 +5,7 @@ module Dependabot
   module NpmAndYarn
     class BunPackageManager < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "bun"
       LOCKFILE_NAME = "bun.lock"
 

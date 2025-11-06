@@ -15,6 +15,7 @@ module Dependabot
     class FileParser
       class SetupFileParser
         extend T::Sig
+
         INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*\[/m
         SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*\[/m
         TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m

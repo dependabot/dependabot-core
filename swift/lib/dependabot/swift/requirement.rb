@@ -10,6 +10,7 @@ module Dependabot
   module Swift
     class Requirement < Dependabot::Requirement
       extend T::Sig
+
       # For consistency with other languages, we define a requirements array.
       # Swift doesn't have an `OR` separator for requirements, so it
       # always contains a single element.

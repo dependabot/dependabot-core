@@ -13,6 +13,7 @@ module Dependabot
   module GitSubmodules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+
       require_relative "update_checker/latest_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
@@ -58,11 +59,14 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version
-        T.let(LatestVersionFinder.new(
-          dependency: dependency,
-          credentials: credentials,
-          cooldown_options: update_cooldown
-        ).latest_tag, T.nilable(String))
+        T.let(
+          LatestVersionFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            cooldown_options: update_cooldown
+          ).latest_tag,
+          T.nilable(String)
+        )
       end
     end
   end

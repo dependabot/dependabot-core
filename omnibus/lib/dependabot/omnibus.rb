@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/bazel"
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
@@ -16,6 +17,7 @@ require "dependabot/gradle"
 require "dependabot/maven"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/julia"
 require "dependabot/cargo"
 require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"

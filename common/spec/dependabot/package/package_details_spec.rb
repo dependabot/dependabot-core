@@ -73,10 +73,12 @@ RSpec.describe Dependabot::Package::PackageDetails do
     it "returns releases sorted in descending order" do
       details = described_class.new(dependency: dependency, releases: [release2, release1])
 
-      expect(details.releases.map(&:version)).to eq([
-        Dependabot::Version.new("6.1.4"),
-        Dependabot::Version.new("6.0.3")
-      ])
+      expect(details.releases.map(&:version)).to eq(
+        [
+          Dependabot::Version.new("6.1.4"),
+          Dependabot::Version.new("6.0.3")
+        ]
+      )
     end
   end
 end

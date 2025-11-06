@@ -17,8 +17,10 @@ require "dependabot/errors"
 module Dependabot
   module Hex
     extend T::Sig
+
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
@@ -50,13 +52,16 @@ module Dependabot
 
       sig { returns(Ecosystem) }
       def ecosystem
-        @ecosystem ||= T.let(begin
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            package_manager: package_manager,
-            language: language
-          )
-        end, T.nilable(Dependabot::Ecosystem))
+        @ecosystem ||= T.let(
+          begin
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              package_manager: package_manager,
+              language: language
+            )
+          end,
+          T.nilable(Dependabot::Ecosystem)
+        )
       end
 
       private
@@ -179,13 +184,16 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
       def hex_info
-        @hex_info ||= T.let(begin
-          version = SharedHelpers.run_shell_command("mix hex.info")
-          {
-            hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
-            elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-          }
-        end, T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        @hex_info ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("mix hex.info")
+            {
+              hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
+              elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+            }
+          end,
+          T.nilable(T::Hash[Symbol, T.nilable(String)])
+        )
       end
     end
   end

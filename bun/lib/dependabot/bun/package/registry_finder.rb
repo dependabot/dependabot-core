@@ -35,8 +35,13 @@ module Dependabot
             yarnrc_yml_file: T.nilable(Dependabot::DependencyFile)
           ).void
         end
-        def initialize(dependency:, credentials:, npmrc_file: nil,
-                       yarnrc_file: nil, yarnrc_yml_file: nil)
+        def initialize(
+          dependency:,
+          credentials:,
+          npmrc_file: nil,
+          yarnrc_file: nil,
+          yarnrc_yml_file: nil
+        )
           @dependency = dependency
           @credentials = credentials
           @npmrc_file = npmrc_file
@@ -103,10 +108,13 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :npmrc_file
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :yarnrc_file
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :yarnrc_yml_file
 

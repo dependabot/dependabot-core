@@ -7,6 +7,7 @@ module Dependabot
   module NpmAndYarn
     class PNPMPackageManager < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "pnpm"
       LOCKFILE_NAME = "pnpm-lock.yaml"
       PNPM_WS_YML_FILENAME = "pnpm-workspace.yaml"
@@ -21,12 +22,15 @@ module Dependabot
       PNPM_V9 = "9"
       PNPM_V10 = "10"
 
-      SUPPORTED_VERSIONS = T.let([
-        Version.new(PNPM_V7),
-        Version.new(PNPM_V8),
-        Version.new(PNPM_V9),
-        Version.new(PNPM_V10)
-      ].freeze, T::Array[Dependabot::Version])
+      SUPPORTED_VERSIONS = T.let(
+        [
+          Version.new(PNPM_V7),
+          Version.new(PNPM_V8),
+          Version.new(PNPM_V9),
+          Version.new(PNPM_V10)
+        ].freeze,
+        T::Array[Dependabot::Version]
+      )
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 

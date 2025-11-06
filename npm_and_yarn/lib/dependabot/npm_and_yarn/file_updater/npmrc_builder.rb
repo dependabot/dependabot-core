@@ -167,7 +167,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(T::Array[String])) }
         def dependency_urls
           return @dependency_urls if defined?(@dependency_urls)
@@ -191,8 +190,7 @@ module Dependabot
           if npm_lockfile
             @dependency_urls +=
               T.must(npm_lockfile.content).scan(/"resolved"\s*:\s*"(.*)"/)
-               .flatten
-               .select { |url| url.is_a?(String) }
+               .flatten.grep(String)
                .reject { |url| url.start_with?("git") }
           end
           if yarn_lock
@@ -210,8 +208,6 @@ module Dependabot
             T.nilable(T::Array[String])
           )
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(String) }
         def complete_npmrc_from_credentials
           # removes attribute timeout to allow for job update,

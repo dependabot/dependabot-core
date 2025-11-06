@@ -14,6 +14,7 @@ module Dependabot
     module Package
       class PackageDetailsFetcher
         extend T::Sig
+
         # https://api.github.com/repos/prometheus-community/helm-charts/releases
         RELEASES_URL_GIT = "https://api.github.com/repos/"
         HELM_CHART_RELEASE = "/helm-charts/releases"
@@ -66,9 +67,9 @@ module Dependabot
             )
           end
           result_lines.sort_by(&:tag).reverse
-          rescue JSON::ParserError => e
-            Dependabot.logger.error("Failed to parse JSON response: #{e.message} response body #{response.body}")
-            []
+        rescue JSON::ParserError => e
+          Dependabot.logger.error("Failed to parse JSON response: #{e.message} response body #{response.body}")
+          []
         end
 
         sig { params(index_url: T.nilable(String), chart_name: String).returns(T::Array[GitTagWithDetail]) }

@@ -19,13 +19,16 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
+
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
 
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(/not supported between instances of 'InstallationCandidate'.*\z/m,
-                                            Regexp)
+        INCOMPATIBLE_VERSIONS_REGEX = T.let(
+          /not supported between instances of 'InstallationCandidate'.*\z/m,
+          Regexp
+        )
         WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
         UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
         RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
@@ -69,8 +72,10 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
         def updated_dependency_files
-          @updated_dependency_files = T.let(fetch_updated_dependency_files,
-                                            T.nilable(T::Array[Dependabot::DependencyFile]))
+          @updated_dependency_files = T.let(
+            fetch_updated_dependency_files,
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
         end
 
         private
@@ -487,8 +492,12 @@ module Dependabot
             T.must(requirement_string.match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)).named_captures.fetch("separator")
 
           default_separator =
-            T.must(T.must(requirement_string
-            .match(RequirementParser::HASH)).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)).named_captures.fetch("separator")
+            T.must(
+              T.must(
+                requirement_string
+                            .match(RequirementParser::HASH)
+              ).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
+            ).named_captures.fetch("separator")
 
           # rubocop:enable Layout/LineLength
           current_separator || default_separator

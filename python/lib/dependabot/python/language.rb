@@ -11,20 +11,25 @@ module Dependabot
 
     class Language < Dependabot::Ecosystem::VersionManager
       extend T::Sig
+
       # This list must match the versions specified at the top of `python/Dockerfile`
       # ARG PY_3_13=3.13.2
       # When updating this list, also update uv/lib/dependabot/uv/language.rb
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
-        3.13.5
-        3.12.11
-        3.11.13
-        3.10.18
-        3.9.23
+        3.14.0
+        3.13.9
+        3.12.12
+        3.11.14
+        3.10.19
+        3.9.24
       ).freeze
 
-      PRE_INSTALLED_PYTHON_VERSIONS = T.let(PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
-        Version.new(v)
-      end.sort, T::Array[Dependabot::Python::Version])
+      PRE_INSTALLED_PYTHON_VERSIONS = T.let(
+        PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
+          Version.new(v)
+        end.sort,
+        T::Array[Dependabot::Python::Version]
+      )
 
       PRE_INSTALLED_VERSIONS_MAP = T.let(
         PRE_INSTALLED_PYTHON_VERSIONS.to_h do |v|

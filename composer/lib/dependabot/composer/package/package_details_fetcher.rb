@@ -104,8 +104,7 @@ module Dependabot
 
           repositories =
             JSON.parse(T.must(composer_file.content))
-                .fetch("repositories", [])
-                .select { |r| r.is_a?(Hash) }
+                .fetch("repositories", []).grep(Hash)
 
           urls = repositories
                  .select { |h| h["type"] == PackageManager::NAME }
@@ -247,11 +246,13 @@ module Dependabot
 
           parsed_auth_json = JSON.parse(T.must(json.content))
           parsed_auth_json.fetch("http-basic", {}).map do |reg, details|
-            Dependabot::Credential.new({
-              "registry" => reg,
-              "username" => details["username"],
-              "password" => details["password"]
-            })
+            Dependabot::Credential.new(
+              {
+                "registry" => reg,
+                "username" => details["username"],
+                "password" => details["password"]
+              }
+            )
           end
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, json.path if json

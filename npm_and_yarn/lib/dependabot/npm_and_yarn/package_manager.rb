@@ -65,12 +65,15 @@ module Dependabot
       )
     end
 
-    PACKAGE_MANAGER_CLASSES = T.let({
-      NpmPackageManager::NAME => NpmPackageManager,
-      YarnPackageManager::NAME => YarnPackageManager,
-      PNPMPackageManager::NAME => PNPMPackageManager,
-      BunPackageManager::NAME => BunPackageManager
-    }.freeze, T::Hash[String, NpmAndYarnPackageManagerClassType])
+    PACKAGE_MANAGER_CLASSES = T.let(
+      {
+        NpmPackageManager::NAME => NpmPackageManager,
+        YarnPackageManager::NAME => YarnPackageManager,
+        PNPMPackageManager::NAME => PNPMPackageManager,
+        BunPackageManager::NAME => BunPackageManager
+      }.freeze,
+      T::Hash[String, NpmAndYarnPackageManagerClassType]
+    )
 
     # Error malformed version number string
     ERROR_MALFORMED_VERSION_NUMBER = "Malformed version number"
@@ -401,7 +404,7 @@ module Dependabot
         return unless name == PNPMPackageManager::NAME
         return unless Version.new(version) < Version.new("7")
 
-        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*")
+        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*, 10.*")
       end
 
       sig { params(name: String, version: T.nilable(String)).void }

@@ -37,7 +37,7 @@ module Dependabot
           .returns(Dependabot::DependencyFile)
       end
       def create_dependency_file(parameters)
-        Dependabot::DependencyFile.new(**T.unsafe({ **parameters.merge({ vendored_file: true }) }))
+        Dependabot::DependencyFile.new(**T.unsafe({ **parameters, vendored_file: true }))
       end
     end
   end

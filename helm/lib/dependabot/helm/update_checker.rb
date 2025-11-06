@@ -57,8 +57,11 @@ module Dependabot
       end
 
       sig do
-        params(chart_name: String, repo_name: T.nilable(String),
-               repo_url: T.nilable(String)).returns(T.nilable(Gem::Version))
+        params(
+          chart_name: String,
+          repo_name: T.nilable(String),
+          repo_url: T.nilable(String)
+        ).returns(T.nilable(Gem::Version))
       end
       def fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         Dependabot.logger.info("Attempting to search for #{chart_name} using helm CLI")
@@ -115,7 +118,9 @@ module Dependabot
       def filter_valid_releases(releases)
         releases.reject do |release|
           version_class.new(release["version"]) <= version_class.new(dependency.version) ||
-            ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(release["version"])) }
+            ignore_requirements.any? do |r|
+              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
+            end
         end
       end
 
@@ -160,8 +165,11 @@ module Dependabot
       end
 
       sig do
-        params(chart_name: String, repo_name: T.nilable(String),
-               repo_url: T.nilable(String)).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        params(
+          chart_name: String,
+          repo_name: T.nilable(String),
+          repo_url: T.nilable(String)
+        ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
       end
       def fetch_chart_releases(chart_name, repo_name = nil, repo_url = nil)
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
@@ -288,7 +296,9 @@ module Dependabot
       def filter_valid_versions(all_versions)
         all_versions.reject do |version|
           version_class.new(version) <= version_class.new(dependency.version) ||
-            ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
+            ignore_requirements.any? do |r|
+              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
+            end
         end
       end
 
@@ -386,7 +396,7 @@ module Dependabot
               tag: version
             }
           }],
-          package_manager: "helm"
+          package_manager: "docker"
         )
       end
 

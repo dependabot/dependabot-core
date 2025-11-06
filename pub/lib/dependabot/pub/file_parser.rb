@@ -49,9 +49,12 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new(T.must(dart_raw_version))
-        end, T.nilable(Dependabot::Pub::Language))
+        @language ||= T.let(
+          begin
+            Language.new(T.must(dart_raw_version))
+          end,
+          T.nilable(Dependabot::Pub::Language)
+        )
       end
 
       sig { returns(T.nilable(String)) }

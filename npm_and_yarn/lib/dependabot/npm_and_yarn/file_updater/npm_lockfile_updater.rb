@@ -84,8 +84,11 @@ module Dependabot
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
         EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
         NESTED_ALIAS = /nested aliases not supported/
-        PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
-                                    /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
+        PEER_DEPS_PATTERNS = T.let(
+          [/Cannot read properties of null/,
+           /ERESOLVE overriding peer dependency/].freeze,
+          T::Array[Regexp]
+        )
         PREMATURE_CLOSE = /premature close/
         EMPTY_OBJECT_ERROR = /Object for dependency "(?<package>.*)" is empty/
         ERROR_E401 = /code E401/
@@ -93,10 +96,13 @@ module Dependabot
         REQUEST_ERROR_E403 = /Request "(?<pkg>.*)" returned a 403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
 
-        NPM_PACKAGE_NOT_FOUND_CODES = T.let([
-          /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
-          /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
-        ].freeze, T::Array[Regexp])
+        NPM_PACKAGE_NOT_FOUND_CODES = T.let(
+          [
+            /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
+            /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
+          ].freeze,
+          T::Array[Regexp]
+        )
 
         # dependency access protocol not supported by packagemanager
         UNSUPPORTED_PROTOCOL = /EUNSUPPORTEDPROTOCOL\n(.*?)Unsupported URL Type "(?<access_method>.*)"/
@@ -112,6 +118,13 @@ module Dependabot
 
         # Invalid version format found for dependency in package.json file
         INVALID_VERSION = /Invalid Version: (?<ver>.*)/
+
+        # Invalid package manager specification in package.json
+        INVALID_PACKAGE_MANAGER_SPEC = /Invalid package manager specification/
+
+        # Invalid npm authentication configuration
+        ERR_INVALID_AUTH = /npm error code ERR_INVALID_AUTH/
+        INVALID_AUTH_CONFIG = /Invalid auth configuration found.*_auth.*must be renamed to/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -207,8 +220,7 @@ module Dependabot
               version: d.previous_version,
               previous_version: d.previous_version,
               requirements: T.must(d.previous_requirements),
-              previous_requirements: d.previous_requirements,
-              origin_files: d.origin_files
+              previous_requirements: d.previous_requirements
             )
           end
 
@@ -219,13 +231,14 @@ module Dependabot
               version: d.previous_version,
               previous_version: d.previous_version,
               requirements: [],
-              previous_requirements: [],
-              origin_files: d.origin_files
+              previous_requirements: []
             )
           end
 
-          run_npm_updater(top_level_dependencies: previous_top_level_dependencies,
-                          sub_dependencies: previous_sub_dependencies)
+          run_npm_updater(
+            top_level_dependencies: previous_top_level_dependencies,
+            sub_dependencies: previous_sub_dependencies
+          )
         end
 
         sig do
@@ -607,6 +620,20 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
+          # Handle invalid package manager specification in package.json
+          if error_message.match?(INVALID_PACKAGE_MANAGER_SPEC)
+            msg = "Invalid package manager specification in package.json. " \
+                  "The packageManager field must specify a valid semver version"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_INVALID_AUTH) || error_message.match?(INVALID_AUTH_CONFIG)
+            msg = "Invalid npm authentication configuration found " \
+                  "The _auth setting in .npmrc needs to be scoped to the specific registry." \
+                  "Please update your .npmrc configuration to use registry-specific auth settings."
+            raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
@@ -648,8 +675,8 @@ module Dependabot
           reg = Package::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
-            npmrc_file: dependency_files. find { |f| f.name.end_with?(".npmrc") },
-            yarnrc_file: dependency_files. find { |f| f.name.end_with?(".yarnrc") },
+            npmrc_file: dependency_files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc_file: dependency_files.find { |f| f.name.end_with?(".yarnrc") },
             yarnrc_yml_file: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
           ).registry
 

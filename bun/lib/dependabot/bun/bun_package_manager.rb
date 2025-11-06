@@ -5,6 +5,7 @@ module Dependabot
   module Bun
     class BunPackageManager < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "bun"
       LOCKFILE_NAME = "bun.lock"
       RC_FILENAME = ".npmrc"

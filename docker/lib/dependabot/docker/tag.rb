@@ -8,6 +8,7 @@ module Dependabot
   module Docker
     class Tag
       extend T::Sig
+
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
       VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
@@ -43,8 +44,11 @@ module Dependabot
       end
 
       sig do
-        params(other_format: Symbol, other_prefix: T.nilable(String),
-               other_suffix: T.nilable(String)).returns(T::Boolean)
+        params(
+          other_format: Symbol,
+          other_prefix: T.nilable(String),
+          other_suffix: T.nilable(String)
+        ).returns(T::Boolean)
       end
       def comparable_formats(other_format, other_prefix, other_suffix)
         return false unless prefix.nil? && suffix.nil? && other_prefix.nil? && other_suffix.nil?

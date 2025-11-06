@@ -46,10 +46,13 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(String) }
         attr_reader :repo_contents_path
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 

@@ -229,12 +229,14 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        expect(lowest_security_fix_version).to eq((
-          { tag: "v1",
-            version: Dependabot::GithubActions::Version.new("1.0.0"),
-            commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
-            tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
-        ))
+        expect(lowest_security_fix_version).to eq(
+          (
+                    { tag: "v1",
+                      version: Dependabot::GithubActions::Version.new("1.0.0"),
+                      commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
+                      tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
+                  )
+        )
       end
     end
 

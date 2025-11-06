@@ -19,8 +19,12 @@ module Dependabot
         ).void
       end
       def initialize(
-        default_days: 0, semver_major_days: 0, semver_minor_days: 0, semver_patch_days: 0,
-        include: [], exclude: []
+        default_days: 0,
+        semver_major_days: 0,
+        semver_minor_days: 0,
+        semver_patch_days: 0,
+        include: [],
+        exclude: []
       )
         default_days ||= 0
         semver_major_days ||= 0

@@ -36,14 +36,16 @@ RSpec.describe Dependabot::RustToolchain::FileParser do
           dependency = dependencies.first
           expect(dependency.name).to eq("rust-toolchain")
           expect(dependency.version).to eq("stable")
-          expect(dependency.requirements).to eq([
-            {
-              file: "rust-toolchain.toml",
-              requirement: "stable",
-              groups: [],
-              source: nil
-            }
-          ])
+          expect(dependency.requirements).to eq(
+            [
+              {
+                file: "rust-toolchain.toml",
+                requirement: "stable",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
         end
       end
 

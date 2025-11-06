@@ -7,17 +7,15 @@ module Dependabot
     GITHUB_COM = T.let("github.com", String)
 
     # Regular expression to match a GitHub repository reference
-    GITHUB_REPO_REFERENCE = T.let(%r{
-      ^(?<owner>[\w.-]+)/
-      (?<repo>[\w.-]+)
-      (?<path>/[^\@]+)?
-      @(?<ref>.+)
-    }x, Regexp)
-
-    # Matches .yml or .yaml files in the .github/workflows directories
-    WORKFLOW_YAML_REGEX = %r{\.github/workflows/.+\.ya?ml$}
-    # Matches .yml or .yaml files anywhere
-    ALL_YAML_FILES = %r{(?:^|/).+\.ya?ml$}
+    GITHUB_REPO_REFERENCE = T.let(
+      %r{
+            ^(?<owner>[\w.-]+)/
+            (?<repo>[\w.-]+)
+            (?<path>/[^\@]+)?
+            @(?<ref>.+)
+          }x,
+      Regexp
+    )
 
     # The ecosystem name for GitHub Actions
     ECOSYSTEM = T.let("github_actions", String)
@@ -37,6 +35,7 @@ module Dependabot
 
     OWNER_KEY = T.let("owner", String)
     REPO_KEY = T.let("repo", String)
+    PATH_KEY = T.let("path", String)
     REF_KEY = T.let("ref", String)
     USES_KEY = T.let("uses", String)
     STEPS_KEY = T.let("steps", String)

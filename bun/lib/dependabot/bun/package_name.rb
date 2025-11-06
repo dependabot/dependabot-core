@@ -98,7 +98,8 @@ module Dependabot
             self.class.new("@types/#{@scope}__#{@name}")
           else
             self.class.new("@types/#{@name}")
-          end, T.nilable(PackageName)
+          end,
+          T.nilable(PackageName)
         )
       end
 

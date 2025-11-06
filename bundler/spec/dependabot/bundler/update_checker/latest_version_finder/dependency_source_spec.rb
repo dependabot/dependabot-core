@@ -15,9 +15,25 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
       "password" => "token"
     }]
   end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "irrelevant",
+      version: "1.0.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.0",
+          groups: ["default"],
+          source: nil
+        }
+      ],
+      package_manager: "bundler"
+    )
+  end
+
   let(:source) do
     described_class.new(
-      dependency: "irrelevant",
+      dependency: dependency,
       dependency_files: files,
       credentials: credentials,
       options: {}
@@ -36,10 +52,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
 
       it "includes inaccessible dependency" do
         expect(inaccessible_git_dependencies.size).to eq(1)
-        expect(inaccessible_git_dependencies.first).to eq({
-          "auth_uri" => "https://x-access-token:token@github.com/no-exist-sorry/prius.git/info/refs?service=git-upload-pack",
-          "uri" => "git@github.com:no-exist-sorry/prius"
-        })
+        expect(inaccessible_git_dependencies.first).to eq(
+          {
+            "auth_uri" => "https://x-access-token:token@github.com/no-exist-sorry/prius.git/info/refs?service=git-upload-pack",
+            "uri" => "git@github.com:no-exist-sorry/prius"
+          }
+        )
       end
     end
 
@@ -48,10 +66,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
 
       it "includes invalid dependency" do
         expect(inaccessible_git_dependencies.size).to eq(1)
-        expect(inaccessible_git_dependencies.first).to eq({
-          "auth_uri" => "dependabot-fixtures/business.git/info/refs?service=git-upload-pack",
-          "uri" => "dependabot-fixtures/business"
-        })
+        expect(inaccessible_git_dependencies.first).to eq(
+          {
+            "auth_uri" => "dependabot-fixtures/business.git/info/refs?service=git-upload-pack",
+            "uri" => "dependabot-fixtures/business"
+          }
+        )
       end
     end
   end

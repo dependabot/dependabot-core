@@ -625,8 +625,10 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         it "returns a suitable exception" do
           expect { creator.create }
-            .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists,
-                            "Duplicate branch #{branch_name} already exists")
+            .to raise_error(
+              Dependabot::PullRequestCreator::BranchAlreadyExists,
+              "Duplicate branch #{branch_name} already exists"
+            )
         end
       end
     end

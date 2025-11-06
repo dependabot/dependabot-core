@@ -99,8 +99,11 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     before do
-      allow(job).to receive_messages(source: github_source, credentials: job_credentials,
-                                     commit_message_options: commit_message_options)
+      allow(job).to receive_messages(
+        source: github_source,
+        credentials: job_credentials,
+        commit_message_options: commit_message_options
+      )
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
 
@@ -165,9 +168,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with all dependencies matching" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: ["business"],
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: ["business"],
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns false" do
@@ -177,9 +182,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with duplicate dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: %w(business business),
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: %w(business business),
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns false" do
@@ -189,9 +196,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with non-matching casing" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: ["BuSiNeSS"],
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: ["BuSiNeSS"],
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns false" do
@@ -201,9 +210,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with out of order dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: %w(PkgB PkgA),
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: %w(PkgB PkgA),
+          updating_a_pull_request?: true
+        )
       end
 
       let(:updated_dependencies) do
@@ -242,9 +253,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with different dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: ["contoso"],
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: ["contoso"],
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns true" do
@@ -275,9 +288,11 @@ RSpec.describe Dependabot::DependencyChange do
   describe "#matches_existing_pr?" do
     context "when no existing pull requests are found" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_pull_requests: [])
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_pull_requests: []
+        )
       end
       let(:dependency_change) do
         described_class.new(
@@ -294,9 +309,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with the same dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_pull_requests: existing_pull_requests)
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_pull_requests: existing_pull_requests
+        )
       end
       let(:existing_pull_requests) do
         [
@@ -345,9 +362,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a grouped pull request with the same dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_group_pull_requests: existing_group_pull_requests)
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_group_pull_requests: existing_group_pull_requests
+        )
       end
       let(:existing_group_pull_requests) do
         [
@@ -392,9 +411,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a grouped pull request with the same dependencies, but in different directory" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_group_pull_requests: existing_group_pull_requests)
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_group_pull_requests: existing_group_pull_requests
+        )
       end
       let(:existing_group_pull_requests) do
         [

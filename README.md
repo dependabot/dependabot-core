@@ -32,7 +32,7 @@ Welcome to the public home of Dependabot :dependabot:.
 Dependabot-Core is the library at the heart of [Dependabot](https://docs.github.com/en/code-security/dependabot) security / version updates.
 
 Use it to generate automated pull requests updating dependencies for projects written in Ruby, JavaScript, Python,
-PHP, Dart, Elixir, Elm, Go, Rust, Java and .NET. It can also update git submodules, Docker files, and Terraform files.
+PHP, Dart, Elixir, Elm, Go, Rust, Java, Julia, and .NET. It can also update git submodules, Docker files, and Terraform files.
 Features include:
 
 - Check for the latest version of a dependency *that's resolvable given a project's other dependencies*
@@ -86,7 +86,7 @@ closed as "cannot reproduce".
 Our issue tracker is quite active, and as a result there's a good chance someone already filed the same issue. If so,
 please upvote that issue, because we use 👍 reactions on issues as one signal to gauge the impact of a feature request or bug.
 
-However, please do not leave comments that contribute nothing new to the discussion. For details, see [https://github.com/golang/go/wiki/NoPlusOne](https://github.com/golang/go/wiki/NoPlusOne). This is open source, if you see something you want fixed, we are happy to coach you through contributing a pull request to fix it.
+However, please do not leave comments that contribute nothing new to the discussion. For details, see [https://go.dev/wiki/NoPlusOne](https://go.dev/wiki/NoPlusOne). This is open source, if you see something you want fixed, we are happy to coach you through contributing a pull request to fix it.
 
 ### Don't file issues about Security Alerts or Dependency Graph
 

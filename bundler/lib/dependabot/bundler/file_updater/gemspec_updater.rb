@@ -39,20 +39,27 @@ module Dependabot
         attr_reader :gemspec
 
         sig do
-          params(gemspec: Dependabot::DependencyFile, dependency: Dependabot::Dependency,
-                 content: String).returns(String)
+          params(
+            gemspec: Dependabot::DependencyFile,
+            dependency: Dependabot::Dependency,
+            content: String
+          ).returns(String)
         end
         def replace_gemspec_version_requirement(gemspec, dependency, content)
           return content unless requirement_changed?(gemspec, dependency)
 
           updated_requirement =
-            T.must(dependency.requirements
-                      .find { |r| r[:file] == gemspec.name })
+            T.must(
+              dependency.requirements
+                                    .find { |r| r[:file] == gemspec.name }
+            )
              .fetch(:requirement)
 
           previous_requirement =
-            T.must(T.must(dependency.previous_requirements)
-                      .find { |r| r[:file] == gemspec.name })
+            T.must(
+              T.must(dependency.previous_requirements)
+                                    .find { |r| r[:file] == gemspec.name }
+            )
              .fetch(:requirement)
 
           RequirementReplacer.new(

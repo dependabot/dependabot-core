@@ -1,6 +1,6 @@
 ! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 stderr security_update_not_possible
-stdout '{"data":{"error-type":"security_update_not_possible","error-details":{"conflicting-dependencies":\[\],"dependency-name":"dependency-a","latest-resolvable-version":"","lowest-non-vulnerable-version":""}},"type":"record_update_job_error"}'
+stdout '{"data":{"error-type":"security_update_not_possible","error-details":{"conflicting-dependencies":\[\],"dependency-name":"dependency-a","latest-resolvable-version":"1.2.3","lowest-non-vulnerable-version":null}},"type":"record_update_job_error"}'
 ! stdout create_pull_request
 
 # Since there are no updates for dependency-a that are not vulnerable, the security update is not possible.

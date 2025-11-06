@@ -40,9 +40,13 @@ module Dependabot
       ).void
     end
     def initialize(
-      mode:, type:, package_manager_name:,
-      title: "", description: "",
-      show_in_pr: false, show_alert: false
+      mode:,
+      type:,
+      package_manager_name:,
+      title: "",
+      description: "",
+      show_in_pr: false,
+      show_alert: false
     )
       @mode = mode
       @type = type
@@ -94,7 +98,7 @@ module Dependabot
 
       later_description = support_later_versions ? ", or later" : ""
 
-      return "Please upgrade to version #{versions_string}#{later_description}." if supported_versions.count == 1
+      return "Please upgrade to version #{versions_string}#{later_description}." if supported_versions.one?
 
       "Please upgrade to one of the following versions: #{versions_string}#{later_description}."
     end

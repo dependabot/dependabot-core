@@ -85,7 +85,7 @@ module Dependabot
                   # This security update would require unlocking other packages, which is not currently supported.
                   # Because of that, return original requirements, so that no requirements are actually updated and
                   # the error bubbles up as security_update_not_possible to the user.
-                  return dependency.requirements if breaking_changes&.size&. > 1
+                  return dependency.requirements if breaking_changes&.size&.> 1
 
                   updates&.find { |u| u["name"] == dependency.name }
                 else
@@ -198,16 +198,18 @@ module Dependabot
       sig { returns(Dependabot::Pub::UpdateChecker::LatestVersionFinder) }
       def version_report
         @version_report ||=
-          T.let(LatestVersionFinder.new(
-                  dependency: dependency,
-                  dependency_files: dependency_files,
-                  credentials: credentials,
-                  ignored_versions: ignored_versions,
-                  security_advisories: security_advisories,
-                  options: options,
-                  cooldown_options: update_cooldown
-                ),
-                T.nilable(Dependabot::Pub::UpdateChecker::LatestVersionFinder))
+          T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories,
+              options: options,
+              cooldown_options: update_cooldown
+            ),
+            T.nilable(Dependabot::Pub::UpdateChecker::LatestVersionFinder)
+          )
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }

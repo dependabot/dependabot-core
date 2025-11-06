@@ -7,6 +7,7 @@ module Dependabot
   module NpmAndYarn
     class Language < Ecosystem::VersionManager
       extend T::Sig
+
       NAME = "node"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])

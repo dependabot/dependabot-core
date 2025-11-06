@@ -170,8 +170,11 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                 .to_return(status: 200,
                            body: fixture("github", "bump_repo.json"),
                            headers: { "content-type" => "application/json" })
-              stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c965" \
-                                       "3891f9e74264a383fa43fefbd")
+              stub_request(
+                :get,
+                url + "/contents/my-dir?ref=aa218f56b14c965" \
+                      "3891f9e74264a383fa43fefbd"
+              )
                 .with(headers: { "Authorization" => "token token" })
                 .to_return(
                   status: 200,

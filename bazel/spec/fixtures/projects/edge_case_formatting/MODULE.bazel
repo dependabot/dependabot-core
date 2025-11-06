@@ -1,0 +1,17 @@
+# Comments and empty lines
+
+
+module(name = "test")
+
+# Dependency with unusual formatting
+bazel_dep(
+  name="rules_cc",version="0.1.1"
+)
+
+# Dependency with extra whitespace
+bazel_dep(  name   =   "platforms"  ,  version   =   "0.0.11"  )
+
+# Function call that's not a dependency
+some_other_function(param = "value")
+
+bazel_dep(name = "final_dep", version = "1.0.0")

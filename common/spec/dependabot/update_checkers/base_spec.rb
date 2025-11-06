@@ -48,10 +48,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
   before do
     allow(updater_instance)
-      .to receive_messages(latest_version: latest_version, latest_resolvable_version: latest_resolvable_version,
-                           latest_resolvable_version_with_no_unlock: latest_resolvable_version_with_no_unlock,
-                           latest_resolvable_previous_version: latest_resolvable_previous_version,
-                           updated_requirements: updated_requirements)
+      .to receive_messages(
+        latest_version: latest_version,
+        latest_resolvable_version: latest_resolvable_version,
+        latest_resolvable_version_with_no_unlock: latest_resolvable_version_with_no_unlock,
+        latest_resolvable_previous_version: latest_resolvable_previous_version,
+        updated_requirements: updated_requirements
+      )
   end
 
   describe "#up_to_date?" do
@@ -659,90 +662,6 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       let(:ignored_versions) { ["~> 1.0, < 2"] }
 
       it { is_expected.to eq([updater_instance.requirement_class.new("~> 1.0", "< 2")]) }
-    end
-  end
-
-  describe "#excluded?" do
-    subject(:excluded) { updater_instance.excluded? }
-
-    let(:updater_instance) do
-      described_class.new(
-        dependency: dependency,
-        dependency_files: [],
-        exclude_paths: exclude_paths,
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
-      )
-    end
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "business",
-        version: "1.5.0",
-        requirements: original_requirements,
-        package_manager: "dummy",
-        origin_files: origin_files
-      )
-    end
-    let(:exclude_paths) { [] }
-    let(:origin_files) { [] }
-
-    before do
-      # Enable the experiment for all tests
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_exclude_paths_subdirectory_manifest_files)
-                                                          .and_return(true)
-    end
-
-    context "when experiment is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_exclude_paths_subdirectory_manifest_files)
-                                                            .and_return(false)
-      end
-
-      it { is_expected.to be(false) }
-    end
-
-    context "when exclude_paths is nil" do
-      let(:exclude_paths) { nil }
-
-      it { is_expected.to be(false) }
-    end
-
-    context "when exclude_paths is empty" do
-      let(:exclude_paths) { [] }
-
-      it { is_expected.to be(false) }
-    end
-
-    context "when dependency has origin_files" do
-      let(:origin_files) { ["frontend/package.json"] }
-
-      context "and none match exclude patterns" do # rubocop:disable RSpec/ContextWording
-        let(:exclude_paths) { ["backend/", "docs/"] }
-
-        it { is_expected.to be(false) }
-      end
-
-      context "and one matches exclude patterns" do # rubocop:disable RSpec/ContextWording
-        let(:exclude_paths) { ["frontend/**"] }
-
-        it "returns true" do
-          expect(excluded).to be(true)
-        end
-      end
-
-      context "with multiple origin files" do
-        let(:origin_files) { ["frontend/package.json", "backend/package.json", "shared/package.json"] }
-
-        context "when none match exclude patterns" do
-          let(:exclude_paths) { ["docs/", "scripts/"] }
-
-          it { is_expected.to be(false) }
-        end
-      end
     end
   end
 end

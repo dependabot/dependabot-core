@@ -58,24 +58,28 @@ RSpec.describe Dependabot::Swift::FileParser do
         expect(dependency.metadata).to eq({ identity: identity })
 
         if expected[:requirement]
-          expect(dependency.requirements).to eq([
-            {
-              requirement: expected[:requirement],
-              groups: ["dependencies"],
-              file: "Package.swift",
-              source: source,
-              metadata: {
-                declaration_string: expected[:declaration_string],
-                requirement_string: expected[:requirement_string]
+          expect(dependency.requirements).to eq(
+            [
+              {
+                requirement: expected[:requirement],
+                groups: ["dependencies"],
+                file: "Package.swift",
+                source: source,
+                metadata: {
+                  declaration_string: expected[:declaration_string],
+                  requirement_string: expected[:requirement_string]
+                }
               }
-            }
-          ])
+            ]
+          )
         else # subdependency
-          expect(dependency.subdependency_metadata).to eq([
-            {
-              source: source
-            }
-          ])
+          expect(dependency.subdependency_metadata).to eq(
+            [
+              {
+                source: source
+              }
+            ]
+          )
         end
       end
     end

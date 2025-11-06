@@ -20,11 +20,14 @@ module Dependabot
 
       # Base regex for SemVer (major.minor.patch[-prerelease][+build])
       # This pattern extracts valid semantic versioning strings based on the SemVer 2.0 specification.
-      SEMVER_REGEX = T.let(/
-        (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
-        (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
-        (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
-      /x, Regexp)
+      SEMVER_REGEX = T.let(
+        /
+          (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
+          (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
+          (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
+        /x,
+        Regexp
+      )
 
       # Full SemVer validation regex (ensures the entire string is a valid SemVer)
       # This ensures the entire input strictly follows SemVer, without extra characters before/after.
@@ -32,11 +35,14 @@ module Dependabot
 
       # SemVer constraint regex (supports package.json version constraints)
       # This pattern ensures proper parsing of SemVer versions with optional operators.
-      SEMVER_CONSTRAINT_REGEX = T.let(/
-        (?: (>=|<=|>|<|=|~|\^)\s*)?  # Make operators optional (e.g., >=, ^, ~)
-        (\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)  # Match full SemVer versions
-        | (\*|latest) # Match wildcard (*) or 'latest'
-      /x, Regexp)
+      SEMVER_CONSTRAINT_REGEX = T.let(
+        /
+                (?: (>=|<=|>|<|=|~|\^)\s*)?  # Make operators optional (e.g., >=, ^, ~)
+                (\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)  # Match full SemVer versions
+                | (\*|latest) # Match wildcard (*) or 'latest'
+              /x,
+        Regexp
+      )
 
       # /(>=|<=|>|<|=|~|\^)\s*(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)|(\*|latest)/
 
@@ -55,17 +61,20 @@ module Dependabot
       SEMVER_CONSTANTS = ["*", "latest"].freeze
 
       # Unified Regex for Valid Constraints
-      VALID_CONSTRAINT_REGEX = T.let(Regexp.union(
-        CARET_CONSTRAINT_REGEX,
-        TILDE_CONSTRAINT_REGEX,
-        EXACT_CONSTRAINT_REGEX,
-        GREATER_THAN_EQUAL_REGEX,
-        LESS_THAN_EQUAL_REGEX,
-        GREATER_THAN_REGEX,
-        LESS_THAN_REGEX,
-        WILDCARD_REGEX,
-        LATEST_REGEX
-      ).freeze, Regexp)
+      VALID_CONSTRAINT_REGEX = T.let(
+        Regexp.union(
+          CARET_CONSTRAINT_REGEX,
+          TILDE_CONSTRAINT_REGEX,
+          EXACT_CONSTRAINT_REGEX,
+          GREATER_THAN_EQUAL_REGEX,
+          LESS_THAN_EQUAL_REGEX,
+          GREATER_THAN_REGEX,
+          LESS_THAN_REGEX,
+          WILDCARD_REGEX,
+          LATEST_REGEX
+        ).freeze,
+        Regexp
+      )
 
       # Extract unique constraints from the given constraint expression.
       # @param constraint_expression [T.nilable(String)] The semver constraint expression.

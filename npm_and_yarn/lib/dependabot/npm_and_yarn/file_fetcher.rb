@@ -7,6 +7,7 @@ require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
@@ -27,8 +28,10 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS = T.let(%w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
-                                     [String, String, String, String, String, String, String, String])
+      PATH_DEPENDENCY_STARTS = T.let(
+        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
+        [String, String, String, String, String, String, String, String]
+      )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
@@ -89,7 +92,13 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files.uniq
+        # Filter excluded files from final collection
+        filtered_files = fetched_files.uniq.reject do |file|
+          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+        end
+
+        filtered_files
       end
 
       private
@@ -148,8 +157,10 @@ module Dependabot
         return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile)) unless npmrc.nil? && package_lock
 
         known_registries = []
-        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch("dependencies",
-                                                                    {}).each do |dependency_name, details|
+        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
+          "dependencies",
+          {}
+        ).each do |dependency_name, details|
           resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
 
           begin
@@ -229,7 +240,8 @@ module Dependabot
             lockfiles,
             registry_config_files,
             credentials
-          ), T.nilable(PackageManagerHelper)
+          ),
+          T.nilable(PackageManagerHelper)
         )
       end
 
@@ -371,7 +383,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
-      def path_dependencies(fetched_files)
+      def path_dependencies(fetched_files) # rubocop:disable Metrics/AbcSize
         package_json_files = T.let([], T::Array[DependencyFile])
         unfetchable_deps = T.let([], T::Array[[String, String]])
 
@@ -389,6 +401,16 @@ module Dependabot
           filename = File.join(filename, MANIFEST_FILENAME) unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
+
+          # Skip excluded path dependencies
+          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
+            Dependabot.logger.warn(
+              "Skipping excluded path dependency '#{cleaned_name}' for package '#{name}'. " \
+              "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
+            )
+            next
+          end
 
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)
@@ -459,8 +481,10 @@ module Dependabot
           # skip dependencies that contain invalid values such as inline comments, null, etc.
 
           unless value.is_a?(String)
-            Dependabot.logger.warn("File fetcher: Skipping dependency \"#{path}\" " \
-                                   "with value: \"#{value}\"")
+            Dependabot.logger.warn(
+              "File fetcher: Skipping dependency \"#{path}\" " \
+              "with value: \"#{value}\""
+            )
 
             next
           end
@@ -609,6 +633,16 @@ module Dependabot
       sig { params(workspace: String).returns(T.nilable(DependencyFile)) }
       def fetch_package_json_if_present(workspace)
         file = File.join(workspace, MANIFEST_FILENAME)
+
+        # Skip excluded workspace packages
+        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
+           !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
+          Dependabot.logger.info(
+            "Skipping excluded workspace package '#{file}' from workspace '#{workspace}'. " \
+            "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
+          )
+          return nil
+        end
 
         begin
           fetch_file_from_host(file)

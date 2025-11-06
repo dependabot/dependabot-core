@@ -89,7 +89,7 @@ module Dependabot
         return req_string if parts.count >= 3
 
         # If we have no parts then the version is completely unlocked
-        return ">= 0" if parts.count.zero?
+        return ">= 0" if parts.none?
 
         # If we have fewer than three parts we do a partial match
         parts << "0"

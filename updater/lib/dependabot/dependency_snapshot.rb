@@ -19,26 +19,18 @@ module Dependabot
     include NoticesHelpers
 
     sig do
-      params(job: Dependabot::Job, job_definition: T::Hash[String, T.untyped]).returns(Dependabot::DependencySnapshot)
+      params(job: Dependabot::Job, fetched_files: Dependabot::FetchedFiles).returns(Dependabot::DependencySnapshot)
     end
-    def self.create_from_job_definition(job:, job_definition:)
-      decoded_dependency_files = job_definition.fetch("base64_dependency_files").map do |a|
-        file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
-        unless file.binary? && !file.deleted?
-          file.content = Base64.decode64(T.must(file.content)).force_encoding("utf-8")
-        end
-        file
-      end
-
+    def self.create_from_job_definition(job:, fetched_files:)
       if job.source.directories
         # The job.source.directory may contain globs, so we use the directories from the fetched files
-        job.source.directories = decoded_dependency_files.flat_map(&:directory).uniq
+        job.source.directories = fetched_files.dependency_files.flat_map(&:directory).uniq
       end
 
       new(
         job: job,
-        base_commit_sha: job_definition.fetch("base_commit_sha"),
-        dependency_files: decoded_dependency_files
+        base_commit_sha: fetched_files.base_commit_sha,
+        dependency_files: fetched_files.dependency_files
       )
     end
 
@@ -147,9 +139,13 @@ module Dependabot
             excluding_dependencies[directory]&.include?(dep)
           end
 
-          add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
-            dep["dependency-name"]
-          end))
+          add_handled_dependencies(
+            current_dependencies.concat(
+              dependencies_in_existing_prs.filter_map do |dep|
+                dep["dependency-name"]
+              end
+            )
+          )
         else
           # add the existing dependencies in the group so individual updates don't try to update them
           add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
@@ -230,8 +226,10 @@ module Dependabot
         @dependencies[dir] = parse_files!
       end
 
-      @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
-                                       Dependabot::DependencyGroupEngine)
+      @dependency_group_engine = T.let(
+        DependencyGroupEngine.from_job_config(job: job),
+        Dependabot::DependencyGroupEngine
+      )
       directories.each do |dir|
         @current_directory = dir
         @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
@@ -317,7 +315,7 @@ module Dependabot
 
     sig { void }
     def assert_current_directory_set!
-      if @current_directory == "" && directories.count == 1
+      if @current_directory == "" && directories.one?
         @current_directory = T.must(directories.first)
         return
       end

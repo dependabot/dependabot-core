@@ -11,6 +11,7 @@ module Dependabot
     class FileParser
       class MavenDependencyParser
         extend T::Sig
+
         require "dependabot/file_parsers/base/dependency_set"
 
         DEPENDENCY_OUTPUT_FILE = "dependency-tree-output.json"
@@ -63,9 +64,11 @@ module Dependabot
         end
 
         sig do
-          params(pom: Dependabot::DependencyFile,
-                 dependency_set: Dependabot::FileParsers::Base::DependencySet,
-                 dependency_tree: T::Hash[String, T.untyped]).void
+          params(
+            pom: Dependabot::DependencyFile,
+            dependency_set: Dependabot::FileParsers::Base::DependencySet,
+            dependency_tree: T::Hash[String, T.untyped]
+          ).void
         end
         def self.extract_dependencies_from_tree(pom, dependency_set, dependency_tree)
           traverse_tree = T.let(-> {}, T.proc.params(node: T::Hash[String, T.untyped]).void)
@@ -92,8 +95,7 @@ module Dependabot
                   classifier: classifier,
                   pom_file: pom.name
                 }
-              }],
-              origin_files: [pom.name]
+              }]
             )
 
             node["children"]&.each(&traverse_tree)

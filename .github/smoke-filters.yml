@@ -4,6 +4,9 @@ common: &common
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/**'
+bazel:
+  - *common
+  - 'bazel/**'
 github_actions:
   - *common
   - 'github_actions/**'
@@ -74,6 +77,9 @@ uv:
 helm:
   - *common
   - 'helm/**'
+julia:
+  - *common
+  - 'julia/**'
 vcpkg:
   - *common
   - 'vcpkg/**'
