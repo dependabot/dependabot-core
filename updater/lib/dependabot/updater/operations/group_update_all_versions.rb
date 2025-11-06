@@ -25,9 +25,6 @@ module Dependabot
         def self.applies_to?(job:)
           return true if job.multi_ecosystem_update?
           return false if job.updating_a_pull_request?
-          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
-            return false
-          end
 
           if job.security_updates_only?
             return true if job.dependencies && T.must(job.dependencies).count > 1
