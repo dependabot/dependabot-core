@@ -1,13 +1,27 @@
-! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-! stdout create_pull_request
-stderr 'The .dependency-type. option is not supported for the .silent. package manager'
-stdout '{"data":{"error-type":"update_files_error".*"error-message":"The .dependency-type. option is not supported for the .silent. package manager.*Affected groups: dev, prod".*},"type":"record_update_job_error"}'
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 create_pull_request
+pr-created expected-dev-group.json
+pr-created expected-prod-group.json
 
 -- manifest.json --
 {
   "dependency-a": { "version": "1.2.3", "group": "dev" },
   "dependency-b": { "version": "1.2.3", "group": "dev" },
   "dependency-c": { "version": "1.2.3" }
+}
+
+-- expected-dev-group.json --
+{
+  "dependency-a": { "version": "1.2.4", "group": "dev" },
+  "dependency-b": { "version": "1.2.4", "group": "dev" },
+  "dependency-c": { "version": "1.2.3" }
+}
+
+-- expected-prod-group.json --
+{
+  "dependency-a": { "version": "1.2.3", "group": "dev" },
+  "dependency-b": { "version": "1.2.3", "group": "dev" },
+  "dependency-c": { "version": "1.2.4" }
 }
 
 -- dependency-a --
