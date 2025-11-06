@@ -33,7 +33,7 @@ Both TOML parsers used by Dependabot correctly handle dotted notation:
 - tomli (Python): Parses `dynamic.version` as nested structure
 
 Testing confirmed:
-```ruby
+```toml
 # Tested with both parsers - both succeed
 [tool.setuptools]
 dynamic.version = {attr = "test.__init__.__version__"}
