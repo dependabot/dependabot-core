@@ -522,14 +522,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "validates that npm version 11 satisfies the constraint" do
         requirement = helper.find_engine_constraints_as_requirement("npm")
-        npm_version_11 = Dependabot::Version.new("11.6.2")
-        expect(requirement.satisfied_by?(npm_version_11)).to be(true)
+        npm_version_eleven = Dependabot::Version.new("11.6.2")
+        expect(requirement.satisfied_by?(npm_version_eleven)).to be(true)
       end
 
       it "validates that npm version 10 does not satisfy the constraint" do
         requirement = helper.find_engine_constraints_as_requirement("npm")
-        npm_version_10 = Dependabot::Version.new("10.9.3")
-        expect(requirement.satisfied_by?(npm_version_10)).to be(false)
+        npm_version_ten = Dependabot::Version.new("10.9.3")
+        expect(requirement.satisfied_by?(npm_version_ten)).to be(false)
       end
     end
 
