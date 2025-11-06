@@ -27,7 +27,7 @@ module Dependabot
 
     # Package managers that support the dependency-type option in group rules
     PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
-      %w(bundler composer hex maven npm_and_yarn pip uv).freeze,
+      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
       T::Array[String]
     )
 
