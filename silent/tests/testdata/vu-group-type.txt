@@ -1,8 +1,7 @@
-dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
-stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 2.2.3 to 2.2.5 \)'
-stdout -count=2 create_pull_request
-pr-created expected-dev-group.json
-pr-created expected-prod-group.json
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+! stdout create_pull_request
+stderr 'The .dependency-type. option is not supported for the .silent. package manager'
+stdout '{"data":{"error-type":"update_files_error".*"error-message":"The .dependency-type. option is not supported for the .silent. package manager.*Affected groups: dev, prod".*},"type":"record_update_job_error"}'
 
 -- manifest.json --
 {
@@ -10,24 +9,6 @@ pr-created expected-prod-group.json
   "dependency-b": { "version": "2.2.3", "group": "dev" },
   "dependency-c": { "version": "2.2.3" },
   "dependency-d": { "version": "2.2.3" },
-  "dependency-e": { "version": "2.2.3", "group": "test" }
-}
-
--- expected-dev-group.json --
-{
-  "dependency-a": { "version": "1.2.5", "group": "dev" },
-  "dependency-b": { "version": "2.2.5", "group": "dev" },
-  "dependency-c": { "version": "2.2.3" },
-  "dependency-d": { "version": "2.2.3" },
-  "dependency-e": { "version": "2.2.5", "group": "test" }
-}
-
--- expected-prod-group.json --
-{
-  "dependency-a": { "version": "1.2.3", "group": "dev" },
-  "dependency-b": { "version": "2.2.3", "group": "dev" },
-  "dependency-c": { "version": "2.2.5" },
-  "dependency-d": { "version": "2.2.5" },
   "dependency-e": { "version": "2.2.3", "group": "test" }
 }
 
