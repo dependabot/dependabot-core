@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+dynamic.version = {attr = "test.__init__.__version__"}
+
+[project]
+name = "test"
+dynamic = ["version"]
+dependencies = [
+   "requests==2.31.0",
+]
