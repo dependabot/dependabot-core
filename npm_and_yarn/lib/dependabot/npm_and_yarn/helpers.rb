@@ -410,18 +410,31 @@ module Dependabot
           .returns(String)
       end
       def self.install(name, version, env: {})
-        Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+        # Check if we have a cached version that satisfies the request
+        cached_version = find_cached_version(name, version)
+
+        if cached_version
+          Dependabot.logger.info("Installing \"#{name}@#{version}\" (using cached version #{cached_version})")
+          actual_version = cached_version
+        else
+          Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+          actual_version = version
+        end
 
         begin
-          # Try to install the specified version
-          output = package_manager_install(name, version, env: env)
+          # Try to install the specified version (exact or from cache)
+          output = package_manager_install(name, actual_version, env: env)
 
           # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/)
-            Dependabot.logger.info("#{name}@#{version} successfully installed.")
+          if output.match?(/Adding #{name}@.* to the cache/) || cached_version
+            if cached_version
+              Dependabot.logger.info("#{name}@#{version} successfully installed from cache (#{cached_version}).")
+            else
+              Dependabot.logger.info("#{name}@#{version} successfully installed.")
+            end
 
-            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
-            package_manager_activate(name, version)
+            Dependabot.logger.info("Activating currently installed version of #{name}: #{actual_version}")
+            package_manager_activate(name, actual_version)
 
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
@@ -453,7 +466,39 @@ module Dependabot
         package_manager_activate(name, current_version)
       end
 
-      # Install the package manager for specified version by using corepack
+      # Find cached version that matches the requested version pattern
+      sig { params(name: String, version: String).returns(T.nilable(String)) }
+      def self.find_cached_version(name, version)
+        cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
+        return nil unless Dir.exist?(cache_dir)
+
+        # List all cached versions
+        cached_versions = Dir.entries(cache_dir).reject { |entry| entry.start_with?('.') }
+
+        # If requesting exact version, check if it exists
+        if cached_versions.include?(version)
+          return version
+        end
+
+        # If requesting major version (like "11"), find highest matching version
+        if version.match?(/^\d+$/)
+          major = version.to_i
+          matching_versions = cached_versions.select do |v|
+            v.match?(/^#{major}\./) # matches "11.x.x" format
+          end
+
+          if matching_versions.any?
+            # Sort by semantic version and return the highest
+            highest_version = matching_versions.max_by do |v|
+              parts = v.split('.').map(&:to_i)
+              [parts[0] || 0, parts[1] || 0, parts[2] || 0]
+            end
+            return highest_version
+          end
+        end
+
+        nil
+      end      # Install the package manager for specified version by using corepack
       sig do
         params(
           name: String,

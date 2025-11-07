@@ -243,7 +243,6 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/MethodLength
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
@@ -256,7 +255,8 @@ module Dependabot
           return
         end
 
-        return package_manager.version.to_s if package_manager.deprecated? || package_manager.unsupported?
+        # NOTE: Removed circular dependency call to package_manager.version.to_s
+        # This was causing infinite loops during package manager resolution
 
         if @engines && @manifest_package_manager.nil?
           # if "packageManager" doesn't exists in manifest file,
@@ -306,8 +306,6 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/MethodLength
-
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
         # Prioritize version mentioned in "packageManager" instead of "engines"
@@ -418,15 +416,21 @@ module Dependabot
           return Helpers.install(name, version.to_s, env: env)
         end
 
-        Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+        # Try to use exact cached version to avoid network calls
+        cached_version = version ? find_cached_version(name, version) : nil
+        install_version = cached_version || version
+
+        Dependabot.logger.info(
+          "Installing \"#{name}@#{install_version}\"#{' (using cached version)' if cached_version}"
+        )
 
         begin
           SharedHelpers.run_shell_command(
-            "corepack install #{name}@#{version} --global --cache-only",
+            "corepack install #{name}@#{install_version} --global --cache-only",
             fingerprint: "corepack install <name>@<version> --global --cache-only"
           )
         rescue SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Dependabot.logger.error("Error installing #{name}@#{install_version}: #{e.message}")
           Helpers.fallback_to_local_version(name)
         end
       end
@@ -446,6 +450,35 @@ module Dependabot
 
         Dependabot.logger.info("Requested version #{match['version']}")
         match["version"]
+      end
+
+      # Find exact cached version for a major version to avoid network calls
+      sig { params(name: String, requested_version: String).returns(T.nilable(String)) }
+      def find_cached_version(name, requested_version)
+        Dependabot.logger.info("Looking for cached version: #{name}@#{requested_version}")
+        return nil unless requested_version.match?(/^\d+$/) # Only for major versions like "11"
+
+        cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
+        Dependabot.logger.info("Cache directory: #{cache_dir}, exists: #{Dir.exist?(cache_dir)}")
+        return nil unless Dir.exist?(cache_dir)
+
+        # Find cached versions that start with the requested major version
+        all_entries = Dir.entries(cache_dir)
+        Dependabot.logger.info("Available cache entries: #{all_entries}")
+
+        cached_versions = all_entries
+                             .select { |entry| entry.start_with?("#{requested_version}.") }
+                             .select { |entry| entry.match?(/^\d+\.\d+\.\d+$/) }
+                             .map { |entry| Version.new(entry) }
+                             .sort
+                             .reverse # Get the highest version first
+
+        result = cached_versions.first&.to_s
+        Dependabot.logger.info("Found cached version: #{result}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.debug("Error checking cached versions for #{name}@#{requested_version}: #{e.message}")
+        nil
       end
 
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
