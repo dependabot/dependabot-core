@@ -147,7 +147,16 @@ module Dependabot
       def poetry_based?
         return false unless pyproject
 
-        !TomlRB.parse(pyproject&.content).dig("tool", "poetry").nil?
+        parsed_pyproject = TomlRB.parse(pyproject&.content)
+
+        # Check if [tool.poetry] section exists
+        return true unless parsed_pyproject.dig("tool", "poetry").nil?
+
+        # Check if using Poetry as build backend with poetry.lock present
+        return false unless poetry_lock
+
+        build_backend = parsed_pyproject.dig("build-system", "build-backend")
+        !build_backend.nil? && build_backend.start_with?("poetry.core")
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
