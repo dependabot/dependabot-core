@@ -149,6 +149,23 @@ $ bin/docker-dev-shell go_modules
 [dependabot-core-dev] ~ $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
+### Using Podman Instead of Docker
+
+Dependabot Core supports using [Podman](https://podman.io/) as an alternative to Docker. To use Podman, set the `CONTAINER_RUNTIME` environment variable:
+
+```shell
+$ export CONTAINER_RUNTIME=podman
+$ bin/docker-dev-shell go_modules
+=> running podman development shell
+```
+
+This is particularly useful for environments where Podman is preferred, such as:
+- Red Hat Enterprise Linux (RHEL) systems
+- Self-hosted GitHub Actions runners using Podman
+- Environments requiring rootless containers
+
+>**Note:** Ensure that Podman is properly configured and accessible from your command line before setting `CONTAINER_RUNTIME=podman`.
+
 ### Building Images from Scratch
 
 Normally the [Quickstart](#quickstart) is all you need, but occasionally you'll need to rebuild the underlying images.

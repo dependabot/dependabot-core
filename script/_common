@@ -3,6 +3,10 @@ export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
 
+# Support for Podman as an alternative container runtime
+# Set CONTAINER_RUNTIME=podman to use Podman instead of Docker
+export CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
+
 function set_tag() {
     case $ECOSYSTEM in
       docker_compose)
@@ -55,7 +59,7 @@ function docker_build() {
   DOCKER_CONTENT_TRUST=1
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+  "$CONTAINER_RUNTIME" build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
@@ -72,7 +76,7 @@ function docker_build() {
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+  "$CONTAINER_RUNTIME" build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "$UPDATER_IMAGE_NAME" \
@@ -81,14 +85,14 @@ function docker_build() {
     .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
-  IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')
+  IMAGE_LAYERS=$("$CONTAINER_RUNTIME" history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')
   echo "$UPDATER_IMAGE_NAME contains $IMAGE_LAYERS layers"
   [[ $IMAGE_LAYERS -lt 126 ]]
 }
 
 function docker_exec() {
   docker_build "$1"
-  docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+  "$CONTAINER_RUNTIME" run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --rm \
   -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
   -ti "$UPDATER_IMAGE$TAG" "${@:2}"
@@ -97,7 +101,7 @@ function docker_exec() {
 function docker_bundle_exec() {
   docker_build "$1"
 
-  docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+  "$CONTAINER_RUNTIME" run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --env VCR \
   --rm \
   -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \

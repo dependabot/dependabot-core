@@ -59,7 +59,7 @@ build_image() {
   docker_build "$ECOSYSTEM"
 
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
-  docker build \
+  "$CONTAINER_RUNTIME" build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg "FROM_IMAGE=$UPDATER_IMAGE_NAME" \
     -t "$IMAGE_NAME" \
@@ -67,7 +67,7 @@ build_image() {
     .
 }
 
-IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
+IMAGE_ID=$("$CONTAINER_RUNTIME" inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
 if [ -z "$IMAGE_ID" ]; then
   echo "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
   build_image
@@ -79,16 +79,16 @@ else
 fi
 
 set +e
-RUNNING=$(docker ps --format '{{.Names}}' | grep "$CONTAINER_NAME$")
+RUNNING=$("$CONTAINER_RUNTIME" ps --format '{{.Names}}' | grep "$CONTAINER_NAME$")
 set -e
 echo "$RUNNING"
 if [ -n "$RUNNING" ]; then
   if [ -z "$BUILT_IMAGE" ]; then
     # image was not rebuilt - can we reuse existing?
-    exec docker exec -ti "$CONTAINER_NAME" bash
+    exec "$CONTAINER_RUNTIME" exec -ti "$CONTAINER_NAME" bash
   else
     # image was rebuilt - exit running container
-    docker stop "$CONTAINER_NAME"
+    "$CONTAINER_RUNTIME" stop "$CONTAINER_NAME"
   fi
 fi
 
@@ -122,11 +122,11 @@ if [ -n "$SSH_AUTH_SOCK" ]; then
   DOCKER_OPTS+=("-e" "SSH_AUTH_SOCK=/tmp/ssh-auth.sock")
 fi
 
-echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
+echo "$(tput setaf 2)=> running $CONTAINER_RUNTIME development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot"
 touch .core-bash_history # allow bash history to persist across invocations
 mkdir -p dry-run tmp
-docker run --rm -ti \
+"$CONTAINER_RUNTIME" run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
   -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
