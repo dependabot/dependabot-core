@@ -10,6 +10,8 @@ module Dependabot
       class BzlmodFileUpdater
         extend T::Sig
 
+        require_relative "lockfile_updater"
+
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
@@ -25,12 +27,27 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def updated_module_files
-          module_files.filter_map do |file|
+          updated_files = T.let([], T::Array[Dependabot::DependencyFile])
+
+          module_files.each do |file|
             updated_content = update_file_content(file)
             next if updated_content == T.must(file.content)
 
-            file.dup.tap { |f| f.content = updated_content }
+            updated_files << file.dup.tap { |f| f.content = updated_content }
           end
+
+          if generate_lockfile?
+            lockfile_updater = LockfileUpdater.new(
+              dependency_files: dependency_files,
+              dependencies: dependencies,
+              credentials: credentials
+            )
+
+            updated_lockfile = lockfile_updater.updated_lockfile
+            updated_files << updated_lockfile if updated_lockfile
+          end
+
+          updated_files
         end
 
         private
@@ -50,6 +67,11 @@ module Dependabot
             dependency_files.select { |f| f.name.end_with?("MODULE.bazel") },
             T.nilable(T::Array[Dependabot::DependencyFile])
           )
+        end
+
+        sig { returns(T::Boolean) }
+        def generate_lockfile?
+          dependency_files.any? { |f| f.name.end_with?("MODULE.bazel.lock") }
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(String) }
