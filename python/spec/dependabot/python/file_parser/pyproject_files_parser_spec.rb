@@ -415,8 +415,8 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         its(:length) { is_expected.to be > 0 }
 
         it "marks optional dependencies as development (non-production)" do
-          # Optional dependencies should be considered development dependencies
-          # for grouping purposes with dependency-type: "development"
+          # Optional dependencies should be marked as non-production, which makes them
+          # match dependency-type: "development" in the dependency grouping system
           optional_deps = dependencies.reject { |d| d.name == "setuptools" }
           expect(optional_deps).to all(satisfy { |dep| !dep.production? })
         end
