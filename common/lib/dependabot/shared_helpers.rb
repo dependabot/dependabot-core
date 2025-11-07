@@ -23,9 +23,6 @@ module Dependabot
   module SharedHelpers # rubocop:disable Metrics/ModuleLength
     extend T::Sig
 
-    # Track hosts that have been configured to prevent infinite loops
-    @configured_git_hosts = T.let(Set.new, T::Set[String])
-
     USER_AGENT = T.let(
       "dependabot-core/#{Dependabot::VERSION} " \
       "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
@@ -379,10 +376,7 @@ module Dependabot
         github_credentials.first
 
       # Make sure we always have https alternatives for github.com.
-      if github_credential.nil? && !@configured_git_hosts.include?("github.com")
-        configure_git_to_use_https("github.com")
-        @configured_git_hosts.add("github.com")
-      end
+      configure_git_to_use_https("github.com") if github_credential.nil?
 
       deduped_credentials = credentials -
                             github_credentials +
@@ -390,7 +384,6 @@ module Dependabot
 
       # Build the content for our credentials file
       git_store_content = ""
-
       deduped_credentials.each do |cred|
         next unless cred["type"] == "git_source"
         next unless cred["host"]
@@ -402,14 +395,10 @@ module Dependabot
         authenticated_url = "https://#{creds}#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
+        configure_git_to_use_https(cred.fetch("host"))
+      end
 
-        # Only configure git for each host once to prevent infinite loops
-        host = cred.fetch("host")
-        unless @configured_git_hosts.include?(host)
-          configure_git_to_use_https(host)
-          @configured_git_hosts.add(host)
-        end
-      end      # Save the file
+      # Save the file
       File.write("git.store", git_store_content)
     end
     # rubocop:enable Metrics/AbcSize
