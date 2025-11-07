@@ -158,7 +158,9 @@ module Dependabot
               original_locked_python = TomlRB.parse(T.must(lockfile).content)["metadata"]["python-versions"]
 
               new_lockfile.gsub!(/\[metadata\](?:\r?\n).*python-versions[^\r\n]+(?:\r?\n)/m) do |match|
-                match.gsub(/(["']).*(['"])(?:\r?\n)\Z/, '\1' + original_locked_python + '\1' + "\n")
+                # Detect the line ending style from the match (CRLF or LF)
+                line_ending = match.include?("\r\n") ? "\r\n" : "\n"
+                match.gsub(/(["']).*(['"])(?:\r?\n)\Z/, '\1' + original_locked_python + '\1' + line_ending)
               end
 
               tmp_hash =
