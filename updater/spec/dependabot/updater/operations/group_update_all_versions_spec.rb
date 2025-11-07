@@ -150,24 +150,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       end
     end
 
-    context "when grouped security updates are disabled and job is security updates only" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:grouped_security_updates_disabled).and_return(true)
-        allow(job).to receive_messages(
-          multi_ecosystem_update?: false,
-          updating_a_pull_request?: false,
-          security_updates_only?: true
-        )
-      end
-
-      it "returns false" do
-        expect(described_class.applies_to?(job: job)).to be false
-      end
-    end
-
     context "when job is security updates only" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:grouped_security_updates_disabled).and_return(false)
         allow(job).to receive_messages(
           multi_ecosystem_update?: false,
           updating_a_pull_request?: false,
