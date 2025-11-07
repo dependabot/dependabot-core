@@ -10,7 +10,6 @@ module Dependabot
       extend T::Sig
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-      MODULE_FILE_PATTERN = T.let(/MODULE\.bazel$/, Regexp)
       CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json).freeze, T::Array[String])
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
@@ -22,7 +21,7 @@ module Dependabot
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.any? do |name|
-          WORKSPACE_FILES.include?(name) || name.match?(MODULE_FILE_PATTERN)
+          WORKSPACE_FILES.include?(name) || name.end_with?("MODULE.bazel")
         end
       end
 
@@ -80,7 +79,7 @@ module Dependabot
         # Note: repo_contents is cached by the base class for efficiency
         repo_contents(raise_errors: false).each do |item|
           next unless item.type == "file"
-          next unless item.name.match?(MODULE_FILE_PATTERN)
+          next unless item.name.end_with?("MODULE.bazel")
 
           file = fetch_file_if_present(item.name)
           files << file if file
