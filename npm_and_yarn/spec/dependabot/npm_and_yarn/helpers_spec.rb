@@ -519,7 +519,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       allow(described_class).to receive(:cache_dir).and_return("/tmp/test_cache/npm")
       allow(Dir).to receive(:exist?).with("/home/dependabot/.cache/node/corepack/v1/npm").and_return(true)
       allow(Dir).to receive(:entries).with("/home/dependabot/.cache/node/corepack/v1/npm")
-                                    .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
 
       result = described_class.find_cached_version("npm", "11.6.2")
       expect(result).to eq("11.6.2")
@@ -528,7 +528,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "finds highest matching version for major version request" do
       allow(Dir).to receive(:exist?).with("/home/dependabot/.cache/node/corepack/v1/npm").and_return(true)
       allow(Dir).to receive(:entries).with("/home/dependabot/.cache/node/corepack/v1/npm")
-                                    .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
 
       result = described_class.find_cached_version("npm", "11")
       expect(result).to eq("11.6.2")
@@ -544,7 +544,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "returns nil when no matching version found" do
       allow(Dir).to receive(:exist?).with("/home/dependabot/.cache/node/corepack/v1/npm").and_return(true)
       allow(Dir).to receive(:entries).with("/home/dependabot/.cache/node/corepack/v1/npm")
-                                    .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
 
       result = described_class.find_cached_version("npm", "12")
       expect(result).to be_nil

@@ -417,7 +417,7 @@ module Dependabot
         end
 
         # Try to use exact cached version to avoid network calls
-        cached_version = version ? find_cached_version(name, version) : nil
+        cached_version = version ? Helpers.find_cached_version(name, version.to_s) : nil
         install_version = cached_version || version
 
         Dependabot.logger.info(
@@ -450,35 +450,6 @@ module Dependabot
 
         Dependabot.logger.info("Requested version #{match['version']}")
         match["version"]
-      end
-
-      # Find exact cached version for a major version to avoid network calls
-      sig { params(name: String, requested_version: String).returns(T.nilable(String)) }
-      def find_cached_version(name, requested_version)
-        Dependabot.logger.info("Looking for cached version: #{name}@#{requested_version}")
-        return nil unless requested_version.match?(/^\d+$/) # Only for major versions like "11"
-
-        cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
-        Dependabot.logger.info("Cache directory: #{cache_dir}, exists: #{Dir.exist?(cache_dir)}")
-        return nil unless Dir.exist?(cache_dir)
-
-        # Find cached versions that start with the requested major version
-        all_entries = Dir.entries(cache_dir)
-        Dependabot.logger.info("Available cache entries: #{all_entries}")
-
-        cached_versions = all_entries
-                             .select { |entry| entry.start_with?("#{requested_version}.") }
-                             .select { |entry| entry.match?(/^\d+\.\d+\.\d+$/) }
-                             .map { |entry| Version.new(entry) }
-                             .sort
-                             .reverse # Get the highest version first
-
-        result = cached_versions.first&.to_s
-        Dependabot.logger.info("Found cached version: #{result}")
-        result
-      rescue StandardError => e
-        Dependabot.logger.debug("Error checking cached versions for #{name}@#{requested_version}: #{e.message}")
-        nil
       end
 
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }

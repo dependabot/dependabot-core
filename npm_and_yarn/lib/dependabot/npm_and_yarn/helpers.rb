@@ -472,33 +472,37 @@ module Dependabot
         cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
         return nil unless Dir.exist?(cache_dir)
 
-        # List all cached versions
-        cached_versions = Dir.entries(cache_dir).reject { |entry| entry.start_with?('.') }
+        cached_versions = list_cached_versions(cache_dir)
 
-        # If requesting exact version, check if it exists
-        if cached_versions.include?(version)
-          return version
+        # Check for exact version match first
+        return version if cached_versions.include?(version)
+
+        # Handle major version resolution
+        find_highest_major_version(cached_versions, version)
+      end
+
+      # List all cached versions, excluding system entries
+      sig { params(cache_dir: String).returns(T::Array[String]) }
+      def self.list_cached_versions(cache_dir)
+        Dir.entries(cache_dir).reject { |entry| entry.start_with?(".") }
+      end
+
+      # Find the highest cached version for a major version request
+      sig { params(cached_versions: T::Array[String], version: String).returns(T.nilable(String)) }
+      def self.find_highest_major_version(cached_versions, version)
+        return nil unless version.match?(/^\d+$/)
+
+        major = version.to_i
+        matching_versions = cached_versions.select { |v| v.match?(/^#{major}\./) }
+
+        return nil if matching_versions.empty?
+
+        # Sort by semantic version and return the highest
+        matching_versions.max_by do |v|
+          parts = v.split(".").map(&:to_i)
+          [parts[0] || 0, parts[1] || 0, parts[2] || 0]
         end
-
-        # If requesting major version (like "11"), find highest matching version
-        if version.match?(/^\d+$/)
-          major = version.to_i
-          matching_versions = cached_versions.select do |v|
-            v.match?(/^#{major}\./) # matches "11.x.x" format
-          end
-
-          if matching_versions.any?
-            # Sort by semantic version and return the highest
-            highest_version = matching_versions.max_by do |v|
-              parts = v.split('.').map(&:to_i)
-              [parts[0] || 0, parts[1] || 0, parts[2] || 0]
-            end
-            return highest_version
-          end
-        end
-
-        nil
-      end      # Install the package manager for specified version by using corepack
+      end
       sig do
         params(
           name: String,
