@@ -45,21 +45,17 @@ RUN corepack install pnpm@$PNPM_VERSION --global
 # Install yarn berry and set it to a stable version
 RUN corepack install yarn@$YARN_VERSION --global
 
-# Pre-cache commonly requested major versions for pnpm and yarn
-RUN corepack install pnpm@9 --global && \
-    corepack install pnpm@10 --global && \
-    corepack install yarn@1 --global && \
-    corepack install yarn@3 --global && \
-    corepack install yarn@4 --global
-
-# Install npm and set it to a stable version
-RUN corepack install npm@$NPM_VERSION --global
-
-# Pre-cache commonly requested major versions to avoid network requests during runtime
-# This prevents corepack from making network calls when projects specify major version constraints
-RUN corepack install npm@10 --global && \
-    corepack install npm@11 --global && \
-    corepack install npm@9 --global
+# Pre-install commonly requested major versions for pnpm, yarn and npm
+RUN corepack install \
+  pnpm@10 \
+  pnpm@9 \
+  yarn@1 \
+  yarn@3 \
+  yarn@4 \
+  npm@11 \
+  npm@10 \
+  npm@9 \
+  --global
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
