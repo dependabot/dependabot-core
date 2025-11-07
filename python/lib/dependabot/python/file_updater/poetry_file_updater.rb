@@ -157,8 +157,8 @@ module Dependabot
 
               original_locked_python = TomlRB.parse(T.must(lockfile).content)["metadata"]["python-versions"]
 
-              new_lockfile.gsub!(/\[metadata\]\n.*python-versions[^\n]+\n/m) do |match|
-                match.gsub(/(["']).*(['"])\n\Z/, '\1' + original_locked_python + '\1' + "\n")
+              new_lockfile.gsub!(/\[metadata\](?:\r?\n).*python-versions[^\r\n]+(?:\r?\n)/m) do |match|
+                match.gsub(/(["']).*(['"])(?:\r?\n)\Z/, '\1' + original_locked_python + '\1' + "\n")
               end
 
               tmp_hash =
@@ -331,12 +331,12 @@ module Dependabot
           group = old_req[:groups].first
 
           header_regex = "#{group}(?:\\.dependencies)?\\]\s*(?:\s*#.*?)*?"
-          /#{header_regex}\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
+          /#{header_regex}(?:\r?\n).*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\r\n]*)(?=\r?\n|$)/mi
         end
 
         sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
         def table_declaration_regex(dep, old_req)
-          /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+          /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\](?:\r?\n).*?\s*version\s* =.*?(?:\r?\n)/m
         end
 
         sig { params(dep: Dependabot::Dependency, old_req: String).returns(Regexp) }
