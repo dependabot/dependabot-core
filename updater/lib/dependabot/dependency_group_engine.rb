@@ -25,9 +25,6 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
-    # Package managers that support the dependency-type option in group rules.
-    # Update this list when adding dependency-type support to new ecosystems.
-    # Note: 'silent' is included to avoid modifying its integration tests.
     PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
       %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
       T::Array[String]
