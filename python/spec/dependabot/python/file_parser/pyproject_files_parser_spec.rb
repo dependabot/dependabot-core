@@ -393,6 +393,24 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
 
         its(:length) { is_expected.to be > 0 }
+
+        it "marks optional dependencies as development (non-production)" do
+          # Optional dependencies should be considered development dependencies
+          # for grouping purposes with dependency-type: "development"
+          optional_deps = dependencies.reject { |d| d.name == "setuptools" }
+          expect(optional_deps).to all(satisfy { |dep| !dep.production? })
+        end
+
+        it "has the correct groups for optional dependencies" do
+          pysocks = dependencies.find { |d| d.name == "pysocks" }
+          expect(pysocks.requirements.first[:groups]).to eq(["socks"])
+
+          ddt = dependencies.find { |d| d.name == "ddt" }
+          expect(ddt.requirements.first[:groups]).to eq(["tests"])
+
+          pytest = dependencies.find { |d| d.name == "pytest" }
+          expect(pytest.requirements.first[:groups]).to eq(["tests"])
+        end
       end
 
       context "with PEP 621 and Poetry configuration" do
