@@ -11,7 +11,7 @@ module Dependabot
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
       MODULE_FILE_PATTERN = T.let(/MODULE\.bazel$/, Regexp)
-      CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock).freeze, T::Array[String])
+      CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json).freeze, T::Array[String])
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
       sig { override.returns(String) }
@@ -93,13 +93,10 @@ module Dependabot
       def config_files
         files = T.let([], T::Array[DependencyFile])
 
-        CONFIG_FILES.each do |filename|
+        CONFIG_FILES.map do |filename|
           file = fetch_file_if_present(filename)
           files << file if file
         end
-
-        bazelversion = fetch_file_if_present(".bazelversion")
-        files << bazelversion if bazelversion
 
         files
       end

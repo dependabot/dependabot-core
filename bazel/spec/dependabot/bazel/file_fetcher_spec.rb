@@ -119,6 +119,29 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       it "fetches the MODULE.bazel file" do
         expect(fetched_files.map(&:name)).to include("MODULE.bazel")
       end
+
+      context "with a maven_install.json file" do
+        before do
+          stub_request(:get, url + "?ref=sha")
+            .to_return(
+              status: 200,
+              body: fixture("github", "contents_bazel_with_maven_install.json"),
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(:get, url + "maven_install.json?ref=sha")
+            .to_return(
+              status: 200,
+              body: fixture("github", "contents_bazel_maven_install.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "includes maven_install.json" do
+          puts "files: #{fetched_files.map(&:name)}"
+          expect(fetched_files.map(&:name)).to include("maven_install.json")
+        end
+      end
     end
 
     context "with MODULE.bazel and *.MODULE.bazel files" do

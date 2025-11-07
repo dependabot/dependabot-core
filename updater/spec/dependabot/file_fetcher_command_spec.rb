@@ -124,6 +124,32 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
         end
       end
+
+      context "when command is recreate" do
+        let(:job_definition) do
+          job_def = JSON.parse(fixture("jobs/job_with_directories.json"))
+          job_def["job"]["command"] = "recreate"
+          job_def["job"]["dependencies"] = ["pandas"]
+          job_def
+        end
+
+        it "closes the pull request before raising DependencyFileNotFound error" do
+          expect(api_client)
+            .to receive(:close_pull_request)
+            .with(["pandas"], :dependency_removed)
+
+          expect(api_client)
+            .to receive(:record_update_job_error)
+            .with(
+              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_type: "dependency_file_not_found"
+            )
+
+          expect(api_client).to receive(:mark_job_as_processed)
+
+          expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        end
+      end
     end
 
     context "when the fetcher raises a ToolVersionNotSupported error", :vcr do
