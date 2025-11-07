@@ -106,7 +106,7 @@ module Dependabot
 
             File.write(module_file.name, updated_module_content)
 
-            run_bazel_sync_command
+            run_bazel_mod_tidy_command
 
             File.read("MODULE.bazel.lock")
           end
@@ -139,7 +139,7 @@ module Dependabot
         end
 
         sig { void }
-        def run_bazel_sync_command
+        def run_bazel_mod_tidy_command
           bazel_version = determine_bazel_version
           bazel_command = bazelisk_available? ? "bazelisk" : "bazel"
 
@@ -149,8 +149,8 @@ module Dependabot
           end
 
           SharedHelpers.run_shell_command(
-            "#{bazel_command} sync --lockfile_mode=update --enable_workspace",
-            fingerprint: "#{bazel_command} sync --lockfile_mode=update --enable_workspace"
+            "#{bazel_command} mod tidy --lockfile_mode=update",
+            fingerprint: "#{bazel_command} mod tidy --lockfile_mode=update"
           )
 
           unless File.exist?("MODULE.bazel.lock")
