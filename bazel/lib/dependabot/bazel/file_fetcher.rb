@@ -75,8 +75,6 @@ module Dependabot
       def module_files
         files = T.let([], T::Array[DependencyFile])
 
-        # Fetch all MODULE.bazel and *.MODULE.bazel files
-        # Note: repo_contents is cached by the base class for efficiency
         repo_contents(raise_errors: false).each do |item|
           next unless item.type == "file"
           next unless item.name.end_with?("MODULE.bazel")
