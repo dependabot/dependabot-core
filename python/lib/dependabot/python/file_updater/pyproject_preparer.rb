@@ -45,12 +45,16 @@ module Dependabot
         sig { params(requirement: String).returns(String) }
         def update_python_requirement(requirement)
           pyproject_object = TomlRB.parse(@pyproject_content)
+
+          # Handle Poetry format
           if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
             python_req = Python::Requirement.new(python_specification)
             unless python_req.satisfied_by?(requirement)
               pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
             end
           end
+          # PEP 621 format uses [project] requires-python, which is already handled by the parser
+
           TomlRB.dump(pyproject_object)
         end
 
@@ -69,7 +73,12 @@ module Dependabot
           return pyproject_content unless lockfile
 
           pyproject_object = TomlRB.parse(pyproject_content)
-          poetry_object = pyproject_object["tool"]["poetry"]
+          poetry_object = pyproject_object.dig("tool", "poetry")
+
+          # If there's no Poetry section, return the content unchanged
+          # This handles PEP 621 format projects
+          return pyproject_content unless poetry_object
+
           excluded_names = dependencies.map(&:name) + ["python"]
 
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|

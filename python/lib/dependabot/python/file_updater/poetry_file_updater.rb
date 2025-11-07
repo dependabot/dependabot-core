@@ -118,20 +118,37 @@ module Dependabot
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
 
+          # Try Poetry format first (tool.poetry.dependencies)
           declaration_regex = declaration_regex(dep, old_r)
           declaration_match = content.match(declaration_regex)
           if declaration_match
             declaration = declaration_match[:declaration]
             new_declaration = T.must(declaration).sub(old_req, new_req)
-            content.sub(T.must(declaration), new_declaration)
-          else
-            content.gsub(table_declaration_regex(dep, new_r)) do |match|
+            return content.sub(T.must(declaration), new_declaration)
+          end
+
+          # Try Poetry table format
+          table_match = content.match(table_declaration_regex(dep, new_r))
+          if table_match
+            return content.gsub(table_declaration_regex(dep, new_r)) do |match|
               match.gsub(
                 /(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
                 '\1' + new_req
               )
             end
           end
+
+          # Try PEP 621 array format (e.g., dependencies = ["django==5.0.0"])
+          pep621_regex = pep621_declaration_regex(dep, old_req)
+          pep621_match = content.match(pep621_regex)
+          if pep621_match
+            declaration = pep621_match[:declaration]
+            new_declaration = T.must(declaration).sub(old_req, new_req)
+            return content.sub(T.must(declaration), new_declaration)
+          end
+
+          # If no match found, return content unchanged
+          content
         end
 
         sig { returns(String) }
@@ -177,15 +194,22 @@ module Dependabot
         sig { params(pyproject_content: String).returns(String) }
         def freeze_dependencies_being_updated(pyproject_content)
           pyproject_object = TomlRB.parse(pyproject_content)
-          poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
-          dependencies.each do |dep|
-            if dep.requirements.find { |r| r[:file] == pyproject&.name }
-              lock_declaration_to_new_version!(poetry_object, dep)
-            else
-              create_declaration_at_new_version!(poetry_object, dep)
+          # Check if this is a Poetry project (has [tool.poetry] section)
+          poetry_object = pyproject_object.dig("tool", "poetry")
+
+          if poetry_object
+            # Handle Poetry format dependencies
+            dependencies.each do |dep|
+              if dep.requirements.find { |r| r[:file] == pyproject&.name }
+                lock_declaration_to_new_version!(poetry_object, dep)
+              else
+                create_declaration_at_new_version!(poetry_object, dep)
+              end
             end
           end
+          # For PEP 621 format, dependencies are already updated in updated_pyproject_content
+          # so we don't need to freeze them here
 
           TomlRB.dump(pyproject_object)
         end
@@ -319,6 +343,13 @@ module Dependabot
         sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
         def table_declaration_regex(dep, old_req)
           /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+        end
+
+        sig { params(dep: Dependabot::Dependency, old_req: String).returns(Regexp) }
+        def pep621_declaration_regex(dep, old_req)
+          # Match PEP 621 array format: "package==1.0.0" or 'package==1.0.0'
+          # This handles dependencies in [project], [project.optional-dependencies], and [dependency-groups]
+          /(?<declaration>["']#{escape(dep)}#{Regexp.escape(old_req)}["'])/mi
         end
 
         sig { params(dep: Dependency).returns(String) }
