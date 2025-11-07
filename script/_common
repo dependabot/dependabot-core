@@ -3,8 +3,9 @@ export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
 
-# Support for Podman as an alternative container runtime
-# Set CONTAINER_RUNTIME=podman to use Podman instead of Docker
+# Support for alternative container runtimes (Podman, etc.)
+# Set CONTAINER_RUNTIME to use a different OCI-compatible runtime instead of Docker
+# Examples: CONTAINER_RUNTIME=podman, CONTAINER_RUNTIME=nerdctl
 export CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 
 function set_tag() {

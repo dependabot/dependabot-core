@@ -122,7 +122,7 @@ if [ -n "$SSH_AUTH_SOCK" ]; then
   DOCKER_OPTS+=("-e" "SSH_AUTH_SOCK=/tmp/ssh-auth.sock")
 fi
 
-echo "$(tput setaf 2)=> running $CONTAINER_RUNTIME development shell$(tput sgr0)"
+echo "$(tput setaf 2)=> running ${CONTAINER_RUNTIME} development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot"
 touch .core-bash_history # allow bash history to persist across invocations
 mkdir -p dry-run tmp
