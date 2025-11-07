@@ -18,6 +18,8 @@ module Dependabot
         [
           /^MODULE\.bazel$/,
           %r{^(?:.*/)?MODULE\.bazel$},
+          /^MODULE\.bazel\.lock$/,
+          %r{^(?:.*/)?MODULE\.bazel\.lock$},
           /^WORKSPACE$/,
           %r{^(?:.*/)?WORKSPACE\.bazel$},
           %r{^(?:.*/)?BUILD$},
@@ -68,6 +70,19 @@ module Dependabot
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def lockfile_files
+        @lockfile_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("MODULE.bazel.lock") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Boolean) }
+      def requires_lockfile_update?
+        dependencies.any? { |dep| bzlmod_dependency?(dep) }
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
