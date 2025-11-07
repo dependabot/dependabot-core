@@ -164,7 +164,10 @@ This is particularly useful for environments where Podman is preferred, such as:
 - Self-hosted GitHub Actions runners using Podman
 - Environments requiring rootless containers
 
->**Note:** Ensure that Podman is properly configured and accessible from your command line before setting `CONTAINER_RUNTIME=podman`.
+>**Note:** Ensure that Podman is properly configured and accessible from your command line before setting `CONTAINER_RUNTIME=podman`. While Podman aims for Docker CLI compatibility, there may be differences in behavior:
+>- **Rootless mode**: Podman can run containers without root privileges, which may affect volume mounts and networking
+>- **Socket configuration**: If using Podman's Docker-compatible socket, ensure `DOCKER_HOST` is set appropriately (e.g., `unix:///run/user/$(id -u)/podman/podman.sock`)
+>- **SELinux**: On RHEL-based systems, SELinux may require `:z` or `:Z` volume mount options for proper file access
 
 ### Building Images from Scratch
 
