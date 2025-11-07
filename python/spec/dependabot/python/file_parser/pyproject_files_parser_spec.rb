@@ -347,6 +347,26 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
       # is ignored because it has markers, plus 1 is build system requires
       its(:length) { is_expected.to eq(5) }
+
+      it "correctly marks production vs development dependencies" do
+        # Main dependency should be production
+        ansys_templates = dependencies.find { |d| d.name == "ansys-templates" }
+        expect(ansys_templates).to be_production
+
+        # Optional dependencies should be development
+        pysocks = dependencies.find { |d| d.name == "pysocks" }
+        expect(pysocks).not_to be_production
+
+        ddt = dependencies.find { |d| d.name == "ddt" }
+        expect(ddt).not_to be_production
+
+        pytest = dependencies.find { |d| d.name == "pytest" }
+        expect(pytest).not_to be_production
+
+        # Build system dependency should be development
+        flit_core = dependencies.find { |d| d.name == "flit-core" }
+        expect(flit_core).not_to be_production
+      end
     end
 
     context "with optional dependencies only" do
