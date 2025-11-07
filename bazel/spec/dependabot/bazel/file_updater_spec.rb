@@ -81,7 +81,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
     it "returns regex patterns for Bazel files including lockfiles" do
       expect(described_class.updated_files_regex).to contain_exactly(
         /^MODULE\.bazel$/,
-        %r{^(?:.*/)?MODULE\.bazel$},
+        %r{^(?:.*/)?[^/]+\.MODULE\.bazel$},
         /^MODULE\.bazel\.lock$/,
         %r{^(?:.*/)?MODULE\.bazel\.lock$},
         /^WORKSPACE$/,

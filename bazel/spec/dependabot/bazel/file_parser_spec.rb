@@ -79,6 +79,36 @@ RSpec.describe Dependabot::Bazel::FileParser do
     end
   end
 
+  context "with *.MODULE.bazel files" do
+    let(:dependency_files) { bazel_project_dependency_files("with_additional_module_files") }
+
+    it "parses dependencies from both MODULE.bazel and *.MODULE.bazel files" do
+      dependencies = parser.parse
+
+      expect(dependencies.length).to eq(3)
+
+      expect(dependencies.map(&:name)).to contain_exactly(
+        "rules_cc",
+        "platforms",
+        "abseil-cpp"
+      )
+
+      # Dependency from main MODULE.bazel
+      rules_cc_dep = dependencies.find { |d| d.name == "rules_cc" }
+      expect(rules_cc_dep.version).to eq("0.1.1")
+      expect(rules_cc_dep.requirements.first[:file]).to eq("MODULE.bazel")
+
+      # Dependencies from deps.MODULE.bazel
+      platforms_dep = dependencies.find { |d| d.name == "platforms" }
+      expect(platforms_dep.version).to eq("0.0.11")
+      expect(platforms_dep.requirements.first[:file]).to eq("deps.MODULE.bazel")
+
+      abseil_dep = dependencies.find { |d| d.name == "abseil-cpp" }
+      expect(abseil_dep.version).to eq("20230125.3")
+      expect(abseil_dep.requirements.first[:file]).to eq("deps.MODULE.bazel")
+    end
+  end
+
   context "with complex MODULE.bazel file" do
     let(:dependency_files) { bazel_project_dependency_files("complex_module") }
 

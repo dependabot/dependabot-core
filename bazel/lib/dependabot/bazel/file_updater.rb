@@ -17,7 +17,7 @@ module Dependabot
       def self.updated_files_regex
         [
           /^MODULE\.bazel$/,
-          %r{^(?:.*/)?MODULE\.bazel$},
+          %r{^(?:.*/)?[^/]+\.MODULE\.bazel$},
           /^MODULE\.bazel\.lock$/,
           %r{^(?:.*/)?MODULE\.bazel\.lock$},
           /^WORKSPACE$/,
