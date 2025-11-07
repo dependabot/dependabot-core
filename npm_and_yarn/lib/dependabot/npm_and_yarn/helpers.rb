@@ -411,7 +411,11 @@ module Dependabot
       end
       def self.install(name, version, env: {})
         # Check if we have a cached version that satisfies the request
-        cached_version = find_cached_version(name, version)
+        begin
+          cached_version = find_cached_version(name, version)
+        rescue StandardError
+          cached_version = nil
+        end
 
         if cached_version
           Dependabot.logger.info("Installing \"#{name}@#{version}\" (using cached version #{cached_version})")
@@ -469,6 +473,8 @@ module Dependabot
       # Find cached version that matches the requested version pattern
       sig { params(name: String, version: String).returns(T.nilable(String)) }
       def self.find_cached_version(name, version)
+        return nil if name.empty? || version.empty?
+
         cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
         return nil unless Dir.exist?(cache_dir)
 
@@ -479,6 +485,9 @@ module Dependabot
 
         # Handle major version resolution
         find_highest_major_version(cached_versions, version)
+      rescue StandardError => e
+        Dependabot.logger.debug("Cache detection failed for #{name}@#{version}: #{e.message}")
+        nil
       end
 
       # List all cached versions, excluding system entries
