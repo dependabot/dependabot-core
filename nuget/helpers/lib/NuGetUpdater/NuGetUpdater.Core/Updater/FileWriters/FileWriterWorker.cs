@@ -209,7 +209,62 @@ public class FileWriterWorker
             foreach (var projectDiscovery in orderedProjectDiscovery)
             {
                 var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
-                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, initialProjectDirectory, projectDiscovery, resolvedDependencies.Value);
+                var projectDirectory = new DirectoryInfo(Path.GetDirectoryName(projectFullPath)!);
+                var projectRelativePath = Path.GetRelativePath(repoContentsPath.FullName, projectFullPath).FullyNormalizedRootedPath();
+                var projectRelativeDirectory = Path.GetDirectoryName(projectRelativePath)!.NormalizePathToUnix();
+                _logger.Info($"Attempting to update {dependencyName} for {projectRelativePath}");
+
+                // rerun discovery because a previous file update may have already fixed this
+                var rerunWorkspaceDiscovery = await _discoveryWorker.RunAsync(repoContentsPath.FullName, projectRelativeDirectory);
+                var rerunProjectDiscovery = rerunWorkspaceDiscovery.GetProjectDiscoveryFromFullPath(repoContentsPath, new FileInfo(projectFullPath));
+                if (rerunProjectDiscovery is null)
+                {
+                    _logger.Warn($"  Unable to re-run project discovery for project {projectRelativePath}.");
+                    continue;
+                }
+
+                var candidateDependencyToUpdate = rerunProjectDiscovery.Dependencies.FirstOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+                if (candidateDependencyToUpdate?.Version is null)
+                {
+                    _logger.Warn($"  Unable to find dependency after discovery rerun.");
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(candidateDependencyToUpdate.Version, out var candidateDependencyCurrentVersion))
+                {
+                    _logger.Warn($"  Unable to parse discovered version number from string: {candidateDependencyToUpdate.Version}");
+                    continue;
+                }
+
+                if (candidateDependencyCurrentVersion >= newDependencyVersion)
+                {
+                    _logger.Info($"  Dependency is already up to date at version {candidateDependencyCurrentVersion}, possibly from a previous operation.");
+                    continue;
+                }
+
+                var rerunTopLevelDependencies = rerunProjectDiscovery.Dependencies
+                    .Where(d => !d.IsTransitive)
+                    .ToImmutableArray();
+                var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                    ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
+                    : rerunTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
+                var resolvedDependenciesInThisproject = await _dependencySolver.SolveAsync(rerunTopLevelDependencies, rerunDesiredDependencies, targetFramework);
+                if (resolvedDependenciesInThisproject is null)
+                {
+                    _logger.Warn($"  Unable to solve dependency conflicts for {projectRelativePath}/{targetFramework}.");
+                    continue;
+                }
+
+                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery!, resolvedDependenciesInThisproject.Value);
+                if (updatedFiles.Length == 0)
+                {
+                    _logger.Info("  Files were unable to be updated.");
+                }
+                else
+                {
+                    _logger.Info($"  Successfully updated the following files: {string.Join(", ", updatedFiles)}");
+                }
+
                 allUpdatedFiles.AddRange(updatedFiles);
             }
 

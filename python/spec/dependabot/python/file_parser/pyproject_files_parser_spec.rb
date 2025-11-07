@@ -276,7 +276,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         )
@@ -393,6 +393,26 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
 
         its(:length) { is_expected.to be > 0 }
+      end
+
+      context "with PEP 621 and Poetry configuration" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pep621_with_poetry.toml" }
+
+        its(:length) { is_expected.to eq(2) }
+
+        it "has the correct dependencies with requirement types" do
+          expect(dependencies.map(&:name)).to contain_exactly("fastapi", "pydantic")
+
+          fastapi = dependencies.find { |d| d.name == "fastapi" }
+          expect(fastapi.version).to eq("0.115.5")
+          expect(fastapi.requirements.first[:groups]).to eq(["dependencies"])
+
+          pydantic = dependencies.find { |d| d.name == "pydantic" }
+          expect(pydantic.version).to eq("2.8.2")
+          expect(pydantic.requirements.first[:groups]).to eq(["dependencies"])
+        end
       end
     end
 

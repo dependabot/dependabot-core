@@ -11,10 +11,13 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     )
   end
 
+  let(:project_name) { "graphing_dependencies" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
   let(:parser) do
     Dependabot::FileParsers.for_package_manager("go_modules").new(
       dependency_files:,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       source: source,
       credentials: [],
       reject_external_code: false
@@ -103,7 +106,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
       # We have disabled fetching of relationships due to a problem with `go mod graph` and our handling of
       # `replace` directives causing some projects to choke on this step.
-      describe "assigns child dependencies using go mod graph", skip: "behaviour disabled temporarily" do
+      describe "assigns child dependencies using go mod graph" do
         let(:dependency_graph_expectations) do
           [
             {
