@@ -516,7 +516,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     it "finds exact version match" do
-      allow(described_class).to receive(:cache_dir).and_return("/tmp/test_cache/npm")
       allow(Dir).to receive(:exist?).with("/home/dependabot/.cache/node/corepack/v1/npm").and_return(true)
       allow(Dir).to receive(:entries).with("/home/dependabot/.cache/node/corepack/v1/npm")
                                      .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
