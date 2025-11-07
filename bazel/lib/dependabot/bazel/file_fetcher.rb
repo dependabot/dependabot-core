@@ -10,7 +10,7 @@ module Dependabot
       extend T::Sig
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-      MODULE_FILE = T.let("MODULE.bazel".freeze, String)
+      MODULE_FILE = T.let("MODULE.bazel", String)
       CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json).freeze, T::Array[String])
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
@@ -74,15 +74,17 @@ module Dependabot
       def module_files
         files = T.let([], T::Array[DependencyFile])
 
-        T.unsafe(repo_contents(raise_errors: false)).each do |item|
-          next unless item.type == "file"
-          next unless item.name.end_with?(MODULE_FILE)
-
+        module_file_items.each do |item|
           file = fetch_file_if_present(item.name)
           files << file if file
         end
 
         files
+      end
+
+      sig { returns(T::Array[T.untyped]) }
+      def module_file_items
+        repo_contents(raise_errors: false).select { |f| f.type == "file" && f.name.end_with?(MODULE_FILE) }
       end
 
       sig { returns(T::Array[DependencyFile]) }
