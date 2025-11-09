@@ -5,6 +5,10 @@ require "spec_helper"
 require "dependabot/julia"
 
 RSpec.describe Dependabot::Julia::FileUpdater do
+  before do
+    described_class.reset_processed_manifest_directories!
+  end
+
   let(:project_file) do
     Dependabot::DependencyFile.new(
       name: "Project.toml",
@@ -340,6 +344,158 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(notice.show_in_pr).to be true
         expect(notice.description).to include("Manifest.toml")
         expect(notice.description).to include("Unsatisfiable requirements")
+      end
+    end
+
+    context "when workspace manifest initially fails" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest.toml",
+          directory: "/Workspace",
+          content: fixture("projects", "basic", "Manifest.toml"),
+          associated_manifest_paths: [
+            "/Workspace/SubPackageA/Project.toml",
+            "/Workspace/SubPackageB/Project.toml"
+          ]
+        )
+      end
+      let(:project_a) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          directory: "/Workspace/SubPackageA",
+          content: fixture("projects", "basic", "Project.toml"),
+          associated_lockfile_path: manifest_file.path
+        )
+      end
+      let(:project_b) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          directory: "/Workspace/SubPackageB",
+          content: fixture("projects", "basic", "Project.toml"),
+          associated_lockfile_path: manifest_file.path
+        )
+      end
+      let(:dependency_files) { [project_a, project_b, manifest_file] }
+
+      let(:dependency_for_a) do
+        Dependabot::Dependency.new(
+          name: "JSON",
+          version: "1.2.0",
+          previous_version: "0.21.0",
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.21, 1.2",
+            file: "Workspace/SubPackageA/Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.21",
+            file: "Workspace/SubPackageA/Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          metadata: { julia_uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
+        )
+      end
+
+      let(:dependency_for_b) do
+        Dependabot::Dependency.new(
+          name: "JSON",
+          version: "1.2.1",
+          previous_version: "0.21.0",
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.21, 1.2",
+            file: "Workspace/SubPackageB/Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.21",
+            file: "Workspace/SubPackageB/Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          metadata: { julia_uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
+        )
+      end
+
+      it "suppresses the notice until all attempts fail" do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          { "error" => "Pkg resolver error: conflict" }
+        )
+
+        updater_for_a = described_class.new(
+          dependencies: [dependency_for_a],
+          dependency_files: dependency_files,
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        )
+
+        expect(updater_for_a.updated_dependency_files.length).to eq(1)
+        expect(updater_for_a.notices).to be_empty
+
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          {
+            "manifest_content" => fixture("projects", "basic", "Manifest.toml"),
+            "manifest_path" => "../Manifest.toml"
+          }
+        )
+
+        updater_for_b = described_class.new(
+          dependencies: [dependency_for_b],
+          dependency_files: dependency_files,
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        )
+
+        updated_files = updater_for_b.updated_dependency_files
+        expect(updated_files.map(&:name)).to include("Manifest.toml")
+        expect(updater_for_b.notices).to be_empty
+      end
+
+      it "emits a notice when every attempt fails" do
+        allow(registry_client_double).to receive(:update_manifest).and_return(
+          { "error" => "Pkg resolver error: still broken" },
+          { "error" => "Pkg resolver error: still broken" }
+        )
+
+        updater_for_a = described_class.new(
+          dependencies: [dependency_for_a],
+          dependency_files: dependency_files,
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        )
+        updater_for_a.updated_dependency_files
+
+        updater_for_b = described_class.new(
+          dependencies: [dependency_for_b],
+          dependency_files: dependency_files,
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        )
+        updater_for_b.updated_dependency_files
+
+        expect(updater_for_b.notices.length).to eq(1)
+        expect(updater_for_b.notices.first.type).to eq("julia_manifest_not_updated")
+        expect(updater_for_b.notices.first.description).to include("still broken")
       end
     end
   end

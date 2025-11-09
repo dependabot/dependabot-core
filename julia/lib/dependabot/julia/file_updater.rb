@@ -5,6 +5,7 @@ require "toml-rb"
 require "tempfile"
 require "fileutils"
 require "pathname"
+require "set"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/julia/registry_client"
@@ -77,10 +78,22 @@ module Dependabot
           end
           $stderr.puts "=========================================\n"
 
-          return handle_julia_helper_error(result, actual_manifest, updated_project) if result["error"]
-
-          build_updated_files(updated_files, updated_project, actual_manifest, result, other_updated_projects)
-          Dependabot.logger.info("FileUpdater: Built #{updated_files.length} updated files: #{updated_files.map { |f| "#{f.directory}/#{f.name}" }.join(', ')}")
+          if result["error"]
+            updated_files = handle_julia_helper_error(
+              result,
+              actual_manifest,
+              updated_project,
+              delay_notice: other_updated_projects.any?
+            )
+          else
+            build_updated_files(updated_files, updated_project, actual_manifest, result, other_updated_projects)
+            Dependabot.logger.info(
+              "FileUpdater: Built #{updated_files.length} updated files: " \
+              "#{updated_files.map { |f| "#{f.directory}/#{f.name}" }.join(', ')}"
+            )
+          end
+        ensure
+          mark_manifest_directory_processed(actual_manifest)
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -122,14 +135,13 @@ module Dependabot
           updated_project: String
         ).returns(T::Array[Dependabot::DependencyFile])
       end
-      def handle_julia_helper_error(result, actual_manifest, updated_project)
+      def handle_julia_helper_error(result, actual_manifest, updated_project, delay_notice: false)
         error_message = result["error"]
-        manifest_path = actual_manifest.name
 
         is_resolver_error = resolver_error?(error_message)
         raise error_message unless is_resolver_error
 
-        add_manifest_update_notice(manifest_path, error_message)
+        add_manifest_update_notice(actual_manifest.path, error_message) unless delay_notice
 
         # Return only the updated Project.toml
         [updated_file(file: T.must(project_file), content: updated_project)]
@@ -142,19 +154,8 @@ module Dependabot
           error_message.include?("ResolverError")
       end
 
-      sig { params(manifest_path: String, error_message: String).void }
-      def add_manifest_update_notice(manifest_path, error_message)
-        # Resolve relative paths to absolute paths for clarity in user-facing notices
-        # Use Pathname.cleanpath to handle any depth of relative paths (e.g., ../../Manifest.toml)
-        project_dir = T.must(project_file).directory
-        absolute_manifest_path = if manifest_path.start_with?("../", "./")
-                                   # For workspace packages, compute the absolute path
-                                   Pathname.new(File.join(project_dir, manifest_path)).cleanpath.to_s
-                                 else
-                                   # For regular packages, use the manifest path as-is
-                                   File.join(project_dir, manifest_path)
-                                 end
-
+      sig { params(absolute_manifest_path: String, error_message: String).void }
+      def add_manifest_update_notice(absolute_manifest_path, error_message)
         @notices << Dependabot::Notice.new(
           mode: Dependabot::Notice::NoticeMode::WARN,
           type: "julia_manifest_not_updated",
@@ -203,6 +204,7 @@ module Dependabot
       sig { params(manifest: Dependabot::DependencyFile).returns(T::Hash[Dependabot::DependencyFile, String]) }
       def update_workspace_sibling_projects(manifest)
         updated_projects = {}
+        processed_dirs = processed_manifest_directories[manifest.path] || Set.new
 
         Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects: Looking for siblings of #{project_file&.path}")
         Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects: Manifest is #{manifest.directory}/#{manifest.name}")
@@ -215,6 +217,10 @@ module Dependabot
           is_current = file == project_file
           Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects:   Checking #{file.directory}/#{file.name}: is_current=#{is_current}")
           next if is_current # Skip the current project
+          if already_processed_directory?(manifest, file.directory)
+            Dependabot.logger.info("FileUpdater.update_workspace_sibling_projects:     skipping #{file.directory} (already processed)")
+            next
+          end
 
           # Check if this project shares the same manifest by comparing directories
           # For workspace packages, they're typically siblings under the same parent
@@ -555,6 +561,38 @@ module Dependabot
           "FileUpdater: Failed to parse #{file.path} while checking dependency declarations: #{e.message}"
         )
         true
+      end
+
+      def processed_manifest_directories
+        self.class.processed_manifest_directories
+      end
+
+      def mark_manifest_directory_processed(manifest)
+        return unless manifest
+
+        dirs = processed_manifest_directories[manifest.path] ||= Set.new
+        dirs << project_directory
+      end
+
+      def already_processed_directory?(manifest, directory)
+        return false unless manifest
+
+        dirs = processed_manifest_directories[manifest.path]
+        dirs&.include?(directory)
+      end
+
+      class << self
+        extend T::Sig
+
+        sig { returns(T::Hash[String, Set[String]]) }
+        def processed_manifest_directories
+          @processed_manifest_directories ||= {}
+        end
+
+        sig { void }
+        def reset_processed_manifest_directories!
+          @processed_manifest_directories = {}
+        end
       end
     end
   end
