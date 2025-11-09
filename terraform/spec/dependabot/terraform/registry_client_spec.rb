@@ -144,6 +144,41 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     end.to raise_error(/Response from registry was 404/)
   end
 
+  it "fetches module versions from a private registry with separate module hostname requiring auth" do
+    hostname = "my-org.private.registry"
+    # modules hosted separately from the base hostname
+    module_hostname = "modules.#{hostname}"
+    token = SecureRandom.hex(16)
+    credentials = [
+      { "type" => "terraform_registry", "host" => hostname, "token" => token }
+    ]
+
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json")
+      .and_return(status: 200,
+                  body: {
+                    "modules.v1": "https://#{module_hostname}/terraform/modules/v1/"
+                  }.to_json)
+    stub_request(:get, "https://#{module_hostname}/terraform/modules/v1/corp/package/aws/versions")
+      .and_return(status: 200,
+                  body: {
+                    modules: [
+                      {
+                        source: "corp/package/aws",
+                        versions: [{ version: "1.0.0" }, { version: "1.1.0" }]
+                      }
+                    ]
+                  }.to_json)
+
+    client = described_class.new(hostname: hostname, credentials: credentials)
+    response = client.all_module_versions(identifier: "corp/package/aws")
+
+    expect(response).to contain_exactly(Gem::Version.new("1.0.0"), Gem::Version.new("1.1.0"))
+    # Verify that the request has an Authorization header when requesting module versions
+    # from the separate hostname
+    expect(WebMock).to have_requested(:get, "https://#{module_hostname}/terraform/modules/v1/corp/package/aws/versions")
+      .with(headers: { "Authorization" => "Bearer #{token}" })
+  end
+
   it "fetches the source for a module dependency", :vcr do
     source = client.source(dependency: module_dependency)
 
