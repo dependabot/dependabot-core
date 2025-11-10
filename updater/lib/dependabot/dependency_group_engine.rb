@@ -25,8 +25,15 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
+    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
+      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
+      T::Array[String]
+    )
+
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
+      validate_group_configuration!(job)
+
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"], applies_to: group["applies-to"])
       end
@@ -39,6 +46,28 @@ module Dependabot
                end
 
       new(dependency_groups: groups)
+    end
+
+    sig { params(job: Dependabot::Job).void }
+    def self.validate_group_configuration!(job)
+      return unless job.dependency_groups.any?
+
+      unsupported_groups = job.dependency_groups.select do |group|
+        rules = group["rules"] || {}
+        rules.key?("dependency-type") &&
+          !PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.include?(job.package_manager)
+      end
+
+      return unless unsupported_groups.any?
+
+      group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
+      Dependabot.logger.warn <<~WARN
+        The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
+        It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
+        Affected groups: #{group_names}
+
+        This option will be ignored. Please remove it from your configuration or use a supported package manager.
+      WARN
     end
 
     sig { returns(T::Array[Dependabot::DependencyGroup]) }
