@@ -12,7 +12,9 @@ ENV PATH=/opt/go/bin:$PATH
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 COPY go_modules/helpers /opt/go_modules/helpers
-RUN bash /opt/go_modules/helpers/build
+# Copy mkcert CA certificate for GitHub Actions runners with HTTPS proxy
+COPY go_modules/mkcert-ca.crt /usr/local/share/ca-certificates/mkcert-ca.crt
+RUN update-ca-certificates && bash /opt/go_modules/helpers/build
 
 USER dependabot
 COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
