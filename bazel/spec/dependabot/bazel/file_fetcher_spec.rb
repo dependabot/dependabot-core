@@ -59,6 +59,12 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       it { is_expected.to be(true) }
     end
 
+    context "with a *.MODULE.bazel file" do
+      let(:filenames) { %w(deps.MODULE.bazel README.md) }
+
+      it { is_expected.to be(true) }
+    end
+
     context "without any Bazel files" do
       let(:filenames) { %w(README.md package.json) }
 
@@ -132,9 +138,35 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         end
 
         it "includes maven_install.json" do
-          puts "files: #{fetched_files.map(&:name)}"
           expect(fetched_files.map(&:name)).to include("maven_install.json")
         end
+      end
+    end
+
+    context "with MODULE.bazel and *.MODULE.bazel files" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_additional_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "deps.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches all MODULE.bazel files including *.MODULE.bazel files" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", "deps.MODULE.bazel")
       end
     end
 
@@ -168,6 +200,212 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
           Dependabot::DependencyFileNotFound,
           /must contain a WORKSPACE, WORKSPACE.bazel, or MODULE.bazel file/
         )
+      end
+    end
+  end
+
+  describe "fetching .bazelversion from parent directories" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "when working in a subdirectory and .bazelversion is in parent" do
+      let(:directory) { "/services" }
+
+      before do
+        # Subdirectory contents (no .bazelversion)
+        stub_request(:get, url + "services?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.generate(
+              [
+                {
+                  "name" => "MODULE.bazel",
+                  "path" => "services/MODULE.bazel",
+                  "type" => "file",
+                  "sha" => "abc123"
+                }
+              ]
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "services/MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # No .bazelversion in subdirectory
+        stub_request(:get, url + "services/.bazelversion?ref=sha")
+          .to_return(status: 404)
+
+        # Parent directory contents listing (needed for file_fetcher to check parent)
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.generate(
+              [
+                {
+                  "name" => ".bazelversion",
+                  "path" => ".bazelversion",
+                  "type" => "file"
+                },
+                {
+                  "name" => "services",
+                  "path" => "services",
+                  "type" => "dir"
+                }
+              ]
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # .bazelversion exists in parent directory
+        stub_request(:get, url + ".bazelversion?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches .bazelversion from parent directory" do
+        expect(fetched_files.map(&:name)).to include(".bazelversion")
+        bazelversion_file = fetched_files.find { |f| f.name == ".bazelversion" }
+        expect(bazelversion_file).not_to be_nil
+        expect(bazelversion_file.content).to eq("6.0.0\n")
+      end
+
+      it "includes MODULE.bazel from subdirectory" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+    end
+
+    context "when .bazelversion exists in current subdirectory" do
+      let(:directory) { "/workspace" }
+
+      before do
+        stub_request(:get, url + "workspace?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.generate(
+              [
+                {
+                  "name" => "MODULE.bazel",
+                  "path" => "workspace/MODULE.bazel",
+                  "type" => "file",
+                  "sha" => "abc123"
+                },
+                {
+                  "name" => ".bazelversion",
+                  "path" => "workspace/.bazelversion",
+                  "type" => "file",
+                  "sha" => "def456"
+                }
+              ]
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "workspace/MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "workspace/.bazelversion?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_version_7.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Root directory also has .bazelversion but should be ignored
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.generate(
+              [
+                {
+                  "name" => ".bazelversion",
+                  "path" => ".bazelversion",
+                  "type" => "file"
+                },
+                {
+                  "name" => "workspace",
+                  "path" => "workspace",
+                  "type" => "dir"
+                }
+              ]
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "uses .bazelversion from current directory (not parent)" do
+        expect(fetched_files.map(&:name)).to include(".bazelversion")
+        bazelversion_file = fetched_files.find { |f| f.name == ".bazelversion" }
+        expect(bazelversion_file.content).to eq("7.0.0\n")
+      end
+    end
+
+    context "when .bazelversion does not exist anywhere" do
+      let(:directory) { "/apps" }
+
+      before do
+        stub_request(:get, url + "apps?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.generate(
+              [
+                {
+                  "name" => "MODULE.bazel",
+                  "path" => "apps/MODULE.bazel",
+                  "type" => "file",
+                  "sha" => "abc123"
+                }
+              ]
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "apps/MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Parent directory contents listing (no .bazelversion)
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.generate(
+              [
+                {
+                  "name" => "apps",
+                  "path" => "apps",
+                  "type" => "dir"
+                }
+              ]
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # No .bazelversion anywhere
+        stub_request(:get, url + "apps/.bazelversion?ref=sha")
+          .to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha")
+          .to_return(status: 404)
+      end
+
+      it "does not include .bazelversion in fetched files" do
+        expect(fetched_files.map(&:name)).not_to include(".bazelversion")
+      end
+
+      it "still fetches MODULE.bazel successfully" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
       end
     end
   end

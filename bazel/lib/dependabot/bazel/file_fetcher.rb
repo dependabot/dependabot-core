@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -10,7 +10,7 @@ module Dependabot
       extend T::Sig
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-      MODULE_FILES = T.let(%w(MODULE.bazel).freeze, T::Array[String])
+      MODULE_FILE = T.let("MODULE.bazel", String)
       CONFIG_FILES = T.let(%w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json).freeze, T::Array[String])
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
@@ -21,7 +21,7 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |name| WORKSPACE_FILES.include?(name) || MODULE_FILES.include?(name) }
+        filenames.any? { |name| WORKSPACE_FILES.include?(name) || name.end_with?(MODULE_FILE) }
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -74,12 +74,17 @@ module Dependabot
       def module_files
         files = T.let([], T::Array[DependencyFile])
 
-        MODULE_FILES.each do |filename|
-          file = fetch_file_if_present(filename)
+        module_file_items.each do |item|
+          file = fetch_file_if_present(item.name)
           files << file if file
         end
 
         files
+      end
+
+      sig { returns(T::Array[T.untyped]) }
+      def module_file_items
+        repo_contents(raise_errors: false).select { |f| f.type == "file" && f.name.end_with?(MODULE_FILE) }
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -87,11 +92,37 @@ module Dependabot
         files = T.let([], T::Array[DependencyFile])
 
         CONFIG_FILES.map do |filename|
-          file = fetch_file_if_present(filename)
+          file = if filename == ".bazelversion"
+                   fetch_bazelversion_file
+                 else
+                   fetch_file_if_present(filename)
+                 end
           files << file if file
         end
 
         files
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def fetch_bazelversion_file
+        file = fetch_file_if_present(".bazelversion")
+        return file if file
+        return if [".", "/"].include?(directory)
+
+        fetch_file_from_parent_directories(".bazelversion")
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_file_from_parent_directories(filename)
+        (1..directory.split("/").count).each do |i|
+          candidate_path = ("../" * i) + filename
+          file = fetch_file_if_present(candidate_path)
+          if file
+            file.name = filename
+            return file
+          end
+        end
+        nil
       end
 
       sig { params(dirname: String).returns(T::Boolean) }

@@ -56,8 +56,15 @@ jobs:
 
           # Set the step output
           echo "suites=$(cat suites.json)" >> $GITHUB_OUTPUT
+  download-cli:
+    uses: dependabot/smoke-tests/.github/workflows/download-cli.yml@main
+    permissions:
+      contents: read
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
+
   e2e:
-    needs: discover
+    needs: [discover, download-cli]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -68,10 +75,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Download CLI
+      - name: Download CLI artifact
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: dependabot-cli
+
+      - name: Make CLI executable
         run: |
-          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
-          tar xzvf *.tar.gz >/dev/null 2>&1
+          chmod +x dependabot
           ./dependabot --version
 
       - name: Restore Smoke Test
