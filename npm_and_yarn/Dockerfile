@@ -12,10 +12,10 @@ ARG PNPM_VERSION=10.16.0
 ARG YARN_VERSION=4.9.2
 
 # Check for updates at https://github.com/oven-sh/bun/releases
-ARG BUN_VERSION=1.2.5
+ARG BUN_VERSION=1.3.0
 
 # See https://github.com/nodesource/distributions#installation-instructions
-# Always update NODEJS_VERSION with a compatible NPM_VERSION 
+# Always update NODEJS_VERSION with a compatible NPM_VERSION
 # See https://nodejs.org/en/about/previous-releases#looking-for-the-latest-release-of-a-version-branch for more information
 # Note : Always use the Active LTS version
 ARG NODEJS_VERSION=22
