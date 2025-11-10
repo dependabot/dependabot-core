@@ -8,10 +8,11 @@ require "dependabot/shared_helpers"
 require "dependabot/clients/github_with_retries"
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/bazel/update_checker"
 
 module Dependabot
   module Bazel
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RegistryClient
         extend T::Sig
 
