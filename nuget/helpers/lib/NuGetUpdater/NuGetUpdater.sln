@@ -48,6 +48,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetPackageCorrelation.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetPackageCorrelation.Cli", "DotNetPackageCorrelation.Cli\DotNetPackageCorrelation.Cli.csproj", "{509454EE-629F-4767-B1D4-7F2DF86C11B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Build.Tasks.Pack", "NuGetProjects\NuGet.Build.Tasks.Pack\NuGet.Build.Tasks.Pack.csproj", "{8A9D0668-DE71-3803-FD2E-E3CEFC18DBFA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -142,6 +144,10 @@ Global
 		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A9D0668-DE71-3803-FD2E-E3CEFC18DBFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A9D0668-DE71-3803-FD2E-E3CEFC18DBFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A9D0668-DE71-3803-FD2E-E3CEFC18DBFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A9D0668-DE71-3803-FD2E-E3CEFC18DBFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -162,6 +168,7 @@ Global
 		{0AEA8D0D-6FFE-46A3-B078-B08C409C1731} = {1095100B-0857-4132-A4CF-D54C4124DED9}
 		{F3AAC7AB-DC59-4290-8BBF-59EF80BA6DB3} = {1095100B-0857-4132-A4CF-D54C4124DED9}
 		{0DCEEE7C-C53C-446C-A3BC-D5C254A952F4} = {1095100B-0857-4132-A4CF-D54C4124DED9}
+		{8A9D0668-DE71-3803-FD2E-E3CEFC18DBFA} = {1095100B-0857-4132-A4CF-D54C4124DED9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3DAF2124-E0B2-45D5-9059-3E5516C2531C}
