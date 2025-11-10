@@ -507,8 +507,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
             )
           end
 
-          it "does not raise an error" do
-            expect { dependency_group_engine }.not_to raise_error
+          it "does not log a warning" do
+            expect(Dependabot.logger).not_to receive(:warn)
+            dependency_group_engine
           end
         end
       end
@@ -528,25 +529,25 @@ RSpec.describe Dependabot::DependencyGroupEngine do
             )
           end
 
-          it "raises a ConfigurationError" do
-            expect { dependency_group_engine }.to raise_error(
-              Dependabot::DependencyGroupEngine::ConfigurationError,
-              /The 'dependency-type' option is not supported for the '#{package_manager}' package manager/
+          it "logs a warning about unsupported option" do
+            expect(Dependabot.logger).to receive(:warn).with(
+              a_string_matching(/The 'dependency-type' option is not supported for the '#{package_manager}' package manager/)
             )
+            dependency_group_engine
           end
 
-          it "includes the group name in the error message" do
-            expect { dependency_group_engine }.to raise_error(
-              Dependabot::DependencyGroupEngine::ConfigurationError,
-              /Affected groups: test-group/
+          it "includes the group name in the warning message" do
+            expect(Dependabot.logger).to receive(:warn).with(
+              a_string_matching(/Affected groups: test-group/)
             )
+            dependency_group_engine
           end
 
-          it "lists supported package managers in the error message" do
-            expect { dependency_group_engine }.to raise_error(
-              Dependabot::DependencyGroupEngine::ConfigurationError,
-              /bundler, composer, hex, maven, npm_and_yarn, pip, uv/
+          it "lists supported package managers in the warning message" do
+            expect(Dependabot.logger).to receive(:warn).with(
+              a_string_matching(/bundler, composer, hex, maven, npm_and_yarn, pip, uv/)
             )
+            dependency_group_engine
           end
         end
       end
@@ -581,11 +582,11 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         )
       end
 
-      it "raises an error mentioning all affected groups" do
-        expect { dependency_group_engine }.to raise_error(
-          Dependabot::DependencyGroupEngine::ConfigurationError,
-          /Affected groups: group-one, group-two/
+      it "logs a warning mentioning all affected groups" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          a_string_matching(/Affected groups: group-one, group-two/)
         )
+        dependency_group_engine
       end
     end
 
@@ -612,8 +613,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         )
       end
 
-      it "does not raise an error" do
-        expect { dependency_group_engine }.not_to raise_error
+      it "does not log a warning" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        dependency_group_engine
       end
     end
   end

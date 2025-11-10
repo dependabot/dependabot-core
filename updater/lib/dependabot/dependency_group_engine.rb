@@ -61,10 +61,13 @@ module Dependabot
       return unless unsupported_groups.any?
 
       group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
-      raise ConfigurationError,
-            "The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager. " \
-            "It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}. " \
-            "Affected groups: #{group_names}"
+      Dependabot.logger.warn <<~WARN
+        The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
+        It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
+        Affected groups: #{group_names}
+
+        This option will be ignored. Please remove it from your configuration or use a supported package manager.
+      WARN
     end
 
     sig { returns(T::Array[Dependabot::DependencyGroup]) }
