@@ -118,20 +118,36 @@ module Dependabot
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
 
+          # Try Poetry-style declaration first (e.g., [tool.poetry.dependencies])
           declaration_regex = declaration_regex(dep, old_r)
           declaration_match = content.match(declaration_regex)
           if declaration_match
             declaration = declaration_match[:declaration]
             new_declaration = T.must(declaration).sub(old_req, new_req)
-            content.sub(T.must(declaration), new_declaration)
-          else
-            content.gsub(table_declaration_regex(dep, new_r)) do |match|
+            return content.sub(T.must(declaration), new_declaration)
+          end
+
+          # Try Poetry table-style declaration (e.g., [tool.poetry.dependencies.package])
+          table_match = content.match(table_declaration_regex(dep, new_r))
+          if table_match
+            return content.gsub(table_declaration_regex(dep, new_r)) do |match|
               match.gsub(
                 /(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
                 '\1' + new_req
               )
             end
           end
+
+          # Try PEP 621 list-style declaration (e.g., dependencies = ["package==1.0.0"])
+          pep621_regex = pep621_declaration_regex(dep, old_req)
+          if content.match?(pep621_regex)
+            return content.gsub(pep621_regex) do |match|
+              match.sub(old_req, new_req)
+            end
+          end
+
+          # If none of the patterns match, return the content unchanged
+          content
         end
 
         sig { returns(String) }
@@ -319,6 +335,18 @@ module Dependabot
         sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
         def table_declaration_regex(dep, old_req)
           /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+        end
+
+        sig { params(dep: Dependabot::Dependency, old_req: String).returns(Regexp) }
+        def pep621_declaration_regex(dep, old_req)
+          # This regex matches PEP 621 style dependencies in lists:
+          # dependencies = [
+          #     "package==1.0.0",
+          # ]
+          # It also matches dependency-groups and optional-dependencies
+          escaped_dep = escape(dep)
+          escaped_req = Regexp.escape(old_req)
+          /["']#{escaped_dep}#{escaped_req}["']/i
         end
 
         sig { params(dep: Dependency).returns(String) }

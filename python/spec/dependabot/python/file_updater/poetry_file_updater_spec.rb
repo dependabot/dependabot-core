@@ -226,6 +226,46 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
+      context "with PEP 621 style dependencies and poetry.lock" do
+        let(:dependency_files) { [pyproject, lockfile] }
+        let(:pyproject_fixture_name) { "pep621_with_poetry.toml" }
+        let(:lockfile_fixture_name) { "pep621_with_poetry.lock" }
+        let(:dependency_name) { "fastapi" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "0.116.0",
+            previous_version: "0.115.5",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==0.116.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }],
+            previous_requirements: [{
+              requirement: "==0.115.5",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          )
+        end
+
+        it "updates both pyproject.toml and poetry.lock" do
+          expect(updated_files.map(&:name)).to match_array(%w(pyproject.toml poetry.lock))
+
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          expect(updated_pyproject.content).to include('fastapi==0.116.0')
+          expect(updated_pyproject.content).not_to include('fastapi==0.115.5')
+
+          updated_lock = updated_files.find { |f| f.name == "poetry.lock" }
+          lockfile_obj = TomlRB.parse(updated_lock.content)
+          fastapi = lockfile_obj["package"].find { |d| d["name"] == "fastapi" }
+          expect(fastapi["version"]).to eq("0.116.0")
+        end
+      end
+
       context "when specifying table style dependencies" do
         let(:pyproject_fixture_name) { "table.toml" }
         let(:dependency_name) { "isort" }
