@@ -2,9 +2,7 @@
 name = "learn-github-apps"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Stanislav Khlud",email = "stanislav.khlud@saritasa.com"}
-]
+authors = ["Dependabot <support@dependabot.com>"]
 readme = "README.md"
 requires-python = "3.13.*"
 dependencies = [
