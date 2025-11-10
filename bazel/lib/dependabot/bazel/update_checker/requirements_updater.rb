@@ -1,9 +1,11 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/bazel/update_checker"
+
 module Dependabot
   module Bazel
-    class UpdateChecker
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RequirementsUpdater
         extend T::Sig
 
