@@ -3,7 +3,6 @@
 
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/bazel/update_checker/registry_client"
 
 module Dependabot
   module Bazel
@@ -112,6 +111,10 @@ module Dependabot
 
       sig { returns(Dependabot::Bazel::UpdateChecker::RegistryClient) }
       def registry_client
+        unless defined?(Dependabot::Bazel::UpdateChecker::RegistryClient)
+          require "dependabot/bazel/update_checker/registry_client"
+        end
+
         @registry_client ||= T.let(
           Dependabot::Bazel::UpdateChecker::RegistryClient.new(credentials: credentials),
           T.nilable(Dependabot::Bazel::UpdateChecker::RegistryClient)
