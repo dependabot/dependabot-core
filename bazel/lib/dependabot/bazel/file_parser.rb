@@ -222,6 +222,7 @@ module Dependabot
         name = func_call.arguments["name"]
         tag = func_call.arguments["tag"]
         commit = func_call.arguments["commit"]
+        remote = func_call.arguments["remote"]
 
         return nil unless name.is_a?(String)
 
@@ -236,7 +237,7 @@ module Dependabot
               file: file.name,
               requirement: version,
               groups: [],
-              source: { type: "git_repository", tag: tag, commit: commit }
+              source: { type: "git_repository", tag: tag, commit: commit, remote: remote }
             }
           ],
           package_manager: "bazel"

@@ -154,6 +154,29 @@ RSpec.describe Dependabot::Bazel::FileParser do
       rules_docker = dependencies.find { |d| d.name == "io_bazel_rules_docker" }
       expect(rules_docker.version).to eq("0.25.0")
     end
+
+    it "captures remote URL from git_repository dependencies" do
+      dependencies = parser.parse
+
+      protobuf = dependencies.find { |d| d.name == "com_google_protobuf" }
+      expect(protobuf).not_to be_nil
+
+      requirement = protobuf.requirements.first
+      expect(requirement[:source][:type]).to eq("git_repository")
+      expect(requirement[:source][:tag]).to eq("v3.19.4")
+      expect(requirement[:source][:remote]).to eq("https://github.com/protocolbuffers/protobuf")
+    end
+
+    it "captures URLs from http_archive dependencies" do
+      dependencies = parser.parse
+
+      rules_go = dependencies.find { |d| d.name == "rules_go" }
+      expect(rules_go).not_to be_nil
+
+      requirement = rules_go.requirements.first
+      expect(requirement[:source][:type]).to eq("http_archive")
+      expect(requirement[:source][:url]).to include("github.com/bazelbuild/rules_go")
+    end
   end
 
   context "with BUILD.bazel file" do
