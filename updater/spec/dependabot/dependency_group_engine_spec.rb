@@ -531,7 +531,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
           it "logs a warning about unsupported option" do
             expect(Dependabot.logger).to receive(:warn).with(
-              a_string_matching(/The 'dependency-type' option is not supported for the '#{package_manager}' package manager/)
+              a_string_matching(
+                /The 'dependency-type' option is not supported for the '#{package_manager}' package manager/
+              )
             )
             dependency_group_engine
           end
