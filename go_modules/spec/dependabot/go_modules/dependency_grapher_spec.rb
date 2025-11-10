@@ -182,7 +182,11 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
           resolved = grapher.resolved_dependencies
           color = resolved.fetch("github.com/fatih/color")
-          expect(color.dependencies).to include("github.com/mattn/go-colorable", "github.com/mattn/go-isatty", "golang.org/x/sys")
+          expect(color.dependencies).to include(
+            "github.com/mattn/go-colorable",
+            "github.com/mattn/go-isatty",
+            "golang.org/x/sys"
+          )
           expect(color.dependencies).not_to include("golang.org/x/tools")
 
           text_pkg = resolved.fetch("golang.org/x/text")
