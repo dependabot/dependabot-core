@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
         )
       end
 
-      it "returns nil for workspace dependencies" do
+      it "returns nil for workspace dependencies (no lockfile update needed)" do
         updated_lockfile = lockfile_updater.updated_lockfile
         expect(updated_lockfile).to be_nil
       end
@@ -157,34 +157,55 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
     end
   end
 
-  describe "#needs_lockfile_update?" do
-    context "with bzlmod dependencies" do
-      let(:dependency_files) { bazel_project_dependency_files("simple_module_with_lockfile") }
+  describe "#determine_bazel_version" do
+    context "when .bazelversion file exists with valid content" do
+      let(:dependency_files) { bazel_project_dependency_files("with_bazelversion") }
 
-      it "returns true" do
-        expect(lockfile_updater.send(:needs_lockfile_update?)).to be true
+      it "returns the version from .bazelversion file" do
+        expect(lockfile_updater.determine_bazel_version).to eq("6.4.0")
       end
     end
 
-    context "without module files" do
-      let(:dependency_files) { bazel_project_dependency_files("simple_workspace") }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: new_version,
-          previous_version: old_version,
-          requirements: [{
-            file: "WORKSPACE",
-            requirement: new_version,
-            groups: [],
-            source: nil
-          }],
-          package_manager: "bazel"
+    context "when .bazelversion file does not exist" do
+      let(:dependency_files) { bazel_project_dependency_files("simple_module_with_lockfile") }
+
+      it "returns DEFAULT_BAZEL_VERSION" do
+        expect(lockfile_updater.determine_bazel_version)
+          .to eq(Dependabot::Bazel::FileUpdater::LockfileUpdater::DEFAULT_BAZEL_VERSION)
+      end
+    end
+
+    context "when .bazelversion file exists but is empty" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "",
+          directory: "/"
         )
+        files
       end
 
-      it "returns false" do
-        expect(lockfile_updater.send(:needs_lockfile_update?)).to be false
+      it "returns DEFAULT_BAZEL_VERSION" do
+        expect(lockfile_updater.determine_bazel_version)
+          .to eq(Dependabot::Bazel::FileUpdater::LockfileUpdater::DEFAULT_BAZEL_VERSION)
+      end
+    end
+
+    context "when .bazelversion file exists with whitespace only" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "  \n  ",
+          directory: "/"
+        )
+        files
+      end
+
+      it "returns DEFAULT_BAZEL_VERSION" do
+        expect(lockfile_updater.determine_bazel_version)
+          .to eq(Dependabot::Bazel::FileUpdater::LockfileUpdater::DEFAULT_BAZEL_VERSION)
       end
     end
   end

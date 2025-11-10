@@ -92,11 +92,37 @@ module Dependabot
         files = T.let([], T::Array[DependencyFile])
 
         CONFIG_FILES.map do |filename|
-          file = fetch_file_if_present(filename)
+          file = if filename == ".bazelversion"
+                   fetch_bazelversion_file
+                 else
+                   fetch_file_if_present(filename)
+                 end
           files << file if file
         end
 
         files
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def fetch_bazelversion_file
+        file = fetch_file_if_present(".bazelversion")
+        return file if file
+        return if [".", "/"].include?(directory)
+
+        fetch_file_from_parent_directories(".bazelversion")
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_file_from_parent_directories(filename)
+        (1..directory.split("/").count).each do |i|
+          candidate_path = ("../" * i) + filename
+          file = fetch_file_if_present(candidate_path)
+          if file
+            file.name = filename
+            return file
+          end
+        end
+        nil
       end
 
       sig { params(dirname: String).returns(T::Boolean) }

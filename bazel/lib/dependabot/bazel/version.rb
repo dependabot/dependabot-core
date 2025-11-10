@@ -1,10 +1,6 @@
 # typed: strong
 # frozen_string_literal: true
 
-# NOTE: This file was scaffolded automatically but is OPTIONAL.
-# If your ecosystem uses standard semantic versioning without special logic,
-# you can safely delete this file and remove the require from lib/dependabot/bazel.rb
-
 require "dependabot/version"
 require "dependabot/utils"
 
@@ -13,9 +9,13 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      # TODO: Implement custom version comparison logic if needed
-      # Example: Handle pre-release versions, build metadata, etc.
-      # If standard semantic versioning is sufficient, delete this file
+      # Bazel uses semantic versioning with hyphens for pre-release versions (e.g., "1.7.0-rc4")
+      # Dependabot::Version normalizes these to dot notation with "pre" prefix (e.g., "1.7.0.pre.rc4")
+      # We need to preserve the original format for Bazel Central Registry compatibility
+      sig { override.returns(String) }
+      def to_s
+        @original_version
+      end
     end
   end
 end
