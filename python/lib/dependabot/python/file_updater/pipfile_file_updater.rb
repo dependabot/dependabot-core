@@ -334,9 +334,11 @@ module Dependabot
             pipfile_content: String
           ).returns(
             T.nilable(
-              T.any(T::Hash[String, T.untyped],
-                    String,
-                    T::Array[T::Hash[String, T.untyped]])
+              T.any(
+                T::Hash[String, T.untyped],
+                String,
+                T::Array[T::Hash[String, T.untyped]]
+              )
             )
           )
         end

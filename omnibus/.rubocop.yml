@@ -1,4 +1,4 @@
-inherit_from: ../.rubocop.yml
-
+---
 Sorbet/StrongSigil:
   Enabled: true
+inherit_from: "../.rubocop.yml"

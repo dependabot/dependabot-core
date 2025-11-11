@@ -41,8 +41,11 @@ module Dependabot
             latest_resolvable_version: T.nilable(T.any(String, Composer::Version))
           ).void
         end
-        def initialize(requirements:, update_strategy:,
-                       latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          update_strategy:,
+          latest_resolvable_version:
+        )
           @requirements = requirements
           @update_strategy = update_strategy
 

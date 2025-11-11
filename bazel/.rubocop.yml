@@ -1,0 +1,4 @@
+inherit_from: ../.rubocop.yml
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/bazel/update_checker/registry_client.rb

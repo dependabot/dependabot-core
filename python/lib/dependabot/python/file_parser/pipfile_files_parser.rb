@@ -15,16 +15,19 @@ module Dependabot
       class PipfileFilesParser
         extend T::Sig
 
-        DEPENDENCY_GROUP_KEYS = T.let([
-          {
-            pipfile: "packages",
-            lockfile: "default"
-          },
-          {
-            pipfile: "dev-packages",
-            lockfile: "develop"
-          }
-        ].freeze, T::Array[T::Hash[Symbol, String]])
+        DEPENDENCY_GROUP_KEYS = T.let(
+          [
+            {
+              pipfile: "packages",
+              lockfile: "default"
+            },
+            {
+              pipfile: "dev-packages",
+              lockfile: "develop"
+            }
+          ].freeze,
+          T::Array[T::Hash[Symbol, String]]
+        )
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
@@ -116,8 +119,11 @@ module Dependabot
         end
 
         sig do
-          params(dep_name: String, requirement: T.any(String, T::Hash[String, T.untyped]),
-                 group: String).returns(T.nilable(String))
+          params(
+            dep_name: String,
+            requirement: T.any(String, T::Hash[String, T.untyped]),
+            group: String
+          ).returns(T.nilable(String))
         end
         def dependency_version(dep_name, requirement, group)
           req = version_from_hash_or_string(requirement)
@@ -171,8 +177,10 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def parsed_pipfile_lock
-          @parsed_pipfile_lock ||= T.let(JSON.parse(T.must(T.must(pipfile_lock).content)),
-                                         T.nilable(T::Hash[String, T.untyped]))
+          @parsed_pipfile_lock ||= T.let(
+            JSON.parse(T.must(T.must(pipfile_lock).content)),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, T.must(pipfile_lock).path
         end
@@ -184,8 +192,10 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pipfile_lock
-          @pipfile_lock ||= T.let(dependency_files.find { |f| f.name == "Pipfile.lock" },
-                                  T.nilable(Dependabot::DependencyFile))
+          @pipfile_lock ||= T.let(
+            dependency_files.find { |f| f.name == "Pipfile.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
       end
     end

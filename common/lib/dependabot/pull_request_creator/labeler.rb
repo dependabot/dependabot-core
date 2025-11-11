@@ -50,9 +50,15 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, custom_labels:, credentials:, dependencies:,
-                     includes_security_fixes:, label_language:,
-                     automerge_candidate:)
+      def initialize(
+        source:,
+        custom_labels:,
+        credentials:,
+        dependencies:,
+        includes_security_fixes:,
+        label_language:,
+        automerge_candidate:
+      )
         @source                  = source
         @custom_labels           = custom_labels
         @credentials             = credentials
@@ -143,18 +149,20 @@ module Dependabot
 
       sig { returns(Integer) }
       def precision
-        T.must(dependencies.map do |dep|
-          new_version_parts = T.must(version(dep)).split(/[.+]/)
-          old_version_parts = previous_version(dep)&.split(/[.+]/) || []
-          all_parts = new_version_parts.first(3) + old_version_parts.first(3)
-          # rubocop:disable Performance/RedundantEqualityComparisonBlock
-          next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
-          # rubocop:enable Performance/RedundantEqualityComparisonBlock
-          next 1 if new_version_parts[0] != old_version_parts[0]
-          next 2 if new_version_parts[1] != old_version_parts[1]
+        T.must(
+          dependencies.map do |dep|
+            new_version_parts = T.must(version(dep)).split(/[.+]/)
+            old_version_parts = previous_version(dep)&.split(/[.+]/) || []
+            all_parts = new_version_parts.first(3) + old_version_parts.first(3)
+            # rubocop:disable Performance/RedundantEqualityComparisonBlock
+            next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
+            # rubocop:enable Performance/RedundantEqualityComparisonBlock
+            next 1 if new_version_parts[0] != old_version_parts[0]
+            next 2 if new_version_parts[1] != old_version_parts[1]
 
-          3
-        end.min)
+            3
+          end.min
+        )
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -383,7 +391,9 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def create_github_dependencies_label
         T.unsafe(github_client_for_source).add_label(
-          source.repo, DEFAULT_DEPENDENCIES_LABEL, "0366d6",
+          source.repo,
+          DEFAULT_DEPENDENCIES_LABEL,
+          "0366d6",
           description: "Pull requests that update a dependency file",
           accept: "application/vnd.github.symmetra-preview+json"
         )
@@ -397,7 +407,9 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def create_gitlab_dependencies_label
         T.unsafe(gitlab_client_for_source).create_label(
-          source.repo, DEFAULT_DEPENDENCIES_LABEL, "#0366d6",
+          source.repo,
+          DEFAULT_DEPENDENCIES_LABEL,
+          "#0366d6",
           description: "Pull requests that update a dependency file"
         )
         @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
@@ -406,7 +418,9 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def create_github_security_label
         T.unsafe(github_client_for_source).add_label(
-          source.repo, DEFAULT_SECURITY_LABEL, "ee0701",
+          source.repo,
+          DEFAULT_SECURITY_LABEL,
+          "ee0701",
           description: "Pull requests that address a security vulnerability",
           accept: "application/vnd.github.symmetra-preview+json"
         )
@@ -420,7 +434,9 @@ module Dependabot
       sig { returns(T.nilable(T::Array[String])) }
       def create_gitlab_security_label
         T.unsafe(gitlab_client_for_source).create_label(
-          source.repo, DEFAULT_SECURITY_LABEL, "#ee0701",
+          source.repo,
+          DEFAULT_SECURITY_LABEL,
+          "#ee0701",
           description: "Pull requests that address a security vulnerability"
         )
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq

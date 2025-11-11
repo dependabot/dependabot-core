@@ -20,14 +20,30 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileParser class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
-        params(dependency_files: T::Array[Dependabot::DependencyFile], source: T.nilable(Dependabot::Source),
-               repo_contents_path: T.nilable(String), credentials: T::Array[Dependabot::Credential],
-               reject_external_code: T::Boolean, options: T::Hash[Symbol, T.untyped]).void
+        params(
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          source: T.nilable(Dependabot::Source),
+          repo_contents_path: T.nilable(String),
+          credentials: T::Array[Dependabot::Credential],
+          reject_external_code: T::Boolean,
+          options: T::Hash[Symbol, T.untyped]
+        ).void
       end
-      def initialize(dependency_files:, source: nil, repo_contents_path: nil,
-                     credentials: [], reject_external_code: false, options: {})
+      def initialize(
+        dependency_files:,
+        source: nil,
+        repo_contents_path: nil,
+        credentials: [],
+        reject_external_code: false,
+        options: {}
+      )
         super
+
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
 
         set_go_environment_variables
       end
@@ -49,13 +65,36 @@ module Dependabot
 
       sig { returns(Ecosystem) }
       def ecosystem
-        @ecosystem ||= T.let(begin
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            package_manager: package_manager,
-            language: language
-          )
-        end, T.nilable(Dependabot::Ecosystem))
+        @ecosystem ||= T.let(
+          begin
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              package_manager: package_manager,
+              language: language
+            )
+          end,
+          T.nilable(Dependabot::Ecosystem)
+        )
+      end
+
+      # Utility method to allow collaborators to check other go commands inside the parsed project's context
+      sig { params(command: String).returns(String) }
+      def run_in_parsed_context(command)
+        SharedHelpers.in_a_temporary_repo_directory(T.must(source&.directory), repo_contents_path) do |path|
+          # Create a fake empty module for local modules that are not inside the repository.
+          # This allows us to run go commands that require all modules to be present.
+          local_replacements.each do |_, stub_path|
+            FileUtils.mkdir_p(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+          end
+
+          File.write("go.mod", go_mod_content)
+
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr) unless status.success?
+
+          stdout
+        end
       end
 
       private
@@ -97,9 +136,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Credential]) }
       def goproxy_credentials
-        @goproxy_credentials ||= T.let(credentials.select do |cred|
-          cred["type"] == "goproxy_server"
-        end, T.nilable(T::Array[Dependabot::Credential]))
+        @goproxy_credentials ||= T.let(
+          credentials.select do |cred|
+            cred["type"] == "goproxy_server"
+          end,
+          T.nilable(T::Array[Dependabot::Credential])
+        )
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -112,24 +154,30 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new(go_version)
-        end, T.nilable(Dependabot::GoModules::Language))
+        @language ||= T.let(
+          go_version ? Language.new(T.must(go_version)) : nil,
+          T.nilable(Dependabot::GoModules::Language)
+        )
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def go_version
-        @go_version ||= T.let(T.must(go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first),
-                              T.nilable(String))
+        @go_version ||= T.let(
+          go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first,
+          T.nilable(String)
+        )
       end
 
       sig { returns(T.nilable(String)) }
       def go_toolchain_version
-        @go_toolchain_version ||= T.let(begin
-          # Checks version based on the GOTOOLCHAIN in ENV
-          version = SharedHelpers.run_shell_command("go version")
-          version.match(/go\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-        end, T.nilable(String))
+        @go_toolchain_version ||= T.let(
+          begin
+            # Checks version based on the GOTOOLCHAIN in ENV
+            version = SharedHelpers.run_shell_command("go version")
+            version.match(/go\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+          end,
+          T.nilable(String)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -170,23 +218,10 @@ module Dependabot
       sig { returns(T::Array[T::Hash[String, T.untyped]]) }
       def required_packages
         @required_packages ||=
-          T.let(SharedHelpers.in_a_temporary_directory do |path|
-            # Create a fake empty module for each local module so that
-            # `go mod edit` works, even if some modules have been `replace`d with
-            # a local module that we don't have access to.
-            local_replacements.each do |_, stub_path|
-              FileUtils.mkdir_p(stub_path)
-              FileUtils.touch(File.join(stub_path, "go.mod"))
-            end
-
-            File.write("go.mod", go_mod_content)
-
-            command = "go mod edit -json"
-
-            stdout, stderr, status = Open3.capture3(command)
-            handle_parser_error(path, stderr) unless status.success?
-            JSON.parse(stdout)["Require"] || []
-          end, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          T.let(
+            JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
+            T.nilable(T::Array[T::Hash[String, T.untyped]])
+          )
       end
 
       sig { returns(T::Hash[String, String]) }
@@ -196,25 +231,30 @@ module Dependabot
           # we can use in their place. Using generated paths is safer as it
           # means we don't need to worry about references to parent
           # directories, etc.
-          T.let(ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
-                T.nilable(T::Hash[String, String]))
+          T.let(
+            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
+            T.nilable(T::Hash[String, String])
+          )
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
       def manifest
         @manifest ||=
-          T.let(SharedHelpers.in_a_temporary_directory do |path|
-                  File.write("go.mod", go_mod&.content)
+          T.let(
+            SharedHelpers.in_a_temporary_directory do |path|
+              File.write("go.mod", go_mod&.content)
 
-                  # Parse the go.mod to get a JSON representation of the replace
-                  # directives
-                  command = "go mod edit -json"
+              # Parse the go.mod to get a JSON representation of the replace
+              # directives
+              command = "go mod edit -json"
 
-                  stdout, stderr, status = Open3.capture3(command)
-                  handle_parser_error(path, stderr) unless status.success?
+              stdout, stderr, status = Open3.capture3(command)
+              handle_parser_error(path, stderr) unless status.success?
 
-                  JSON.parse(stdout)
-                end, T.nilable(T::Hash[String, T.untyped]))
+              JSON.parse(stdout)
+            end,
+            T.nilable(T::Hash[String, T.untyped])
+          )
       end
 
       sig { returns(T.nilable(String)) }

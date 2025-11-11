@@ -34,12 +34,14 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "has the right details for the dependency" do
         expect(dependencies[0].name).to eq("retry")
         expect(dependencies[0].version).to eq("2.0.0")
-        expect(dependencies[0].requirements).to eq([{
-          requirement: "2.0.0",
-          groups: ["direct"],
-          file: "pubspec.yaml",
-          source: { "description" => { "name" => "retry", "url" => "https://pub.dev" }, "type" => "hosted" }
-        }])
+        expect(dependencies[0].requirements).to eq(
+          [{
+            requirement: "2.0.0",
+            groups: ["direct"],
+            file: "pubspec.yaml",
+            source: { "description" => { "name" => "retry", "url" => "https://pub.dev" }, "type" => "hosted" }
+          }]
+        )
       end
     end
 
@@ -52,23 +54,27 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "has the right details for the retry (direct) dependency" do
         dep = dependencies.find { |d| d.name == "retry" }
         expect(dep.version).to eq("2.0.0")
-        expect(dep.requirements).to eq([{
-          requirement: "^2.0.0",
-          groups: ["direct"],
-          file: "pubspec.yaml",
-          source: { "description" => { "name" => "retry", "url" => "https://pub.dev" }, "type" => "hosted" }
-        }])
+        expect(dep.requirements).to eq(
+          [{
+            requirement: "^2.0.0",
+            groups: ["direct"],
+            file: "pubspec.yaml",
+            source: { "description" => { "name" => "retry", "url" => "https://pub.dev" }, "type" => "hosted" }
+          }]
+        )
       end
 
       it "has the right details for the test (dev) dependency" do
         dep = dependencies.find { |d| d.name == "test" }
         expect(dep.version).to eq("1.17.12")
-        expect(dep.requirements).to eq([{
-          requirement: ">=1.17.10 <=1.17.12",
-          groups: ["dev"],
-          file: "pubspec.yaml",
-          source: { "description" => { "name" => "test", "url" => "https://pub.dev" }, "type" => "hosted" }
-        }])
+        expect(dep.requirements).to eq(
+          [{
+            requirement: ">=1.17.10 <=1.17.12",
+            groups: ["dev"],
+            file: "pubspec.yaml",
+            source: { "description" => { "name" => "test", "url" => "https://pub.dev" }, "type" => "hosted" }
+          }]
+        )
       end
 
       it "has the right details for the test_core (transitive) dependency" do
@@ -83,8 +89,10 @@ RSpec.describe Dependabot::Pub::FileParser do
 
       it "raises a helpful error" do
         expect { dependencies }.to raise_error(Dependabot::DependabotError) do |error|
-          expect(error.message).to start_with("dependency_services failed: " \
-                                              "Error on line 3, column 1 of pubspec.yaml: Unexpected end of file.")
+          expect(error.message).to start_with(
+            "dependency_services failed: " \
+            "Error on line 3, column 1 of pubspec.yaml: Unexpected end of file."
+          )
         end
       end
     end

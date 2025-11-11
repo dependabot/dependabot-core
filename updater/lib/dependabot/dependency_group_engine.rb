@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/dependency_group"
+require "dependabot/updater/pattern_specificity_calculator"
 
 # This class implements our strategy for keeping track of and matching dependency
 # groups that are defined by users in their dependabot config file.
@@ -24,8 +25,15 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
+    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
+      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
+      T::Array[String]
+    )
+
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
+      validate_group_configuration!(job)
+
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"], applies_to: group["applies-to"])
       end
@@ -38,6 +46,28 @@ module Dependabot
                end
 
       new(dependency_groups: groups)
+    end
+
+    sig { params(job: Dependabot::Job).void }
+    def self.validate_group_configuration!(job)
+      return unless job.dependency_groups.any?
+
+      unsupported_groups = job.dependency_groups.select do |group|
+        rules = group["rules"] || {}
+        rules.key?("dependency-type") &&
+          !PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.include?(job.package_manager)
+      end
+
+      return unless unsupported_groups.any?
+
+      group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
+      Dependabot.logger.warn <<~WARN
+        The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
+        It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
+        Affected groups: #{group_names}
+
+        This option will be ignored. Please remove it from your configuration or use a supported package manager.
+      WARN
     end
 
     sig { returns(T::Array[Dependabot::DependencyGroup]) }
@@ -54,9 +84,12 @@ module Dependabot
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
       if dependency_groups.any?
+        specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
+
         dependencies.each do |dependency|
           matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
             next unless group.contains?(dependency)
+            next if should_skip_due_to_specificity?(group, dependency, specificity_calculator)
 
             group.dependencies.push(dependency)
             matches << group
@@ -97,6 +130,22 @@ module Dependabot
         - your configuration's 'allow' rules do not permit any of the dependencies that match the group
         - the dependencies that match the group rules have been removed from your project
       WARN
+    end
+
+    sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        dependency: Dependabot::Dependency,
+        specificity_calculator: Dependabot::Updater::PatternSpecificityCalculator
+      ).returns(T::Boolean)
+    end
+    def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
+      return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
+
+      contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
+      specificity_calculator.dependency_belongs_to_more_specific_group?(
+        group, dependency, @dependency_groups, contains_checker, dependency.directory
+      )
     end
   end
 end

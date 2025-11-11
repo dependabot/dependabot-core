@@ -338,31 +338,35 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         )
       )
 
-      expect(combined_set.all_versions_for_name("foo")).to eq([
-        foo_v1,
-        foo_sha,
-        Dependabot::Dependency.new(
-          name: "foo",
-          version: "1.1",
-          package_manager: "dummy",
-          requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
-        )
-      ])
+      expect(combined_set.all_versions_for_name("foo")).to eq(
+        [
+          foo_v1,
+          foo_sha,
+          Dependabot::Dependency.new(
+            name: "foo",
+            version: "1.1",
+            package_manager: "dummy",
+            requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
+          )
+        ]
+      )
     end
 
     context "when the same version is added multiple times" do
       it "combines each into the the existing version" do
         dependency_set = described_class.new << foo_v1_1 << foo_v1_1_alt << foo_sha
 
-        expect(dependency_set.all_versions_for_name("foo")).to eq([
-          Dependabot::Dependency.new(
-            name: "foo",
-            version: "1.1",
-            package_manager: "dummy",
-            requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
-          ),
-          foo_sha
-        ])
+        expect(dependency_set.all_versions_for_name("foo")).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "foo",
+              version: "1.1",
+              package_manager: "dummy",
+              requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
+            ),
+            foo_sha
+          ]
+        )
       end
     end
   end

@@ -13,14 +13,6 @@ module Dependabot
 
       include Dependabot::Pub::Helpers
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          %r{^(.*/)?pubspec\.yaml$},
-          %r{^(.*/)?pubspec\.lock$}
-        ]
-      end
-
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         dependency_services_apply(@dependencies)

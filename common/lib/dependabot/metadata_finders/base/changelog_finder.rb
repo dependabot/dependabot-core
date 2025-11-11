@@ -48,8 +48,12 @@ module Dependabot
           )
             .void
         end
-        def initialize(source:, dependency:, credentials:,
-                       suggested_changelog_url: nil)
+        def initialize(
+          source:,
+          dependency:,
+          credentials:,
+          suggested_changelog_url: nil
+        )
           @source = source
           @dependency = dependency
           @credentials = credentials

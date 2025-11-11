@@ -39,13 +39,20 @@ module Dependabot
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, unprepared_dependency_files:, credentials:, ignored_versions:, options:,
-                       repo_contents_path: nil,
-                       raise_on_ignored: false,
-                       replacement_git_pin: nil, remove_git_source: false,
-                       unlock_requirement: true,
-                       latest_allowable_version: nil,
-                       cooldown_options: nil)
+        def initialize(
+          dependency:,
+          unprepared_dependency_files:,
+          credentials:,
+          ignored_versions:,
+          options:,
+          repo_contents_path: nil,
+          raise_on_ignored: false,
+          replacement_git_pin: nil,
+          remove_git_source: false,
+          unlock_requirement: true,
+          latest_allowable_version: nil,
+          cooldown_options: nil
+        )
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials

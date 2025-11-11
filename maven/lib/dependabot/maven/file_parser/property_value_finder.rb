@@ -31,8 +31,10 @@ module Dependabot
         def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files
           @credentials = credentials
-          @pom_fetcher = T.let(PomFetcher.new(dependency_files: dependency_files),
-                               Dependabot::Maven::FileParser::PomFetcher)
+          @pom_fetcher = T.let(
+            PomFetcher.new(dependency_files: dependency_files),
+            Dependabot::Maven::FileParser::PomFetcher
+          )
         end
 
         sig do

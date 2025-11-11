@@ -56,12 +56,14 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
   let(:dependency_requirement) { "1.72" }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
@@ -248,8 +250,10 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker::LatestVersionFinder do
       package_details = version_finder.package_details
 
       latest_filtered = version_finder.send(:apply_post_fetch_latest_versions_filter, package_details.releases)
-      security_filtered = version_finder.send(:apply_post_fetch_lowest_security_fix_versions_filter,
-                                              package_details.releases)
+      security_filtered = version_finder.send(
+        :apply_post_fetch_lowest_security_fix_versions_filter,
+        package_details.releases
+      )
 
       expect(security_filtered.map { |x| x.version.to_s })
         .to match_array(latest_filtered.map { |x| x.version.to_s })

@@ -449,17 +449,20 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to eq("2.0.0")
-            expect(dependency.requirements).to contain_exactly({
-              requirement: nil,
-              file: "requirements.txt",
-              groups: ["dependencies"],
-              source: nil
-            }, {
-              requirement: "==2.0.0",
-              file: "constraints.txt",
-              groups: ["dependencies"],
-              source: nil
-            })
+            expect(dependency.requirements).to contain_exactly(
+              {
+                requirement: nil,
+                file: "requirements.txt",
+                groups: ["dependencies"],
+                source: nil
+              },
+              {
+                requirement: "==2.0.0",
+                file: "constraints.txt",
+                groups: ["dependencies"],
+                source: nil
+              }
+            )
           end
         end
 
@@ -475,17 +478,20 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("requests")
               expect(dependency.version).to eq("2.0.0")
-              expect(dependency.requirements).to contain_exactly({
-                requirement: "==2.0.0",
-                file: "constraints.txt",
-                groups: ["dependencies"],
-                source: nil
-              }, {
-                requirement: "==2.4.1",
-                file: "requirements.txt",
-                groups: ["dependencies"],
-                source: nil
-              })
+              expect(dependency.requirements).to contain_exactly(
+                {
+                  requirement: "==2.0.0",
+                  file: "constraints.txt",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "==2.4.1",
+                  file: "requirements.txt",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              )
             end
           end
         end
@@ -775,67 +781,74 @@ RSpec.describe Dependabot::Python::FileParser do
       its(:length) { is_expected.to eq(6) }
 
       it "has the right details" do
-        expect(dependencies).to contain_exactly(Dependabot::Dependency.new(
-                                                  name: "requests",
-                                                  version: "2.4.1",
-                                                  requirements: [{
-                                                    requirement: "==2.4.1",
-                                                    file: "requirements.txt",
-                                                    groups: ["dependencies"],
-                                                    source: nil
-                                                  }],
-                                                  package_manager: "pip"
-                                                ), Dependabot::Dependency.new(
-                                                     name: "attrs",
-                                                     version: "18.0.0",
-                                                     requirements: [{
-                                                       requirement: "==18.0.0",
-                                                       file: "more_requirements.txt",
-                                                       groups: ["dependencies"],
-                                                       source: nil
-                                                     }],
-                                                     package_manager: "pip"
-                                                   ), Dependabot::Dependency.new(
-                                                        name: "aiocache[redis]",
-                                                        version: "0.10.0",
-                                                        requirements: [{
-                                                          requirement: "==0.10.0",
-                                                          file: "more_requirements.txt",
-                                                          groups: ["dependencies"],
-                                                          source: nil
-                                                        }],
-                                                        package_manager: "pip"
-                                                      ), Dependabot::Dependency.new(
-                                                           name: "luigi",
-                                                           version: "2.2.0",
-                                                           requirements: [{
-                                                             requirement: "==2.2.0",
-                                                             file: "more_requirements.txt",
-                                                             groups: ["dependencies"],
-                                                             source: nil
-                                                           }],
-                                                           package_manager: "pip"
-                                                         ), Dependabot::Dependency.new(
-                                                              name: "psycopg2",
-                                                              version: "2.6.1",
-                                                              requirements: [{
-                                                                requirement: "==2.6.1",
-                                                                file: "more_requirements.txt",
-                                                                groups: ["dependencies"],
-                                                                source: nil
-                                                              }],
-                                                              package_manager: "pip"
-                                                            ), Dependabot::Dependency.new(
-                                                                 name: "pytest",
-                                                                 version: "3.4.0",
-                                                                 requirements: [{
-                                                                   requirement: "==3.4.0",
-                                                                   file: "more_requirements.txt",
-                                                                   groups: ["dependencies"],
-                                                                   source: nil
-                                                                 }],
-                                                                 package_manager: "pip"
-                                                               ))
+        expect(dependencies).to contain_exactly(
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "2.4.1",
+            requirements: [{
+              requirement: "==2.4.1",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "pip"
+          ),
+          Dependabot::Dependency.new(
+            name: "attrs",
+            version: "18.0.0",
+            requirements: [{
+              requirement: "==18.0.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "pip"
+          ),
+          Dependabot::Dependency.new(
+            name: "aiocache[redis]",
+            version: "0.10.0",
+            requirements: [{
+              requirement: "==0.10.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "pip"
+          ),
+          Dependabot::Dependency.new(
+            name: "luigi",
+            version: "2.2.0",
+            requirements: [{
+              requirement: "==2.2.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "pip"
+          ),
+          Dependabot::Dependency.new(
+            name: "psycopg2",
+            version: "2.6.1",
+            requirements: [{
+              requirement: "==2.6.1",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "pip"
+          ),
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "3.4.0",
+            requirements: [{
+              requirement: "==3.4.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        )
       end
     end
 
@@ -914,17 +927,20 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("attrs")
               expect(dependency.version).to eq("17.3.0")
-              expect(dependency.requirements).to contain_exactly({
-                requirement: nil,
-                file: "requirements/test.in",
-                groups: ["dependencies"],
-                source: nil
-              }, {
-                requirement: "==17.3.0",
-                file: "requirements.txt",
-                groups: ["dependencies"],
-                source: nil
-              })
+              expect(dependency.requirements).to contain_exactly(
+                {
+                  requirement: nil,
+                  file: "requirements/test.in",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "==17.3.0",
+                  file: "requirements.txt",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              )
             end
           end
         end

@@ -102,7 +102,8 @@ module Dependabot
             lockfiles,
             registry_config_files,
             credentials
-          ), T.nilable(PackageManagerHelper)
+          ),
+          T.nilable(PackageManagerHelper)
         )
       end
 
@@ -143,65 +144,92 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shrinkwrap
-        @shrinkwrap ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @shrinkwrap ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def package_lock
-        @package_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(NpmPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @package_lock ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(NpmPackageManager::LOCKFILE_NAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def yarn_lock
-        @yarn_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(YarnPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @yarn_lock ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(YarnPackageManager::LOCKFILE_NAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pnpm_lock
-        @pnpm_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @pnpm_lock ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pnpm_workspace_yml
-        @pnpm_workspace_yml ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @pnpm_workspace_yml ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def bun_lock
-        @bun_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @bun_lock ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def npmrc
-        @npmrc ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(NpmPackageManager::RC_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @npmrc ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(NpmPackageManager::RC_FILENAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def yarnrc
-        @yarnrc ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(YarnPackageManager::RC_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @yarnrc ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(YarnPackageManager::RC_FILENAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def yarnrc_yml
-        @yarnrc_yml ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(YarnPackageManager::RC_YML_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
+        @yarnrc_yml ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(YarnPackageManager::RC_YML_FILENAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -259,9 +287,12 @@ module Dependabot
 
       sig { returns(LockfileParser) }
       def lockfile_parser
-        @lockfile_parser ||= T.let(LockfileParser.new(
-                                     dependency_files: dependency_files
-                                   ), T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser))
+        @lockfile_parser ||= T.let(
+          LockfileParser.new(
+            dependency_files: dependency_files
+          ),
+          T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser)
+        )
       end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -280,13 +311,16 @@ module Dependabot
           manifest_name: file.name
         )
         version = version_for(requirement, lockfile_details)
-        converted_version = T.let(if version.nil?
-                                    nil
-                                  elsif version.is_a?(String)
-                                    version
-                                  else
-                                    Dependabot::Version.new(version)
-                                  end, T.nilable(T.any(String, Dependabot::Version)))
+        converted_version = T.let(
+          if version.nil?
+            nil
+          elsif version.is_a?(String)
+            version
+          else
+            Dependabot::Version.new(version)
+          end,
+          T.nilable(T.any(String, Dependabot::Version))
+        )
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
@@ -316,8 +350,10 @@ module Dependabot
       def check_required_files
         return if get_original_file(MANIFEST_FILENAME)
 
-        raise DependencyFileNotFound.new(nil,
-                                         "#{MANIFEST_FILENAME} not found.")
+        raise DependencyFileNotFound.new(
+          nil,
+          "#{MANIFEST_FILENAME} not found."
+        )
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
@@ -364,9 +400,12 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def workspace_package_names
-        @workspace_package_names ||= T.let(package_files.filter_map do |f|
-          JSON.parse(T.must(f.content))["name"]
-        end, T.nilable(T::Array[String]))
+        @workspace_package_names ||= T.let(
+          package_files.filter_map do |f|
+            JSON.parse(T.must(f.content))["name"]
+          end,
+          T.nilable(T::Array[String])
+        )
       end
 
       sig do
@@ -533,7 +572,8 @@ module Dependabot
           [
             dependency_files.find { |f| f.name == MANIFEST_FILENAME },
             *sub_package_files
-          ].compact, T.nilable(T::Array[DependencyFile])
+          ].compact,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 

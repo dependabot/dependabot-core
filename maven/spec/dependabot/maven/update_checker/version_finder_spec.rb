@@ -352,12 +352,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
     context "with a repository from credentials" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "maven_repository",
-          "url" => "https://private.registry.org/repo/",
-          "username" => "dependabot",
-          "password" => "dependabotPassword"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/",
+            "username" => "dependabot",
+            "password" => "dependabotPassword"
+          }
+        )]
       end
 
       let(:private_registry_metadata_url) do
@@ -382,16 +384,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       context "when gitlab maven repository is used" do
         let(:credentials) do
           [
-            Dependabot::Credential.new({
-              "type" => "maven_repository",
-              "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
-            }),
-            Dependabot::Credential.new({
-              "type" => "git_source",
-              "host" => "private.registry.org",
-              "username" => "x-access-token",
-              "password" => "customToken"
-            })
+            Dependabot::Credential.new(
+              {
+                "type" => "maven_repository",
+                "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "private.registry.org",
+                "username" => "x-access-token",
+                "password" => "customToken"
+              }
+            )
           ]
         end
 
@@ -419,10 +425,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       context "when there is no auth details" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/repo/"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/repo/"
+            }
+          )]
         end
 
         before do
@@ -458,32 +466,42 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "with multiple repositories from credentials" do
       let(:credentials) do
         [
-          Dependabot::Credential.new({
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/repo/",
-            "username" => "dependabot",
-            "password" => "dependabotPassword"
-          }),
-          Dependabot::Credential.new({
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/repo/"
-          }),
-          Dependabot::Credential.new({
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/repo2/",
-            "username" => "dependabot2",
-            "password" => "dependabotPassword2"
-          }),
-          Dependabot::Credential.new({
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
-          }),
-          Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "private.registry.org",
-            "username" => "x-access-token",
-            "password" => "customToken"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/repo/",
+              "username" => "dependabot",
+              "password" => "dependabotPassword"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/repo/"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/repo2/",
+              "username" => "dependabot2",
+              "password" => "dependabotPassword2"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "private.registry.org",
+              "username" => "x-access-token",
+              "password" => "customToken"
+            }
+          )
         ]
       end
 
@@ -698,6 +716,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         is_expected.to eq("http://repository.jboss.org/maven2")
       end
     end
+
+    context "when the release has a nil version" do
+      before do
+        allow(finder).to receive(:fetch_latest_release).and_return(
+          instance_double(Dependabot::Package::PackageRelease, version: nil, url: "https://repo.maven.apache.org/maven2")
+        )
+      end
+
+      it "returns nil" do
+        expect(latest_version_details).to be_nil
+      end
+    end
   end
 
   describe "#lowest_security_fix_version_details" do
@@ -775,6 +805,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         it "doesn't raise an error" do
           expect { lowest_security_fix_version_details }.not_to raise_error
         end
+      end
+    end
+
+    context "when the release has a nil version" do
+      before do
+        allow(finder).to receive(:fetch_lowest_security_fix_release).and_return(
+          instance_double(Dependabot::Package::PackageRelease, version: nil, url: "https://repo.maven.apache.org/maven2")
+        )
+      end
+
+      it "returns nil" do
+        expect(lowest_security_fix_version_details).to be_nil
       end
     end
   end

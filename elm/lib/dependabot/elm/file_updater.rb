@@ -11,13 +11,6 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/elm_json_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^elm\.json$/
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []

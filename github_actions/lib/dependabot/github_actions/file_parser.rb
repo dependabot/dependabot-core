@@ -112,9 +112,19 @@ module Dependabot
       def github_dependency(file, string, hostname)
         details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
         repo_name = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}"
+        path = details[PATH_KEY]
         ref = details.fetch(REF_KEY)
         version = version_class.new(ref).to_s if version_class.correct?(ref)
-        name = version_class.path_based?(ref) ? string : repo_name
+
+        # For reusable workflows (.github/workflows/*.yml), use the repository name + workflow path
+        # to distinguish between different workflow files in the same repository
+        name = if path&.match?(%r{/\.github/workflows/.*\.ya?ml$})
+                 "#{repo_name}#{path}"
+               elsif version_class.path_based?(ref)
+                 string
+               else
+                 repo_name
+               end
         Dependency.new(
           name: name,
           version: version,

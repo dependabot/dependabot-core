@@ -1,0 +1,18 @@
+module(
+    name = "my-complex-module",
+    version = "2.1.0",
+    compatibility_level = 1,
+)
+
+# Direct dependencies
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "platforms", version = "0.0.11", dev_dependency = True)
+bazel_dep(
+    name = "abseil-cpp",
+    version = "20230125.3",
+    repo_name = "com_google_absl"
+)
+
+# Conditional dependencies
+bazel_dep(name = "rules_python", version = "0.25.0")
+bazel_dep(name = "rules_go", version = "0.39.1")

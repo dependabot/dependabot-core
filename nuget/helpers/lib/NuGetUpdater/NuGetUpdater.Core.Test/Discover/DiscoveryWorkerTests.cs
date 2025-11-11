@@ -1124,7 +1124,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ],
             expectedResult: new()
             {
-                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"], "unused"),
                 Path = "",
                 Projects = [],
             }
@@ -1199,7 +1199,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ],
             expectedResult: new()
             {
-                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                Error = new PrivateSourceBadResponse([$"{http.BaseUrl.TrimEnd('/')}/index.json"], "unused"),
                 Path = "",
                 Projects = [],
             }
@@ -1456,6 +1456,55 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = ["Directory.Packages.props"],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ImplicitlyDefinedPackagesAreMarkedAsIndirect()
+    {
+        // packages auto-added by the SDK have extra metadata IsImplicitlyDefined=true, but for the sake of a unit test we can fake it
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net9.0"),
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="1.0.0" />
+
+                        <!-- this package fakes the IsImplicitlyDefined metadata to appear like it came from the SDK -->
+                        <PackageReference Include="Package.B" Version="2.0.0" IsImplicitlyDefined="true" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
                         AdditionalFiles = [],
                     }
                 ]

@@ -27,13 +27,19 @@ RSpec.describe Dependabot::RegistryClient do
 
       it "delegates headers correctly" do
         headers = { "Foo" => "Bar" }
-        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge({
-          headers: {
-            "Foo" => "Bar",
-            "User-Agent" => anything
-          },
-          retry_interval: 5
-        }))
+        expect(Excon).to receive(:get).with(
+          url,
+          **maven_defaults,
+          **dependabot_defaults.merge(
+            {
+              headers: {
+                "Foo" => "Bar",
+                "User-Agent" => anything
+              },
+              retry_interval: 5
+            }
+          )
+        )
 
         described_class.get(url: url, headers: headers)
       end
@@ -48,14 +54,18 @@ RSpec.describe Dependabot::RegistryClient do
       it "delegates with headers and options merged correctly" do
         headers = { "Foo" => "Bar" }
         options = { bar: "baaz" }
-        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge(
-          headers: {
-            "Foo" => "Bar",
-            "User-Agent" => anything
-          },
-          bar: "baaz",
-          retry_interval: 5
-        ))
+        expect(Excon).to receive(:get).with(
+          url,
+          **maven_defaults,
+          **dependabot_defaults.merge(
+            headers: {
+              "Foo" => "Bar",
+              "User-Agent" => anything
+            },
+            bar: "baaz",
+            retry_interval: 5
+          )
+        )
 
         described_class.get(url: url, headers: headers, options: options)
       end
@@ -63,10 +73,16 @@ RSpec.describe Dependabot::RegistryClient do
       it "ignores headers that are passed as options" do
         headers = { "Foo" => "Bar" }
         options = { headers: headers }
-        expect(Excon).to receive(:get).with(url, **maven_defaults, **dependabot_defaults.merge({ headers: {
-          "Foo" => "Bar",
-          "User-Agent" => anything
-        }, retry_interval: 5 }))
+        expect(Excon).to receive(:get).with(
+          url,
+          **maven_defaults,
+          **dependabot_defaults.merge(
+            { headers: {
+              "Foo" => "Bar",
+              "User-Agent" => anything
+            }, retry_interval: 5 }
+          )
+        )
 
         described_class.get(url: url, options: options)
       end
@@ -81,10 +97,16 @@ RSpec.describe Dependabot::RegistryClient do
 
       it "delegates headers correctly" do
         headers = { "Foo" => "Bar" }
-        expect(Excon).to receive(:head).with(url, **maven_defaults, **dependabot_defaults.merge(headers: {
-          "Foo" => "Bar",
-          "User-Agent" => anything
-        }))
+        expect(Excon).to receive(:head).with(
+          url,
+          **maven_defaults,
+          **dependabot_defaults.merge(
+            headers: {
+              "Foo" => "Bar",
+              "User-Agent" => anything
+            }
+          )
+        )
 
         described_class.head(url: url, headers: headers)
       end
@@ -99,13 +121,17 @@ RSpec.describe Dependabot::RegistryClient do
       it "delegates with headers and options merged correctly" do
         headers = { "Foo" => "Bar" }
         options = { bar: "baaz" }
-        expect(Excon).to receive(:head).with(url, **maven_defaults, **dependabot_defaults.merge(
-          headers: {
-            "Foo" => "Bar",
-            "User-Agent" => anything
-          },
-          bar: "baaz"
-        ))
+        expect(Excon).to receive(:head).with(
+          url,
+          **maven_defaults,
+          **dependabot_defaults.merge(
+            headers: {
+              "Foo" => "Bar",
+              "User-Agent" => anything
+            },
+            bar: "baaz"
+          )
+        )
 
         described_class.head(url: url, headers: headers, options: options)
       end
@@ -113,10 +139,16 @@ RSpec.describe Dependabot::RegistryClient do
       it "ignores headers that are passed as options" do
         headers = { "Foo" => "Bar" }
         options = { headers: headers }
-        expect(Excon).to receive(:head).with(url, **maven_defaults, **dependabot_defaults.merge(headers: {
-          "Foo" => "Bar",
-          "User-Agent" => anything
-        }))
+        expect(Excon).to receive(:head).with(
+          url,
+          **maven_defaults,
+          **dependabot_defaults.merge(
+            headers: {
+              "Foo" => "Bar",
+              "User-Agent" => anything
+            }
+          )
+        )
 
         described_class.head(url: url, options: options)
       end

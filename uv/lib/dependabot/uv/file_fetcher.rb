@@ -24,10 +24,16 @@ module Dependabot
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze
-      REQUIREMENT_FILE_PATTERNS = T.let({
-        extensions: [".txt", ".in"],
-        filenames: ["uv.lock"]
-      }.freeze, T::Hash[Symbol, T::Array[String]])
+      REQUIREMENT_FILE_PATTERNS = T.let(
+        {
+          extensions: [".txt", ".in"],
+          filenames: ["uv.lock"]
+        }.freeze,
+        T::Hash[Symbol, T::Array[String]]
+      )
+
+      # Projects that use README files for metadata may use any of these common names
+      README_FILENAMES = T.let(%w(README.md README.rst README.txt README).freeze, T::Array[String])
 
       MAX_FILE_SIZE = 500_000
 
@@ -80,6 +86,8 @@ module Dependabot
         fetched_files = []
 
         fetched_files += pyproject_files
+        # Fetch README support files if referenced in pyproject metadata
+        fetched_files += readme_files
 
         fetched_files += requirements_in_files
         fetched_files += requirement_files if requirements_txt_files.any?
@@ -108,6 +116,41 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pyproject_files
         [pyproject].compact
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def readme_files
+        return [] unless pyproject
+
+        # Attempt to read the readme declaration from the pyproject. Accept both simplified
+        # string form and table form ( { file = "..." } ).
+        readme_decl = nil
+        begin
+          readme_decl = parsed_pyproject.dig("project", "readme")
+        rescue TomlRB::ParseError
+          # If the pyproject is unparseable fail later in parsed_pyproject.
+        end
+
+        candidate_names =
+          case readme_decl
+          when String then [readme_decl]
+          when Hash
+            if readme_decl["file"].is_a?(String)
+              [T.cast(readme_decl["file"], String)]
+            else
+              README_FILENAMES
+            end
+          else
+            README_FILENAMES
+          end
+
+        candidate_names.filter_map do |filename|
+          file = fetch_file_if_present(filename)
+          file.support_file = true if file
+          file
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -217,7 +260,8 @@ module Dependabot
               fetched_files += child_files
               child_files
             end
-          end, T.nilable(T::Array[Dependabot::DependencyFile])
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
@@ -404,8 +448,10 @@ module Dependabot
 
       sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
       def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(RequiremenstFileMatcher.new(requirements_in_files),
-                                                T.nilable(Dependabot::Uv::RequiremenstFileMatcher))
+        @requirements_in_file_matcher ||= T.let(
+          RequiremenstFileMatcher.new(requirements_in_files),
+          T.nilable(Dependabot::Uv::RequiremenstFileMatcher)
+        )
       end
 
       sig { returns(T::Array[PathDependency]) }

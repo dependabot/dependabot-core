@@ -90,6 +90,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       it { is_expected.to be(false) }
     end
 
+    context "with a nil version in target_version_details" do
+      let(:target_version_details) do
+        {
+          version: nil,
+          source_url: "https://repo.maven.apache.org/maven2"
+        }
+      end
+
+      it { is_expected.to be(false) }
+    end
+
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")

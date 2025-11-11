@@ -406,14 +406,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         checker.latest_version
 
         expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
-          hash_including(cooldown_options: an_object_having_attributes(
-            default_days: expected_cooldown_options.default_days,
-            semver_major_days: expected_cooldown_options.semver_major_days,
-            semver_minor_days: expected_cooldown_options.semver_minor_days,
-            semver_patch_days: expected_cooldown_options.semver_patch_days,
-            include: expected_cooldown_options.include,
-            exclude: expected_cooldown_options.exclude
-          ))
+          hash_including(
+            cooldown_options: an_object_having_attributes(
+              default_days: expected_cooldown_options.default_days,
+              semver_major_days: expected_cooldown_options.semver_major_days,
+              semver_minor_days: expected_cooldown_options.semver_minor_days,
+              semver_patch_days: expected_cooldown_options.semver_patch_days,
+              include: expected_cooldown_options.include,
+              exclude: expected_cooldown_options.exclude
+            )
+          )
         )
       end
     end
@@ -538,21 +540,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "returns the right array of updated dependencies" do
-          expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
-                                                                              name: "rspec-mocks",
-                                                                              version: "3.6.0",
-                                                                              previous_version: "3.5.0",
-                                                                              requirements: expected_requirements,
-                                                                              previous_requirements: requirements,
-                                                                              package_manager: "bundler"
-                                                                            ), Dependabot::Dependency.new(
-                                                                                 name: "rspec-support",
-                                                                                 version: "3.6.0",
-                                                                                 previous_version: "3.5.0",
-                                                                                 requirements: expected_requirements,
-                                                                                 previous_requirements: requirements,
-                                                                                 package_manager: "bundler"
-                                                                               ))
+          expect(updated_dependencies_after_full_unlock).to contain_exactly(
+            Dependabot::Dependency.new(
+              name: "rspec-mocks",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            ),
+            Dependabot::Dependency.new(
+              name: "rspec-support",
+              version: "3.6.0",
+              previous_version: "3.5.0",
+              requirements: expected_requirements,
+              previous_requirements: requirements,
+              package_manager: "bundler"
+            )
+          )
         end
 
         context "with a gem.rb and gems.locked setup" do
@@ -576,21 +581,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           it "returns the right array of updated dependencies" do
-            expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
-                                                                                name: "rspec-mocks",
-                                                                                version: "3.6.0",
-                                                                                previous_version: "3.5.0",
-                                                                                requirements: expected_requirements,
-                                                                                previous_requirements: requirements,
-                                                                                package_manager: "bundler"
-                                                                              ), Dependabot::Dependency.new(
-                                                                                   name: "rspec-support",
-                                                                                   version: "3.6.0",
-                                                                                   previous_version: "3.5.0",
-                                                                                   requirements: expected_requirements,
-                                                                                   previous_requirements: requirements,
-                                                                                   package_manager: "bundler"
-                                                                                 ))
+            expect(updated_dependencies_after_full_unlock).to contain_exactly(
+              Dependabot::Dependency.new(
+                name: "rspec-mocks",
+                version: "3.6.0",
+                previous_version: "3.5.0",
+                requirements: expected_requirements,
+                previous_requirements: requirements,
+                package_manager: "bundler"
+              ),
+              Dependabot::Dependency.new(
+                name: "rspec-support",
+                version: "3.6.0",
+                previous_version: "3.5.0",
+                requirements: expected_requirements,
+                previous_requirements: requirements,
+                package_manager: "bundler"
+              )
+            )
           end
         end
       end
@@ -677,14 +685,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it "converts the Version object to string before passing to ConflictingDependencyResolver" do
         result = conflicting_dependencies
 
-        expect(result).to eq([
-          {
-            "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
-            "name" => "dummy-pkg-b",
-            "version" => "1.0.0",
-            "requirement" => "< 2.0.0"
-          }
-        ])
+        expect(result).to eq(
+          [
+            {
+              "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+              "name" => "dummy-pkg-b",
+              "version" => "1.0.0",
+              "requirement" => "< 2.0.0"
+            }
+          ]
+        )
 
         # Verify that the ConflictingDependencyResolver was called with a string target_version
         expect(mock_resolver)
@@ -1151,9 +1161,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
               .to_return(
                 status: 200,
-                body: fixture("git",
-                              "upload_packs",
-                              "dependabot-test-ruby-package"),
+                body: fixture(
+                  "git",
+                  "upload_packs",
+                  "dependabot-test-ruby-package"
+                ),
                 headers: git_header
               )
           end
@@ -1710,9 +1722,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
             .to_return(
               status: 200,
-              body: fixture("git",
-                            "upload_packs",
-                            "dependabot-test-ruby-package"),
+              body: fixture(
+                "git",
+                "upload_packs",
+                "dependabot-test-ruby-package"
+              ),
               headers: git_header
             )
         end

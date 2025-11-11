@@ -29,8 +29,10 @@ module Dependabot
       return true if normalized_path == pattern || normalized_path == normalized_pattern
 
       # Directory prefix match: check if path is inside an excluded directory
-      normalized_path.start_with?("#{pattern}#{File::SEPARATOR}",
-                                  "#{normalized_pattern}#{File::SEPARATOR}")
+      normalized_path.start_with?(
+        "#{pattern}#{File::SEPARATOR}",
+        "#{normalized_pattern}#{File::SEPARATOR}"
+      )
     end
 
     # Check for recursive pattern matches (patterns ending with /**)
@@ -81,9 +83,11 @@ module Dependabot
 
     # Helper method to check if a file path should be excluded
     sig do
-      params(path: String,
-             context: String,
-             exclude_paths: T.nilable(T::Array[String])).returns(T::Boolean)
+      params(
+        path: String,
+        context: String,
+        exclude_paths: T.nilable(T::Array[String])
+      ).returns(T::Boolean)
     end
     def self.should_exclude_path?(path, context, exclude_paths)
       return false unless Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)

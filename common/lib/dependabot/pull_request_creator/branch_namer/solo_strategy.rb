@@ -75,10 +75,12 @@ module Dependabot
         sig { returns(String) }
         def property_name
           @property_name ||=
-            T.let(T.must(dependencies.first).requirements
-                                .find { |r| r.dig(:metadata, :property_name) }
-                                &.dig(:metadata, :property_name),
-                  T.nilable(String))
+            T.let(
+              T.must(dependencies.first).requirements
+                                              .find { |r| r.dig(:metadata, :property_name) }
+                                              &.dig(:metadata, :property_name),
+              T.nilable(String)
+            )
 
           raise "No property name!" unless @property_name
 
@@ -215,9 +217,11 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def dependency_digest
           T.let(
-            Digest::MD5.hexdigest(dependencies.map do |dependency|
-              "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
-            end.sort.join(",")).slice(0, 10),
+            Digest::MD5.hexdigest(
+              dependencies.map do |dependency|
+                "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
+              end.sort.join(",")
+            ).slice(0, 10),
             T.nilable(String)
           )
         end

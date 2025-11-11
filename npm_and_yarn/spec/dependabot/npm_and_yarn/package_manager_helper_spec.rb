@@ -141,6 +141,25 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with engines field for npm >=11.0.0" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "npm" => ">=11.0.0" } } }
+
+      it "returns an NpmPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("11")
+      end
+
+      it "supports npm version 11" do
+        npm_package_manager = helper.package_manager
+        expect(npm_package_manager.supported_versions).to include(Dependabot::Version.new("11"))
+      end
+
+      it "does not throw unsupported version error" do
+        expect { helper.package_manager.raise_if_unsupported! }.not_to raise_error
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
@@ -481,6 +500,36 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         requirement = helper.find_engine_constraints_as_requirement("pnpm")
         expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
         expect(requirement.constraints).to eq([">= 10"])
+      end
+    end
+
+    context "when the engines field contains npm >=11.0.0 constraint" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "npm" => ">=11.0.0"
+          }
+        }
+      end
+
+      it "returns a requirement for npm with the correct constraints" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 11.0.0"])
+      end
+
+      it "validates that npm version 11 satisfies the constraint" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        npm_version_eleven = Dependabot::Version.new("11.6.2")
+        expect(requirement.satisfied_by?(npm_version_eleven)).to be(true)
+      end
+
+      it "validates that npm version 10 does not satisfy the constraint" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        npm_version_ten = Dependabot::Version.new("10.9.3")
+        expect(requirement.satisfied_by?(npm_version_ten)).to be(false)
       end
     end
 

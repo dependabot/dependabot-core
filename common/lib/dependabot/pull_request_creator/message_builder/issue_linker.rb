@@ -12,14 +12,17 @@ module Dependabot
 
         REPO_REGEX = %r{(?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)}
         TAG_REGEX = /(?<tag>(?:\#|GH-)\d+)/i
-        ISSUE_LINK_REGEXS = T.let([
-          /
-            (?:(?<=[^A-Za-z0-9\[\\]|^)\\*#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))|
-            (?:(?<=\s|^)#{REPO_REGEX}#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))
-          /x,
-          /\[#{TAG_REGEX}\](?=[^A-Za-z0-9\-\(])/,
-          /\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/i
-        ].freeze, T::Array[Regexp])
+        ISSUE_LINK_REGEXS = T.let(
+          [
+            /
+              (?:(?<=[^A-Za-z0-9\[\\]|^)\\*#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))|
+              (?:(?<=\s|^)#{REPO_REGEX}#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))
+            /x,
+            /\[#{TAG_REGEX}\](?=[^A-Za-z0-9\-\(])/,
+            /\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/i
+          ].freeze,
+          T::Array[Regexp]
+        )
 
         sig { returns(T.nilable(String)) }
         attr_reader :source_url
@@ -36,8 +39,10 @@ module Dependabot
           ISSUE_LINK_REGEXS.reduce(text) do |updated_text, regex|
             updated_text.gsub(regex) do |issue_link|
               tag = T.must(
-                T.must(issue_link
-                    .match(/(?<tag>(?:\#|GH-)?\d+)/i))
+                T.must(
+                  issue_link
+                                      .match(/(?<tag>(?:\#|GH-)?\d+)/i)
+                )
                      .named_captures.fetch("tag")
               )
               number = tag.match(/\d+/).to_s

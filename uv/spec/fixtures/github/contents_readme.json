@@ -1,0 +1,18 @@
+{
+  "name": "README.md",
+  "path": "README.md",
+  "sha": "readme123",
+  "size": 50,
+  "url": "https://api.github.com/repos/test/test/contents/README.md?ref=sha",
+  "html_url": "https://github.com/test/test/blob/sha/README.md",
+  "git_url": "https://api.github.com/repos/test/test/git/blobs/readme123",
+  "download_url": "https://raw.githubusercontent.com/test/test/sha/README.md",
+  "type": "file",
+  "content": "IyBUZXN0IFBhY2thZ2UKClRoaXMgaXMgYSB0ZXN0IHBhY2thZ2UuCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/test/test/contents/README.md?ref=sha",
+    "git": "https://api.github.com/repos/test/test/git/blobs/readme123",
+    "html": "https://github.com/test/test/blob/sha/README.md"
+  }
+}

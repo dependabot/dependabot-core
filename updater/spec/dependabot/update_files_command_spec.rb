@@ -7,27 +7,47 @@ require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateFilesCommand do
-  subject(:job) { described_class.new }
+  subject(:job) { described_class.new(fetched_files) }
 
   let(:service) do
-    instance_double(Dependabot::Service,
-                    capture_exception: nil,
-                    mark_job_as_processed: nil,
-                    record_update_job_error: nil,
-                    record_update_job_unknown_error: nil,
-                    update_dependency_list: nil,
-                    increment_metric: nil,
-                    wait_for_calls_to_finish: nil)
+    instance_double(
+      Dependabot::Service,
+      capture_exception: nil,
+      mark_job_as_processed: nil,
+      record_update_job_error: nil,
+      record_update_job_unknown_error: nil,
+      update_dependency_list: nil,
+      increment_metric: nil,
+      wait_for_calls_to_finish: nil
+    )
   end
   let(:job_definition) do
-    JSON.parse(fixture("file_fetcher_output/output.json"))
+    JSON.parse(fixture("jobs/job_without_credentials.json"))
+  end
+  let(:manifest) do
+    Dependabot::DependencyFile.new(
+      name: "Gemfile",
+      content: fixture("bundler/original/Gemfile"),
+      directory: "/"
+    )
+  end
+  let(:fetched_files) do
+    # We no longer write encoded files to disk, need to migrate the fixtures in this test
+    Dependabot::FetchedFiles.new(
+      dependency_files: [manifest],
+      base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+    )
   end
   let(:job_id) { "123123" }
 
   before do
     allow(Dependabot::Service).to receive(:new).and_return(service)
-    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "mock_token",
-                                                       job_definition: job_definition, repo_contents_path: nil)
+    allow(Dependabot::Environment).to receive_messages(
+      job_id: job_id,
+      job_token: "mock_token",
+      job_definition: job_definition,
+      repo_contents_path: nil
+    )
   end
 
   describe "#perform_job" do
@@ -47,50 +67,10 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       expect(dummy_runner).to receive(:run)
       expect(service).to receive(:mark_job_as_processed)
         .with(base_commit_sha)
-
-      perform_job
-    end
-
-    it "sends dependency metadata to the service" do
       expect(service).to receive(:update_dependency_list)
         .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       perform_job
-    end
-
-    context "with vendoring_dependencies" do
-      let(:snapshot) do
-        instance_double(Dependabot::DependencySnapshot,
-                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
-      end
-      let(:repo_contents_path) { "repo/path" }
-
-      let(:job_definition) do
-        JSON.parse(fixture("file_fetcher_output/vendoring_output.json"))
-      end
-
-      before do
-        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
-        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
-      end
-
-      it "delegates to Dependabot::Updater" do
-        dummy_runner = double(run: nil)
-        base_commit_sha = "1c6331732c41e4557a16dacb82534f1d1c831848"
-        expect(Dependabot::Updater)
-          .to receive(:new)
-          .with(
-            service: service,
-            job: an_object_having_attributes(id: job_id, repo_contents_path: repo_contents_path),
-            dependency_snapshot: snapshot
-          )
-          .and_return(dummy_runner)
-        expect(dummy_runner).to receive(:run)
-        expect(service).to receive(:mark_job_as_processed)
-          .with(base_commit_sha)
-
-        perform_job
-      end
     end
   end
 
@@ -303,15 +283,19 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       let(:error) { Dependabot::DependencyFileNotParseable.new("path/to/file", "a") }
 
       let(:snapshot) do
-        instance_double(Dependabot::DependencySnapshot,
-                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
+        instance_double(
+          Dependabot::DependencySnapshot,
+          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+        )
       end
 
       let(:updater) do
-        instance_double(Dependabot::Updater,
-                        service: service,
-                        job: job,
-                        dependency_snapshot: snapshot)
+        instance_double(
+          Dependabot::Updater,
+          service: service,
+          job: job,
+          dependency_snapshot: snapshot
+        )
       end
 
       before do
@@ -451,62 +435,6 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
           perform_job
         end
-      end
-    end
-  end
-
-  # NOTE: This experiment is currently attached to the update_files_command
-  #
-  # This functionality should ideally be a separate binary, we are attaching it
-  # to existing updates during POC work
-  describe "experiment: enable_dependency_submission_poc" do
-    context "when it is enabled" do
-      subject(:perform_job) { job.perform_job }
-
-      before do
-        Dependabot::Experiments.register(:enable_dependency_submission_poc, true)
-      end
-
-      after do
-        Dependabot::Experiments.reset!
-      end
-
-      it "emits a create_dependency_submission call to the Dependabot service" do
-        expect(service).to receive(:create_dependency_submission) do |args|
-          expect(args[:dependency_submission]).to be_a(GithubApi::DependencySubmission)
-
-          expect(args[:dependency_submission].job_id).to eql(job_id)
-          expect(args[:dependency_submission].package_manager).to eql("bundler")
-        end
-
-        perform_job
-      end
-
-      it "does not emit a create_dependency_submission call if the job is a Security update" do
-        job_definition["job"]["security_updates_only"] = true
-        job_definition["job"]["dependencies"] = ["octokit"]
-
-        expect(service).not_to receive(:create_dependency_submission)
-
-        perform_job
-      end
-    end
-
-    context "when it is disabled" do
-      subject(:perform_job) { job.perform_job }
-
-      before do
-        Dependabot::Experiments.register(:enable_dependency_submission_poc, false)
-      end
-
-      after do
-        Dependabot::Experiments.reset!
-      end
-
-      it "does not emits a create_dependency_submission call to the Dependabot service" do
-        expect(service).not_to receive(:create_dependency_submission)
-
-        perform_job
       end
     end
   end

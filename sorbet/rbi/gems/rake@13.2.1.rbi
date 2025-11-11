@@ -559,34 +559,34 @@ module Rake::DSL
 
   private
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def cd(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def chdir(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def chmod(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def chmod_R(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def chown(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def chown_R(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def copy(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def cp(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def cp_lr(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def cp_r(*args, **options, &block); end
 
   # Describes the next rake task.  Duplicate descriptions are discarded.
@@ -650,37 +650,37 @@ module Rake::DSL
   # source://rake//lib/rake/dsl_definition.rb#184
   def import(*fns); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def install(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def link(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def ln(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def ln_s(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def ln_sf(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def ln_sr(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def makedirs(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def mkdir(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def mkdir_p(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def mkpath(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def move(*args, **options, &block); end
 
   # Declare a task that performs its prerequisites in
@@ -694,7 +694,7 @@ module Rake::DSL
   # source://rake//lib/rake/dsl_definition.rb#113
   def multitask(*args, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def mv(*args, **options, &block); end
 
   # Create a new rake namespace and use it for evaluating the given
@@ -719,37 +719,37 @@ module Rake::DSL
   # source://rake//lib/rake/dsl_definition.rb#136
   def namespace(name = T.unsafe(nil), &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#77
+  # source://rake//lib/rake/dsl_definition.rb#24
   def nowrite(value = T.unsafe(nil)); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#123
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rake_check_options(options, *optdecl); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#116
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rake_output_message(message); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def remove(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rm(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rm_f(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rm_r(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rm_rf(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rmdir(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def rmtree(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils.rb#98
+  # source://rake//lib/rake/dsl_definition.rb#23
   def ruby(*args, **options, &block); end
 
   # Declare a rule for auto-tasks.
@@ -762,19 +762,19 @@ module Rake::DSL
   # source://rake//lib/rake/dsl_definition.rb#152
   def rule(*args, &block); end
 
-  # source://rake//lib/rake/file_utils.rb#110
+  # source://rake//lib/rake/dsl_definition.rb#23
   def safe_ln(*args, **options); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def safe_unlink(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils.rb#43
+  # source://rake//lib/rake/dsl_definition.rb#23
   def sh(*cmd, &block); end
 
-  # source://rake//lib/rake/file_utils.rb#126
+  # source://rake//lib/rake/dsl_definition.rb#23
   def split_all(path); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def symlink(*args, **options, &block); end
 
   # :call-seq:
@@ -811,13 +811,13 @@ module Rake::DSL
   # source://rake//lib/rake/dsl_definition.rb#59
   def task(*args, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/dsl_definition.rb#24
   def touch(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#53
+  # source://rake//lib/rake/dsl_definition.rb#24
   def verbose(value = T.unsafe(nil)); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#107
+  # source://rake//lib/rake/dsl_definition.rb#24
   def when_writing(msg = T.unsafe(nil)); end
 end
 
@@ -842,6 +842,7 @@ Rake::EMPTY_TASK_ARGS = T.let(T.unsafe(nil), Rake::TaskArguments)
 # source://rake//lib/rake/early_time.rb#5
 class Rake::EarlyTime
   include ::Comparable
+  include ::Singleton::SingletonInstanceMethods
   include ::Singleton
   extend ::Singleton::SingletonClassMethods
 
@@ -856,7 +857,10 @@ class Rake::EarlyTime
   class << self
     private
 
+    # source://rake//lib/rake/early_time.rb#7
     def allocate; end
+
+    # source://rake//lib/rake/early_time.rb#7
     def new(*_arg0); end
   end
 end
@@ -917,7 +921,7 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#99
   def initialize(*patterns); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def &(*args, &block); end
 
   # Redefine * to return either a string or a new file list.
@@ -925,16 +929,16 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#193
   def *(other); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def +(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def -(*args, &block); end
 
   # source://rake//lib/rake/file_list.rb#203
   def <<(obj); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def <=>(*args, &block); end
 
   # A FileList is equal through array equality.
@@ -942,10 +946,10 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#171
   def ==(array); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def [](*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def []=(*args, &block); end
 
   # Add file names defined by glob patterns to the file list.  If an array
@@ -955,40 +959,40 @@ class Rake::FileList
   #   file_list.include("*.java", "*.cfg")
   #   file_list.include %w( math.c lib.h *.o )
   #
-  # source://rake//lib/rake/file_list.rb#116
+  # source://rake//lib/rake/file_list.rb#128
   def add(*filenames); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def all?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def any?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def append(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def assoc(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def at(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def bsearch(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def bsearch_index(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def chain(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def chunk(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def chunk_while(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def clear(*args, &block); end
 
   # Clear all the exclude patterns so that we exclude nothing.
@@ -996,79 +1000,79 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#164
   def clear_exclude; end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def collect(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def collect!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def collect_concat(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def combination(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def compact(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def compact!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def concat(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def count(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def cycle(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def deconstruct(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def delete(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def delete_at(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def delete_if(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def detect(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def difference(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def dig(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def drop(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def drop_while(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each_cons(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each_entry(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each_index(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each_slice(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each_with_index(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def each_with_object(*args, &block); end
 
   # Grep each of the files in the filelist using the given pattern. If a
@@ -1080,10 +1084,10 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#293
   def egrep(pattern, *options); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def empty?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def entries(*args, &block); end
 
   # Register a list of file name patterns that should be excluded from the
@@ -1146,49 +1150,52 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#284
   def ext(newext = T.unsafe(nil)); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def fetch(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
+  def fetch_values(*args, &block); end
+
+  # source://rake//lib/rake/file_list.rb#76
   def fill(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def filter(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def filter!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def filter_map(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def find(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def find_all(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def find_index(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def first(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def flat_map(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def flatten(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def flatten!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def grep(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def grep_v(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def group_by(*args, &block); end
 
   # Return a new FileList with the results of running +gsub+ against each
@@ -1219,25 +1226,25 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#116
   def include(*filenames); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def include?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def index(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def inject(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def insert(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def inspect(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def intersect?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def intersection(*args, &block); end
 
   # Lie about our class.
@@ -1247,62 +1254,62 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#187
   def is_a?(klass); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def join(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def keep_if(*args, &block); end
 
   # Lie about our class.
   #
   # @return [Boolean]
   #
-  # source://rake//lib/rake/file_list.rb#187
+  # source://rake//lib/rake/file_list.rb#190
   def kind_of?(klass); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def last(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def lazy(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def length(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def map(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def map!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def max(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def max_by(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def member?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def min(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def min_by(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def minmax(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def minmax_by(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def none?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def one?(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def pack(*args, &block); end
 
   # FileList version of partition.  Needed because the nested arrays should
@@ -1318,43 +1325,40 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#272
   def pathmap(spec = T.unsafe(nil), &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def permutation(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
-  def place(*args, &block); end
-
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def pop(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def prepend(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def product(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def push(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def rassoc(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def reduce(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def reject(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def reject!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def repeated_combination(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def repeated_permutation(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def replace(*args, &block); end
 
   # Resolve all the pending adds now.
@@ -1362,73 +1366,73 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#210
   def resolve; end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def reverse(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def reverse!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def reverse_each(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def rindex(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def rotate(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def rotate!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def sample(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def select(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def select!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def shelljoin(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def shift(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def shuffle(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def shuffle!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def size(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def slice(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def slice!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def slice_after(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def slice_before(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def slice_when(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def sort(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def sort!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def sort_by(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def sort_by!(*args, &block); end
 
   # Return a new FileList with the results of running +sub+ against each
@@ -1445,16 +1449,16 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#258
   def sub!(pat, rep); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def sum(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def take(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def take_while(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def tally(*args, &block); end
 
   # Return the internal array object.
@@ -1467,7 +1471,7 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#182
   def to_ary; end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def to_h(*args, &block); end
 
   # Convert a FileList to a string by joining all elements with a space.
@@ -1475,31 +1479,31 @@ class Rake::FileList
   # source://rake//lib/rake/file_list.rb#344
   def to_s; end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def to_set(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def transpose(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def union(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def uniq(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def uniq!(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def unshift(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def values_at(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#77
+  # source://rake//lib/rake/file_list.rb#76
   def zip(*args, &block); end
 
-  # source://rake//lib/rake/file_list.rb#68
+  # source://rake//lib/rake/file_list.rb#67
   def |(*args, &block); end
 
   private
@@ -1617,70 +1621,70 @@ module Rake::FileUtilsExt
   extend ::FileUtils
   extend ::Rake::FileUtilsExt
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def cd(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def chdir(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def chmod(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def chmod_R(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def chown(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def chown_R(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def copy(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def cp(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def cp_lr(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def cp_r(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def install(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def link(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def ln(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def ln_s(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def ln_sf(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def ln_sr(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def makedirs(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def mkdir(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def mkdir_p(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def mkpath(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def move(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def mv(*args, **options, &block); end
 
   # Get/set the nowrite flag controlling output from the FileUtils
@@ -1712,34 +1716,34 @@ module Rake::FileUtilsExt
   # source://rake//lib/rake/file_utils_ext.rb#116
   def rake_output_message(message); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def remove(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def rm(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def rm_f(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def rm_r(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def rm_rf(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def rmdir(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def rmtree(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def safe_unlink(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def symlink(*args, **options, &block); end
 
-  # source://rake//lib/rake/file_utils_ext.rb#34
+  # source://rake//lib/rake/file_utils_ext.rb#33
   def touch(*args, **options, &block); end
 
   # Get/set the verbose flag controlling output from the FileUtils
@@ -1886,6 +1890,7 @@ Rake::LATE = T.let(T.unsafe(nil), Rake::LateTime)
 # source://rake//lib/rake/late_time.rb#4
 class Rake::LateTime
   include ::Comparable
+  include ::Singleton::SingletonInstanceMethods
   include ::Singleton
   extend ::Singleton::SingletonClassMethods
 
@@ -1898,7 +1903,10 @@ class Rake::LateTime
   class << self
     private
 
+    # source://rake//lib/rake/late_time.rb#6
     def allocate; end
+
+    # source://rake//lib/rake/late_time.rb#6
     def new(*_arg0); end
   end
 end
@@ -2393,7 +2401,7 @@ class Rake::Task
 
   # List of prerequisites for a task.
   #
-  # source://rake//lib/rake/task.rb#17
+  # source://rake//lib/rake/task.rb#18
   def prereqs; end
 
   # List of prerequisite tasks
@@ -2600,7 +2608,7 @@ class Rake::TaskArguments
   #
   # @return [Boolean]
   #
-  # source://rake//lib/rake/task_arguments.rb#88
+  # source://rake//lib/rake/task_arguments.rb#91
   def key?(key); end
 
   # Returns the value of the given argument via method_missing
@@ -2845,16 +2853,16 @@ class Rake::ThreadHistoryDisplay
 
   private
 
-  # source://rake//lib/rake/private_reader.rb#15
+  # source://rake//lib/rake/thread_history_display.rb#9
   def items; end
 
   # source://rake//lib/rake/thread_history_display.rb#35
   def rename(hash, key, renames); end
 
-  # source://rake//lib/rake/private_reader.rb#15
+  # source://rake//lib/rake/thread_history_display.rb#9
   def stats; end
 
-  # source://rake//lib/rake/private_reader.rb#15
+  # source://rake//lib/rake/thread_history_display.rb#9
   def threads; end
 end
 

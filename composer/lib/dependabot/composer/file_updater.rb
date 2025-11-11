@@ -12,14 +12,6 @@ module Dependabot
       require_relative "file_updater/manifest_updater"
       require_relative "file_updater/lockfile_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^composer\.json$/,
-          /^composer\.lock$/
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
@@ -74,8 +66,10 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def composer_json
-        @composer_json ||= T.let(get_original_file(PackageManager::MANIFEST_FILENAME),
-                                 T.nilable(Dependabot::DependencyFile))
+        @composer_json ||= T.let(
+          get_original_file(PackageManager::MANIFEST_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

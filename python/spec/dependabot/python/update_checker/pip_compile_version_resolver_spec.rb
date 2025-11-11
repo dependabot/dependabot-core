@@ -17,12 +17,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:dependency_files) { [manifest_file, generated_file] }
   let(:manifest_file) do
@@ -191,8 +193,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
             expect { latest_resolvable_version }
               .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message)
-                  .to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
-                              "package versions have conflicting dependencies.")
+                  .to include(
+                    "Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
+                    "package versions have conflicting dependencies."
+                  )
               end
           end
         end
@@ -222,8 +226,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message)
-              .to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
-                          "conflicting dependencies.")
+              .to include(
+                "Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
+                "conflicting dependencies."
+              )
           end
       end
     end
@@ -392,8 +398,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
           expect { resolvable }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message)
-                .to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
-                            "package versions have conflicting dependencies.")
+                .to include(
+                  "Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
+                  "package versions have conflicting dependencies."
+                )
             end
         end
       end

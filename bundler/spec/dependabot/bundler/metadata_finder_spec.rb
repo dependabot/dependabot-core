@@ -143,11 +143,13 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         end
         let(:credentials) do
           [
-            Dependabot::Credential.new({
-              "type" => "rubygems_server",
-              "host" => "gems.greysteil.com",
-              "replaces-base" => true
-            })
+            Dependabot::Credential.new(
+              {
+                "type" => "rubygems_server",
+                "host" => "gems.greysteil.com",
+                "replaces-base" => true
+              }
+            )
           ]
         end
 

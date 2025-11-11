@@ -1,0 +1,18 @@
+[project]
+name = "test" 
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi==0.115.5",
+    "pydantic==2.8.2"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

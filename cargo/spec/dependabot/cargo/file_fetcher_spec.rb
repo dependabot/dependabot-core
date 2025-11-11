@@ -168,9 +168,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "provides the Rust channel" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "cargo" => "default" }
-      })
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        {
+          package_managers: { "cargo" => "default" }
+        }
+      )
     end
   end
 
@@ -228,9 +230,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "provides the Rust channel" do
-      expect(file_fetcher_instance.ecosystem_versions).to eq({
-        package_managers: { "cargo" => "1.2.3" }
-      })
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        {
+          package_managers: { "cargo" => "1.2.3" }
+        }
+      )
     end
   end
 
@@ -365,8 +369,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         end
 
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
-                             "contents/my_dir?ref=sha")
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/" \
+            "contents/my_dir?ref=sha"
+          )
             .with(headers: { "Authorization" => "token token" })
             .to_return(
               status: 200,
@@ -756,16 +763,22 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_in_workspace_root",
-                        "contents_cargo_manifest_workspace.json"),
+          body: fixture(
+            "github",
+            "path_dependency_in_workspace_root",
+            "contents_cargo_manifest_workspace.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "child/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_in_workspace_root",
-                        "contents_cargo_manifest_child.json"),
+          body: fixture(
+            "github",
+            "path_dependency_in_workspace_root",
+            "contents_cargo_manifest_child.json"
+          ),
           headers: json_header
         )
     end
@@ -818,48 +831,66 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_crate_fail_1.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_crate_fail_1.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "detached_crate_fail_2/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_crate_fail_2.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_crate_fail_2.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "detached_crate_success/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_crate_success.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_crate_success.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "detached_workspace_member/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_detached_workspace_member.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_detached_workspace_member.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "incorrect_detached_workspace_member/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_incorrect_detached_workspace_member.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_incorrect_detached_workspace_member.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "incorrect_workspace/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_incorrect_workspace.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_incorrect_workspace.json"
+          ),
           headers: json_header
         )
       stub_request(:get, url + "workspace/Cargo.toml?ref=sha")
@@ -873,8 +904,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
-          body: fixture("github", "path_dependency_workspace_member",
-                        "contents_cargo_manifest_workspace_nested_one_nested_two.json"),
+          body: fixture(
+            "github",
+            "path_dependency_workspace_member",
+            "contents_cargo_manifest_workspace_nested_one_nested_two.json"
+          ),
           headers: json_header
         )
 
@@ -898,19 +932,23 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches the dependencies successfully" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(
-            Cargo.toml
-            ../detached_workspace_member/Cargo.toml
-            ../workspace/Cargo.toml
-            ../workspace/nested_one/nested_two/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              Cargo.toml
+              ../detached_workspace_member/Cargo.toml
+              ../workspace/Cargo.toml
+              ../workspace/nested_one/nested_two/Cargo.toml
+            )
+          )
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(
-            /detached_crate_success/Cargo.toml
-            /detached_workspace_member/Cargo.toml
-            /workspace/Cargo.toml
-            /workspace/nested_one/nested_two/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              /detached_crate_success/Cargo.toml
+              /detached_workspace_member/Cargo.toml
+              /workspace/Cargo.toml
+              /workspace/nested_one/nested_two/Cargo.toml
+            )
+          )
       end
     end
 
@@ -925,13 +963,17 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches as many dependencies as possible, without erroring" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(
-            ../incorrect_workspace/Cargo.toml Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              ../incorrect_workspace/Cargo.toml Cargo.toml
+            )
+          )
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(
-            /detached_crate_fail_1/Cargo.toml /incorrect_workspace/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              /detached_crate_fail_1/Cargo.toml /incorrect_workspace/Cargo.toml
+            )
+          )
       end
     end
 
@@ -946,13 +988,377 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       it "fetches as many dependencies as possible, without erroring" do
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(
-            ../incorrect_detached_workspace_member/Cargo.toml Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              ../incorrect_detached_workspace_member/Cargo.toml Cargo.toml
+            )
+          )
         expect(file_fetcher_instance.files.map(&:path))
-          .to match_array(%w(
-            /detached_crate_fail_2/Cargo.toml /incorrect_detached_workspace_member/Cargo.toml
-          ))
+          .to match_array(
+            %w(
+              /detached_crate_fail_2/Cargo.toml /incorrect_detached_workspace_member/Cargo.toml
+            )
+          )
+      end
+    end
+  end
+
+  describe "#expand_workspaces" do
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials)
+    end
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "test/repo",
+        directory: "/"
+      )
+    end
+
+    before do
+      allow(file_fetcher_instance).to receive_messages(commit: "sha", directory: "")
+    end
+
+    context "when workspace path is a simple glob pattern" do
+      it "expands workspace paths with wildcards" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "packages/", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "packages/crate1"),
+            OpenStruct.new(type: "dir", path: "packages/crate2"),
+            OpenStruct.new(type: "file", path: "packages/README.md")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "packages/*")
+        expect(result).to contain_exactly("packages/crate1", "packages/crate2")
+      end
+    end
+
+    context "when workspace path is exactly '*'" do
+      it "handles the edge case without throwing nil error" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "crate1"),
+            OpenStruct.new(type: "dir", path: "crate2"),
+            OpenStruct.new(type: "file", path: "README.md")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "*")
+        expect(result).to match_array(%w(crate1 crate2))
+      end
+    end
+
+    context "when workspace path starts with '*'" do
+      it "handles paths that start with wildcard" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "test-crate"),
+            OpenStruct.new(type: "dir", path: "prod-crate"),
+            OpenStruct.new(type: "file", path: "README.md")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "*-crate")
+        expect(result).to match_array(%w(test-crate prod-crate))
+      end
+    end
+
+    context "when workspace path contains multiple wildcards" do
+      it "handles multiple wildcards correctly" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "src/", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "src/bin-crate-v1"),
+            OpenStruct.new(type: "dir", path: "src/lib-crate-v2"),
+            OpenStruct.new(type: "dir", path: "src/other")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "src/*-crate-*")
+        expect(result).to contain_exactly("src/bin-crate-v1", "src/lib-crate-v2")
+      end
+    end
+
+    context "when no directories match the pattern" do
+      it "returns empty array when no matches found" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "nonexistent/", raise_errors: false)
+          .and_return([])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "nonexistent/*")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when workspace path has nested wildcards" do
+      it "handles nested directory patterns" do
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "apps/", raise_errors: false)
+          .and_return([
+            OpenStruct.new(type: "dir", path: "apps/web/frontend"),
+            OpenStruct.new(type: "dir", path: "apps/api/backend"),
+            OpenStruct.new(type: "file", path: "apps/config.json")
+          ])
+
+        result = file_fetcher_instance.send(:expand_workspaces, "apps/*/frontend")
+        expect(result).to contain_exactly("apps/web/frontend")
+      end
+    end
+  end
+
+  describe "#uses_workspace_dependencies?" do
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials)
+    end
+
+    context "when manifest has regular workspace dependencies" do
+      let(:manifest_with_workspace_deps) do
+        {
+          "dependencies" => {
+            "serde" => { "workspace" => true },
+            "tokio" => "1.0"
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, manifest_with_workspace_deps)).to be(true)
+      end
+    end
+
+    context "when manifest has dev workspace dependencies" do
+      let(:manifest_with_dev_workspace_deps) do
+        {
+          "dev-dependencies" => {
+            "criterion" => { "workspace" => true }
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, manifest_with_dev_workspace_deps)).to be(true)
+      end
+    end
+
+    context "when manifest has build workspace dependencies" do
+      let(:manifest_with_build_workspace_deps) do
+        {
+          "build-dependencies" => {
+            "cc" => { "workspace" => true }
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(
+          file_fetcher_instance.send(
+            :uses_workspace_dependencies?,
+            manifest_with_build_workspace_deps
+          )
+        ).to be(true)
+      end
+    end
+
+    context "when manifest has target-specific workspace dependencies" do
+      let(:manifest_with_target_workspace_deps) do
+        {
+          "target" => {
+            "wasm32-unknown-unknown" => {
+              "dependencies" => {
+                "wasm-bindgen" => { "workspace" => true }
+              }
+            }
+          }
+        }
+      end
+
+      it "returns true" do
+        expect(
+          file_fetcher_instance.send(
+            :uses_workspace_dependencies?,
+            manifest_with_target_workspace_deps
+          )
+        ).to be(true)
+      end
+    end
+
+    context "when manifest has no workspace dependencies" do
+      let(:manifest_without_workspace_deps) do
+        {
+          "dependencies" => {
+            "serde" => "1.0",
+            "tokio" => "1.0"
+          },
+          "dev-dependencies" => {
+            "criterion" => "0.4"
+          }
+        }
+      end
+
+      it "returns false" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, manifest_without_workspace_deps)).to be(false)
+      end
+    end
+
+    context "when manifest is empty" do
+      let(:empty_manifest) { {} }
+
+      it "returns false" do
+        expect(file_fetcher_instance.send(:uses_workspace_dependencies?, empty_manifest)).to be(false)
+      end
+    end
+  end
+
+  describe "workspace root fetching for workspace dependencies" do
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials)
+    end
+
+    describe "integration with fetch_workspace_files" do
+      let(:workspace_member_file) do
+        Dependabot::DependencyFile.new(
+          name: "internal/Cargo.toml",
+          content: "[package]\nname = \"internal\"\n\n[dependencies]\nanstyle = { workspace = true }\n"
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: "[workspace]\nmembers = [\"internal\"]\n\n[workspace.dependencies]\nanstyle = \"1.0.8\"\n"
+        )
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive(:find_workspace_root)
+          .with(workspace_member_file)
+          .and_return(workspace_root_file)
+      end
+
+      it "includes workspace root when workspace member uses workspace dependencies" do
+        # Mock the workspace dependency paths from the root file
+        allow(file_fetcher_instance).to receive(:workspace_dependency_paths_from_file)
+          .with(workspace_root_file)
+          .and_return(["internal/Cargo.toml"])
+
+        # Mock the workspace dependency paths from the member file (recursive call)
+        allow(file_fetcher_instance).to receive(:workspace_dependency_paths_from_file)
+          .with(workspace_member_file)
+          .and_return([])
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("internal/Cargo.toml", fetch_submodules: true)
+          .and_return(workspace_member_file)
+
+        # Mock the cargo_toml method call
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("Cargo.toml")
+          .and_return(workspace_root_file)
+
+        # Call the method under test
+        result = file_fetcher_instance.send(
+          :fetch_workspace_files,
+          file: workspace_root_file,
+          previously_fetched_files: []
+        )
+
+        # Should include both the workspace member and the workspace root
+        expect(result.map(&:name)).to include("internal/Cargo.toml", "Cargo.toml")
+      end
+    end
+
+    describe "integration with fetch_files" do
+      let(:main_cargo_file) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: "[package]\nname = \"test\"\n\n[dependencies]\nserde = { workspace = true }\n"
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "../Cargo.toml",
+          content: "[workspace]\nmembers = [\"test\"]\n\n[workspace.dependencies]\nserde = \"1.0\"\n"
+        )
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive_messages(
+          cargo_toml: main_cargo_file,
+          cargo_lock: nil,
+          cargo_config: nil,
+          rust_toolchain: nil,
+          fetch_path_dependency_and_workspace_files: []
+        )
+        allow(file_fetcher_instance).to receive(:find_workspace_root)
+          .with(main_cargo_file)
+          .and_return(workspace_root_file)
+      end
+
+      it "includes workspace root when main Cargo.toml uses workspace dependencies" do
+        files = file_fetcher_instance.fetch_files
+
+        expect(files.map(&:name)).to include("Cargo.toml", "../Cargo.toml")
+      end
+    end
+
+    describe "integration with fetch_path_dependency_files" do
+      let(:main_file) do
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: "[package]\nname = \"main\"\n\n[dependencies]\ninternal = { path = \"../internal\" }\n"
+        )
+      end
+
+      let(:path_dep_file) do
+        Dependabot::DependencyFile.new(
+          name: "../internal/Cargo.toml",
+          content: "[package]\nname = \"internal\"\n\n[dependencies]\nserde = { workspace = true }\n"
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "../Cargo.toml",
+          content: "[workspace]\nmembers = [\"internal\"]\n\n[workspace.dependencies]\nserde = \"1.0\"\n"
+        )
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive(:path_dependency_paths_from_file)
+          .with(main_file)
+          .and_return(["../internal/Cargo.toml"])
+
+        # Mock for the path dependency file itself (no further path dependencies)
+        allow(file_fetcher_instance).to receive(:path_dependency_paths_from_file)
+          .with(path_dep_file)
+          .and_return([])
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("../internal/Cargo.toml", fetch_submodules: true)
+          .and_return(path_dep_file)
+
+        # Mock workspace_member? to return true for our test case
+        allow(file_fetcher_instance).to receive(:workspace_member?)
+          .and_return(false)
+        allow(file_fetcher_instance).to receive(:workspace_member?)
+          .with(hash_including("dependencies" => hash_including("serde" => { "workspace" => true })))
+          .and_return(true)
+
+        allow(file_fetcher_instance).to receive(:find_workspace_root)
+          .with(path_dep_file)
+          .and_return(workspace_root_file)
+      end
+
+      it "includes workspace root when path dependency uses workspace dependencies" do
+        result = file_fetcher_instance.send(
+          :fetch_path_dependency_files,
+          file: main_file,
+          previously_fetched_files: []
+        )
+
+        # Should include the path dependency and its workspace root
+        expect(result.map(&:name)).to include("../internal/Cargo.toml", "../Cargo.toml")
       end
     end
   end

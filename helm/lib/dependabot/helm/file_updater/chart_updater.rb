@@ -41,8 +41,11 @@ module Dependabot
         attr_reader :dependency
 
         sig do
-          params(content: String, yaml_obj: T::Hash[T.untyped, T.untyped],
-                 file: Dependabot::DependencyFile).returns(String)
+          params(
+            content: String,
+            yaml_obj: T::Hash[T.untyped, T.untyped],
+            file: Dependabot::DependencyFile
+          ).returns(String)
         end
         def update_chart_dependencies(content, yaml_obj, file)
           if update_chart_dependency?(file) && yaml_obj["dependencies"]

@@ -6,3 +6,18 @@
 #
 # Changed Layout/DotPosition from leading to trailing
 3fc49229761517cf3dc6979018a9a2d84f733ece
+
+# Enabled Layout/MultilineMethodArgumentLineBreaks and Layout/FirstMethodArgumentLineBreak
+653539603c43f638abb4d1fbdabe7c4c9df4bd81
+
+# Enabled Layout/MultilineMethodParameterLineBreaks and Layout/FirstMethodParameterLineBreak
+f8acdfb85fdc4749f9cd1f29eb428cafd11478cd
+
+# Enabled Layout/EmptyLinesAroundAttributeAccessor
+0f69e2d8016435d393646a30c81e64c1ed0a942c
+
+# Enabled Layout/SpaceAroundMethodCallOperator
+cdeed7e3a9e4fb5d2ac4c47e1c0409c64c2c76ef
+
+# Enabled Layout/RescueEnsureAlignment
+f94250eddf49c168fb1dcc2dfdd4a924ce648370

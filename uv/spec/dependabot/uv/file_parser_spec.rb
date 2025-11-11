@@ -508,67 +508,74 @@ RSpec.describe Dependabot::Uv::FileParser do
       its(:length) { is_expected.to eq(6) }
 
       it "has the right details" do
-        expect(dependencies).to contain_exactly(Dependabot::Dependency.new(
-                                                  name: "requests",
-                                                  version: "2.4.1",
-                                                  requirements: [{
-                                                    requirement: "==2.4.1",
-                                                    file: "requirements.txt",
-                                                    groups: ["dependencies"],
-                                                    source: nil
-                                                  }],
-                                                  package_manager: "uv"
-                                                ), Dependabot::Dependency.new(
-                                                     name: "attrs",
-                                                     version: "18.0.0",
-                                                     requirements: [{
-                                                       requirement: "==18.0.0",
-                                                       file: "more_requirements.txt",
-                                                       groups: ["dependencies"],
-                                                       source: nil
-                                                     }],
-                                                     package_manager: "uv"
-                                                   ), Dependabot::Dependency.new(
-                                                        name: "aiocache[redis]",
-                                                        version: "0.10.0",
-                                                        requirements: [{
-                                                          requirement: "==0.10.0",
-                                                          file: "more_requirements.txt",
-                                                          groups: ["dependencies"],
-                                                          source: nil
-                                                        }],
-                                                        package_manager: "uv"
-                                                      ), Dependabot::Dependency.new(
-                                                           name: "luigi",
-                                                           version: "2.2.0",
-                                                           requirements: [{
-                                                             requirement: "==2.2.0",
-                                                             file: "more_requirements.txt",
-                                                             groups: ["dependencies"],
-                                                             source: nil
-                                                           }],
-                                                           package_manager: "uv"
-                                                         ), Dependabot::Dependency.new(
-                                                              name: "psycopg2",
-                                                              version: "2.6.1",
-                                                              requirements: [{
-                                                                requirement: "==2.6.1",
-                                                                file: "more_requirements.txt",
-                                                                groups: ["dependencies"],
-                                                                source: nil
-                                                              }],
-                                                              package_manager: "uv"
-                                                            ), Dependabot::Dependency.new(
-                                                                 name: "pytest",
-                                                                 version: "3.4.0",
-                                                                 requirements: [{
-                                                                   requirement: "==3.4.0",
-                                                                   file: "more_requirements.txt",
-                                                                   groups: ["dependencies"],
-                                                                   source: nil
-                                                                 }],
-                                                                 package_manager: "uv"
-                                                               ))
+        expect(dependencies).to contain_exactly(
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "2.4.1",
+            requirements: [{
+              requirement: "==2.4.1",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "uv"
+          ),
+          Dependabot::Dependency.new(
+            name: "attrs",
+            version: "18.0.0",
+            requirements: [{
+              requirement: "==18.0.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "uv"
+          ),
+          Dependabot::Dependency.new(
+            name: "aiocache[redis]",
+            version: "0.10.0",
+            requirements: [{
+              requirement: "==0.10.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "uv"
+          ),
+          Dependabot::Dependency.new(
+            name: "luigi",
+            version: "2.2.0",
+            requirements: [{
+              requirement: "==2.2.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "uv"
+          ),
+          Dependabot::Dependency.new(
+            name: "psycopg2",
+            version: "2.6.1",
+            requirements: [{
+              requirement: "==2.6.1",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "uv"
+          ),
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "3.4.0",
+            requirements: [{
+              requirement: "==3.4.0",
+              file: "more_requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "uv"
+          )
+        )
       end
     end
 
@@ -647,17 +654,20 @@ RSpec.describe Dependabot::Uv::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("attrs")
               expect(dependency.version).to eq("17.3.0")
-              expect(dependency.requirements).to contain_exactly({
-                requirement: nil,
-                file: "requirements/test.in",
-                groups: ["dependencies"],
-                source: nil
-              }, {
-                requirement: "==17.3.0",
-                file: "requirements.txt",
-                groups: ["dependencies"],
-                source: nil
-              })
+              expect(dependency.requirements).to contain_exactly(
+                {
+                  requirement: nil,
+                  file: "requirements/test.in",
+                  groups: ["dependencies"],
+                  source: nil
+                },
+                {
+                  requirement: "==17.3.0",
+                  file: "requirements.txt",
+                  groups: ["dependencies"],
+                  source: nil
+                }
+              )
             end
           end
         end
@@ -722,7 +732,10 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(1) }
+      # pydantic (from project.dependencies)
+      # setuptools (from build-system.requires)
+      # setuptools-scm (from build-system.requires)
+      its(:length) { is_expected.to eq(3) }
     end
 
     context "with a pyproject.toml file with no dependencies" do
@@ -734,7 +747,9 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(0) }
+      # setuptools
+      # setuptools-scm
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "with a pyproject.toml in poetry format and a lock file" do
@@ -888,12 +903,12 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(7) }
+      its(:length) { is_expected.to eq(8) }
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
 
-        its(:length) { is_expected.to eq(2) }
+        its(:length) { is_expected.to eq(3) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }

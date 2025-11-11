@@ -90,7 +90,8 @@ module Dependabot
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
-          end, T.nilable(String)
+          end,
+          T.nilable(String)
         )
       end
       # rubocop:enable Metrics/PerceivedComplexity
@@ -122,7 +123,8 @@ module Dependabot
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
-          end, T.nilable(String)
+          end,
+          T.nilable(String)
         )
       end
       # rubocop:enable Metrics/PerceivedComplexity
@@ -143,7 +145,8 @@ module Dependabot
           rescue Excon::Error::Timeout, Excon::Error::Socket,
                  Excon::Error::TooManyRedirects, ArgumentError
             nil
-          end, T.nilable(Excon::Response)
+          end,
+          T.nilable(Excon::Response)
         )
 
         return unless @homepage_response&.status == 200
@@ -197,7 +200,9 @@ module Dependabot
           .map { |c| AuthedUrlBuilder.authed_url(credential: c) }
 
         (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
-          base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
+          # Convert /simple/ endpoints to /pypi/ for JSON API access
+          json_base_url = base_url.sub(%r{/simple/?$}i, "/pypi")
+          json_base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
       end
 

@@ -417,8 +417,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       before do
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with("go get github.com/spf13/viper@v1.7.1").and_return(["", stderr,
-                                                                                                    exit_status])
+        allow(Open3).to receive(:capture3).with("go get github.com/spf13/viper@v1.7.1").and_return(
+          ["", stderr,
+           exit_status]
+        )
       end
 
       it {
@@ -1052,6 +1054,20 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect do
           updater.send(:handle_subprocess_error, stderr)
         end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a go.mod parsing error" do
+      let(:stderr) do
+        <<~ERROR
+          go: error loading go.mod: go.mod:7: unknown godebug 'tlskyber'
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end

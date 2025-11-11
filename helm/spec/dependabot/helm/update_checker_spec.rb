@@ -37,12 +37,14 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "helm_registry",
-      "registry" => repo_url,
-      "username" => username,
-      "password" => password
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "helm_registry",
+        "registry" => repo_url,
+        "username" => username,
+        "password" => password
+      }
+    )]
   end
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }

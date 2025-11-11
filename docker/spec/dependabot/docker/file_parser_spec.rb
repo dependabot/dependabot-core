@@ -302,11 +302,13 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "when replaces-base is false" do
             let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
             let(:credentials) do
-              [Dependabot::Credential.new({
-                "type" => "docker_registry",
-                "registry" => "registry-host.io:5000",
-                "replaces-base" => false
-              })]
+              [Dependabot::Credential.new(
+                {
+                  "type" => "docker_registry",
+                  "registry" => "registry-host.io:5000",
+                  "replaces-base" => false
+                }
+              )]
             end
             let(:parser) do
               described_class.new(
@@ -344,8 +346,10 @@ RSpec.describe Dependabot::Docker::FileParser do
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("ubuntu")
-                expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8d" \
-                                                 "fc38288cf73aa07485005")
+                expect(dependency.version).to eq(
+                  "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                  "fc38288cf73aa07485005"
+                )
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end
@@ -381,15 +385,17 @@ RSpec.describe Dependabot::Docker::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
         expect(dependency.version).to eq("12.04.5")
-        expect(dependency.requirements).to eq([{
-          requirement: nil,
-          groups: [],
-          file: "Dockerfile",
-          source: {
-            tag: "12.04.5",
-            digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
-          }
-        }])
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              tag: "12.04.5",
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }]
+        )
       end
     end
 
@@ -874,15 +880,17 @@ RSpec.describe Dependabot::Docker::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
         expect(dependency.version).to eq("12.04.5")
-        expect(dependency.requirements).to eq([{
-          requirement: nil,
-          groups: [],
-          file: "digest_and_tag.yaml",
-          source: {
-            tag: "12.04.5",
-            digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
-          }
-        }])
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            file: "digest_and_tag.yaml",
+            source: {
+              tag: "12.04.5",
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }]
+        )
       end
     end
 

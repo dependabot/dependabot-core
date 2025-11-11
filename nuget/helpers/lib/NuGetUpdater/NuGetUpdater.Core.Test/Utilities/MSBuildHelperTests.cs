@@ -452,7 +452,7 @@ public class MSBuildHelperTests : TestBase
             // output
             "Response status code does not indicate success: 500 (Internal Server Error).",
             // expectedError
-            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
         ];
 
         yield return
@@ -460,7 +460,7 @@ public class MSBuildHelperTests : TestBase
             // output
             "The response ended prematurely. (ResponseEnded)",
             // expectedError
-            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
         ];
 
         yield return
@@ -468,7 +468,7 @@ public class MSBuildHelperTests : TestBase
             // output
             "The file is not a valid nupkg.",
             // expectedError
-            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
         ];
 
         yield return
@@ -476,7 +476,7 @@ public class MSBuildHelperTests : TestBase
             // output
             "The content at 'http://localhost/test-feed/Packages(Id='Some.Package',Version='1.2.3')' is not valid XML.",
             // expectedError
-            new PrivateSourceBadResponse(["http://localhost/test-feed"]),
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
         ];
 
         yield return

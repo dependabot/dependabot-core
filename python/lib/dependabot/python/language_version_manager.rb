@@ -121,6 +121,8 @@ module Dependabot
           @python_requirement_parser.imputed_requirements.map do |r|
             Dependabot::Python::Requirement.new(r)
           end
+        return unless compiled_file_python_requirement_markers.any?
+
         python_version_matching(compiled_file_python_requirement_markers)
       end
 

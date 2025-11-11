@@ -27,9 +27,15 @@ module Dependabot
             raise_on_ignored: T::Boolean
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:,
-                       cooldown_options: nil, raise_on_ignored: false)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:,
+          security_advisories:,
+          cooldown_options: nil,
+          raise_on_ignored: false
+        )
           @forbidden_urls      = T.let([], T::Array[String])
           @dependency_metadata = T.let({}, T::Hash[T.untyped, Nokogiri::XML::Document])
           @auth_headers_finder = T.let(nil, T.nilable(Utils::AuthHeadersFinder))
@@ -55,13 +61,13 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def latest_version_details
           release = fetch_latest_release
-          release ? { version: release.version, source_url: release.url } : nil
+          release&.version ? { version: release.version, source_url: release.url } : nil
         end
 
         sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
         def lowest_security_fix_version_details
           release = fetch_lowest_security_fix_release
-          release ? { version: release.version, source_url: release.url } : nil
+          release&.version ? { version: release.version, source_url: release.url } : nil
         end
 
         protected

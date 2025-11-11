@@ -29,7 +29,7 @@ module Dependabot
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[String])
+            index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
@@ -47,16 +47,16 @@ module Dependabot
 
         private
 
-        sig { returns(T.nilable(Dependency)) }
+        sig { returns(Dependency) }
         def dependency
           # For now, we'll only ever be updating a single dependency
-          dependencies.first
+          T.must(dependencies.first)
         end
 
         sig { returns(T::Array[DependencyFile]) }
         def fetch_updated_dependency_files
-          previous_requirements = dependency&.previous_requirements || []
-          reqs = T.must(dependency).requirements.zip(previous_requirements)
+          previous_requirements = dependency.previous_requirements || []
+          reqs = dependency.requirements.zip(previous_requirements)
 
           reqs.filter_map do |(new_req, old_req)|
             next if new_req == old_req
@@ -77,11 +77,11 @@ module Dependabot
           raise "Could not find a dependency file for #{new_req}" unless original_file
 
           RequirementReplacer.new(
-            content: original_file.content,
-            dependency_name: dependency&.name,
+            content: T.must(original_file.content),
+            dependency_name: dependency.name,
             old_requirement: old_req.fetch(:requirement),
             new_requirement: new_req.fetch(:requirement),
-            new_hash_version: dependency&.version,
+            new_hash_version: dependency.version,
             index_urls: @index_urls
           ).updated_content
         end

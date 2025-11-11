@@ -1,1 +1,5 @@
 inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/composer/file_updater/lockfile_updater.rb

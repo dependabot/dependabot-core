@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/credential"
+require "dependabot/notices"
 
 module Dependabot
   module FileUpdaters
@@ -28,11 +29,6 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
-      sig { overridable.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        raise NotImplementedError
-      end
-
       sig do
         params(
           dependencies: T::Array[Dependabot::Dependency],
@@ -55,6 +51,11 @@ module Dependabot
       sig { overridable.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         raise NotImplementedError
+      end
+
+      sig { overridable.returns(T::Array[Dependabot::Notice]) }
+      def notices
+        []
       end
 
       private

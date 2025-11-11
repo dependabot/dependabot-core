@@ -19,10 +19,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   let(:dependencies) { [dependency] }
 
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com"
+      }
+    )]
   end
 
   let(:dependency) do
@@ -136,8 +138,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:files) { project_dependency_files("npm8/simple_no_indentation") }
 
       it "defaults to npm and uses two spaces" do
-        expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "simple_no_indentation",
-                                                    "package-lock.json")
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "simple_no_indentation",
+          "package-lock.json"
+        )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
       end
     end
@@ -146,8 +152,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:files) { project_dependency_files("npm8/lockfile_with_newline") }
 
       it "ignores the newline when calculating indentation" do
-        expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "lockfile_with_newline",
-                                                    "package-lock.json")
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "lockfile_with_newline",
+          "package-lock.json"
+        )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
       end
     end
@@ -885,6 +895,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             .to include(
               "Found invalid version \"^8.0.1\" while updating"
             )
+        end
+      end
+    end
+
+    context "with invalid package manager specification" do
+      let(:response) do
+        "Invalid package manager specification in package.json (npm@>=10.9.0); expected a semver version"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Invalid package manager specification in package.json")
+            .and include("The packageManager field must specify a valid semver version")
+        end
+      end
+    end
+
+    context "with invalid npm authentication configuration error" do
+      let(:response) do
+        "npm warn using --force Recommended protections disabled.
+        npm error code ERR_INVALID_AUTH
+        npm error Invalid auth configuration found: `_auth` must be renamed"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("Invalid npm authentication configuration found")
+            .and include("The _auth setting in .npmrc needs to be scoped to the specific registry")
         end
       end
     end

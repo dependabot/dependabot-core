@@ -104,8 +104,6 @@ public partial class EntryPointTests
                 http.BaseUrl,
                 "--job-id",
                 "TEST-ID",
-                "--output-path",
-                Path.Combine(tempDirectory.DirectoryPath, "output.json"),
                 "--base-commit-sha",
                 "BASE-COMMIT-SHA"
             };

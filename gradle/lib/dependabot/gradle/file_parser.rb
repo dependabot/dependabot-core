@@ -25,10 +25,13 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
+      require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
-                                         T::Array[String])
+      SUPPORTED_BUILD_FILE_NAMES = T.let(
+        %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
+        T::Array[String]
+      )
 
       PROPERTY_REGEX = T.let(
         /
@@ -56,6 +59,11 @@ module Dependabot
         end
         script_plugin_files.each do |plugin_file|
           dependency_set += buildfile_dependencies(plugin_file)
+        end
+        if Experiments.enabled?(:gradle_wrapper_updater)
+          wrapper_properties_file.each do |properties_file|
+            dependency_set += wrapper_properties_dependencies(properties_file)
+          end
         end
         version_catalog_file.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
@@ -109,9 +117,20 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new("NOT-AVAILABLE")
-        end, T.nilable(Dependabot::Gradle::Language))
+        @language ||= T.let(
+          begin
+            Language.new("NOT-AVAILABLE")
+          end,
+          T.nilable(Dependabot::Gradle::Language)
+        )
+      end
+
+      sig { params(properties_file: Dependabot::DependencyFile).returns(DependencySet) }
+      def wrapper_properties_dependencies(properties_file)
+        dependency_set = DependencySet.new
+        dependency = DistributionsFinder.resolve_dependency(properties_file)
+        dependency_set << dependency if dependency
+        dependency_set
       end
 
       sig { params(toml_file: Dependabot::DependencyFile).returns(DependencySet) }
@@ -460,10 +479,13 @@ module Dependabot
         metadata = T.let({}, T::Hash[Symbol, T.any(String, T::Hash[Symbol, String])])
         metadata[:property_name] = version_property_name if version_property_name
         if in_dependency_set
-          metadata[:dependency_set] = T.let({
-            group: details_hash[:group],
-            version: details_hash[:version]
-          }, T::Hash[Symbol, String])
+          metadata[:dependency_set] = T.let(
+            {
+              group: details_hash[:group],
+              version: details_hash[:version]
+            },
+            T::Hash[Symbol, String]
+          )
         end
         metadata
       end
@@ -472,8 +494,10 @@ module Dependabot
       def evaluated_value(value, buildfile)
         return value unless value&.scan(PROPERTY_REGEX)&.one?
 
-        property_name  = T.must(T.must(value).match(PROPERTY_REGEX)
-                          &.named_captures&.fetch("property_name"))
+        property_name = T.must(
+          T.must(value).match(PROPERTY_REGEX)
+                                    &.named_captures&.fetch("property_name")
+        )
         property_value = property_value_finder.property_value(
           property_name: property_name,
           callsite_buildfile: buildfile
@@ -530,6 +554,14 @@ module Dependabot
           dependency_files.select do |f|
             f.name.end_with?("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
           end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_properties_file
+        @wrapper_properties_file ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("gradle-wrapper.properties") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

@@ -1,0 +1,13 @@
+{
+  "name": "WORKSPACE",
+  "path": "WORKSPACE",
+  "sha": "abc123",
+  "size": 1234,
+  "url": "https://api.github.com/repos/example/repo/contents/WORKSPACE?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/WORKSPACE",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/WORKSPACE",
+  "type": "file",
+  "content": "d29ya3NwYWNlKG5hbWUgPSAiZXhhbXBsZSIp\n",
+  "encoding": "base64"
+}

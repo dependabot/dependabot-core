@@ -1,0 +1,6 @@
+name = "WorkspaceRoot"
+uuid = "11111111-1111-1111-1111-111111111111"
+version = "1.0.0"
+
+[workspace]
+projects = ["SubPackage"]

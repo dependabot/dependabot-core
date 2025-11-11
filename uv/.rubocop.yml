@@ -1,21 +1,6 @@
 inherit_from: ../.rubocop.yml
 
-inherit_mode:
-  merge:
-    - Exclude
-
-Sorbet/StrictSigil:
+Sorbet/ForbidTUnsafe:
   Exclude:
-    - lib/dependabot/uv/authed_url_builder.rb
-    - lib/dependabot/uv/file_parser/python_requirement_parser.rb
+    - lib/dependabot/uv/file_fetcher.rb
     - lib/dependabot/uv/file_updater/compile_file_updater.rb
-    - lib/dependabot/uv/file_updater/requirement_replacer.rb
-    - lib/dependabot/uv/metadata_finder.rb
-    - lib/dependabot/uv/package/package_registry_finder.rb
-    - lib/dependabot/uv/requirement.rb
-    - lib/dependabot/uv/update_checker/lock_file_resolver.rb
-    - lib/dependabot/uv/update_checker/pip_compile_version_resolver.rb
-    - lib/dependabot/uv/update_checker/pip_version_resolver.rb
-    - lib/dependabot/uv/update_checker/requirements_updater.rb
-    - lib/dependabot/uv/update_checker.rb
-    - lib/dependabot/uv/version.rb

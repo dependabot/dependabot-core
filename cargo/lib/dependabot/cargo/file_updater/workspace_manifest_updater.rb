@@ -22,9 +22,11 @@ module Dependabot
 
           return T.must(manifest.content) if workspace_deps.empty?
 
-          T.must(workspace_deps.reduce(manifest.content.dup) do |content, dep|
-            update_workspace_dependency(T.must(content), dep)
-          end)
+          T.must(
+            workspace_deps.reduce(manifest.content.dup) do |content, dep|
+              update_workspace_dependency(T.must(content), dep)
+            end
+          )
         end
 
         private

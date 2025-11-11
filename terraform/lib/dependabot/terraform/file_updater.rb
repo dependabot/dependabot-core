@@ -20,11 +20,6 @@ module Dependabot
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
       GIT_HTTPS_PREFIX = %r{^git::https://}
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [/\.tf$/, /\.hcl$/]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
@@ -449,8 +444,9 @@ module Dependabot
           return
         end
 
-        raise Dependabot::DependencyFileNotResolvable, "Error while updating lockfile, " \
-                                                       "no matching constraints found."
+        raise Dependabot::DependencyFileNotResolvable,
+              "Error while updating lockfile, " \
+              "no matching constraints found."
       end
 
       sig { params(message: String).returns(String) }

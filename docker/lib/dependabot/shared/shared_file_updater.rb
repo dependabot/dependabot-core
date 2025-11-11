@@ -66,10 +66,12 @@ module Dependabot
         updated_content
       end
 
-      # rubocop:disable Metrics/MethodLength
       sig do
-        params(previous_content: String, old_source: T::Hash[Symbol, T.nilable(String)],
-               new_source: T::Hash[Symbol, T.nilable(String)]).returns(String)
+        params(
+          previous_content: String,
+          old_source: T::Hash[Symbol, T.nilable(String)],
+          new_source: T::Hash[Symbol, T.nilable(String)]
+        ).returns(String)
       end
       def update_digest_and_tag(previous_content, old_source, new_source) # rubocop:disable Metrics/PerceivedComplexity
         old_digest = old_source[:digest]
@@ -112,13 +114,10 @@ module Dependabot
           end
 
           old_dec = old_dec.gsub(":#{old_tag}", ":#{new_tag}") unless old_tag.to_s.empty?
+
           old_dec
-            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
-            .gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
-      # rubocop:enable Metrics/MethodLength
-
       sig { params(escaped_declaration: String).returns(Regexp) }
       def build_old_declaration_regex(escaped_declaration)
         %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}

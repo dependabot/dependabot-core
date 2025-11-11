@@ -174,8 +174,11 @@ module Dependabot
     def record_update_job_unknown_error(error_type:, error_details:)
       error_type = "unknown_error" if error_type.nil?
       ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_unknown_error", kind: :internal) do |_span|
-        ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
-                                                            error_details: error_details)
+        ::Dependabot::OpenTelemetry.record_update_job_error(
+          job_id: job_id,
+          error_type: error_type,
+          error_details: error_details
+        )
 
         api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
         body = {
@@ -469,8 +472,10 @@ module Dependabot
     end
 
     sig do
-      params(dependency_change: Dependabot::DependencyChange,
-             base_commit_sha: String).returns(T::Hash[String, T.untyped])
+      params(
+        dependency_change: Dependabot::DependencyChange,
+        base_commit_sha: String
+      ).returns(T::Hash[String, T.untyped])
     end
     def create_pull_request_data(dependency_change, base_commit_sha)
       data = {

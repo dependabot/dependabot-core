@@ -529,7 +529,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     before do
       latest_version = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
       allow(latest_version)
-        .to receive(:latest_version).and_return({ version: Gem::Version.new("1.5.0") })
+        .to receive(:latest_version).and_return(Gem::Version.new("1.5.0"))
       allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
         .to receive(:new).and_return(latest_version)
     end
@@ -538,15 +538,134 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       checker.latest_version
 
       expect(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
-        hash_including(cooldown_options: an_object_having_attributes(
-          default_days: expected_cooldown_options.default_days,
-          semver_major_days: expected_cooldown_options.semver_major_days,
-          semver_minor_days: expected_cooldown_options.semver_minor_days,
-          semver_patch_days: expected_cooldown_options.semver_patch_days,
-          include: expected_cooldown_options.include,
-          exclude: expected_cooldown_options.exclude
-        ))
+        hash_including(
+          cooldown_options: an_object_having_attributes(
+            default_days: expected_cooldown_options.default_days,
+            semver_major_days: expected_cooldown_options.semver_major_days,
+            semver_minor_days: expected_cooldown_options.semver_minor_days,
+            semver_patch_days: expected_cooldown_options.semver_patch_days,
+            include: expected_cooldown_options.include,
+            exclude: expected_cooldown_options.exclude
+          )
+        )
       )
+    end
+  end
+
+  # Test cases for version capping fix - prevents VersionResolver from returning
+  # versions higher than latest_version
+  describe "#fetch_latest_resolvable_version version capping" do
+    subject(:fetch_latest_resolvable_version) do
+      checker.send(:fetch_latest_resolvable_version, unlock_requirement: true)
+    end
+
+    # Use time dependency (which has existing fixtures) but override with our test scenario
+    let(:dependency_name) { "time" }
+    let(:dependency_version) { "0.0.7" }
+    let(:manifest_fixture_name) { "bare_version_specified" }
+    let(:lockfile_fixture_name) { "bare_version_specified" }
+
+    # Override the requirements to match our test scenario
+    let(:requirements) do
+      [{ file: "Cargo.toml", requirement: "0.0.7", groups: [], source: nil }]
+    end
+
+    context "when VersionResolver returns a version higher than latest_version" do
+      before do
+        # Create a mock VersionResolver instance
+        version_resolver = instance_double(Dependabot::Cargo::UpdateChecker::VersionResolver)
+        allow(version_resolver).to receive(:latest_resolvable_version).and_return(Gem::Version.new("0.1.0"))
+
+        # Mock VersionResolver.new to return our mock
+        allow(Dependabot::Cargo::UpdateChecker::VersionResolver)
+          .to receive(:new)
+          .and_return(version_resolver)
+
+        # Mock latest_version to return 0.0.8
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new("0.0.8"))
+      end
+
+      it "caps the result to latest_version" do
+        expect(fetch_latest_resolvable_version).to eq(Gem::Version.new("0.0.8"))
+      end
+    end
+
+    context "when VersionResolver returns a version equal to latest_version" do
+      before do
+        # Create a mock VersionResolver instance
+        version_resolver = instance_double(Dependabot::Cargo::UpdateChecker::VersionResolver)
+        allow(version_resolver).to receive(:latest_resolvable_version).and_return(Gem::Version.new("0.0.8"))
+
+        # Mock VersionResolver.new to return our mock
+        allow(Dependabot::Cargo::UpdateChecker::VersionResolver)
+          .to receive(:new)
+          .and_return(version_resolver)
+
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new("0.0.8"))
+      end
+
+      it "returns the resolved version unchanged" do
+        expect(fetch_latest_resolvable_version).to eq(Gem::Version.new("0.0.8"))
+      end
+    end
+
+    context "when VersionResolver returns a version lower than latest_version" do
+      before do
+        # Create a mock VersionResolver instance
+        version_resolver = instance_double(Dependabot::Cargo::UpdateChecker::VersionResolver)
+        allow(version_resolver).to receive(:latest_resolvable_version).and_return(Gem::Version.new("0.0.7"))
+
+        # Mock VersionResolver.new to return our mock
+        allow(Dependabot::Cargo::UpdateChecker::VersionResolver)
+          .to receive(:new)
+          .and_return(version_resolver)
+
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new("0.0.8"))
+      end
+
+      it "returns the resolved version unchanged" do
+        expect(fetch_latest_resolvable_version).to eq(Gem::Version.new("0.0.7"))
+      end
+    end
+
+    context "with git dependency (should not apply version capping)" do
+      let(:dependency_name) { "utf8-ranges" }
+      let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
+      let(:manifest_fixture_name) { "git_dependency" }
+      let(:lockfile_fixture_name) { "git_dependency" }
+      let(:requirements) do
+        [{
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: nil,
+            ref: nil
+          }
+        }]
+      end
+
+      before do
+        git_url = "https://github.com/BurntSushi/utf8-ranges.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+          .with(basic_auth: %w(x-access-token token))
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "utf8-ranges"),
+            headers: git_header
+          )
+      end
+
+      it "does not apply version capping for git dependencies" do
+        # Git dependencies should not be subject to version capping
+        # since they return SHA hashes, not semantic versions
+        expect { fetch_latest_resolvable_version }.not_to raise_error
+      end
     end
   end
 end

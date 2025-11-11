@@ -293,7 +293,7 @@ public class VersionFinderTests : TestBase
         var error = JobErrorBase.ErrorFromException(exception, "TEST-JOB-ID", tempDir.DirectoryPath);
 
         // assert
-        var expected = new PrivateSourceBadResponse([feedUrl]);
+        var expected = new PrivateSourceBadResponse([feedUrl], "unused");
         var expectedJson = JsonSerializer.Serialize(expected, RunWorker.SerializerOptions);
         var actualJson = JsonSerializer.Serialize(error, RunWorker.SerializerOptions);
         Assert.Equal(expectedJson, actualJson);

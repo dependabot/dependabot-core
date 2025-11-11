@@ -43,13 +43,16 @@ module Dependabot
 
       sig { returns(Ecosystem) }
       def ecosystem
-        @ecosystem ||= T.let(begin
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            language: language,
-            package_manager: package_manager
-          )
-        end, T.nilable(Dependabot::Ecosystem))
+        @ecosystem ||= T.let(
+          begin
+            Ecosystem.new(
+              name: ECOSYSTEM,
+              language: language,
+              package_manager: package_manager
+            )
+          end,
+          T.nilable(Dependabot::Ecosystem)
+        )
       end
 
       private
@@ -95,9 +98,12 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        @language ||= T.let(begin
-          Language.new(T.must(swift_version))
-        end, T.nilable(Dependabot::Swift::Language))
+        @language ||= T.let(
+          begin
+            Language.new(T.must(swift_version))
+          end,
+          T.nilable(Dependabot::Swift::Language)
+        )
       end
 
       sig { returns(T.nilable(String)) }

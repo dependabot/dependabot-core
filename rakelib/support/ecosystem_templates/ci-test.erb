@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -e
+
+bundle install
+bundle exec turbo_tests --verbose
+
+# TODO: If you have native helpers or additional tests, add them here
+# Example:
+# cd /opt/<%= ecosystem_name %> && npm run lint && cd -
+# cd /opt/<%= ecosystem_name %> && npm test && cd -

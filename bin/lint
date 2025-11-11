@@ -10,7 +10,13 @@ shellcheck \
   ./*/helpers/*/build \
   ./*/helpers/build \
   ./*/script/* \
-  ./script/* \
+  ./script/_common \
+  ./script/build \
+  ./script/ci-test-updater \
+  ./script/dependabot \
+  ./script/generate-coverage-report \
+  ./script/setup \
+  ./script/updater-e2e \
   ./updater/bin/run \
   "$@"
 

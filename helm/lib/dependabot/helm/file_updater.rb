@@ -19,11 +19,6 @@ module Dependabot
       YAML_REGEXP = /(Chart|values(?>\.[\w-]+)?)\.ya?ml/i
       IMAGE_REGEX = /(?:image:|repository:\s*)/i
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [CHART_YAML_REGEXP, VALUES_YAML_REGEXP]
-      end
-
       sig { override.returns(String) }
       def file_type
         "Helm chart"
@@ -86,24 +81,31 @@ module Dependabot
 
       sig { returns(LockFileGenerator) }
       def lockfile_updater
-        @lockfile_updater ||= T.let(LockFileGenerator.new(
-                                      dependencies: dependencies,
-                                      dependency_files: dependency_files,
-                                      repo_contents_path: T.must(repo_contents_path),
-                                      credentials: credentials
-                                    ), T.nilable(Dependabot::Helm::FileUpdater::LockFileGenerator))
+        @lockfile_updater ||= T.let(
+          LockFileGenerator.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            repo_contents_path: T.must(repo_contents_path),
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Helm::FileUpdater::LockFileGenerator)
+        )
       end
 
       sig { returns(ImageUpdater) }
       def image_updater
-        @image_updater ||= T.let(ImageUpdater.new(dependency: T.must(dependency), dependency_files: dependency_files),
-                                 T.nilable(Dependabot::Helm::FileUpdater::ImageUpdater))
+        @image_updater ||= T.let(
+          ImageUpdater.new(dependency: T.must(dependency), dependency_files: dependency_files),
+          T.nilable(Dependabot::Helm::FileUpdater::ImageUpdater)
+        )
       end
 
       sig { returns(ChartUpdater) }
       def chart_updater
-        @chart_updater ||= T.let(ChartUpdater.new(dependency: T.must(dependency)),
-                                 T.nilable(Dependabot::Helm::FileUpdater::ChartUpdater))
+        @chart_updater ||= T.let(
+          ChartUpdater.new(dependency: T.must(dependency)),
+          T.nilable(Dependabot::Helm::FileUpdater::ChartUpdater)
+        )
       end
 
       sig { params(chart_lock: Dependabot::DependencyFile, updated_content: String).returns(String) }

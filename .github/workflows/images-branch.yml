@@ -57,6 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: bazel, ecosystem: bazel }
           - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
@@ -73,6 +74,7 @@ jobs:
           - { name: gradle, ecosystem: gradle }
           - { name: helm, ecosystem: helm }
           - { name: hex, ecosystem: mix }
+          - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }

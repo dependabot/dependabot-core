@@ -431,11 +431,13 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "splits requirements correctly" do
       results = requirements.map { |req| req.split(Dependabot::Composer::REQUIREMENT_SEPARATOR) }
-      expect(results).to eq([
-        ["php >=7.4", "php >=8.0"],
-        ["php >=7.4", "php >=8.0"],
-        ["php >=7.4", "", "php >=8.0"]
-      ])
+      expect(results).to eq(
+        [
+          ["php >=7.4", "php >=8.0"],
+          ["php >=7.4", "php >=8.0"],
+          ["php >=7.4", "", "php >=8.0"]
+        ]
+      )
     end
   end
 end

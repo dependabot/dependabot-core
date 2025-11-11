@@ -111,10 +111,11 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
         stub_request(
           :get, "https://registry.terraform.io/.well-known/terraform.json"
-        ).to_return(status: 200, body: {
-          "modules.v1": "/v1/modules/",
-          "providers.v1": "/v1/providers/"
-        }.to_json)
+        ).to_return(status: 200,
+                    body: {
+                      "modules.v1": "/v1/modules/",
+                      "providers.v1": "/v1/providers/"
+                    }.to_json)
         stub_request(:get, url).to_return(status: 200, body: registry_response)
       end
 

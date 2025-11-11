@@ -150,7 +150,7 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/PerceivedComplexity, Metrics/MethodLength
         sig do
           params(
             path: String,
@@ -163,8 +163,10 @@ module Dependabot
             Dir.chdir(path) do
               if top_level_dependency_updates.any?
                 if Helpers.yarn_berry?(yarn_lock)
-                  run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
-                                                   yarn_lock: yarn_lock)
+                  run_yarn_berry_top_level_updater(
+                    top_level_dependency_updates: top_level_dependency_updates,
+                    yarn_lock: yarn_lock
+                  )
                 else
                   run_yarn_top_level_updater(
                     top_level_dependency_updates: top_level_dependency_updates
@@ -181,9 +183,12 @@ module Dependabot
           package_missing = error_handler.package_missing(e.message)
 
           unless package_missing
-            error_handler.handle_error(e, {
-              yarn_lock: yarn_lock
-            })
+            error_handler.handle_error(
+              e,
+              {
+                yarn_lock: yarn_lock
+              }
+            )
           end
 
           raise unless package_missing
@@ -195,7 +200,7 @@ module Dependabot
           sleep(rand(3.0..10.0))
           retry
         end
-        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/PerceivedComplexity, Metrics/MethodLength
 
         sig do
           params(
@@ -268,10 +273,12 @@ module Dependabot
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "yarn:update",
-              args: T.unsafe([
-                Dir.pwd,
-                top_level_dependency_updates
-              ])
+              args: T.unsafe(
+                [
+                  Dir.pwd,
+                  top_level_dependency_updates
+                ]
+              )
             ),
             T::Hash[String, String]
           )
@@ -322,9 +329,12 @@ module Dependabot
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
 
-          error_handler.handle_error(error, {
-            yarn_lock: yarn_lock
-          })
+          error_handler.handle_error(
+            error,
+            {
+              yarn_lock: yarn_lock
+            }
+          )
 
           package_not_found = error_handler.handle_package_not_found(error_message, yarn_lock)
 
@@ -372,8 +382,10 @@ module Dependabot
              error_message.include?(DEPENDENCY_MATCH_NOT_FOUND)
 
             unless resolvable_before_update?(yarn_lock)
-              error_handler.raise_resolvability_error(error_message,
-                                                      yarn_lock)
+              error_handler.raise_resolvability_error(
+                error_message,
+                yarn_lock
+              )
             end
 
             # Dependabot has probably messed something up with the update and we
@@ -587,10 +599,11 @@ module Dependabot
                 .find { |d| d.name == sanitized_name }
           return unless dep
 
-          raise PrivateSourceTimedOut, url.gsub(
-            HTTP_CHECK_REGEX,
-            ""
-          )
+          raise PrivateSourceTimedOut,
+                url.gsub(
+                  HTTP_CHECK_REGEX,
+                  ""
+                )
         end
 
         sig { returns(String) }
@@ -814,11 +827,15 @@ module Dependabot
         ).returns(Dependabot::DependabotError)
       end
       def create_error(handler, message, error, params)
-        handler.call(message, error, {
-          dependencies: dependencies,
-          dependency_files: dependency_files,
-          **params
-        })
+        handler.call(
+          message,
+          error,
+          {
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            **params
+          }
+        )
       end
 
       # Raises a resolvability error for a dependency file

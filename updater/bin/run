@@ -3,8 +3,14 @@ set -e
 
 command="$1"
 if [ -z "$command" ]; then
-  echo "usage: run [fetch_files|update_files|update_graph]"
+  echo "usage: run [update_files|update_graph]"
   exit 1
+fi
+
+# ignore fetch_files command for backward compatibility
+if [ "$command" = "fetch_files" ]; then
+  echo "fetch_files command is no longer used directly"
+  exit 0
 fi
 
 bundle exec ruby "bin/${command}.rb"

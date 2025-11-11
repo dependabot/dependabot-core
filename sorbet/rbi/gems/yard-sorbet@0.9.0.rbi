@@ -386,11 +386,6 @@ class YARDSorbet::TStructProp < ::T::Struct
   const :prop_name, ::String
   const :source, ::String
   const :types, T::Array[::String]
-
-  class << self
-    # source://sorbet-runtime/0.5.11577/lib/types/struct.rb#13
-    def inherited(s); end
-  end
 end
 
 # Helper methods for working with `YARD` tags

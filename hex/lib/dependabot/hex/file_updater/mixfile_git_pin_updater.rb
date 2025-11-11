@@ -12,8 +12,12 @@ module Dependabot
         extend T::Sig
 
         sig { params(dependency_name: String, mixfile_content: String, previous_pin: String, updated_pin: String).void }
-        def initialize(dependency_name:, mixfile_content:,
-                       previous_pin:, updated_pin:)
+        def initialize(
+          dependency_name:,
+          mixfile_content:,
+          previous_pin:,
+          updated_pin:
+        )
           @dependency_name = dependency_name
           @mixfile_content = mixfile_content
           @previous_pin    = previous_pin

@@ -1,7 +1,9 @@
 import hashin
 import json
 import plette
+import ssl
 import traceback
+from urllib.error import URLError
 from poetry.factory import Factory
 
 
@@ -21,6 +23,17 @@ def get_dependency_hash(dependency_name, dependency_version, algorithm,
             "error_class:": e.__class__.__name__,
             "trace:": ''.join(traceback.format_stack())
         })
+    except (URLError, ssl.SSLError) as e:
+        # Handle SSL certificate verification errors
+        error_msg = str(e)
+        if "CERTIFICATE_VERIFY_FAILED" in error_msg:
+            return json.dumps({
+                "error": "CERTIFICATE_VERIFY_FAILED: " + error_msg,
+                "error_class:": e.__class__.__name__,
+                "trace:": ''.join(traceback.format_stack())
+            })
+        # Re-raise if it's not a certificate verification error
+        raise
 
 
 def get_pipfile_hash(directory):

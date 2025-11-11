@@ -40,9 +40,13 @@ module Dependabot
       ).void
     end
     def initialize(
-      mode:, type:, package_manager_name:,
-      title: "", description: "",
-      show_in_pr: false, show_alert: false
+      mode:,
+      type:,
+      package_manager_name:,
+      title: "",
+      description: "",
+      show_in_pr: false,
+      show_alert: false
     )
       @mode = mode
       @type = type

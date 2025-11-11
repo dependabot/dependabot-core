@@ -10,8 +10,10 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
 
     let(:credentials) do
       [
-        Dependabot::Credential.new({ "type" => "hex_organization", "organization" => "organization",
-                                     "token" => "token" })
+        Dependabot::Credential.new(
+          { "type" => "hex_organization", "organization" => "organization",
+            "token" => "token" }
+        )
       ]
     end
 
@@ -25,8 +27,10 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
 
     let(:credentials) do
       [
-        Dependabot::Credential.new({ "type" => "hex_repository", "url" => "url", "auth_key" => "auth_key",
-                                     "public_key_fingerprint" => "public_key_fingerprint" })
+        Dependabot::Credential.new(
+          { "type" => "hex_repository", "url" => "url", "auth_key" => "auth_key",
+            "public_key_fingerprint" => "public_key_fingerprint" }
+        )
       ]
     end
 

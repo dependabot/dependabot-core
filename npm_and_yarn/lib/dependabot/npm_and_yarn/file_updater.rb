@@ -36,20 +36,6 @@ module Dependabot
         end
       end
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          %r{^(?:.*/)?package\.json$},
-          %r{^(?:.*/)?package-lock\.json$},
-          %r{^(?:.*/)?npm-shrinkwrap\.json$},
-          %r{^(?:.*/)?yarn\.lock$},
-          %r{^(?:.*/)?pnpm-lock\.yaml$},
-          %r{^(?:.*/)?pnpm-workspace\.yaml$},
-          %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
-          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
-        ]
-      end
-
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
@@ -216,7 +202,8 @@ module Dependabot
               dependency_files: dependency_files,
               updated_dependencies: dependencies
             ).files_requiring_update
-          end, T.nilable(T::Array[DependencyFile])
+          end,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 
@@ -311,7 +298,8 @@ module Dependabot
         @package_files ||= T.let(
           filtered_dependency_files.select do |f|
             f.name.end_with?("package.json")
-          end, T.nilable(T::Array[DependencyFile])
+          end,
+          T.nilable(T::Array[DependencyFile])
         )
       end
 

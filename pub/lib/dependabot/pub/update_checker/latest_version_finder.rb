@@ -30,10 +30,15 @@ module Dependabot
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions: [],
-                       security_advisories: [], options: {},
-                       cooldown_options: nil)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions: [],
+          security_advisories: [],
+          options: {},
+          cooldown_options: nil
+        )
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
@@ -45,14 +50,19 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def current_report
-          @current_report ||= T.let(T.must(PackageDetailsFetcher.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            security_advisories: security_advisories,
-            options: options
-          ).report.find { |d| d["name"] == dependency.name }), T.nilable(T::Hash[String, T.untyped]))
+          @current_report ||= T.let(
+            T.must(
+              PackageDetailsFetcher.new(
+                dependency: dependency,
+                dependency_files: dependency_files,
+                credentials: credentials,
+                ignored_versions: ignored_versions,
+                security_advisories: security_advisories,
+                options: options
+              ).report.find { |d| d["name"] == dependency.name }
+            ),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         end
 
         sig { returns(T.nilable(String)) }
@@ -108,14 +118,17 @@ module Dependabot
           return unparsed_version unless cooldown_enabled?
           return unparsed_version unless cooldown_options
 
-          @package_details ||= T.let(PackageDetailsFetcher.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            security_advisories: security_advisories,
-            options: options
-          ).package_details_metadata, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+          @package_details ||= T.let(
+            PackageDetailsFetcher.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories,
+              options: options
+            ).package_details_metadata,
+            T.nilable(T::Array[Dependabot::Package::PackageRelease])
+          )
 
           return unparsed_version unless @package_details.any?
 
@@ -126,9 +139,9 @@ module Dependabot
           return unparsed_version unless in_cooldown_period?(version_release)
 
           dependency.version
-          rescue StandardError => e
-            Dependabot.logger.error("Failed to filter cooldown versions for \"#{dependency.name}\": #{e.backtrace}")
-            unparsed_version
+        rescue StandardError => e
+          Dependabot.logger.error("Failed to filter cooldown versions for \"#{dependency.name}\": #{e.backtrace}")
+          unparsed_version
         end
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
@@ -146,8 +159,10 @@ module Dependabot
           passed_days = passed_seconds / DAY_IN_SECONDS
 
           if passed_days < days
-            Dependabot.logger.info("Version #{release.version}, Release date: #{release.released_at}." \
-                                   " Days since release: #{passed_days} (cooldown days: #{days})")
+            Dependabot.logger.info(
+              "Version #{release.version}, Release date: #{release.released_at}." \
+              " Days since release: #{passed_days} (cooldown days: #{days})"
+            )
           end
 
           # Check if the release is within the cooldown period
@@ -197,16 +212,22 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
+
         sig { returns(T::Hash[Symbol, T.untyped]) }
         attr_reader :options
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
       end

@@ -27,12 +27,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     )
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -417,11 +419,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       context "when an index url set in credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-            "replaces-base" => true
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+              "replaces-base" => true
+            }
+          )]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -435,12 +439,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           end
 
           let(:credentials) do
-            [Dependabot::Credential.new({
-              "type" => "python_index",
-              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-              "token" => "user:pass",
-              "replaces-base" => true
-            })]
+            [Dependabot::Credential.new(
+              {
+                "type" => "python_index",
+                "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+                "token" => "user:pass",
+                "replaces-base" => true
+              }
+            )]
           end
 
           it { is_expected.to eq(Gem::Version.new("2.6.0")) }
@@ -488,29 +494,35 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
             expect { latest_version }
               .to raise_error(error_class) do |error|
                 expect(error.source)
-                  .to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
-                         "/source/+simple/")
+                  .to eq(
+                    "https://pypi.weasyldev.com/${SECURE_NAME}" \
+                    "/source/+simple/"
+                  )
               end
           end
 
           context "when environment variables are provided as a config variable" do
             let(:credentials) do
-              [Dependabot::Credential.new({
-                "type" => "python_index",
-                "index-url" => "https://pypi.weasyldev.com/weasyl/" \
-                               "source/+simple",
-                "replaces-base" => false
-              })]
+              [Dependabot::Credential.new(
+                {
+                  "type" => "python_index",
+                  "index-url" => "https://pypi.weasyldev.com/weasyl/" \
+                                 "source/+simple",
+                  "replaces-base" => false
+                }
+              )]
             end
 
             its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
 
             context "with a gemfury style" do
               let(:credentials) do
-                [Dependabot::Credential.new({
-                  "type" => "python_index",
-                  "index-url" => "https://pypi.weasyldev.com/source/+simple"
-                })]
+                [Dependabot::Credential.new(
+                  {
+                    "type" => "python_index",
+                    "index-url" => "https://pypi.weasyldev.com/source/+simple"
+                  }
+                )]
               end
               let(:url) { "https://pypi.weasyldev.com/source/+simple/luigi/" }
 
@@ -555,11 +567,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
       context "when credentials are set" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "python_index",
-            "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-            "replaces-base" => false
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+              "replaces-base" => false
+            }
+          )]
         end
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }

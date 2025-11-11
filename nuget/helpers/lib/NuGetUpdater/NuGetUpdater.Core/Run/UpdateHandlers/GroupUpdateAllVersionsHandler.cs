@@ -42,14 +42,8 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         // group update, do all directories and merge
         // ungrouped update, do each dir separate
         await this.ReportUpdaterStarted(apiHandler);
-        if (job.DependencyGroups.Length > 0)
-        {
-            await RunGroupedDependencyUpdates(job, originalRepoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
-        }
-        else
-        {
-            await RunUngroupedDependencyUpdates(job, originalRepoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
-        }
+        await RunGroupedDependencyUpdates(job, originalRepoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
+        await RunUngroupedDependencyUpdates(job, originalRepoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, discoveryWorker, analyzeWorker, updaterWorker, apiHandler, experimentsManager, logger);
     }
 
     private async Task RunGroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
@@ -146,7 +140,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
                 }
 
-                var updatedDependencyFiles = await tracker.StopTrackingAsync();
+                var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
             }
 
@@ -204,6 +198,15 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     if (job.IsDependencyIgnoredByNameOnly(dependency.Name))
                     {
                         logger.Info($"Skipping ignored dependency {dependency.Name}.");
+                        continue;
+                    }
+
+                    var matchingGroups = job.DependencyGroups
+                        .Where(group => group.GetGroupMatcher().IsMatch(dependency.Name))
+                        .ToImmutableArray();
+                    if (matchingGroups.Length > 0)
+                    {
+                        logger.Info($"Dependency {dependency.Name} skipped for ungrouped updates because it's a member of the following groups: {string.Join(", ", matchingGroups.Select(group => group.Name))}");
                         continue;
                     }
 

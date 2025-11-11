@@ -40,32 +40,39 @@ public class JobErrorBaseTests : TestBase
 
     public static IEnumerable<object[]> GenerateErrorFromExceptionTestData()
     {
+        // something elevated to a bad response
+        yield return
+        [
+            new BadResponseException("nope", "http://nuget.example.com/v3/index.json"),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"], "nope"),
+        ];
+
         // internal error from package feed
         yield return
         [
             new HttpRequestException("nope", null, HttpStatusCode.InternalServerError),
-            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"], "nope"),
         ];
 
         // inner exception turns into private_source_bad_response; 500
         yield return
         [
-            new FatalProtocolException("nope", new HttpRequestException("nope", null, HttpStatusCode.InternalServerError)),
-            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
+            new FatalProtocolException("nope", new HttpRequestException("inner nope", null, HttpStatusCode.InternalServerError)),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"], "inner nope"),
         ];
 
         // inner exception turns into private_source_bad_response; ResponseEnded
         yield return
         [
-            new FatalProtocolException("nope", new HttpRequestException("nope", new HttpIOException(HttpRequestError.ResponseEnded))),
-            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
+            new FatalProtocolException("nope", new HttpRequestException("inner nope", new HttpIOException(HttpRequestError.ResponseEnded))),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"], "inner nope"),
         ];
 
         // service returned corrupt package
         yield return
         [
             new InvalidDataException("Central Directory corrupt."),
-            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"]),
+            new PrivateSourceBadResponse(["http://nuget.example.com/v3/index.json"], "Central Directory corrupt."),
         ];
 
         // top-level exception turns into private_source_authentication_failure

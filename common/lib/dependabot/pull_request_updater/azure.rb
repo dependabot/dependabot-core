@@ -48,8 +48,15 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, files:, base_commit:, old_commit:,
-                     credentials:, pull_request_number:, author_details: nil)
+      def initialize(
+        source:,
+        files:,
+        base_commit:,
+        old_commit:,
+        credentials:,
+        pull_request_number:,
+        author_details: nil
+      )
         @source = source
         @files = files
         @base_commit = base_commit

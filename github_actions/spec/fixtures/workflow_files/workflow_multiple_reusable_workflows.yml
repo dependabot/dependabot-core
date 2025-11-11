@@ -1,0 +1,9 @@
+on:
+  pull_request:
+
+jobs:
+  test-action-one:
+    uses: dsp-testing/github-action-with-multiple-reusable-workflow-10619/.github/workflows/action-one.yml@v1.0.0
+  
+  test-action-two:
+    uses: dsp-testing/github-action-with-multiple-reusable-workflow-10619/.github/workflows/action-two.yml@v1.0.0

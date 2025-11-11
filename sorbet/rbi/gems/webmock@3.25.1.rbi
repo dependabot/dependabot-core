@@ -5,6 +5,116 @@
 # Please instead update this file by running `bin/tapioca gem webmock`.
 
 
+# source://webmock//lib/webmock/http_lib_adapters/http_rb/client.rb#3
+module HTTP
+  extend ::HTTP::Base64
+end
+
+# source://webmock//lib/webmock/http_lib_adapters/http_rb/client.rb#4
+class HTTP::Client
+  include ::HTTP::Base64
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/client.rb#5
+  def __perform__(req, options); end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/client.rb#7
+  def perform(request, options); end
+
+  # @return [Boolean]
+  #
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/client.rb#13
+  def webmock_enabled?; end
+end
+
+# source://webmock//lib/webmock/http_lib_adapters/http_rb/request.rb#4
+class HTTP::Request
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/request.rb#5
+  def webmock_signature; end
+end
+
+# source://webmock//lib/webmock/http_lib_adapters/http_rb/response.rb#4
+class HTTP::Response
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/response.rb#5
+  def to_webmock; end
+
+  private
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/response.rb#83
+  def reset_body_to_allow_it_to_be_streamed!(webmock_response); end
+
+  class << self
+    # source://webmock//lib/webmock/http_lib_adapters/http_rb/response.rb#58
+    def build_http_rb_response_body_from_webmock_response(webmock_response); end
+
+    # source://webmock//lib/webmock/http_lib_adapters/http_rb/response.rb#26
+    def from_webmock(request, webmock_response, request_signature = T.unsafe(nil)); end
+
+    # source://webmock//lib/webmock/http_lib_adapters/http_rb/response.rb#71
+    def normalize_uri(uri); end
+  end
+end
+
+# source://webmock//lib/webmock/http_lib_adapters/http_rb/streamer.rb#5
+class HTTP::Response::Streamer
+  # @return [Streamer] a new instance of Streamer
+  #
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/streamer.rb#6
+  def initialize(str, encoding: T.unsafe(nil)); end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/streamer.rb#24
+  def close; end
+
+  # @return [Boolean]
+  #
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/streamer.rb#28
+  def finished_request?; end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/streamer.rb#11
+  def readpartial(size = T.unsafe(nil), outbuf = T.unsafe(nil)); end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/streamer.rb#32
+  def sequence_id; end
+end
+
+# source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#4
+class HTTP::WebMockPerform
+  # @return [WebMockPerform] a new instance of WebMockPerform
+  #
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#5
+  def initialize(request, options, &perform); end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#12
+  def exec; end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#16
+  def request_signature; end
+
+  protected
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#62
+  def halt; end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#66
+  def invoke_callbacks(webmock_response, options = T.unsafe(nil)); end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#55
+  def perform; end
+
+  # @raise [Errno::ETIMEDOUT]
+  #
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#50
+  def raise_timeout_error; end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#31
+  def register_request(signature); end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#35
+  def replay; end
+
+  # source://webmock//lib/webmock/http_lib_adapters/http_rb/webmock.rb#27
+  def response_for_request(signature); end
+end
+
 # source://webmock//lib/webmock/http_lib_adapters/net_http_response.rb#18
 module Net::WebMockHTTPResponse
   # source://webmock//lib/webmock/http_lib_adapters/net_http_response.rb#19
@@ -677,6 +787,22 @@ end
 
 # source://webmock//lib/webmock/http_lib_adapters/excon_adapter.rb#16
 WebMock::HttpLibAdapters::ExconAdapter::PARAMS_TO_DELETE = T.let(T.unsafe(nil), Array)
+
+# source://webmock//lib/webmock/http_lib_adapters/http_rb_adapter.rb#14
+class WebMock::HttpLibAdapters::HttpRbAdapter < ::WebMock::HttpLibAdapter
+  class << self
+    # source://webmock//lib/webmock/http_lib_adapters/http_rb_adapter.rb#22
+    def disable!; end
+
+    # source://webmock//lib/webmock/http_lib_adapters/http_rb_adapter.rb#18
+    def enable!; end
+
+    # @return [Boolean]
+    #
+    # source://webmock//lib/webmock/http_lib_adapters/http_rb_adapter.rb#26
+    def enabled?; end
+  end
+end
 
 # source://webmock//lib/webmock/http_lib_adapters/net_http.rb#11
 class WebMock::HttpLibAdapters::NetHttpAdapter < ::WebMock::HttpLibAdapter

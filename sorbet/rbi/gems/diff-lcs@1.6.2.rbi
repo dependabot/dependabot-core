@@ -122,7 +122,7 @@ module Diff::LCS
   # on +self+ and the +patchset+ will be created. See Diff::LCS#patch. Attempts
   # to autodiscover the direction of the patch.
   #
-  # source://diff-lcs//lib/diff/lcs.rb#102
+  # source://diff-lcs//lib/diff/lcs.rb#105
   def unpatch(patchset); end
 
   # Attempts to unpatch +self+ with the provided +patchset+. A new sequence
@@ -142,7 +142,7 @@ module Diff::LCS
   class << self
     # :yields: seq1[i] for each matched
     #
-    # source://diff-lcs//lib/diff/lcs.rb#145
+    # source://diff-lcs//lib/diff/lcs.rb#158
     def LCS(seq1, seq2, &block); end
 
     # source://diff-lcs//lib/diff/lcs/callbacks.rb#52
@@ -537,7 +537,7 @@ class Diff::LCS::Change
   # source://diff-lcs//lib/diff/lcs/change.rb#38
   def to_a; end
 
-  # source://diff-lcs//lib/diff/lcs/change.rb#38
+  # source://diff-lcs//lib/diff/lcs/change.rb#42
   def to_ary; end
 
   # @return [Boolean]
@@ -609,7 +609,7 @@ class Diff::LCS::ContextChange < ::Diff::LCS::Change
   # source://diff-lcs//lib/diff/lcs/change.rb#122
   def to_a; end
 
-  # source://diff-lcs//lib/diff/lcs/change.rb#122
+  # source://diff-lcs//lib/diff/lcs/change.rb#130
   def to_ary; end
 
   class << self
@@ -746,6 +746,7 @@ class Diff::LCS::DefaultCallbacks
 
     private
 
+    # source://diff-lcs//lib/diff/lcs/callbacks.rb#36
     def new(*_arg0); end
   end
 end
@@ -880,7 +881,7 @@ class Diff::LCS::Hunk
   # source://diff-lcs//lib/diff/lcs/hunk.rb#71
   def flag_context; end
 
-  # source://diff-lcs//lib/diff/lcs/hunk.rb#73
+  # source://diff-lcs//lib/diff/lcs/hunk.rb#71
   def flag_context=(context); end
 
   # Merges this hunk and the provided hunk together if they overlap. Returns
@@ -918,7 +919,7 @@ class Diff::LCS::Hunk
   # a truthy value so that if there is no overlap, you can know the merge
   # was skipped.
   #
-  # source://diff-lcs//lib/diff/lcs/hunk.rb#97
+  # source://diff-lcs//lib/diff/lcs/hunk.rb#104
   def unshift(hunk); end
 
   private

@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'main' }}
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
           cat filtered.json
 
           # Curl the smoke-test tests directory to get a list of tests to run
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
+          URL=https://api.github.com/repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $URL > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
@@ -56,8 +56,15 @@ jobs:
 
           # Set the step output
           echo "suites=$(cat suites.json)" >> $GITHUB_OUTPUT
+  download-cli:
+    uses: dependabot/smoke-tests/.github/workflows/download-cli.yml@main
+    permissions:
+      contents: read
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
+
   e2e:
-    needs: discover
+    needs: [discover, download-cli]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -68,10 +75,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Download CLI
+      - name: Download CLI artifact
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: dependabot-cli
+
+      - name: Make CLI executable
         run: |
-          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
-          tar xzvf *.tar.gz >/dev/null 2>&1
+          chmod +x dependabot
           ./dependabot --version
 
       - name: Restore Smoke Test
@@ -84,7 +95,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
+          URL=https://api.github.com/repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
       - name: Cache Smoke Test
