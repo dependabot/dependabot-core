@@ -132,6 +132,7 @@ module Dependabot
       end
       def max_version_from_upper_bounds(versions)
         upper_bounds = versions.select { |v| v[:op].start_with?("<") }
+                               .reject { |v| v[:version].respond_to?(:prerelease?) && v[:version].prerelease? }
         upper_bounds.map { |v| v[:version] }.max if upper_bounds.any?
       end
 
