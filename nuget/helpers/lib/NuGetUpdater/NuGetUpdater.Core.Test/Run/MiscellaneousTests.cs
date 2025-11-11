@@ -542,6 +542,154 @@ public class MiscellaneousTests
         Assert.Equal(filePathOnDisk, actualRepoRelativePath);
     }
 
+    [Theory]
+    [MemberData(nameof(GetPromoteAdditionalPackageSourcesData))]
+    public void PromoteAdditionalPackageSources(string nuGetConfigContents, string? expectedContent)
+    {
+        var logger = new TestLogger();
+        var modifiedNuGetConfigContents = RunWorker.PromoteAdditionalPackageSources("test/NuGet.Config", nuGetConfigContents, logger);
+        var expectedNuGetConfigContents = expectedContent ?? nuGetConfigContents;
+        Assert.Equal(expectedNuGetConfigContents.Replace("\r", ""), modifiedNuGetConfigContents.Replace("\r", ""));
+    }
+
+    public static IEnumerable<object?[]> GetPromoteAdditionalPackageSourcesData()
+    {
+        // no change, no config section
+        yield return
+        [
+            """
+            <configuration>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+              </packageSources>
+            </configuration>
+            """,
+            null
+        ];
+
+        // no change, config section but no relevant values
+        yield return
+        [
+            """
+            <configuration>
+              <config></config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+              </packageSources>
+            </configuration>
+            """,
+            null
+        ];
+
+        // add package source, no package source mapping
+        yield return
+        [
+            """
+            <configuration>
+              <config>
+                <add key="dependabotAdditionalPackageSource" value="extra-source-1" />
+                <ADD KEY="dependabotAdditionalPackageSource" VALUE="extra-source-2" />
+              </config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+              </packageSources>
+            </configuration>
+            """,
+            """
+            <configuration>
+              <config>
+                <add key="dependabotAdditionalPackageSource" value="extra-source-1" />
+                <ADD KEY="dependabotAdditionalPackageSource" VALUE="extra-source-2" />
+              </config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+                <add key="dependabot-additional-package-source-1" value="extra-source-1" />
+                <add key="dependabot-additional-package-source-2" value="extra-source-2" />
+              </packageSources>
+            </configuration>
+            """
+        ];
+
+        // add package source with package source mapping
+        yield return
+        [
+            """
+            <configuration>
+              <config>
+                <add key="dependabotAdditionalPackageSource" value="extra-source-1" />
+                <add key="dependabotAdditionalPackageSource" value="extra-source-2" />
+              </config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="default-source">
+                  <package pattern="Some.Package" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """,
+            """
+            <configuration>
+              <config>
+                <add key="dependabotAdditionalPackageSource" value="extra-source-1" />
+                <add key="dependabotAdditionalPackageSource" value="extra-source-2" />
+              </config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+                <add key="dependabot-additional-package-source-1" value="extra-source-1" />
+                <add key="dependabot-additional-package-source-2" value="extra-source-2" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="default-source">
+                  <package pattern="Some.Package" />
+                </packageSource>
+                <packageSource key="dependabot-additional-package-source-1">
+                  <package pattern="*" />
+                </packageSource>
+                <packageSource key="dependabot-additional-package-source-2">
+                  <package pattern="*" />
+                </packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """
+        ];
+
+        // add package insecure source
+        yield return
+        [
+            """
+            <configuration>
+              <config>
+                <add key="dependabotAdditionalPackageSource" value="http://nuget.example.com/insecure" />
+              </config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+              </packageSources>
+            </configuration>
+            """,
+            """
+            <configuration>
+              <config>
+                <add key="dependabotAdditionalPackageSource" value="http://nuget.example.com/insecure" />
+              </config>
+              <packageSources>
+                <clear />
+                <add key="default-source" value="http://nuget.example.com" />
+                <add key="dependabot-additional-package-source-1" value="http://nuget.example.com/insecure" allowInsecureConnections="true" />
+              </packageSources>
+            </configuration>
+            """
+        ];
+    }
+
     public static IEnumerable<object[]> GetUpdateOperationsData()
     {
         static ProjectDiscoveryResult GetProjectDiscovery(string filePath, params string[] dependencyNames)
