@@ -1,55 +1,49 @@
 # syntax=docker.io/docker/dockerfile:1.20
+# Dependabot should generally handle keeping these files up to date, though there may be situations where a manual update is required.
+# When updating digests, always use the Multiplatform digest rather than one specific to a single architecture.
+# Tools like `docker buildx imagetools` can help you locate the Multiplatform digest
+# If you perform a manual update, make sure to update the tag as well.
+# Including the tag with the digest is for documentation purposes, as Docker ignores the tag when a digest is provided
+# It helps because mapping tags to digests is difficult without OCI metadata and not all the images publish this metadata
+# From https://github.com/sigstore/cosign/releases
+FROM ghcr.io/sigstore/cosign/cosign:v3.0.2@sha256:b29487e48205d875c324c79583e2806d9d269c0fa299e0861bbec023d8430c8b AS cosign
+# From https://github.com/regclient/regclient/releases
+FROM ghcr.io/regclient/regctl:v0.10.0@sha256:c10b839d91d66b2ce9f4fa588f1b576c51c4709934aeb782ef175a20fd49942d AS regctl
+# From https://github.com/helm/helm/releases
+FROM alpine/helm:3.17.2@sha256:b80eb190fca14707e94a5090235a3f1bf2f206f26761f2890d16a1e570386236 AS helm
+# From https://github.com/oras-project/oras/releases
+FROM ghcr.io/oras-project/oras:v1.2.2@sha256:cd549d80c4aa89638aea5964a3cd8193a6dd8abf939a43b5d562c24dbab08ff1 AS oras
+
+# The builder needs to be an image with the cacerts because cosign verification needs them
+# We could use a smaller base image and install the cacerts, but
+# at that point, we can just use the dependabot-updater-core as the base image
+# and save us another pull as it is already used as the final image
+FROM ghcr.io/dependabot/dependabot-updater-core AS builder
+
+COPY  --chown=dependabot:dependabot --from=regctl /regctl $DEPENDABOT_HOME/tools/regctl
+COPY  --chown=dependabot:dependabot --from=cosign /ko-app/cosign $DEPENDABOT_HOME/tools/cosign
+COPY  --chown=dependabot:dependabot --from=helm /usr/bin/helm $DEPENDABOT_HOME/tools/helm
+COPY  --chown=dependabot:dependabot --from=oras /bin/oras $DEPENDABOT_HOME/tools/oras
+
+ENV PATH=/opt/bin/dependabot-tools:$PATH
+
+# Verify regctl signature
+RUN <<EOF
+      REGCTL_VERSION=$(regctl version --format '{{.VCSTag}}')
+      cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp https://github.com/regclient/regclient/.github/workflows/ \
+            ghcr.io/regclient/regctl:${REGCTL_VERSION}
+      # Remove cosign as it is not needed in the final image
+       rm $DEPENDABOT_HOME/tools/cosign
+EOF
+
+COPY --chown=dependabot:dependabot --parents docker helm common $DEPENDABOT_HOME
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG TARGETARCH
-
-# Install regctl. See https://github.com/regclient/regclient/releases for updates
-ARG REGCTL_VERSION=0.5.6
-ARG ORAS_VERSION=1.2.2
-
-# These are manually calculated as they are not provided by the maintainer
-# curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-amd64 | sha256sum
-ARG REGCTL_AMD64_CHECKSUM=ed352bc9991e3f12819b27fe516c58c4dab1fc0ee66c2f24d54c922a4f6fd582
-# curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-arm64 | sha256sum
-ARG REGCTL_ARM64_CHECKSUM=5e6ab7a5c48017f3213078ba726714010c608a7761f3f18e55d44be36ca5d95b
-
-ENV PATH=/opt/bin:$PATH
-RUN cd /tmp \
-  && curl -sSf -o regctl-${TARGETARCH} -L https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-${TARGETARCH} \
-  && printf "$REGCTL_AMD64_CHECKSUM regctl-amd64\n$REGCTL_ARM64_CHECKSUM regctl-arm64\n" | sha256sum -c --ignore-missing - \
-  && mkdir /opt/bin \
-  && mv regctl-${TARGETARCH} /opt/bin/regctl \
-  && chmod o+rx /opt/bin/regctl
-
-# Add Helm installation
-ARG HELM_VERSION=3.17.2
-# Checksums for Helm
-# curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz | sha256sum
-ARG HELM_AMD64_CHECKSUM=90c28792a1eb5fb0b50028e39ebf826531ebfcf73f599050dbd79bab2f277241
-# curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-arm64.tar.gz | sha256sum
-ARG HELM_ARM64_CHECKSUM=0b13ec8580dd5498b5a2d7cb34146e098049f59500a266db1bb98f59649eb90a
-
-ENV PATH=/opt/bin:$PATH
-RUN cd /tmp \
-  && curl -sSf -o regctl-${TARGETARCH} -L https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-${TARGETARCH} \
-  && printf "$REGCTL_AMD64_CHECKSUM regctl-amd64\n$REGCTL_ARM64_CHECKSUM regctl-arm64\n" | sha256sum -c --ignore-missing - \
-  && mkdir -p /opt/bin \
-  && mv regctl-${TARGETARCH} /opt/bin/regctl \
-  && chmod o+rx /opt/bin/regctl \
-  # Install Helm
-  && curl -sSf -L https://get.helm.sh/helm-v${HELM_VERSION}-linux-${TARGETARCH}.tar.gz | tar xz \
-  && mv linux-${TARGETARCH}/helm /opt/bin/helm \
-  && chmod o+rx /opt/bin/helm \
-  && rm -rf linux-${TARGETARCH}
-
-
-RUN cd /tmp \
-  && curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz \
-  && mkdir -p oras-install/ \
-  && tar -zxf oras_${ORAS_VERSION}_*.tar.gz -C oras-install/ \
-  && mv oras-install/oras /opt/bin/oras \
-  && rm -rf oras_${ORAS_VERSION}_*.tar.gz oras-install/
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot --parents docker helm common $DEPENDABOT_HOME/
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --from=builder $DEPENDABOT_HOME $DEPENDABOT_HOME
+ENV PATH=$DEPENDABOT_HOME/tools:$PATH
