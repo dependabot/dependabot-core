@@ -133,6 +133,9 @@ module Dependabot
 
       # missing dependency files is not fatal for update_graph jobs as they need to process deletions
       if @dependency_files_for_multi_directories&.empty? && !job.update_graph?
+        if job.command == "update" || job.command == "recreate"
+          service.close_pull_request(job.dependencies || [], :dependency_removed)
+        end
         raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
       end
 

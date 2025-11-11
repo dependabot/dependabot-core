@@ -1,0 +1,13 @@
+{
+  "name": "MODULE.bazel",
+  "path": "MODULE.bazel",
+  "sha": "abc123",
+  "size": 1234,
+  "url": "https://api.github.com/repos/example/repo/contents/MODULE.bazel?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/MODULE.bazel",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/MODULE.bazel",
+  "type": "file",
+  "content": "bW9kdWxlKG5hbWUgPSAiZXhhbXBsZSIsIHZlcnNpb24gPSAiMS4wLjAiKQ==\n",
+  "encoding": "base64"
+}

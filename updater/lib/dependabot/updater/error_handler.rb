@@ -81,20 +81,21 @@ module Dependabot
       # Provides logging for errors that occur when processing a dependency
       sig do
         params(
-          dependency: T.untyped,
+          dependency: T.nilable(Dependabot::Dependency),
           error: StandardError,
           error_type: String,
           error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
         ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
+        dependency_name = dependency&.name || "unknown dependency"
         if error_type == "unknown_error"
-          Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
+          Dependabot.logger.error "Error processing #{dependency_name} (#{error.class.name})"
           Dependabot.logger.error error.message
           error.backtrace&.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
-            "Handled error whilst updating #{dependency.name}: #{error_type} #{error_detail}"
+            "Handled error whilst updating #{dependency_name}: #{error_type} #{error_detail}"
           )
         end
       end

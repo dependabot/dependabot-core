@@ -90,24 +90,6 @@ module Dependabot
       sig do
         params(
           project_path: String,
-          package_name: String,
-          target_version: String
-        ).returns(T::Hash[String, T.untyped])
-      end
-      def check_update_compatibility(project_path, package_name, target_version)
-        call_julia_helper(
-          function: "check_update_compatibility",
-          args: {
-            project_path: project_path,
-            package_name: package_name,
-            target_version: target_version
-          }
-        )
-      end
-
-      sig do
-        params(
-          project_path: String,
           manifest_path: T.nilable(String)
         ).returns(T::Hash[String, T.untyped])
       end
@@ -127,6 +109,24 @@ module Dependabot
           function: "parse_manifest",
           args: { manifest_path: manifest_path }
         )
+      end
+
+      sig { params(directory: String).returns(T::Hash[String, String]) }
+      def find_environment_files(directory)
+        result = call_julia_helper(
+          function: "find_environment_files",
+          args: { directory: directory }
+        )
+
+        return {} if result["error"]
+
+        {
+          "project_file" => result["project_file"],
+          "manifest_file" => result["manifest_file"]
+        }
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to find environment files in #{directory}: #{e.message}")
+        {}
       end
 
       sig do
@@ -157,22 +157,6 @@ module Dependabot
         call_julia_helper(
           function: "find_package_source_url",
           args: args
-        )
-      end
-
-      sig do
-        params(
-          package_name: String,
-          source_url: String
-        ).returns(T::Hash[String, T.untyped])
-      end
-      def extract_package_metadata_from_url(package_name, source_url)
-        call_julia_helper(
-          function: "extract_package_metadata_from_url",
-          args: {
-            package_name: package_name,
-            source_url: source_url
-          }
         )
       end
 
@@ -267,6 +251,68 @@ module Dependabot
           "Failed to fetch available versions with custom registries for #{package_name}: #{e.message}"
         )
         []
+      end
+
+      # ============================================================================
+      # BATCH OPERATIONS
+      # ============================================================================
+
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+      def batch_fetch_package_info(dependencies)
+        packages = dependencies.map do |dep|
+          {
+            name: dep.name,
+            uuid: dep.metadata[:julia_uuid] || ""
+          }
+        end
+
+        call_julia_helper(
+          function: "batch_get_package_info",
+          args: { packages: packages }
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to batch fetch package info: #{e.message}")
+        {}
+      end
+
+      sig do
+        params(
+          packages_versions: T::Array[T::Hash[Symbol, T.untyped]]
+        ).returns(T::Hash[String, T::Hash[String, T.nilable(String)]])
+      end
+      def batch_fetch_version_release_dates(packages_versions)
+        result = call_julia_helper(
+          function: "batch_get_version_release_dates",
+          args: { packages_versions: packages_versions }
+        )
+
+        # Convert the result to a more Ruby-friendly format
+        result.transform_values do |dates|
+          next dates if dates.is_a?(Hash) && dates["error"]
+
+          dates.is_a?(Hash) ? dates : {}
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to batch fetch version release dates: #{e.message}")
+        {}
+      end
+
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
+      def batch_fetch_available_versions(dependencies)
+        packages = dependencies.map do |dep|
+          {
+            name: dep.name,
+            uuid: dep.metadata[:julia_uuid] || ""
+          }
+        end
+
+        call_julia_helper(
+          function: "batch_get_available_versions",
+          args: { packages: packages }
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to batch fetch available versions: #{e.message}")
+        {}
       end
 
       private

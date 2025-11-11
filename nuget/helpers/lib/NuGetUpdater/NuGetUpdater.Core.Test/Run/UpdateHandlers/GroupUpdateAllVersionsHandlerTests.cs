@@ -270,7 +270,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
     }
 
     [Fact]
-    public async Task GeneratesCreatePullRequest_Grouped()
+    public async Task GeneratesCreatePullRequest_GroupedAndUngrouped()
     {
         // single groups specified; creates 1 PR for both directories
         await TestAsync(
@@ -284,7 +284,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         Rules = new()
                         {
                             ["patterns"] = new[] { "*" },
-                            ["exclude-patterns"] = new[] { "Unrelated.*" },
+                            ["exclude-patterns"] = new[] { "Ungrouped.*" },
                         },
                     },
                 ],
@@ -304,7 +304,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                             Dependencies = [
                                 new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                                 new("Some.Other.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
-                                new("Unrelated.Dependency", "5.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Ungrouped.Dependency", "5.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                             ],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -321,7 +321,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                             Dependencies = [
                                 new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                                 new("Some.Other.Dependency", "3.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
-                                new("Unrelated.Dependency", "5.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                                new("Ungrouped.Dependency", "5.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
                             ],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -338,6 +338,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 {
                     "Some.Dependency" => "2.0.0",
                     "Some.Other.Dependency" => "4.0.0",
+                    "Ungrouped.Dependency" => "6.0.0",
                     _ => throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}"),
                 };
                 return Task.FromResult(new AnalysisResult()
@@ -373,6 +374,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         ["operation"] = "group_update_all_versions",
                     }
                 },
+                // first the grouped updates
                 // for "/src"
                 new UpdatedDependencyList()
                 {
@@ -395,7 +397,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         },
                         new()
                         {
-                            Name = "Unrelated.Dependency",
+                            Name = "Ungrouped.Dependency",
                             Version = "5.0.0",
                             Requirements = [
                                 new() { Requirement = "5.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
@@ -426,7 +428,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         },
                         new()
                         {
-                            Name = "Unrelated.Dependency",
+                            Name = "Ungrouped.Dependency",
                             Version = "5.0.0",
                             Requirements = [
                                 new() { Requirement = "5.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
@@ -507,6 +509,129 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     PrTitle = EndToEndTests.TestPullRequestTitle,
                     PrBody = EndToEndTests.TestPullRequestBody,
                     DependencyGroup = "test-group",
+                },
+                // now the ungrouped updates
+                // for "/src"
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Other.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Version = "5.0.0",
+                            Requirements = [
+                                new() { Requirement = "5.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/project.csproj"],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Version = "6.0.0",
+                            Requirements = [
+                                new() { Requirement = "6.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "5.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "5.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                // for "/test"
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Other.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Version = "5.0.0",
+                            Requirements = [
+                                new() { Requirement = "5.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/test/project.csproj"],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Ungrouped.Dependency",
+                            Version = "6.0.0",
+                            Requirements = [
+                                new() { Requirement = "6.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
+                            ],
+                            PreviousVersion = "5.0.0",
+                            PreviousRequirements = [
+                                new() { Requirement = "5.0.0", File = "/test/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/test",
+                            Name = "project.csproj",
+                            Content = "updated contents",
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = EndToEndTests.TestPullRequestCommitMessage,
+                    PrTitle = EndToEndTests.TestPullRequestTitle,
+                    PrBody = EndToEndTests.TestPullRequestBody,
+                    DependencyGroup = null,
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -608,6 +733,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         ["operation"] = "group_update_all_versions",
                     }
                 },
+                // grouped check
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -659,6 +785,29 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     PrTitle = EndToEndTests.TestPullRequestTitle,
                     PrBody = EndToEndTests.TestPullRequestBody,
                     DependencyGroup = "test-group",
+                },
+                // ungrouped check
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Some.Other.Dependency",
+                            Version = "3.0.0",
+                            Requirements = [
+                                new() { Requirement = "3.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/project.csproj"],
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
@@ -770,6 +919,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         ["operation"] = "group_update_all_versions",
                     }
                 },
+                // grouped check
                 new UpdatedDependencyList()
                 {
                     Dependencies = [
@@ -821,6 +971,29 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                     PrTitle = EndToEndTests.TestPullRequestTitle,
                     PrBody = EndToEndTests.TestPullRequestBody,
                     DependencyGroup = "test-group-1",
+                },
+                // ungrouped check
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Package.For.Group.One",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                        new()
+                        {
+                            Name = "Package.For.Group.Two",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/project.csproj"],
                 },
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]

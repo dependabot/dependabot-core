@@ -11,10 +11,13 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
     )
   end
 
+  let(:project_name) { "graphing_dependencies" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
   let(:parser) do
     Dependabot::FileParsers.for_package_manager("go_modules").new(
       dependency_files:,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       source: source,
       credentials: [],
       reject_external_code: false
@@ -103,7 +106,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
       # We have disabled fetching of relationships due to a problem with `go mod graph` and our handling of
       # `replace` directives causing some projects to choke on this step.
-      describe "assigns child dependencies using go mod graph", skip: "behaviour disabled temporarily" do
+      describe "assigns child dependencies using go mod graph" do
         let(:dependency_graph_expectations) do
           [
             {
@@ -153,6 +156,45 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
             expect(dependency.dependencies).to eql(expectation[:depends_on])
           end
+        end
+      end
+
+      describe "when go mod graph includes pruned modules" do
+        let(:graph_output_with_pruned) do
+          <<~GRAPH
+            github.com/dependabot/core-test github.com/fatih/color@v1.18.0
+            github.com/fatih/color github.com/mattn/go-colorable@v0.1.14
+            github.com/fatih/color github.com/mattn/go-isatty@v0.0.20
+            github.com/fatih/color golang.org/x/sys@v0.36.0
+            github.com/fatih/color golang.org/x/tools@v0.17.0
+            github.com/mattn/go-colorable golang.org/x/sys@v0.36.0
+            github.com/mattn/go-colorable golang.org/x/tools@v0.17.0
+            github.com/mattn/go-isatty golang.org/x/sys@v0.36.0
+            rsc.io/quote rsc.io/sampler@v1.3.0
+            rsc.io/sampler golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
+            golang.org/x/text go@1.24.0
+          GRAPH
+        end
+
+        it "filters out pruned subdependencies" do
+          allow(parser).to receive(:run_in_parsed_context).and_call_original
+          allow(parser).to receive(:run_in_parsed_context).with("go mod graph").and_return(graph_output_with_pruned)
+
+          resolved = grapher.resolved_dependencies
+          color = resolved.fetch("github.com/fatih/color")
+          expect(color.dependencies).to include(
+            "github.com/mattn/go-colorable",
+            "github.com/mattn/go-isatty",
+            "golang.org/x/sys"
+          )
+          expect(color.dependencies).not_to include("golang.org/x/tools")
+
+          text_pkg = resolved.fetch("golang.org/x/text")
+          expect(text_pkg.dependencies).not_to include("go")
+
+          all_children = resolved.values.flat_map(&:dependencies)
+          expect(all_children).not_to include("golang.org/x/tools")
+          expect(all_children).not_to include("go")
         end
       end
     end

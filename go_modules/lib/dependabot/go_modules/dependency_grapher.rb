@@ -37,7 +37,9 @@ module Dependabot
       # doing this in the parser shouldn't add a huge overhead.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        package_relationships.fetch(dependency.name, [])
+        # go mod graph returns all dependencies it finds, even if it has been pruned. So filter those out.
+        dependency_names = @dependencies.map(&:name)
+        package_relationships.fetch(dependency.name, []).select { |child| dependency_names.include?(child) }
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -45,7 +47,7 @@ module Dependabot
         return @go_mod if defined?(@go_mod)
 
         @go_mod = T.let(
-          dependency_files.find { |f| f.name = "go.mod" },
+          dependency_files.find { |f| f.name == "go.mod" },
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -72,24 +74,21 @@ module Dependabot
         )
       end
 
-      # TODO: Re-instate method once we consider how we are handling `replace` directives
       sig { returns(T::Hash[String, T.untyped]) }
       def fetch_package_relationships
-        {}
+        T.cast(
+          file_parser,
+          Dependabot::GoModules::FileParser
+        ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
+          match = line.match(GO_MOD_GRAPH_LINE_REGEX)
+          unless match
+            Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
+            next
+          end
 
-        # T.cast(
-        #   file_parser,
-        #   Dependabot::GoModules::FileParser
-        # ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
-        #   match = line.match(GO_MOD_GRAPH_LINE_REGEX)
-        #   unless match
-        #     Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
-        #     next
-        #   end
-
-        #   rels[match[:parent]] ||= []
-        #   rels[match[:parent]] << match[:child]
-        # end
+          rels[match[:parent]] ||= []
+          rels[match[:parent]] << match[:child]
+        end
       end
     end
   end

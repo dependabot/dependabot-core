@@ -5,6 +5,7 @@ require "nokogiri"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers/base"
+require "dependabot/gradle/distributions"
 require "dependabot/gradle/file_fetcher"
 require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/maven/utils/auth_headers_finder"
@@ -25,6 +26,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
+        return nil if Distributions.distribution_requirements?(dependency.requirements)
+
         tmp_source = look_up_source_in_pom(dependency_pom_file)
         return tmp_source if tmp_source
 

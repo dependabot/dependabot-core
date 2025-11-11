@@ -16,9 +16,9 @@ module Dependabot
     class ReplaceStubber
       extend T::Sig
 
-      sig { params(repo_contents_path: T.nilable(String)).void }
+      sig { params(repo_contents_path: String).void }
       def initialize(repo_contents_path)
-        @repo_contents_path = repo_contents_path
+        @repo_contents_path = T.let(repo_contents_path, String)
       end
 
       sig do
@@ -37,7 +37,6 @@ module Dependabot
       def stub_replace_path?(path, directory)
         return true if absolute_path?(path)
         return false unless relative_replacement_path?(path)
-        return true if @repo_contents_path.nil?
 
         resolved_path = module_pathname(directory).join(path).realpath
         inside_repo_contents_path = resolved_path.to_s.start_with?(@repo_contents_path.to_s)

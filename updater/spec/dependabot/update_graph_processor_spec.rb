@@ -22,7 +22,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   let(:service) do
     instance_double(
       Dependabot::Service,
-      create_dependency_submission: nil
+      create_dependency_submission: nil,
+      record_update_job_error: nil
     )
   end
 
@@ -55,7 +56,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       Dependabot::Job,
       id: "42",
       package_manager: "bundler",
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       credentials: credentials,
       source: source,
       reject_external_code?: false,
@@ -64,10 +65,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   end
 
   let(:base_commit_sha) { "fake-sha" }
+  let(:repo_contents_path) { nil }
 
   context "with a basic Gemfile project" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -123,6 +126,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "with a small sinatra app" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_sinatra_app/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -199,6 +203,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
     let(:dir1) { "/" }
     let(:dir2) { "/subproject/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_sinatra_app/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -270,11 +275,67 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       update_graph_processor.run
     end
+
+    context "when the first directory fails to process" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: "garbage",
+            directory: dir1
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: "garbage in greater volume",
+            directory: dir1
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("bundler/original/Gemfile"),
+            directory: dir2
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: fixture("bundler/original/Gemfile.lock"),
+            directory: dir2
+          )
+        ]
+      end
+
+      it "emits a snapshot and an error" do
+        expect(service).to receive(:create_dependency_submission).once
+        expect(service).to receive(:record_update_job_error).once
+
+        update_graph_processor.run
+      end
+
+      it "correctly snapshots the second directory" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+
+          next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
+
+          # Check we have the simple app with 2 dependencies
+          expect(payload[:manifests].length).to eq(1)
+          lockfile = payload[:manifests].fetch("/Gemfile.lock")
+
+          expect(lockfile[:resolved].length).to eq(2)
+
+          dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+          expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+          dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+          expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+        end
+
+        update_graph_processor.run
+      end
+    end
   end
 
   context "with vendored files" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_vendored/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -314,6 +375,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "without a Gemfile.lock" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -355,6 +417,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
   context "with a set of empty dependency files" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
     let(:dependency_files) do
       [
@@ -418,9 +481,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     context "when the source does not specify a branch" do
       let(:directories) { ["/"] }
       let(:branch) { nil }
+      let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
 
       it "retrieves the default branch via Git" do
-        allow(job).to receive(:repo_contents_path).and_return(Dir.pwd)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("origin/very-esoteric-naming\n")
 
         expect(service).to receive(:create_dependency_submission) do |args|
@@ -431,6 +494,63 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         update_graph_processor.run
       end
+    end
+  end
+
+  context "when fetching subdependencies fails" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+
+      failing_grapher_class = Class.new(original_grapher_class) do
+        def initialize(file_parser:)
+          super
+          @raise_once = true
+        end
+
+        def fetch_subdependencies(_dependency)
+          if @raise_once
+            @raise_once = false
+            raise StandardError, "boom"
+          end
+          []
+        end
+      end
+
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with(job.package_manager).and_return(failing_grapher_class)
+    end
+
+    it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+        expect(payload[:manifests]).to be_a(Hash)
+      end
+
+      expect(service).to receive(:record_update_job_error) do |args|
+        expect(args[:error_type]).to eq("dependency_file_not_resolvable")
+        expect(args[:error_details]).to include(:message)
+      end
+
+      update_graph_processor.run
     end
   end
 end
