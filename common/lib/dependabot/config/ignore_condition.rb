@@ -131,7 +131,10 @@ module Dependabot
           .returns(T.nilable(T.any(String, Gem::Version)))
       end
       def max_version_from_upper_bounds(versions)
-        upper_bounds = versions.select { |v| v[:op].start_with?("<") }
+        # Only use <= upper bounds (not <), and exclude prereleases
+        # <= means "up to and including", so user could be on this version
+        # < means "strictly below", so user is NOT on this version
+        upper_bounds = versions.select { |v| v[:op] == "<=" }
                                .reject { |v| v[:version].respond_to?(:prerelease?) && v[:version].prerelease? }
         upper_bounds.map { |v| v[:version] }.max if upper_bounds.any?
       end
