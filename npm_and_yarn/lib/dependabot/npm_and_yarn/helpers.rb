@@ -473,13 +473,6 @@ module Dependabot
       # Find cached version that matches the requested version pattern
       sig { params(name: String, version: String).returns(T.nilable(String)) }
       def self.find_cached_version(name, version)
-        return nil if name.empty? || version.empty?
-
-        # Disable cache optimization in test environments to avoid interfering with test expectations
-        return nil if ENV["RSPEC_RUNNING"] == "true" || ENV["CI"] == "true" ||
-                     ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test" ||
-                     defined?(RSpec)
-
         cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
         return nil unless Dir.exist?(cache_dir)
 
