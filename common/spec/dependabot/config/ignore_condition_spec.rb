@@ -314,22 +314,89 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       context "when the dependency version isn't known" do
         let(:dependency_version) { nil }
 
-        context "with ignore_major_versions" do
-          let(:update_types) { ["version-update:semver-major"] }
+        context "without requirements" do
+          context "with ignore_major_versions" do
+            let(:update_types) { ["version-update:semver-major"] }
 
-          it { is_expected.to eq([]) }
+            it { is_expected.to eq([]) }
+          end
+
+          context "with ignore_minor_versions" do
+            let(:update_types) { ["version-update:semver-minor"] }
+
+            it { is_expected.to eq([]) }
+          end
+
+          context "with ignore_patch_versions" do
+            let(:update_types) { ["version-update:semver-patch"] }
+
+            it { is_expected.to eq([]) }
+          end
         end
 
-        context "with ignore_minor_versions" do
-          let(:update_types) { ["version-update:semver-minor"] }
+        context "with requirements" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              requirements: [{ requirement: ">7.0.0,<=7.4.4", file: "test.txt", groups: [], source: nil }],
+              package_manager: package_manager,
+              version: dependency_version
+            )
+          end
 
-          it { is_expected.to eq([]) }
-        end
+          context "with ignore_major_versions" do
+            let(:update_types) { ["version-update:semver-major"] }
 
-        context "with ignore_patch_versions" do
-          let(:update_types) { ["version-update:semver-patch"] }
+            it "derives version from requirements and ignores major updates" do
+              expect(ignored_versions).to eq([">= 8.a"])
+              expect_allowed(["7.0.1", "7.4.0", "7.4.4"])
+              expect_ignored(["8.0.0", "8.3.2", "9.0.0"])
+            end
+          end
 
-          it { is_expected.to eq([]) }
+          context "with ignore_minor_versions" do
+            let(:update_types) { ["version-update:semver-minor"] }
+
+            it "derives version from requirements and ignores minor updates" do
+              expect(ignored_versions).to eq([">= 7.5.a, < 8"])
+              expect_allowed(["7.4.0", "7.4.4", "7.4.5"])
+              expect_ignored(["7.5.0", "7.6.0"])
+            end
+          end
+
+          context "with ignore_patch_versions" do
+            let(:update_types) { ["version-update:semver-patch"] }
+
+            it "derives version from requirements and ignores patch updates" do
+              expect(ignored_versions).to eq(["> 7.4.4, < 7.5"])
+              expect_allowed(["7.4.0", "7.4.4"])
+              expect_ignored(["7.4.5", "7.4.6"])
+            end
+          end
+
+          context "with complex requirements containing only lower bounds" do
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: dependency_name,
+                requirements: [{ requirement: ">7.0.0", file: "test.txt", groups: [], source: nil }],
+                package_manager: package_manager,
+                version: dependency_version
+              )
+            end
+
+            context "with ignore_major_versions" do
+              let(:update_types) { ["version-update:semver-major"] }
+
+              # When only a lower bound exists, we derive the version from it
+              # This is reasonable - if the requirement is >7.0.0, we can infer
+              # the user wants to stay on version 7.x
+              it "derives version from lower bound and ignores major updates" do
+                expect(ignored_versions).to eq([">= 8.a"])
+                expect_allowed(["7.0.1", "7.5.0", "7.9.9"])
+                expect_ignored(["8.0.0", "9.0.0"])
+              end
+            end
+          end
         end
       end
 
