@@ -39,19 +39,14 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
-# Pre-install commonly requested major versions for pnpm, yarn and npm
-RUN corepack install \  
-  pnpm@$PNPM_VERSION  \  
-  pnpm@10 \  
-  pnpm@9 \  
-  yarn@$YARN_VERSION \  
-  yarn@1 \  
-  yarn@3 \  
-  yarn@4 \  
-  npm@11 \  
-  npm@10 \  
-  npm@9 \  
-  --global
+# Install pnpm and set it to a stable version
+RUN corepack install pnpm@$PNPM_VERSION --global
+
+# Install yarn berry and set it to a stable version
+RUN corepack install yarn@$YARN_VERSION --global
+
+# Install npm and set it to a stable version
+RUN corepack install npm@$NPM_VERSION --global
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
