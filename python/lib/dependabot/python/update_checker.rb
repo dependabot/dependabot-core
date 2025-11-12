@@ -351,12 +351,12 @@ module Dependabot
         )
         return false unless response.status == 200
 
-        pypi_info = JSON.parse(response.body)["info"] || {}
-        pypi_info["summary"] == T.must(library_details)["description"]
+        (JSON.parse(response.body)["info"] || {})["summary"] == T.must(library_details)["description"]
       rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
         false
       end
 
+      sig { returns(T::Boolean) }
       def updating_pipfile?
         requirement_files.any?("Pipfile")
       end
