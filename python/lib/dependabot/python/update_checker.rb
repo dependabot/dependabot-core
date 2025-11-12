@@ -336,28 +336,27 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def library?
-        return false unless updating_pyproject?
-        return false unless library_details
+        return @is_library unless @is_library.nil?
 
-        return false if T.must(library_details)["name"].nil?
-
-        # Hit PyPi and check whether there are details for a library with a
-        # matching name and description
-        index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
-        )
-
-        return false unless index_response.status == 200
-
-        pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == T.must(library_details)["description"]
-      rescue Excon::Error::Timeout, Excon::Error::Socket
-        false
-      rescue URI::InvalidURIError
-        false
+        @is_library = T.let(check_pypi_for_library_match, T.nilable(T::Boolean))
+        @is_library || false
       end
 
       sig { returns(T::Boolean) }
+      def check_pypi_for_library_match
+        return false unless updating_pyproject? && library_details && !T.must(library_details)["name"].nil?
+
+        response = Dependabot::RegistryClient.get(
+          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
+        )
+        return false unless response.status == 200
+
+        pypi_info = JSON.parse(response.body)["info"] || {}
+        pypi_info["summary"] == T.must(library_details)["description"]
+      rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
+        false
+      end
+
       def updating_pipfile?
         requirement_files.any?("Pipfile")
       end
