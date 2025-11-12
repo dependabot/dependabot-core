@@ -84,8 +84,11 @@ module Dependabot
           new_requirement =
             if req_strings.any? { |r| requirement_class.new(r).exact? }
               find_and_update_equality_match(req_strings)
-            elsif req_strings.any? { |r| r.start_with?("~=", "==") }
-              tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
+            elsif req_strings.any? { |r| r.start_with?("~=") }
+              tw_req = req_strings.find { |r| r.start_with?("~=") }
+              bump_version(tw_req, latest_resolvable_version.to_s)
+            elsif req_strings.any? { |r| r.start_with?("==") }
+              tw_req = req_strings.find { |r| r.start_with?("==") }
               convert_to_range(tw_req, T.must(latest_resolvable_version))
             else
               update_requirements_range(req_strings)
