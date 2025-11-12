@@ -369,7 +369,7 @@ module Dependabot
         path_dependencies.each do |dep|
           path = T.must(dep[:path])
           project_files += fetch_project_file(path)
-        rescue Dependabot::DependencyFileNotFound => e
+        rescue Dependabot::DependencyFileNotFound
           # If it's a sdist/wheel file, skip it as these are pre-built packages
           # that are ignored during parsing (see helpers/lib/parser.py lines 173-174)
           next if sdist_or_wheel?(T.must(path))
