@@ -97,13 +97,26 @@ public class RunWorker
 
     private async Task SetAdditionalPackageSourcesInNuGetConfig(DirectoryInfo repoContentsPath, ILogger logger)
     {
-        var configFiles = repoContentsPath.EnumerateFiles("NuGet.Config", new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true });
+        var configFiles = GetNuGetConfigPaths(repoContentsPath);
         foreach (var configFile in configFiles)
         {
-            var originalContents = await File.ReadAllTextAsync(configFile.FullName);
-            var modifiedContents = PromoteAdditionalPackageSources(configFile.FullName, originalContents, logger);
-            await File.WriteAllTextAsync(configFile.FullName, modifiedContents);
+            var originalContents = await File.ReadAllTextAsync(configFile);
+            var modifiedContents = PromoteAdditionalPackageSources(configFile, originalContents, logger);
+            await File.WriteAllTextAsync(configFile, modifiedContents);
         }
+    }
+
+    internal static ImmutableArray<string> GetNuGetConfigPaths(DirectoryInfo repoContentsPath)
+    {
+        var configFiles = repoContentsPath.EnumerateFiles("NuGet.Config", new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true }).ToImmutableArray();
+        var caseCorrectedConfigFiles = configFiles
+            .Where(cf => cf.Directory is not null)
+            .SelectMany(cf => cf.Directory!.EnumerateFiles().Where(f => f.Name.Equals("NuGet.Config", StringComparison.OrdinalIgnoreCase)))
+            .Select(f => f.FullName)
+            .Distinct()
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .ToImmutableArray();
+        return caseCorrectedConfigFiles;
     }
 
     private const string AdditionalPackageSourceKeyName = "DependabotAdditionalPackageSource";
@@ -134,7 +147,7 @@ public class RunWorker
         var additionalSourceSuffix = 1;
         foreach (var additionalPackageSource in additionalPackageSources)
         {
-            logger.Info($"Promoting additional package source {additionalPackageSource}");
+            logger.Info($"Promoting additional package source {additionalPackageSource} in file {path}");
             var sourceName = $"dependabot-additional-package-source-{additionalSourceSuffix++}";
             packageSourcesElement.Add(new XElement("add",
                 new XAttribute("key", sourceName),

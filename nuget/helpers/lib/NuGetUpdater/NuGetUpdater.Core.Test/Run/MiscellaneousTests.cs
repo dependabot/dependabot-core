@@ -542,6 +542,26 @@ public class MiscellaneousTests
         Assert.Equal(filePathOnDisk, actualRepoRelativePath);
     }
 
+    [Fact]
+    public async Task GetNuGetConfigPaths()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("a/nuget.config", ""),
+            ("b/NuGet.config", ""),
+            ("c/NuGet.Config", "")
+        );
+        var actualPaths = RunWorker.GetNuGetConfigPaths(new DirectoryInfo(tempDir.DirectoryPath))
+            .Select(p => Path.GetRelativePath(tempDir.DirectoryPath, p).NormalizePathToUnix())
+            .ToImmutableArray();
+        var expectedPaths = new[]
+        {
+            "a/nuget.config",
+            "b/NuGet.config",
+            "c/NuGet.Config",
+        };
+        AssertEx.Equal(expectedPaths, actualPaths);
+    }
+
     [Theory]
     [MemberData(nameof(GetPromoteAdditionalPackageSourcesData))]
     public void PromoteAdditionalPackageSources(string nuGetConfigContents, string? expectedContent)

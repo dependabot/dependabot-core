@@ -1035,7 +1035,7 @@ public class EndToEndTests
                       </PropertyGroup>
                     </Project>
                     """),
-                ("NuGet.Config", $"""
+                ("nuget.config", $"""
                     <configuration>
                       <config>
                         <add key="DependabotAdditionalPackageSource" value="{http2.BaseUrl.TrimEnd('/')}/index.json" />
