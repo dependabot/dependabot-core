@@ -65,11 +65,12 @@ module Dependabot
         prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
+          purl = build_purl(dep)
           resolved[dep.name] = ResolvedDependency.new(
-            package_url: build_purl(dep),
+            package_url: purl,
             direct: dep.top_level?,
             runtime: dep.production?,
-            dependencies: safe_fetch_subdependencies(dep)
+            dependencies: safe_fetch_subdependencies(dep).map { |d| build_purl(d) }
           )
         end
       end
@@ -84,11 +85,12 @@ module Dependabot
         file_parser.dependency_files
       end
 
-      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      # Return full dependency objects for subdependencies so callers can access metadata / build purls.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
       def safe_fetch_subdependencies(dependency)
         return [] if @errored_fetching_subdependencies
 
-        fetch_subdependencies(dependency)
+        fetch_subdependencies(dependency, @dependencies)
       rescue StandardError => e
         @errored_fetching_subdependencies = true
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
@@ -100,8 +102,8 @@ module Dependabot
       # The strategy that should be used is highly dependent on the ecosystem, in some cases the parser
       # may be able to set this information in the dependency.metadata collection, in others the grapher
       # will need to run additional native commands.
-      sig { abstract.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
-      def fetch_subdependencies(dependency); end
+      sig { abstract.params(dependency: Dependabot::Dependency, all_dependencies: T::Array[Dependabot::Dependency]).returns(T::Array[Dependabot::Dependency]) }
+      def fetch_subdependencies(dependency, all_dependencies); end
 
       # Each grapher is expected to implement a method to map the various package managers it supports to
       # the correct Package-URL type, see:
