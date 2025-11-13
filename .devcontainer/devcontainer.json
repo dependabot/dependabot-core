@@ -27,8 +27,8 @@
     "ghcr.io/devcontainers/features/rust": "latest",
     "ghcr.io/devcontainers/features/dotnet:2": {
       // these versions should be kept in sync with the files `nuget/Dockerfile` and `nuget/helpers/lib/NuGetUpdater/global.json`
-      "version": "8.0.412",
-      "additionalVersions": "9.0.302"
+      "version": "8.0.416",
+      "additionalVersions": "9.0.307, 10.0.100"
     },
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"

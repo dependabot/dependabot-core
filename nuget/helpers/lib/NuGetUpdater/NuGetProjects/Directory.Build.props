@@ -15,4 +15,8 @@
 
   <Import Project="..\Directory.Common.props" />
 
+  <PropertyGroup>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
 </Project>

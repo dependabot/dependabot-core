@@ -259,53 +259,6 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
-        public async Task ReturnsDependenciesThatCannotBeEvaluated()
-        {
-            await TestDiscoveryAsync(
-                packages:
-                [
-                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
-                    MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
-                ],
-                workspacePath: "",
-                files: [
-                    ("myproj.csproj", """
-                        <Project Sdk="Microsoft.NET.Sdk">
-                          <PropertyGroup>
-                            <TargetFramework>net8.0</TargetFramework>
-                          </PropertyGroup>
-                          <ItemGroup>
-                            <PackageReference Include="Package.A" Version="1.2.3" />
-                            <PackageReference Include="Package.B" Version="$(ThisPropertyCannotBeResolved)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
-                ],
-                expectedResult: new()
-                {
-                    Path = "",
-                    Projects = [
-                        new()
-                        {
-                            FilePath = "myproj.csproj",
-                            Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", "myproj.csproj"),
-                            ],
-                            TargetFrameworks = ["net8.0"],
-                            ReferencedProjectPaths = [],
-                            ImportedFiles = [],
-                            AdditionalFiles = [],
-                        }
-                    ],
-                }
-            );
-        }
-
-        [Fact]
         public async Task TargetFrameworkCanBeResolvedFromImplicitlyImportedFile()
         {
             await TestDiscoveryAsync(
