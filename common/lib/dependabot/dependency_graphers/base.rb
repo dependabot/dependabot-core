@@ -66,7 +66,7 @@ module Dependabot
 
         @dependencies.each_with_object({}) do |dep, resolved|
           purl = build_purl(dep)
-          resolved[dep.name] = ResolvedDependency.new(
+          resolved[purl] = ResolvedDependency.new(
             package_url: purl,
             direct: dep.top_level?,
             runtime: dep.production?,

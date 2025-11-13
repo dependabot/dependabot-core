@@ -65,40 +65,40 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
         expect(resolved_dependencies.keys).to eql(
           %w(
-            github.com/fatih/color
-            rsc.io/qr
-            rsc.io/quote
-            github.com/mattn/go-colorable
-            github.com/mattn/go-isatty
-            golang.org/x/sys
-            golang.org/x/text
-            rsc.io/sampler
+            pkg:golang/github.com/fatih/color@v1.18.0
+            pkg:golang/rsc.io/qr@v0.2.0
+            pkg:golang/rsc.io/quote@v1.5.2
+            pkg:golang/github.com/mattn/go-colorable@v0.1.14
+            pkg:golang/github.com/mattn/go-isatty@v0.0.20
+            pkg:golang/golang.org/x/sys@v0.36.0
+            pkg:golang/golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
+            pkg:golang/rsc.io/sampler@v1.3.0
           )
         )
 
         # Direct dependencies
-        color = resolved_dependencies["github.com/fatih/color"]
+        color = resolved_dependencies["pkg:golang/github.com/fatih/color@v1.18.0"]
         expect(color.package_url).to eql("pkg:golang/github.com/fatih/color@v1.18.0")
         expect(color.direct).to be(true)
         expect(color.runtime).to be(true)
 
-        qr = resolved_dependencies["rsc.io/qr"]
+        qr = resolved_dependencies["pkg:golang/rsc.io/qr@v0.2.0"]
         expect(qr.package_url).to eql("pkg:golang/rsc.io/qr@v0.2.0")
         expect(qr.direct).to be(true)
         expect(qr.runtime).to be(true)
 
-        quote = resolved_dependencies["rsc.io/quote"]
+        quote = resolved_dependencies["pkg:golang/rsc.io/quote@v1.5.2"]
         expect(quote.package_url).to eql("pkg:golang/rsc.io/quote@v1.5.2")
         expect(quote.direct).to be(true)
         expect(quote.runtime).to be(true)
 
         # Spot check indirect dependencies
-        colorable = resolved_dependencies["github.com/mattn/go-colorable"]
+        colorable = resolved_dependencies["pkg:golang/github.com/mattn/go-colorable@v0.1.14"]
         expect(colorable.package_url).to eql("pkg:golang/github.com/mattn/go-colorable@v0.1.14")
         expect(colorable.direct).to be(false)
         expect(colorable.runtime).to be(true)
 
-        isatty = resolved_dependencies["github.com/mattn/go-isatty"]
+        isatty = resolved_dependencies["pkg:golang/github.com/mattn/go-isatty@v0.0.20"]
         expect(isatty.package_url).to eql("pkg:golang/github.com/mattn/go-isatty@v0.0.20")
         expect(isatty.direct).to be(false)
         expect(isatty.runtime).to be(true)
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
         let(:dependency_graph_expectations) do
           [
             {
-              name: "github.com/fatih/color",
+              name: "pkg:golang/github.com/fatih/color@v1.18.0",
               depends_on: [
                 "pkg:golang/github.com/mattn/go-colorable@v0.1.14",
                 "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
@@ -118,32 +118,32 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
               ]
             },
             {
-              name: "github.com/mattn/go-colorable",
+              name: "pkg:golang/github.com/mattn/go-colorable@v0.1.14",
               depends_on: [
                 "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
                 "pkg:golang/golang.org/x/sys@v0.36.0"
               ]
             },
             {
-              name: "github.com/mattn/go-isatty",
+              name: "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
               depends_on: [
                 "pkg:golang/golang.org/x/sys@v0.36.0"
               ]
             },
             {
-              name: "rsc.io/quote",
+              name: "pkg:golang/rsc.io/quote@v1.5.2",
               depends_on: [
                 "pkg:golang/rsc.io/sampler@v1.3.0"
               ]
             },
             {
-              name: "rsc.io/sampler",
+              name: "pkg:golang/rsc.io/sampler@v1.3.0",
               depends_on: [
                 "pkg:golang/golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c"
               ]
             },
             {
-              name: "golang.org/x/text",
+              name: "pkg:golang/golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c",
               depends_on: []
             }
           ]
@@ -181,7 +181,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           allow(parser).to receive(:run_in_parsed_context).with("go mod graph").and_return(graph_output_with_pruned)
 
           resolved = grapher.resolved_dependencies
-          color = resolved.fetch("github.com/fatih/color")
+          color = resolved.fetch("pkg:golang/github.com/fatih/color@v1.18.0")
           expect(color.dependencies).to include(
             "pkg:golang/github.com/mattn/go-colorable@v0.1.14",
             "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           )
           expect(color.dependencies).not_to include("pkg:golang/golang.org/x/tools@v0.17.0")
 
-          text_pkg = resolved.fetch("golang.org/x/text")
+          text_pkg = resolved.fetch("pkg:golang/golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c")
           expect(text_pkg.dependencies).not_to include("pkg:golang/go@1.24.0")
 
           all_children = resolved.values.flat_map(&:dependencies)
