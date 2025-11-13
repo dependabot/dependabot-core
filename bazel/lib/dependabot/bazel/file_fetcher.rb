@@ -12,7 +12,7 @@ module Dependabot
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
       MODULE_FILE = T.let("MODULE.bazel", String)
       CONFIG_FILES = T.let(
-        %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel .bazelrc).freeze, T::Array[String]
+        %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel).freeze, T::Array[String]
       )
       SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
