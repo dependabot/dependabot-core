@@ -40,7 +40,8 @@ module Dependabot
                    :record_ecosystem_versions,
                    :increment_metric,
                    :record_ecosystem_meta,
-                   :record_cooldown_meta
+                   :record_cooldown_meta,
+                   :record_exclude_paths_subdirectory_meta
 
     sig { void }
     def wait_for_calls_to_finish
