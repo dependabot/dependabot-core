@@ -112,34 +112,34 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
             {
               name: "github.com/fatih/color",
               depends_on: [
-                "github.com/mattn/go-colorable",
-                "github.com/mattn/go-isatty",
-                "golang.org/x/sys"
+                "pkg:golang/github.com/mattn/go-colorable@v0.1.14",
+                "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
+                "pkg:golang/golang.org/x/sys@v0.36.0"
               ]
             },
             {
               name: "github.com/mattn/go-colorable",
               depends_on: [
-                "github.com/mattn/go-isatty",
-                "golang.org/x/sys"
+                "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
+                "pkg:golang/golang.org/x/sys@v0.36.0"
               ]
             },
             {
               name: "github.com/mattn/go-isatty",
               depends_on: [
-                "golang.org/x/sys"
+                "pkg:golang/golang.org/x/sys@v0.36.0"
               ]
             },
             {
               name: "rsc.io/quote",
               depends_on: [
-                "rsc.io/sampler"
+                "pkg:golang/rsc.io/sampler@v1.3.0"
               ]
             },
             {
               name: "rsc.io/sampler",
               depends_on: [
-                "golang.org/x/text"
+                "pkg:golang/golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c"
               ]
             },
             {
@@ -183,18 +183,18 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           resolved = grapher.resolved_dependencies
           color = resolved.fetch("github.com/fatih/color")
           expect(color.dependencies).to include(
-            "github.com/mattn/go-colorable",
-            "github.com/mattn/go-isatty",
-            "golang.org/x/sys"
+            "pkg:golang/github.com/mattn/go-colorable@v0.1.14",
+            "pkg:golang/github.com/mattn/go-isatty@v0.0.20",
+            "pkg:golang/golang.org/x/sys@v0.36.0"
           )
-          expect(color.dependencies).not_to include("golang.org/x/tools")
+          expect(color.dependencies).not_to include("pkg:golang/golang.org/x/tools@v0.17.0")
 
           text_pkg = resolved.fetch("golang.org/x/text")
-          expect(text_pkg.dependencies).not_to include("go")
+          expect(text_pkg.dependencies).not_to include("pkg:golang/go@1.24.0")
 
           all_children = resolved.values.flat_map(&:dependencies)
-          expect(all_children).not_to include("golang.org/x/tools")
-          expect(all_children).not_to include("go")
+          expect(all_children).not_to include("pkg:golang/golang.org/x/tools@v0.17.0")
+          expect(all_children).not_to include("pkg:golang/go@1.24.0")
         end
       end
     end

@@ -87,18 +87,21 @@ module Dependabot
 
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
       def dependencies_by_name
-        @dependencies_by_name ||= @dependencies.each_with_object({}) do |dep, hash|
-          hash[dep.name] = dep
-        end
+        @dependencies_by_name ||= T.let(
+          @dependencies.each_with_object({}) do |dep, hash|
+            hash[dep.name] = dep
+          end,
+          T.nilable(T::Hash[String, Dependabot::Dependency])
+        )
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
       def safe_fetch_subdependencies(dependency)
         return [] if @errored_fetching_subdependencies
 
-        fetch_subdependencies(dependency).map do |dependency_name|
+        fetch_subdependencies(dependency).filter_map do |dependency_name|
           dependencies_by_name[dependency_name]
-        end.compact
+        end
       rescue StandardError => e
         @errored_fetching_subdependencies = true
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
