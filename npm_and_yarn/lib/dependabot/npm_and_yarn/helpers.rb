@@ -473,7 +473,7 @@ module Dependabot
       # Find cached version that matches the requested version pattern
       sig { params(name: String, version: String).returns(T.nilable(String)) }
       def self.find_cached_version(name, version)
-        cache_dir = "/home/dependabot/.cache/node/corepack/v1/#{name}"
+        cache_dir = "/$HOME/.cache/node/corepack/v1/#{name}"
         return nil unless Dir.exist?(cache_dir)
 
         cached_versions = list_cached_versions(cache_dir)
