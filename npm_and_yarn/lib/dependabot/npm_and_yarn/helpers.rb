@@ -471,17 +471,17 @@ module Dependabot
       end
 
       # Find cached version that matches the requested version pattern
-      sig { params(name: T.deprecated_enum(['yarn', 'pnpm', 'npm']), version: String).returns(T.nilable(String)) }
+      sig { params(name: T.deprecated_enum(%w(yarn pnpm npm)), version: String).returns(T.nilable(String)) }
       def self.find_cached_version(name, version)
-        cache_dir = "/$HOME/.cache/node/corepack/v1/#{name}"
-        return nil unless Dir.exist?(cache_dir)
+        cache_dir = "#{ENV.fetch('HOME', nil)}/.cache/node/corepack/v1/#{name}"
 
         cached_versions = list_cached_versions(cache_dir)
 
-        # Check for exact version match first
+        # Check for exact version match first (e.g., "11.6.2" matches "11.6.2")
+        # include? checks for exact string equality in the array
         return version if cached_versions.include?(version)
 
-        # Handle major version resolution
+        # Handle major version resolution (e.g., "11" finds highest "11.x.x")
         find_highest_major_version(cached_versions, version)
       rescue StandardError => e
         Dependabot.logger.warn("Cache detection failed for #{name}@#{version}: #{e.message}")
