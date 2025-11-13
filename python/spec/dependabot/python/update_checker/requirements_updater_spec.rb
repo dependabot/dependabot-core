@@ -163,10 +163,29 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq("~=1.5.0") }
 
+          # Regression test for issue: pip: `increase-if-necessary` changes pinning level
+          # https://github.com/dependabot/dependabot-core/issues/XXXXX
+          context "when version from PyPI has fewer segments than requirement" do
+            let(:requirement_txt_req_string) { "~=5.0.0" }
+            let(:latest_resolvable_version) { "5.1" }
+
+            context "with the bump_versions_if_necessary update strategy" do
+              let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+
+              # Should maintain 3 segments to preserve patch-level pinning
+              its([:requirement]) { is_expected.to eq("~=5.1.0") }
+            end
+
+            # Should maintain 3 segments to preserve patch-level pinning
+            its([:requirement]) { is_expected.to eq("~=5.1.0") }
+          end
+
           context "when requirement supports the new version" do
             let(:requirement_txt_req_string) { "~=1.3" }
 
-            its([:requirement]) { is_expected.to eq("~=1.5") }
+            # When new version has more segments than old requirement,
+            # use the longer precision to maintain tighter version control
+            its([:requirement]) { is_expected.to eq("~=1.5.0") }
 
             context "with the bump_versions_if_necessary update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
@@ -185,12 +204,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:requirement_txt_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~=2.1") }
+            # When new version has more segments than old requirement,
+            # use the longer precision to maintain tighter version control
+            its([:requirement]) { is_expected.to eq("~=2.1.0") }
 
             context "with the bump_versions_if_necessary update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
-              its([:requirement]) { is_expected.to eq("~=2.1") }
+              # When new version has more segments than old requirement,
+              # use the longer precision to maintain tighter version control
+              its([:requirement]) { is_expected.to eq("~=2.1.0") }
             end
 
             context "with the widen_ranges update strategy" do
@@ -299,14 +322,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:setup_py_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~=2.1") }
+            # When new version has more segments than old requirement,
+            # use the longer precision to maintain tighter version control
+            its([:requirement]) { is_expected.to eq("~=2.1.0") }
           end
 
           context "when bumping from minor version 4.1 to 5.0 (issue example)" do
             let(:setup_py_req_string) { "~=4.1" }
             let(:latest_resolvable_version) { "5.0.0" }
 
-            its([:requirement]) { is_expected.to eq("~=5.0") }
+            # When new version has more segments than old requirement,
+            # use the longer precision to maintain tighter version control
+            its([:requirement]) { is_expected.to eq("~=5.0.0") }
           end
         end
 
@@ -408,14 +435,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:setup_cfg_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~=2.1") }
+            # When new version has more segments than old requirement,
+            # use the longer precision to maintain tighter version control
+            its([:requirement]) { is_expected.to eq("~=2.1.0") }
           end
 
           context "when bumping from minor version 4.1 to 5.0 (issue example)" do
             let(:setup_cfg_req_string) { "~=4.1" }
             let(:latest_resolvable_version) { "5.0.0" }
 
-            its([:requirement]) { is_expected.to eq("~=5.0") }
+            # When new version has more segments than old requirement,
+            # use the longer precision to maintain tighter version control
+            its([:requirement]) { is_expected.to eq("~=5.0.0") }
           end
         end
 
