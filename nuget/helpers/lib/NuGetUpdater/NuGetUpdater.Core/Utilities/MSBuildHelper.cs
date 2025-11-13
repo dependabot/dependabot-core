@@ -493,7 +493,8 @@ internal static partial class MSBuildHelper
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false);
 
-            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, logger);
+            var experimentsManager = new ExperimentsManager() { UseSingleRestore = false }; // single restore is meaningless here
+            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, logger);
             var allDependencies = projectDiscovery
                 .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
                 .FirstOrDefault()
@@ -511,6 +512,37 @@ internal static partial class MSBuildHelper
             {
             }
         }
+    }
+
+    public static async Task<HashSet<string>> GetProjectTargetsAsync(string projectPath, ILogger logger)
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify targets, so we can skip the process invocation
+            return [];
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var args = new[]
+        {
+            "msbuild",
+            projectPath,
+            "-targets"
+        };
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        if (exitCode != 0)
+        {
+            logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return [];
+        }
+
+        var targets = stdOut.Split('\n')
+            .Skip(1) // first line is msbuild info
+            .Select(l => l.Trim())
+            .Where(l => !string.IsNullOrEmpty(l))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return targets;
     }
 
     internal static string? GetMissingFile(string output)

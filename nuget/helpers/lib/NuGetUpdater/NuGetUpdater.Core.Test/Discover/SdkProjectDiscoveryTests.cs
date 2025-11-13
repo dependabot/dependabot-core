@@ -587,6 +587,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         // Normally this would cause a restore failure which means discovery would also fail
         // This test ensures we can still run discovery
         await TestDiscoverAsync(
+            useSingleRestore: false,
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0", [(null, [("Transitive.Package", "2.0.0")])]),
                 MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
@@ -629,7 +630,26 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         );
     }
 
-    private static async Task TestDiscoverAsync(string startingDirectory, string projectPath, TestFile[] files, ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, MockNuGetPackage[]? packages = null)
+    private static async Task TestDiscoverAsync(
+        string startingDirectory,
+        string projectPath,
+        TestFile[] files,
+        ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
+        MockNuGetPackage[]? packages = null
+    )
+    {
+        await TestDiscoverAsync(useSingleRestore: true, startingDirectory, projectPath, files, expectedProjects, packages);
+        await TestDiscoverAsync(useSingleRestore: false, startingDirectory, projectPath, files, expectedProjects, packages);
+    }
+
+    private static async Task TestDiscoverAsync(
+        bool useSingleRestore,
+        string startingDirectory,
+        string projectPath,
+        TestFile[] files,
+        ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
+        MockNuGetPackage[]? packages = null
+    )
     {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
 
@@ -637,7 +657,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, logger);
+        var experimentsManager = new ExperimentsManager() { UseSingleRestore = useSingleRestore };
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
         ValidateProjectResults(expectedProjects, projectDiscovery);
     }
 }
