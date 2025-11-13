@@ -17,6 +17,20 @@ module Dependabot
           const :line, Integer
         end
 
+        class ExtensionTag < T::Struct
+          const :tag_name, String
+          const :arguments, T::Hash[String, T.untyped]
+          const :line, Integer
+        end
+
+        class ExtensionUsage < T::Struct
+          const :extension_name, String
+          const :from_module, String
+          const :variable_name, String
+          const :tags, T::Array[ExtensionTag]
+          const :line, Integer
+        end
+
         sig { params(content: String).void }
         def initialize(content)
           @content = content
@@ -42,6 +56,28 @@ module Dependabot
           end
 
           function_calls
+        end
+
+        sig { returns(T::Array[ExtensionUsage]) }
+        def parse_extension_usages
+          extension_usages = T.let([], T::Array[ExtensionUsage])
+
+          while @position < @length
+            skip_whitespace_and_comments
+
+            break unless @position < @length
+
+            start_position = @position
+            extension_usage = try_parse_extension_usage
+
+            if extension_usage
+              extension_usages << extension_usage
+            elsif @position == start_position
+              move_to_next_char
+            end
+          end
+
+          extension_usages
         end
 
         private
@@ -352,6 +388,210 @@ module Dependabot
             end
             move_to_next_char
           end
+        end
+
+        sig { returns(T.nilable(ExtensionUsage)) }
+        def try_parse_extension_usage
+          start_line = @line
+          start_position = @position
+
+          variable_name = parse_extension_variable
+          return nil unless variable_name
+
+          keyword_arguments, positional_arguments = parse_use_extension_call
+          return nil unless keyword_arguments && positional_arguments
+
+          from_module_str, extension_name_str = extract_extension_info(
+            keyword_arguments,
+            positional_arguments
+          )
+          return nil if extension_name_str.empty?
+
+          tags = parse_extension_tags(variable_name)
+
+          ExtensionUsage.new(
+            extension_name: extension_name_str,
+            from_module: from_module_str,
+            variable_name: variable_name,
+            tags: tags,
+            line: start_line
+          )
+        rescue StandardError
+          @position = T.must(start_position)
+          @line = T.must(start_line)
+          nil
+        end
+
+        sig { returns(T.nilable(String)) }
+        def parse_extension_variable
+          variable_name = parse_identifier
+          return nil unless variable_name
+
+          skip_whitespace_and_comments
+          return nil unless current_char == "="
+
+          move_to_next_char
+          variable_name
+        end
+
+        sig { returns(T.nilable([T::Hash[String, T.untyped], T::Array[T.untyped]])) }
+        def parse_use_extension_call
+          skip_whitespace_and_comments
+
+          function_name = parse_identifier
+          return nil unless function_name == "use_extension"
+
+          skip_whitespace_and_comments
+          return nil unless current_char == "("
+
+          move_to_next_char
+
+          keyword_arguments, positional_arguments = parse_function_arguments
+
+          skip_whitespace_and_comments
+          return nil unless current_char == ")"
+
+          move_to_next_char
+
+          [keyword_arguments, positional_arguments]
+        end
+
+        sig do
+          params(
+            keyword_arguments: T::Hash[String, T.untyped],
+            positional_arguments: T::Array[T.untyped]
+          ).returns([String, String])
+        end
+        def extract_extension_info(keyword_arguments, positional_arguments)
+          from_module_str = extract_from_module(keyword_arguments, positional_arguments)
+          extension_name_str = extract_extension_name(keyword_arguments, positional_arguments)
+
+          [from_module_str, extension_name_str]
+        end
+
+        sig do
+          params(
+            keyword_arguments: T::Hash[String, T.untyped],
+            positional_arguments: T::Array[T.untyped]
+          ).returns(String)
+        end
+        def extract_from_module(keyword_arguments, positional_arguments)
+          return positional_arguments[0].to_s if positional_arguments.length >= 1
+
+          keyword_arguments["from"].to_s
+        end
+
+        sig do
+          params(
+            keyword_arguments: T::Hash[String, T.untyped],
+            positional_arguments: T::Array[T.untyped]
+          ).returns(String)
+        end
+        def extract_extension_name(keyword_arguments, positional_arguments)
+          return positional_arguments[1].to_s if positional_arguments.length >= 2
+
+          keyword_arguments["name"].to_s
+        end
+
+        sig { params(variable_name: String).returns(T::Array[ExtensionTag]) }
+        def parse_extension_tags(variable_name)
+          tags = T.let([], T::Array[ExtensionTag])
+
+          loop do
+            tag = try_parse_single_extension_tag(variable_name)
+            break unless tag
+
+            tags << tag
+          end
+
+          tags
+        end
+
+        sig { params(variable_name: String).returns(T.nilable(ExtensionTag)) }
+        def try_parse_single_extension_tag(variable_name)
+          skip_whitespace_and_comments
+          return nil if @position >= @length
+
+          start_position = @position
+          start_line = @line
+
+          return nil unless extension_tag_matches_variable?(variable_name, start_position, start_line)
+
+          tag_name = parse_extension_tag_name(start_position, start_line)
+          return nil unless tag_name
+
+          keyword_arguments = parse_extension_tag_arguments(start_position, start_line)
+          return nil unless keyword_arguments
+
+          ExtensionTag.new(
+            tag_name: tag_name,
+            arguments: keyword_arguments,
+            line: start_line
+          )
+        rescue StandardError
+          @position = T.must(start_position)
+          @line = T.must(start_line)
+          nil
+        end
+
+        sig { params(variable_name: String, start_position: Integer, start_line: Integer).returns(T::Boolean) }
+        def extension_tag_matches_variable?(variable_name, start_position, start_line)
+          identifier = parse_identifier
+
+          unless identifier == variable_name
+            @position = start_position
+            @line = start_line
+            return false
+          end
+
+          skip_whitespace_and_comments
+
+          unless current_char == "."
+            @position = start_position
+            @line = start_line
+            return false
+          end
+
+          move_to_next_char
+          skip_whitespace_and_comments
+          true
+        end
+
+        sig { params(start_position: Integer, start_line: Integer).returns(T.nilable(String)) }
+        def parse_extension_tag_name(start_position, start_line)
+          tag_name = parse_identifier
+          unless tag_name
+            @position = start_position
+            @line = start_line
+            return nil
+          end
+
+          skip_whitespace_and_comments
+          unless current_char == "("
+            @position = start_position
+            @line = start_line
+            return nil
+          end
+
+          move_to_next_char
+          tag_name
+        end
+
+        sig do
+          params(start_position: Integer, start_line: Integer).returns(T.nilable(T::Hash[String, T.untyped]))
+        end
+        def parse_extension_tag_arguments(start_position, start_line)
+          keyword_arguments, _positional_arguments = parse_function_arguments
+
+          skip_whitespace_and_comments
+          unless current_char == ")"
+            @position = start_position
+            @line = start_line
+            return nil
+          end
+
+          move_to_next_char
+          keyword_arguments
         end
       end
     end

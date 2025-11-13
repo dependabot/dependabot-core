@@ -299,4 +299,80 @@ RSpec.describe Dependabot::Bazel::FileParser do
       end
     end
   end
+
+  context "with extension dependencies" do
+    let(:dependency_files) { bazel_project_dependency_files("with_extensions") }
+
+    it "parses Go module dependencies from go_deps extension" do
+      dependencies = parser.parse
+
+      go_deps = dependencies.select { |d| d.requirements.first[:groups] == ["go_deps"] }
+      expect(go_deps.length).to eq(2)
+
+      uuid_dep = go_deps.find { |d| d.name == "github.com/google/uuid" }
+      expect(uuid_dep).not_to be_nil
+      expect(uuid_dep.version).to eq("v1.3.0")
+      expect(uuid_dep.requirements.first[:requirement]).to eq("v1.3.0")
+      expect(uuid_dep.requirements.first[:source][:type]).to eq("go_modules")
+      expect(uuid_dep.requirements.first[:source][:sum]).to eq("h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=")
+
+      net_dep = go_deps.find { |d| d.name == "golang.org/x/net" }
+      expect(net_dep).not_to be_nil
+      expect(net_dep.version).to eq("v0.17.0")
+    end
+
+    it "parses Maven dependencies from maven extension" do
+      dependencies = parser.parse
+
+      maven_deps = dependencies.select { |d| d.requirements.first[:groups] == ["maven"] }
+      expect(maven_deps.length).to eq(3)
+
+      guava_dep = maven_deps.find { |d| d.name == "com.google.guava:guava" }
+      expect(guava_dep).not_to be_nil
+      expect(guava_dep.version).to eq("31.1-jre")
+      expect(guava_dep.requirements.first[:source][:type]).to eq("maven")
+      expect(guava_dep.requirements.first[:source][:group]).to eq("com.google.guava")
+      expect(guava_dep.requirements.first[:source][:artifact]).to eq("guava")
+
+      junit_dep = maven_deps.find { |d| d.name == "junit:junit" }
+      expect(junit_dep).not_to be_nil
+      expect(junit_dep.version).to eq("4.13.2")
+
+      mockito_dep = maven_deps.find { |d| d.name == "org.mockito:mockito-core" }
+      expect(mockito_dep).not_to be_nil
+      expect(mockito_dep.version).to eq("5.5.0")
+    end
+
+    it "parses Rust crate dependencies from crate extension" do
+      dependencies = parser.parse
+
+      crate_deps = dependencies.select { |d| d.requirements.first[:groups] == ["crate"] }
+      expect(crate_deps.length).to eq(2)
+
+      serde_dep = crate_deps.find { |d| d.name == "serde" }
+      expect(serde_dep).not_to be_nil
+      expect(serde_dep.version).to eq("1.0.193")
+      expect(serde_dep.requirements.first[:source][:type]).to eq("cargo")
+      expect(serde_dep.requirements.first[:source][:features]).to eq(["derive"])
+
+      tokio_dep = crate_deps.find { |d| d.name == "tokio" }
+      expect(tokio_dep).not_to be_nil
+      expect(tokio_dep.version).to eq("1.35.0")
+      expect(tokio_dep.requirements.first[:source][:features]).to eq(%w(rt macros))
+      expect(tokio_dep.requirements.first[:source][:default_features]).to be(false)
+    end
+
+    it "parses bazel_dep dependencies alongside extension dependencies" do
+      dependencies = parser.parse
+
+      # Should have bazel_dep + extension dependencies
+      extension_groups = %w(go_deps maven crate).freeze
+      bazel_deps = dependencies.reject do |d|
+        extension_groups.include?(d.requirements.first[:groups]&.first)
+      end
+
+      expect(bazel_deps.length).to eq(4) # rules_cc, gazelle, rules_jvm_external, rules_rust
+      expect(bazel_deps.map(&:name)).to include("rules_cc", "gazelle", "rules_jvm_external", "rules_rust")
+    end
+  end
 end

@@ -1,0 +1,47 @@
+module(name = "my-module", version = "1.0")
+
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "gazelle", version = "0.38.0")
+bazel_dep(name = "rules_jvm_external", version = "6.0")
+bazel_dep(name = "rules_rust", version = "0.46.0")
+
+# Go dependencies via go_deps extension
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.module(
+    path = "github.com/google/uuid",
+    version = "v1.3.0",
+    sum = "h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=",
+)
+go_deps.module(
+    path = "golang.org/x/net",
+    version = "v0.17.0",
+    sum = "h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=",
+)
+
+# Maven dependencies via maven extension
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.artifact(
+    group = "com.google.guava",
+    artifact = "guava",
+    version = "31.1-jre",
+)
+maven.install(
+    artifacts = [
+        "junit:junit:4.13.2",
+        "org.mockito:mockito-core:5.5.0",
+    ],
+)
+
+# Rust dependencies via crate extension
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.spec(
+    package = "serde",
+    version = "1.0.193",
+    features = ["derive"],
+)
+crate.spec(
+    package = "tokio",
+    version = "1.35.0",
+    default_features = False,
+    features = ["rt", "macros"],
+)

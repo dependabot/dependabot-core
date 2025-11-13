@@ -717,4 +717,288 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
       end
     end
   end
+
+  describe "extension dependency updates" do
+    context "with Go module dependency" do
+      let(:module_file_content) do
+        <<~CONTENT
+          module(name = "my-module", version = "1.0")
+
+          bazel_dep(name = "gazelle", version = "0.38.0")
+
+          go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+          go_deps.module(
+              path = "github.com/google/uuid",
+              version = "v1.3.0",
+              sum = "h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=",
+          )
+        CONTENT
+      end
+
+      let(:dependency_name) { "github.com/google/uuid" }
+      let(:old_version) { "v1.3.0" }
+      let(:new_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: new_version,
+          groups: ["go_deps"],
+          source: {
+            type: "go_modules",
+            sum: "h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I="
+          },
+          metadata: { line: 6 }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: old_version,
+          groups: ["go_deps"],
+          source: {
+            type: "go_modules",
+            sum: "h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I="
+          },
+          metadata: { line: 6 }
+        }]
+      end
+
+      it "updates the Go module version" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("MODULE.bazel")
+        expect(updated_files.first.content).to include('version = "v1.4.0"')
+        expect(updated_files.first.content).to include('path = "github.com/google/uuid"')
+        expect(updated_files.first.content).to include('sum = "h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I="')
+      end
+    end
+
+    context "with Maven artifact dependency" do
+      let(:module_file_content) do
+        <<~CONTENT
+          module(name = "my-module", version = "1.0")
+
+          bazel_dep(name = "rules_jvm_external", version = "6.0")
+
+          maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+          maven.artifact(
+              group = "com.google.guava",
+              artifact = "guava",
+              version = "31.1-jre",
+          )
+        CONTENT
+      end
+
+      let(:dependency_name) { "com.google.guava:guava" }
+      let(:old_version) { "31.1-jre" }
+      let(:new_version) { "32.0.0-jre" }
+      let(:requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: new_version,
+          groups: ["maven"],
+          source: {
+            type: "maven",
+            group: "com.google.guava",
+            artifact: "guava"
+          },
+          metadata: { line: 6 }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: old_version,
+          groups: ["maven"],
+          source: {
+            type: "maven",
+            group: "com.google.guava",
+            artifact: "guava"
+          },
+          metadata: { line: 6 }
+        }]
+      end
+
+      it "updates the Maven artifact version" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("MODULE.bazel")
+        expect(updated_files.first.content).to include('version = "32.0.0-jre"')
+        expect(updated_files.first.content).to include('artifact = "guava"')
+      end
+    end
+
+    context "with Maven install coordinate string" do
+      let(:module_file_content) do
+        <<~CONTENT
+          module(name = "my-module", version = "1.0")
+
+          bazel_dep(name = "rules_jvm_external", version = "6.0")
+
+          maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+          maven.install(
+              artifacts = [
+                  "junit:junit:4.13.2",
+                  "org.mockito:mockito-core:5.5.0",
+              ],
+          )
+        CONTENT
+      end
+
+      let(:dependency_name) { "junit:junit" }
+      let(:old_version) { "4.13.2" }
+      let(:new_version) { "4.13.3" }
+      let(:requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: new_version,
+          groups: ["maven"],
+          source: {
+            type: "maven",
+            group: "junit",
+            artifact: "junit",
+            coordinate_string: "junit:junit:4.13.2"
+          },
+          metadata: { line: 6 }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: old_version,
+          groups: ["maven"],
+          source: {
+            type: "maven",
+            group: "junit",
+            artifact: "junit",
+            coordinate_string: "junit:junit:4.13.2"
+          },
+          metadata: { line: 6 }
+        }]
+      end
+
+      it "updates the Maven coordinate string version" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("MODULE.bazel")
+        expect(updated_files.first.content).to include('"junit:junit:4.13.3"')
+        expect(updated_files.first.content).not_to include('"junit:junit:4.13.2"')
+      end
+    end
+
+    context "with Cargo/Rust crate dependency" do
+      let(:module_file_content) do
+        <<~CONTENT
+          module(name = "my-module", version = "1.0")
+
+          bazel_dep(name = "rules_rust", version = "0.46.0")
+
+          crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+          crate.spec(
+              package = "serde",
+              version = "1.0.193",
+              features = ["derive"],
+          )
+        CONTENT
+      end
+
+      let(:dependency_name) { "serde" }
+      let(:old_version) { "1.0.193" }
+      let(:new_version) { "1.0.194" }
+      let(:requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: new_version,
+          groups: ["crate"],
+          source: {
+            type: "cargo",
+            features: ["derive"],
+            default_features: nil
+          },
+          metadata: { line: 6 }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: old_version,
+          groups: ["crate"],
+          source: {
+            type: "cargo",
+            features: ["derive"],
+            default_features: nil
+          },
+          metadata: { line: 6 }
+        }]
+      end
+
+      it "updates the Cargo crate version" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("MODULE.bazel")
+        expect(updated_files.first.content).to include('version = "1.0.194"')
+        expect(updated_files.first.content).to include('package = "serde"')
+      end
+    end
+
+    context "with Cargo version operator preserved" do
+      let(:module_file_content) do
+        <<~CONTENT
+          module(name = "my-module", version = "1.0")
+
+          bazel_dep(name = "rules_rust", version = "0.46.0")
+
+          crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+          crate.spec(
+              package = "tokio",
+              version = "^1.35.0",
+              features = ["rt"],
+          )
+        CONTENT
+      end
+
+      let(:dependency_name) { "tokio" }
+      let(:old_version) { "1.35.0" }
+      let(:new_version) { "1.36.0" }
+      let(:requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: "^#{new_version}",
+          groups: ["crate"],
+          source: {
+            type: "cargo",
+            features: ["rt"],
+            default_features: nil
+          },
+          metadata: { line: 6 }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: "^#{old_version}",
+          groups: ["crate"],
+          source: {
+            type: "cargo",
+            features: ["rt"],
+            default_features: nil
+          },
+          metadata: { line: 6 }
+        }]
+      end
+
+      it "preserves the version operator" do
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("MODULE.bazel")
+        expect(updated_files.first.content).to include('version = "^1.36.0"')
+        expect(updated_files.first.content).to include('package = "tokio"')
+      end
+    end
+  end
 end

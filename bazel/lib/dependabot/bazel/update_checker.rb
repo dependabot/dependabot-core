@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "time"
@@ -14,6 +14,10 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/registry_client"
+      require_relative "update_checker/go_modules_version_resolver"
+      require_relative "update_checker/maven_version_resolver"
+      require_relative "update_checker/cargo_version_resolver"
+      require_relative "extension_registry"
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -73,6 +77,59 @@ module Dependabot
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
       def fetch_latest_version
+        ecosystem = detect_ecosystem
+
+        if ecosystem
+          fetch_ecosystem_latest_version(ecosystem)
+        else
+          fetch_bazel_registry_latest_version
+        end
+      rescue Dependabot::DependabotError => e
+        Dependabot.logger.warn("Failed to fetch latest version for #{dependency.name}: #{e.message}")
+        nil
+      end
+
+      sig { returns(T.nilable(String)) }
+      def detect_ecosystem
+        req = dependency.requirements.first
+        return nil unless req
+
+        source = req[:source]
+        return nil unless source.is_a?(Hash)
+
+        source_type = source[:type]
+        return nil unless source_type.is_a?(String)
+
+        ecosystem_map = {
+          "go_modules" => "go_modules",
+          "maven" => "maven",
+          "cargo" => "cargo"
+        }
+
+        ecosystem_map[source_type]
+      end
+
+      sig { params(ecosystem: String).returns(T.nilable(T.any(String, Gem::Version))) }
+      def fetch_ecosystem_latest_version(ecosystem)
+        resolver = case ecosystem
+                   when "go_modules"
+                     GoModulesVersionResolver.new(dependency: dependency)
+                   when "maven"
+                     MavenVersionResolver.new(dependency: dependency)
+                   when "cargo"
+                     CargoVersionResolver.new(dependency: dependency)
+                   else
+                     return nil
+                   end
+
+        latest = resolver.latest_version
+        return nil unless latest
+
+        latest
+      end
+
+      sig { returns(T.nilable(T.any(String, Gem::Version))) }
+      def fetch_bazel_registry_latest_version
         return nil unless registry_client.get_metadata(dependency.name)
 
         versions = registry_client.all_module_versions(dependency.name)
@@ -85,9 +142,6 @@ module Dependabot
         return nil unless latest_version_string
 
         Dependabot::Bazel::Version.new(latest_version_string)
-      rescue Dependabot::DependabotError => e
-        Dependabot.logger.warn("Failed to fetch latest version for #{dependency.name}: #{e.message}")
-        nil
       end
 
       sig { returns(UpdateChecker::RegistryClient) }

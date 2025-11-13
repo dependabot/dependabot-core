@@ -11,6 +11,9 @@ module Dependabot
         extend T::Sig
 
         require_relative "lockfile_updater"
+        require_relative "extension_dependency_updater"
+
+        include ExtensionDependencyUpdater
 
         sig do
           params(
@@ -89,7 +92,23 @@ module Dependabot
         def update_dependency_in_content(content, dependency)
           return content unless dependency.package_manager == "bazel"
 
-          update_bazel_dep_version(content, dependency)
+          if extension_dependency?(dependency)
+            update_extension_dependency(content, dependency)
+          else
+            update_bazel_dep_version(content, dependency)
+          end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def extension_dependency?(dependency)
+          req = dependency.requirements.first
+          return false unless req
+
+          source = req[:source]
+          return false unless source.is_a?(Hash)
+
+          source_type = source[:type]
+          %w(go_modules maven cargo).include?(source_type)
         end
 
         sig { params(content: String, dependency: Dependabot::Dependency).returns(String) }

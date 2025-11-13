@@ -646,4 +646,190 @@ RSpec.describe Dependabot::Bazel::FileParser::StarlarkParser do
       end
     end
   end
+
+  describe "#parse_extension_usages" do
+    subject(:extension_usages) { described_class.new(content).parse_extension_usages }
+
+    context "with go_deps extension" do
+      let(:content) do
+        <<~STARLARK
+          go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+          go_deps.module(
+              path = "github.com/google/uuid",
+              version = "v1.3.0",
+              sum = "h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=",
+          )
+          go_deps.module(
+              path = "golang.org/x/net",
+              version = "v0.17.0",
+          )
+        STARLARK
+      end
+
+      it "parses the extension usage" do
+        expect(extension_usages.length).to eq(1)
+
+        ext_usage = extension_usages.first
+        expect(ext_usage.variable_name).to eq("go_deps")
+        expect(ext_usage.tags.length).to eq(2)
+      end
+
+      it "parses the extension tags" do
+        ext_usage = extension_usages.first
+        expect(ext_usage.tags.length).to eq(2)
+
+        first_tag = ext_usage.tags[0]
+        expect(first_tag.tag_name).to eq("module")
+        expect(first_tag.arguments["path"]).to eq("github.com/google/uuid")
+        expect(first_tag.arguments["version"]).to eq("v1.3.0")
+        expect(first_tag.arguments["sum"]).to eq("h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=")
+
+        second_tag = ext_usage.tags[1]
+        expect(second_tag.tag_name).to eq("module")
+        expect(second_tag.arguments["path"]).to eq("golang.org/x/net")
+        expect(second_tag.arguments["version"]).to eq("v0.17.0")
+        expect(second_tag.arguments["sum"]).to be_nil
+      end
+    end
+
+    context "with maven extension" do
+      let(:content) do
+        <<~STARLARK
+          maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+          maven.artifact(
+              group = "com.google.guava",
+              artifact = "guava",
+              version = "31.1-jre",
+          )
+          maven.install(
+              artifacts = [
+                  "junit:junit:4.13.2",
+                  "org.mockito:mockito-core:5.5.0",
+              ],
+          )
+        STARLARK
+      end
+
+      it "parses the extension usage" do
+        expect(extension_usages.length).to eq(1)
+
+        ext_usage = extension_usages.first
+        expect(ext_usage.variable_name).to eq("maven")
+        expect(ext_usage.tags.length).to eq(2)
+      end
+
+      it "parses both artifact and install tags" do
+        ext_usage = extension_usages.first
+        expect(ext_usage.tags.length).to eq(2)
+
+        artifact_tag = ext_usage.tags[0]
+        expect(artifact_tag.tag_name).to eq("artifact")
+        expect(artifact_tag.arguments["group"]).to eq("com.google.guava")
+        expect(artifact_tag.arguments["artifact"]).to eq("guava")
+        expect(artifact_tag.arguments["version"]).to eq("31.1-jre")
+
+        install_tag = ext_usage.tags[1]
+        expect(install_tag.tag_name).to eq("install")
+        expect(install_tag.arguments["artifacts"]).to be_an(Array)
+        expect(install_tag.arguments["artifacts"]).to eq(
+          [
+            "junit:junit:4.13.2",
+            "org.mockito:mockito-core:5.5.0"
+          ]
+        )
+      end
+    end
+
+    context "with crate extension" do
+      let(:content) do
+        <<~STARLARK
+          crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+          crate.spec(
+              package = "serde",
+              version = "1.0.193",
+              features = ["derive"],
+          )
+          crate.spec(
+              package = "tokio",
+              version = "1.35.0",
+              default_features = False,
+              features = ["rt", "macros"],
+          )
+        STARLARK
+      end
+
+      it "parses the extension usage" do
+        expect(extension_usages.length).to eq(1)
+
+        ext_usage = extension_usages.first
+        expect(ext_usage.variable_name).to eq("crate")
+        expect(ext_usage.tags.length).to eq(2)
+      end
+
+      it "parses spec tags with features" do
+        ext_usage = extension_usages.first
+        expect(ext_usage.tags.length).to eq(2)
+
+        serde_tag = ext_usage.tags[0]
+        expect(serde_tag.tag_name).to eq("spec")
+        expect(serde_tag.arguments["package"]).to eq("serde")
+        expect(serde_tag.arguments["version"]).to eq("1.0.193")
+        expect(serde_tag.arguments["features"]).to eq(["derive"])
+
+        tokio_tag = ext_usage.tags[1]
+        expect(tokio_tag.tag_name).to eq("spec")
+        expect(tokio_tag.arguments["package"]).to eq("tokio")
+        expect(tokio_tag.arguments["version"]).to eq("1.35.0")
+        expect(tokio_tag.arguments["default_features"]).to be(false)
+        expect(tokio_tag.arguments["features"]).to eq(%w(rt macros))
+      end
+    end
+
+    context "with multiple extensions" do
+      let(:content) do
+        <<~STARLARK
+          go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+          go_deps.module(path = "github.com/foo/bar", version = "v1.0.0")
+
+          maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+          maven.artifact(group = "junit", artifact = "junit", version = "4.13.2")
+        STARLARK
+      end
+
+      it "parses all extensions" do
+        expect(extension_usages.length).to eq(2)
+
+        expect(extension_usages[0].variable_name).to eq("go_deps")
+        expect(extension_usages[0].tags.length).to eq(1)
+
+        expect(extension_usages[1].variable_name).to eq("maven")
+        expect(extension_usages[1].tags.length).to eq(1)
+      end
+    end
+
+    context "with no extensions" do
+      let(:content) do
+        <<~STARLARK
+          bazel_dep(name = "rules_cc", version = "0.1.1")
+        STARLARK
+      end
+
+      it "returns an empty array" do
+        expect(extension_usages).to eq([])
+      end
+    end
+
+    context "with malformed extension" do
+      let(:content) do
+        <<~STARLARK
+          go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps"
+          go_deps.module(path = "invalid"
+        STARLARK
+      end
+
+      it "handles parse errors gracefully" do
+        expect(extension_usages).to eq([])
+      end
+    end
+  end
 end

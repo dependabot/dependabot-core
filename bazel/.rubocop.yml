@@ -2,3 +2,7 @@ inherit_from: ../.rubocop.yml
 Sorbet/ForbidTUnsafe:
   Exclude:
     - lib/dependabot/bazel/update_checker/registry_client.rb
+
+Metrics/ClassLength:
+  Exclude:
+    - lib/dependabot/bazel/file_parser/starlark_parser.rb

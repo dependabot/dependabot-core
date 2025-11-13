@@ -15,6 +15,10 @@ module Dependabot
       extend T::Sig
 
       require_relative "file_parser/starlark_parser"
+      require_relative "file_parser/extension_tag_parsers"
+      require_relative "extension_registry"
+
+      include ExtensionTagParsers
 
       REPOSITORY_REFERENCE = %r{@([^/]+)}
 
@@ -153,7 +157,67 @@ module Dependabot
           )
         end
 
+        extension_parser = StarlarkParser.new(content)
+        extension_usages = extension_parser.parse_extension_usages
+
+        extension_usages.each do |ext_usage|
+          dependency_set += parse_extension_tags(ext_usage, file)
+        end
+
         dependency_set
+      end
+
+      sig do
+        params(
+          ext_usage: StarlarkParser::ExtensionUsage,
+          file: Dependabot::DependencyFile
+        ).returns(DependencySet)
+      end
+      def parse_extension_tags(ext_usage, file)
+        dependency_set = DependencySet.new
+
+        ext_usage.tags.each do |tag|
+          dependencies = parse_extension_tag_dependencies(ext_usage, tag, file)
+          dependencies.each { |dep| dependency_set << dep }
+        end
+
+        dependency_set
+      end
+
+      sig do
+        params(
+          ext_usage: StarlarkParser::ExtensionUsage,
+          tag: StarlarkParser::ExtensionTag,
+          file: Dependabot::DependencyFile
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def parse_extension_tag_dependencies(ext_usage, tag, file)
+        extension_name = ext_usage.extension_name
+        tag_name = tag.tag_name
+
+        return [] unless ExtensionRegistry.supported?(extension_name)
+
+        parser_method = ExtensionRegistry.tag_parser_for(extension_name, tag_name)
+        return [] unless parser_method
+
+        result = send(parser_method, tag, file)
+        return [] unless result
+
+        dep_hashes = result.is_a?(Array) ? result : [result]
+
+        dep_hashes.filter_map do |dep_hash|
+          create_dependency_from_hash(dep_hash)
+        end
+      end
+
+      sig { params(dep_hash: T::Hash[Symbol, T.untyped]).returns(T.nilable(Dependabot::Dependency)) }
+      def create_dependency_from_hash(dep_hash)
+        Dependabot::Dependency.new(
+          name: dep_hash[:name],
+          version: dep_hash[:version],
+          requirements: dep_hash[:requirements],
+          package_manager: dep_hash[:package_manager]
+        )
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
