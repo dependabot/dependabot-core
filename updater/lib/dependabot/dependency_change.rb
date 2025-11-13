@@ -105,7 +105,11 @@ module Dependabot
     sig { returns(String) }
     def humanized
       updated_dependencies.map do |dependency|
-        "#{dependency.name} ( from #{dependency.humanized_previous_version} to #{dependency.humanized_version} )"
+        if dependency.humanized_previous_version
+          "#{dependency.name} ( from #{dependency.humanized_previous_version} to #{dependency.humanized_version} )"
+        else
+          "#{dependency.name} ( to #{dependency.humanized_version} )"
+        end
       end.join(", ")
     end
 

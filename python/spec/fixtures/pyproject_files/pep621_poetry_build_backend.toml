@@ -1,0 +1,24 @@
+[project]
+name = "learn-github-apps"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Dependabot Support",email = "support@dependabot.com"}
+]
+readme = "README.md"
+requires-python = "3.13.*"
+dependencies = [
+    "django==5.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "saritasa-invocations==1.0.0",
+]
+local =[
+    "redis==6.0.0",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

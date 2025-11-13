@@ -79,6 +79,36 @@ RSpec.describe Dependabot::Bazel::FileParser do
     end
   end
 
+  context "with *.MODULE.bazel files" do
+    let(:dependency_files) { bazel_project_dependency_files("with_additional_module_files") }
+
+    it "parses dependencies from both MODULE.bazel and *.MODULE.bazel files" do
+      dependencies = parser.parse
+
+      expect(dependencies.length).to eq(3)
+
+      expect(dependencies.map(&:name)).to contain_exactly(
+        "rules_cc",
+        "platforms",
+        "abseil-cpp"
+      )
+
+      # Dependency from main MODULE.bazel
+      rules_cc_dep = dependencies.find { |d| d.name == "rules_cc" }
+      expect(rules_cc_dep.version).to eq("0.1.1")
+      expect(rules_cc_dep.requirements.first[:file]).to eq("MODULE.bazel")
+
+      # Dependencies from deps.MODULE.bazel
+      platforms_dep = dependencies.find { |d| d.name == "platforms" }
+      expect(platforms_dep.version).to eq("0.0.11")
+      expect(platforms_dep.requirements.first[:file]).to eq("deps.MODULE.bazel")
+
+      abseil_dep = dependencies.find { |d| d.name == "abseil-cpp" }
+      expect(abseil_dep.version).to eq("20230125.3")
+      expect(abseil_dep.requirements.first[:file]).to eq("deps.MODULE.bazel")
+    end
+  end
+
   context "with complex MODULE.bazel file" do
     let(:dependency_files) { bazel_project_dependency_files("complex_module") }
 
@@ -123,6 +153,29 @@ RSpec.describe Dependabot::Bazel::FileParser do
 
       rules_docker = dependencies.find { |d| d.name == "io_bazel_rules_docker" }
       expect(rules_docker.version).to eq("0.25.0")
+    end
+
+    it "captures remote URL from git_repository dependencies" do
+      dependencies = parser.parse
+
+      protobuf = dependencies.find { |d| d.name == "com_google_protobuf" }
+      expect(protobuf).not_to be_nil
+
+      requirement = protobuf.requirements.first
+      expect(requirement[:source][:type]).to eq("git_repository")
+      expect(requirement[:source][:tag]).to eq("v3.19.4")
+      expect(requirement[:source][:remote]).to eq("https://github.com/protocolbuffers/protobuf")
+    end
+
+    it "captures URLs from http_archive dependencies" do
+      dependencies = parser.parse
+
+      rules_go = dependencies.find { |d| d.name == "rules_go" }
+      expect(rules_go).not_to be_nil
+
+      requirement = rules_go.requirements.first
+      expect(requirement[:source][:type]).to eq("http_archive")
+      expect(requirement[:source][:url]).to include("github.com/bazelbuild/rules_go")
     end
   end
 

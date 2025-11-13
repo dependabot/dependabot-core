@@ -78,10 +78,12 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe ".updated_files_regex" do
-    it "returns regex patterns for Bazel files" do
+    it "returns regex patterns for Bazel files including lockfiles" do
       expect(described_class.updated_files_regex).to contain_exactly(
         /^MODULE\.bazel$/,
-        %r{^(?:.*/)?MODULE\.bazel$},
+        %r{^(?:.*/)?[^/]+\.MODULE\.bazel$},
+        /^MODULE\.bazel\.lock$/,
+        %r{^(?:.*/)?MODULE\.bazel\.lock$},
         /^WORKSPACE$/,
         %r{^(?:.*/)?WORKSPACE\.bazel$},
         %r{^(?:.*/)?BUILD$},
@@ -508,6 +510,198 @@ RSpec.describe Dependabot::Bazel::FileUpdater do
 
         expect(updated_files.count).to eq(0)
       end
+    end
+  end
+
+  describe "lockfile generation and updating" do
+    context "with a MODULE.bazel project with existing lockfile" do
+      let(:dependency_files) { bazel_project_dependency_files("simple_module_with_lockfile") }
+
+      it "updates both MODULE.bazel and MODULE.bazel.lock" do
+        # Mock the BzlmodFileUpdater to return both MODULE.bazel and lockfile updates
+        bzlmod_updater = instance_double(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater)
+        allow(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater).to receive(:new).and_return(bzlmod_updater)
+
+        module_file = Dependabot::DependencyFile.new(
+          name: "MODULE.bazel",
+          content: module_file_content.sub('version = "0.1.1"', 'version = "0.2.0"')
+        )
+        lockfile = Dependabot::DependencyFile.new(
+          name: "MODULE.bazel.lock",
+          content: updated_lockfile_content
+        )
+
+        allow(bzlmod_updater).to receive(:updated_module_files).and_return([module_file, lockfile])
+
+        updated_files = file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(2)
+
+        module_file = updated_files.find { |f| f.name == "MODULE.bazel" }
+        expect(module_file.content).to include('bazel_dep(name = "rules_cc", version = "0.2.0")')
+
+        lockfile = updated_files.find { |f| f.name == "MODULE.bazel.lock" }
+        expect(lockfile).not_to be_nil
+        expect(lockfile.content).to include("rules_cc@0.2.0")
+      end
+    end
+
+    context "with a MODULE.bazel project without lockfile" do
+      let(:dependency_files) { bazel_project_dependency_files("module_needs_lockfile") }
+
+      it "generates new MODULE.bazel.lock" do
+        # Create a file_updater with lockfile files to trigger lockfile generation
+        dependency_files_with_lockfile = dependency_files + [
+          Dependabot::DependencyFile.new(
+            name: "MODULE.bazel.lock",
+            content: "{}"
+          )
+        ]
+
+        lockfile_file_updater = described_class.new(
+          dependency_files: dependency_files_with_lockfile,
+          dependencies: dependencies,
+          credentials: credentials
+        )
+
+        # Mock the BzlmodFileUpdater to return both MODULE.bazel and lockfile updates
+        bzlmod_updater = instance_double(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater)
+        allow(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater).to receive(:new).and_return(bzlmod_updater)
+
+        module_file = Dependabot::DependencyFile.new(
+          name: "MODULE.bazel",
+          content: module_file_content.sub('version = "0.1.1"', 'version = "0.2.0"')
+        )
+        lockfile = Dependabot::DependencyFile.new(
+          name: "MODULE.bazel.lock",
+          content: new_lockfile_content
+        )
+
+        allow(bzlmod_updater).to receive(:updated_module_files).and_return([module_file, lockfile])
+
+        updated_files = lockfile_file_updater.updated_dependency_files
+
+        expect(updated_files.count).to eq(2)
+
+        module_file = updated_files.find { |f| f.name == "MODULE.bazel" }
+        expect(module_file.content).to include('bazel_dep(name = "rules_cc", version = "0.2.0")')
+
+        lockfile = updated_files.find { |f| f.name == "MODULE.bazel.lock" }
+        expect(lockfile).not_to be_nil
+        expect(lockfile.content).to include("rules_cc@0.2.0")
+      end
+    end
+
+    context "with a WORKSPACE project" do
+      let(:dependency_files) { bazel_project_dependency_files("simple_workspace") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "rules_cc",
+          version: "v0.2.0",
+          previous_version: "v0.1.1",
+          requirements: [{
+            file: "WORKSPACE",
+            requirement: "v0.2.0",
+            groups: [],
+            source: { type: "http_archive", url: "https://github.com/bazelbuild/rules_cc/archive/v0.2.0.tar.gz" }
+          }],
+          previous_requirements: [{
+            file: "WORKSPACE",
+            requirement: "v0.1.1",
+            groups: [],
+            source: { type: "http_archive", url: "https://github.com/bazelbuild/rules_cc/archive/v0.1.1.tar.gz" }
+          }],
+          package_manager: "bazel"
+        )
+      end
+
+      it "does not generate lockfile for WORKSPACE projects" do
+        updated_files = file_updater.updated_dependency_files
+
+        # Should only update WORKSPACE, not generate lockfile
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.name).to eq("WORKSPACE")
+        expect(updated_files.none? { |f| f.name.end_with?(".lock") }).to be true
+      end
+    end
+
+    context "when lockfile generation fails" do
+      let(:dependency_files) { bazel_project_dependency_files("simple_module_with_lockfile") }
+
+      it "continues with MODULE.bazel updates even if lockfile fails" do
+        # Mock the BzlmodFileUpdater to return MODULE.bazel update and empty lockfile
+        bzlmod_updater = instance_double(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater)
+        allow(Dependabot::Bazel::FileUpdater::BzlmodFileUpdater).to receive(:new).and_return(bzlmod_updater)
+
+        module_file = Dependabot::DependencyFile.new(
+          name: "MODULE.bazel",
+          content: module_file_content.sub('version = "0.1.1"', 'version = "0.2.0"')
+        )
+        lockfile = Dependabot::DependencyFile.new(
+          name: "MODULE.bazel.lock",
+          content: ""
+        )
+
+        allow(bzlmod_updater).to receive(:updated_module_files).and_return([module_file, lockfile])
+
+        updated_files = file_updater.updated_dependency_files
+
+        # Should still update MODULE.bazel and create an empty lockfile
+        expect(updated_files.count).to eq(2)
+
+        module_file = updated_files.find { |f| f.name == "MODULE.bazel" }
+        expect(module_file.content).to include('bazel_dep(name = "rules_cc", version = "0.2.0")')
+
+        lockfile = updated_files.find { |f| f.name == "MODULE.bazel.lock" }
+        expect(lockfile.content).to eq("")
+      end
+    end
+
+    def updated_lockfile_content
+      # Sample updated lockfile content with new version
+      <<~JSON
+        {
+          "lockFileVersion": 11,
+          "registryFileHashes": {},
+          "selectedYankedVersions": {},
+          "moduleExtensions": {},
+          "moduleDepGraph": {
+            "<root>": {
+              "name": "my-module",
+              "version": "1.0",
+              "repoName": "",
+              "deps": {
+                "rules_cc": "rules_cc@0.2.0",
+                "platforms": "platforms@0.0.11",
+                "abseil-cpp": "abseil-cpp@20230125.3"
+              }
+            }
+          }
+        }
+      JSON
+    end
+
+    def new_lockfile_content
+      # Sample new lockfile content
+      <<~JSON
+        {
+          "lockFileVersion": 11,
+          "registryFileHashes": {},
+          "selectedYankedVersions": {},
+          "moduleExtensions": {},
+          "moduleDepGraph": {
+            "<root>": {
+              "name": "test-module",
+              "version": "1.0",
+              "repoName": "",
+              "deps": {
+                "rules_cc": "rules_cc@0.2.0",
+                "platforms": "platforms@0.0.11"
+              }
+            }
+          }
+        }
+      JSON
     end
   end
 

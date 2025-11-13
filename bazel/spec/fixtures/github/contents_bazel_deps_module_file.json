@@ -1,0 +1,13 @@
+{
+  "name": "deps.MODULE.bazel",
+  "path": "deps.MODULE.bazel",
+  "sha": "def456",
+  "size": 567,
+  "url": "https://api.github.com/repos/example/repo/contents/deps.MODULE.bazel?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/deps.MODULE.bazel",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/def456",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/deps.MODULE.bazel",
+  "type": "file",
+  "content": "YmF6ZWxfZGVwKG5hbWUgPSAiZGVwcyIsIHZlcnNpb24gPSAiMS4wLjAiKQ==\n",
+  "encoding": "base64"
+}

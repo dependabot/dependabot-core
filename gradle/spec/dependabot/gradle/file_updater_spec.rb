@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     )
   end
   let(:dependencies) { [dependency] }
-  let(:dependency_files) { [buildfile] }
+  let(:dependency_files) { [buildfile, wrapper_file] }
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
@@ -51,10 +51,33 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     )
   end
 
+  let(:wrapper_file) do
+    Dependabot::DependencyFile.new(
+      name: "gradle/wrapper/gradle-wrapper.properties",
+      content: fixture(
+        "wrapper_files",
+        "gradle-wrapper-8.14.2-bin.properties"
+      )
+    )
+  end
+
   it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, _|
+        raise "Unexpected shell command: #{command}"
+      end
+
+      Dependabot::Experiments.register(:gradle_wrapper_updater, true)
+      Dependabot::Experiments.register(:gradle_lockfile_updater, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
@@ -634,6 +657,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
 
           let(:buildfile) do
+            wrapper_file
+          end
+
+          let(:wrapper_file) do
             Dependabot::DependencyFile.new(
               name: "gradle/wrapper/gradle-wrapper.properties",
               content: fixture(
@@ -684,16 +711,25 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           end
 
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          end
+
           its(:content) do
+            expected_command = "gradle --no-daemon --stacktrace wrapper --no-validate-url --gradle-version 9.0.0"
+
             is_expected.to include(
               "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
             )
 
             if checksum
+              expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
               is_expected.to include("distributionSha256Sum=#{updated_checksum}")
             else
               is_expected.not_to include("distributionSha256Sum=")
             end
+
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(expected_command, cwd: anything)
           end
         end
 
