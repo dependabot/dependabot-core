@@ -471,7 +471,7 @@ module Dependabot
       end
 
       # Find cached version that matches the requested version pattern
-      sig { params(name: T.enum(['yarn', 'pnpm', 'npm']), version: String).returns(T.nilable(String)) }
+      sig { params(name: T.deprecated_enum(['yarn', 'pnpm', 'npm']), version: String).returns(T.nilable(String)) }
       def self.find_cached_version(name, version)
         cache_dir = "/$HOME/.cache/node/corepack/v1/#{name}"
         return nil unless Dir.exist?(cache_dir)
