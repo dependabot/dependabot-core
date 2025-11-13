@@ -93,10 +93,24 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
             body: fixture("github", "contents_bazel_workspace.json"),
             headers: { "content-type" => "application/json" }
           )
+        # BUILD file is listed in contents_bazel_simple.json, so we need to stub its content
+        stub_request(:get, url + "BUILD?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub optional config files that may be fetched
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
       end
 
       it "fetches the WORKSPACE file" do
-        expect(fetched_files.map(&:name)).to contain_exactly("WORKSPACE")
+        expect(fetched_files.map(&:name)).to contain_exactly("WORKSPACE", "BUILD")
       end
     end
 
@@ -449,6 +463,298 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       it "returns unknown version" do
         expect(ecosystem_versions).to eq({ package_managers: { "bazel" => "unknown" } })
       end
+    end
+  end
+
+  describe "#referenced_files_from_modules" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with MODULE.bazel containing lock_file and requirements_lock references" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_references.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_references.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock referenced files
+        stub_request(:get, url + "maven_install.json?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_maven_install.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "python/requirements.txt?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_python_requirements.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub directory listings (needed for fetch_file_if_present to check if files exist)
+        stub_request(:get, url + "python?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "requirements.txt", "type": "file"}, {"name": "BUILD.bazel", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/jol?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "jol_maven_install.json", "type": "file"}, {"name": "BUILD.bazel", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/benchmarks?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "jmh_maven_install.json", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/jol/jol_maven_install.json?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_jol_maven_install.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/benchmarks/jmh_maven_install.json?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_maven_install.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock BUILD files for directories
+        stub_request(:get, url + "BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "python/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "python/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_python_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/jol/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "tools/jol/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_jol_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/benchmarks/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "tools/benchmarks/BUILD.bazel?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + ".bazelversion?ref=sha")
+          .to_return(status: 404)
+
+        # Stub optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha")
+          .to_return(status: 404)
+      end
+
+      it "fetches lock files referenced in lock_file attributes" do
+        expect(fetched_files.map(&:name)).to include(
+          "maven_install.json",
+          "tools/jol/jol_maven_install.json",
+          "tools/benchmarks/jmh_maven_install.json"
+        )
+      end
+
+      it "fetches requirements files referenced in requirements_lock attributes" do
+        expect(fetched_files.map(&:name)).to include("python/requirements.txt")
+      end
+
+      it "fetches BUILD.bazel files from directories containing referenced files" do
+        expect(fetched_files.map(&:name)).to include(
+          "python/BUILD.bazel",
+          "tools/jol/BUILD.bazel"
+        )
+      end
+
+      it "does not fail when BUILD files are missing from some directories" do
+        expect(fetched_files.map(&:name)).not_to include("tools/benchmarks/BUILD.bazel")
+        expect(fetched_files.map(&:name)).to include("tools/benchmarks/jmh_maven_install.json")
+      end
+
+      it "handles @repo//path:file format correctly" do
+        maven_file = fetched_files.find { |f| f.name == "maven_install.json" }
+        expect(maven_file).not_to be_nil
+      end
+
+      it "handles //path:file format correctly" do
+        python_file = fetched_files.find { |f| f.name == "python/requirements.txt" }
+        expect(python_file).not_to be_nil
+      end
+
+      it "fetches all files needed for bazel mod tidy to succeed" do
+        expected_files = [
+          "MODULE.bazel",
+          "maven_install.json",
+          "python/requirements.txt",
+          "python/BUILD.bazel",
+          "tools/jol/jol_maven_install.json",
+          "tools/jol/BUILD.bazel",
+          "tools/benchmarks/jmh_maven_install.json"
+        ]
+        expect(fetched_files.map(&:name)).to include(*expected_files)
+      end
+    end
+
+    context "when MODULE.bazel has no file references" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + ".bazelversion?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(status: 404)
+
+        # Stub optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "maven_install.json?ref=sha")
+          .to_return(status: 404)
+      end
+
+      it "does not attempt to fetch referenced files" do
+        expect(fetched_files.map(&:name)).to eq(["MODULE.bazel"])
+      end
+    end
+  end
+
+  describe "#extract_referenced_paths" do
+    let(:module_content) do
+      <<~BAZEL
+        bazel_dep(name = "rules_python", version = "1.6.3")
+
+        pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+        pip.parse(
+            hub_name = "pip",
+            requirements_lock = "//python:requirements.txt",
+        )
+
+        maven = use_extension("@rules_jvm_external//extension:maven.bzl", "maven")
+        maven.install(
+            lock_file = "@batfish//:maven_install.json",
+            name = "maven",
+        )
+
+        maven.install(
+            lock_file = "//tools/jol:jol_maven_install.json",
+            name = "jmh_maven",
+        )
+      BAZEL
+    end
+
+    let(:module_file) do
+      Dependabot::DependencyFile.new(
+        name: "MODULE.bazel",
+        content: module_content
+      )
+    end
+
+    it "extracts paths from lock_file attributes with @repo prefix" do
+      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(paths).to include("maven_install.json")
+    end
+
+    it "extracts paths from lock_file attributes without @repo prefix" do
+      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(paths).to include("tools/jol/jol_maven_install.json")
+    end
+
+    it "extracts paths from requirements_lock attributes" do
+      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(paths).to include("python/requirements.txt")
+    end
+
+    it "converts Bazel label colons to forward slashes" do
+      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(paths).to include("tools/jol/jol_maven_install.json")
+      expect(paths).not_to include("tools/jol:jol_maven_install.json")
+    end
+
+    it "removes leading slashes from extracted paths" do
+      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      paths.each do |path|
+        expect(path).not_to start_with("/")
+      end
+    end
+
+    it "returns unique paths when same file is referenced multiple times" do
+      duplicate_content = module_content + "\nmaven.install(lock_file = \"//tools/jol:jol_maven_install.json\")\n"
+      duplicate_file = Dependabot::DependencyFile.new(
+        name: "MODULE.bazel",
+        content: duplicate_content
+      )
+      paths = file_fetcher_instance.send(:extract_referenced_paths, duplicate_file)
+      expect(paths.count("tools/jol/jol_maven_install.json")).to eq(1)
+    end
+
+    it "handles empty content gracefully" do
+      empty_file = Dependabot::DependencyFile.new(
+        name: "MODULE.bazel",
+        content: ""
+      )
+      paths = file_fetcher_instance.send(:extract_referenced_paths, empty_file)
+      expect(paths).to eq([])
+    end
+
+    it "handles content with no references gracefully" do
+      simple_file = Dependabot::DependencyFile.new(
+        name: "MODULE.bazel",
+        content: 'bazel_dep(name = "rules_python", version = "1.6.3")'
+      )
+      paths = file_fetcher_instance.send(:extract_referenced_paths, simple_file)
+      expect(paths).to eq([])
     end
   end
 end
