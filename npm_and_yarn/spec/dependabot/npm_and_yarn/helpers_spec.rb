@@ -541,5 +541,14 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       result = described_class.find_cached_version("npm", "12")
       expect(result).to be_nil
     end
+
+    it "returns nil when requesting specific patch version not in cache" do
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
+      allow(Dir).to receive(:entries).with(cache_path)
+                                     .and_return([".", "..", "11.5.0", "10.9.4", "9.9.4"])
+
+      result = described_class.find_cached_version("npm", "11.6.2")
+      expect(result).to be_nil
+    end
   end
 end
