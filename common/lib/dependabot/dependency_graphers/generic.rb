@@ -18,8 +18,7 @@ module Dependabot
       # as we roll out ecosystem-specific graphers.
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        files = filtered_dependency_files
-        T.must(files.last)
+        T.must(filtered_dependency_files.last)
       end
 
       private
@@ -29,16 +28,11 @@ module Dependabot
         dependency_files.reject { |f| f.support_file? || f.vendored_file? }
       end
 
-      # Generic strategy: convert metadata :depends_on (names) into Dependency objects
-      sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
-      def fetch_subdependencies(dependency, all_dependencies)
-        names = dependency.metadata.fetch(:depends_on, [])
-        return [] if names.empty?
-
-        names.each_with_object([]) do |name, arr|
-          dep_obj = all_dependencies.find { |d| d.name == name }
-          arr << dep_obj if dep_obj
-        end
+      # Our generic strategy is to check if the parser has attached a `depends_on` key to the Dependency's
+      # metadata, but in most cases this will be empty.
+      sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def fetch_subdependencies(dependency)
+        dependency.metadata.fetch(:depends_on, [])
       end
 
       # TODO: Delegate this to ecosystem-specific base classes
