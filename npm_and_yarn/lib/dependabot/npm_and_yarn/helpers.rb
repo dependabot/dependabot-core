@@ -413,7 +413,8 @@ module Dependabot
         # Check if we have a cached version that satisfies the request
         begin
           cached_version = find_cached_version(name, version)
-        rescue StandardError
+        rescue StandardError => e
+          Dependabot.logger.warn("Failed to check cache for #{name}@#{version}: #{e.class} - #{e.message}")
           cached_version = nil
         end
 
