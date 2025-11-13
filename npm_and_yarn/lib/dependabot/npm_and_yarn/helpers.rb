@@ -484,7 +484,7 @@ module Dependabot
         # Handle major version resolution
         find_highest_major_version(cached_versions, version)
       rescue StandardError => e
-        Dependabot.logger.debug("Cache detection failed for #{name}@#{version}: #{e.message}")
+        Dependabot.logger.warn("Cache detection failed for #{name}@#{version}: #{e.message}")
         nil
       end
 
