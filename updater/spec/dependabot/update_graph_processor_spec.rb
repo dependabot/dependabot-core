@@ -112,10 +112,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         # Resolved dependencies are correct
         expect(lockfile[:resolved].length).to eq(2)
 
-        dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+        dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
         expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
 
-        dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+        dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
 
@@ -159,8 +159,14 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
 
         # the following top-level packages should be defined in the right groups
-        %w(sinatra pry rspec capybara).each do |pkg_name|
-          resolved_dep = lockfile[:resolved][pkg_name]
+        {
+          "sinatra" => "4.1.1",
+          "pry" => "0.15.2",
+          "rspec" => "3.13.1",
+          "capybara" => "3.40.0"
+        }.each do |pkg_name, version|
+          key = "pkg:gem/#{pkg_name}@#{version}"
+          resolved_dep = lockfile[:resolved][key]
 
           expect(resolved_dep).not_to be_empty
           expect(resolved_dep[:relationship]).to eq("direct")
@@ -183,12 +189,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         # the direct ones were verified above.
         # let's pull out a few indirect dependencies to check
-        rack = lockfile[:resolved]["rack"]
+        rack = lockfile[:resolved]["pkg:gem/rack@3.1.16"]
         expect(rack[:package_url]).to eql("pkg:gem/rack@3.1.16")
         expect(rack[:relationship]).to eq("indirect")
         expect(rack[:scope]).to eq("runtime")
 
-        addressable = lockfile[:resolved]["addressable"]
+        addressable = lockfile[:resolved]["pkg:gem/addressable@2.8.7"]
         expect(addressable[:package_url]).to eql("pkg:gem/addressable@2.8.7")
         expect(addressable[:relationship]).to eq("indirect")
         expect(addressable[:scope]).to eq("development")
@@ -267,9 +273,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         expect(lockfile[:resolved].length).to eq(2)
 
-        dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+        dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
         expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-        dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+        dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
 
@@ -321,9 +327,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
           expect(lockfile[:resolved].length).to eq(2)
 
-          dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+          dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
           expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-          dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+          dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
           expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
         end
 
@@ -402,10 +408,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         # Resolved dependencies are correct
         expect(gemfile[:resolved].length).to eq(2)
 
-        dependency1 = gemfile[:resolved]["dummy-pkg-a"]
+        dependency1 = gemfile[:resolved]["pkg:gem/dummy-pkg-a"]
         expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a")
 
-        dependency2 = gemfile[:resolved]["dummy-pkg-b"]
+        dependency2 = gemfile[:resolved]["pkg:gem/dummy-pkg-b"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b")
       end
 
