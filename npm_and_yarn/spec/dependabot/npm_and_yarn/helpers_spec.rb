@@ -516,7 +516,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     it "finds exact version match" do
-      cache_path = "#{ENV.fetch('HOME', nil)}/.cache/node/corepack/v1/npm"
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
       allow(Dir).to receive(:entries).with(cache_path)
                                      .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
 
@@ -525,7 +525,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     it "finds highest matching version for major version request" do
-      cache_path = "#{ENV.fetch('HOME', nil)}/.cache/node/corepack/v1/npm"
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
       allow(Dir).to receive(:entries).with(cache_path)
                                      .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
 
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     it "returns nil when no matching version found" do
-      cache_path = "#{ENV.fetch('HOME', nil)}/.cache/node/corepack/v1/npm"
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
       allow(Dir).to receive(:entries).with(cache_path)
                                      .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
 
