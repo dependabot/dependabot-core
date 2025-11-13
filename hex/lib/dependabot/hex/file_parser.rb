@@ -11,6 +11,7 @@ require "dependabot/hex/language"
 require "dependabot/hex/package_manager"
 require "dependabot/hex/requirement"
 require "dependabot/shared_helpers"
+require "dependabot/utils"
 require "dependabot/errors"
 
 # For docs, see https://hexdocs.pm/mix/Mix.Tasks.Deps.html
@@ -186,11 +187,22 @@ module Dependabot
       def hex_info
         @hex_info ||= T.let(
           begin
-            version = SharedHelpers.run_shell_command("mix hex.info")
-            {
-              hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
-              elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-            }
+            # Use a temporary directory for HEX_HOME to avoid permission issues
+            # when mix hex.info tries to write cache files
+            FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
+            tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
+            begin
+              version = SharedHelpers.run_shell_command(
+                "mix hex.info",
+                env: { "HEX_HOME" => tmp_dir }
+              )
+              {
+                hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
+                elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+              }
+            ensure
+              FileUtils.rm_rf(tmp_dir)
+            end
           end,
           T.nilable(T::Hash[Symbol, T.nilable(String)])
         )
