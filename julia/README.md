@@ -11,6 +11,21 @@ It handles updates for packages managed through Julia's package manager and pars
 - Support for standard Julia semantic versioning
 - Integration with Julia's General registry
 - Cross-platform compatibility
+- Release date tracking for packages in the General registry (enables cooldown period feature)
+- Julia workspace support (packages with shared manifest files)
+- User notifications when manifest updates fail due to dependency conflicts
+
+## Comparison to CompatHelper.jl
+
+This implementation is designed to align with [CompatHelper.jl](https://github.com/JuliaRegistries/CompatHelper.jl), the main tool used for automated dependency updates by the Julia ecosystem (at the time of writing).
+
+There are some notable differences:
+
+- **Lockfile Updates**: Dependabot updates both `Project.toml` and tries to update any `Manifest.toml` files, whereas CompatHelper.jl only updates `Project.toml`.
+- **Workspace Support**: Dependabot handles Julia workspaces where multiple packages share a common manifest file in a parent directory.
+- **Conflict Notifications**: When manifest updates fail due to dependency conflicts (common in workspaces), Dependabot adds warning notices to pull requests explaining the issue.
+
+Also, a goal of this is to integrate into github's CVE database and alerting systems for vulnerabilities in Julia packages.
 
 ## Julia Documentation References
 
@@ -21,17 +36,41 @@ For more information about Julia package management, see:
 - [Project.toml and Manifest.toml format](https://pkgdocs.julialang.org/v1/toml-files/)
 - [Julia semantic versioning](https://pkgdocs.julialang.org/v1/compatibility/)
 
+## Error Handling and User Notifications
+
+When manifest updates fail (common in workspace configurations with conflicting sibling dependencies), Dependabot will:
+
+1. Successfully update the `Project.toml` file with the new dependency requirements
+2. Attempt to update the corresponding manifest file using Julia's package resolver
+3. If the manifest update fails due to conflicts, add a warning notice to the pull request describing:
+   - Which manifest file could not be updated (with absolute path for clarity)
+   - The specific error message from Julia's package resolver
+   - The fact that only the `Project.toml` was updated
+
+This ensures users understand when lockfiles couldn't be updated and why, while still providing the compatibility range update in the project file.
+
 ## Current Limitations
 
 - Custom/private registries are not currently fully supported
 - Registry authentication is not implemented
 - Full version history parsing from registries is limited
+- Release date information is only available for packages in the General registry (non-General packages will not have cooldown period enforcement)
 
 ## Files Handled
 
 - `Project.toml` / `JuliaProject.toml` - Main project files
 - `Manifest.toml` / `JuliaManifest.toml` - Lock files
 - `Manifest-vX.Y.toml` / `JuliaManifest-vX.Y.toml` - Version-specific lock files
+
+### Julia Workspace Support
+
+Julia workspaces are fully supported. In workspace configurations:
+
+- Multiple packages can share a single manifest file located in a parent directory
+- Each package has its own `Project.toml` file in a subdirectory
+- The workspace root contains a manifest file (e.g., `Manifest.toml`) shared by all workspace packages
+- When updating workspace packages, Dependabot will attempt to update both the individual `Project.toml` and the shared manifest
+- If manifest updates fail due to conflicting requirements between workspace siblings, a warning notice is added to the pull request explaining the conflict
 
 ### Terminology: Julia vs Dependabot
 
@@ -82,11 +121,14 @@ The Julia ecosystem implementation follows a hybrid approach where the Ruby infr
 | `RegistryClient#parse_manifest` | `parse_manifest(manifest_path)` | Parse Manifest.toml files |
 | `RegistryClient#get_version_from_manifest` | `get_version_from_manifest(manifest_path, name, uuid)` | Extract specific package version from manifest (requires UUID) |
 | **FileUpdater** | | |
-| `FileUpdater#updated_dependency_files` | `update_manifest(project_path, updates)` | Update Project.toml and Manifest.toml with comprehensive change tracking |
+| `FileUpdater#updated_dependency_files` | `update_manifest(project_path, updates)` | Update Project.toml and Manifest.toml with comprehensive change tracking and error handling |
 | **UpdateChecker** | | |
 | `LatestVersionFinder#latest_version` | `get_latest_version(package_name, package_uuid)` | Find latest available non-yanked version (requires UUID) |
 | **MetadataFinder** | | |
 | `MetadataFinder#source_url` | `find_package_source_url(package_name, package_uuid)` | Extract repository URL from package metadata (requires UUID) |
+| **PackageDetailsFetcher** | | |
+| `PackageDetailsFetcher#fetch_release_dates` | `get_version_release_date(package_name, version, package_uuid)` | Get registration date for a version (General registry only) |
+| `PackageDetailsFetcher#fetch_release_dates` | `batch_get_version_release_dates(packages_versions)` | Batch fetch registration dates (General registry only) |
 
 ### Communication Protocol
 
@@ -105,6 +147,8 @@ Ruby classes communicate with Julia functions via:
 
 **Error Handling**: When all versions of a package are yanked, the function returns a descriptive error message rather than failing silently.
 
+**Release Date Tracking**: For packages in the General registry, release dates are fetched from the [GeneralMetadata.jl API](https://juliaregistries.github.io/GeneralMetadata.jl/). This enables Dependabot's cooldown period feature, which allows users to wait a specified number of days after a version is released before updating. Packages in other registries will not have release date information available, and cooldown periods will not apply to them.
+
 ### Julia Helper Structure
 
 ```text
@@ -118,4 +162,3 @@ julia/helpers/DependabotHelper.jl/
 ```
 
 The `run_dependabot_helper.jl` script acts as the JSON-RPC server, receiving function calls from Ruby and dispatching them to the appropriate Julia functions.
-

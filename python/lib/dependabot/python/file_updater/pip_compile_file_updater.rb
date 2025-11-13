@@ -458,6 +458,8 @@ module Dependabot
           hashes = []
 
           index_urls.each do |index_url|
+            index_url = "https://pypi.org" if index_url && !index_url.start_with?("http://", "https://")
+
             args = [name, version, algorithm]
             args << index_url if index_url
 

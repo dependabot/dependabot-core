@@ -812,10 +812,12 @@ public class FileWriterWorkerTests : TestBase
             discoveryWorker: new TestDiscoveryWorker(args =>
             {
                 discoveryRequestCount++;
-                var result = discoveryRequestCount switch
+                if (discoveryRequestCount <= 3)
                 {
-                    // initial request, report 1.0.0
-                    1 => new WorkspaceDiscoveryResult()
+                    // 1 - initial request
+                    // 2 - pre-edit request
+                    // 3 - post-edit request - no change made, indicates failure
+                    return Task.FromResult(new WorkspaceDiscoveryResult()
                     {
                         Path = "/",
                         Projects = [
@@ -829,26 +831,10 @@ public class FileWriterWorkerTests : TestBase
                                 ReferencedProjectPaths = []
                             }
                         ]
-                    },
-                    // post-edit request, report 1.0.0 again, indicating the file edits didn't produce the desired result
-                    2 => new WorkspaceDiscoveryResult()
-                    {
-                        Path = "/",
-                        Projects = [
-                            new ProjectDiscoveryResult()
-                            {
-                                FilePath = "project.csproj",
-                                Dependencies = [new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference)],
-                                TargetFrameworks = ["net9.0"],
-                                AdditionalFiles = [],
-                                ImportedFiles = [],
-                                ReferencedProjectPaths = []
-                            }
-                        ]
-                    },
-                    _ => throw new NotSupportedException($"Didn't expect {discoveryRequestCount} discovery requests"),
-                };
-                return Task.FromResult(result);
+                    });
+                }
+
+                throw new NotSupportedException($"Didn't expect {discoveryRequestCount} discovery requests");
             }),
             dependencySolver: null, // use real worker
             fileWriter: null, // use real worker
@@ -864,6 +850,80 @@ public class FileWriterWorkerTests : TestBase
                 """,
             expectedAdditionalFiles: [],
             expectedOperations: []
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_PriorFileEditResolvedDependencyInSubsequentFile()
+    {
+        // via a ProjectReference, two projects have the same dependency and updating the root causes the other dependency to also be updated and not result in unnecessarily pinning anything
+        await TestAsync(
+            dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            files: [
+                ("src/a/a.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="..\b\b.csproj" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/b/b.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Unrelated.Dependency", "3.0.0", "net9.0"),
+            ],
+            discoveryWorker: null, // use real worker
+            dependencySolver: null, // use real worker
+            fileWriter: null, // use real worker
+            expectedFiles: [
+                ("src/a/a.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="..\b\b.csproj" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/b/b.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedOperations: [
+                new PinnedUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/src/b/b.csproj"] }
+            ]
         );
     }
 

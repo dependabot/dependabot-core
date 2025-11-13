@@ -26,6 +26,7 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
 
+  spec.add_dependency "dependabot-bazel", Dependabot::VERSION
   spec.add_dependency "dependabot-bun", Dependabot::VERSION
   spec.add_dependency "dependabot-bundler", Dependabot::VERSION
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION

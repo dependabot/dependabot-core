@@ -84,6 +84,52 @@ RSpec.describe Dependabot::PullRequest do
       expect(pr1).to eq(pr2)
     end
 
+    it "treats '/.' and '/' directories as equivalent" do
+      pr1 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0",
+            directory: "/."
+          )
+        ]
+      )
+      pr2 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0",
+            directory: "/"
+          )
+        ]
+      )
+
+      expect(pr1).to eq(pr2)
+    end
+
+    it "normalizes directories" do
+      pr1 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0",
+            directory: "hello/world/"
+          )
+        ]
+      )
+      pr2 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0",
+            directory: "/hello/world"
+          )
+        ]
+      )
+
+      expect(pr1).to eq(pr2)
+    end
+
     it "is false when the name is different" do
       pr1 = described_class.new(
         [

@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     )
   end
   let(:dependencies) { [dependency] }
-  let(:dependency_files) { [buildfile] }
+  let(:dependency_files) { [buildfile, wrapper_file] }
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
@@ -51,10 +51,33 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     )
   end
 
+  let(:wrapper_file) do
+    Dependabot::DependencyFile.new(
+      name: "gradle/wrapper/gradle-wrapper.properties",
+      content: fixture(
+        "wrapper_files",
+        "gradle-wrapper-8.14.2-bin.properties"
+      )
+    )
+  end
+
   it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, _|
+        raise "Unexpected shell command: #{command}"
+      end
+
+      Dependabot::Experiments.register(:gradle_wrapper_updater, true)
+      Dependabot::Experiments.register(:gradle_lockfile_updater, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
@@ -625,6 +648,103 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected
             .to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
         end
+      end
+
+      context "with a wrapper" do
+        shared_examples "wrapper" do |version, type, checksum, updated_checksum|
+          subject(:updated_buildfile) do
+            updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.properties" }
+          end
+
+          let(:buildfile) do
+            wrapper_file
+          end
+
+          let(:wrapper_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.properties",
+              content: fixture(
+                "wrapper_files",
+                "gradle-wrapper-#{version}-#{type}#{'-checksum' if checksum}.properties"
+              )
+            )
+          end
+
+          let(:dependency) do
+            requirements = [{
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              requirement: "9.0.0",
+              groups: [],
+              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+            }]
+            if checksum
+              requirements << {
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: updated_checksum,
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+              }
+            end
+
+            previous_requirements = [{
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              requirement: version,
+              groups: [],
+              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+            }]
+            if checksum
+              previous_requirements << {
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: checksum,
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+              }
+            end
+
+            Dependabot::Dependency.new(
+              name: "gradle-wrapper",
+              version: "9.0.0",
+              previous_version: version,
+              requirements: requirements,
+              previous_requirements: previous_requirements,
+              package_manager: "gradle"
+            )
+          end
+
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          end
+
+          its(:content) do
+            expected_command = "gradle --no-daemon --stacktrace wrapper --no-validate-url --gradle-version 9.0.0"
+
+            is_expected.to include(
+              "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
+            )
+
+            if checksum
+              expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
+              is_expected.to include("distributionSha256Sum=#{updated_checksum}")
+            else
+              is_expected.not_to include("distributionSha256Sum=")
+            end
+
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(expected_command, cwd: anything)
+          end
+        end
+
+        it_behaves_like "wrapper", "8.14.2", "all", nil, nil
+        it_behaves_like "wrapper", "8.14.2", "bin", nil, nil
+        it_behaves_like "wrapper",
+                        "8.14.2",
+                        "bin",
+                        "7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999",
+                        "8fad3d78296ca518113f3d29016617c7f9367dc005f932bd9d93bf45ba46072b"
+        it_behaves_like "wrapper",
+                        "8.14.2",
+                        "all",
+                        "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
+                        "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
       end
 
       context "with a version catalog" do

@@ -25,6 +25,7 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
+      require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
 
       SUPPORTED_BUILD_FILE_NAMES = T.let(
@@ -58,6 +59,11 @@ module Dependabot
         end
         script_plugin_files.each do |plugin_file|
           dependency_set += buildfile_dependencies(plugin_file)
+        end
+        if Experiments.enabled?(:gradle_wrapper_updater)
+          wrapper_properties_file.each do |properties_file|
+            dependency_set += wrapper_properties_dependencies(properties_file)
+          end
         end
         version_catalog_file.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
@@ -117,6 +123,14 @@ module Dependabot
           end,
           T.nilable(Dependabot::Gradle::Language)
         )
+      end
+
+      sig { params(properties_file: Dependabot::DependencyFile).returns(DependencySet) }
+      def wrapper_properties_dependencies(properties_file)
+        dependency_set = DependencySet.new
+        dependency = DistributionsFinder.resolve_dependency(properties_file)
+        dependency_set << dependency if dependency
+        dependency_set
       end
 
       sig { params(toml_file: Dependabot::DependencyFile).returns(DependencySet) }
@@ -540,6 +554,14 @@ module Dependabot
           dependency_files.select do |f|
             f.name.end_with?("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
           end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_properties_file
+        @wrapper_properties_file ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("gradle-wrapper.properties") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

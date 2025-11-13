@@ -1,0 +1,10 @@
+name = "WorkspaceTwo"
+uuid = "44444444-4444-4444-4444-444444444444"
+authors = ["Test User <test@example.com>"]
+version = "0.1.0"
+
+[workspace]
+projects = ["SubPackageA", "SubPackageB"]
+
+[compat]
+julia = "1.10"

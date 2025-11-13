@@ -1,2 +1,4 @@
 Manifest.toml
 !test/TestPackage.jl/Manifest.toml
+!test/WorkspaceOne/Manifest.toml
+!test/WorkspaceTwo/Manifest.toml

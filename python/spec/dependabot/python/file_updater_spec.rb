@@ -307,6 +307,52 @@ RSpec.describe Dependabot::Python::FileUpdater do
       end
     end
 
+    context "with a PEP 621 pyproject.toml using Poetry build backend and poetry.lock" do
+      let(:dependency_files) { [pyproject, lockfile] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content:
+            fixture("pyproject_files", "pep621_poetry_build_backend.toml")
+        )
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content:
+            fixture("poetry_locks", "pep621_poetry_build_backend.lock")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "django",
+          version: "5.2.7",
+          previous_version: "5.0.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==5.2.7",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "==5.0.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "delegates to PoetryFileUpdater when using Poetry as build backend" do
+        expect(described_class::PoetryFileUpdater)
+          .to receive(:new).and_call_original
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
     context "with a pip-compile file" do
       let(:dependency_files) { [manifest_file, generated_file] }
       let(:manifest_file) do
