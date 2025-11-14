@@ -466,11 +466,33 @@ module Dependabot
         return @cargo_config if defined?(@cargo_config)
 
         @cargo_config = fetch_support_file(".cargo/config.toml")
-
         @cargo_config ||= T.let(
           fetch_support_file(".cargo/config")&.tap { |f| f.name = ".cargo/config.toml" },
           T.nilable(Dependabot::DependencyFile)
         )
+        @cargo_config ||= T.let(fetch_cargo_config_from_parent_dirs, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def fetch_cargo_config_from_parent_dirs
+        1.upto(directory.scan("/").length + 1) do |level|
+          config = try_fetch_config_at_path(Array.new(level, "..").join("/"))
+          return config if config
+        end
+        nil
+      end
+
+      sig { params(parent_path: String).returns(T.nilable(Dependabot::DependencyFile)) }
+      def try_fetch_config_at_path(parent_path)
+        [".cargo/config.toml", ".cargo/config"].each do |config_name|
+          config = fetch_file_from_host(File.join(parent_path, config_name), fetch_submodules: false)
+          config.support_file = true
+          config.name = ".cargo/config.toml"
+          return config
+        rescue Dependabot::DependencyFileNotFound
+          next
+        end
+        nil
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
