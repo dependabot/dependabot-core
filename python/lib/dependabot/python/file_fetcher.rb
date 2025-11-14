@@ -369,12 +369,10 @@ module Dependabot
         path_dependencies.each do |dep|
           path = T.must(dep[:path])
           project_files += fetch_project_file(path)
-        rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << if sdist_or_wheel?(T.must(path))
-                                e.file_path&.gsub(%r{^/}, "")
-                              else
-                                "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
-                              end
+        rescue Dependabot::DependencyFileNotFound
+          next if sdist_or_wheel?(T.must(path))
+
+          unfetchable_deps << "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
         end
 
         poetry_path_dependencies.each do |path|
