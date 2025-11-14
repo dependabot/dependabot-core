@@ -417,14 +417,14 @@ module Dependabot
             Dependabot.logger.info("Using cached #{name} version #{cached_version} (requested: #{version})")
             cached_version
           else
-            Dependabot.logger.info("Installing \"#{name}@#{version}\"")
             version
           end
         rescue StandardError => e
           Dependabot.logger.warn("Failed to check cache for #{name}@#{version}: #{e.class} - #{e.message}")
-          Dependabot.logger.info("Installing \"#{name}@#{version}\"")
           version
         end
+
+        Dependabot.logger.info("Installing \"#{name}@#{actual_version}\"") if actual_version == version
 
         begin
           # Try to install the specified version (exact or from cache)
