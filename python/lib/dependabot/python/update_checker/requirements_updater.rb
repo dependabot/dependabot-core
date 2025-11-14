@@ -306,11 +306,21 @@ module Dependabot
         def at_same_precision(new_version, old_version)
           # return new_version unless old_version.include?("*")
 
-          count = old_version.split(".").count
+          # For tilde-equal requirements, maintain or increase precision to preserve
+          # the semantic meaning of the pinning level. For example:
+          # - ~=5.0.0 pins to patch versions (5.0.*), so upgrading to 5.1 should give ~=5.1.0
+          # - ~=5.0 pins to minor versions (5.*), so upgrading to 5.1.0 should give ~=5.1.0
+          # Using the maximum ensures we never decrease precision unintentionally.
+          new_segments_count = new_version.split(".").count
+          old_segments_count = old_version.split(".").count
+          count = [new_segments_count, old_segments_count].max
           precision = old_version.split(".").index("*") || count
 
-          new_version
-            .split(".")
+          # Pad the new version with zeros if needed to match the desired segment count
+          new_segments = new_version.split(".")
+          new_segments.fill("0", new_segments.length...count)
+
+          new_segments
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
             .join(".")
