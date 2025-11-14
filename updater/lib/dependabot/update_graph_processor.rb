@@ -101,7 +101,7 @@ module Dependabot
 
     sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files_for(directory)
-      dependency_files.select { |f| f.directory == directory }
+      dependency_files.select { |f| f.directory == directory || f.shared_across_directories? }
     end
 
     sig { params(branch: String, source: Dependabot::Source).returns(GithubApi::DependencySubmission) }

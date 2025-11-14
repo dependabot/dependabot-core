@@ -56,11 +56,15 @@ module Dependabot
     def initialize(job:, dependency_files:, updated_dependencies:, change_source:, notices: [])
       @job = job
 
-      dir = Pathname.new(job.source.directory).cleanpath
-      @dependency_files = T.let(
-        dependency_files.select { |f| Pathname.new(f.directory).cleanpath == dir },
-        T::Array[Dependabot::DependencyFile]
-      )
+      dir_path = job.source.directory || dependency_files.first&.directory || "/"
+      dir = Pathname.new(dir_path).cleanpath
+
+      @dependency_files = dependency_files.select do |file|
+        file_dir = Pathname.new(file.directory).cleanpath
+        file_dir == dir ||
+          file.shared_across_directories? ||
+          workspace_sibling_project?(file: file, current_dir: dir, all_files: dependency_files)
+      end
 
       raise "Missing directory in dependency files: #{dir}" unless @dependency_files.any?
 
@@ -157,6 +161,36 @@ module Dependabot
 
       update_files
     end
+
+    sig do
+      params(
+        file: Dependabot::DependencyFile,
+        current_dir: Pathname,
+        all_files: T::Array[Dependabot::DependencyFile]
+      ).returns(T::Boolean)
+    end
+    def workspace_sibling_project?(file:, current_dir:, all_files:)
+      return false unless file.respond_to?(:associated_lockfile_path)
+
+      lockfile_path = file.associated_lockfile_path
+      return false unless lockfile_path
+
+      current_dir_files = all_files.select do |other|
+        Pathname.new(other.directory).cleanpath == current_dir
+      end
+
+      shares_lockfile = current_dir_files.any? do |other|
+        next false unless other.respond_to?(:associated_lockfile_path)
+
+        other.associated_lockfile_path == lockfile_path
+      end
+      return false unless shares_lockfile
+
+      dir_prefix = current_dir.to_path
+      dir_prefix = "#{dir_prefix}/" unless dir_prefix.end_with?("/")
+      !lockfile_path.start_with?(dir_prefix)
+    end
+
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(

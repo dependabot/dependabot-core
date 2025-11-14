@@ -129,6 +129,21 @@ module Dependabot
         {}
       end
 
+      sig { params(directory: String).returns(T::Hash[String, T.untyped]) }
+      def detect_workspace_files(directory)
+        result = call_julia_helper(
+          function: "detect_workspace_files",
+          args: { directory: directory }
+        )
+
+        return {} if result["error"]
+
+        result
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to detect workspace files in #{directory}: #{e.message}")
+        {}
+      end
+
       sig do
         params(
           manifest_path: String,

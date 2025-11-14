@@ -40,6 +40,12 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :mode
 
+    sig { returns(T.nilable(T::Array[String])) }
+    attr_accessor :associated_manifest_paths
+
+    sig { returns(T.nilable(String)) }
+    attr_accessor :associated_lockfile_path
+
     class ContentEncoding
       UTF_8 = "utf-8"
       BASE64 = "base64"
@@ -77,7 +83,9 @@ module Dependabot
         content_encoding: String,
         deleted: T::Boolean,
         operation: String,
-        mode: T.nilable(String)
+        mode: T.nilable(String),
+        associated_manifest_paths: T.nilable(T::Array[String]),
+        associated_lockfile_path: T.nilable(String)
       )
         .void
     end
@@ -92,7 +100,9 @@ module Dependabot
       content_encoding: ContentEncoding::UTF_8,
       deleted: false,
       operation: Operation::UPDATE,
-      mode: nil
+      mode: nil,
+      associated_manifest_paths: nil,
+      associated_lockfile_path: nil
     )
       @name = name
       @content = content
@@ -103,6 +113,8 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
+      @associated_manifest_paths = associated_manifest_paths
+      @associated_lockfile_path = associated_lockfile_path
       raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation
@@ -137,6 +149,8 @@ module Dependabot
       details["mode"] = mode if mode
 
       details["symlink_target"] = symlink_target if symlink_target
+      details["associated_manifest_paths"] = associated_manifest_paths if associated_manifest_paths
+      details["associated_lockfile_path"] = associated_lockfile_path if associated_lockfile_path
       details
     end
 
@@ -200,6 +214,11 @@ module Dependabot
     sig { returns(T::Boolean) }
     def binary?
       content_encoding == ContentEncoding::BASE64
+    end
+
+    sig { returns(T::Boolean) }
+    def shared_across_directories?
+      associated_manifest_paths&.length.to_i > 1
     end
 
     sig { returns(String) }

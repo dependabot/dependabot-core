@@ -108,6 +108,8 @@ function run(input::String)
         elseif func_name == "find_environment_files"
             project_file, manifest_file = find_environment_files(args["directory"])
             Dict("project_file" => project_file, "manifest_file" => manifest_file)
+        elseif func_name == "detect_workspace_files"
+            detect_workspace_files(args["directory"])
         else
             Dict("error" => "Unknown function: $func_name")
         end
