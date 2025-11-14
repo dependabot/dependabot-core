@@ -43,6 +43,7 @@
 # - submodules
 # - swift
 # - terraform
+# - opentofu
 # - vcpkg
 
 # rubocop:disable Style/GlobalVars
@@ -84,6 +85,7 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./opentofu/lib"
 $LOAD_PATH << "./uv/lib"
 $LOAD_PATH << "./vcpkg/lib"
 
@@ -138,6 +140,7 @@ require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"
 
@@ -375,6 +378,7 @@ valid_package_managers = %w(
   rust_toolchain
   swift
   terraform
+  opentofu
   uv
   vcpkg
 )

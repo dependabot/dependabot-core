@@ -60,6 +60,7 @@ jobs:
           - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
+          - { name: opentofu, ecosystem: opentofu }
           - { name: uv, ecosystem: uv }
           - { name: vcpkg, ecosystem: vcpkg }
     env:

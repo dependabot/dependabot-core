@@ -256,6 +256,12 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
+  -v "$(pwd)/opentofu/.rubocop.yml:$CODE_DIR/opentofu/.rubocop.yml" \
+  -v "$(pwd)/opentofu/dependabot-opentofu.gemspec:$CODE_DIR/opentofu/dependabot-opentofu.gemspec" \
+  -v "$(pwd)/opentofu/helpers:$CODE_DIR/opentofu/helpers" \
+  -v "$(pwd)/opentofu/lib:$CODE_DIR/opentofu/lib" \
+  -v "$(pwd)/opentofu/script:$CODE_DIR/opentofu/script" \
+  -v "$(pwd)/opentofu/spec:$CODE_DIR/opentofu/spec" \
   -v "$(pwd)/pub/.rubocop.yml:$CODE_DIR/pub/.rubocop.yml" \
   -v "$(pwd)/pub/dependabot-pub.gemspec:$CODE_DIR/pub/dependabot-pub.gemspec" \
   -v "$(pwd)/pub/lib:$CODE_DIR/pub/lib" \
