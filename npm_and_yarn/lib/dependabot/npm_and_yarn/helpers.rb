@@ -411,29 +411,30 @@ module Dependabot
       end
       def self.install(name, version, env: {})
         # Check if we have a cached version that satisfies the request
-        begin
+        actual_version = begin
           cached_version = find_cached_version(name, version)
+          if cached_version
+            Dependabot.logger.info("Using cached #{name} version #{cached_version} (requested: #{version})")
+            cached_version
+          else
+            Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+            version
+          end
         rescue StandardError => e
           Dependabot.logger.warn("Failed to check cache for #{name}@#{version}: #{e.class} - #{e.message}")
-          cached_version = nil
-        end
-
-        if cached_version
-          Dependabot.logger.info("Installing \"#{name}@#{version}\" (using cached version #{cached_version})")
-          actual_version = cached_version
-        else
           Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-          actual_version = version
+          version
         end
 
         begin
           # Try to install the specified version (exact or from cache)
           output = package_manager_install(name, actual_version, env: env)
+          used_cache = actual_version != version
 
           # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/) || cached_version
-            if cached_version
-              Dependabot.logger.info("#{name}@#{version} successfully installed from cache (#{cached_version}).")
+          if output.match?(/Adding #{name}@.* to the cache/) || used_cache
+            if used_cache
+              Dependabot.logger.info("Successfully activated #{name}@#{actual_version} from cache.")
             else
               Dependabot.logger.info("#{name}@#{version} successfully installed.")
             end
@@ -472,7 +473,7 @@ module Dependabot
       end
 
       # Find cached version that matches the requested version pattern
-      sig { params(name: T.deprecated_enum(%w(yarn pnpm npm)), version: String).returns(T.nilable(String)) }
+      sig { params(name: String, version: String).returns(T.nilable(String)) }
       def self.find_cached_version(name, version)
         cache_dir = "#{Dir.home}/.cache/node/corepack/v1/#{name}"
 
