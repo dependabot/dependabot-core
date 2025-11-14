@@ -163,10 +163,13 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Fact]
-    public async Task TestDependenciesSeparatedBySemicolon()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestDependenciesSeparatedBySemicolon(bool useSingleRestore)
     {
         await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
@@ -368,9 +371,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task TestPackageConfig(bool useDirectDiscovery)
+    public async Task TestPackageConfig(bool useSingleRestore)
     {
         await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -487,11 +491,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Fact]
-    public async Task TestRepo()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestRepo(bool useSingleRestore)
     {
         var solutionPath = "solution.sln";
         await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
@@ -617,11 +624,110 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Fact]
-    public async Task TestRepo_DirectDiscovery_Slnx()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestRepo_Sln(bool useSingleRestore)
+    {
+        await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/solution.sln", """
+                    Microsoft Visual Studio Solution File, Format Version 12.00
+                    # Visual Studio 14
+                    VisualStudioVersion = 14.0.22705.0
+                    MinimumVisualStudioVersion = 10.0.40219.1
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project.A", "client\client.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+                    EndProject
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project.B", "server\server.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20D}"
+                    EndProject
+                    Global
+                      GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        Debug|Any CPU = Debug|Any CPU
+                        Release|Any CPU = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.Build.0 = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(SolutionProperties) = preSolution
+                        HideSolutionNode = FALSE
+                      EndGlobalSection
+                    EndGlobal
+                    """),
+                ("src/client/client.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/server/server.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.B" Version="4.5.6" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "client/client.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [new("Package.A", "1.2.3", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net8.0"])],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "src/client/client.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "server/server.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [new("Package.B", "4.5.6", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net8.0"])],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "src/server/server.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestRepo_Slnx(bool useSingleRestore)
     {
         var solutionPath = "solution.slnx";
         await TestDiscoveryAsync(
+            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
