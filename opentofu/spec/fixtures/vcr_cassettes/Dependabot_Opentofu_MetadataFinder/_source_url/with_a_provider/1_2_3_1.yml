@@ -1,0 +1,45 @@
+---
+http_interactions:
+  - request:
+      method: get
+      uri: https://api.opentofu.org/registry/docs/providers/hashicorp/aws/v3.40.0/index.json
+      body:
+        encoding: US-ASCII
+        string: ""
+      headers:
+        user-agent:
+          - dependabot-core/0.343.0 excon/1.2.5 ruby/3.4.5 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
+        accept-encoding:
+          - deflate, gzip
+    response:
+      status:
+        code: 200
+        message: OK
+      headers:
+        date:
+          - Fri, 24 Oct 2025 17:09:34 GMT
+        content-type:
+          - application/json
+        content-length:
+          - "285926"
+        connection:
+          - keep-alive
+        server-timing:
+          - cfEdge;dur=538,cfOrigin;dur=0
+        access-control-allow-origin:
+          - "*"
+        cache-control:
+          - public, max-age=3600
+        access-control-allow-methods:
+          - GET
+        vary:
+          - accept-encoding
+        server:
+          - cloudflare
+        cf-ray:
+          - 993b15286c2f0bf9-JDO
+      body:
+        encoding: ASCII-8BIT
+        string: '{"id": "v3.40.0", "published": "2021-05-13T23:18:37Z", "docs":{"index":{"name":"index","edit_link":"https://github.com/opentofu/terraform-provider-aws/blob/v3.40.0/website/docs/index.html.markdown"}}}'
+    recorded_at: Fri, 24 Oct 2025 17:09:34 GMT
+recorded_with: VCR 6.3.1
