@@ -287,8 +287,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it "raises a helpful error" do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message)
-              .to include("depends on black (^18), version solving failed")
+            expect(error.message).to include("depends on black (^18), version solving failed")
           end
       end
 
@@ -561,6 +560,25 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
           expect(error.message)
             .to include("scipy requires Python <3.13,>=3.9, so it will not be satisfied for")
+        end
+      end
+    end
+
+    context "with python range incompatibility exact regex capture" do
+      let(:response) do
+        <<~POETRY_OUTPUT.strip
+          Resolving dependencies...
+          The current project's supported Python range (>=3.11,<3.13) is not compatible with some of the required packages Python requirement: - foo requires Python <3.11,>=3.10, so it will not be satisfied for Python >=3.11,<3.13
+        POETRY_OUTPUT
+      end
+
+      it "matches PYTHON_RANGE_INCOMPATIBLE and raises" do
+        match = response.match(Dependabot::Python::UpdateChecker::PoetryVersionResolver::PYTHON_RANGE_INCOMPATIBLE)
+        expect(match).not_to be_nil
+        expect(match[:project_range]).to eq(">=3.11,<3.13")
+        expect(match[:package]).to eq("foo")
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("Python range (>=3.11,<3.13) is not compatible")
         end
       end
     end
