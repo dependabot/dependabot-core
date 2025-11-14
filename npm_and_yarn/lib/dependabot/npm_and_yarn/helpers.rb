@@ -410,51 +410,62 @@ module Dependabot
           .returns(String)
       end
       def self.install(name, version, env: {})
-        # Check if we have a cached version that satisfies the request
-        actual_version = begin
-          cached_version = find_cached_version(name, version)
-          if cached_version
-            Dependabot.logger.info("Using cached #{name} version #{cached_version} (requested: #{version})")
-            cached_version
-          else
-            version
-          end
-        rescue StandardError => e
-          Dependabot.logger.warn("Failed to check cache for #{name}@#{version}: #{e.class} - #{e.message}")
-          version
-        end
-
+        actual_version = resolve_version_from_cache(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{actual_version}\"") if actual_version == version
 
-        begin
-          # Try to install the specified version (exact or from cache)
-          output = package_manager_install(name, actual_version, env: env)
-          used_cache = actual_version != version
+        install_and_activate_version(name, version, actual_version, env)
+        package_manager_version(name)
+      end
 
-          # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/) || used_cache
-            if used_cache
-              Dependabot.logger.info("Successfully activated #{name}@#{actual_version} from cache.")
-            else
-              Dependabot.logger.info("#{name}@#{version} successfully installed.")
-            end
+      # Resolve the version to use, checking cache first
+      sig { params(name: String, version: String).returns(String) }
+      def self.resolve_version_from_cache(name, version)
+        cached_version = find_cached_version(name, version)
+        if cached_version
+          Dependabot.logger.info("Using cached #{name} version #{cached_version} (requested: #{version})")
+          cached_version
+        else
+          version
+        end
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to check cache for #{name}@#{version}: #{e.class} - #{e.message}")
+        version
+      end
 
-            Dependabot.logger.info("Activating currently installed version of #{name}: #{actual_version}")
-            package_manager_activate(name, actual_version)
+      # Install and activate the specified version
+      sig do
+        params(
+          name: String,
+          version: String,
+          actual_version: String,
+          env: T.nilable(T::Hash[String, String])
+        ).void
+      end
+      def self.install_and_activate_version(name, version, actual_version, env)
+        output = package_manager_install(name, actual_version, env: env)
+        used_cache = actual_version != version
 
-          else
-            Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name)
-          end
-        rescue StandardError => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+        if output.match?(/Adding #{name}@.* to the cache/) || used_cache
+          log_installation_success(name, version, actual_version, used_cache)
+          Dependabot.logger.info("Activating currently installed version of #{name}: #{actual_version}")
+          package_manager_activate(name, actual_version)
+        else
+          Dependabot.logger.error("Corepack installation output unexpected: #{output}")
           fallback_to_local_version(name)
         end
+      rescue StandardError => e
+        Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+        fallback_to_local_version(name)
+      end
 
-        # Verify the installed version
-        installed_version = package_manager_version(name)
-
-        installed_version
+      # Log successful installation or cache activation
+      sig { params(name: String, version: String, actual_version: String, used_cache: T::Boolean).void }
+      def self.log_installation_success(name, version, actual_version, used_cache)
+        if used_cache
+          Dependabot.logger.info("Successfully activated #{name}@#{actual_version} from cache.")
+        else
+          Dependabot.logger.info("#{name}@#{version} successfully installed.")
+        end
       end
 
       # Attempt to activate the local version of the package manager
