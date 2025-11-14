@@ -262,7 +262,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
             "name" => "minor-and-patch",
             "rules" => {
               "patterns" => ["*"],
-              "update-types" => ["minor", "patch"]
+              "update-types" => %w(minor patch)
             }
           }
         ]
