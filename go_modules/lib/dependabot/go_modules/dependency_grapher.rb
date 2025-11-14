@@ -18,7 +18,7 @@ module Dependabot
       #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
       #   <---parent--->        <----child------>
       #
-      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/
+      GO_MOD_GRAPH_LINE_REGEX = T.let(/^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/, Regexp)
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
