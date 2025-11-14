@@ -57,7 +57,7 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
       it "correctly serializes the resolved dependencies" do
         expect(grapher.resolved_dependencies.count).to be(1)
 
-        ibandit = grapher.resolved_dependencies["ibandit"]
+        ibandit = grapher.resolved_dependencies["pkg:gem/ibandit"]
         expect(ibandit.package_url).to eql("pkg:gem/ibandit")
         expect(ibandit.direct).to be(true)
         expect(ibandit.runtime).to be(true)
@@ -87,15 +87,15 @@ RSpec.describe "Dependabot::DependencyGraphers::Generic" do
 
         expect(resolved_dependencies.count).to be(2)
 
-        expect(resolved_dependencies.keys).to eql(%w(ibandit i18n))
+        expect(resolved_dependencies.keys).to eql(%w(pkg:gem/ibandit@0.7.0 pkg:gem/i18n@0.7.0.beta1))
 
-        ibandit = resolved_dependencies["ibandit"]
+        ibandit = resolved_dependencies["pkg:gem/ibandit@0.7.0"]
         expect(ibandit.package_url).to eql("pkg:gem/ibandit@0.7.0")
         expect(ibandit.direct).to be(true)
         expect(ibandit.runtime).to be(true)
         expect(ibandit.dependencies).to be_empty
 
-        i18n = resolved_dependencies["i18n"]
+        i18n = resolved_dependencies["pkg:gem/i18n@0.7.0.beta1"]
         expect(i18n.package_url).to eql("pkg:gem/i18n@0.7.0.beta1")
         expect(i18n.direct).to be(false)
         expect(i18n.runtime).to be(true)
