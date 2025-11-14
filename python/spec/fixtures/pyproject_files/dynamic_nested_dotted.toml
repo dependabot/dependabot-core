@@ -1,0 +1,6 @@
+[tool.setuptools]
+dynamic.version = {attr = "test.__init__.__version__"}
+
+[project]
+name = "test"
+dynamic = ["version"]

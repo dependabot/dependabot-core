@@ -445,4 +445,19 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
     end
   end
+
+  describe "dotted key notation handling" do
+    subject(:dependencies) { parser.dependency_set.dependencies }
+
+    context "when using dotted notation without conflicts" do
+      let(:pyproject_fixture_name) { "dynamic_nested_dotted_with_deps.toml" }
+
+      it "parses successfully" do
+        expect(dependencies.length).to eq(3)  # requests + 2 build-system deps
+        request_dep = dependencies.find { |d| d.name == "requests" }
+        expect(request_dep).not_to be_nil
+        expect(request_dep.version).to eq("2.31.0")
+      end
+    end
+  end
 end
