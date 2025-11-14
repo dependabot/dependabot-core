@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/bazel/file_updater"
+require "dependabot/bazel/package_manager"
 require "dependabot/shared_helpers"
 require "pathname"
 require "fileutils"
@@ -12,8 +13,6 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       class LockfileUpdater
         extend T::Sig
-
-        DEFAULT_BAZEL_VERSION = "8.4.2"
 
         sig do
           params(
@@ -53,10 +52,10 @@ module Dependabot
         sig { returns(String) }
         def determine_bazel_version
           bazelversion_file = dependency_files.find { |f| f.name == ".bazelversion" }
-          return DEFAULT_BAZEL_VERSION unless bazelversion_file
+          return Dependabot::Bazel::DEFAULT_BAZEL_VERSION unless bazelversion_file
 
           version = T.must(bazelversion_file.content).strip
-          version.empty? ? DEFAULT_BAZEL_VERSION : version
+          version.empty? ? Dependabot::Bazel::DEFAULT_BAZEL_VERSION : version
         end
 
         private
