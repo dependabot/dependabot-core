@@ -7,12 +7,14 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    public bool AdditionalPackageSources { get; init; } = false;
     public bool GenerateSimplePrBody { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
         return new()
         {
+            ["nuget_additional_package_sources"] = AdditionalPackageSources,
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
         };
     }
@@ -21,6 +23,7 @@ public record ExperimentsManager
     {
         return new ExperimentsManager()
         {
+            AdditionalPackageSources = IsEnabled(experiments, "nuget_additional_package_sources"),
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
         };
     }
