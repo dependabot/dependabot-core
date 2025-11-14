@@ -39,12 +39,15 @@ module Dependabot
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
+          # We only run this updater if it's a distribution dependency
+          return [] unless Distributions.distribution_requirements?(dependency.requirements)
+
           local_files = dependency_files.select do |file|
             file.directory == build_file.directory && target_file?(file)
           end
 
           # If we don't have any files in the build files don't generate one
-          return dependency_files unless local_files.any?
+          return [] unless local_files.any?
 
           updated_files = dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|

@@ -3,26 +3,26 @@
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <DefineConstants>$(DefineConstants);PACK_TASKS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NuGet.Build.Tasks.Pack\NuGet.Build.Tasks.Pack.csproj" />
     <ProjectReference Include="..\NuGet.Commands\NuGet.Commands.csproj" />
-    <ProjectReference Include="..\NuGet.PackageManagement\NuGet.PackageManagement.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Build.Tasks\**\*.cs" />
+    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Build.Tasks.Pack\**\*.cs" />
+    <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Build.Tasks\Common\MSBuildLogger.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Build.Tasks\**\*.resx" />
+    <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Build.Tasks.Pack\**\*.resx" />
   </ItemGroup>
 
 </Project>

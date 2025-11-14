@@ -40,17 +40,19 @@ public class RunWorker
         _updaterWorker = updateWorker;
     }
 
-    public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
+    public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = Deserialize(jobFileContent);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        return result;
     }
 
-    public async Task RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    public async Task<int> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
-        await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        var result = await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        return result;
     }
 
     private static readonly ImmutableArray<IUpdateHandler> UpdateHandlers =
@@ -65,8 +67,9 @@ public class RunWorker
     public static IUpdateHandler GetUpdateHandler(Job job) =>
         UpdateHandlers.FirstOrDefault(h => h.CanHandle(job)) ?? throw new InvalidOperationException("Unable to find appropriate update handler.");
 
-    private async Task RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    private async Task<int> RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        int result = 0;
         JobErrorBase? error = null;
 
         try
@@ -83,9 +86,11 @@ public class RunWorker
         if (error is not null)
         {
             await _apiHandler.RecordUpdateJobError(error, _logger);
+            result = 1;
         }
 
         await _apiHandler.MarkAsProcessed(new(baseCommitSha));
+        return result;
     }
 
     internal static ImmutableArray<UpdateOperationBase> PatchInOldVersions(ImmutableArray<UpdateOperationBase> updateOperations, ProjectDiscoveryResult? projectDiscovery)
