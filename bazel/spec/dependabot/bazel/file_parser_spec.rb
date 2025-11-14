@@ -43,6 +43,37 @@ RSpec.describe Dependabot::Bazel::FileParser do
     end
   end
 
+  describe "#ecosystem" do
+    it "returns the Bazel ecosystem with package manager and language" do
+      ecosystem = parser.ecosystem
+
+      expect(ecosystem.name).to eq("bazel")
+      expect(ecosystem.package_manager.name).to eq("bazel")
+      expect(ecosystem.language.name).to eq("bazel")
+    end
+
+    context "with .bazelversion file" do
+      let(:dependency_files) { bazel_project_dependency_files("with_bazelversion") }
+
+      it "uses the detected Bazel version" do
+        ecosystem = parser.ecosystem
+
+        expect(ecosystem.package_manager.version.to_s).to eq("6.4.0")
+        expect(ecosystem.language.version.to_s).to eq("6.4.0")
+      end
+    end
+
+    context "without .bazelversion file" do
+      it "uses the default version for detected_version" do
+        ecosystem = parser.ecosystem
+
+        expect(ecosystem.package_manager.detected_version.to_s).to eq("8.4.2")
+        expect(ecosystem.package_manager.version).to be_nil
+        expect(ecosystem.language.version.to_s).to eq("8.4.2")
+      end
+    end
+  end
+
   context "with WORKSPACE file" do
     let(:dependency_files) { bazel_project_dependency_files("simple_workspace") }
 

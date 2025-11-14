@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
 
       it "returns DEFAULT_BAZEL_VERSION" do
         expect(lockfile_updater.determine_bazel_version)
-          .to eq(Dependabot::Bazel::FileUpdater::LockfileUpdater::DEFAULT_BAZEL_VERSION)
+          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
       end
     end
 
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
 
       it "returns DEFAULT_BAZEL_VERSION" do
         expect(lockfile_updater.determine_bazel_version)
-          .to eq(Dependabot::Bazel::FileUpdater::LockfileUpdater::DEFAULT_BAZEL_VERSION)
+          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
       end
     end
 
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
 
       it "returns DEFAULT_BAZEL_VERSION" do
         expect(lockfile_updater.determine_bazel_version)
-          .to eq(Dependabot::Bazel::FileUpdater::LockfileUpdater::DEFAULT_BAZEL_VERSION)
+          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
       end
     end
   end

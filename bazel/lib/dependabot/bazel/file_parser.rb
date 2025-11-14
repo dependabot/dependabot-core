@@ -7,6 +7,9 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/bazel/version"
+require "dependabot/bazel/package_manager"
+require "dependabot/bazel/language"
+require "dependabot/ecosystem"
 require "dependabot/errors"
 
 module Dependabot
@@ -48,7 +51,38 @@ module Dependabot
         dependencies.uniq { |dep| [dep.name, dep.version] }
       end
 
+      sig { override.returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(
+            detected_version: bazel_version || DEFAULT_BAZEL_VERSION,
+            raw_version: bazel_version
+          ),
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def language
+        @language ||= T.let(
+          Language.new(bazel_version || DEFAULT_BAZEL_VERSION),
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
 
       sig { returns(DependencySet) }
       def module_dependencies

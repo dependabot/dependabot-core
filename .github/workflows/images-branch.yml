@@ -31,6 +31,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Set PR
         run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
@@ -83,6 +84,7 @@ jobs:
           - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
+          - { name: opentofu, ecosystem: opentofu }
           - { name: uv, ecosystem: uv }
           - { name: vcpkg, ecosystem: vcpkg }
     permissions:
@@ -96,8 +98,9 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
+          persist-credentials: false
 
-      - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -118,7 +121,7 @@ jobs:
           echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
-      - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

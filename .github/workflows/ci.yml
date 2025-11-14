@@ -44,6 +44,7 @@ jobs:
           - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
+          - { path: opentofu, name: opentofu, ecosystem: opentofu }
           - { path: uv, name: uv, ecosystem: uv }
           - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
 
@@ -52,6 +53,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
+          persist-credentials: false
 
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: changes
@@ -85,6 +87,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
+          persist-credentials: false
       # using bundler as the test updater
       - name: Build ecosystem image
         run: script/build bundler
@@ -100,6 +103,8 @@ jobs:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
         with:
           bundler-cache: true
@@ -115,6 +120,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
 
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: changes
@@ -141,12 +148,13 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Build ecosystem image
         run: script/build silent
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: 'silent/tests/go.mod'
 

@@ -32,7 +32,7 @@ Welcome to the public home of Dependabot :dependabot:.
 Dependabot-Core is the library at the heart of [Dependabot](https://docs.github.com/en/code-security/dependabot) security / version updates.
 
 Use it to generate automated pull requests updating dependencies for projects written in Ruby, JavaScript, Python,
-PHP, Dart, Elixir, Elm, Go, Rust, Java, Julia, and .NET. It can also update git submodules, Docker files, and Terraform files.
+PHP, Dart, Elixir, Elm, Go, Rust, Java, Julia, and .NET. It can also update git submodules, Docker files, Opentofu, and Terraform files.
 Features include:
 
 - Check for the latest version of a dependency *that's resolvable given a project's other dependencies*
@@ -112,7 +112,7 @@ Contribution workflow:
 Please refer to the [CONTRIBUTING](CONTRIBUTING.md) guidelines for more information.
 
 ## New Ecosystems
-	
+
 If you're interested in contributing support for a new ecosystem, please refer to the [contributing guidelines](CONTRIBUTING.md#contributing-new-ecosystems) for more information.
 
 # Development Guide
