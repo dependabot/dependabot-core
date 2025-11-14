@@ -248,6 +248,67 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
+    context "with groups using update-types" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "major",
+            "rules" => {
+              "patterns" => ["*"],
+              "update-types" => ["major"]
+            }
+          },
+          {
+            "name" => "minor-and-patch",
+            "rules" => {
+              "patterns" => ["*"],
+              "update-types" => ["minor", "patch"]
+            }
+          }
+        ]
+      end
+
+      let(:dependencies) { [dummy_pkg_a, dummy_pkg_b] }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(true)
+      end
+
+      context "when groups have update-types rules" do
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "allows dependencies to be in multiple overlapping groups" do
+          major_group = dependency_group_engine.find_group(name: "major")
+          minor_patch_group = dependency_group_engine.find_group(name: "minor-and-patch")
+
+          # Both dependencies should be in both groups because update-types filtering
+          # happens later during update checking, not during initial group assignment
+          expect(major_group.dependencies).to include(dummy_pkg_a, dummy_pkg_b)
+          expect(minor_patch_group.dependencies).to include(dummy_pkg_a, dummy_pkg_b)
+        end
+
+        it "does not apply specificity enforcement when update-types are present" do
+          major_group = dependency_group_engine.find_group(name: "major")
+          specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
+
+          # Even though major_group would be considered "more specific" due to being processed first,
+          # should_skip_due_to_specificity? returns false when update-types are present
+          expect(
+            dependency_group_engine.send(
+              :should_skip_due_to_specificity?,
+              major_group,
+              dummy_pkg_a,
+              specificity_calculator
+            )
+          ).to be(false)
+        end
+      end
+    end
+
     context "with group membership enforcement experiment" do
       let(:dependency_groups_config) do
         [
