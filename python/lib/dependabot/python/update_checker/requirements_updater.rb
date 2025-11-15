@@ -118,7 +118,7 @@ module Dependabot
 
           # If the requirement is a development dependency we always want to
           # bump it
-          return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
+          return update_pyproject_version(req, force_bump: true) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
           when RequirementsUpdateStrategy::WidenRanges then widen_pyproject_requirement(req)
@@ -137,8 +137,8 @@ module Dependabot
           update_pyproject_version(req)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
-        def update_pyproject_version(req)
+        sig { params(req: T::Hash[Symbol, T.untyped], force_bump: T::Boolean).returns(T::Hash[Symbol, T.untyped]) }
+        def update_pyproject_version(req, force_bump: false)
           requirement_strings = req[:requirement].split(",").map(&:strip)
 
           new_requirement =
@@ -147,10 +147,7 @@ module Dependabot
               # be binding and any other requirements will be being ignored
               find_and_update_equality_match(requirement_strings)
             elsif requirement_strings.any? { |r| r.start_with?("~", "^") }
-              # If a compatibility operator is being used, just bump its
-              # version (and remove any other requirements)
-              v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
-              bump_version(v_req, latest_resolvable_version.to_s)
+              update_pyproject_compatibility_requirement(req, requirement_strings, force_bump: force_bump)
             elsif new_version_satisfies?(req)
               # Otherwise we're looking at a range operator. No change
               # required if it's already satisfied
@@ -161,6 +158,26 @@ module Dependabot
             end
 
           req.merge(requirement: new_requirement)
+        end
+
+        sig do
+          params(
+            req: T::Hash[Symbol, T.untyped],
+            requirement_strings: T::Array[String],
+            force_bump: T::Boolean
+          ).returns(String)
+        end
+        def update_pyproject_compatibility_requirement(req, requirement_strings, force_bump: false)
+          if force_bump || !new_version_satisfies?(req)
+            # Bump the version if forced (dev dependencies) or if new version
+            # is not already satisfied (and remove any other requirements)
+            v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
+            bump_version(T.must(v_req), latest_resolvable_version.to_s)
+          else
+            # If a compatibility operator is being used but the new version
+            # is already satisfied, no change is required
+            req.fetch(:requirement)
+          end
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
@@ -256,8 +273,7 @@ module Dependabot
             if requirement_strings.any? { |r| r.match?(/^[=\d]/) }
               find_and_update_equality_match(requirement_strings)
             elsif requirement_strings.any? { |r| r.start_with?("~=") }
-              tw_req = requirement_strings.find { |r| r.start_with?("~=") }
-              bump_version(tw_req, latest_resolvable_version.to_s)
+              update_tilde_requirement(req, requirement_strings)
             elsif new_version_satisfies?(req)
               req.fetch(:requirement)
             else
@@ -266,6 +282,14 @@ module Dependabot
           req.merge(requirement: new_requirement)
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
+        end
+
+        sig { params(req: T::Hash[Symbol, T.untyped], requirement_strings: T::Array[String]).returns(String) }
+        def update_tilde_requirement(req, requirement_strings)
+          return req.fetch(:requirement) if new_version_satisfies?(req)
+
+          tw_req = requirement_strings.find { |r| r.start_with?("~=") }
+          bump_version(T.must(tw_req), latest_resolvable_version.to_s)
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
