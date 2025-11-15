@@ -78,7 +78,9 @@ module Dependabot
         versions = registry_client.all_module_versions(dependency.name)
         return nil if versions.empty?
 
-        filtered_versions = apply_cooldown_filter(versions)
+        filtered_versions = filter_ignored_versions(versions)
+        filtered_versions = filter_lower_versions(filtered_versions)
+        filtered_versions = apply_cooldown_filter(filtered_versions)
         return nil if filtered_versions.empty?
 
         latest_version_string = filtered_versions.max_by { |v| version_sort_key(v) }
@@ -96,6 +98,32 @@ module Dependabot
           UpdateChecker::RegistryClient.new(credentials: credentials),
           T.nilable(UpdateChecker::RegistryClient)
         )
+      end
+
+      sig { params(versions: T::Array[String]).returns(T::Array[String]) }
+      def filter_ignored_versions(versions)
+        filtered = versions.reject do |version_string|
+          version = version_class.new(version_string)
+          ignore_requirements.any? { |req| req.satisfied_by?(version) }
+        end
+
+        if versions.count > filtered.count
+          Dependabot.logger.info("Filtered out #{versions.count - filtered.count} ignored versions")
+        end
+
+        if raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+        end
+
+        filtered
+      end
+
+      sig { params(versions: T::Array[String]).returns(T::Array[String]) }
+      def filter_lower_versions(versions)
+        return versions unless dependency.version
+
+        current_version = version_class.new(dependency.version)
+        versions.select { |v| version_class.new(v) > current_version }
       end
 
       sig { params(versions: T::Array[String]).returns(T::Array[String]) }
