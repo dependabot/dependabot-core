@@ -198,7 +198,9 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
   - package-ecosystem: "docker"
-    directory: "/docker"
+    directories:
+      - "/docker"
+      - "/helm"
     schedule:
       interval: "weekly"
       day: "sunday"
