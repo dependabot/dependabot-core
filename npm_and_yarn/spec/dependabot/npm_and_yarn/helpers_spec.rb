@@ -501,4 +501,54 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.node_version).to be_nil
     end
   end
+
+  describe "::find_cached_version" do
+    before do
+      # Create a temporary cache directory structure for testing
+      FileUtils.mkdir_p("/tmp/test_cache/npm")
+      FileUtils.touch("/tmp/test_cache/npm/11.6.2")
+      FileUtils.touch("/tmp/test_cache/npm/10.9.4")
+      FileUtils.touch("/tmp/test_cache/npm/9.9.4")
+    end
+
+    after do
+      FileUtils.rm_rf("/tmp/test_cache")
+    end
+
+    it "finds exact version match" do
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
+      allow(Dir).to receive(:entries).with(cache_path)
+                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+
+      result = described_class.find_cached_version("npm", "11.6.2")
+      expect(result).to eq("11.6.2")
+    end
+
+    it "finds highest matching version for major version request" do
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
+      allow(Dir).to receive(:entries).with(cache_path)
+                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+
+      result = described_class.find_cached_version("npm", "11")
+      expect(result).to eq("11.6.2")
+    end
+
+    it "returns nil when no matching version found" do
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
+      allow(Dir).to receive(:entries).with(cache_path)
+                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+
+      result = described_class.find_cached_version("npm", "12")
+      expect(result).to be_nil
+    end
+
+    it "returns nil when requesting specific patch version not in cache" do
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
+      allow(Dir).to receive(:entries).with(cache_path)
+                                     .and_return([".", "..", "11.5.0", "10.9.4", "9.9.4"])
+
+      result = described_class.find_cached_version("npm", "11.6.2")
+      expect(result).to be_nil
+    end
+  end
 end

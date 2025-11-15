@@ -410,32 +410,62 @@ module Dependabot
           .returns(String)
       end
       def self.install(name, version, env: {})
-        Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+        actual_version = resolve_version_from_cache(name, version)
+        Dependabot.logger.info("Installing \"#{name}@#{actual_version}\"") if actual_version == version
 
-        begin
-          # Try to install the specified version
-          output = package_manager_install(name, version, env: env)
+        install_and_activate_version(name, version, actual_version, env)
+        package_manager_version(name)
+      end
 
-          # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/)
-            Dependabot.logger.info("#{name}@#{version} successfully installed.")
+      # Resolve the version to use, checking cache first
+      sig { params(name: String, version: String).returns(String) }
+      def self.resolve_version_from_cache(name, version)
+        cached_version = find_cached_version(name, version)
+        if cached_version
+          Dependabot.logger.info("Using cached #{name} version #{cached_version} (requested: #{version})")
+          cached_version
+        else
+          version
+        end
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to check cache for #{name}@#{version}: #{e.class} - #{e.message}")
+        version
+      end
 
-            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
-            package_manager_activate(name, version)
+      # Install and activate the specified version
+      sig do
+        params(
+          name: String,
+          version: String,
+          actual_version: String,
+          env: T.nilable(T::Hash[String, String])
+        ).void
+      end
+      def self.install_and_activate_version(name, version, actual_version, env)
+        output = package_manager_install(name, actual_version, env: env)
+        used_cache = actual_version != version
 
-          else
-            Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name)
-          end
-        rescue StandardError => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+        if output.match?(/Adding #{name}@.* to the cache/) || used_cache
+          log_installation_success(name, version, actual_version, used_cache)
+          Dependabot.logger.info("Activating currently installed version of #{name}: #{actual_version}")
+          package_manager_activate(name, actual_version)
+        else
+          Dependabot.logger.error("Corepack installation output unexpected: #{output}")
           fallback_to_local_version(name)
         end
+      rescue StandardError => e
+        Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+        fallback_to_local_version(name)
+      end
 
-        # Verify the installed version
-        installed_version = package_manager_version(name)
-
-        installed_version
+      # Log successful installation or cache activation
+      sig { params(name: String, version: String, actual_version: String, used_cache: T::Boolean).void }
+      def self.log_installation_success(name, version, actual_version, used_cache)
+        if used_cache
+          Dependabot.logger.info("Successfully activated #{name}@#{actual_version} from cache.")
+        else
+          Dependabot.logger.info("#{name}@#{version} successfully installed.")
+        end
       end
 
       # Attempt to activate the local version of the package manager
@@ -453,7 +483,47 @@ module Dependabot
         package_manager_activate(name, current_version)
       end
 
-      # Install the package manager for specified version by using corepack
+      # Find cached version that matches the requested version pattern
+      sig { params(name: String, version: String).returns(T.nilable(String)) }
+      def self.find_cached_version(name, version)
+        cache_dir = "#{Dir.home}/.cache/node/corepack/v1/#{name}"
+
+        cached_versions = list_cached_versions(cache_dir)
+
+        # Check for exact version match first (e.g., "11.6.2" matches "11.6.2")
+        # include? checks for exact string equality in the array
+        return version if cached_versions.include?(version)
+
+        # Handle major version resolution (e.g., "11" finds highest "11.x.x")
+        find_highest_major_version(cached_versions, version)
+      rescue StandardError => e
+        Dependabot.logger.warn("Cache detection failed for #{name}@#{version}: #{e.message}")
+        nil
+      end
+
+      # List all cached versions, excluding system entries
+      sig { params(cache_dir: String).returns(T::Array[String]) }
+      def self.list_cached_versions(cache_dir)
+        Dir.entries(cache_dir).reject { |entry| entry.start_with?(".") }
+      end
+
+      # Find the highest cached version for a major version request
+      sig { params(cached_versions: T::Array[String], version: String).returns(T.nilable(String)) }
+      def self.find_highest_major_version(cached_versions, version)
+        # Only optimize for simple major version requests (e.g., "11", not "11.6.2")
+        return nil unless version.match?(/^\d+$/)
+
+        major = version.to_i
+        matching_versions = cached_versions.select { |v| v.match?(/^#{major}\./) }
+
+        return nil if matching_versions.empty?
+
+        # Sort by semantic version and return the highest
+        matching_versions.max_by do |v|
+          parts = v.split(".").map(&:to_i)
+          [parts[0] || 0, parts[1] || 0, parts[2] || 0]
+        end
+      end
       sig do
         params(
           name: String,
