@@ -9,7 +9,6 @@ require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/npm_and_yarn/npm_package_manager"
 require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
-require "dependabot/npm_and_yarn/bun_package_manager"
 require "dependabot/npm_and_yarn/language"
 require "dependabot/npm_and_yarn/constraint_helper"
 
@@ -60,8 +59,7 @@ module Dependabot
       T.any(
         T.class_of(Dependabot::NpmAndYarn::NpmPackageManager),
         T.class_of(Dependabot::NpmAndYarn::YarnPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::BunPackageManager)
+        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager)
       )
     end
 
@@ -69,8 +67,7 @@ module Dependabot
       {
         NpmPackageManager::NAME => NpmPackageManager,
         YarnPackageManager::NAME => YarnPackageManager,
-        PNPMPackageManager::NAME => PNPMPackageManager,
-        BunPackageManager::NAME => BunPackageManager
+        PNPMPackageManager::NAME => PNPMPackageManager
       }.freeze,
       T::Hash[String, NpmAndYarnPackageManagerClassType]
     )
@@ -482,8 +479,6 @@ module Dependabot
           NpmPackageManager::SUPPORTED_VERSIONS
         when "yarn"
           YarnPackageManager::SUPPORTED_VERSIONS
-        when "bun"
-          BunPackageManager::SUPPORTED_VERSIONS
         when "pnpm"
           PNPMPackageManager::SUPPORTED_VERSIONS
         end

@@ -11,11 +11,8 @@ ARG PNPM_VERSION=10.16.0
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/yarn_package_manager.rb (Section : Update instructions)
 ARG YARN_VERSION=4.9.2
 
-# Check for updates at https://github.com/oven-sh/bun/releases
-ARG BUN_VERSION=1.2.5
-
 # See https://github.com/nodesource/distributions#installation-instructions
-# Always update NODEJS_VERSION with a compatible NPM_VERSION 
+# Always update NODEJS_VERSION with a compatible NPM_VERSION
 # See https://nodejs.org/en/about/previous-releases#looking-for-the-latest-release-of-a-version-branch for more information
 # Note : Always use the Active LTS version
 ARG NODEJS_VERSION=22
@@ -34,7 +31,6 @@ RUN mkdir -p /etc/apt/keyrings \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
   && npm install -g corepack@$COREPACK_VERSION \
-  && npm install -g corepack@$COREPACK_VERSION bun@$BUN_VERSION \
   && rm -rf ~/.npm
 
 USER dependabot

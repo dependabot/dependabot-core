@@ -71,15 +71,6 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
-        def bun_locks
-          @bun_locks ||= T.let(
-            dependency_files
-            .select { |f| f.name.end_with?("bun.lock") },
-            T.nilable(T::Array[Dependabot::DependencyFile])
-          )
-        end
-
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def root_yarn_lock
           @root_yarn_lock ||= T.let(
@@ -98,15 +89,6 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def root_bun_lock
-          @root_bun_lock ||= T.let(
-            dependency_files
-            .find { |f| f.name == "bun.lock" },
-            T.nilable(Dependabot::DependencyFile)
-          )
-        end
-
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def shrinkwraps
           @shrinkwraps ||= T.let(
@@ -118,7 +100,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def lockfiles
-          [*package_locks, *shrinkwraps, *yarn_locks, *pnpm_locks, *bun_locks]
+          [*package_locks, *shrinkwraps, *yarn_locks, *pnpm_locks]
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -148,7 +130,7 @@ module Dependabot
             File.write(f.name, prepared_yarn_lockfile_content(T.must(f.content)))
           end
 
-          [*package_locks, *shrinkwraps, *pnpm_locks, *bun_locks].each do |f|
+          [*package_locks, *shrinkwraps, *pnpm_locks].each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
             File.write(f.name, f.content)
           end
