@@ -364,9 +364,7 @@ module Dependabot
     sig { params(directory: String).returns(T::Boolean) }
     def glob?(directory)
       # We could tighten this up, but it's probably close enough.
-      directory.include?("*") || directory.include?("?") ||
-        (directory.include?("[") && directory.include?("]")) ||
-        (directory.include?("{") && directory.include?("}"))
+      directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))
     end
 
     sig { returns(Dependabot::GitMetadataFetcher) }
