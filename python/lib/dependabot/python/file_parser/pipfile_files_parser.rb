@@ -66,9 +66,12 @@ module Dependabot
               # equivalent to "*" (latest available version)
               req = "*" if req == ""
 
+              # Extract extras from the requirement hash if present
+              extras = req.is_a?(Hash) && req["extras"] ? req["extras"] : []
+
               dependencies <<
                 Dependency.new(
-                  name: normalised_name(dep_name),
+                  name: normalised_name(dep_name, extras),
                   version: dependency_version(dep_name, req, T.must(group)),
                   requirements: [{
                     requirement: req.is_a?(String) ? req : req["version"],

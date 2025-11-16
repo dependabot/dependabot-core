@@ -465,5 +465,54 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       its(:name) { is_expected.to eq("tensorflow-gpu") }
       its(:requirements) { is_expected.to eq(expected_requirements) }
     end
+
+    context "with extras specified" do
+      let(:pipfile_fixture_name) { "with_extras" }
+      let(:lockfile_fixture_name) { "with_extras.lock" }
+
+      describe "top level dependencies" do
+        subject(:dependencies) do
+          parser.dependency_set.dependencies.select(&:top_level?)
+        end
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "dependency with extras" do
+          subject { dependencies.find { |d| d.name == "psycopg[c]" } }
+
+          let(:expected_requirements) do
+            [{
+              requirement: "==3.1.18",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("psycopg[c]") }
+          its(:version) { is_expected.to eq("3.1.18") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
+
+        describe "dependency without extras" do
+          subject { dependencies.find { |d| d.name == "requests" } }
+
+          let(:expected_requirements) do
+            [{
+              requirement: "==2.31.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("requests") }
+          its(:version) { is_expected.to eq("2.31.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
+      end
+    end
   end
 end
