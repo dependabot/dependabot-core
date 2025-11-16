@@ -772,5 +772,30 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when only a pre-release version fixes the CVE" do
+      let(:dependency_version) { "2.6.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.6.0"]
+          )
+        ]
+      end
+
+      # The fixture has 2.7.0b1 as a pre-release, which should be returned
+      # as the lowest security fix even though the current version (2.6.0) is stable
+      it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+    end
   end
 end

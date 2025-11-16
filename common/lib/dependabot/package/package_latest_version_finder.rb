@@ -356,7 +356,8 @@ module Dependabot
 
         releases = filter_yanked_versions(releases)
         releases = filter_unsupported_versions(releases, language_version)
-        # versions = filter_prerelease_versions(versions)
+        # Pre-releases should be allowed for security fixes, so we don't filter them out
+        # releases = filter_prerelease_versions(releases)
         releases = Dependabot::UpdateCheckers::VersionFilters
                    .filter_vulnerable_versions(
                      releases,
