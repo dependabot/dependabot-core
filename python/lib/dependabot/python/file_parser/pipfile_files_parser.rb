@@ -67,7 +67,10 @@ module Dependabot
               req = "*" if req == ""
 
               # Extract extras from the requirement hash if present
-              extras = req.is_a?(Hash) && req["extras"] ? req["extras"] : []
+              extras = T.let(
+                req.is_a?(Hash) && req["extras"] ? req["extras"] : [],
+                T::Array[String]
+              )
 
               dependencies <<
                 Dependency.new(
