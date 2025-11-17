@@ -142,9 +142,6 @@ module Dependabot
     def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
       return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
-      # Delegate to the specificity calculator to determine if enforcement should be disabled
-      return false if specificity_calculator.specificity_enforcement_disabled?(dependency_groups)
-
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       specificity_calculator.dependency_belongs_to_more_specific_group?(
         group, dependency, @dependency_groups, contains_checker, dependency.directory

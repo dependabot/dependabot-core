@@ -10,8 +10,11 @@ module Dependabot
     # for dependency group patterns. This enables proper prioritization when a dependency
     # matches multiple groups, ensuring it's only processed by the most specific group.
     #
-    # The calculator also determines when specificity enforcement should be disabled,
-    # such as when groups use update-types rules that require deferred filtering.
+    # The calculator evaluates group membership based on all rule criteria including:
+    # - Pattern matching (wildcards, exact matches)
+    # - Update types (when version information is available)
+    # - Dependency types (production vs development)
+    # - Other rule-based filters
     #
     # Specificity scoring hierarchy:
     # - Explicit group members: 1000 (highest)
@@ -33,18 +36,14 @@ module Dependabot
       MINIMUM_SCORE = 1
       LENGTH_BONUS_THRESHOLD = 5
 
-      # Check if specificity enforcement should be disabled for groups
-      # Returns true if any group has update-types rules, which require capturing
-      # all matching dependencies initially and filtering them later during update
-      # checking based on the actual version change type
-      sig { params(groups: T::Array[Dependabot::DependencyGroup]).returns(T::Boolean) }
-      def specificity_enforcement_disabled?(groups)
-        groups.any? { |group| group.rules.key?("update-types") }
-      end
-
       # Check if a dependency belongs to a more specific group than the current one
       # This prevents generic patterns (like '*') from capturing dependencies
       # that belong to more specific patterns (like 'docker*' or exact names)
+      #
+      # When groups use update-types rules, specificity enforcement is disabled because
+      # the actual update type cannot be determined until version checking occurs. In this
+      # case, dependencies are added to all matching groups and filtered later based on
+      # the actual version change.
       sig do
         params(
           current_group: Dependabot::DependencyGroup,
@@ -59,6 +58,11 @@ module Dependabot
       def dependency_belongs_to_more_specific_group?(current_group, dep, groups, contains_checker, directory)
         patterns = T.unsafe(current_group.rules["patterns"])
         return false unless patterns&.any?
+
+        # If any group has update-types rules, disable specificity enforcement
+        # because dependencies need to be added to all matching groups and filtered
+        # later during update checking based on actual version changes
+        return false if update_types_rules?(groups)
 
         current_group_specificity = calculate_group_specificity_for_dependency(current_group, dep)
 
@@ -77,6 +81,14 @@ module Dependabot
       end
 
       private
+
+      # Check if any group has update-types rules
+      # When update-types are present, specificity enforcement must be disabled because
+      # the actual update type cannot be determined until version checking occurs
+      sig { params(groups: T::Array[Dependabot::DependencyGroup]).returns(T::Boolean) }
+      def update_types_rules?(groups)
+        groups.any? { |group| group.rules.key?("update-types") }
+      end
 
       # Calculate the specificity score for a dependency within a group
       # Higher scores indicate more specific patterns
