@@ -739,6 +739,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
+
+        context "when checking library status multiple times" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(status: 404)
+          end
+
+          it "caches the PyPI check result to avoid redundant calls" do
+            # Call requirements_update_strategy multiple times
+            checker.send(:requirements_update_strategy)
+            checker.send(:requirements_update_strategy)
+
+            # Verify PyPI was only called once (memoization working)
+            expect(a_request(:get, "https://pypi.org/pypi/pendulum/json/"))
+              .to have_been_made.once
+          end
+        end
       end
 
       context "when updating a dependency in an additional requirements file" do
