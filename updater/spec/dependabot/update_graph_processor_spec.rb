@@ -243,43 +243,53 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
 
     it "correctly snapshots the first directory" do
+      payload = nil
+
+      # Capture the first call
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
-
-        next unless payload[:job][:correlator] == "dependabot-bundler-Gemfile.lock"
-
-        # Check we have a Sinatra app with 28 dependencies
-        expect(payload[:manifests].length).to eq(1)
-        lockfile = payload[:manifests].fetch("/Gemfile.lock")
-
-        expect(lockfile[:resolved].length).to eq(28)
-
-        expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
-        expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
       end
+      expect(service).to receive(:create_dependency_submission).once
 
       update_graph_processor.run
+
+      expect(payload).not_to be_nil
+      expect(payload[:job][:correlator]).to eql("dependabot-bundler")
+
+      # Check we have a Sinatra app with 28 dependencies
+      expect(payload[:manifests].length).to eq(1)
+      lockfile = payload[:manifests].fetch("/Gemfile.lock")
+
+      expect(lockfile[:resolved].length).to eq(28)
+
+      expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
+      expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
     end
 
     it "correctly snapshots the second directory" do
+      payload = nil
+
+      expect(service).to receive(:create_dependency_submission).once
+      # Capture the second call
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
-
-        next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
-
-        # Check we have the simple app with 2 dependencies
-        expect(payload[:manifests].length).to eq(1)
-        lockfile = payload[:manifests].fetch("/Gemfile.lock")
-
-        expect(lockfile[:resolved].length).to eq(2)
-
-        dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
-        expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-        dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
-        expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
 
       update_graph_processor.run
+
+      expect(payload).not_to be_nil
+      expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+
+      # Check we have the simple app with 2 dependencies
+      expect(payload[:manifests].length).to eq(1)
+      lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+
+      expect(lockfile[:resolved].length).to eq(2)
+
+      dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
+      expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+      dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
+      expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
     end
 
     context "when the first directory fails to process" do
@@ -316,24 +326,28 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
 
       it "correctly snapshots the second directory" do
+        payload = nil
+
+        # Capture the first call
         expect(service).to receive(:create_dependency_submission) do |args|
           payload = args[:dependency_submission].payload
-
-          next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
-
-          # Check we have the simple app with 2 dependencies
-          expect(payload[:manifests].length).to eq(1)
-          lockfile = payload[:manifests].fetch("/Gemfile.lock")
-
-          expect(lockfile[:resolved].length).to eq(2)
-
-          dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
-          expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-          dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
-          expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
         end
 
         update_graph_processor.run
+
+        expect(payload).not_to be_nil
+        expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+
+        # Check we have the simple app with 2 dependencies
+        expect(payload[:manifests].length).to eq(1)
+        lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+
+        expect(lockfile[:resolved].length).to eq(2)
+
+        dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
+        expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+        dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
+        expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
     end
   end
