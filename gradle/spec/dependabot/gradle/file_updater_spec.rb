@@ -716,20 +716,28 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
 
           its(:content) do
-            expected_command = "gradle --no-daemon --stacktrace wrapper --no-validate-url --gradle-version 9.0.0"
+            # First command: Update wrapper with new version
+            first_cmd = "./gradlew --no-daemon --stacktrace wrapper --no-validate-url " \
+                        "--gradle-version 9.0.0"
+            # Second command: Regenerate wrapper binaries
+            second_cmd = "./gradlew --no-daemon --stacktrace wrapper"
 
             is_expected.to include(
               "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
             )
 
             if checksum
-              expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
+              first_cmd += " --gradle-distribution-sha256-sum #{updated_checksum}"
               is_expected.to include("distributionSha256Sum=#{updated_checksum}")
             else
               is_expected.not_to include("distributionSha256Sum=")
             end
 
-            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(expected_command, cwd: anything)
+            # Verify both commands were called in sequence
+            expect(Dependabot::SharedHelpers)
+              .to have_received(:run_shell_command).with(first_cmd, cwd: anything).ordered
+            expect(Dependabot::SharedHelpers)
+              .to have_received(:run_shell_command).with(second_cmd, cwd: anything).ordered
           end
         end
 
@@ -745,6 +753,177 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                         "all",
                         "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
                         "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365"
+
+        context "when wrapper task fails" do
+          let(:buildfile) { wrapper_file }
+          let(:wrapper_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.properties",
+              content: fixture("wrapper_files", "gradle-wrapper-8.14.2-bin.properties")
+            )
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "gradle-wrapper",
+              version: "9.0.0",
+              previous_version: "8.14.2",
+              requirements: [{
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: "9.0.0",
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              }],
+              previous_requirements: [{
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: "8.14.2",
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+              .and_raise(
+                Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "Gradle wrapper task failed",
+                  error_context: {}
+                )
+              )
+          end
+
+          it "raises DependencyFileNotResolvable" do
+            expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "when updating a non-wrapper dependency" do
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "build.gradle",
+              content: fixture("buildfiles", "basic_build.gradle")
+            )
+          end
+
+          let(:dependency_files) { [buildfile, wrapper_file] }
+
+          let(:wrapper_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.properties",
+              content: fixture("wrapper_files", "gradle-wrapper-8.14.2-bin.properties")
+            )
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "co.aikar:acf-paper",
+              version: "0.6.0-SNAPSHOT",
+              requirements: [{
+                file: "build.gradle",
+                requirement: "0.6.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "0.5.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          it "does not run wrapper updater" do
+            # Should not call run_shell_command for wrapper tasks
+            updated_files
+            expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+          end
+
+          it "updates only the build file" do
+            expect(updated_files.length).to eq(1)
+            expect(updated_files.first.name).to eq("build.gradle")
+          end
+        end
+
+        context "with all wrapper files including binaries" do
+          let(:buildfile) { wrapper_file }
+
+          let(:wrapper_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.properties",
+              content: fixture("wrapper_files", "gradle-wrapper-8.14.2-bin.properties")
+            )
+          end
+
+          let(:gradlew_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradlew",
+              content: "#!/bin/sh\necho 'gradlew script'"
+            )
+          end
+
+          let(:gradlew_bat_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradlew.bat",
+              content: "@echo off\necho gradlew.bat"
+            )
+          end
+
+          let(:jar_file) do
+            file = Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.jar",
+              content: Base64.encode64("fake jar content")
+            )
+            file.content_encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
+            file
+          end
+
+          let(:dependency_files) { [wrapper_file, gradlew_file, gradlew_bat_file, jar_file] }
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "gradle-wrapper",
+              version: "9.0.0",
+              previous_version: "8.14.2",
+              requirements: [{
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: "9.0.0",
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              }],
+              previous_requirements: [{
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: "8.14.2",
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          end
+
+          it "processes all wrapper files" do
+            # When commands are mocked, files don't actually change content,
+            # so they may be filtered out. The key is that the wrapper updater
+            # processes all wrapper files by running the wrapper task.
+            result = updated_files
+            # At minimum, the properties file should be in the result
+            expect(result.map(&:name)).to include("gradle/wrapper/gradle-wrapper.properties")
+          end
+
+          it "runs wrapper task twice" do
+            updated_files
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).twice
+          end
+        end
       end
 
       context "with a version catalog" do

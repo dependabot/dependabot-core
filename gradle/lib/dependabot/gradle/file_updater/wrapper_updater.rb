@@ -42,38 +42,74 @@ module Dependabot
           # We only run this updater if it's a distribution dependency
           return [] unless Distributions.distribution_requirements?(dependency.requirements)
 
-          local_files = dependency_files.select do |file|
-            file.directory == build_file.directory && target_file?(file)
-          end
+          # Find all wrapper files - they can span multiple directories
+          local_files = dependency_files.select { |file| target_file?(file) }
 
           # If we don't have any files in the build files don't generate one
-          return [] unless local_files.any?
+          return dependency_files unless local_files.any?
 
           updated_files = dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
-            cwd = File.join(temp_dir, base_path(build_file))
-
-            # Create gradle.properties file with proxy settings
-            # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
-            write_properties_file(properties_filename)
-
-            command_parts = %w(gradle --no-daemon --stacktrace) + command_args
-            command = Shellwords.join(command_parts)
-
-            Dir.chdir(cwd) do
-              SharedHelpers.run_shell_command(command, cwd: cwd)
-              update_files_content(temp_dir, local_files, updated_files)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              puts "Failed to update files: #{e.message}"
-              return updated_files
-            end
+            update_wrapper_files(build_file, temp_dir, local_files, updated_files)
           end
           updated_files
         end
 
         private
+
+        sig do
+          params(
+            build_file: Dependabot::DependencyFile,
+            temp_dir: T.any(Pathname, String),
+            local_files: T::Array[Dependabot::DependencyFile],
+            updated_files: T::Array[Dependabot::DependencyFile]
+          ).void
+        end
+        def update_wrapper_files(build_file, temp_dir, local_files, updated_files)
+          cwd = File.join(temp_dir, base_path(build_file))
+
+          # Create gradle.properties file with proxy settings
+          properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
+          write_properties_file(properties_filename)
+
+          Dir.chdir(cwd) do
+            run_wrapper_tasks(cwd)
+            update_file_contents(temp_dir, local_files, updated_files)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            handle_wrapper_update_error(e)
+          end
+        end
+
+        sig { params(cwd: String).void }
+        def run_wrapper_tasks(cwd)
+          gradlew_script = File.exist?("gradlew.bat") && !File.exist?("gradlew") ? "gradlew.bat" : "./gradlew"
+
+          # First run: Update wrapper with new version and download new distribution
+          first_command = Shellwords.join([gradlew_script, "--no-daemon", "--stacktrace"] + command_args)
+          SharedHelpers.run_shell_command(first_command, cwd: cwd)
+
+          # Second run: Regenerate wrapper binaries (gradlew, gradlew.bat, gradle-wrapper.jar)
+          second_command = Shellwords.join([gradlew_script, "--no-daemon", "--stacktrace", "wrapper"])
+          SharedHelpers.run_shell_command(second_command, cwd: cwd)
+        end
+
+        sig do
+          params(
+            temp_dir: T.any(Pathname, String),
+            local_files: T::Array[Dependabot::DependencyFile],
+            updated_files: T::Array[Dependabot::DependencyFile]
+          ).void
+        end
+        def update_file_contents(temp_dir, local_files, updated_files)
+          local_files.each do |file|
+            file_path = File.join(temp_dir, file.directory, file.name)
+            f_content = file.binary? ? File.binread(file_path) : File.read(file_path)
+            tmp_file = file.dup
+            tmp_file.content = file.binary? ? Base64.encode64(f_content) : f_content
+            updated_files[T.must(updated_files.index(file))] = tmp_file
+          end
+        end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def target_file?(file)
@@ -110,29 +146,30 @@ module Dependabot
           File.dirname(File.join(build_file.directory, build_file.name)).delete_suffix("/gradle/wrapper")
         end
 
-        sig do
-          params(
-            temp_dir: T.any(Pathname, String),
-            local_files: T::Array[Dependabot::DependencyFile],
-            updated_files: T::Array[Dependabot::DependencyFile]
-          ).void
-        end
-        def update_files_content(temp_dir, local_files, updated_files)
-          local_files.each do |file|
-            f_content = File.read(File.join(temp_dir, file.directory, file.name))
-            tmp_file = file.dup
-            tmp_file.content = tmp_file.binary? ? Base64.encode64(f_content) : f_content
-            updated_files[T.must(updated_files.index(file))] = tmp_file
-          end
-        end
-
         sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
           files_to_populate.each do |file|
             in_path_name = File.join(temp_dir, file.directory, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+
+            # Write file content - binary files need special handling
+            if file.binary?
+              File.binwrite(in_path_name, Base64.decode64(T.must(file.content)))
+            else
+              File.write(in_path_name, file.content)
+            end
+
+            # Make gradlew scripts executable so they can be run
+            FileUtils.chmod(0o755, in_path_name) if file.name.end_with?("gradlew", "gradlew.bat")
           end
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
+        def handle_wrapper_update_error(error)
+          # Gradle wrapper update failures typically indicate build compatibility issues
+          # with the new Gradle version. Raise as DependencyFileNotResolvable so the
+          # service layer can handle appropriately.
+          raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
         sig { params(file_name: String).void }
