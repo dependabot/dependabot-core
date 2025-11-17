@@ -269,6 +269,9 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def label_update_type?
+        # If custom labels are configured, don't automatically add semver labels
+        return false if custom_labels
+
         # If a `skip-release` label exists then this repo is likely to be using
         # an auto-releasing service (like auto). We don't want to hijack that
         # service's labels.
