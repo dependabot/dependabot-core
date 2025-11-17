@@ -112,8 +112,7 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock,
-          bun: bun_lock
+          pnpm: pnpm_lock
         }
       end
 
@@ -187,16 +186,6 @@ module Dependabot
         @pnpm_workspace_yml ||= T.let(
           dependency_files.find do |f|
             f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
-          end,
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def bun_lock
-        @bun_lock ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
           end,
           T.nilable(Dependabot::DependencyFile)
         )
