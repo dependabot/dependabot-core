@@ -318,55 +318,98 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         ]
       end
 
-      it "emits a blank snapshot, a normal snapshot and an error" do
-        expect(service).to receive(:create_dependency_submission).twice
-        expect(service).to receive(:record_update_job_error).once
-
-        update_graph_processor.run
-      end
-
-      it "emits a blank snapshot for the first directory" do
-        payload = nil
-
-        # Capture the first call
-        expect(service).to receive(:create_dependency_submission) do |args|
-          payload = args[:dependency_submission].payload
-        end
-        expect(service).to receive(:create_dependency_submission).once
-
-        update_graph_processor.run
-
-        expect(payload).not_to be_nil
-        expect(payload[:job][:correlator]).to eql("dependabot-bundler")
-
-        # It should be empty
-        expect(payload[:manifests].length).to be_zero
-      end
-
-      it "correctly snapshots the second directory" do
-        payload = nil
-
-        # Capture the second call
-        expect(service).to receive(:create_dependency_submission).once
-        expect(service).to receive(:create_dependency_submission) do |args|
-          payload = args[:dependency_submission].payload
+      context "when executing standalone" do
+        before do
+          allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
         end
 
-        update_graph_processor.run
+        it "emits a snapshot and an error" do
+          expect(service).to receive(:create_dependency_submission).once
+          expect(service).to receive(:record_update_job_error).once
 
-        expect(payload).not_to be_nil
-        expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+          update_graph_processor.run
+        end
 
-        # Check we have the simple app with 2 dependencies
-        expect(payload[:manifests].length).to eq(1)
-        lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+        it "correctly snapshots the second directory" do
+          payload = nil
 
-        expect(lockfile[:resolved].length).to eq(2)
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+          end
 
-        dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
-        expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-        dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
-        expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+          update_graph_processor.run
+
+          expect(payload).not_to be_nil
+          expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+
+          # Check we have the simple app with 2 dependencies
+          expect(payload[:manifests].length).to eq(1)
+          lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+
+          expect(lockfile[:resolved].length).to eq(2)
+
+          dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
+          expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+          dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
+          expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+        end
+      end
+
+      context "when executing in GitHub Actions" do
+        before do
+          allow(Dependabot::Environment).to receive(:github_actions?).and_return(true)
+        end
+
+        it "emits a blank snapshot, a normal snapshot and an error" do
+          expect(service).to receive(:create_dependency_submission).twice
+          expect(service).to receive(:record_update_job_error).once
+
+          update_graph_processor.run
+        end
+
+        it "emits a blank snapshot for the first directory" do
+          payload = nil
+
+          # Capture the first call
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+          end
+          expect(service).to receive(:create_dependency_submission).once
+
+          update_graph_processor.run
+
+          expect(payload).not_to be_nil
+          expect(payload[:job][:correlator]).to eql("dependabot-bundler")
+
+          # It should be empty
+          expect(payload[:manifests].length).to be_zero
+        end
+
+        it "correctly snapshots the second directory" do
+          payload = nil
+
+          # Capture the second call
+          expect(service).to receive(:create_dependency_submission).once
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+          end
+
+          update_graph_processor.run
+
+          expect(payload).not_to be_nil
+          expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+
+          # Check we have the simple app with 2 dependencies
+          expect(payload[:manifests].length).to eq(1)
+          lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+
+          expect(lockfile[:resolved].length).to eq(2)
+
+          dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
+          expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+          dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
+          expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+        end
       end
     end
   end

@@ -91,6 +91,8 @@ module Dependabot
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
 
+      return unless Dependabot::Environment.github_actions?
+
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
       empty_submission = empty_submission(branch, T.must(directory_source))
       service.create_dependency_submission(dependency_submission: empty_submission)
