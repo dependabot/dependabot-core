@@ -91,6 +91,7 @@ module Dependabot
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
 
+      # If we are not running in Actions, there's nothing more to do.
       return unless Dependabot::Environment.github_actions?
 
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
