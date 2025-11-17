@@ -10,6 +10,9 @@ module Dependabot
     # for dependency group patterns. This enables proper prioritization when a dependency
     # matches multiple groups, ensuring it's only processed by the most specific group.
     #
+    # The calculator also determines when specificity enforcement should be disabled,
+    # such as when groups use update-types rules that require deferred filtering.
+    #
     # Specificity scoring hierarchy:
     # - Explicit group members: 1000 (highest)
     # - Exact pattern matches: 1000
@@ -29,6 +32,15 @@ module Dependabot
       UNIVERSAL_WILDCARD_SCORE = 1
       MINIMUM_SCORE = 1
       LENGTH_BONUS_THRESHOLD = 5
+
+      # Check if specificity enforcement should be disabled for groups
+      # Returns true if any group has update-types rules, which require capturing
+      # all matching dependencies initially and filtering them later during update
+      # checking based on the actual version change type
+      sig { params(groups: T::Array[Dependabot::DependencyGroup]).returns(T::Boolean) }
+      def specificity_enforcement_disabled?(groups)
+        groups.any? { |group| group.rules.key?("update-types") }
+      end
 
       # Check if a dependency belongs to a more specific group than the current one
       # This prevents generic patterns (like '*') from capturing dependencies

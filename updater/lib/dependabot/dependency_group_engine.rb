@@ -142,10 +142,8 @@ module Dependabot
     def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
       return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
-      # If any groups have update-types rules, disable specificity enforcement
-      # because those groups need to capture all matching dependencies initially,
-      # then filter them later during update checking based on the actual version change
-      return false if dependency_groups.any? { |g| g.rules.key?("update-types") }
+      # Delegate to the specificity calculator to determine if enforcement should be disabled
+      return false if specificity_calculator.specificity_enforcement_disabled?(dependency_groups)
 
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       specificity_calculator.dependency_belongs_to_more_specific_group?(
