@@ -318,17 +318,36 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         ]
       end
 
-      it "emits a snapshot and an error" do
-        expect(service).to receive(:create_dependency_submission).once
+      it "emits a blank snapshot, a normal snapshot and an error" do
+        expect(service).to receive(:create_dependency_submission).twice
         expect(service).to receive(:record_update_job_error).once
 
         update_graph_processor.run
       end
 
-      it "correctly snapshots the second directory" do
+      it "emits a blank snapshot for the first directory" do
         payload = nil
 
         # Capture the first call
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+        end
+        expect(service).to receive(:create_dependency_submission).once
+
+        update_graph_processor.run
+
+        expect(payload).not_to be_nil
+        expect(payload[:job][:correlator]).to eql("dependabot-bundler")
+
+        # It should be empty
+        expect(payload[:manifests].length).to be_zero
+      end
+
+      it "correctly snapshots the second directory" do
+        payload = nil
+
+        # Capture the second call
+        expect(service).to receive(:create_dependency_submission).once
         expect(service).to receive(:create_dependency_submission) do |args|
           payload = args[:dependency_submission].payload
         end
