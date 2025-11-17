@@ -35,11 +35,6 @@ jobs:
 
       - uses: rubygems/configure-rubygems-credentials@bc6dd217f8a4f919d6835fcfefd470ef821f5c44 # v1.0.0
 
-      - name: Install patched sigstore gem (temporary workaround)
-        run: |
-          gem install specific_install
-          gem specific_install https://github.com/sigstore/sigstore-ruby.git -r 8d5b49629ddcda7d61b328a37a42fb10291d96ad
-
       # We can't use the https://github.com/rubygems/release-gem workflow because it calls `rake release` rather than `rake gems:release`.
       # `rake release` causes problems because it tries to push a git tag, but we've already manually tagged the release as part of the `gems-bump-version` workflow.
       - run: gem exec rake gems:release
