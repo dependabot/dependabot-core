@@ -670,19 +670,23 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           end
 
+          let(:distribution_url) do
+            "https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
+          end
+
           let(:dependency) do
             requirements = [{
               file: "gradle/wrapper/gradle-wrapper.properties",
               requirement: "9.0.0",
               groups: [],
-              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              source: { type: "gradle-distribution", url: distribution_url, property: "distributionUrl" }
             }]
             if checksum
               requirements << {
                 file: "gradle/wrapper/gradle-wrapper.properties",
                 requirement: updated_checksum,
                 groups: [],
-                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+                source: { type: "gradle-distribution", url: distribution_url, property: "distributionSha256Sum" }
               }
             end
 
@@ -716,11 +720,18 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
 
           its(:content) do
-            expected_command = "gradle --no-daemon --stacktrace wrapper --no-validate-url --gradle-version 9.0.0"
+            gradle_command = Gem.win_platform? ? "gradlew.bat" : "./gradlew"
 
-            is_expected.to include(
-              "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
-            )
+            expected_command = %W(
+              #{gradle_command}
+              --no-daemon
+              --stacktrace
+              wrapper
+              --gradle-version 9.0.0
+              --distribution-type #{type}
+            ).join(" ")
+
+            is_expected.to include("distributionUrl=#{distribution_url}")
 
             if checksum
               expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"

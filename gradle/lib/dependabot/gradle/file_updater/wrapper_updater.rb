@@ -37,6 +37,7 @@ module Dependabot
           )
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
           # We only run this updater if it's a distribution dependency
@@ -56,14 +57,28 @@ module Dependabot
 
             # Create gradle.properties file with proxy settings
             # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
+            properties_filename = File.join(cwd, "gradle.properties")
             write_properties_file(properties_filename)
 
-            command_parts = %w(gradle --no-daemon --stacktrace) + command_args
-            command = Shellwords.join(command_parts)
+            local_gradle_command = T.let(Gem.win_platform?, T::Boolean) ? "gradlew.bat" : "./gradlew"
+
+            command_parts = %w(--no-daemon --stacktrace) + command_args
+            command = Shellwords.join([local_gradle_command] + command_parts)
 
             Dir.chdir(cwd) do
-              SharedHelpers.run_shell_command(command, cwd: cwd)
+              FileUtils.chmod("+x", local_gradle_command) if File.exist?(File.join(cwd, local_gradle_command))
+
+              begin
+                # first attempt: run the wrapper task via the local gradle wrapper
+                # `gradle-wrapper.jar` might be too old to run on host's Java version
+                SharedHelpers.run_shell_command(command, cwd: cwd)
+              rescue SharedHelpers::HelperSubprocessFailed
+                # second attempt: run the wrapper task via system gradle and then retry via local wrapper
+                system_command = Shellwords.join(["gradle"] + command_parts)
+                SharedHelpers.run_shell_command(system_command, cwd: cwd) # run via system gradle
+                SharedHelpers.run_shell_command(command, cwd: cwd) # retry via local wrapper
+              end
+
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
               puts "Failed to update files: #{e.message}"
@@ -72,6 +87,7 @@ module Dependabot
           end
           updated_files
         end
+        # rubocop:enable Metrics/AbcSize
 
         private
 
@@ -84,8 +100,12 @@ module Dependabot
         def command_args
           version = T.let(dependency.requirements[0]&.[](:requirement), String)
           checksum = T.let(dependency.requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
+          source = T.let(dependency.requirements[0]&.[](:source), T::Hash[Symbol, String])
+          distribution_url = source.[](:url)
+          distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
-          args = %W(wrapper --no-validate-url --gradle-version #{version})
+          args = %W(wrapper --gradle-version #{version})
+          args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
         end
