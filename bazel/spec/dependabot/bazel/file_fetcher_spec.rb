@@ -702,29 +702,29 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
     end
 
     it "extracts paths from lock_file attributes with @repo prefix" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("maven_install.json")
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(file_paths).to include("maven_install.json")
     end
 
     it "extracts paths from lock_file attributes without @repo prefix" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("tools/jol/jol_maven_install.json")
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(file_paths).to include("tools/jol/jol_maven_install.json")
     end
 
     it "extracts paths from requirements_lock attributes" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("python/requirements.txt")
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(file_paths).to include("python/requirements.txt")
     end
 
     it "converts Bazel label colons to forward slashes" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("tools/jol/jol_maven_install.json")
-      expect(paths).not_to include("tools/jol:jol_maven_install.json")
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      expect(file_paths).to include("tools/jol/jol_maven_install.json")
+      expect(file_paths).not_to include("tools/jol:jol_maven_install.json")
     end
 
     it "removes leading slashes from extracted paths" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      paths.each do |path|
+      file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
+      (file_paths + directory_paths).each do |path|
         expect(path).not_to start_with("/")
       end
     end
@@ -735,8 +735,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         name: "MODULE.bazel",
         content: duplicate_content
       )
-      paths = file_fetcher_instance.send(:extract_referenced_paths, duplicate_file)
-      expect(paths.count("tools/jol/jol_maven_install.json")).to eq(1)
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, duplicate_file)
+      expect(file_paths.count("tools/jol/jol_maven_install.json")).to eq(1)
     end
 
     it "handles empty content gracefully" do
@@ -744,8 +744,9 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         name: "MODULE.bazel",
         content: ""
       )
-      paths = file_fetcher_instance.send(:extract_referenced_paths, empty_file)
-      expect(paths).to eq([])
+      file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, empty_file)
+      expect(file_paths).to eq([])
+      expect(directory_paths).to eq([])
     end
 
     it "handles content with no references gracefully" do
@@ -753,8 +754,9 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         name: "MODULE.bazel",
         content: 'bazel_dep(name = "rules_python", version = "1.6.3")'
       )
-      paths = file_fetcher_instance.send(:extract_referenced_paths, simple_file)
-      expect(paths).to eq([])
+      file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, simple_file)
+      expect(file_paths).to eq([])
+      expect(directory_paths).to eq([])
     end
 
     it "extracts patch files from single_version_override" do
@@ -767,8 +769,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         )
       BAZEL
       file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_patches)
-      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
-      expect(paths).to include("third_party/googleapis.patch")
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(file_paths).to include("third_party/googleapis.patch")
     end
 
     it "extracts multiple patch files from patches array" do
@@ -783,8 +785,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         )
       BAZEL
       file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_patches)
-      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
-      expect(paths).to include("patches/fix1.patch", "patches/fix2.patch", "third_party/custom.patch")
+      file_paths, _directory_paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(file_paths).to include("patches/fix1.patch", "patches/fix2.patch", "third_party/custom.patch")
     end
 
     it "extracts local_path_override paths" do
@@ -795,8 +797,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         )
       BAZEL
       file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_path)
-      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
-      expect(paths).to include("third_party/remoteapis")
+      _file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(directory_paths).to include("third_party/remoteapis")
     end
 
     it "extracts relative path overrides with dot notation" do
@@ -807,8 +809,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         )
       BAZEL
       file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_path)
-      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
-      expect(paths).to include("./third_party/local")
+      _file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(directory_paths).to include("third_party/local")
     end
 
     it "does not extract absolute paths" do
@@ -819,8 +821,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         )
       BAZEL
       file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_absolute)
-      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
-      expect(paths).not_to include("/usr/local/lib/module")
+      _file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(directory_paths).not_to include("/usr/local/lib/module")
     end
 
     it "does not extract URL paths" do
@@ -831,8 +833,152 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         )
       BAZEL
       file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_url)
-      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
-      expect(paths).not_to include("https://example.com/module")
+      _file_paths, directory_paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(directory_paths).not_to include("https://example.com/module")
+    end
+  end
+
+  describe "fetching local_path_override directories" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with MODULE.bazel containing local_path_override" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the local_path_override directory listing
+        stub_request(:get, url + "third_party/remoteapis?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "MODULE.bazel", "type": "file"}, {"name": "BUILD.bazel", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the local_path_override directory files
+        stub_request(:get, url + "third_party/remoteapis/MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "third_party/remoteapis/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "third_party/remoteapis/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_root_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches MODULE.bazel from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/MODULE.bazel")
+      end
+
+      it "fetches BUILD.bazel from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/BUILD.bazel")
+      end
+
+      it "includes the main MODULE.bazel file" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+    end
+
+    context "when local_path_override directory uses WORKSPACE instead of MODULE.bazel" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the local_path_override directory listing
+        stub_request(:get, url + "third_party/remoteapis?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "WORKSPACE", "type": "file"}, {"name": "BUILD", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        # This local override directory has WORKSPACE instead of MODULE.bazel
+        stub_request(:get, url + "third_party/remoteapis/MODULE.bazel?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "third_party/remoteapis/WORKSPACE.bazel?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "third_party/remoteapis/WORKSPACE?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_workspace.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "third_party/remoteapis/BUILD?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "third_party/remoteapis/BUILD.bazel?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_root_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches WORKSPACE from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/WORKSPACE")
+      end
+
+      it "fetches BUILD from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/BUILD")
+      end
     end
   end
 
