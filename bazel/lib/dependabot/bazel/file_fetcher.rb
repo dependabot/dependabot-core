@@ -174,7 +174,7 @@ module Dependabot
         files
       end
 
-      # Extracts file paths from lock_file and requirements_lock attributes in MODULE.bazel content.
+      # Extracts file paths from lock_file, requirements_lock, patches, and path attributes in MODULE.bazel.
       # Converts Bazel label syntax to filesystem paths.
       #
       # Bazel labels can have several formats:
@@ -187,6 +187,7 @@ module Dependabot
       # 1. Strips optional @repo prefix
       # 2. Converts colon separators to forward slashes (path:file -> path/file)
       # 3. Removes leading slashes to create relative paths
+      # 4. Handles both single files and arrays of files (e.g., patches = ["file1", "file2"])
       #
       # @param module_file [DependencyFile] the MODULE.bazel file to parse
       # @return [Array<String>] unique relative file paths referenced in the module
@@ -206,6 +207,24 @@ module Dependabot
         content.scan(%r{requirements_lock\s*=\s*"(?:@[^"/]+)?//([^"]+)"}) do |match|
           path = match[0].tr(":", "/").sub(%r{^/}, "")
           paths << path
+        end
+
+        # Match patches attribute (can be single file or array)
+        # Examples: patches = ["//third_party:file.patch"] or patches = ["//path:a.patch", "//path:b.patch"]
+        content.scan(%r{patches\s*=\s*\[(.*?)\]}m) do |match|
+          # Extract all quoted strings from the array
+          match[0].scan(%r{"(?:@[^"/]+)?//([^"]+)"}) do |file_match|
+            path = file_match[0].tr(":", "/").sub(%r{^/}, "")
+            paths << path
+          end
+        end
+
+        # Match path attribute for local_path_override
+        # Example: path = "third_party/remoteapis"
+        content.scan(/path\s*=\s*"([^"]+)"/) do |match|
+          path = match[0]
+          # Only include if it looks like a local relative path (not a URL or absolute path)
+          paths << path unless path.start_with?("http://", "https://", "/")
         end
 
         paths.uniq

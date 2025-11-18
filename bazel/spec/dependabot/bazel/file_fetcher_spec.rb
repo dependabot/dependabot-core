@@ -756,6 +756,84 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       paths = file_fetcher_instance.send(:extract_referenced_paths, simple_file)
       expect(paths).to eq([])
     end
+
+    it "extracts patch files from single_version_override" do
+      content_with_patches = <<~BAZEL
+        single_version_override(
+            module_name = "googleapis",
+            patch_strip = 1,
+            patches = ["//third_party:googleapis.patch"],
+            version = "0.0.0-20250604-de157ca3",
+        )
+      BAZEL
+      file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_patches)
+      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(paths).to include("third_party/googleapis.patch")
+    end
+
+    it "extracts multiple patch files from patches array" do
+      content_with_patches = <<~BAZEL
+        archive_override(
+            module_name = "example",
+            patches = [
+                "//patches:fix1.patch",
+                "//patches:fix2.patch",
+                "//third_party:custom.patch",
+            ],
+        )
+      BAZEL
+      file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_patches)
+      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(paths).to include("patches/fix1.patch", "patches/fix2.patch", "third_party/custom.patch")
+    end
+
+    it "extracts local_path_override paths" do
+      content_with_path = <<~BAZEL
+        local_path_override(
+            module_name = "remoteapis",
+            path = "third_party/remoteapis",
+        )
+      BAZEL
+      file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_path)
+      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(paths).to include("third_party/remoteapis")
+    end
+
+    it "extracts relative path overrides with dot notation" do
+      content_with_path = <<~BAZEL
+        local_path_override(
+            module_name = "local_module",
+            path = "./third_party/local",
+        )
+      BAZEL
+      file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_path)
+      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(paths).to include("./third_party/local")
+    end
+
+    it "does not extract absolute paths" do
+      content_with_absolute = <<~BAZEL
+        local_path_override(
+            module_name = "system_module",
+            path = "/usr/local/lib/module",
+        )
+      BAZEL
+      file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_absolute)
+      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(paths).not_to include("/usr/local/lib/module")
+    end
+
+    it "does not extract URL paths" do
+      content_with_url = <<~BAZEL
+        local_path_override(
+            module_name = "remote_module",
+            path = "https://example.com/module",
+        )
+      BAZEL
+      file = Dependabot::DependencyFile.new(name: "MODULE.bazel", content: content_with_url)
+      paths = file_fetcher_instance.send(:extract_referenced_paths, file)
+      expect(paths).not_to include("https://example.com/module")
+    end
   end
 
   describe "fetching downloader_config files" do
