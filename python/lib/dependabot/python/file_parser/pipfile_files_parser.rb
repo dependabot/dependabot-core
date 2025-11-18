@@ -66,15 +66,9 @@ module Dependabot
               # equivalent to "*" (latest available version)
               req = "*" if req == ""
 
-              # Extract extras from the requirement hash if present
-              extras = T.let(
-                req.is_a?(Hash) && req["extras"] ? req["extras"] : [],
-                T::Array[String]
-              )
-
               dependencies <<
                 Dependency.new(
-                  name: normalised_name(dep_name, extras),
+                  name: normalised_name(dep_name, extract_extras(req)),
                   version: dependency_version(dep_name, req, T.must(group)),
                   requirements: [{
                     requirement: req.is_a?(String) ? req : req["version"],
@@ -167,6 +161,14 @@ module Dependabot
           return false unless req.is_a?(Hash)
 
           %w(git path).any? { |k| req.key?(k) }
+        end
+
+        sig { params(req: T.any(String, T::Hash[String, T.untyped])).returns(T::Array[String]) }
+        def extract_extras(req)
+          return [] unless req.is_a?(Hash)
+          return [] unless req["extras"]
+
+          T.cast(req["extras"], T::Array[String])
         end
 
         sig { params(name: String, extras: T::Array[String]).returns(String) }

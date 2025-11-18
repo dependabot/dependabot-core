@@ -102,7 +102,7 @@ module Dependabot
         def declaration_regex(dep)
           # Use original_name from metadata if present (for dependencies with extras)
           # Otherwise use the dependency name directly
-          name = T.let(dep.metadata&.[](:original_name) || dep.name, String)
+          name = T.let(dep.metadata[:original_name] || dep.name, String)
           escaped_name = Regexp.escape(name).gsub("\\-", "[-_.]")
           /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
         end
@@ -111,7 +111,7 @@ module Dependabot
         def table_declaration_version_regex(dep)
           # Use original_name from metadata if present (for dependencies with extras)
           # Otherwise use the dependency name directly
-          name = T.let(dep.metadata&.[](:original_name) || dep.name, String)
+          name = T.let(dep.metadata[:original_name] || dep.name, String)
           /
             packages\.#{Regexp.quote(name)}\]
             (?:(?!^\[).)+
