@@ -184,21 +184,6 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
     end
 
-    context "when beta ecosystems are not allowed" do
-      before do
-        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-      end
-
-      it "raises a DependencyFileNotFound error with beta message" do
-        expect { fetched_files }.to raise_error(
-          Dependabot::DependencyFileNotFound,
-          "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the top-level of " \
-          "your `dependabot.yml`. See https://docs.github.com/en/code-security/dependabot/working-with-dependabot/" \
-          "dependabot-options-reference#enable-beta-ecosystems for details."
-        )
-      end
-    end
-
     context "without any required files" do
       before do
         stub_request(:get, url + "?ref=sha")
