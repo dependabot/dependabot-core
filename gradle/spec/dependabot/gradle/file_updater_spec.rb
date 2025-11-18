@@ -720,10 +720,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
 
           its(:content) do
-            gradle_command = Gem.win_platform? ? "gradlew.bat" : "./gradlew"
-
             expected_command = %W(
-              #{gradle_command}
+              ./gradlew
               --no-daemon
               --stacktrace
               wrapper

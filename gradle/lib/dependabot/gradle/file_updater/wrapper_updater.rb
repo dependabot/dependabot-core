@@ -60,13 +60,11 @@ module Dependabot
             properties_filename = File.join(cwd, "gradle.properties")
             write_properties_file(properties_filename)
 
-            local_gradle_command = T.let(Gem.win_platform?, T::Boolean) ? "gradlew.bat" : "./gradlew"
-
             command_parts = %w(--no-daemon --stacktrace) + command_args
-            command = Shellwords.join([local_gradle_command] + command_parts)
+            command = Shellwords.join(["./gradlew"] + command_parts)
 
             Dir.chdir(cwd) do
-              FileUtils.chmod("+x", local_gradle_command) if File.exist?(File.join(cwd, local_gradle_command))
+              FileUtils.chmod("+x", "./gradlew") if File.exist?(File.join(cwd, "./gradlew"))
 
               begin
                 # first attempt: run the wrapper task via the local gradle wrapper
