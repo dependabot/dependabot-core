@@ -43,6 +43,7 @@ module Dependabot
         fetched_files += module_files
         fetched_files += config_files
         fetched_files += referenced_files_from_modules
+        fetched_files += downloader_config_files
 
         return fetched_files if fetched_files.any?
 
@@ -205,6 +206,52 @@ module Dependabot
         content.scan(%r{requirements_lock\s*=\s*"(?:@[^"/]+)?//([^"]+)"}) do |match|
           path = match[0].tr(":", "/").sub(%r{^/}, "")
           paths << path
+        end
+
+        paths.uniq
+      end
+
+      # Fetches downloader_config files referenced in .bazelrc.
+      # Parses .bazelrc for lines like "--downloader_config=FILENAME" and fetches those files.
+      #
+      # @return [Array<DependencyFile>] downloader config files referenced in .bazelrc
+      sig { returns(T::Array[DependencyFile]) }
+      def downloader_config_files
+        files = T.let([], T::Array[DependencyFile])
+        bazelrc_file = fetch_file_if_present(".bazelrc")
+        return files unless bazelrc_file
+
+        config_paths = extract_downloader_config_paths(bazelrc_file)
+        config_paths.each do |path|
+          config_file = fetch_file_if_present(path)
+          files << config_file if config_file
+        rescue Dependabot::DependencyFileNotFound
+          Dependabot.logger.warn(
+            "Downloader config file '#{path}' referenced in .bazelrc but not found in repository"
+          )
+        end
+
+        files
+      end
+
+      # Extracts downloader_config file paths from .bazelrc content.
+      # Matches lines containing --downloader_config=FILENAME.
+      #
+      # @param bazelrc_file [DependencyFile] the .bazelrc file to parse
+      # @return [Array<String>] unique relative file paths for downloader configs
+      sig { params(bazelrc_file: DependencyFile).returns(T::Array[String]) }
+      def extract_downloader_config_paths(bazelrc_file)
+        content = T.must(bazelrc_file.content)
+        paths = []
+
+        # Match --downloader_config=FILENAME patterns
+        # This handles various formats:
+        # - --downloader_config=path/to/file.json
+        # - --downloader_config path/to/file.json
+        # - build --downloader_config=path/to/file.json
+        content.scan(/--downloader_config[=\s]+(\S+)/) do |match|
+          path = match[0]
+          paths << path unless path.empty?
         end
 
         paths.uniq

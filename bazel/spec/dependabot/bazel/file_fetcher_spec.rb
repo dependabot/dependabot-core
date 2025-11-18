@@ -757,4 +757,220 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       expect(paths).to eq([])
     end
   end
+
+  describe "fetching downloader_config files" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with a .bazelrc file containing downloader_config" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_downloader_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_downloader.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "downloader.cfg?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_downloader_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches the downloader config file" do
+        expect(fetched_files.map(&:name)).to include("downloader.cfg")
+      end
+
+      it "includes MODULE.bazel and .bazelrc" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", ".bazelrc")
+      end
+    end
+
+    context "when downloader_config file is missing" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_downloader_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_downloader.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "downloader.cfg?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "logs a warning when downloader config file is not found" do
+        allow(Dependabot.logger).to receive(:warn)
+        fetched_files
+        expect(Dependabot.logger).to have_received(:warn).with(
+          "Downloader config file 'downloader.cfg' referenced in .bazelrc but not found in repository"
+        )
+      end
+
+      it "continues fetching other files successfully" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", ".bazelrc")
+        expect(fetched_files.map(&:name)).not_to include("downloader.cfg")
+      end
+    end
+
+    context "when .bazelrc is not present" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+      end
+
+      it "does not attempt to fetch downloader config files" do
+        expect(fetched_files.map(&:name)).not_to include("downloader.cfg")
+      end
+    end
+  end
+
+  describe "#extract_downloader_config_paths" do
+    let(:bazelrc_content_with_equals) do
+      <<~BAZELRC
+        # Bazel configuration file
+        build --java_runtime_version=remotejdk_11
+
+        # Custom downloader configuration for mirrors
+        build --downloader_config=downloader.cfg
+
+        # Other build options
+        test --test_output=all
+      BAZELRC
+    end
+
+    let(:bazelrc_content_with_space) do
+      <<~BAZELRC
+        build --downloader_config downloader.cfg
+        test --downloader_config secondary.cfg
+      BAZELRC
+    end
+
+    let(:bazelrc_content_multiple) do
+      <<~BAZELRC
+        build --downloader_config=primary.cfg
+        test --downloader_config secondary.cfg
+        run --downloader_config=mirrors/custom.cfg
+      BAZELRC
+    end
+
+    let(:bazelrc_content_no_config) do
+      <<~BAZELRC
+        build --java_runtime_version=remotejdk_11
+        test --test_output=all
+      BAZELRC
+    end
+
+    it "extracts downloader_config path with equals syntax" do
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: bazelrc_content_with_equals
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths).to eq(["downloader.cfg"])
+    end
+
+    it "extracts downloader_config path with space syntax" do
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: bazelrc_content_with_space
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths).to contain_exactly("downloader.cfg", "secondary.cfg")
+    end
+
+    it "extracts multiple downloader_config paths" do
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: bazelrc_content_multiple
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths).to contain_exactly("primary.cfg", "secondary.cfg", "mirrors/custom.cfg")
+    end
+
+    it "handles paths in subdirectories" do
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: bazelrc_content_multiple
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths).to include("mirrors/custom.cfg")
+    end
+
+    it "returns empty array when no downloader_config is present" do
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: bazelrc_content_no_config
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths).to eq([])
+    end
+
+    it "handles empty content gracefully" do
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: ""
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths).to eq([])
+    end
+
+    it "returns unique paths when same config is referenced multiple times" do
+      duplicate_content = bazelrc_content_with_equals + "\ntest --downloader_config=downloader.cfg\n"
+      bazelrc_file = Dependabot::DependencyFile.new(
+        name: ".bazelrc",
+        content: duplicate_content
+      )
+      paths = file_fetcher_instance.send(:extract_downloader_config_paths, bazelrc_file)
+      expect(paths.count("downloader.cfg")).to eq(1)
+    end
+  end
 end
