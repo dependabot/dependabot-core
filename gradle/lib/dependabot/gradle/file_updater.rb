@@ -99,12 +99,12 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          buildfiles_processed[buildfile.name] = buildfile
+          buildfiles_processed[File.join(buildfile.directory, buildfile.name)] = buildfile
         end
 
         # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
         updated_files = T.let([], T::Array[Dependabot::DependencyFile])
-        buildfiles_processed.each do |_, buildfile|
+        buildfiles_processed.each_value do |buildfile|
           if Dependabot::Experiments.enabled?(:gradle_wrapper_updater)
             wrapper_updater = WrapperUpdater.new(dependency_files: files, dependency: dependency)
             updated_files += wrapper_updater.update_files(buildfile)
@@ -124,7 +124,8 @@ module Dependabot
           end
         end
 
-        files
+        # we return files sorted by path to ensure consistent ordering when reporting
+        files.sort_by { |f| File.join(f.directory, f.name) }
       end
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity

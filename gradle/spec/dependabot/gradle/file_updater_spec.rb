@@ -726,6 +726,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               --stacktrace
               wrapper
               --gradle-version 9.0.0
+              --no-validate-url
               --distribution-type #{type}
             ).join(" ")
 

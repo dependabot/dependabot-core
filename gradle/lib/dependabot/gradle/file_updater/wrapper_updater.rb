@@ -66,6 +66,9 @@ module Dependabot
             Dir.chdir(cwd) do
               FileUtils.chmod("+x", "./gradlew") if File.exist?(File.join(cwd, "./gradlew"))
 
+              properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
+              validate_option = get_validate_distribution_url_option(properties_file)
+
               begin
                 # first attempt: run the wrapper task via the local gradle wrapper
                 # `gradle-wrapper.jar` might be too old to run on host's Java version
@@ -76,6 +79,9 @@ module Dependabot
                 SharedHelpers.run_shell_command(system_command, cwd: cwd) # run via system gradle
                 SharedHelpers.run_shell_command(command, cwd: cwd) # retry via local wrapper
               end
+
+              # Restore previous validateDistributionUrl option if it existed
+              override_validate_distribution_url_option(properties_file, validate_option)
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -102,7 +108,7 @@ module Dependabot
           distribution_url = source.[](:url)
           distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
-          args = %W(wrapper --gradle-version #{version})
+          args = %W(wrapper --gradle-version #{version} --no-validate-url)
           args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
@@ -151,6 +157,26 @@ module Dependabot
             FileUtils.mkdir_p(File.dirname(in_path_name))
             File.write(in_path_name, file.content)
           end
+        end
+
+        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
+        def get_validate_distribution_url_option(properties_file)
+          return nil unless File.exist?(properties_file)
+
+          properties_content = File.read(properties_file)
+          properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
+        end
+
+        sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
+        def override_validate_distribution_url_option(properties_file, value)
+          return unless File.exist?(properties_file)
+
+          properties_content = File.read(properties_file)
+          updated_content = properties_content.gsub(
+            /^validateDistributionUrl=(.*)\n/,
+            value ? "validateDistributionUrl=#{value}\n" : ""
+          )
+          File.write(properties_file, updated_content)
         end
 
         sig { params(file_name: String).void }
