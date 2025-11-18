@@ -683,4 +683,123 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "#filter_by_cooldown" do
+    subject(:filtered_releases) do
+      finder.send(:filter_by_cooldown, all_releases)
+    end
+
+    let(:all_releases) do
+      [
+        Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("1.5.0")),
+        Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("1.4.0")),
+        Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("1.3.0"))
+      ]
+    end
+    let(:cooldown_options_obj) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+    let(:cooldown_options) { cooldown_options_obj } # Override the top-level nil cooldown_options
+    let(:dependency_name) { "business" }
+    let(:current_version) { "1.3.0" } # Use string version to match existing test patterns
+
+    before do
+      # Mock in_cooldown_period? to simulate all releases being filtered out by cooldown
+      allow(finder).to receive(:in_cooldown_period?).and_return(true)
+    end
+
+    context "when parent cooldown filtering returns no versions" do
+      it "returns the current version as a fallback" do
+        expect(filtered_releases.length).to eq(1)
+        expect(filtered_releases.first.version).to eq(Dependabot::Bundler::Version.new("1.3.0"))
+      end
+
+      it "logs the fallback behavior" do
+        expect(Dependabot.logger).to receive(:info).with("Filtered out 3 versions due to cooldown").ordered
+        expect(Dependabot.logger).to receive(:info)
+          .with("All versions filtered by cooldown for business, falling back to current version 1.3.0").ordered
+        filtered_releases
+      end
+
+      context "when current version is nil" do
+        let(:current_version) { nil }
+
+        it "returns empty array" do
+          expect(filtered_releases).to eq([])
+        end
+
+        it "does not log fallback message" do
+          # Allow parent logging but ensure no fallback message is logged
+          expect(Dependabot.logger).to receive(:info).with("Filtered out 3 versions due to cooldown")
+          expect(Dependabot.logger).not_to receive(:info).with(/falling back to current version/)
+          filtered_releases
+        end
+      end
+
+      context "when current version is not in the original version list" do
+        let(:current_version) { "1.2.0" }
+
+        it "still returns the current version as fallback" do
+          expect(filtered_releases.length).to eq(1)
+          expect(filtered_releases.first.version).to eq(Dependabot::Bundler::Version.new("1.2.0"))
+        end
+
+        it "logs the fallback behavior" do
+          expect(Dependabot.logger).to receive(:info).with("Filtered out 3 versions due to cooldown").ordered
+          expect(Dependabot.logger).to receive(:info)
+            .with("All versions filtered by cooldown for business, falling back to current version 1.2.0").ordered
+          filtered_releases
+        end
+      end
+    end
+
+    context "when parent cooldown filtering returns some versions" do
+      before do
+        # Mock in_cooldown_period? to return false for 1.4.0 only, true for others
+        allow(finder).to receive(:in_cooldown_period?) do |release|
+          release.version != Dependabot::Bundler::Version.new("1.4.0")
+        end
+      end
+
+      it "returns the parent filtered versions without fallback" do
+        expect(filtered_releases.length).to eq(1)
+        expect(filtered_releases.first.version).to eq(Dependabot::Bundler::Version.new("1.4.0"))
+      end
+
+      it "does not log fallback message" do
+        # Allow parent logging but ensure our fallback message is not logged
+        expect(Dependabot.logger).to receive(:info).with("Filtered out 2 versions due to cooldown")
+        expect(Dependabot.logger).not_to receive(:info).with(/falling back to current version/)
+        filtered_releases
+      end
+    end
+
+    context "when cooldown is disabled" do
+      let(:cooldown_options_obj) { nil }
+
+      it "returns all releases unchanged" do
+        expect(filtered_releases).to eq(all_releases)
+      end
+    end
+
+    context "with version pre-releases" do
+      let(:all_releases) do
+        [
+          Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("2.0.0.beta1")),
+          Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("1.5.0")),
+          Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("1.4.0.rc1")),
+          Dependabot::Package::PackageRelease.new(version: Dependabot::Bundler::Version.new("1.3.0"))
+        ]
+      end
+      let(:current_version) { "1.4.0.rc1" }
+
+      before do
+        # Mock the in_cooldown_period? method to simulate all releases being in cooldown
+        allow(finder).to receive(:in_cooldown_period?).and_return(true)
+      end
+
+      it "handles pre-release versions correctly in fallback" do
+        expect(filtered_releases.length).to eq(1)
+        expect(filtered_releases.first.version).to eq(Dependabot::Bundler::Version.new("1.4.0.rc1"))
+      end
+    end
+  end
 end
