@@ -861,7 +861,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         stub_request(:get, url + "third_party/remoteapis?ref=sha")
           .to_return(
             status: 200,
-            body: '[{"name": "MODULE.bazel", "type": "file"}, {"name": "BUILD.bazel", "type": "file"}]',
+            body: '[{"name": "MODULE.bazel", "path": "third_party/remoteapis/MODULE.bazel", "type": "file"}, ' \
+                  '{"name": "BUILD.bazel", "path": "third_party/remoteapis/BUILD.bazel", "type": "file"}]',
             headers: { "content-type" => "application/json" }
           )
 
@@ -930,7 +931,8 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         stub_request(:get, url + "third_party/remoteapis?ref=sha")
           .to_return(
             status: 200,
-            body: '[{"name": "WORKSPACE", "type": "file"}, {"name": "BUILD", "type": "file"}]',
+            body: '[{"name": "WORKSPACE", "path": "third_party/remoteapis/WORKSPACE", "type": "file"}, ' \
+                  '{"name": "BUILD", "path": "third_party/remoteapis/BUILD", "type": "file"}]',
             headers: { "content-type" => "application/json" }
           )
 
