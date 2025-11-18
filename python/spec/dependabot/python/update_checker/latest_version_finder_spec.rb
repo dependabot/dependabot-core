@@ -367,8 +367,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
-        context "when the file name is unparseable" do
-          let(:pipfile_fixture_name) { "unparseable" }
+        context "when the file name is unparsable" do
+          let(:pipfile_fixture_name) { "unparsable" }
           let(:pypi_url) { "https://pypi.org/simple/luigi/" }
 
           it { is_expected.to eq(Gem::Version.new("2.6.0")) }
