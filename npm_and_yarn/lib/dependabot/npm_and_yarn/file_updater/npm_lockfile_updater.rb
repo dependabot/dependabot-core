@@ -866,6 +866,11 @@ module Dependabot
             updated_lockfile_content, parsed_updated_lockfile_content
           )
 
+          # Remove optional dependencies from the dependencies section
+          updated_lockfile_content = remove_optional_dependencies_from_dependencies_section(
+            updated_lockfile_content, parsed_updated_lockfile_content
+          )
+
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
           replace_tarball_urls(updated_lockfile_content)
@@ -988,6 +993,45 @@ module Dependabot
           end
 
           updated_lockfile_content
+        end
+
+        # Removes optional dependencies that npm incorrectly adds to the
+        # "dependencies" section of packages."" when updating optional deps.
+        # This ensures optional dependencies remain only in "optionalDependencies".
+        sig do
+          params(
+            updated_lockfile_content: String,
+            parsed_updated_lockfile_content: T::Hash[String, T.untyped]
+          )
+            .returns(String)
+        end
+        def remove_optional_dependencies_from_dependencies_section(updated_lockfile_content,
+                                                                     parsed_updated_lockfile_content)
+          return updated_lockfile_content unless parsed_package_json["optionalDependencies"]
+
+          optional_deps = parsed_package_json["optionalDependencies"].keys
+          dependencies_in_lockfile = parsed_updated_lockfile_content.dig("packages", "", "dependencies")
+
+          return updated_lockfile_content unless dependencies_in_lockfile
+
+          # Find optional dependencies that are incorrectly in the dependencies section
+          misplaced_deps = optional_deps.select { |dep| dependencies_in_lockfile.key?(dep) }
+
+          return updated_lockfile_content if misplaced_deps.empty?
+
+          # Remove misplaced optional dependencies from the dependencies section
+          lockfile_json = parsed_updated_lockfile_content
+          misplaced_deps.each do |dep_name|
+            lockfile_json.dig("packages", "")&.fetch("dependencies", {})&.delete(dep_name)
+          end
+
+          # Remove the entire dependencies key if it's now empty
+          if lockfile_json.dig("packages", "", "dependencies")&.empty?
+            lockfile_json.dig("packages", "")&.delete("dependencies")
+          end
+
+          indent = detect_indentation(updated_lockfile_content)
+          JSON.pretty_generate(lockfile_json, indent: indent)
         end
 
         sig { params(updated_lockfile_content: String).returns(String) }
