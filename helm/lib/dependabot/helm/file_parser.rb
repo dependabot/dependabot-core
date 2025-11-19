@@ -109,21 +109,59 @@ module Dependabot
         end
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(image_string: String).returns(T.nilable(T::Hash[String, T.nilable(String)])) }
       def extract_image_details(image_string)
         return nil if image_string.match?(/\${[^}]+}/)
 
-        # Match the full image spec with optional registry prefix
-        full_match = image_string.match(%r{^(?:(?<registry>#{REGISTRY})/)?(?<image>#{IMAGE})(?<tag>#{TAG})?(?<digest>#{DIGEST})?$}o)
-        return nil unless full_match
+        # Extract components step-by-step to avoid regex backtracking issues
+        remaining = image_string.dup
 
-        {
-          "registry" => full_match[:registry],
-          "image" => full_match[:image],
-          "tag" => full_match[:tag],
-          "digest" => full_match[:digest]
-        }
+        # Extract digest if present
+        digest = nil
+        if remaining.include?("@")
+          digest_match = remaining.match(/@(?<digest>[^\s]+)$/)
+          if digest_match
+            digest = digest_match[:digest]
+            remaining = remaining.sub(/@#{Regexp.escape(digest)}$/, "") if digest
+          end
+        end
+
+        # Extract tag if present
+        tag = nil
+        if remaining.include?(":")
+          tag_match = remaining.match(/:(?<tag>[\w][\w.-]{0,127})$/)
+          if tag_match
+            tag = tag_match[:tag]
+            remaining = remaining.sub(/:#{Regexp.escape(tag)}$/, "") if tag
+          end
+        end
+
+        # Extract registry and image
+        # Registry has format: domain.com or domain.com:port
+        # Image has format: name or namespace/name or namespace/subnamespace/name
+        registry_pattern = %r{
+          ^(?<registry>
+            [a-z\d](?:[a-z\d]|[._-])*[a-z\d]                # First domain component
+            (?:\.[a-z\d](?:[a-z\d]|[._-])*[a-z\d])+         # Additional domain components
+            (?::\d+)?                                        # Optional port
+          )/
+        }ix
+
+        if remaining.match?(registry_pattern)
+          # Has registry prefix
+          registry_match = remaining.match(registry_pattern)
+          if registry_match
+            registry = registry_match[:registry]
+            image = remaining.sub(%r{^#{Regexp.escape(registry)}/}, "") if registry
+            return { "registry" => registry, "image" => image, "tag" => tag, "digest" => digest }
+          end
+        end
+
+        # No registry, just image name
+        { "registry" => nil, "image" => remaining, "tag" => tag, "digest" => digest }
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig do
         params(
