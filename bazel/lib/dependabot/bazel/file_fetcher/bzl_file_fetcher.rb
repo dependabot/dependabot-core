@@ -69,8 +69,8 @@ module Dependabot
         end
 
         # Extracts .bzl file paths from use_extension() and use_repo_rule() calls.
-        # Only extracts files from the local repository because Dependabot cannot fetch
-        # external repository files (e.g., "@rules_python//...").
+        # Only extracts workspace-relative paths (//...) and filters out external Bazel
+        # repositories (@repo//...) since those files don't exist in the current repository.
         sig { params(content: String).returns(T::Array[String]) }
         def extract_bzl_file_paths(content)
           extract_use_extension_paths(content) + extract_use_repo_rule_paths(content)
@@ -93,7 +93,9 @@ module Dependabot
         end
 
         # Extracts file dependencies from load() and Label() statements.
-        # Only extracts local repository files because external repos are not accessible.
+        # Only extracts workspace-relative (//...) and file-relative (:...) paths.
+        # External Bazel repositories (@repo//...) are excluded since those files
+        # exist in different repositories, not the current one being analyzed.
         sig { params(content: String, file_path: String).returns(T::Array[String]) }
         def extract_bzl_load_dependencies(content, file_path)
           paths = []
