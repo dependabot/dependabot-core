@@ -32,9 +32,6 @@ module Dependabot
         attr_reader :module_file
 
         # Extracts file paths from lock_file, requirements_lock, and patches attributes.
-        #
-        # @param content [String] the MODULE.bazel file content
-        # @return [Array<String>] extracted file paths
         sig { params(content: String).returns(T::Array[String]) }
         def extract_file_attribute_paths(content)
           (
@@ -69,9 +66,6 @@ module Dependabot
         end
 
         # Extracts directory paths from local_path_override attributes.
-        #
-        # @param content [String] the MODULE.bazel file content
-        # @return [Array<String>] extracted directory paths
         sig { params(content: String).returns(T::Array[String]) }
         def extract_directory_paths(content)
           extract_local_path_override_paths(content)

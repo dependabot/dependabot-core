@@ -43,9 +43,6 @@ module Dependabot
         attr_reader :visited_bzl_files
 
         # Fetches .bzl files recursively, following their load() and Label() dependencies.
-        #
-        # @param paths [Array<String>] .bzl file paths to fetch
-        # @return [Array<DependencyFile>] fetched .bzl files and their dependencies
         sig { params(paths: T::Array[String]).returns(T::Array[DependencyFile]) }
         def fetch_bzl_files_recursively(paths)
           files = T.let([], T::Array[DependencyFile])
