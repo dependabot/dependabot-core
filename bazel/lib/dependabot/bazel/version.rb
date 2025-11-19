@@ -14,7 +14,10 @@ module Dependabot
         @original_version = T.let(version.to_s, String)
         @bcr_suffix = T.let(parse_bcr_suffix(@original_version), T.nilable(Integer))
 
-        # Pass version without .bcr suffix to parent for base version parsing
+        # Strip .bcr.X suffix before passing to parent because Gem::Version would
+        # treat .bcr as a pre-release identifier, making 1.6.50.bcr.1 < 1.6.50 (incorrect).
+        # By storing only the base version in the parent, we can compare base versions
+        # normally, then use custom logic for .bcr suffix comparison.
         base_version = remove_bcr_suffix(@original_version)
         super(base_version)
 
