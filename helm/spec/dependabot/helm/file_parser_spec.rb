@@ -192,6 +192,37 @@ RSpec.describe Dependabot::Helm::FileParser do
         end
       end
     end
+
+    context "with values.yaml containing registry field" do
+      subject(:dependency) { dependencies.first }
+
+      let(:helmfile_body) do
+        fixture("helm", "yaml", "quay-registry.yaml")
+      end
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          name: "values.yaml",
+          content: helmfile_body
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          metadata: { type: :docker_image },
+          file: "values.yaml",
+          source: { registry: "quay.io", tag: "v3.6.6" }
+        }]
+      end
+
+      it "correctly extracts registry from the registry field and not from repository" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("argoproj/argocli")
+        expect(dependency.version).to eq("v3.6.6")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
   end
 
   describe "version_from with environment variables" do

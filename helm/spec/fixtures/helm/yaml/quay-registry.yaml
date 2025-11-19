@@ -1,0 +1,4 @@
+image:
+  repository: 'argoproj/argocli'
+  tag: v3.6.6
+  registry: quay.io

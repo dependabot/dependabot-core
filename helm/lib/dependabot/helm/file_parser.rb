@@ -113,18 +113,15 @@ module Dependabot
       def extract_image_details(image_string)
         return nil if image_string.match?(/\${[^}]+}/)
 
-        registry_match = image_string.match(%r{^(#{REGISTRY}/)?}o)
-        image_match = image_string.match(/#{IMAGE}/o)
-        tag_match = image_string.match(/#{TAG}/o)
-        digest_match = image_string.match(/#{DIGEST}/o)
-
-        return nil unless image_match
+        # Match the full image spec with optional registry prefix
+        full_match = image_string.match(%r{^(?:(?<registry>#{REGISTRY})/)?(?<image>#{IMAGE})(?<tag>#{TAG})?(?<digest>#{DIGEST})?$}o)
+        return nil unless full_match
 
         {
-          "registry" => registry_match && registry_match[:registry],
-          "image" => image_match[:image],
-          "tag" => tag_match && tag_match[:tag],
-          "digest" => digest_match && digest_match[:digest]
+          "registry" => full_match[:registry],
+          "image" => full_match[:image],
+          "tag" => full_match[:tag],
+          "digest" => full_match[:digest]
         }
       end
 
@@ -139,7 +136,12 @@ module Dependabot
       def handle_string_value(key, value, hash, current_path)
         images = []
         if key == "repository" && hash["tag"].is_a?(String)
-          images << { path: current_path.join("."), image: "#{value}:#{hash['tag']}" }
+          image_string = "#{value}:#{hash['tag']}"
+          # Only prepend registry if it's not already in the repository value
+          if hash["registry"].is_a?(String) && !value.start_with?("#{hash['registry']}/")
+            image_string = "#{hash['registry']}/#{image_string}"
+          end
+          images << { path: current_path.join("."), image: image_string }
         elsif key == "image" && value.include?(":")
           images << { path: current_path.join("."), image: value }
         end
