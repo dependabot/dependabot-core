@@ -21,7 +21,8 @@ module Dependabot
         base_version = remove_bcr_suffix(@original_version)
         super(base_version)
 
-        # Restore original version after parent initialization
+        # Parent's initialize overwrote @original_version with base_version.to_s,
+        # so restore it to the full version string including .bcr suffix
         @original_version = version.to_s
       end
 
