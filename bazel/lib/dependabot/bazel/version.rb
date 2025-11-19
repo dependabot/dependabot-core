@@ -14,15 +14,9 @@ module Dependabot
         @original_version = T.let(version.to_s, String)
         @bcr_suffix = T.let(parse_bcr_suffix(@original_version), T.nilable(Integer))
 
-        # Strip .bcr.X suffix before passing to parent because Gem::Version would
-        # treat .bcr as a pre-release identifier, making 1.6.50.bcr.1 < 1.6.50 (incorrect).
-        # By storing only the base version in the parent, we can compare base versions
-        # normally, then use custom logic for .bcr suffix comparison.
         base_version = remove_bcr_suffix(@original_version)
         super(base_version)
 
-        # Parent's initialize overwrote @original_version with base_version.to_s,
-        # so restore it to the full version string including .bcr suffix
         @original_version = version.to_s
       end
 
@@ -34,8 +28,6 @@ module Dependabot
       sig { returns(T.nilable(Integer)) }
       attr_reader :bcr_suffix
 
-      # Override comparison to handle .bcr.X suffixes correctly
-      # BCR convention: 1.6.50.bcr.2 > 1.6.50.bcr.1 > 1.6.50
       sig { override.params(other: T.untyped).returns(T.nilable(Integer)) }
       def <=>(other)
         other_bazel = convert_to_bazel_version(other)
@@ -78,14 +70,11 @@ module Dependabot
 
       sig { params(ours: T.nilable(Integer), theirs: T.nilable(Integer)).returns(Integer) }
       def compare_bcr_suffixes(ours, theirs)
-        # Both have .bcr suffixes - compare numerically
         return ours <=> theirs if ours && theirs
 
-        # Version with .bcr suffix is newer than version without
         return 1 if ours
         return -1 if theirs
 
-        # Neither has .bcr suffix - equal
         0
       end
     end
