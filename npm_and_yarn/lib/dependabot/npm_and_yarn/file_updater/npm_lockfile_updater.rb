@@ -1005,8 +1005,10 @@ module Dependabot
           )
             .returns(String)
         end
-        def remove_optional_dependencies_from_dependencies_section(updated_lockfile_content,
-                                                                     parsed_updated_lockfile_content)
+        def remove_optional_dependencies_from_dependencies_section(
+          updated_lockfile_content,
+          parsed_updated_lockfile_content
+        )
           return updated_lockfile_content unless parsed_package_json["optionalDependencies"]
 
           optional_deps = parsed_package_json["optionalDependencies"].keys
@@ -1014,24 +1016,41 @@ module Dependabot
 
           return updated_lockfile_content unless dependencies_in_lockfile
 
-          # Find optional dependencies that are incorrectly in the dependencies section
-          misplaced_deps = optional_deps.select { |dep| dependencies_in_lockfile.key?(dep) }
-
+          misplaced_deps = find_misplaced_optional_deps(optional_deps, dependencies_in_lockfile)
           return updated_lockfile_content if misplaced_deps.empty?
 
-          # Remove misplaced optional dependencies from the dependencies section
-          lockfile_json = parsed_updated_lockfile_content
+          remove_misplaced_deps_from_lockfile(parsed_updated_lockfile_content, misplaced_deps)
+
+          indent = detect_indentation(updated_lockfile_content)
+          JSON.pretty_generate(parsed_updated_lockfile_content, indent: indent)
+        end
+
+        sig do
+          params(
+            optional_deps: T::Array[String],
+            dependencies_in_lockfile: T::Hash[String, T.untyped]
+          )
+            .returns(T::Array[String])
+        end
+        def find_misplaced_optional_deps(optional_deps, dependencies_in_lockfile)
+          optional_deps.select { |dep| dependencies_in_lockfile.key?(dep) }
+        end
+
+        sig do
+          params(
+            lockfile_json: T::Hash[String, T.untyped],
+            misplaced_deps: T::Array[String]
+          )
+            .void
+        end
+        def remove_misplaced_deps_from_lockfile(lockfile_json, misplaced_deps)
           misplaced_deps.each do |dep_name|
             lockfile_json.dig("packages", "")&.fetch("dependencies", {})&.delete(dep_name)
           end
 
           # Remove the entire dependencies key if it's now empty
-          if lockfile_json.dig("packages", "", "dependencies")&.empty?
-            lockfile_json.dig("packages", "")&.delete("dependencies")
-          end
-
-          indent = detect_indentation(updated_lockfile_content)
-          JSON.pretty_generate(lockfile_json, indent: indent)
+          deps = lockfile_json.dig("packages", "", "dependencies")
+          lockfile_json.dig("packages", "")&.delete("dependencies") if deps && deps.empty?
         end
 
         sig { params(updated_lockfile_content: String).returns(String) }
