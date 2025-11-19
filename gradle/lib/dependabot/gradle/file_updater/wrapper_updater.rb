@@ -38,6 +38,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
           # We only run this updater if it's a distribution dependency
@@ -50,6 +51,12 @@ module Dependabot
           # If we don't have any files in the build files don't generate one
           return [] unless local_files.any?
 
+          # we only run this updater if the build file has a requirement for this dependency
+          target_requirements = dependency.requirements.select do |req|
+            T.let(req[:file], String) == build_file.name
+          end
+          return [] unless target_requirements.any?
+
           updated_files = dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
@@ -60,7 +67,7 @@ module Dependabot
             properties_filename = File.join(cwd, "gradle.properties")
             write_properties_file(properties_filename)
 
-            command_parts = %w(--no-daemon --stacktrace) + command_args
+            command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements)
             command = Shellwords.join(["./gradlew"] + command_parts)
 
             Dir.chdir(cwd) do
@@ -73,7 +80,9 @@ module Dependabot
                 # first attempt: run the wrapper task via the local gradle wrapper
                 # `gradle-wrapper.jar` might be too old to run on host's Java version
                 SharedHelpers.run_shell_command(command, cwd: cwd)
-              rescue SharedHelpers::HelperSubprocessFailed
+              rescue SharedHelpers::HelperSubprocessFailed => e
+                puts "Running #{command} failed, retrying first with system Gradle: #{e.message}"
+
                 # second attempt: run the wrapper task via system gradle and then retry via local wrapper
                 system_command = Shellwords.join(["gradle"] + command_parts)
                 SharedHelpers.run_shell_command(system_command, cwd: cwd) # run via system gradle
@@ -92,6 +101,7 @@ module Dependabot
           updated_files
         end
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/MethodLength
 
         private
 
@@ -100,12 +110,11 @@ module Dependabot
           @target_files.any? { |r| "/#{file.name}".end_with?(r) }
         end
 
-        sig { returns(T::Array[String]) }
-        def command_args
-          version = T.let(dependency.requirements[0]&.[](:requirement), String)
-          checksum = T.let(dependency.requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
-          source = T.let(dependency.requirements[0]&.[](:source), T::Hash[Symbol, String])
-          distribution_url = source.[](:url)
+        sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[String]) }
+        def command_args(requirements)
+          version = T.let(requirements[0]&.[](:requirement), String)
+          checksum = T.let(requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
+          distribution_url = T.let(requirements[0]&.[](:source), T::Hash[Symbol, String])[:url]
           distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
           args = %W(wrapper --gradle-version #{version} --no-validate-url)

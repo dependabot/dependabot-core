@@ -56,9 +56,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/MethodLength
       sig do
         params(buildfiles: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency)
           .returns(T::Array[Dependabot::DependencyFile])
@@ -99,38 +97,46 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          buildfiles_processed[File.join(buildfile.directory, buildfile.name)] = buildfile
+          buildfiles_processed[buildfile.name] = buildfile
         end
 
         # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
-        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
-        buildfiles_processed.each_value do |buildfile|
-          if Dependabot::Experiments.enabled?(:gradle_wrapper_updater)
+        if Dependabot::Experiments.enabled?(:gradle_wrapper_updater)
+          buildfiles_processed.each_value do |buildfile|
             wrapper_updater = WrapperUpdater.new(dependency_files: files, dependency: dependency)
-            updated_files += wrapper_updater.update_files(buildfile)
+            updated_files = wrapper_updater.update_files(buildfile)
+            replace_updated_files(files, updated_files)
           end
-          if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+        end
+        if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+          buildfiles_processed.each_value do |buildfile|
             lockfile_updater = LockfileUpdater.new(dependency_files: files)
-            updated_files += lockfile_updater.update_lockfiles(buildfile)
+            updated_files = lockfile_updater.update_lockfiles(buildfile)
+            replace_updated_files(files, updated_files)
           end
         end
 
+        files
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize
+      sig do
+        params(
+          files: T::Array[Dependabot::DependencyFile],
+          updated_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def replace_updated_files(files, updated_files)
         updated_files.each do |file|
-          existing_file = files.find { |f| f.name == file.name && f.directory == file.directory }
+          existing_file = files.find { |f| f.name == file.name }
           if existing_file.nil?
             files << file
           else
             files[T.must(files.index(existing_file))] = file
           end
         end
-
-        # we return files sorted by path to ensure consistent ordering when reporting
-        files.sort_by { |f| File.join(f.directory, f.name) }
+        files
       end
-      # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/MethodLength
 
       sig do
         params(
