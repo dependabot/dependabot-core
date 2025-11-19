@@ -9,12 +9,74 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      # Bazel uses semantic versioning with hyphens for pre-release versions (e.g., "1.7.0-rc4")
-      # Dependabot::Version normalizes these to dot notation with "pre" prefix (e.g., "1.7.0.pre.rc4")
-      # We need to preserve the original format for Bazel Central Registry compatibility
+      sig { override.params(version: VersionParameter).void }
+      def initialize(version)
+        @original_version = T.let(version.to_s, String)
+        @bcr_suffix = T.let(parse_bcr_suffix(@original_version), T.nilable(Integer))
+
+        # Pass version without .bcr suffix to parent for base version parsing
+        base_version = remove_bcr_suffix(@original_version)
+        super(base_version)
+
+        # Restore original version after parent initialization
+        @original_version = version.to_s
+      end
+
       sig { override.returns(String) }
       def to_s
         @original_version
+      end
+
+      sig { returns(T.nilable(Integer)) }
+      attr_reader :bcr_suffix
+
+      # Override comparison to handle .bcr.X suffixes correctly
+      # BCR convention: 1.6.50.bcr.2 > 1.6.50.bcr.1 > 1.6.50
+      sig { override.params(other: T.untyped).returns(T.nilable(Integer)) }
+      def <=>(other)
+        other_bazel = convert_to_bazel_version(other)
+        return nil unless other_bazel
+
+        base_comparison = super(other_bazel)
+        return base_comparison unless base_comparison&.zero?
+
+        compare_bcr_suffixes(@bcr_suffix, other_bazel.bcr_suffix)
+      end
+
+      private
+
+      sig { params(version_string: String).returns(T.nilable(Integer)) }
+      def parse_bcr_suffix(version_string)
+        match = version_string.match(/\.bcr\.(\d+)$/)
+        match ? T.must(match[1]).to_i : nil
+      end
+
+      sig { params(version_string: String).returns(String) }
+      def remove_bcr_suffix(version_string)
+        version_string.sub(/\.bcr\.\d+$/, "")
+      end
+
+      sig { params(other: T.untyped).returns(T.nilable(Dependabot::Bazel::Version)) }
+      def convert_to_bazel_version(other)
+        case other
+        when Dependabot::Bazel::Version
+          other
+        when Gem::Version
+          T.cast(Dependabot::Bazel::Version.new(other.to_s), Dependabot::Bazel::Version)
+        end
+      end
+
+      sig { params(ours: T.nilable(Integer), theirs: T.nilable(Integer)).returns(Integer) }
+      def compare_bcr_suffixes(ours, theirs)
+        # Both have .bcr suffixes - compare numerically
+        return ours <=> theirs if ours && theirs
+
+        # Version with .bcr suffix is newer than version without
+        return 1 if ours
+        return -1 if theirs
+
+        # Neither has .bcr suffix - equal
+        0
       end
     end
   end
