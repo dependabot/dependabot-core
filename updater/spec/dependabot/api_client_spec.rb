@@ -193,6 +193,46 @@ RSpec.describe Dependabot::ApiClient do
       end
     end
 
+    context "with deleted dependency files" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: "some things",
+            directory: "/"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: nil,
+            directory: "/",
+            operation: Dependabot::DependencyFile::Operation::DELETE
+          )
+        ]
+      end
+
+      it "excludes content field for deleted files with nil content" do
+        client.create_pull_request(dependency_change, base_commit)
+        expect(WebMock)
+          .to(have_requested(:post, create_pull_request_url)
+            .with do |req|
+              data = JSON.parse(req.body)["data"]
+              files = data["updated-dependency-files"]
+
+              # First file should have content
+              expect(files[0]["content"]).to eq("some things")
+              expect(files[0]["name"]).to eq("Gemfile")
+
+              # Second file (deleted) should not have content key
+              expect(files[1].key?("content")).to be(false)
+              expect(files[1]["name"]).to eq("Gemfile.lock")
+              expect(files[1]["operation"]).to eq("delete")
+              expect(files[1]["deleted"]).to be(true)
+
+              true
+            end)
+      end
+    end
+
     context "when dealing with grouped updates" do
       it "does not include the dependency-group key by default" do
         client.create_pull_request(dependency_change, base_commit)
