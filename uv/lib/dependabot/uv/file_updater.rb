@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -15,16 +15,6 @@ module Dependabot
       require_relative "file_updater/compile_file_updater"
       require_relative "file_updater/lock_file_updater"
       require_relative "file_updater/requirement_file_updater"
-
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
-          /^.*\.in$/,                # Match any .in files at any level
-          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
-          /^.*uv\.lock$/             # Match uv.lock at any level
-        ]
-      end
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
@@ -78,7 +68,7 @@ module Dependabot
         ).updated_dependency_files
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[T.nilable(String)]) }
       def pip_compile_index_urls
         if credentials.any?(&:replaces_base?)
           credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }

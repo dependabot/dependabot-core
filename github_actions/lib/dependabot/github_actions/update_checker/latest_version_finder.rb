@@ -57,14 +57,19 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
+
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
@@ -101,32 +106,41 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::GithubActions::Package::PackageDetailsFetcher)) }
         def package_details_fetcher
-          @package_details_fetcher = T.let(Dependabot::GithubActions::Package::PackageDetailsFetcher
-            .new(
-              dependency: dependency,
-              credentials: credentials,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              security_advisories: security_advisories
-            ), T.nilable(Dependabot::GithubActions::Package::PackageDetailsFetcher))
+          @package_details_fetcher = T.let(
+            Dependabot::GithubActions::Package::PackageDetailsFetcher
+                        .new(
+                          dependency: dependency,
+                          credentials: credentials,
+                          ignored_versions: ignored_versions,
+                          raise_on_ignored: raise_on_ignored,
+                          security_advisories: security_advisories
+                        ),
+            T.nilable(Dependabot::GithubActions::Package::PackageDetailsFetcher)
+          )
         end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def available_release
-          @available_release = T.let(T.must(package_details_fetcher).release_list_for_git_dependency,
-                                     T.nilable(T.any(Dependabot::Version, String)))
+          @available_release = T.let(
+            T.must(package_details_fetcher).release_list_for_git_dependency,
+            T.nilable(T.any(Dependabot::Version, String))
+          )
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def available_security_fix_releases
-          @available_security_fix_releases = T.let(T.must(package_details_fetcher).lowest_security_fix_version_tag,
-                                                   T.nilable(T::Hash[Symbol, T.untyped]))
+          @available_security_fix_releases = T.let(
+            T.must(package_details_fetcher).lowest_security_fix_version_tag,
+            T.nilable(T::Hash[Symbol, T.untyped])
+          )
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def available_latest_version_tag
-          @latest_version_tag = T.let(T.must(package_details_fetcher).latest_version_tag,
-                                      T.nilable(T::Hash[Symbol, T.untyped]))
+          @latest_version_tag = T.let(
+            T.must(package_details_fetcher).latest_version_tag,
+            T.nilable(T::Hash[Symbol, T.untyped])
+          )
         end
 
         sig { override.returns(T::Boolean) }
@@ -170,8 +184,10 @@ module Dependabot
 
                 SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
                 Dir.chdir(repo_contents_path) do
-                  date = SharedHelpers.run_shell_command("git show --no-patch --format=\"%cd\" " \
-                                                         "--date=iso #{commit_ref}")
+                  date = SharedHelpers.run_shell_command(
+                    "git show --no-patch --format=\"%cd\" " \
+                    "--date=iso #{commit_ref}"
+                  )
                   Dependabot.logger.info("Found release date : #{Time.parse(date)}")
                   return date
                 end
@@ -195,8 +211,10 @@ module Dependabot
           days = T.must(cooldown).default_days
           passed_seconds = Time.now.to_i - release_date.to_i
 
-          Dependabot.logger.info("Days since release : #{passed_seconds / (3600 * 24)} " \
-                                 "(cooldown days #{T.must(cooldown_options).default_days})")
+          Dependabot.logger.info(
+            "Days since release : #{passed_seconds / (3600 * 24)} " \
+            "(cooldown days #{T.must(cooldown_options).default_days})"
+          )
 
           passed_seconds < days * DAY_IN_SECONDS
         end
@@ -220,9 +238,14 @@ module Dependabot
 
         sig { returns(Dependabot::GithubActions::Helpers::Githelper) }
         def git_helper
-          Helpers::Githelper.new(dependency: dependency, credentials: credentials,
-                                 ignored_versions: ignored_versions, raise_on_ignored: raise_on_ignored,
-                                 consider_version_branches_pinned: false, dependency_source_details: nil)
+          Helpers::Githelper.new(
+            dependency: dependency,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            consider_version_branches_pinned: false,
+            dependency_source_details: nil
+          )
         end
       end
     end

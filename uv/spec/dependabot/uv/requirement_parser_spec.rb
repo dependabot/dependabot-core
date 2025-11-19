@@ -175,8 +175,10 @@ RSpec.describe Dependabot::Uv::RequirementParser do
         end
 
         its([:hashes]) do
-          is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
-                                         { algorithm: "sha256", hash: "2ccb79b02" })
+          is_expected.to contain_exactly(
+            { algorithm: "sha256", hash: "2ccb79b01" },
+            { algorithm: "sha256", hash: "2ccb79b02" }
+          )
         end
 
         context "when spread over multiple lines" do
@@ -187,8 +189,10 @@ RSpec.describe Dependabot::Uv::RequirementParser do
           end
 
           its([:hashes]) do
-            is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
-                                           { algorithm: "sha256", hash: "2ccb79b02" })
+            is_expected.to contain_exactly(
+              { algorithm: "sha256", hash: "2ccb79b01" },
+              { algorithm: "sha256", hash: "2ccb79b02" }
+            )
           end
         end
 
@@ -207,8 +211,10 @@ RSpec.describe Dependabot::Uv::RequirementParser do
           end
 
           its([:hashes]) do
-            is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
-                                           { algorithm: "sha256", hash: "2ccb79b02" })
+            is_expected.to contain_exactly(
+              { algorithm: "sha256", hash: "2ccb79b01" },
+              { algorithm: "sha256", hash: "2ccb79b02" }
+            )
           end
         end
 
@@ -228,8 +234,10 @@ RSpec.describe Dependabot::Uv::RequirementParser do
           end
 
           its([:hashes]) do
-            is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
-                                           { algorithm: "sha256", hash: "2ccb79b02" })
+            is_expected.to contain_exactly(
+              { algorithm: "sha256", hash: "2ccb79b01" },
+              { algorithm: "sha256", hash: "2ccb79b02" }
+            )
           end
         end
       end
@@ -239,20 +247,24 @@ RSpec.describe Dependabot::Uv::RequirementParser do
       let(:line) { "luigi == 0.1.0, <= 1" }
 
       its([:requirements]) do
-        is_expected.to eq([
-          { comparison: "==", version: "0.1.0" },
-          { comparison: "<=", version: "1" }
-        ])
+        is_expected.to eq(
+          [
+            { comparison: "==", version: "0.1.0" },
+            { comparison: "<=", version: "1" }
+          ]
+        )
       end
 
       context "with a comment" do
         let(:line) { "luigi == 0.1.0, <= 1 # some comment" }
 
         its([:requirements]) do
-          is_expected.to eq([
-            { comparison: "==", version: "0.1.0" },
-            { comparison: "<=", version: "1" }
-          ])
+          is_expected.to eq(
+            [
+              { comparison: "==", version: "0.1.0" },
+              { comparison: "<=", version: "1" }
+            ]
+          )
         end
       end
 
@@ -260,10 +272,12 @@ RSpec.describe Dependabot::Uv::RequirementParser do
         let(:line) { "luigi (>0.1.0,<2)" }
 
         its([:requirements]) do
-          is_expected.to eq([
-            { comparison: ">", version: "0.1.0" },
-            { comparison: "<", version: "2" }
-          ])
+          is_expected.to eq(
+            [
+              { comparison: ">", version: "0.1.0" },
+              { comparison: "<", version: "2" }
+            ]
+          )
         end
       end
     end

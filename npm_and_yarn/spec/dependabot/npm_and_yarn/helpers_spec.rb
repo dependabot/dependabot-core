@@ -97,22 +97,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
         dependency_set << foo_a << bar_a << foo_c << bar_c << foo_b << bar_b
 
-        expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq([
-          Dependabot::Dependency.new(
-            name: "foo",
-            version: "0.0.1",
-            requirements: (foo_a.requirements + foo_c.requirements + foo_b.requirements).uniq,
-            package_manager: "npm_and_yarn",
-            metadata: { all_versions: [foo_a, foo_c, foo_b] }
-          ),
-          Dependabot::Dependency.new(
-            name: "bar",
-            version: "0.2.1",
-            requirements: (bar_a.requirements + bar_c.requirements + bar_b.requirements).uniq,
-            package_manager: "npm_and_yarn",
-            metadata: { all_versions: [bar_a, bar_c, bar_b] }
-          )
-        ])
+        expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "foo",
+              version: "0.0.1",
+              requirements: (foo_a.requirements + foo_c.requirements + foo_b.requirements).uniq,
+              package_manager: "npm_and_yarn",
+              metadata: { all_versions: [foo_a, foo_c, foo_b] }
+            ),
+            Dependabot::Dependency.new(
+              name: "bar",
+              version: "0.2.1",
+              requirements: (bar_a.requirements + bar_c.requirements + bar_b.requirements).uniq,
+              package_manager: "npm_and_yarn",
+              metadata: { all_versions: [bar_a, bar_c, bar_b] }
+            )
+          ]
+        )
       end
 
       it "correctly merges existing metadata into new metadata" do
@@ -135,22 +137,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           metadata: { all_versions: [bar_a] }
         )
 
-        expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq([
-          Dependabot::Dependency.new(
-            name: "foo",
-            version: "0.0.1",
-            requirements: (foo_a.requirements + foo_c.requirements + foo_b.requirements).uniq,
-            package_manager: "npm_and_yarn",
-            metadata: { all_versions: [foo_a, foo_c, foo_b] }
-          ),
-          Dependabot::Dependency.new(
-            name: "bar",
-            version: "0.2.1",
-            requirements: (bar_c.requirements + bar_b.requirements + bar_a.requirements).uniq,
-            package_manager: "npm_and_yarn",
-            metadata: { all_versions: [bar_c, bar_b, bar_a] }
-          )
-        ])
+        expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq(
+          [
+            Dependabot::Dependency.new(
+              name: "foo",
+              version: "0.0.1",
+              requirements: (foo_a.requirements + foo_c.requirements + foo_b.requirements).uniq,
+              package_manager: "npm_and_yarn",
+              metadata: { all_versions: [foo_a, foo_c, foo_b] }
+            ),
+            Dependabot::Dependency.new(
+              name: "bar",
+              version: "0.2.1",
+              requirements: (bar_c.requirements + bar_b.requirements + bar_a.requirements).uniq,
+              package_manager: "npm_and_yarn",
+              metadata: { all_versions: [bar_c, bar_b, bar_a] }
+            )
+          ]
+        )
       end
     end
   end
@@ -340,19 +344,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Test the result
         result = described_class.install("npm", "8.0.0")
         expect(result).to eq("10.8.2")
-      end
-    end
-
-    context "when corepack is not used for bun" do
-      it "falls back to the local version of the package manager" do
-        # Mock for `local_package_manager_version("bun")`
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "bun -v",
-          fingerprint: "bun -v"
-        ).and_return("1.1.39")
-
-        result = described_class.install("bun", "1.1.39")
-        expect(result).to eq("1.1.39")
       end
     end
   end

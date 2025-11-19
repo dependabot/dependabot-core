@@ -9,7 +9,6 @@ require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/npm_and_yarn/npm_package_manager"
 require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
-require "dependabot/npm_and_yarn/bun_package_manager"
 require "dependabot/npm_and_yarn/language"
 require "dependabot/npm_and_yarn/constraint_helper"
 
@@ -60,17 +59,18 @@ module Dependabot
       T.any(
         T.class_of(Dependabot::NpmAndYarn::NpmPackageManager),
         T.class_of(Dependabot::NpmAndYarn::YarnPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::BunPackageManager)
+        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager)
       )
     end
 
-    PACKAGE_MANAGER_CLASSES = T.let({
-      NpmPackageManager::NAME => NpmPackageManager,
-      YarnPackageManager::NAME => YarnPackageManager,
-      PNPMPackageManager::NAME => PNPMPackageManager,
-      BunPackageManager::NAME => BunPackageManager
-    }.freeze, T::Hash[String, NpmAndYarnPackageManagerClassType])
+    PACKAGE_MANAGER_CLASSES = T.let(
+      {
+        NpmPackageManager::NAME => NpmPackageManager,
+        YarnPackageManager::NAME => YarnPackageManager,
+        PNPMPackageManager::NAME => PNPMPackageManager
+      }.freeze,
+      T::Hash[String, NpmAndYarnPackageManagerClassType]
+    )
 
     # Error malformed version number string
     ERROR_MALFORMED_VERSION_NUMBER = "Malformed version number"
@@ -401,7 +401,7 @@ module Dependabot
         return unless name == PNPMPackageManager::NAME
         return unless Version.new(version) < Version.new("7")
 
-        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*")
+        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*, 10.*")
       end
 
       sig { params(name: String, version: T.nilable(String)).void }
@@ -479,8 +479,6 @@ module Dependabot
           NpmPackageManager::SUPPORTED_VERSIONS
         when "yarn"
           YarnPackageManager::SUPPORTED_VERSIONS
-        when "bun"
-          BunPackageManager::SUPPORTED_VERSIONS
         when "pnpm"
           PNPMPackageManager::SUPPORTED_VERSIONS
         end

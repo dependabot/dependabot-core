@@ -39,8 +39,12 @@ module Dependabot
             latest_resolvable_version: T.nilable(String)
           ).void
         end
-        def initialize(requirements:, update_strategy:, has_lockfile:,
-                       latest_resolvable_version:)
+        def initialize(
+          requirements:,
+          update_strategy:,
+          has_lockfile:,
+          latest_resolvable_version:
+        )
           @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.untyped]])
           @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
           @has_lockfile = T.let(has_lockfile, T::Boolean)
@@ -80,8 +84,11 @@ module Dependabot
           new_requirement =
             if req_strings.any? { |r| requirement_class.new(r).exact? }
               find_and_update_equality_match(req_strings)
-            elsif req_strings.any? { |r| r.start_with?("~=", "==") }
-              tw_req = req_strings.find { |r| r.start_with?("~=", "==") }
+            elsif req_strings.any? { |r| r.start_with?("~=") }
+              tw_req = req_strings.find { |r| r.start_with?("~=") }
+              bump_version(tw_req, latest_resolvable_version.to_s)
+            elsif req_strings.any? { |r| r.start_with?("==") }
+              tw_req = req_strings.find { |r| r.start_with?("==") }
               convert_to_range(tw_req, T.must(latest_resolvable_version))
             else
               update_requirements_range(req_strings)
@@ -172,9 +179,11 @@ module Dependabot
 
         sig { params(req_string: String).returns(String) }
         def add_new_requirement_option(req_string)
-          option_to_copy = T.must(T.must(req_string.split(PYPROJECT_OR_SEPARATOR).last)
-                                     .split(PYPROJECT_SEPARATOR).first).strip
-          operator       = option_to_copy.gsub(/\d.*/, "").strip
+          option_to_copy = T.must(
+            T.must(req_string.split(PYPROJECT_OR_SEPARATOR).last)
+                                                 .split(PYPROJECT_SEPARATOR).first
+          ).strip
+          operator = option_to_copy.gsub(/\d.*/, "").strip
 
           new_option =
             case operator
@@ -335,9 +344,13 @@ module Dependabot
         # Updates the version in a constraint to be the given version
         sig { params(req_string: String, version_to_be_permitted: String).returns(String) }
         def bump_version(req_string, version_to_be_permitted)
-          old_version = T.must(T.must(req_string
-                        .match(/(#{RequirementParser::VERSION})/o))
-                        .captures.first)
+          old_version = T.must(
+            T.must(
+              req_string
+                                      .match(/(#{RequirementParser::VERSION})/o)
+            )
+                                    .captures.first
+          )
 
           req_string.sub(
             old_version,

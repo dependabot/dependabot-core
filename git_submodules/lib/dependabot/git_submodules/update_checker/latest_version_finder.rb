@@ -45,10 +45,13 @@ module Dependabot
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def version_list
           @version_list ||=
-            T.let(Package::PackageDetailsFetcher.new(
-              dependency: dependency,
-              credentials: credentials
-            ).available_versions, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+            T.let(
+              Package::PackageDetailsFetcher.new(
+                dependency: dependency,
+                credentials: credentials
+              ).available_versions,
+              T.nilable(T::Array[Dependabot::Package::PackageRelease])
+            )
         end
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
@@ -63,9 +66,11 @@ module Dependabot
           passed_days = passed_seconds / DAY_IN_SECONDS
 
           if passed_days < days
-            Dependabot.logger.info("Filtered #{release.tag}, Released on: " \
-                                   "#{T.must(release.released_at).strftime('%Y-%m-%d')} " \
-                                   "(#{passed_days}/#{days} cooldown days)")
+            Dependabot.logger.info(
+              "Filtered #{release.tag}, Released on: " \
+              "#{T.must(release.released_at).strftime('%Y-%m-%d')} " \
+              "(#{passed_days}/#{days} cooldown days)"
+            )
           end
 
           passed_seconds < days * DAY_IN_SECONDS
@@ -113,10 +118,13 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :cooldown_options
+
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
       end

@@ -38,8 +38,11 @@ module Dependabot
       private
 
       sig do
-        params(yaml: T::Hash[T.untyped, T.untyped], chart_file: Dependabot::DependencyFile,
-               dependency_set: DependencySet).void
+        params(
+          yaml: T::Hash[T.untyped, T.untyped],
+          chart_file: Dependabot::DependencyFile,
+          dependency_set: DependencySet
+        ).void
       end
       def parse_dependencies(yaml, chart_file, dependency_set)
         yaml["dependencies"].each do |dep|
@@ -47,12 +50,12 @@ module Dependabot
 
           parsed_line = {
             "image" => dep["name"],
-            "tag" => dep["version"],
+            "tag" => dep["version"].to_s,
             "registry" => repository_from_registry(dep["repository"]),
             "digest" => nil
           }
 
-          dependency = build_dependency(chart_file, parsed_line, dep["version"])
+          dependency = build_dependency(chart_file, parsed_line, dep["version"].to_s)
           add_dependency_type_to_dependency(dependency, :helm_chart)
 
           dependency_set << dependency
@@ -126,8 +129,12 @@ module Dependabot
       end
 
       sig do
-        params(key: String, value: String, hash: T::Hash[T.untyped, T.untyped],
-               current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
+        params(
+          key: String,
+          value: String,
+          hash: T::Hash[T.untyped, T.untyped],
+          current_path: T::Array[String]
+        ).returns(T::Array[T::Hash[Symbol, String]])
       end
       def handle_string_value(key, value, hash, current_path)
         images = []

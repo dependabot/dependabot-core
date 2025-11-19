@@ -23,8 +23,16 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependencies:, files:, target_branch:, dependency_group:, includes_security_fixes:,
-                       separator: "/", prefix: "dependabot", max_length: nil)
+        def initialize(
+          dependencies:,
+          files:,
+          target_branch:,
+          dependency_group:,
+          includes_security_fixes:,
+          separator: "/",
+          prefix: "dependabot",
+          max_length: nil
+        )
           super(
             dependencies: dependencies,
             files: files,
@@ -76,9 +84,11 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def dependency_digest
           @dependency_digest ||= T.let(
-            Digest::MD5.hexdigest(dependencies.map do |dependency|
-                                    "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
-                                  end.sort.join(",")).slice(0, 10),
+            Digest::MD5.hexdigest(
+              dependencies.map do |dependency|
+                "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
+              end.sort.join(",")
+            ).slice(0, 10),
             T.nilable(String)
           )
         end

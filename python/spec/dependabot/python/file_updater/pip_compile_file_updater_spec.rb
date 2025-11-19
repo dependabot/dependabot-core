@@ -60,12 +60,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
     }]
   end
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
@@ -609,11 +611,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with({
-          args: %w(package_name 1.0.0 sha256),
-          command: "pyenv exec python3 /opt/python/run.py",
-          function: "get_dependency_hash"
-        }).and_raise(
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with(
+          {
+            args: %w(package_name 1.0.0 sha256),
+            command: "pyenv exec python3 /opt/python/run.py",
+            function: "get_dependency_hash"
+          }
+        ).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "Error message", error_context: {}, error_class: "PackageNotFoundError"
           )
@@ -630,6 +634,32 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "returns returns two hashes" do
         result = updater.send(:package_hashes_for, name: name, version: version, algorithm: algorithm)
         expect(result).to eq(["--hash=sha256:123abc"])
+      end
+    end
+
+    context "when index_url is a relative path" do
+      let(:updater) do
+        described_class.new(
+          dependencies: [],
+          dependency_files: [],
+          credentials: [],
+          index_urls: ["/pypi"]
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with(
+          {
+            args: %w(package_name 1.0.0 sha256 https://pypi.org),
+            command: "pyenv exec python3 /opt/python/run.py",
+            function: "get_dependency_hash"
+          }
+        ).and_return([{ "hash" => "abc123" }])
+      end
+
+      it "replaces relative index_url with https://pypi.org and returns hash" do
+        result = updater.send(:package_hashes_for, name: "package_name", version: "1.0.0", algorithm: "sha256")
+        expect(result).to eq(["--hash=sha256:abc123"])
       end
     end
   end

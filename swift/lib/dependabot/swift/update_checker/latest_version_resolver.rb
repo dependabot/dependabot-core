@@ -150,7 +150,8 @@ module Dependabot
               dependency: dependency,
               credentials: credentials,
               git_commit_checker: git_commit_checker
-            ), T.nilable(Package::PackageDetailsFetcher)
+            ),
+            T.nilable(Package::PackageDetailsFetcher)
           )
         end
 

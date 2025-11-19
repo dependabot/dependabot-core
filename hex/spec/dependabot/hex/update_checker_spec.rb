@@ -25,12 +25,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
   end
   let(:update_cooldown) { nil }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -444,16 +446,20 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       context "with good credentials" do
         let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "hex_organization",
-            "organization" => "dependabot",
-            "token" => hex_pm_org_token
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "hex_organization",
+              "organization" => "dependabot",
+              "token" => hex_pm_org_token
+            }
+          )]
         end
 
         it "returns the expected version" do
@@ -464,16 +470,20 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with bad credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "hex_organization",
-            "organization" => "dependabot",
-            "token" => "111f6cbeffc6e14c6a884f0111caff3e"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "hex_organization",
+              "organization" => "dependabot",
+              "token" => "111f6cbeffc6e14c6a884f0111caff3e"
+            }
+          )]
         end
 
         it "raises a helpful error" do
@@ -487,15 +497,19 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with no token" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }), Dependabot::Credential.new({
-            "type" => "hex_organization",
-            "organization" => "dependabot"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "hex_organization",
+              "organization" => "dependabot"
+            }
+          )]
         end
 
         # This needs to changes to the Elixir helper
@@ -510,12 +524,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with no credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )]
         end
 
         # The Elixir process hangs waiting for input in this case. This spec
@@ -543,12 +559,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with good credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "hex_repository",
-            "repo" => "dependabot",
-            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => "https://dependabot-private.fly.dev"
+            }
+          )]
         end
 
         it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
@@ -556,12 +574,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with bad credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "hex_repository",
-            "repo" => "dependabot",
-            "auth_key" => "111f6cbeffc6e14c6a884f0111caff3e",
-            "url" => "https://dependabot-private.fly.dev"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "111f6cbeffc6e14c6a884f0111caff3e",
+              "url" => "https://dependabot-private.fly.dev"
+            }
+          )]
         end
 
         it "raises a helpful error" do
@@ -576,13 +596,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with correct public key fingerprint verification" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "hex_repository",
-            "repo" => "dependabot",
-            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev",
-            "public_key_fingerprint" => "SHA256:jn36tNgSXuEljoob8fkejX9LIyXqCcwShjRGps7RVgw"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => "https://dependabot-private.fly.dev",
+              "public_key_fingerprint" => "SHA256:jn36tNgSXuEljoob8fkejX9LIyXqCcwShjRGps7RVgw"
+            }
+          )]
         end
 
         it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
@@ -590,13 +612,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with incorrect public key fingerprint verification" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "hex_repository",
-            "repo" => "dependabot",
-            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev",
-            "public_key_fingerprint" => "SHA256:kejX9LIyXqCcwShjRGps7RVgjn36tNgSXuEljoob8fw"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => "https://dependabot-private.fly.dev",
+              "public_key_fingerprint" => "SHA256:kejX9LIyXqCcwShjRGps7RVgjn36tNgSXuEljoob8fw"
+            }
+          )]
         end
 
         it "raises a helpful error" do
@@ -611,16 +635,20 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       context "with dependencies on both a private organization and private repo" do
         let(:credentials) do
-          [Dependabot::Credential.new({
-            "type" => "hex_organization",
-            "organization" => "dependabot",
-            "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
-          }), Dependabot::Credential.new({
-            "type" => "hex_repository",
-            "repo" => "dependabot",
-            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev"
-          })]
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_organization",
+              "organization" => "dependabot",
+              "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => "https://dependabot-private.fly.dev"
+            }
+          )]
         end
 
         it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }

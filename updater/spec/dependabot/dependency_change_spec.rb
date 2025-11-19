@@ -99,8 +99,11 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     before do
-      allow(job).to receive_messages(source: github_source, credentials: job_credentials,
-                                     commit_message_options: commit_message_options)
+      allow(job).to receive_messages(
+        source: github_source,
+        credentials: job_credentials,
+        commit_message_options: commit_message_options
+      )
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
 
@@ -165,9 +168,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with all dependencies matching" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: ["business"],
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: ["business"],
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns false" do
@@ -177,9 +182,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with duplicate dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: %w(business business),
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: %w(business business),
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns false" do
@@ -189,9 +196,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with non-matching casing" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: ["BuSiNeSS"],
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: ["BuSiNeSS"],
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns false" do
@@ -201,9 +210,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with out of order dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: %w(PkgB PkgA),
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: %w(PkgB PkgA),
+          updating_a_pull_request?: true
+        )
       end
 
       let(:updated_dependencies) do
@@ -242,13 +253,81 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with different dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: ["contoso"],
-                        updating_a_pull_request?: true)
+        instance_double(
+          Dependabot::Job,
+          dependencies: ["contoso"],
+          updating_a_pull_request?: true
+        )
       end
 
       it "returns true" do
         expect(dependency_change.should_replace_existing_pr?).to be true
+      end
+    end
+  end
+
+  describe "#humanized" do
+    it "includes from and to versions when previous version exists" do
+      expect(dependency_change.humanized).to eq("business ( from 1.7.0 to 1.8.0 )")
+    end
+
+    context "when previous_version is nil" do
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "django-cors-headers",
+            package_manager: "pip",
+            version: "4.6.0",
+            previous_version: nil,
+            requirements: [
+              { file: "requirements.txt", requirement: "==4.6.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "requirements.txt", requirement: nil, groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "omits the from version" do
+        expect(dependency_change.humanized).to eq("django-cors-headers ( to 4.6.0 )")
+      end
+    end
+
+    context "with multiple dependencies" do
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "redis",
+            package_manager: "pip",
+            version: "5.2.0",
+            previous_version: nil,
+            requirements: [
+              { file: "requirements.txt", requirement: "==5.2.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "requirements.txt", requirement: nil, groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "formats each dependency correctly" do
+        expect(dependency_change.humanized).to eq(
+          "business ( from 1.7.0 to 1.8.0 ), redis ( to 5.2.0 )"
+        )
       end
     end
   end
@@ -275,9 +354,11 @@ RSpec.describe Dependabot::DependencyChange do
   describe "#matches_existing_pr?" do
     context "when no existing pull requests are found" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_pull_requests: [])
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_pull_requests: []
+        )
       end
       let(:dependency_change) do
         described_class.new(
@@ -294,9 +375,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a pull request with the same dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_pull_requests: existing_pull_requests)
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_pull_requests: existing_pull_requests
+        )
       end
       let(:existing_pull_requests) do
         [
@@ -345,9 +428,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a grouped pull request with the same dependencies" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_group_pull_requests: existing_group_pull_requests)
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_group_pull_requests: existing_group_pull_requests
+        )
       end
       let(:existing_group_pull_requests) do
         [
@@ -392,9 +477,11 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when updating a grouped pull request with the same dependencies, but in different directory" do
       let(:job) do
-        instance_double(Dependabot::Job,
-                        dependencies: updated_dependencies.map(&:name),
-                        existing_group_pull_requests: existing_group_pull_requests)
+        instance_double(
+          Dependabot::Job,
+          dependencies: updated_dependencies.map(&:name),
+          existing_group_pull_requests: existing_group_pull_requests
+        )
       end
       let(:existing_group_pull_requests) do
         [

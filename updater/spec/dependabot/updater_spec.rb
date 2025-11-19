@@ -168,10 +168,12 @@ RSpec.describe Dependabot::Updater do
 
         job = build_job
         service = build_service
-        error = Octokit::TooManyRequests.new({
-          status: 403,
-          response_headers: { "X-RateLimit-Reset" => 42 }
-        })
+        error = Octokit::TooManyRequests.new(
+          {
+            status: 403,
+            response_headers: { "X-RateLimit-Reset" => 42 }
+          }
+        )
         allow(service).to receive(:create_pull_request).and_raise(error)
         updater = build_updater(service: service, job: job)
 
@@ -785,16 +787,18 @@ RSpec.describe Dependabot::Updater do
               ]
             )
 
-          job = build_job(ignore_conditions: [
-            {
-              "dependency-name" => "dummy-pkg-a",
-              "version-requirement" => "~> 2.0.0"
-            },
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "version-requirement" => "~> 1.0.0"
-            }
-          ])
+          job = build_job(
+            ignore_conditions: [
+              {
+                "dependency-name" => "dummy-pkg-a",
+                "version-requirement" => "~> 2.0.0"
+              },
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "version-requirement" => "~> 1.0.0"
+              }
+            ]
+          )
           service = build_service
           updater = build_updater(service: service, job: job)
 
@@ -829,46 +833,20 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when a PR already exists for the latest version" do
-      it "doesn't call can_update? (so short-circuits resolution)" do
-        checker = stub_update_checker
-
-        job = build_job(existing_pull_requests: [
-          [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "dependency-version" => "1.2.0"
-            }
-          ]
-        ])
-        service = build_service
-        updater = build_updater(service: service, job: job)
-
-        expect(checker).not_to receive(:can_update?)
-        expect(Dependabot::DependencyChangeBuilder).not_to receive(:create_from)
-        expect(service).not_to receive(:create_pull_request)
-        expect(service).not_to receive(:record_update_job_error)
-        expect(Dependabot.logger)
-          .to receive(:info)
-          .with("Pull request already exists for dummy-pkg-b " \
-                "with latest version 1.2.0")
-
-        updater.run
-      end
-    end
-
     context "when a PR already exists for the resolved version" do
       it "doesn't update the dependency" do
         checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"))
 
-        job = build_job(existing_pull_requests: [
-          [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "dependency-version" => "1.2.0"
-            }
+        job = build_job(
+          existing_pull_requests: [
+            [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "dependency-version" => "1.2.0"
+              }
+            ]
           ]
-        ])
+        )
         service = build_service
         updater = build_updater(service: service, job: job)
 
@@ -880,99 +858,6 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot.logger)
           .to receive(:info)
           .with("Pull request already exists for dummy-pkg-b@1.2.0")
-
-        updater.run
-      end
-    end
-
-    context "when a security update PR exists for the resolved version" do
-      it "creates an update job error and short-circuits" do
-        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"), vulnerable?: true)
-
-        job = build_job(
-          requested_dependencies: ["dummy-pkg-b"],
-          existing_pull_requests: [
-            [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "dependency-version" => "1.2.0"
-              }
-            ]
-          ],
-          security_updates_only: true,
-          security_advisories: [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "affected-versions" => ["1.1.0"]
-            }
-          ]
-        )
-        service = build_service
-        updater = build_updater(service: service, job: job)
-
-        expect(checker).to receive(:up_to_date?).and_return(false)
-        expect(checker).to receive(:can_update?).and_return(true)
-        expect(Dependabot::DependencyChangeBuilder).not_to receive(:create_from)
-        expect(service).not_to receive(:create_pull_request)
-        expect(service).to receive(:record_update_job_error)
-          .with(
-            error_type: "pull_request_exists_for_security_update",
-            error_details: {
-              "updated-dependencies": [
-                "dependency-name": "dummy-pkg-b",
-                "dependency-version": "1.2.0"
-              ]
-            }
-          )
-        expect(Dependabot.logger)
-          .to receive(:info)
-          .with("Pull request already exists for dummy-pkg-b@1.2.0")
-
-        updater.run
-      end
-    end
-
-    context "when a security update PR exists for the latest version" do
-      it "doesn't call can_update? (so short-circuits resolution)" do
-        checker = stub_update_checker(vulnerable?: true)
-
-        job = build_job(
-          requested_dependencies: ["dummy-pkg-b"],
-          existing_pull_requests: [
-            [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "dependency-version" => "1.2.0"
-              }
-            ]
-          ],
-          security_updates_only: true,
-          security_advisories: [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "affected-versions" => ["1.1.0"]
-            }
-          ]
-        )
-        service = build_service
-        updater = build_updater(service: service, job: job)
-
-        expect(checker).not_to receive(:can_update?)
-        expect(Dependabot::DependencyChangeBuilder).not_to receive(:create_from)
-        expect(service).not_to receive(:create_pull_request)
-        expect(service).to receive(:record_update_job_error)
-          .with(
-            error_type: "pull_request_exists_for_latest_version",
-            error_details: {
-              "dependency-name": "dummy-pkg-b",
-              "dependency-version": "1.2.0"
-            },
-            dependency: an_instance_of(Dependabot::Dependency)
-          )
-        expect(Dependabot.logger)
-          .to receive(:info)
-          .with("Pull request already exists for dummy-pkg-b " \
-                "with latest version 1.2.0")
 
         updater.run
       end
@@ -997,88 +882,6 @@ RSpec.describe Dependabot::Updater do
 
         expect(service).to receive(:create_pull_request).once
 
-        updater.run
-      end
-    end
-
-    context "when a PR already exists for a removed dependency" do
-      it "creates an update job error and short-circuits" do
-        checker =
-          stub_update_checker(
-            latest_version: Gem::Version.new("1.3.0"),
-            vulnerable?: true,
-            updated_dependencies: [
-              Dependabot::Dependency.new(
-                name: "dummy-pkg-b",
-                package_manager: "bundler",
-                previous_version: "1.1.0",
-                requirements: [],
-                previous_requirements: [],
-                removed: true
-              ),
-              Dependabot::Dependency.new(
-                name: "dummy-pkg-c",
-                package_manager: "bundler",
-                version: "1.4.0",
-                previous_version: "1.3.0",
-                requirements: [
-                  { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
-                ],
-                previous_requirements: [
-                  { file: "Gemfile", requirement: "~> 1.3.0", groups: [], source: nil }
-                ]
-              )
-            ]
-          )
-
-        job = build_job(
-          requested_dependencies: ["dummy-pkg-b"],
-          existing_pull_requests: [
-            [
-              {
-                "dependency-name" => "dummy-pkg-c",
-                "dependency-version" => "1.4.0"
-              },
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "dependency-removed" => true
-              }
-            ]
-          ],
-          security_updates_only: true,
-          security_advisories: [
-            {
-              "dependency-name" => "dummy-pkg-b",
-              "affected-versions" => ["1.1.0"]
-            }
-          ]
-        )
-        service = build_service
-        updater = build_updater(service: service, job: job)
-
-        expect(checker).to receive(:up_to_date?).and_return(false)
-        expect(checker).to receive(:can_update?).and_return(true)
-        expect(Dependabot::DependencyChangeBuilder).not_to receive(:create_from)
-        expect(service).not_to receive(:create_pull_request)
-        expect(service).to receive(:record_update_job_error)
-          .with(
-            error_type: "pull_request_exists_for_security_update",
-            error_details: {
-              "updated-dependencies": [
-                {
-                  "dependency-name": "dummy-pkg-c",
-                  "dependency-version": "1.4.0"
-                },
-                {
-                  "dependency-name": "dummy-pkg-b",
-                  "dependency-removed": true
-                }
-              ]
-            }
-          )
-        expect(Dependabot.logger)
-          .to receive(:info)
-          .with("Pull request already exists for dummy-pkg-c@1.4.0, dummy-pkg-b@removed")
         updater.run
       end
     end
@@ -2659,8 +2462,12 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
-  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
-                    dependency_snapshot: nil)
+  def build_updater(
+    service: build_service,
+    job: build_job,
+    dependency_files: default_dependency_files,
+    dependency_snapshot: nil
+  )
     Dependabot::Updater.new(
       service: service,
       job: job,
@@ -2720,10 +2527,21 @@ RSpec.describe Dependabot::Updater do
   end
 
   # rubocop:disable Metrics/MethodLength
-  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
-                existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
-                updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false, repo_contents_path: nil, update_cooldown: nil)
+  def build_job(
+    requested_dependencies: nil,
+    allowed_updates: default_allowed_updates,
+    existing_pull_requests: [],
+    existing_group_pull_requests: [],
+    ignore_conditions: [],
+    security_advisories: [],
+    experiments: {},
+    updating_a_pull_request: false,
+    security_updates_only: false,
+    dependency_groups: [],
+    lockfile_only: false,
+    repo_contents_path: nil,
+    update_cooldown: nil
+  )
     Dependabot::Job.new(
       id: "1",
       token: "token",

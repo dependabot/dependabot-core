@@ -1,0 +1,3 @@
+spacy==3.4.4
+# Model downloaded during build
+.model/en_core_web_sm-3.4.1.tar.gz

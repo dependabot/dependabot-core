@@ -26,14 +26,17 @@ module Dependabot
 
       # These are errors that halt the update run and are handled in the main
       # backend. They do *not* raise a sentry.
-      RUN_HALTING_ERRORS = T.let({
-        Dependabot::OutOfDisk => "out_of_disk",
-        Dependabot::OutOfMemory => "out_of_memory",
-        Dependabot::AllVersionsIgnored => "all_versions_ignored",
-        Dependabot::UnexpectedExternalCode => "unexpected_external_code",
-        Errno::ENOSPC => "out_of_disk",
-        Octokit::Unauthorized => "octokit_unauthorized"
-      }.freeze, T::Hash[Module, String])
+      RUN_HALTING_ERRORS = T.let(
+        {
+          Dependabot::OutOfDisk => "out_of_disk",
+          Dependabot::OutOfMemory => "out_of_memory",
+          Dependabot::AllVersionsIgnored => "all_versions_ignored",
+          Dependabot::UnexpectedExternalCode => "unexpected_external_code",
+          Errno::ENOSPC => "out_of_disk",
+          Octokit::Unauthorized => "octokit_unauthorized"
+        }.freeze,
+        T::Hash[Module, String]
+      )
 
       sig { params(service: Service, job: Job).void }
       def initialize(service:, job:)
@@ -78,20 +81,21 @@ module Dependabot
       # Provides logging for errors that occur when processing a dependency
       sig do
         params(
-          dependency: T.untyped,
+          dependency: T.nilable(Dependabot::Dependency),
           error: StandardError,
           error_type: String,
           error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
         ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
+        dependency_name = dependency&.name || "unknown dependency"
         if error_type == "unknown_error"
-          Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
+          Dependabot.logger.error "Error processing #{dependency_name} (#{error.class.name})"
           Dependabot.logger.error error.message
           error.backtrace&.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
-            "Handled error whilst updating #{dependency.name}: #{error_type} #{error_detail}"
+            "Handled error whilst updating #{dependency_name}: #{error_type} #{error_detail}"
           )
         end
       end
@@ -207,10 +211,13 @@ module Dependabot
           ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
         }.compact
 
-        service.increment_metric("updater.update_job_unknown_error", tags: {
-          package_manager: job.package_manager,
-          class_name: error.class.name
-        })
+        service.increment_metric(
+          "updater.update_job_unknown_error",
+          tags: {
+            package_manager: job.package_manager,
+            class_name: error.class.name
+          }
+        )
         service.record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
       end
 

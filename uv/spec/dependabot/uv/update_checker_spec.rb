@@ -49,12 +49,14 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:checker) do
     described_class.new(
@@ -635,17 +637,20 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       end
 
       it "updates both requirements" do
-        expect(checker.updated_requirements).to contain_exactly({
-          file: "constraints.txt",
-          requirement: "==2.6.0",
-          groups: [],
-          source: nil
-        }, {
-          file: "requirements.txt",
-          requirement: "==2.6.0",
-          groups: [],
-          source: nil
-        })
+        expect(checker.updated_requirements).to contain_exactly(
+          {
+            file: "constraints.txt",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "requirements.txt",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          }
+        )
       end
     end
   end

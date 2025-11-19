@@ -29,8 +29,14 @@ module Dependabot
             index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
-        def initialize(content:, dependency_name:, old_requirement:,
-                       new_requirement:, new_hash_version: nil, index_urls: nil)
+        def initialize(
+          content:,
+          dependency_name:,
+          old_requirement:,
+          new_requirement:,
+          new_hash_version: nil,
+          index_urls: nil
+        )
           @content = T.let(content, String)
           @dependency_name = T.let(normalise(dependency_name), String)
           @old_requirement = T.let(old_requirement, T.nilable(String))
@@ -158,12 +164,18 @@ module Dependabot
           return "" unless requirement_includes_hashes?(requirement)
 
           hash_regex = RequirementParser::HASH
-          matches = T.must(original_dependency_declaration_string(requirement)
-            .match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/))
+          matches = T.must(
+            original_dependency_declaration_string(requirement)
+                        .match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)
+          )
           current_separator = matches.named_captures.fetch("separator")
 
-          hash_matches = T.must(T.must(original_dependency_declaration_string(requirement)
-            .match(RequirementParser::HASH)).pre_match.match(/(?<separator>\s*\\?\s*?)\z/))
+          hash_matches = T.must(
+            T.must(
+              original_dependency_declaration_string(requirement)
+                          .match(RequirementParser::HASH)
+            ).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
+          )
           default_separator = hash_matches
                               .named_captures.fetch("separator")
 

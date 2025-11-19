@@ -26,6 +26,7 @@ Sentry.init do |config|
     dependabot-updater/bin|
     dependabot-updater/config|
     dependabot-updater/lib|
+    bazel|
     common|
     bundler|
     cargo|
@@ -42,6 +43,7 @@ Sentry.init do |config|
     gradle|
     helm|
     hex|
+    julia|
     maven|
     npm_and_yarn|
     nuget|
@@ -51,6 +53,7 @@ Sentry.init do |config|
     silent|
     swift|
     terraform|
+    opentofu|
     uv|
     vcpkg|
   )}x
@@ -65,6 +68,7 @@ Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -81,6 +85,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
@@ -90,5 +95,6 @@ require "dependabot/rust_toolchain"
 require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"

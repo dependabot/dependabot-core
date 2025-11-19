@@ -19,6 +19,7 @@
 #   ruby bin/dry-run.rb go_modules zonedb/zonedb
 #
 # Package managers:
+# - bazel
 # - bun
 # - bundler
 # - cargo
@@ -42,6 +43,7 @@
 # - submodules
 # - swift
 # - terraform
+# - opentofu
 # - vcpkg
 
 # rubocop:disable Style/GlobalVars
@@ -56,6 +58,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
@@ -73,6 +76,7 @@ $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
+$LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
@@ -81,6 +85,7 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./opentofu/lib"
 $LOAD_PATH << "./uv/lib"
 $LOAD_PATH << "./vcpkg/lib"
 
@@ -110,6 +115,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -126,6 +132,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
@@ -133,6 +140,7 @@ require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"
 
@@ -230,8 +238,10 @@ option_parse = OptionParser.new do |opts|
     $options[:branch] = value
   end
 
-  opts.on("--dep DEPENDENCIES",
-          "Comma separated list of dependencies to update") do |value|
+  opts.on(
+    "--dep DEPENDENCIES",
+    "Comma separated list of dependencies to update"
+  ) do |value|
     $options[:dependency_names] = value.split(",").map { |o| o.strip.downcase }
   end
 
@@ -289,18 +299,24 @@ option_parse = OptionParser.new do |opts|
     end
   end
 
-  opts.on("--security-updates-only",
-          "Only update vulnerable dependencies") do |_value|
+  opts.on(
+    "--security-updates-only",
+    "Only update vulnerable dependencies"
+  ) do |_value|
     $options[:security_updates_only] = true
   end
 
-  opts.on("--profile",
-          "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`") do
+  opts.on(
+    "--profile",
+    "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`"
+  ) do
     $options[:profile] = true
   end
 
-  opts.on("--pull-request",
-          "Output pull request information metadata: title, description") do
+  opts.on(
+    "--pull-request",
+    "Output pull request information metadata: title, description"
+  ) do
     $options[:pull_request] = true
   end
 
@@ -336,6 +352,7 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  bazel
   bun
   bundler
   cargo
@@ -361,6 +378,7 @@ valid_package_managers = %w(
   rust_toolchain
   swift
   terraform
+  opentofu
   uv
   vcpkg
 )

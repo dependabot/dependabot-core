@@ -39,18 +39,20 @@ RSpec.describe Dependabot::DependencySnapshot do
   end
 
   let(:job) do
-    instance_double(Dependabot::Job,
-                    package_manager: "bundler",
-                    security_updates_only?: false,
-                    repo_contents_path: nil,
-                    credentials: [],
-                    reject_external_code?: false,
-                    source: source,
-                    dependency_groups: dependency_groups,
-                    allowed_update?: true,
-                    dependency_group_to_refresh: nil,
-                    dependencies: nil,
-                    experiments: { large_hadron_collider: true })
+    instance_double(
+      Dependabot::Job,
+      package_manager: "bundler",
+      security_updates_only?: false,
+      repo_contents_path: nil,
+      credentials: [],
+      reject_external_code?: false,
+      source: source,
+      dependency_groups: dependency_groups,
+      allowed_update?: true,
+      dependency_group_to_refresh: nil,
+      dependencies: nil,
+      experiments: { large_hadron_collider: true }
+    )
   end
 
   let(:dependency_files) do
@@ -114,6 +116,9 @@ RSpec.describe Dependabot::DependencySnapshot do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:allow_refresh_for_existing_pr_dependencies)
       .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:group_membership_enforcement)
+      .and_return(false)
   end
 
   after do
@@ -123,18 +128,15 @@ RSpec.describe Dependabot::DependencySnapshot do
   describe "::add_handled_dependencies" do
     subject(:create_dependency_snapshot) do
       described_class.create_from_job_definition(
-        job: job,
-        job_definition: job_definition
+        job:,
+        fetched_files:
       )
     end
 
     let(:unsupported_error_enabled) { false }
 
-    let(:job_definition) do
-      {
-        "base_commit_sha" => base_commit_sha,
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
+    let(:fetched_files) do
+      Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
     end
 
     it "handles dependencies" do
@@ -181,19 +183,16 @@ RSpec.describe Dependabot::DependencySnapshot do
   describe "::create_from_job_definition" do
     subject(:create_dependency_snapshot) do
       described_class.create_from_job_definition(
-        job: job,
-        job_definition: job_definition
+        job:,
+        fetched_files:
       )
     end
 
     context "when the package manager version is unsupported" do
       let(:unsupported_error_enabled) { true }
 
-      let(:job_definition) do
-        {
-          "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encode_dependency_files(dependency_files_for_unsupported)
-        }
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files: dependency_files_for_unsupported)
       end
 
       it "raises ToolVersionNotSupported error" do
@@ -204,11 +203,8 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
 
     context "when the job definition includes valid information prepared by the file fetcher step" do
-      let(:job_definition) do
-        {
-          "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encode_dependency_files(dependency_files)
-        }
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
       end
 
       it "creates a new instance which has parsed the dependencies from the provided files" do
@@ -258,26 +254,24 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
 
     context "when it's a security update and has dependencies" do
-      let(:job_definition) do
-        {
-          "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encode_dependency_files(dependency_files),
-          "security_updates_only" => true
-        }
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
       end
       let(:job) do
-        instance_double(Dependabot::Job,
-                        package_manager: "bundler",
-                        security_updates_only?: true,
-                        repo_contents_path: nil,
-                        credentials: [],
-                        reject_external_code?: false,
-                        source: source,
-                        dependency_groups: dependency_groups,
-                        dependencies: ["dummy-pkg-a"],
-                        allowed_update?: false,
-                        dependency_group_to_refresh: nil,
-                        experiments: { large_hadron_collider: true })
+        instance_double(
+          Dependabot::Job,
+          package_manager: "bundler",
+          security_updates_only?: true,
+          repo_contents_path: nil,
+          credentials: [],
+          reject_external_code?: false,
+          source: source,
+          dependency_groups: dependency_groups,
+          dependencies: ["dummy-pkg-a"],
+          allowed_update?: false,
+          dependency_group_to_refresh: nil,
+          experiments: { large_hadron_collider: true }
+        )
       end
 
       it "uses the dependencies even if they aren't allowed" do
@@ -294,41 +288,15 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
 
     context "when there is a parser error" do
-      let(:job_definition) do
-        {
-          "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encode_dependency_files(dependency_files).tap do |files|
-            files.first["content"] = Base64.encode64("garbage")
-          end
-        }
+      let(:fetched_files) do
+        bad_files = dependency_files.tap do |files|
+          files.first.content = "garbage"
+        end
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files: bad_files)
       end
 
       it "raises an error" do
         expect { create_dependency_snapshot }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
-      end
-    end
-
-    context "when the job definition does not have the 'base64_dependency_files' key" do
-      let(:job_definition) do
-        {
-          "base_commit_sha" => base_commit_sha
-        }
-      end
-
-      it "raises an error" do
-        expect { create_dependency_snapshot }.to raise_error(KeyError)
-      end
-    end
-
-    context "when the job definition does not have the 'base_commit_sha' key" do
-      let(:job_definition) do
-        {
-          "base64_dependency_files" => encode_dependency_files(dependency_files)
-        }
-      end
-
-      it "raises an error" do
-        expect { create_dependency_snapshot }.to raise_error(KeyError)
       end
     end
   end
@@ -336,25 +304,27 @@ RSpec.describe Dependabot::DependencySnapshot do
   describe "::mark_group_handled" do
     subject(:create_dependency_snapshot) do
       described_class.create_from_job_definition(
-        job: job,
-        job_definition: job_definition
+        job:,
+        fetched_files:
       )
     end
 
     let(:job) do
-      instance_double(Dependabot::Job,
-                      package_manager: "bundler",
-                      security_updates_only?: false,
-                      repo_contents_path: nil,
-                      credentials: [],
-                      reject_external_code?: false,
-                      source: source,
-                      dependency_groups: dependency_groups,
-                      allowed_update?: true,
-                      dependency_group_to_refresh: nil,
-                      dependencies: nil,
-                      experiments: { large_hadron_collider: true },
-                      existing_group_pull_requests: existing_group_pull_requests)
+      instance_double(
+        Dependabot::Job,
+        package_manager: "bundler",
+        security_updates_only?: false,
+        repo_contents_path: nil,
+        credentials: [],
+        reject_external_code?: false,
+        source: source,
+        dependency_groups: dependency_groups,
+        allowed_update?: true,
+        dependency_group_to_refresh: nil,
+        dependencies: nil,
+        experiments: { large_hadron_collider: true },
+        existing_group_pull_requests: existing_group_pull_requests
+      )
     end
 
     let(:source) do
@@ -389,11 +359,8 @@ RSpec.describe Dependabot::DependencySnapshot do
       ]
     end
 
-    let(:job_definition) do
-      {
-        "base_commit_sha" => base_commit_sha,
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
+    let(:fetched_files) do
+      Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
     end
 
     let(:dependency_files) do

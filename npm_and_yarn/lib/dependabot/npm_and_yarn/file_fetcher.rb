@@ -28,8 +28,10 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS = T.let(%w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
-                                     [String, String, String, String, String, String, String, String])
+      PATH_DEPENDENCY_STARTS = T.let(
+        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
+        [String, String, String, String, String, String, String, String]
+      )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
@@ -69,7 +71,6 @@ module Dependabot
         package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
-        package_managers["bun"] = bun_version if bun_version
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
@@ -85,7 +86,6 @@ module Dependabot
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
         fetched_files += pnpm_files if pnpm_version
-        fetched_files += bun_files if bun_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -130,13 +130,6 @@ module Dependabot
       end
 
       sig { returns(T::Array[DependencyFile]) }
-      def bun_files
-        fetched_bun_files = []
-        fetched_bun_files << bun_lock if bun_lock
-        fetched_bun_files
-      end
-
-      sig { returns(T::Array[DependencyFile]) }
       def lerna_files
         fetched_lerna_files = []
         fetched_lerna_files << lerna_json if lerna_json
@@ -155,8 +148,10 @@ module Dependabot
         return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile)) unless npmrc.nil? && package_lock
 
         known_registries = []
-        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch("dependencies",
-                                                                    {}).each do |dependency_name, details|
+        FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
+          "dependencies",
+          {}
+        ).each do |dependency_name, details|
           resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
 
           begin
@@ -218,16 +213,6 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T.any(Integer, String))) }
-      def bun_version
-        return @bun_version = nil unless allow_beta_ecosystems?
-
-        @bun_version ||= T.let(
-          package_manager_helper.setup(BunPackageManager::NAME),
-          T.nilable(T.any(Integer, String))
-        )
-      end
-
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
         @package_manager_helper ||= T.let(
@@ -236,7 +221,8 @@ module Dependabot
             lockfiles,
             registry_config_files,
             credentials
-          ), T.nilable(PackageManagerHelper)
+          ),
+          T.nilable(PackageManagerHelper)
         )
       end
 
@@ -245,8 +231,7 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock,
-          bun: bun_lock
+          pnpm: pnpm_lock
         }
       end
 
@@ -289,17 +274,6 @@ module Dependabot
         return @pnpm_lock if @pnpm_lock || directory == "/"
 
         @pnpm_lock = fetch_file_from_parent_directories(PNPMPackageManager::LOCKFILE_NAME)
-      end
-
-      sig { returns(T.nilable(DependencyFile)) }
-      def bun_lock
-        return @bun_lock if defined?(@bun_lock)
-
-        @bun_lock ||= T.let(fetch_file_if_present(BunPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
-
-        return @bun_lock if @bun_lock || directory == "/"
-
-        @bun_lock = fetch_file_from_parent_directories(BunPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -476,8 +450,10 @@ module Dependabot
           # skip dependencies that contain invalid values such as inline comments, null, etc.
 
           unless value.is_a?(String)
-            Dependabot.logger.warn("File fetcher: Skipping dependency \"#{path}\" " \
-                                   "with value: \"#{value}\"")
+            Dependabot.logger.warn(
+              "File fetcher: Skipping dependency \"#{path}\" " \
+              "with value: \"#{value}\""
+            )
 
             next
           end

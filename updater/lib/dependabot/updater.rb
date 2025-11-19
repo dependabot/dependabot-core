@@ -1,5 +1,7 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 # Dependabot components
 require "dependabot/dependency_change"
@@ -20,19 +22,28 @@ require "wildcard_matcher"
 
 module Dependabot
   class Updater
+    extend T::Sig
+
     # To do work, this class needs three arguments:
     # - The Dependabot::Service to send events and outcomes to
     # - The Dependabot::Job that describes the work to be done
     # - The Dependabot::DependencySnapshot which encapsulates the starting state of the project
+    sig do
+      params(
+        service: Dependabot::Service,
+        job: Dependabot::Job,
+        dependency_snapshot: Dependabot::DependencySnapshot
+      ).void
+    end
     def initialize(service:, job:, dependency_snapshot:)
-      @service = service
-      @job = job
-      @dependency_snapshot = dependency_snapshot
-      @error_handler = ErrorHandler.new(service: service, job: job)
+      @service = T.let(service, Dependabot::Service)
+      @job = T.let(job, Dependabot::Job)
+      @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+      @error_handler = T.let(ErrorHandler.new(service: service, job: job), Dependabot::Updater::ErrorHandler)
     end
 
+    sig { void }
     def run
-      return unless job
       raise Dependabot::NotImplemented unless (operation_class = Operations.class_for(job: job))
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
@@ -63,9 +74,16 @@ module Dependabot
 
     private
 
+    sig { returns(Dependabot::Service) }
     attr_reader :service
+
+    sig { returns(Dependabot::Job) }
     attr_reader :job
+
+    sig { returns(Dependabot::DependencySnapshot) }
     attr_reader :dependency_snapshot
+
+    sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
   end
 end

@@ -96,8 +96,10 @@ RSpec.describe Functions::VersionResolver do
         stub_request(:get, old_index_url + "?gems=business,statesman")
           .to_return(
             status: 200,
-            body: fixture("rubygems_responses",
-                          "dependencies-default-gemfile")
+            body: fixture(
+              "rubygems_responses",
+              "dependencies-default-gemfile"
+            )
           )
       end
 

@@ -56,12 +56,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
   let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+    [Dependabot::Credential.new(
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }
+    )]
   end
   let(:checker) do
     described_class.new(
@@ -445,6 +447,47 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .to eq(Gem::Version.new("2.5.0"))
         end
       end
+
+      context "when including hybrid Poetry + PEP621 dependencies without lockfile" do
+        let(:pyproject_fixture_name) { "pep621_with_poetry.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "delegates to PipVersionResolver for PEP 621 dependencies" do
+          dummy_resolver =
+            instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "when including hybrid Poetry + PEP621 dependencies with lockfile" do
+        let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "exact_version.lock")
+          )
+        end
+        let(:dependency_files) { [pyproject, poetry_lock] }
+
+        it "delegates to PoetryVersionResolver when lockfile exists" do
+          dummy_resolver =
+            instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new)
+            .and_return(dummy_resolver)
+          expect(dummy_resolver)
+            .to receive(:latest_resolvable_version)
+            .with(requirement: ">=2.0.0,<=2.6.0")
+            .and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.5.0"))
+        end
+      end
     end
   end
 
@@ -696,6 +739,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
         end
+
+        context "when checking library status multiple times" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(status: 404)
+          end
+
+          it "caches the PyPI check result to avoid redundant calls" do
+            # Call requirements_update_strategy multiple times
+            checker.send(:requirements_update_strategy)
+            checker.send(:requirements_update_strategy)
+
+            # Verify PyPI was only called once (memoization working)
+            expect(a_request(:get, "https://pypi.org/pypi/pendulum/json/"))
+              .to have_been_made.once
+          end
+        end
       end
 
       context "when updating a dependency in an additional requirements file" do
@@ -844,17 +904,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       it "updates both requirements" do
-        expect(checker.updated_requirements).to contain_exactly({
-          file: "constraints.txt",
-          requirement: "==2.6.0",
-          groups: [],
-          source: nil
-        }, {
-          file: "requirements.txt",
-          requirement: "==2.6.0",
-          groups: [],
-          source: nil
-        })
+        expect(checker.updated_requirements).to contain_exactly(
+          {
+            file: "constraints.txt",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          },
+          {
+            file: "requirements.txt",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          }
+        )
       end
     end
   end

@@ -153,8 +153,10 @@ module Dependabot
 
         sig { returns(T.nilable(PipCompileFileMatcher)) }
         def pip_compile_file_matcher
-          @pip_compile_file_matcher = T.let(PipCompileFileMatcher.new(pip_compile_files),
-                                            T.nilable(PipCompileFileMatcher))
+          @pip_compile_file_matcher = T.let(
+            PipCompileFileMatcher.new(pip_compile_files),
+            T.nilable(PipCompileFileMatcher)
+          )
         end
 
         sig { returns(T.class_of(Dependabot::Python::Requirement)) }

@@ -57,6 +57,7 @@ module Dependabot
 
         sig { returns(T::Array[T.untyped]) }
         attr_reader :credentials
+
         sig { returns(T::Array[T.untyped]) }
         attr_reader :forbidden_urls
 

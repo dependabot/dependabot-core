@@ -43,11 +43,16 @@ module Dependabot
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pyproject_dependencies
-          if using_poetry?
-            poetry_dependencies
-          else
-            pep621_pep735_dependencies
-          end
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          # Parse Poetry dependencies if [tool.poetry] section exists
+          dependencies += poetry_dependencies if using_poetry?
+
+          # Parse PEP 621/735 dependencies if those sections exist
+          # This handles hybrid projects that have both Poetry and PEP 621 sections
+          dependencies += pep621_pep735_dependencies if using_pep621? || using_pep735?
+
+          dependencies
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -84,10 +89,14 @@ module Dependabot
           parse_pep621_pep735_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
-            next if dep["markers"].include?("<")
+            next if dep["markers"]&.include?("<")
 
             # If no requirement, don't add it
             next if dep["requirement"].empty?
+
+            # Skip build-system.requires dependencies when using Poetry
+            # Poetry manages its own build system dependencies
+            next if using_poetry? && dep["requirement_type"] == "build-system.requires"
 
             dependencies <<
               Dependency.new(
@@ -107,9 +116,11 @@ module Dependabot
         end
 
         sig do
-          params(type: String,
-                 deps_hash: T::Hash[String,
-                                    T.untyped]).returns(Dependabot::FileParsers::Base::DependencySet)
+          params(
+            type: String,
+            deps_hash: T::Hash[String,
+                               T.untyped]
+          ).returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
@@ -218,8 +229,10 @@ module Dependabot
 
         sig { returns(T::Array[T.nilable(String)]) }
         def production_dependency_names
-          @production_dependency_names ||= T.let(parse_production_dependency_names,
-                                                 T.nilable(T::Array[T.nilable(String)]))
+          @production_dependency_names ||= T.let(
+            parse_production_dependency_names,
+            T.nilable(T::Array[T.nilable(String)])
+          )
         end
 
         sig { returns(T::Array[T.nilable(String)]) }
@@ -283,8 +296,10 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
-          @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" },
-                               T.nilable(Dependabot::DependencyFile))
+          @pyproject ||= T.let(
+            dependency_files.find { |f| f.name == "pyproject.toml" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.untyped) }
@@ -319,14 +334,18 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
-          @poetry_lock ||= T.let(dependency_files.find { |f| f.name == "poetry.lock" },
-                                 T.nilable(Dependabot::DependencyFile))
+          @poetry_lock ||= T.let(
+            dependency_files.find { |f| f.name == "poetry.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pdm_lock
-          @pdm_lock ||= T.let(dependency_files.find { |f| f.name == "pdm.lock" },
-                              T.nilable(Dependabot::DependencyFile))
+          @pdm_lock ||= T.let(
+            dependency_files.find { |f| f.name == "pdm.lock" },
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
       end
     end

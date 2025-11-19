@@ -168,8 +168,14 @@ module Dependabot
         )
           .void
       end
-      def create_commit(repo, branch_name, base_commit, commit_message, files,
-                        author_details)
+      def create_commit(
+        repo,
+        branch_name,
+        base_commit,
+        commit_message,
+        files,
+        author_details
+      )
         parameters = {
           message: commit_message, # TODO: Format markup in commit message
           author: "#{author_details.fetch(:name)} <#{author_details.fetch(:email)}>",
@@ -201,8 +207,15 @@ module Dependabot
         )
           .void
       end
-      def create_pull_request(repo, pr_name, source_branch, target_branch,
-                              pr_description, _labels, _work_item = nil)
+      def create_pull_request(
+        repo,
+        pr_name,
+        source_branch,
+        target_branch,
+        pr_description,
+        _labels,
+        _work_item = nil
+      )
         reviewers = default_reviewers(repo)
 
         content = {

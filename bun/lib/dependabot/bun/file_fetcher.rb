@@ -28,8 +28,10 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS = T.let(%w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
-                                     [String, String, String, String, String, String, String, String])
+      PATH_DEPENDENCY_STARTS = T.let(
+        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze,
+        [String, String, String, String, String, String, String, String]
+      )
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
@@ -118,7 +120,8 @@ module Dependabot
             lockfiles,
             registry_config_files,
             credentials
-          ), T.nilable(PackageManagerHelper)
+          ),
+          T.nilable(PackageManagerHelper)
         )
       end
 
@@ -250,8 +253,10 @@ module Dependabot
           # skip dependencies that contain invalid values such as inline comments, null, etc.
 
           unless value.is_a?(String)
-            Dependabot.logger.warn("File fetcher: Skipping dependency \"#{path}\" " \
-                                   "with value: \"#{value}\"")
+            Dependabot.logger.warn(
+              "File fetcher: Skipping dependency \"#{path}\" " \
+              "with value: \"#{value}\""
+            )
 
             next
           end

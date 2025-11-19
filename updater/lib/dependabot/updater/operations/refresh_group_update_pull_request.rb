@@ -30,15 +30,12 @@ module Dependabot
         include GroupUpdateRefreshing
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
-        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
+        def self.applies_to?(job:)
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
           return false unless job.dependencies&.any?
           return false unless job.dependency_group_to_refresh
-          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
-            return false
-          end
 
           return true if job.source.directories && T.must(job.source.directories).count > 1
 
@@ -70,6 +67,24 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @group = T.let(dependency_snapshot.job_group, T.nilable(Dependabot::DependencyGroup))
+        end
+
+        sig { override.returns(Dependabot::Job) }
+        attr_reader :job
+
+        sig { override.returns(Dependabot::DependencySnapshot) }
+        attr_reader :dependency_snapshot
+
+        sig { override.returns(Dependabot::Updater::ErrorHandler) }
+        attr_reader :error_handler
+
+        sig { override.returns(Dependabot::Service) }
+        attr_reader :service
+
+        sig { override.returns(Dependabot::DependencyGroup) }
+        def group
+          T.must(@group)
         end
 
         sig { void }
@@ -142,18 +157,6 @@ module Dependabot
 
         private
 
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
-
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
@@ -163,11 +166,14 @@ module Dependabot
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(job_group)
           else
-            dependency_changes = T.let(T.must(job.source.directories).filter_map do |directory|
-              job.source.directory = directory
-              dependency_snapshot.current_directory = directory
-              compile_all_dependency_changes_for(job_group)
-            end, T::Array[Dependabot::DependencyChange])
+            dependency_changes = T.let(
+              T.must(job.source.directories).filter_map do |directory|
+                job.source.directory = directory
+                dependency_snapshot.current_directory = directory
+                compile_all_dependency_changes_for(job_group)
+              end,
+              T::Array[Dependabot::DependencyChange]
+            )
 
             # merge the changes together into one
             dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)

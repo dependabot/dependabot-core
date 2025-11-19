@@ -67,12 +67,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
 
       context "with a required ruby version requirement class" do
         let(:gemspec) do
-          bundler_project_dependency_file("gemspec_required_ruby_version_requirement_class",
-                                          filename: "example.gemspec")
+          bundler_project_dependency_file(
+            "gemspec_required_ruby_version_requirement_class",
+            filename: "example.gemspec"
+          )
         end
         let(:content) do
-          bundler_project_dependency_file("gemspec_required_ruby_version_requirement_class",
-                                          filename: "Gemfile").content
+          bundler_project_dependency_file(
+            "gemspec_required_ruby_version_requirement_class",
+            filename: "Gemfile"
+          ).content
         end
 
         it { is_expected.to include("ruby '2.1.10'\n") }
@@ -155,7 +159,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
 
-        it { is_expected.to include("ruby '3.4.5'\n") }
+        it { is_expected.to include("ruby '3.4.7'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 

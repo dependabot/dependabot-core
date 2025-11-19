@@ -44,23 +44,27 @@ RSpec.describe Dependabot::Uv::FileUpdater::PyprojectPreparer do
 
   describe "#add_auth_env_vars" do
     it "adds auth env vars when a token is present" do
-      preparer.add_auth_env_vars([
-        {
-          "type" => "python_index",
-          "index-url" => "some.internal.registry.com/pypi/",
-          "token" => "hello:world"
-        }
-      ])
+      preparer.add_auth_env_vars(
+        [
+          {
+            "type" => "python_index",
+            "index-url" => "some.internal.registry.com/pypi/",
+            "token" => "hello:world"
+          }
+        ]
+      )
       expect(ENV.delete("UV_INDEX_URL_TOKEN_SOME_INTERNAL_REGISTRY_COM_PYPI_")).to eq("hello:world")
       expect(ENV.delete("PIP_INDEX_URL")).to eq("https://hello:world@some.internal.registry.com/pypi/")
     end
 
     it "has no effect when a token is not present" do
-      preparer.add_auth_env_vars([
-        {
-          "index-url" => "https://some.internal.registry.com/pypi/"
-        }
-      ])
+      preparer.add_auth_env_vars(
+        [
+          {
+            "index-url" => "https://some.internal.registry.com/pypi/"
+          }
+        ]
+      )
       expect(ENV.fetch("UV_INDEX_URL_TOKEN_SOME_INTERNAL_REGISTRY_COM_PYPI_", nil)).to be_nil
     end
 

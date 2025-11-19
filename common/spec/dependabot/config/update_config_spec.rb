@@ -28,8 +28,10 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     context "with ignored versions" do
       let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(dependency_name: "@types/node",
-                                                 versions: [">= 14.14.x, < 15"])]
+        [Dependabot::Config::IgnoreCondition.new(
+          dependency_name: "@types/node",
+          versions: [">= 14.14.x, < 15"]
+        )]
       end
 
       it "returns versions" do
@@ -62,9 +64,11 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     context "with update_types and versions" do
       let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(dependency_name: "@types/node",
-                                                 versions: [">= 14.14.x, < 15"],
-                                                 update_types: ["version-update:semver-minor"])]
+        [Dependabot::Config::IgnoreCondition.new(
+          dependency_name: "@types/node",
+          versions: [">= 14.14.x, < 15"],
+          update_types: ["version-update:semver-minor"]
+        )]
       end
 
       it "returns versions" do
@@ -275,9 +279,14 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       before do
-        Dependabot::Dependency.register_name_normaliser("fake-package-manager", lambda { |name|
-                                                                                  name.downcase.gsub(/[_=]/, "-")
-                                                                                })
+        Dependabot::Dependency.register_name_normaliser(
+          "fake-package-manager",
+          lambda { |name|
+            name.downcase.gsub(
+              /[_=]/, "-"
+            )
+          }
+        )
       end
 
       it "normalizes the dependency name to match" do
@@ -306,8 +315,11 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(dependency_name: "actions/checkout",
-                                                 versions: [], update_types: ["version-update:semver-major"])]
+        [Dependabot::Config::IgnoreCondition.new(
+          dependency_name: "actions/checkout",
+          versions: [],
+          update_types: ["version-update:semver-major"]
+        )]
       end
 
       it "returns no ignored versions" do

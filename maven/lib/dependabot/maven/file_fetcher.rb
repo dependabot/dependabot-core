@@ -33,6 +33,7 @@ module Dependabot
         fetched_files << pom
         fetched_files += child_poms
         fetched_files += relative_path_parents(fetched_files)
+        fetched_files += targetfiles
         fetched_files << extensions if extensions
 
         # Filter excluded files from final collection
@@ -56,6 +57,15 @@ module Dependabot
       end
 
       sig { returns(T::Array[DependencyFile]) }
+      def targetfiles
+        repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.end_with?(".target") }
+          .map { |f| fetch_file_from_host(f.name) }
+      rescue Dependabot::DirectoryNotFound, Octokit::NotFound
+        []
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
       def child_poms
         recursively_fetch_child_poms(T.must(pom), fetched_filenames: ["pom.xml"])
       end
@@ -71,8 +81,10 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile,
-               fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile])
+        params(
+          pom: Dependabot::DependencyFile,
+          fetched_filenames: T::Array[String]
+        ).returns(T::Array[Dependabot::DependencyFile])
       end
       def recursively_fetch_child_poms(pom, fetched_filenames:)
         base_path = File.dirname(pom.name)
@@ -109,8 +121,10 @@ module Dependabot
       end
 
       sig do
-        params(pom: Dependabot::DependencyFile,
-               fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile])
+        params(
+          pom: Dependabot::DependencyFile,
+          fetched_filenames: T::Array[String]
+        ).returns(T::Array[Dependabot::DependencyFile])
       end
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)

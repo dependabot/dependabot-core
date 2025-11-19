@@ -27,9 +27,12 @@ module Dependabot
 
         require_relative "latest_version_finder"
 
-        TIGHTLY_COUPLED_MONOREPOS = T.let({
-          "vue" => %w(vue vue-template-compiler)
-        }.freeze, T::Hash[String, T::Array[String]])
+        TIGHTLY_COUPLED_MONOREPOS = T.let(
+          {
+            "vue" => %w(vue vue-template-compiler)
+          }.freeze,
+          T::Hash[String, T::Array[String]]
+        )
 
         # Error message returned by `yarn add` (for Yarn classic):
         # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
@@ -105,10 +108,15 @@ module Dependabot
           ).void
         end
         def initialize( # rubocop:disable Metrics/AbcSize
-          dependency:, dependency_files:, credentials:,
-          latest_allowable_version:, latest_version_finder:,
-          repo_contents_path:, dependency_group: nil,
-          raise_on_ignored: false, update_cooldown: nil
+          dependency:,
+          dependency_files:,
+          credentials:,
+          latest_allowable_version:,
+          latest_version_finder:,
+          repo_contents_path:,
+          dependency_group: nil,
+          raise_on_ignored: false,
+          update_cooldown: nil
         )
           @dependency               = dependency
           @dependency_files         = dependency_files
@@ -209,22 +217,29 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
+
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
         sig { returns(T.nilable(Dependabot::DependencyGroup)) }
         attr_reader :dependency_group
+
         sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
         attr_reader :update_cooldown
+
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
-        sig { params(dep: Dependabot::Dependency) .returns(PackageLatestVersionFinder) }
+        sig { params(dep: Dependabot::Dependency).returns(PackageLatestVersionFinder) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
             PackageLatestVersionFinder.new(
@@ -671,17 +686,11 @@ module Dependabot
           npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
           return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
 
-          bun_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.bun_locks, path: path)
-          return run_bun_checker(path: path, version: version) if bun_lockfiles.any?
-
           root_yarn_lock = dependency_files_builder.root_yarn_lock
           return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
 
           root_pnpm_lock = dependency_files_builder.root_pnpm_lock
           return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
-
-          root_bun_lock = dependency_files_builder.root_bun_lock
-          return run_bun_checker(path: path, version: version) if root_bun_lock
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -720,23 +729,6 @@ module Dependabot
                   error_context: {}
                 )
               end
-            end
-          end
-        end
-
-        sig do
-          params(
-            path: String,
-            version: T.nilable(T.any(String, Gem::Version))
-          ).returns(T.untyped)
-        end
-        def run_bun_checker(path:, version:)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              Helpers.run_bun_command(
-                "update #{dependency.name}@#{version} --save-text-lockfile",
-                fingerprint: "update <dependency_name>@<version> --save-text-lockfile"
-              )
             end
           end
         end

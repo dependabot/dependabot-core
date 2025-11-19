@@ -85,11 +85,24 @@ module Dependabot
         )
           .void
       end
-      def initialize(source:, branch_name:, base_commit:, credentials:,
-                     files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, signature_key:, custom_headers:,
-                     labeler:, reviewers:, assignees:, milestone:,
-                     require_up_to_date_base:)
+      def initialize(
+        source:,
+        branch_name:,
+        base_commit:,
+        credentials:,
+        files:,
+        commit_message:,
+        pr_description:,
+        pr_name:,
+        author_details:,
+        signature_key:,
+        custom_headers:,
+        labeler:,
+        reviewers:,
+        assignees:,
+        milestone:,
+        require_up_to_date_base:
+      )
         @source                  = source
         @branch_name             = branch_name
         @base_commit             = base_commit

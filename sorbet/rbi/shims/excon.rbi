@@ -6,22 +6,22 @@ module Excon
     sig do
       params(
         url: String,
-        params: T.untyped,
-        block: T.untyped
+        params: T::Hash[Symbol, T.untyped],
+        block: T.nilable(T.proc.void)
       )
         .returns(Excon::Response)
     end
-    def get(url, params = T.unsafe(nil), &block); end
+    def get(url, params = {}, &block); end
 
     sig do
       params(
         url: String,
-        params: T.untyped,
-        block: T.untyped
+        params: T::Hash[Symbol, T.untyped],
+        block: T.nilable(T.proc.void)
       )
         .returns(Excon::Response)
     end
-    def head(url, params = T.unsafe(nil), &block); end
+    def head(url, params = {}, &block); end
   end
 
   class Response
@@ -30,10 +30,13 @@ module Excon
 
     sig { returns(Excon::Headers) }
     def headers; end
+
+    sig { returns(String) }
+    def body; end
   end
 
   class Headers
-    sig { params(key: String).returns(T.nilable(String)) }
+    sig { params(key: T.any(String, Symbol)).returns(T.nilable(String)) }
     def [](key); end
   end
 end

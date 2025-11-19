@@ -66,15 +66,6 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
     )
   end
 
-  describe ".updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "matches vcpkg.json files" do
-      expect(updated_files_regex).to include(match("vcpkg.json"))
-      expect(updated_files_regex).to include(match("path/to/vcpkg.json"))
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_dependency_files) { updater.updated_dependency_files }
 
@@ -151,10 +142,12 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
         expect(updated_content["builtin-baseline"]).to eq("new-commit-sha")
         expect(updated_content["name"]).to eq("my-project")
         expect(updated_content["version"]).to eq("1.0.0")
-        expect(updated_content["dependencies"]).to eq([
-          "fmt",
-          { "name" => "boost-system", "features" => ["threading"] }
-        ])
+        expect(updated_content["dependencies"]).to eq(
+          [
+            "fmt",
+            { "name" => "boost-system", "features" => ["threading"] }
+          ]
+        )
       end
     end
 
