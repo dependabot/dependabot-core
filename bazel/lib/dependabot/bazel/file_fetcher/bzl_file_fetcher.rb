@@ -100,32 +100,16 @@ module Dependabot
           file_dir = File.dirname(file_path)
 
           content.scan(%r{load\s*\(\s*"(//[^"]+|:[^"]+)"}) do |match|
-            path = resolve_bazel_path(match[0], file_dir)
-            paths << path if path
+            path = PathConverter.label_to_path(match[0], context_dir: file_dir)
+            paths << path unless path.empty?
           end
 
           content.scan(%r{Label\s*\(\s*"(//[^"]+|:[^"]+)"\)}) do |match|
-            path = resolve_bazel_path(match[0], file_dir)
-            paths << path if path
+            path = PathConverter.label_to_path(match[0], context_dir: file_dir)
+            paths << path unless path.empty?
           end
 
           paths
-        end
-
-        # Resolves Bazel label syntax to filesystem paths.
-        # Bazel uses : for target separator and // for absolute paths within the workspace.
-        sig { params(bazel_path: String, file_dir: String).returns(T.nilable(String)) }
-        def resolve_bazel_path(bazel_path, file_dir)
-          path = if bazel_path.start_with?(":")
-                   relative_file = bazel_path.sub(/^:/, "")
-                   file_dir == "." ? relative_file : "#{file_dir}/#{relative_file}"
-                 elsif bazel_path.start_with?("//")
-                   bazel_path.tr(":", "/").sub(%r{^/+}, "")
-                 else
-                   bazel_path
-                 end
-
-          path.empty? ? nil : path
         end
       end
     end

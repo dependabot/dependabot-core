@@ -9,6 +9,7 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
+      require_relative "file_fetcher/path_converter"
       require_relative "file_fetcher/bzl_file_fetcher"
       require_relative "file_fetcher/module_path_extractor"
       require_relative "file_fetcher/directory_tree_fetcher"
@@ -189,34 +190,6 @@ module Dependabot
       def downloader_config_files
         config_fetcher = DownloaderConfigFetcher.new(fetcher: self)
         config_fetcher.fetch_downloader_config_files
-      end
-
-      # Extracts file paths, directory paths, and .bzl file paths from MODULE.bazel.
-      # This method is kept for backward compatibility with tests.
-      #
-      # @param module_file [DependencyFile] the MODULE.bazel file to parse
-      # @return [Array<Array<String>, Array<String>, Array<String>>] tuple of
-      #   [file_paths, directory_paths, bzl_file_paths]
-      sig { params(module_file: DependencyFile).returns([T::Array[String], T::Array[String], T::Array[String]]) }
-      def extract_referenced_paths(module_file)
-        extractor = ModulePathExtractor.new(module_file: module_file)
-        file_paths, directory_paths = extractor.extract_paths
-
-        bzl_fetcher = BzlFileFetcher.new(module_file: module_file, fetcher: self)
-        bzl_file_paths = bzl_fetcher.send(:extract_bzl_file_paths, T.must(module_file.content))
-
-        [file_paths, directory_paths, bzl_file_paths]
-      end
-
-      # Extracts downloader_config file paths from .bazelrc content.
-      # This method is kept for backward compatibility with tests.
-      #
-      # @param bazelrc_file [DependencyFile] the .bazelrc file to parse
-      # @return [Array<String>] unique relative file paths for downloader configs
-      sig { params(bazelrc_file: DependencyFile).returns(T::Array[String]) }
-      def extract_downloader_config_paths(bazelrc_file)
-        config_fetcher = DownloaderConfigFetcher.new(fetcher: self)
-        config_fetcher.send(:extract_downloader_config_paths, bazelrc_file)
       end
     end
   end

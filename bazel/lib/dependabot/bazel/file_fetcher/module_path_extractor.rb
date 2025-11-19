@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/bazel/file_fetcher"
+require "dependabot/bazel/file_fetcher/path_converter"
 require "sorbet-runtime"
 
 module Dependabot
@@ -45,22 +46,24 @@ module Dependabot
 
         sig { params(content: String).returns(T::Array[String]) }
         def extract_lock_file_paths(content)
-          content.scan(/lock_file\s*=\s*"([^"]+)"/).map { |match| convert_label_to_path(T.must(match[0])) }
+          content.scan(/lock_file\s*=\s*"([^"]+)"/).map { |match| PathConverter.label_to_path(T.must(match[0])) }
         end
 
         sig { params(content: String).returns(T::Array[String]) }
         def extract_requirements_lock_paths(content)
-          content.scan(/requirements_lock\s*=\s*"([^"]+)"/).map { |match| convert_label_to_path(T.must(match[0])) }
+          content.scan(/requirements_lock\s*=\s*"([^"]+)"/).map do |match|
+            PathConverter.label_to_path(T.must(match[0]))
+          end
         end
 
         sig { params(content: String).returns(T::Array[String]) }
         def extract_patches_paths(content)
           patches = []
           content.scan(/patches\s*=\s*\[([^\]]+)\]/) do |match|
-            match[0].scan(/"([^"]+)"/) { |file| patches << convert_label_to_path(file[0]) }
+            match[0].scan(/"([^"]+)"/) { |file| patches << PathConverter.label_to_path(file[0]) }
           end
           content.scan(/patches\s*=\s*"([^"]+)"/) do |match|
-            patches << convert_label_to_path(match[0])
+            patches << PathConverter.label_to_path(match[0])
           end
           patches
         end
@@ -72,32 +75,13 @@ module Dependabot
         sig { params(content: String).returns(T::Array[String]) }
         def extract_directory_paths(content)
           extract_local_path_override_paths(content)
-            .reject { |path| absolute_or_url?(path) }
-            .map { |path| normalize_relative_path(path) }
+            .reject { |path| PathConverter.should_filter_path?(path) }
+            .map { |path| PathConverter.normalize_path(path) }
         end
 
         sig { params(content: String).returns(T::Array[String]) }
         def extract_local_path_override_paths(content)
           content.scan(/local_path_override\s*\([^)]*path\s*=\s*"([^"]+)"[^)]*\)/m).flatten
-        end
-
-        sig { params(path: String).returns(T::Boolean) }
-        def absolute_or_url?(path)
-          path.start_with?("http://", "https://", "/")
-        end
-
-        sig { params(path: String).returns(String) }
-        def normalize_relative_path(path)
-          path.sub(%r{^\./}, "")
-        end
-
-        # Converts Bazel label syntax to filesystem paths.
-        # Bazel labels can reference external repos (@repo//) or local files (// or :).
-        sig { params(label: String).returns(String) }
-        def convert_label_to_path(label)
-          label = label.sub(%r{^@[^/]+//}, "")
-          label = label.tr(":", "/")
-          label.sub(%r{^/+}, "")
         end
       end
     end
