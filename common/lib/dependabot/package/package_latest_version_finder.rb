@@ -203,9 +203,8 @@ module Dependabot
       end
       def filter_prerelease_versions(releases)
         return releases if wants_prerelease?
-        # Don't filter out pre-releases if there are security advisories, as a pre-release
-        # might be the only version that fixes a vulnerability
-        return releases if security_advisories.any?
+        # Don't filter out pre-releases if there are security advisories and no stable version fixes them
+        return releases if security_advisories.any? && !stable_version_fixes_vulnerability?(releases)
 
         filtered = releases.reject { |release| release.version.prerelease? }
 
@@ -214,6 +213,22 @@ module Dependabot
         end
 
         filtered
+      end
+
+      sig do
+        params(releases: T::Array[Dependabot::Package::PackageRelease])
+          .returns(T::Boolean)
+      end
+      def stable_version_fixes_vulnerability?(releases)
+        return false if security_advisories.empty?
+
+        stable_releases = releases.reject { |release| release.version.prerelease? }
+        non_vulnerable_stable = Dependabot::UpdateCheckers::VersionFilters
+                                .filter_vulnerable_versions(
+                                  stable_releases,
+                                  security_advisories
+                                )
+        non_vulnerable_stable.any?
       end
 
       sig do
