@@ -66,6 +66,12 @@ module Dependabot
           other
         when Gem::Version
           T.cast(Dependabot::Bazel::Version.new(other.to_s), Dependabot::Bazel::Version)
+        when String
+          T.cast(Dependabot::Bazel::Version.new(other), Dependabot::Bazel::Version)
+        when Dependabot::Version
+          T.cast(Dependabot::Bazel::Version.new(other.to_s), Dependabot::Bazel::Version)
+        else
+          nil
         end
       end
 
