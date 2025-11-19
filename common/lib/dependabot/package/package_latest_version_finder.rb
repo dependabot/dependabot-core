@@ -203,6 +203,9 @@ module Dependabot
       end
       def filter_prerelease_versions(releases)
         return releases if wants_prerelease?
+        # Don't filter out pre-releases if there are security advisories, as a pre-release
+        # might be the only version that fixes a vulnerability
+        return releases if security_advisories.any?
 
         filtered = releases.reject { |release| release.version.prerelease? }
 

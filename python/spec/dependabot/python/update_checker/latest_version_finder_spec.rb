@@ -282,6 +282,31 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
 
+    context "when there are security advisories" do
+      let(:dependency_version) { "2.6.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.6.0"]
+          )
+        ]
+      end
+
+      # When there are security advisories, pre-releases should be included
+      # in latest_version to ensure they can be used as upper bounds
+      it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+    end
+
     context "with a Pipfile with no source" do
       let(:pipfile_fixture_name) { "no_source" }
       let(:dependency_files) { [pipfile] }
