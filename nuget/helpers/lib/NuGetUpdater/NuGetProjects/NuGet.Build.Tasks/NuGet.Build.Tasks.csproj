@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NuGet.Build.Tasks.Pack\NuGet.Build.Tasks.Pack.csproj" />
     <ProjectReference Include="..\NuGet.Commands\NuGet.Commands.csproj" />
     <ProjectReference Include="..\NuGet.PackageManagement\NuGet.PackageManagement.csproj" />
   </ItemGroup>

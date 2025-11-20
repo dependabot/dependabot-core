@@ -675,6 +675,78 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
     end
   end
 
+  describe "ignored versions" do
+    let(:ignored_versions) { [">= 2.a"] }
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("rules_go")
+        .and_return({
+          "name" => "rules_go",
+          "versions" => ["0.33.0", "0.34.0", "1.9.0", "2.0.0", "3.0.0"],
+          "latest_version" => "3.0.0"
+        })
+
+      allow(registry_client).to receive(:all_module_versions)
+        .with("rules_go")
+        .and_return(["0.33.0", "0.34.0", "1.9.0", "2.0.0", "3.0.0"])
+    end
+
+    context "when ignoring major version updates" do
+      it "filters out major versions" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.9.0"))
+      end
+
+      it "logs filtered versions" do
+        allow(Dependabot.logger).to receive(:info)
+        checker.latest_version
+        expect(Dependabot.logger).to have_received(:info)
+          .with("Filtered out 2 ignored versions")
+      end
+    end
+
+    context "when all versions are ignored" do
+      let(:ignored_versions) { [">= 0"] }
+
+      it "returns nil" do
+        expect(checker.latest_version).to be_nil
+      end
+    end
+
+    context "when ignoring specific version ranges" do
+      let(:ignored_versions) { [">= 1.0, < 2.0"] }
+
+      it "filters out versions in the specified range" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("3.0.0"))
+      end
+    end
+
+    context "when raise_on_ignored is true" do
+      let(:ignored_versions) { [">= 0.34"] }
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: true
+        )
+      end
+
+      before do
+        # Need to set up mocks for the new checker instance
+        allow(Dependabot::Bazel::UpdateChecker::RegistryClient).to receive(:new).and_return(registry_client)
+        allow(Dependabot.logger).to receive(:info)
+      end
+
+      it "logs when all newer versions are ignored" do
+        expect(checker.latest_version).to be_nil
+        expect(Dependabot.logger).to have_received(:info)
+          .with("All updates for rules_go were ignored")
+      end
+    end
+  end
+
   describe "cooldown integration" do
     let(:cooldown_options) { instance_double(Dependabot::Package::ReleaseCooldownOptions) }
     let(:checker_with_cooldown) do

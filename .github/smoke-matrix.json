@@ -120,6 +120,11 @@
     "ecosystem": "terraform"
   },
   {
+    "core": "opentofu",
+    "test": "opentofu",
+    "ecosystem": "opentofu"
+  },
+  {
     "core": "vcpkg",
     "test": "vcpkg",
     "ecosystem": "vcpkg"
