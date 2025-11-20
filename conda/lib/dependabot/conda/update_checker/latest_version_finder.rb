@@ -66,9 +66,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def conda_package_details
-          channels_to_try = channels_to_search
-
-          channels_to_try.each do |channel|
+          channels_to_search.each do |channel|
             versions = @conda_client.available_versions(dependency.name, channel)
             next if versions.empty?
 
