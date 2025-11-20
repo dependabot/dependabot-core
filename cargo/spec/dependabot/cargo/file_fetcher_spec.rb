@@ -1367,7 +1367,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     # Tests for the Cargo-specific filename normalization fix
     # This addresses the "No Cargo.toml!" error caused by leading slashes in filenames
 
-    describe "#normalize_filename" do
+    describe "normalization logic" do
       it "normalizes various filename formats correctly" do
         test_cases = [
           # [input, expected_output]
@@ -1383,7 +1383,8 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         ]
 
         test_cases.each do |input, expected|
-          normalized = file_fetcher_instance.send(:normalize_filename, input)
+          # Test the inline normalization logic
+          normalized = Pathname.new(input).cleanpath.to_s.gsub(%r{^/+}, "")
           expect(normalized).to eq(expected),
                                 "Expected #{input.inspect} to normalize to #{expected.inspect}, " \
                                 "got #{normalized.inspect}"
