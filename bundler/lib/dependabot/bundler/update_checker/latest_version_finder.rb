@@ -70,37 +70,6 @@ module Dependabot
           true
         end
 
-        sig do
-          override
-            .params(releases: T::Array[Dependabot::Package::PackageRelease])
-            .returns(T::Array[Dependabot::Package::PackageRelease])
-        end
-        def filter_by_cooldown(releases)
-          # Call parent method to get filtered releases
-          filtered = super
-
-          # If all releases were filtered out due to cooldown and we have a current version, use it as fallback
-          if filtered.empty? && !releases.empty? && dependency.version
-            current_version_str = dependency.version
-
-            Dependabot.logger.info(
-              "All versions filtered by cooldown for #{dependency.name}, " \
-              "falling back to current version #{current_version_str}"
-            )
-
-            # Create a PackageRelease for the current version
-            current_version = version_class.new(current_version_str)
-            current_release = Dependabot::Package::PackageRelease.new(
-              version: current_version,
-              released_at: nil,
-              tag: nil
-            )
-            return [current_release]
-          end
-
-          filtered
-        end
-
         sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def available_versions
           return nil if package_details&.releases.nil?
