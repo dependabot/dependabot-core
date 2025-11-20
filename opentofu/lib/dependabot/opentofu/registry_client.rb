@@ -151,7 +151,7 @@ module Dependabot
         url_for_registry(services.fetch(service_key))
       rescue KeyError
         available = services.keys.empty? ? "none" : services.keys.join(", ")
-        raise Dependabot::DependabotError,
+        raise DependabotError,
               "Registry at #{hostname} does not support required service '#{service_key}'. " \
               "Available services: #{available}"
       end
@@ -185,20 +185,25 @@ module Dependabot
               JSON.parse(response.body)
             when 500..599
               # Server error - likely a temporary outage
-              raise Dependabot::PrivateSourceBadResponse, hostname
+              raise RegistryError.new(
+                response.status,
+                "Registry at #{hostname} is currently unavailable (HTTP #{response.status}). This may be a temporary outage - please try again later."
+              )
             when 401
               # Authentication required or failed
-              raise Dependabot::PrivateSourceAuthenticationFailure, hostname
+              raise PrivateSourceAuthenticationFailure, hostname
             when 404
               # Service discovery not supported
-              raise Dependabot::DependabotError,
-                    "Registry at #{hostname} does not support service discovery " \
-                    "(/.well-known/terraform.json not found)"
+              raise RegistryError.new(
+                response.status,
+                "Registry at #{hostname} does not support service discovery: (/.well-known/terraform.json not found)"
+              )
             else
               # Unexpected status code
-              raise Dependabot::DependabotError,
-                    "Registry at #{hostname} returned unexpected status #{response.status} " \
-                    "for service discovery endpoint"
+              raise RegistryError.new(
+                response.status,
+                "Registry at #{hostname} returned unexpected status #{response.status} for service discovery endpoint"
+              )
             end
           end,
           T.nilable(T::Hash[String, String])
