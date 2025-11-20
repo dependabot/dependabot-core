@@ -514,9 +514,18 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "finds highest matching version for major version request" do
       cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
       allow(Dir).to receive(:entries).with(cache_path)
-                                     .and_return([".", "..", "11.6.2", "10.9.4", "9.9.4"])
+                                     .and_return([".", "..", "11.6.2", "11.5.0", "10.9.4", "9.9.4"])
 
       result = described_class.find_cached_version("npm", "11")
+      expect(result).to eq("11.6.2")
+    end
+
+    it "finds highest matching version for major.minor version request" do
+      cache_path = "#{Dir.home}/.cache/node/corepack/v1/npm"
+      allow(Dir).to receive(:entries).with(cache_path)
+                                     .and_return([".", "..", "11.6.2", "11.6.0", "11.5.0", "10.9.4"])
+
+      result = described_class.find_cached_version("npm", "11.6")
       expect(result).to eq("11.6.2")
     end
 

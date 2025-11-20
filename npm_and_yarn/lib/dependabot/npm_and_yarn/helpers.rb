@@ -453,11 +453,11 @@ module Dependabot
         cached_versions = list_cached_versions(cache_dir)
 
         # Check for exact version match first (e.g., "11.6.2" matches "11.6.2")
-        # include? checks for exact string equality in the array
         return version if cached_versions.include?(version)
 
-        # Handle major version resolution (e.g., "11" finds highest "11.x.x")
-        find_highest_major_version(cached_versions, version)
+        # Find highest version that starts with the requested version pattern
+        # Examples: "11" finds highest "11.x.x", "11.6" finds highest "11.6.x"
+        find_highest_matching_version(cached_versions, version)
       rescue StandardError => e
         Dependabot.logger.warn("Cache detection failed for #{name}@#{version}: #{e.message}")
         nil
@@ -469,14 +469,10 @@ module Dependabot
         Dir.entries(cache_dir).reject { |entry| entry.start_with?(".") }
       end
 
-      # Find the highest cached version for a major version request
+      # Find the highest cached version that starts with the requested version pattern
       sig { params(cached_versions: T::Array[String], version: String).returns(T.nilable(String)) }
-      def self.find_highest_major_version(cached_versions, version)
-        # Only optimize for simple major version requests (e.g., "11", not "11.6.2")
-        return nil unless version.match?(/^\d+$/)
-
-        major = version.to_i
-        matching_versions = cached_versions.select { |v| v.match?(/^#{major}\./) }
+      def self.find_highest_matching_version(cached_versions, version)
+        matching_versions = cached_versions.select { |v| v.start_with?("#{version}.") }
 
         return nil if matching_versions.empty?
 
