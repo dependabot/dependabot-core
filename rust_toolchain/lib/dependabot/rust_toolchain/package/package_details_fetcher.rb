@@ -19,7 +19,7 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
-  MANIFESTS_URL = "https://static.rust-lang.org/manifests.txt"
+        MANIFESTS_URL = "https://static.rust-lang.org/manifests.txt"
 
         sig do
           params(
