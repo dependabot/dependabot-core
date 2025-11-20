@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     expect do
       client.all_provider_versions(identifier: "hashicorp/aws")
-    end.to raise_error(Dependabot::DependabotError, /does not support required service 'providers.v1'/)
+    end.to raise_error(Dependabot::DependabotError, /does not support required service/)
   end
 
   it "raises an error when the host does not support the service discovery protocol" do
@@ -82,7 +82,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     expect do
       client.all_provider_versions(identifier: "hashicorp/aws")
-    end.to raise_error(Dependabot::DependabotError, /does not support service discovery/)
+    end.to raise_error(Dependabot::RegistryError) do |error|
+      expect(error.status).to eq(404)
+      expect(error.message).to match(/does not support service discovery/)
+    end
   end
 
   it "raises an error when the registry returns a 500 error" do
@@ -92,7 +95,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     expect do
       client.all_provider_versions(identifier: "hashicorp/aws")
-    end.to raise_error(Dependabot::PrivateSourceBadResponse)
+    end.to raise_error(Dependabot::RegistryError) do |error|
+      expect(error.status).to eq(500)
+      expect(error.message).to match(/currently unavailable/)
+    end
   end
 
   it "fetches provider versions form a custom registry secured by a token" do
@@ -248,17 +254,23 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
         expect do
           client.service_url_for_registry("modules.v1")
-        end.to raise_error(Dependabot::DependabotError, /does not support service discovery/)
+        end.to raise_error(Dependabot::RegistryError) do |error|
+          expect(error.status).to eq(404)
+          expect(error.message).to match(/does not support service discovery/)
+        end
       end
     end
 
     context "when the metadata endpoint returns a server error" do
-      it "raises a bad response error" do
+      it "raises a registry error" do
         stub_request(:get, metadata).and_return(status: 500)
 
         expect do
           client.service_url_for_registry("modules.v1")
-        end.to raise_error(Dependabot::PrivateSourceBadResponse)
+        end.to raise_error(Dependabot::RegistryError) do |error|
+          expect(error.status).to eq(500)
+          expect(error.message).to match(/currently unavailable/)
+        end
       end
     end
 
@@ -325,7 +337,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
         expect do
           client.service_url_for_registry("providers.v1")
-        end.to raise_error(Dependabot::DependabotError, /does not support required service 'providers.v1'/)
+        end.to raise_error(Dependabot::DependabotError, /does not support required service/)
       end
     end
   end
