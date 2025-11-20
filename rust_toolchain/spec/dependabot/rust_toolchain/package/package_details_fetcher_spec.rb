@@ -33,9 +33,13 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
     end
 
     before do
-      allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: described_class::MANIFESTS_URL)
-        .and_return(instance_double(Excon::Response, body: manifests_response))
+      # Accept cache-busted URL with optional timestamp query param
+      allow(Dependabot::RegistryClient).to receive(:get) do |args|
+        url = args[:url]
+        base = described_class::MANIFESTS_URL
+        expect(url).to match(%r{\A#{Regexp.escape(base)}(\?t=\d+)?\z})
+        instance_double(Excon::Response, body: manifests_response)
+      end
     end
 
     it "fetches and parses all manifests correctly" do
@@ -107,9 +111,11 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
     # rubocop:enable Naming/VariableNumber
 
     it "handles network errors gracefully" do
-      allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: described_class::MANIFESTS_URL)
-        .and_raise(Excon::Error::Timeout.new("Request timeout"))
+      allow(Dependabot::RegistryClient).to receive(:get) do |args|
+        url = args[:url]
+        expect(url).to match(%r{\A#{Regexp.escape(described_class::MANIFESTS_URL)}(\?t=\d+)?\z})
+        raise Excon::Error::Timeout.new("Request timeout")
+      end
 
       expect { finder.fetch }.to raise_error(Excon::Error::Timeout)
     end
