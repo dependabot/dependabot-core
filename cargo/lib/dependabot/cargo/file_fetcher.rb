@@ -14,6 +14,10 @@ require "dependabot/cargo/file_parser"
 # https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-section
 module Dependabot
   module Cargo
+    # rubocop:disable Metrics/ClassLength
+    # Class handles complex workspace resolution, path dependencies, and manifest parsing.
+    # The additional lines are necessary for fixing the "No Cargo.toml!" bug by normalizing
+    # filenames to remove leading slashes that cause mismatch between fetcher and parser.
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers
@@ -487,7 +491,33 @@ module Dependabot
           T.nilable(Dependabot::DependencyFile)
         )
       end
+
+      sig { override.params(filename: T.any(Pathname, String)).returns(Dependabot::DependencyFile) }
+      def load_cloned_file_if_present(filename)
+        file = super
+        file.name = normalize_filename(file.name)
+        file
+      end
+
+      sig do
+        override.params(
+          filename: T.any(Pathname, String),
+          type: String,
+          fetch_submodules: T::Boolean
+        ).returns(Dependabot::DependencyFile)
+      end
+      def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        file = super
+        file.name = normalize_filename(file.name)
+        file
+      end
+
+      sig { params(filename: String).returns(String) }
+      def normalize_filename(filename)
+        Pathname.new(filename).cleanpath.to_s.gsub(%r{^/+}, "")
+      end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 

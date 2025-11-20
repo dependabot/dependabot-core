@@ -241,7 +241,7 @@ module Dependabot
                end
 
         DependencyFile.new(
-          name: Pathname.new(filename).cleanpath.to_s.gsub(%r{^/+}, ""),
+          name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
           content: content,
@@ -270,7 +270,7 @@ module Dependabot
         symlink_target = clean_path.sub(T.must(linked_path), @linked_paths.dig(linked_path, :path)) if type == "symlink"
 
         DependencyFile.new(
-          name: Pathname.new(filename).cleanpath.to_s.gsub(%r{^/+}, ""),
+          name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
           content: content,
