@@ -81,7 +81,7 @@ module Dependabot
                 # `gradle-wrapper.jar` might be too old to run on host's Java version
                 SharedHelpers.run_shell_command(command, cwd: cwd)
               rescue SharedHelpers::HelperSubprocessFailed => e
-                puts "Running #{command} failed, retrying first with system Gradle: #{e.message}"
+                Dependabot.logger.warn("Running #{command} failed, retrying first with system Gradle: #{e.message}")
 
                 # second attempt: run the wrapper task via system gradle and then retry via local wrapper
                 system_command = Shellwords.join(["gradle"] + command_parts)
@@ -94,7 +94,7 @@ module Dependabot
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
-              puts "Failed to update files: #{e.message}"
+              Dependabot.logger.error("Failed to update files: #{e.message}")
               return updated_files
             end
           end
