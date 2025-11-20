@@ -721,12 +721,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           its(:content) do
             expected_command = %W(
-              ./gradlew
-              --no-daemon
-              --stacktrace
-              wrapper
-              --gradle-version 9.0.0
-              --no-validate-url
+              ./gradlew --no-daemon --stacktrace wrapper --gradle-version 9.0.0 --no-validate-url
               --distribution-type #{type}
             ).join(" ")
 
