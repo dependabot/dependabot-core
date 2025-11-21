@@ -43,7 +43,7 @@ RUN corepack install yarn@$YARN_VERSION --global
 
 # Install and activate the latest npm globally
 RUN corepack install npm@$NPM_VERSION --global \
-  # Pre-fetch older versions into Corepack’s cache WITHOUT activating them
+  # Pre-cache popular older versions (npm 8, 9, 10) for on-demand activation
   && corepack prepare npm@10 \
   && corepack prepare npm@9 \
   && corepack prepare npm@8

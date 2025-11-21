@@ -367,18 +367,16 @@ module Dependabot
       sig do
         params(
           name: String,
-          version: String,
-          env: T.nilable(T::Hash[String, String])
+          version: String
         )
           .returns(String)
       end
-      def self.install(name, version, env: {})
+      def self.install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
-          # Try to install the specified version
+          # Try to activate the specified version
           package_manager_activate(name, version)
-
         rescue StandardError => e
           Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
           fallback_to_local_version(name)
