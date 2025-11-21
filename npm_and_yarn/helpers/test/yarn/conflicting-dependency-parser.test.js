@@ -1,10 +1,9 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const {
-  findConflictingDependencies,
-} = require("../../lib/yarn/conflicting-dependency-parser");
-const helpers = require("./helpers");
+import path from "node:path";
+import os from "node:os";
+import fs from "node:fs";
+import findConflictingDependencies from "../../lib/yarn/conflicting-dependency-parser";
+
+import helpers from "./helpers";
 
 fdescribe("findConflictingDependencies", () => {
   let tempDir;
