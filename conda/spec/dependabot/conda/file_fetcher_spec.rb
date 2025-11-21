@@ -200,10 +200,9 @@ RSpec.describe Dependabot::Conda::FileFetcher do
             YAML
           end
 
-          it "raises error with unsupported message" do
+          it "raises error with specific fully qualified message" do
             expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("not currently supported")
-              expect(error.message).to include("Fully qualified")
+              expect(error.message).to include("fully qualified package specifications")
             end
           end
         end
@@ -215,24 +214,46 @@ RSpec.describe Dependabot::Conda::FileFetcher do
             YAML
           end
 
-          it "raises DependencyFileNotFound" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+          it "raises error with specific no dependencies message" do
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.message).to include("no dependencies to manage")
+            end
+          end
+        end
+
+        context "with missing dependencies key" do
+          let(:unsupported_content) do
+            <<~YAML
+              name: myenv
+              channels:
+                - conda-forge
+            YAML
+          end
+
+          it "raises error with specific no dependencies message" do
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.message).to include("no dependencies to manage")
+            end
           end
         end
 
         context "with invalid YAML" do
           let(:unsupported_content) { "invalid: yaml: [unclosed" }
 
-          it "raises DependencyFileNotFound" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+          it "raises error with specific YAML syntax message" do
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.message).to include("invalid YAML syntax")
+            end
           end
         end
 
         context "with non-Hash YAML" do
           let(:unsupported_content) { "- just\n- a\n- list" }
 
-          it "raises DependencyFileNotFound" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+          it "raises error with specific YAML syntax message" do
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.message).to include("invalid YAML syntax")
+            end
           end
         end
 
@@ -243,8 +264,10 @@ RSpec.describe Dependabot::Conda::FileFetcher do
             YAML
           end
 
-          it "raises DependencyFileNotFound" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+          it "raises error with specific no dependencies message" do
+            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.message).to include("no dependencies to manage")
+            end
           end
         end
       end

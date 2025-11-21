@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         # All conda packages have build strings (e.g., python=3.10.9=he550d4f_0_cpython)
         # Phase 2: Fully qualified conda specs are not supported, but pip packages are
         expect(dependencies.all? { |d| d.package_manager == "pip" }).to be true
-        expect(dependencies.length).to be > 0
+        expect(dependencies.length).to be_positive
 
         # Verify some expected pip packages are present
         pip_names = dependencies.map(&:name)
