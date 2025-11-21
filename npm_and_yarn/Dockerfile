@@ -42,7 +42,8 @@ RUN corepack install pnpm@$PNPM_VERSION --global
 RUN corepack install yarn@$YARN_VERSION --global
 
 # Install npm and set it to a stable version
-RUN corepack install npm@$NPM_VERSION --global
+RUN corepack install npm@$NPM_VERSION --global \
+  && corepack install npm@10.9.3 --global
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
