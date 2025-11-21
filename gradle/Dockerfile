@@ -1,28 +1,19 @@
+# From https://hub.docker.com/_/gradle/tags
+FROM gradle:8.14.3-jdk21-ubi-minimal AS gradle
+
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Install Java
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk \
     ca-certificates-java \
-    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Gradle
 ENV GRADLE_HOME=/opt/gradle
-ENV GRADLE_VERSION=8.14.2
-ARG GRADLE_DOWNLOAD_SHA256=7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999
-RUN set -o errexit -o nounset \
-    && echo "Downloading Gradle" \
-    && wget --no-verbose --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
-    \
-    && echo "Checking Gradle download hash" \
-    && echo "${GRADLE_DOWNLOAD_SHA256} *gradle.zip" | sha256sum -c - \
-    \
-    && echo "Installing Gradle" \
-    && unzip gradle.zip \
-    && rm gradle.zip \
-    && mv "gradle-${GRADLE_VERSION}" "${GRADLE_HOME}/" \
-    && ln -s "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
+COPY --from=gradle $GRADLE_HOME $GRADLE_HOME
+# Make the Gradle binary available system-wide
+RUN ln -s "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
 
 USER dependabot
 
