@@ -717,6 +717,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           before do
             allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            allow(File).to receive(:exist?).and_return(true)
+            allow(FileUtils).to receive(:chmod)
           end
 
           its(:content) do

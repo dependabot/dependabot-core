@@ -39,6 +39,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
           # We only run this updater if it's a distribution dependency
@@ -67,20 +68,23 @@ module Dependabot
             properties_filename = File.join(cwd, "gradle.properties")
             write_properties_file(properties_filename)
 
+            has_local_script = File.exist?(File.join(cwd, "./gradlew"))
             command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements)
-            command = Shellwords.join(["./gradlew"] + command_parts)
+            command = Shellwords.join([has_local_script ? "./gradlew" : "gradle"] + command_parts)
 
             Dir.chdir(cwd) do
-              FileUtils.chmod("+x", "./gradlew") if File.exist?(File.join(cwd, "./gradlew"))
+              FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
               validate_option = get_validate_distribution_url_option(properties_file)
 
               begin
-                # first attempt: run the wrapper task via the local gradle wrapper
+                # first attempt: run the wrapper task via the local gradle wrapper (if present)
                 # `gradle-wrapper.jar` might be too old to run on host's Java version
                 SharedHelpers.run_shell_command(command, cwd: cwd)
               rescue SharedHelpers::HelperSubprocessFailed => e
+                raise e unless has_local_script # already field with system one, there is no point to retry
+
                 Dependabot.logger.warn("Running #{command} failed, retrying first with system Gradle: #{e.message}")
 
                 # second attempt: run the wrapper task via system gradle and then retry via local wrapper
@@ -102,6 +106,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
