@@ -26,8 +26,7 @@ module Dependabot
           files = T.let([], T::Array[DependencyFile])
 
           begin
-            repo_contents = @fetcher.send(:repo_contents, dir: directory, raise_errors: false)
-            return files if repo_contents.nil?
+            repo_contents = @fetcher.send(:repo_contents, dir: directory)
 
             repo_contents.each do |item|
               path = item.path
@@ -41,8 +40,8 @@ module Dependabot
                 files += fetch_directory_tree(path)
               end
             end
-          rescue Octokit::NotFound, Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
-            # Intentionally empty - skip inaccessible directories
+          rescue Octokit::NotFound, Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound => e
+            Dependabot.logger.warn("Skipping inaccessible directory '#{directory}': #{e.message}")
           end
 
           files

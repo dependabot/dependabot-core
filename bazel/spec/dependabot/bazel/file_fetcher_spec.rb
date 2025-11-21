@@ -799,6 +799,54 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
         expect(fetched_files.map(&:name)).to include("third_party/remoteapis/BUILD")
       end
     end
+
+    context "when local_path_override directory is inaccessible" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the local_path_override directory as not found
+        stub_request(:get, url + "third_party/remoteapis?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_root_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "logs a warning about the inaccessible directory" do
+        fetched_files
+        expect(Dependabot.logger).to have_received(:warn).with(
+          %r{Skipping inaccessible directory 'third_party/remoteapis'}
+        )
+      end
+
+      it "continues fetching other files" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+    end
   end
 
   describe "fetching downloader_config files" do
