@@ -367,16 +367,27 @@ module Dependabot
       sig do
         params(
           name: String,
-          version: String
+          version: String,
+          env: T.nilable(T::Hash[String, String])
         )
           .returns(String)
       end
-      def self.install(name, version)
+      def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
-          # Try to install the specified version
-          package_manager_activate(name, version)
+          # Try to activate the specified version
+          output = package_manager_activate(name, version, env: env)
+
+          # Confirm success based on the output
+          if output.include?("immediate activation...")
+            Dependabot.logger.info("#{name}@#{version} successfully installed.")
+
+            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
+          else
+            Dependabot.logger.error("Corepack installation output unexpected: #{output}")
+            fallback_to_local_version(name)
+          end
         rescue StandardError => e
           Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
           fallback_to_local_version(name)
@@ -423,13 +434,14 @@ module Dependabot
       end
 
       # Prepare the package manager for use by using corepack
-      sig { params(name: String, version: String).returns(String) }
-      def self.package_manager_activate(name, version)
+      sig { params(name: String, version: String, env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.package_manager_activate(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env
         ).strip
       end
 

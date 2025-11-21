@@ -176,7 +176,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0/n")
       expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack prepare npm@7.0.0 --activate",
-        fingerprint: "corepack prepare <name>@<version> --activate"
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: {}
       )
       described_class.package_manager_activate("npm", "7.0.0")
     end
@@ -226,8 +227,9 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_activate("npm", "8.0.0")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@8.0.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
-        ).and_return("")
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@8.0.0 for immediate activation...")
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
@@ -237,6 +239,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        expect(Dependabot.logger).to receive(:info).with("npm@8.0.0 successfully installed.")
+        expect(Dependabot.logger).to receive(:info).with("Activating currently installed version of npm: 8.0.0")
         expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
         expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 8.0.0")
 
@@ -251,7 +255,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_activate("npm", "8.0.0")` (raises an error)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@8.0.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
         ).and_raise(StandardError, "Unexpected error")
 
         # Mock for `local_package_manager_version("npm")`
@@ -263,7 +268,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_activate("npm", "10.8.2")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@10.8.2 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
         ).and_return("")
 
         # Mock for `package_manager_version("npm")`
@@ -295,14 +301,16 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_activate("npm", "8.0.0")` (raises an error)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@8.0.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
         ).and_raise(StandardError, "Corepack failed")
 
         # Mock for `package_manager_activate("npm", "10.8.2")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@10.8.2 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
-        ).and_return("")
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: {}
+        ).and_return("Preparing npm@10.8.2 for immediate activation...")
 
         # Mock for `local_package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
