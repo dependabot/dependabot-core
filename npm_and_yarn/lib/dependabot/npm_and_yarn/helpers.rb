@@ -363,7 +363,7 @@ module Dependabot
         end
       end
 
-      # Install the package manager for specified version by using corepack
+      # Activate the package manager for specified version by using corepack
       sig do
         params(
           name: String,

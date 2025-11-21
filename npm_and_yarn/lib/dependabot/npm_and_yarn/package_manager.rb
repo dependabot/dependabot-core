@@ -412,7 +412,7 @@ module Dependabot
             env = @registry_helper.find_corepack_env_variables
           end
           # Use the Helpers.install method to install the package manager
-          return Helpers.install(name, version.to_s, env: env)
+          return Helpers.install(name, version.to_s)
         end
 
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
