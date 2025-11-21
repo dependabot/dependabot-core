@@ -223,24 +223,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     context "when corepack succeeds" do
       it "installs, activates, and retrieves the version of the package manager" do
-        # Mock for `package_manager_install("npm", "8.0.0")`
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack install npm@8.0.0 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only",
-          env: {}
-        ).and_return("Adding npm@8.0.0 to the cache")
-
         # Mock for `package_manager_activate("npm", "8.0.0")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@8.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate"
         ).and_return("")
-
-        # Mock for `local_package_manager_version("npm")`
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "npm -v",
-          fingerprint: "npm -v"
-        ).and_return("10.8.2")
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
@@ -250,8 +237,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
-        expect(Dependabot.logger).to receive(:info).with("npm@8.0.0 successfully installed.")
-        expect(Dependabot.logger).to receive(:info).with("Activating currently installed version of npm: 8.0.0")
         expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
         expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 8.0.0")
 
@@ -263,24 +248,23 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     context "when corepack fails with unexpected output" do
       it "falls back to the local package manager" do
-        # Mock for `package_manager_install("npm", "8.0.0")`
+        # Mock for `package_manager_activate("npm", "8.0.0")` (raises an error)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack install npm@8.0.0 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only",
-          env: {}
-        ).and_return("Unexpected output")
-
-        # Mock for `package_manager_activate("npm", "10.8.2")`
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack prepare npm@10.8.2 --activate",
+          "corepack prepare npm@8.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate"
-        ).and_return("")
+        ).and_raise(StandardError, "Unexpected error")
 
         # Mock for `local_package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "npm -v",
           fingerprint: "npm -v"
         ).and_return("10.8.2")
+
+        # Mock for `package_manager_activate("npm", "10.8.2")`
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.8.2 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate"
+        ).and_return("")
 
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
@@ -290,7 +274,9 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
-        expect(Dependabot.logger).to receive(:error).with("Corepack installation output unexpected: Unexpected output")
+        expect(Dependabot.logger).to receive(:error).with(
+          "Error activating npm@8.0.0: Unexpected error"
+        )
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of npm."
         )
@@ -306,11 +292,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
     context "when corepack fails with an error" do
       it "falls back to the local package manager" do
-        # Mock for `package_manager_install("npm", "8.0.0")` (raises an error)
+        # Mock for `package_manager_activate("npm", "8.0.0")` (raises an error)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack install npm@8.0.0 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only",
-          env: {}
+          "corepack prepare npm@8.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate"
         ).and_raise(StandardError, "Corepack failed")
 
         # Mock for `package_manager_activate("npm", "10.8.2")`
@@ -333,7 +318,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
-        expect(Dependabot.logger).to receive(:error).with("Error installing npm@8.0.0: Corepack failed")
+        expect(Dependabot.logger).to receive(:error).with("Error activating npm@8.0.0: Corepack failed")
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of npm."
         )

@@ -16,10 +16,11 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V10
+      NPM_DEFAULT_VERSION = NPM_V11
 
       # PNPM Version Constants
       PNPM_V10 = 10
@@ -65,7 +66,7 @@ module Dependabot
         lockfile_version = lockfile_version_str.to_i
 
         # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V10 if lockfile_version >= 3
+        return NPM_V11 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
@@ -376,21 +377,10 @@ module Dependabot
 
         begin
           # Try to install the specified version
-          output = package_manager_install(name, version, env: env)
+          package_manager_activate(name, version)
 
-          # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/)
-            Dependabot.logger.info("#{name}@#{version} successfully installed.")
-
-            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
-            package_manager_activate(name, version)
-
-          else
-            Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name)
-          end
         rescue StandardError => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
           fallback_to_local_version(name)
         end
 
