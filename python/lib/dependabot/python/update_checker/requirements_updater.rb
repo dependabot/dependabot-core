@@ -324,12 +324,11 @@ module Dependabot
         def preserve_local_version(old_version, new_version)
           # Extract local version suffix from old version (e.g., "+cpu" from "1.9.1+cpu")
           # and append it to the new version to preserve it
-          if old_version.match?(/\+[0-9a-zA-Z]+(?:[\._-][0-9a-zA-Z]+)*/)
-            local_suffix = old_version.match(/(\+[0-9a-zA-Z]+(?:[\._-][0-9a-zA-Z]+)*)/)&.captures&.first
-            new_version + local_suffix.to_s
-          else
-            new_version
-          end
+          local_version_match = old_version.match(/(\+[0-9a-zA-Z]+(?:[\._-][0-9a-zA-Z]+)*)/)
+          return new_version unless local_version_match
+
+          local_suffix = T.must(local_version_match.captures.first)
+          new_version + local_suffix
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
