@@ -65,6 +65,56 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       )
     end
 
+    context "when prioritize_scm_source enabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:prioritize_scm_source)
+          .and_return(true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      context "when project url, scm url, and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_project_scm_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_scm") }
+      end
+
+      context "when project url and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_project_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_project") }
+      end
+
+      context "when only issue management url is present" do
+        let(:maven_response) { fixture("poms", "sourceurl_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_issuemanagement") }
+      end
+    end
+
+    context "when prioritize_scm_source disabled" do
+      context "when project url, scm url, and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_project_scm_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_project") }
+      end
+
+      context "when scm url and issue management url are present" do
+        let(:maven_response) { fixture("poms", "sourceurl_scm_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_scm") }
+      end
+
+      context "when only issue management url is present" do
+        let(:maven_response) { fixture("poms", "sourceurl_issuemanagement_pom.xml") }
+
+        it { is_expected.to eq("https://github.com/dependabot/sourceurl_issuemanagement") }
+      end
+    end
+
     context "when the github link is buried in the pom" do
       let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
