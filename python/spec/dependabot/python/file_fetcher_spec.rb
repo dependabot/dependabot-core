@@ -1333,7 +1333,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
-            body: fixture("github", "contents_python_requirements.json"),
+            body: fixture("github", "requirements_content.json"),
             headers: json_header
           )
       end
