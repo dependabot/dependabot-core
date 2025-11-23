@@ -63,11 +63,6 @@ module Dependabot
             populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, base_path(build_file))
 
-            # Create gradle.properties file with proxy settings
-            # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(cwd, "gradle.properties")
-            write_properties_file(properties_filename)
-
             has_local_script = File.exist?(File.join(cwd, "./gradlew"))
             command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements)
             command = Shellwords.join([has_local_script ? "./gradlew" : "gradle"] + command_parts)
@@ -77,11 +72,12 @@ module Dependabot
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
               validate_option = get_validate_distribution_url_option(properties_file)
+              env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
               begin
                 # first attempt: run the wrapper task via the local gradle wrapper (if present)
                 # `gradle-wrapper.jar` might be too old to run on host's Java version
-                SharedHelpers.run_shell_command(command, cwd: cwd)
+                SharedHelpers.run_shell_command(command, cwd: cwd, env: env)
               rescue SharedHelpers::HelperSubprocessFailed => e
                 raise e unless has_local_script # already field with system one, there is no point to retry
 
@@ -89,8 +85,8 @@ module Dependabot
 
                 # second attempt: run the wrapper task via system gradle and then retry via local wrapper
                 system_command = Shellwords.join(["gradle"] + command_parts)
-                SharedHelpers.run_shell_command(system_command, cwd: cwd) # run via system gradle
-                SharedHelpers.run_shell_command(command, cwd: cwd) # retry via local wrapper
+                SharedHelpers.run_shell_command(system_command, cwd: cwd, env: env) # run via system gradle
+                SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
               end
 
               # Restore previous validateDistributionUrl option if it existed
@@ -204,11 +200,9 @@ module Dependabot
           File.write(properties_file, updated_content)
         end
 
-        # this is a hack-workaround for Gradle Wrapper `./gradlew` poor support for proxy settings
-        # The official documentation suggests using command line arguments, but they don't fully work.
-        # So instead of adding `-Dhttp.proxyHost=...` to the command line, we create a `gradle.properties` file instead
-        sig { params(file_name: String).void }
-        def write_properties_file(file_name) # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T::Array[String]) }
+        def proxy_args
           http_proxy = ENV.fetch("HTTP_PROXY", nil)
           https_proxy = ENV.fetch("HTTPS_PROXY", nil)
           http_split = http_proxy&.split(":")
@@ -217,13 +211,15 @@ module Dependabot
           https_proxy_host = https_split&.fetch(1, nil)&.gsub("//", "") || "host.docker.internal"
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
-          properties_content = "
-systemProp.http.proxyHost=#{http_proxy_host}
-systemProp.http.proxyPort=#{http_proxy_port}
-systemProp.https.proxyHost=#{https_proxy_host}
-systemProp.https.proxyPort=#{https_proxy_port}"
-          File.write(file_name, properties_content)
+
+          args = []
+          args += %W(-Dhttp.proxyHost=#{http_proxy_host}) if http_proxy_host
+          args += %W(-Dhttp.proxyPort=#{http_proxy_port}) if http_proxy_port
+          args += %W(-Dhttps.proxyHost=#{https_proxy_host}) if https_proxy_host
+          args += %W(-Dhttps.proxyPort=#{https_proxy_port}) if https_proxy_port
+          args
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files

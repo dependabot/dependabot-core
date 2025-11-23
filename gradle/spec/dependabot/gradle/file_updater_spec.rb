@@ -726,6 +726,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               ./gradlew --no-daemon --stacktrace wrapper --gradle-version 9.0.0 --no-validate-url
               --distribution-type #{type}
             ).join(" ")
+            expected_env = { "JAVA_OPTS" => %w(
+              -Dhttp.proxyHost=host.docker.internal
+              -Dhttp.proxyPort=1080
+              -Dhttps.proxyHost=host.docker.internal
+              -Dhttps.proxyPort=1080
+            ).join(" ") }
 
             is_expected.to include("distributionUrl=#{distribution_url}")
 
@@ -736,7 +742,11 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               is_expected.not_to include("distributionSha256Sum=")
             end
 
-            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(expected_command, cwd: anything)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+              expected_command,
+              cwd: anything,
+              env: expected_env
+            )
           end
         end
 
