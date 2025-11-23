@@ -92,8 +92,7 @@ module Dependabot
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
-          Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-            !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
+          !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file.name, @exclude_paths)
         end
 
         filtered_files
@@ -372,8 +371,7 @@ module Dependabot
           next if fetched_files.map(&:name).include?(cleaned_name)
 
           # Skip excluded path dependencies
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(cleaned_name, @exclude_paths)
             Dependabot.logger.warn(
               "Skipping excluded path dependency '#{cleaned_name}' for package '#{name}'. " \
               "This file is excluded by exclude_paths configuration: #{@exclude_paths}"
@@ -604,8 +602,7 @@ module Dependabot
         file = File.join(workspace, MANIFEST_FILENAME)
 
         # Skip excluded workspace packages
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-           !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
+        if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(file, @exclude_paths)
           Dependabot.logger.info(
             "Skipping excluded workspace package '#{file}' from workspace '#{workspace}'. " \
             "This file is excluded by exclude_paths configuration: #{@exclude_paths}"

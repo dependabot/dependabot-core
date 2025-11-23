@@ -1272,5 +1272,77 @@ RSpec.describe Dependabot::Python::FileFetcher do
           .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
+
+    context "with exclude_paths configuration" do
+      let(:update_config) do
+        Dependabot::Config::UpdateConfig.new(
+          exclude_paths: ["**/requirements-specific.txt"]
+        )
+      end
+      let(:file_fetcher_instance) do
+        described_class.new(
+          source: source,
+          credentials: credentials,
+          update_config: update_config
+        )
+      end
+      let(:repo_contents) do
+        [
+          OpenStruct.new(
+            name: "requirements.txt",
+            path: "requirements.txt",
+            type: "file",
+            size: 100
+          ),
+          OpenStruct.new(
+            name: "models",
+            path: "models",
+            type: "dir"
+          )
+        ]
+      end
+      let(:models_dir_contents) do
+        [
+          OpenStruct.new(
+            name: "diseases_detector_v1",
+            path: "models/diseases_detector_v1",
+            type: "dir"
+          )
+        ]
+      end
+      let(:disease_detector_contents) do
+        [
+          OpenStruct.new(
+            name: "requirements-specific.txt",
+            path: "models/diseases_detector_v1/requirements-specific.txt",
+            type: "file",
+            size: 200
+          )
+        ]
+      end
+
+      before do
+        allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+        allow(file_fetcher_instance).to receive(:repo_contents).and_return(repo_contents)
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "models").and_return(models_dir_contents)
+        allow(file_fetcher_instance).to receive(:repo_contents)
+          .with(dir: "models/diseases_detector_v1").and_return(disease_detector_contents)
+
+        stub_request(:get, File.join(url, "requirements.txt?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_requirements.json"),
+            headers: json_header
+          )
+      end
+
+      it "excludes files matching the exclude_paths pattern" do
+        files = file_fetcher_instance.files
+        expect(files.map(&:name)).to eq(["requirements.txt"])
+        expect(files.map(&:name)).not_to include("models/diseases_detector_v1/requirements-specific.txt")
+      end
+    end
   end
 end

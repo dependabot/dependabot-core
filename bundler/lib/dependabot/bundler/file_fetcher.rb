@@ -256,8 +256,7 @@ module Dependabot
           next if file.name == path
 
           # Skip excluded child Gemfiles
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
             raise Dependabot::DependencyFileNotEvaluatable,
                   "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
                   "Please either remove the reference from '#{file.name}' " \

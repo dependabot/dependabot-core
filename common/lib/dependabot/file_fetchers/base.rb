@@ -476,11 +476,7 @@ module Dependabot
           .values_at(:provider, :repo, :path, :commit)
 
         entries = _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
-          filter_excluded(entries)
-        else
-          entries
-        end
+        filter_excluded(entries)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
 
@@ -561,11 +557,7 @@ module Dependabot
             size: 0 # NOTE: added for parity with github contents API
           )
         end
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
-          filter_excluded(entries)
-        else
-          entries
-        end
+        filter_excluded(entries)
       end
 
       # Filters out any entries whose paths match one of the exclude_paths globs.
