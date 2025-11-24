@@ -286,20 +286,30 @@ module Dependabot
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
         def find_and_update_equality_match(requirement_strings)
-          if requirement_strings.any? { |r| requirement_class.new(r).exact? }
-            # True equality match
-            T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
-             .sub(
-               RequirementParser::VERSION,
-               T.must(latest_resolvable_version).to_s
-             )
-          else
-            # Prefix match
-            T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
-             .sub(RequirementParser::VERSION) do |v|
-              at_same_precision(T.must(latest_resolvable_version).to_s, v)
-            end
+          updated_equality = if requirement_strings.any? { |r| requirement_class.new(r).exact? }
+                               # True equality match
+                               T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
+                                .sub(
+                                  RequirementParser::VERSION,
+                                  T.must(latest_resolvable_version).to_s
+                                )
+                             else
+                               # Prefix match
+                               T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
+                                .sub(RequirementParser::VERSION) do |v|
+                                 at_same_precision(T.must(latest_resolvable_version).to_s, v)
+                               end
+                             end
+
+          # Preserve non-equality constraints (like <5.1, >=2.0, etc.)
+          non_equality_constraints = requirement_strings.reject do |r|
+            requirement_class.new(r).exact? || r.match?(/^(=+|\d)/)
           end
+
+          return updated_equality if non_equality_constraints.empty?
+
+          # Combine updated equality with preserved constraints
+          ([updated_equality] + non_equality_constraints).join(",")
         end
 
         sig { params(new_version: String, old_version: String).returns(String) }

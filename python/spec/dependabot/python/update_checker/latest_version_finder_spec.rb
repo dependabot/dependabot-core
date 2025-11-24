@@ -594,6 +594,36 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when requirement has upper bound constraint with exact pin" do
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "==2.0.0,<2.5",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "respects the upper bound and ignores the exact pin" do
+        expect(latest_version).to eq(Gem::Version.new("2.4.0"))
+      end
+    end
+
+    context "when requirement has only upper bound constraint" do
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.txt",
+          requirement: "<2.5",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "respects the upper bound" do
+        expect(latest_version).to eq(Gem::Version.new("2.4.0"))
+      end
+    end
   end
 
   describe "#latest_version_with_no_unlock" do

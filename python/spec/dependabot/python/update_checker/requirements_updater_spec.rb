@@ -95,6 +95,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
             its([:requirement]) { is_expected.to eq("=1.5.0") }
           end
+
+          context "when pinned version has an upper bound constraint" do
+            let(:requirement_txt_req_string) { "==1.4.0,<1.5" }
+
+            its([:requirement]) { is_expected.to eq("==1.5.0,<1.5") }
+
+            context "when updating within the constraint" do
+              let(:requirement_txt_req_string) { "==1.4.0,<1.6" }
+
+              its([:requirement]) { is_expected.to eq("==1.5.0,<1.6") }
+            end
+
+            context "when pinned version has multiple constraints" do
+              let(:requirement_txt_req_string) { "==1.4.0,>=1.0,<2.0" }
+
+              its([:requirement]) { is_expected.to eq("==1.5.0,>=1.0,<2.0") }
+            end
+          end
         end
 
         context "when no requirement is specified" do
@@ -264,6 +282,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:setup_py_req_string) { "1.4.0" }
 
             its([:requirement]) { is_expected.to eq("1.5.0") }
+          end
+
+          context "when pinned version has an upper bound constraint" do
+            let(:setup_py_req_string) { "==1.4.0,<1.5" }
+
+            its([:requirement]) { is_expected.to eq("==1.5.0,<1.5") }
+
+            context "when updating within the constraint" do
+              let(:setup_py_req_string) { "==1.4.0,<1.6" }
+
+              its([:requirement]) { is_expected.to eq("==1.5.0,<1.6") }
+            end
           end
         end
 

@@ -37,6 +37,42 @@ module Dependabot
         def cooldown_enabled?
           true
         end
+
+        private
+
+        sig do
+          override
+            .params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          # Filter based on range requirements only (e.g., <, >, >=, <=, !=)
+          # This allows finding the latest version while respecting upper/lower bounds
+          # but ignoring pinning constraints like ==, ~=, ^ which are the target of the update
+          reqs = T.let(
+            dependency.requirements.filter_map do |r|
+              requirement_value = T.cast(r.fetch(:requirement), T.nilable(String))
+              next if requirement_value.nil?
+
+              requirement_string = requirement_value
+              range_parts = T.let(
+                requirement_string.split(",").map(&:strip).select do |part|
+                  part.match?(/^\s*(<|>|>=|<=|!=)\s*\d/)
+                end,
+                T::Array[String]
+              )
+
+              range_parts.empty? ? nil : requirement_class.requirements_array(range_parts.join(","))
+            end.flatten,
+            T::Array[Dependabot::Requirement]
+          )
+
+          return releases if reqs.empty?
+
+          releases.select do |release|
+            reqs.all? { |req| req.satisfied_by?(release.version) }
+          end
+        end
       end
     end
   end
