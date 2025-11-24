@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
       context "when no requirement was previously specified" do
         let(:requirement) { nil }
 
-        it { is_expected.to eq(requirements.first) }
+        its([:requirement]) { is_expected.to eq("~> 0.3.7") }
       end
 
       context "when an exact requirement was previously specified" do
@@ -154,6 +154,22 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 1.5, <= 1.4.0") }
         end
+      end
+    end
+
+    context "when there is no latest version" do
+      let(:latest_version) { nil }
+
+      context "when no requirement was previously specified" do
+        let(:requirement) { nil }
+
+        it { is_expected.to eq(requirements.first) }
+      end
+
+      context "when a requirement was previously specified" do
+        let(:requirement) { "~> 0.2.1" }
+
+        it { is_expected.to eq(requirements.first) }
       end
     end
 

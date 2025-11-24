@@ -94,7 +94,7 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       attr_reader :requirements
 
-      sig { returns(Dependabot::Terraform::Version) }
+      sig { returns(T.nilable(Dependabot::Terraform::Version)) }
       attr_reader :latest_version
 
       sig { returns(T.nilable(String)) }
@@ -110,7 +110,11 @@ module Dependabot
 
       sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
       def update_registry_requirement(req)
-        return req if req.fetch(:requirement).nil?
+        return req unless latest_version
+
+        if req.fetch(:requirement).nil?
+          return req.merge(requirement: "~> #{latest_version}")
+        end
 
         string_req = req.fetch(:requirement).strip
         ruby_req = requirement_class.new(string_req)
