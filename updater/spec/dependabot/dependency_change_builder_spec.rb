@@ -27,7 +27,8 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     )
   end
 
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/.") }
+  let(:source_directory) { "/." }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: source_directory) }
 
   let(:dependency_files) do
     [
@@ -180,6 +181,63 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
       it "raises an exception" do
         expect { create_change }.to raise_error(Dependabot::DependabotError)
+      end
+    end
+
+    context "when dependencies share a lockfile across directories" do
+      let(:source_directory) { "/WorkspacePackage1.jl/SubPackageA" }
+      let(:manifest_path) { "/WorkspacePackage1.jl/Manifest.toml" }
+      let(:lockfile_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Project.toml",
+            content: 'name = "SubPackageA"',
+            directory: "/WorkspacePackage1.jl/SubPackageA",
+            associated_lockfile_path: manifest_path
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Project.toml",
+            content: 'name = "SubPackageB"',
+            directory: "/WorkspacePackage1.jl/SubPackageB",
+            associated_lockfile_path: manifest_path
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Manifest.toml",
+            content: "manifest",
+            directory: "/WorkspacePackage1.jl",
+            associated_manifest_paths: [
+              "/WorkspacePackage1.jl/SubPackageA/Project.toml",
+              "/WorkspacePackage1.jl/SubPackageB/Project.toml"
+            ]
+          )
+        ]
+      end
+      let(:dependency_files) { lockfile_files }
+      let(:change_source) do
+        Dependabot::Dependency.new(
+          name: "JSON",
+          package_manager: "julia",
+          requirements: [{
+            file: "WorkspacePackage1.jl/SubPackageA/Project.toml",
+            requirement: "0.21",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+      let(:updated_dependencies) { [change_source] }
+
+      it "keeps sibling project files needed for workspace manifest updates" do
+        builder = described_class.new(
+          job: job,
+          dependency_files: dependency_files,
+          updated_dependencies: updated_dependencies,
+          change_source: change_source
+        )
+
+        files = builder.send(:dependency_files)
+        sibling_path = "/WorkspacePackage1.jl/SubPackageB/Project.toml"
+        expect(files.map(&:path)).to include(sibling_path)
       end
     end
   end

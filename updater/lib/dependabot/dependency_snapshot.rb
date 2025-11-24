@@ -50,7 +50,42 @@ module Dependabot
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
       assert_current_directory_set!
-      @dependency_files.select { |f| f.directory == @current_directory }
+      all_files = @dependency_files
+
+      Dependabot.logger.info("DependencySnapshot.dependency_files: Filtering for directory: #{@current_directory}")
+      Dependabot.logger.info("DependencySnapshot.dependency_files: Total files: #{all_files.map { |f| "#{f.directory}/#{f.name} (shared=#{f.respond_to?(:shared_across_directories?) ? f.shared_across_directories? : 'N/A'})" }.join(', ')}")
+
+      # Include files in current directory, shared files, AND workspace sibling manifests
+      result = all_files.select do |f|
+        # Include if in current directory
+        next true if f.directory == @current_directory
+
+        # Include if shared across directories (lockfiles/manifests)
+        next true if f.respond_to?(:shared_across_directories?) && f.shared_across_directories?
+
+        # Include workspace sibling manifest files (Project.toml) that share the same lockfile
+        # Only include these if we're NOT in the parent directory (to avoid parsing all projects at once)
+        if f.name.match?(/^(Julia)?Project\.toml$/i) &&
+           f.respond_to?(:associated_lockfile_path) && f.associated_lockfile_path
+          lockfile_path = T.must(f.associated_lockfile_path)
+          # Check if any file in current directory shares this lockfile path
+          current_dir_files = all_files.select { |other| other.directory == @current_directory }
+          shares_lockfile = current_dir_files.any? do |other|
+            other.respond_to?(:associated_lockfile_path) &&
+              other.associated_lockfile_path == lockfile_path
+          end
+
+          # Only include if we share a lockfile AND the lockfile is not in our current directory
+          # (which would mean we're the parent)
+          lockfile_not_in_current_dir = !lockfile_path.start_with?("#{@current_directory}/")
+          shares_lockfile && lockfile_not_in_current_dir
+        else
+          false
+        end
+      end
+
+      Dependabot.logger.info("DependencySnapshot.dependency_files: Filtered to #{result.length} files: #{result.map { |f| "#{f.directory}/#{f.name}" }.join(', ')}")
+      result
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
