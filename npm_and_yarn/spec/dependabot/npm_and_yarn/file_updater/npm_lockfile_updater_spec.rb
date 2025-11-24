@@ -373,7 +373,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         # Verify the dependency is NOT in the dependencies section
         dependencies = parsed_lockfile.dig("packages", "", "dependencies")
-        expect(dependencies).to be_nil.or(not_include("etag"))
+        expect(dependencies).not_to include("etag") if dependencies
 
         # Verify the dependency IS in the optionalDependencies section
         expect(parsed_lockfile.dig("packages", "", "optionalDependencies"))
