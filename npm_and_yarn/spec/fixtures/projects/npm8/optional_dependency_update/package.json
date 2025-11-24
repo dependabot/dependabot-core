@@ -1,0 +1,14 @@
+{
+  "name": "npm-linux",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.52.5"
+  },
+  "author": "",
+  "license": "ISC"
+}

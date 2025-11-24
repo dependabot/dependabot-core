@@ -285,13 +285,14 @@ module Dependabot
           # do the same in the js updater helper, we've kept it separate for
           # the npm 7 rollout
           install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
+          has_optional_dependencies = top_level_dependencies.any? { |dependency| optional_dependency?(dependency) }
 
-          run_npm_install_lockfile_only(install_args)
+          run_npm_install_lockfile_only(install_args, has_optional_dependencies: has_optional_dependencies)
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
-            run_npm_install_lockfile_only
+            run_npm_install_lockfile_only([], has_optional_dependencies: has_optional_dependencies)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -339,9 +340,11 @@ module Dependabot
         #   to work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are
         #   run when installing git dependencies
-        sig { params(install_args: T::Array[String]).returns(String) }
-        def run_npm_install_lockfile_only(install_args = [])
-          command = [
+        # - `--no-save` when updating optional dependencies to prevent npm from
+        #   modifying package-lock.json and adding optional deps to dependencies section
+        sig { params(install_args: T::Array[String], has_optional_dependencies: T::Boolean).returns(String) }
+        def run_npm_install_lockfile_only(install_args = [], has_optional_dependencies: false)
+          command_args = [
             "install",
             *install_args,
             "--force",
@@ -349,9 +352,13 @@ module Dependabot
             "false",
             "--ignore-scripts",
             "--package-lock-only"
-          ].join(" ")
+          ]
 
-          fingerprint = [
+          command_args << "--no-save" if has_optional_dependencies
+
+          command = command_args.join(" ")
+
+          fingerprint_args = [
             "install",
             install_args.empty? ? "" : "<install_args>",
             "--force",
@@ -359,7 +366,11 @@ module Dependabot
             "false",
             "--ignore-scripts",
             "--package-lock-only"
-          ].join(" ")
+          ]
+
+          fingerprint_args << "--no-save" if has_optional_dependencies
+
+          fingerprint = fingerprint_args.join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
         end
@@ -405,6 +416,13 @@ module Dependabot
         def dependency_in_lockfile?(dependency)
           lockfile_dependencies.any? do |dep|
             dep.name == dependency.name
+          end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def optional_dependency?(dependency)
+          dependency.requirements.any? do |req|
+            req[:groups]&.include?("optionalDependencies")
           end
         end
 
