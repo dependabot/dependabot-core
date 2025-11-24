@@ -199,6 +199,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
             end
           end
+
+          context "when maintaining precision with fewer segments in new version" do
+            let(:requirement_txt_req_string) { "~=5.0.0" }
+            let(:latest_resolvable_version) { "5.1" }
+
+            its([:requirement]) { is_expected.to eq("~=5.1.0") }
+
+            context "with the bump_versions_if_necessary update strategy" do
+              let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+
+              its([:requirement]) { is_expected.to eq("~=5.1.0") }
+            end
+          end
         end
 
         context "when a prefix match was specified" do
@@ -308,6 +321,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
             its([:requirement]) { is_expected.to eq("~=5.0") }
           end
+
+          context "when maintaining precision with fewer segments in new version" do
+            let(:setup_py_req_string) { "~=5.0.0" }
+            let(:latest_resolvable_version) { "5.1" }
+
+            its([:requirement]) { is_expected.to eq("~=5.1.0") }
+          end
         end
 
         context "when a prefix match was specified" do
@@ -416,6 +436,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:latest_resolvable_version) { "5.0.0" }
 
             its([:requirement]) { is_expected.to eq("~=5.0") }
+          end
+
+          context "when maintaining precision with fewer segments in new version" do
+            let(:setup_cfg_req_string) { "~=5.0.0" }
+            let(:latest_resolvable_version) { "5.1" }
+
+            its([:requirement]) { is_expected.to eq("~=5.1.0") }
           end
         end
 
@@ -544,12 +571,26 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               let(:pyproject_req_string) { "~=1.3.0" }
 
               its([:requirement]) { is_expected.to eq("~=1.5.0") }
+
+              context "when maintaining precision with fewer segments in new version" do
+                let(:pyproject_req_string) { "~=5.0.0" }
+                let(:latest_resolvable_version) { "5.1" }
+
+                its([:requirement]) { is_expected.to eq("~=5.1.0") }
+              end
             end
 
             context "when a ~ requirement was specified" do
               let(:pyproject_req_string) { "~1.3.0" }
 
               its([:requirement]) { is_expected.to eq("~1.5.0") }
+
+              context "when maintaining precision with fewer segments in new version" do
+                let(:pyproject_req_string) { "~5.0.0" }
+                let(:latest_resolvable_version) { "5.1" }
+
+                its([:requirement]) { is_expected.to eq("~5.1.0") }
+              end
             end
 
             context "when a ^ requirement was specified" do
