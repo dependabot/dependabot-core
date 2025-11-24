@@ -58,6 +58,7 @@ module Dependabot
       private
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_opentofu_files(dependency_set)
         opentofu_files.each do |file|
@@ -107,6 +108,7 @@ module Dependabot
           end
         end
       end
+      # rubocop:enable Metrics/MethodLength
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
