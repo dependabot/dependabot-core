@@ -866,7 +866,6 @@ module Dependabot
             updated_lockfile_content, parsed_updated_lockfile_content
           )
 
-          # Remove optional dependencies from the dependencies section
           updated_lockfile_content = remove_optional_dependencies_from_dependencies_section(
             updated_lockfile_content, parsed_updated_lockfile_content
           )
@@ -995,9 +994,6 @@ module Dependabot
           updated_lockfile_content
         end
 
-        # Removes optional dependencies that npm incorrectly adds to the
-        # "dependencies" section of packages."" when updating optional deps.
-        # This ensures optional dependencies remain only in "optionalDependencies".
         sig do
           params(
             updated_lockfile_content: String,
