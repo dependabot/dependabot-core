@@ -345,6 +345,50 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
       end
     end
+
+    context "with an optional dependency that npm adds to dependencies section" do
+      let(:files) { project_dependency_files("npm8/optional_dependency_update") }
+      let(:dependency_name) { "etag" }
+      let(:version) { "1.8.1" }
+      let(:previous_version) { "1.7.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.8.1",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.0.0",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+
+      it "removes optional dependency from dependencies section" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+        # Verify the dependency is NOT in the dependencies section
+        dependencies = parsed_lockfile.dig("packages", "", "dependencies")
+        expect(dependencies).to be_nil.or(not_include("etag"))
+
+        # Verify the dependency IS in the optionalDependencies section
+        expect(parsed_lockfile.dig("packages", "", "optionalDependencies"))
+          .to include("etag" => "^1.8.1")
+
+        # Verify against expected output
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "optional_dependency_update",
+          "package-lock.json"
+        )
+        expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+      end
+    end
   end
 
   describe "npm errors" do
