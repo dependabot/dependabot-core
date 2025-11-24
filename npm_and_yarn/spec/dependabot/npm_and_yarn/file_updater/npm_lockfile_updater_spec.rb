@@ -1039,4 +1039,78 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
   end
+
+  context "when updating optional dependencies" do
+    let(:files) { project_dependency_files("npm8/optional_dependency_update") }
+    let(:dependency_name) { "@rollup/rollup-linux-x64-gnu" }
+    let(:version) { "4.53.2" }
+    let(:previous_version) { "4.52.5" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^4.53.2",
+        groups: ["optionalDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "package.json",
+        requirement: "^4.52.5",
+        groups: ["optionalDependencies"],
+        source: nil
+      }]
+    end
+
+    it "uses --no-save flag and maintains optionalDependencies only" do
+      # Allow the npm command to be called and return empty string
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+        .and_return("")
+
+      # Verify that when we update the lockfile, the command includes --no-save
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+        .with(include("--no-save"), anything)
+
+      updated_npm_lock_content
+    end
+
+    describe "#optional_dependency?" do
+      it "correctly identifies optional dependencies" do
+        optional_dep = Dependabot::Dependency.new(
+          name: "@rollup/rollup-linux-x64-gnu",
+          version: "4.53.2",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^4.53.2",
+            groups: ["optionalDependencies"],
+            source: nil
+          }]
+        )
+
+        regular_dep = Dependabot::Dependency.new(
+          name: "regular-package",
+          version: "1.0.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+
+        # Create a simple updater instance to test the private method
+        test_updater = described_class.new(
+          lockfile: files.find { |f| f.name == "package-lock.json" },
+          dependency_files: files,
+          dependencies: [optional_dep],
+          credentials: credentials
+        )
+
+        expect(test_updater.send(:optional_dependency?, optional_dep)).to be(true)
+        expect(test_updater.send(:optional_dependency?, regular_dep)).to be(false)
+      end
+    end
+  end
 end
