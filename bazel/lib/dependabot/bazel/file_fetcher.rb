@@ -9,12 +9,17 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
+      require_relative "file_fetcher/path_converter"
+      require_relative "file_fetcher/bzl_file_fetcher"
+      require_relative "file_fetcher/module_path_extractor"
+      require_relative "file_fetcher/directory_tree_fetcher"
+      require_relative "file_fetcher/downloader_config_fetcher"
+
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
       MODULE_FILE = T.let("MODULE.bazel", String)
       CONFIG_FILES = T.let(
         %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel).freeze, T::Array[String]
       )
-      SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -28,21 +33,12 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        unless allow_beta_ecosystems?
-          raise Dependabot::DependencyFileNotFound.new(
-            nil,
-            "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the" \
-            " top-level of your `dependabot.yml`. See " \
-            "https://docs.github.com/en/code-security/dependabot/working-with-dependabot" \
-            "/dependabot-options-reference#enable-beta-ecosystems for details."
-          )
-        end
-
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files += workspace_files
         fetched_files += module_files
         fetched_files += config_files
         fetched_files += referenced_files_from_modules
+        fetched_files += downloader_config_files
 
         return fetched_files if fetched_files.any?
 
@@ -128,86 +124,72 @@ module Dependabot
         nil
       end
 
-      sig { params(dirname: String).returns(T::Boolean) }
-      def should_skip_directory?(dirname)
-        SKIP_DIRECTORIES.any? { |skip_dir| dirname.start_with?(skip_dir) }
-      end
-
-      # Fetches files referenced in MODULE.bazel files via lock_file and requirements_lock attributes.
-      # Also fetches BUILD/BUILD.bazel files from directories containing referenced files, as these
-      # are required by Bazel to recognize the directories as valid packages.
-      #
-      # This method handles Bazel label syntax and converts it to filesystem paths:
-      # - "@repo//path:file.json" -> "path/file.json"
-      # - "//path:file.json" -> "path/file.json"
-      # - "@repo//:file.json" -> "file.json"
-      #
-      # @return [Array<DependencyFile>] referenced files and their associated BUILD files
+      # Fetches files referenced in MODULE.bazel and their associated BUILD files.
+      # Bazel requires BUILD files to recognize directories as valid packages.
       sig { returns(T::Array[DependencyFile]) }
       def referenced_files_from_modules
         files = T.let([], T::Array[DependencyFile])
         directories_with_files = T.let(Set.new, T::Set[String])
+        local_override_directories = T.let(Set.new, T::Set[String])
+        tree_fetcher = DirectoryTreeFetcher.new(fetcher: self)
 
         module_files.each do |module_file|
-          referenced_paths = extract_referenced_paths(module_file)
+          extractor = ModulePathExtractor.new(module_file: module_file)
+          file_paths, directory_paths = extractor.extract_paths
 
-          referenced_paths.each do |path|
-            fetched_file = fetch_file_if_present(path)
-            next unless fetched_file
+          bzl_fetcher = BzlFileFetcher.new(module_file: module_file, fetcher: self)
+          bzl_files = bzl_fetcher.fetch_bzl_files
 
-            files << fetched_file
-            # Track directories that contain referenced files so we can fetch their BUILD files.
-            # Exclude root directory (.) as BUILD files there are already handled by config_files.
-            dir = File.dirname(path)
+          bzl_files.each do |file|
+            dir = File.dirname(file.name)
             directories_with_files.add(dir) unless dir == "."
           end
+
+          files += bzl_files
+          files += fetch_paths_and_track_directories(file_paths, directories_with_files)
+
+          directory_paths.each { |dir| local_override_directories.add(dir) unless dir == "." }
         end
 
-        # Fetch BUILD or BUILD.bazel files for directories that contain referenced files.
-        # These BUILD files are required for Bazel to recognize directories as valid packages.
-        directories_with_files.each do |dir|
-          build_file = fetch_file_if_present("#{dir}/BUILD") || fetch_file_if_present("#{dir}/BUILD.bazel")
-          files << build_file if build_file
-        end
+        files += tree_fetcher.fetch_build_files_for_directories(directories_with_files)
+        files += fetch_local_override_directory_trees(local_override_directories)
 
         files
       end
 
-      # Extracts file paths from lock_file and requirements_lock attributes in MODULE.bazel content.
-      # Converts Bazel label syntax to filesystem paths.
-      #
-      # Bazel labels can have several formats:
-      # - "@repo//path:file" - external or self-referential repository with path
-      # - "//path:file" - main repository reference with path
-      # - "@repo//:file" - external or self-referential repository root file
-      # - "//:file" - main repository root file
-      #
-      # The method:
-      # 1. Strips optional @repo prefix
-      # 2. Converts colon separators to forward slashes (path:file -> path/file)
-      # 3. Removes leading slashes to create relative paths
-      #
-      # @param module_file [DependencyFile] the MODULE.bazel file to parse
-      # @return [Array<String>] unique relative file paths referenced in the module
-      sig { params(module_file: DependencyFile).returns(T::Array[String]) }
-      def extract_referenced_paths(module_file)
-        content = T.must(module_file.content)
-        paths = []
+      # Fetches files and tracks their directories for BUILD file resolution.
+      sig do
+        params(
+          paths: T::Array[String],
+          directories: T::Set[String]
+        ).returns(T::Array[DependencyFile])
+      end
+      def fetch_paths_and_track_directories(paths, directories)
+        files = T.let([], T::Array[DependencyFile])
+        paths.each do |path|
+          fetched_file = fetch_file_if_present(path)
+          next unless fetched_file
 
-        # Match lock_file attributes with optional @repo prefix: "(?:@[^"\/]+)?\/\/([^"]+)"
-        # Capture group 1: everything after // (e.g., "tools/jol:file.json" or ":file.json")
-        content.scan(%r{lock_file\s*=\s*"(?:@[^"/]+)?//([^"]+)"}) do |match|
-          path = match[0].tr(":", "/").sub(%r{^/}, "")
-          paths << path
+          files << fetched_file
+          dir = File.dirname(path)
+          directories.add(dir) unless dir == "."
         end
+        files
+      end
 
-        # Match requirements_lock attributes with optional @repo prefix
-        content.scan(%r{requirements_lock\s*=\s*"(?:@[^"/]+)?//([^"]+)"}) do |match|
-          path = match[0].tr(":", "/").sub(%r{^/}, "")
-          paths << path
-        end
+      # Fetches complete directory trees for local module overrides.
+      sig { params(directories: T::Set[String]).returns(T::Array[DependencyFile]) }
+      def fetch_local_override_directory_trees(directories)
+        tree_fetcher = DirectoryTreeFetcher.new(fetcher: self)
+        files = T.let([], T::Array[DependencyFile])
+        directories.each { |dir| files += tree_fetcher.fetch_directory_tree(dir) }
+        files
+      end
 
-        paths.uniq
+      sig { returns(T::Array[DependencyFile]) }
+      def downloader_config_files
+        config_fetcher = DownloaderConfigFetcher.new(fetcher: self)
+        config_fetcher.fetch_downloader_config_files
       end
     end
   end
