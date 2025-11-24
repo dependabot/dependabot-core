@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "cgi"
@@ -49,29 +49,39 @@ module Dependabot
           # Filter based on range requirements only (e.g., <, >, >=, <=, !=)
           # This allows finding the latest version while respecting upper/lower bounds
           # but ignoring pinning constraints like ==, ~=, ^ which are the target of the update
-          reqs = T.let(
+          return releases if dependency.requirements.empty?
+
+          reqs = extract_range_requirements
+          return releases if reqs.empty?
+
+          releases.select { |release| reqs.all? { |req| req.satisfied_by?(release.version) } }
+        end
+
+        sig { returns(T::Array[Dependabot::Requirement]) }
+        def extract_range_requirements
+          T.let(
             dependency.requirements.filter_map do |r|
-              requirement_value = T.cast(r.fetch(:requirement), T.nilable(String))
-              next if requirement_value.nil?
+              requirement_value = r.fetch(:requirement, nil)
+              # Skip if nil or not a String
+              next unless requirement_value.is_a?(String)
 
-              requirement_string = requirement_value
-              range_parts = T.let(
-                requirement_string.split(",").map(&:strip).select do |part|
-                  part.match?(/^\s*(<|>|>=|<=|!=)\s*\d/)
-                end,
-                T::Array[String]
-              )
-
+              # Type guard above ensures requirement_value is a String
+              requirement_string = T.let(requirement_value, String)
+              range_parts = extract_range_parts(requirement_string)
               range_parts.empty? ? nil : requirement_class.requirements_array(range_parts.join(","))
             end.flatten,
             T::Array[Dependabot::Requirement]
           )
+        end
 
-          return releases if reqs.empty?
-
-          releases.select do |release|
-            reqs.all? { |req| req.satisfied_by?(release.version) }
-          end
+        sig { params(requirement_string: String).returns(T::Array[String]) }
+        def extract_range_parts(requirement_string)
+          T.let(
+            requirement_string.split(",").map(&:strip).select do |part|
+              part.match?(/^\s*(<|>|>=|<=|!=)\s*\d/)
+            end,
+            T::Array[String]
+          )
         end
       end
     end
