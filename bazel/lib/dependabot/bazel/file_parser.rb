@@ -169,8 +169,7 @@ module Dependabot
           name = func_call.arguments["name"]
           version = func_call.arguments["version"]
 
-          # Ensure name and version are strings
-          next unless name.is_a?(String) && version.is_a?(String)
+          next unless name.is_a?(String) && version.is_a?(String) && !name.empty? && !version.empty?
 
           dependency_set << Dependabot::Dependency.new(
             name: name,
