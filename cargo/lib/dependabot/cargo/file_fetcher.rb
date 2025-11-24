@@ -35,12 +35,7 @@ module Dependabot
                   else
                     "default"
                   end
-
-        {
-          package_managers: {
-            "cargo" => channel
-          }
-        }
+        { package_managers: { "cargo" => channel } }
       rescue TomlRB::ParseError
         raise Dependabot::DependencyFileNotParseable.new(
           T.must(rust_toolchain).path,
@@ -50,26 +45,21 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = T.let([], T::Array[DependencyFile])
-        fetched_files << cargo_toml
+        fetched_files = T.let([cargo_toml], T::Array[DependencyFile])
         fetched_files << T.must(cargo_lock) if cargo_lock
         fetched_files << T.must(cargo_config) if cargo_config
         fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
-
         # If the main Cargo.toml uses workspace dependencies, ensure we have the workspace root
         parsed_manifest = parsed_file(cargo_toml)
         if uses_workspace_dependencies?(parsed_manifest) || workspace_member?(parsed_manifest)
           workspace_root = find_workspace_root(cargo_toml)
           fetched_files << workspace_root if workspace_root && !fetched_files.include?(workspace_root)
         end
-
         # Filter excluded files from final collection
-        filtered_files = fetched_files.reject do |file|
+        fetched_files.reject do |file|
           Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
-        end
-
-        filtered_files.uniq
+        end.uniq
       end
 
       private
@@ -79,15 +69,10 @@ module Dependabot
       end
       def fetch_path_dependency_and_workspace_files(files = nil)
         fetched_files = files || [cargo_toml]
-
         fetched_files += path_dependency_files(fetched_files)
         fetched_files += fetched_files.flat_map { |f| workspace_files(f) }
-
         updated_files = fetched_files.reject(&:support_file?).uniq
-        updated_files +=
-          fetched_files.uniq
-                       .reject { |f| updated_files.map(&:name).include?(f.name) }
-
+        updated_files += fetched_files.uniq.reject { |f| updated_files.map(&:name).include?(f.name) }
         return updated_files if updated_files == files
 
         fetch_path_dependency_and_workspace_files(updated_files)
@@ -96,11 +81,7 @@ module Dependabot
       sig { params(cargo_toml: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
       def workspace_files(cargo_toml)
         @workspace_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
-        @workspace_files[cargo_toml.name] ||=
-          fetch_workspace_files(
-            file: cargo_toml,
-            previously_fetched_files: []
-          )
+        @workspace_files[cargo_toml.name] ||= fetch_workspace_files(file: cargo_toml, previously_fetched_files: [])
       end
 
       sig { params(fetched_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
@@ -108,13 +89,10 @@ module Dependabot
         @path_dependency_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
         fetched_path_dependency_files = T.let([], T::Array[Dependabot::DependencyFile])
         fetched_files.each do |file|
-          @path_dependency_files[file.name] ||=
-            fetch_path_dependency_files(
-              file: file,
-              previously_fetched_files: fetched_files +
-                                        fetched_path_dependency_files
-            )
-
+          @path_dependency_files[file.name] ||= fetch_path_dependency_files(
+            file: file,
+            previously_fetched_files: fetched_files + fetched_path_dependency_files
+          )
           fetched_path_dependency_files += T.must(@path_dependency_files[file.name])
         end
 
@@ -349,8 +327,7 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def workspace_dependency_paths_from_file(file)
-        if parsed_file(file)["workspace"] &&
-           !parsed_file(file)["workspace"].key?("members")
+        if parsed_file(file)["workspace"] && !parsed_file(file)["workspace"].key?("members")
           return path_dependency_paths_from_file(file)
         end
 
@@ -432,9 +409,7 @@ module Dependabot
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path
         dir = directory.gsub(%r{(^/|/$)}, "")
-
         unglobbed_path = (path.split("*").first || "").gsub(%r{(?<=/)[^/]*$}, "")
-
         repo_contents(dir: unglobbed_path, raise_errors: false)
           .select { |file| file.type == "dir" }
           .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
@@ -455,10 +430,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def cargo_lock
-        @cargo_lock ||= T.let(
-          fetch_file_if_present("Cargo.lock"),
-          T.nilable(Dependabot::DependencyFile)
-        )
+        @cargo_lock ||= T.let(fetch_file_if_present("Cargo.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -466,7 +438,6 @@ module Dependabot
         return @cargo_config if defined?(@cargo_config)
 
         @cargo_config = fetch_support_file(".cargo/config.toml")
-
         @cargo_config ||= T.let(
           fetch_support_file(".cargo/config")&.tap { |f| f.name = ".cargo/config.toml" },
           T.nilable(Dependabot::DependencyFile)
@@ -478,14 +449,32 @@ module Dependabot
         return @rust_toolchain if defined?(@rust_toolchain)
 
         @rust_toolchain = fetch_support_file("rust-toolchain")
-
-        # Per https://rust-lang.github.io/rustup/overrides.html the file can
-        # have a `.toml` extension, but the non-extension version is preferred.
-        # Renaming here to simplify finding it later in the code.
+        # Per https://rust-lang.github.io/rustup/overrides.html the file can have a `.toml` extension,
+        # but the non-extension version is preferred. Renaming here to simplify finding it later in the code.
         @rust_toolchain ||= T.let(
           fetch_support_file("rust-toolchain.toml")&.tap { |f| f.name = "rust-toolchain" },
           T.nilable(Dependabot::DependencyFile)
         )
+      end
+
+      sig { override.params(filename: T.any(Pathname, String)).returns(Dependabot::DependencyFile) }
+      def load_cloned_file_if_present(filename)
+        file = super
+        file.name = Pathname.new(file.name).cleanpath.to_s.gsub(%r{^/+}, "")
+        file
+      end
+
+      sig do
+        override.params(
+          filename: T.any(Pathname, String),
+          type: String,
+          fetch_submodules: T::Boolean
+        ).returns(Dependabot::DependencyFile)
+      end
+      def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        file = super
+        file.name = Pathname.new(file.name).cleanpath.to_s.gsub(%r{^/+}, "")
+        file
       end
     end
   end
