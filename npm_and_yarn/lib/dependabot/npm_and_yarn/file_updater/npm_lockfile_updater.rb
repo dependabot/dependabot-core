@@ -288,14 +288,14 @@ module Dependabot
           top_level_dependencies.each do |dependency|
             install_args = [npm_install_args(dependency)]
             is_optional = optional_dependency?(dependency)
-            result = run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
+            run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
           end
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
             # Run final install without specific dependencies
-            result = run_npm_install_lockfile_only([], has_optional_dependencies: false)
+            run_npm_install_lockfile_only([], has_optional_dependencies: false)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
