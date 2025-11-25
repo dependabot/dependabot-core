@@ -30,6 +30,21 @@ module Dependabot
         T.proc.params(arg0: T.untyped).returns(Regexp)
       )
 
+      # Bracket syntax: package[version='>=1.0']
+      CONDA_BRACKET_PATTERN = T.let(
+        lambda do |name|
+          /^(\s{2,4}-\s+)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
+        end,
+        T.proc.params(arg0: T.untyped).returns(Regexp)
+      )
+
+      CONDA_CHANNEL_BRACKET_PATTERN = T.let(
+        lambda do |name|
+          /^(\s{2,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
+        end,
+        T.proc.params(arg0: T.untyped).returns(Regexp)
+      )
+
       PIP_PATTERN = T.let(
         lambda do |name|
           /^(\s{5,}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
@@ -43,7 +58,6 @@ module Dependabot
 
         environment_files.each do |file|
           updated_file = update_environment_file(file)
-          # Always include a file (even if unchanged) to match expected behavior
           updated_files << (updated_file || file)
         end
 
@@ -56,7 +70,6 @@ module Dependabot
       def check_required_files
         filenames = dependency_files.map(&:name)
         raise "No environment.yml file found!" unless filenames.any? { |name| name.match?(/^environment\.ya?ml$/i) }
-        # File found, all good
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -140,18 +153,13 @@ module Dependabot
         ).returns(T::Hash[Symbol, T.untyped])
       end
       def update_conda_dependency_in_content(content, dependency)
-        # Pattern to match conda dependency lines (with optional channel prefix)
-        # Matches: "  - numpy=1.26", "  - conda-forge::numpy>=1.21.0", "  - numpy >= 1.21.0  # comment", etc.
-        # Enhanced to handle flexible indentation, space around operators, and comment preservation
-        # But restrict to main dependencies section (not deeply nested like pip section)
-        conda_patterns = [
-          # With channel prefix - main dependencies section (2-4 spaces to avoid pip section)
+        # Try standard patterns first (most common)
+        standard_patterns = [
           CONDA_CHANNEL_PATTERN.call(dependency.name),
-          # Without channel prefix - main dependencies section (2-4 spaces to avoid pip section)
           CONDA_SIMPLE_PATTERN.call(dependency.name)
         ]
 
-        conda_patterns.each do |pattern|
+        standard_patterns.each do |pattern|
           next unless content.match?(pattern)
 
           updated_content = content.gsub(pattern) do
@@ -159,9 +167,30 @@ module Dependabot
             name = ::Regexp.last_match(2)
             whitespace_before_comment = ::Regexp.last_match(4) || ""
             comment = ::Regexp.last_match(5) || ""
-            # Use the requirement from the dependency object, or default to =version
             new_requirement = get_requirement_for_dependency(dependency, "conda")
             "#{prefix}#{name}#{new_requirement}#{whitespace_before_comment}#{comment}"
+          end
+          return { updated: true, content: updated_content, not_found: false }
+        end
+
+        # Try bracket syntax patterns (rare cases)
+        bracket_patterns = [
+          CONDA_CHANNEL_BRACKET_PATTERN.call(dependency.name),
+          CONDA_BRACKET_PATTERN.call(dependency.name)
+        ]
+
+        bracket_patterns.each do |pattern|
+          next unless content.match?(pattern)
+
+          updated_content = content.gsub(pattern) do
+            prefix = ::Regexp.last_match(1)
+            name = ::Regexp.last_match(2)
+            bracket_start = ::Regexp.last_match(3)
+            bracket_end = ::Regexp.last_match(4)
+            whitespace_before_comment = ::Regexp.last_match(5) || ""
+            comment = ::Regexp.last_match(6) || ""
+            new_requirement = get_requirement_for_dependency(dependency, "conda")
+            "#{prefix}#{name}#{bracket_start}#{new_requirement}#{bracket_end}#{whitespace_before_comment}#{comment}"
           end
           return { updated: true, content: updated_content, not_found: false }
         end
@@ -176,10 +205,6 @@ module Dependabot
         ).returns(T::Hash[Symbol, T.untyped])
       end
       def update_pip_dependency_in_content(content, dependency)
-        # Pattern to match pip dependency lines in pip section
-        # Enhanced to handle flexible indentation for pip section (5+ spaces to distinguish from main deps),
-        # better operator support, and multiple constraints like "requests>=2.25.0,<3.0"
-        # Capture whitespace between requirement and comment to preserve formatting
         pip_pattern = PIP_PATTERN.call(dependency.name)
 
         if content.match?(pip_pattern)
@@ -188,7 +213,6 @@ module Dependabot
             name = ::Regexp.last_match(2)
             whitespace_before_comment = ::Regexp.last_match(4) || ""
             comment = ::Regexp.last_match(5) || ""
-            # Use the requirement from the dependency object, or default to ==version
             new_requirement = get_requirement_for_dependency(dependency, "pip")
             "#{prefix}#{name}#{new_requirement}#{whitespace_before_comment}#{comment}"
           end
