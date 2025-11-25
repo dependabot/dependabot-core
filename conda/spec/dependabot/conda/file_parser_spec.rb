@@ -30,8 +30,6 @@ RSpec.describe Dependabot::Conda::FileParser do
 
       it "extracts the correct dependencies" do
         dependencies = parser.parse
-
-        # Phase 2: Python interpreter is now included as a conda package
         expect(dependencies.map(&:name)).to match_array(
           %w(
             python numpy pandas pydantic-settings
@@ -214,7 +212,6 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(numpy_dep.requirements.first[:requirement]).to eq("=1.21.0")
         # Channel info should be preserved in the source or elsewhere if needed
-        # Phase 2: python is now included as a conda package
         expect(dependencies.map(&:name)).to match_array(%w(python numpy pandas))
       end
     end
@@ -254,7 +251,6 @@ RSpec.describe Dependabot::Conda::FileParser do
 
       it "parses non-Python packages correctly (R, system tools)" do
         dependencies = parser.parse
-        # Phase 2: Support ALL conda packages (Python, R, Julia, system tools, etc.)
         expect(dependencies.map(&:name)).to match_array(%w(r-base git cmake))
 
         r_dep = dependencies.find { |dep| dep.name == "r-base" }
@@ -270,7 +266,6 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
 
         # All conda packages have build strings (e.g., python=3.10.9=he550d4f_0_cpython)
-        # Phase 2: Fully qualified conda specs are not supported, but pip packages are
         expect(dependencies.all? { |d| d.package_manager == "pip" }).to be true
         expect(dependencies.length).to be_positive
 

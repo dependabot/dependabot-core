@@ -64,7 +64,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
         )
       end
 
-      # Phase 3: Update checking now works with delegation to Python ecosystem
       it "can detect updates when newer version is available" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
       end
@@ -90,7 +89,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
         allow(latest_version_finder).to receive(:latest_version).and_return(Dependabot::Conda::Version.new("2.28.2"))
       end
 
-      # Phase 3: Update checking now works with delegation to Python ecosystem
       it "can detect updates when newer version is available" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
       end
@@ -487,10 +485,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
       end
     end
   end
-
-  # NOTE: The update_requirement_string method has been removed in favor of
-  # the RequirementsUpdater class. See requirements_updater_spec.rb for
-  # comprehensive tests of requirement updating logic across all strategies.
 
   private
 

@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "yaml"
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -115,7 +116,6 @@ module Dependabot
 
       sig { params(content: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
       def parse_yaml_content(content)
-        require "yaml"
         parsed = YAML.safe_load(content)
         parsed.is_a?(Hash) ? parsed : nil
       end

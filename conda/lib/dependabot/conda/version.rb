@@ -50,6 +50,9 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(Integer, String)])) }
       attr_reader :local_parts
 
+      VersionParts = T.let(Struct.new(:epoch, :main, :local, keyword_init: true), T.untyped)
+      private_constant :VersionParts
+
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
@@ -60,12 +63,12 @@ module Dependabot
         validate_version!(@version_string)
 
         # Parse epoch, main version, and local version
-        epoch_str, main_version, local_version = parse_epoch_and_local(@version_string)
+        parts = parse_epoch_and_local(@version_string)
 
-        @epoch = T.let(epoch_str.to_i, Integer)
-        @version_parts = T.let(parse_components(main_version), T::Array[T.any(Integer, String)])
+        @epoch = T.let(parts.epoch.to_i, Integer)
+        @version_parts = T.let(parse_components(parts.main), T::Array[T.any(Integer, String)])
         @local_parts = T.let(
-          local_version ? parse_components(local_version) : nil,
+          parts.local ? parse_components(parts.local) : nil,
           T.nilable(T::Array[T.any(Integer, String)])
         )
 
@@ -93,8 +96,7 @@ module Dependabot
       # Validates version string for malformed segments
       sig { params(version_str: String).void }
       def validate_version!(version_str)
-        # Remove epoch and local version for validation
-        _, main_version, = parse_epoch_and_local(version_str)
+        main_version = parse_epoch_and_local(version_str).main
 
         # Check for empty segments (consecutive dots, leading/trailing dots)
         return unless main_version.include?("..") || main_version.match?(/^\./) || main_version.match?(/\.$/)
@@ -103,8 +105,8 @@ module Dependabot
       end
 
       # Parses epoch and local version from version string
-      # Returns [epoch_string, main_version, local_version]
-      sig { params(version_str: String).returns([T.nilable(String), String, T.nilable(String)]) }
+      # Returns VersionParts struct with epoch, main, and local fields
+      sig { params(version_str: String).returns(T.untyped) }
       def parse_epoch_and_local(version_str)
         # Split on '!' for epoch
         parts = version_str.split("!", 2)
@@ -121,7 +123,7 @@ module Dependabot
         main_version = parts[0]
         local_version = parts[1]
 
-        [epoch_str, T.must(main_version), local_version]
+        VersionParts.new(epoch: epoch_str, main: T.must(main_version), local: local_version)
       end
 
       # Parses version components into normalized segments
