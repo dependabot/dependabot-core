@@ -112,9 +112,7 @@ module Dependabot
       def update_registry_requirement(req)
         return req unless latest_version
 
-        if req.fetch(:requirement).nil?
-          return req.merge(requirement: "~> #{latest_version}")
-        end
+        return req.merge(requirement: "~> #{latest_version}") if req.fetch(:requirement).nil?
 
         string_req = req.fetch(:requirement).strip
         ruby_req = requirement_class.new(string_req)
@@ -136,7 +134,7 @@ module Dependabot
       def update_twiddle_version(req_string)
         old_version = requirement_class.new(req_string)
                                        .requirements.first.last
-        updated_version = at_same_precision(latest_version, old_version)
+        updated_version = at_same_precision(T.must(latest_version), old_version)
         req_string.sub(old_version.to_s, updated_version)
       end
 
@@ -144,10 +142,10 @@ module Dependabot
       def update_range(req_string)
         requirement_class.new(req_string).requirements.flat_map do |r|
           ruby_req = requirement_class.new(r.join(" "))
-          next ruby_req if ruby_req.satisfied_by?(latest_version)
+          next ruby_req if ruby_req.satisfied_by?(T.must(latest_version))
 
           case op = ruby_req.requirements.first.first
-          when "<", "<=" then [update_greatest_version(ruby_req, latest_version)]
+          when "<", "<=" then [update_greatest_version(ruby_req, T.must(latest_version))]
           when "!=" then []
           else raise "Unexpected operation for unsatisfied req: #{op}"
           end
