@@ -284,15 +284,18 @@ module Dependabot
           # TODO: Update the npm 6 updater to use these args as we currently
           # do the same in the js updater helper, we've kept it separate for
           # the npm 7 rollout
-          install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
-          has_optional_dependencies = top_level_dependencies.any? { |dependency| optional_dependency?(dependency) }
 
-          run_npm_install_lockfile_only(install_args, has_optional_dependencies: has_optional_dependencies)
+          top_level_dependencies.each do |dependency|
+            install_args = [npm_install_args(dependency)]
+            is_optional = optional_dependency?(dependency)
+            result = run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
+          end
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
-            run_npm_install_lockfile_only([], has_optional_dependencies: has_optional_dependencies)
+            # Run final install without specific dependencies
+            result = run_npm_install_lockfile_only([], has_optional_dependencies: false)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
