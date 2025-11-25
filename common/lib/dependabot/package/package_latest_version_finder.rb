@@ -158,6 +158,26 @@ module Dependabot
         if releases.count > filtered.count
           Dependabot.logger.info("Filtered out #{releases.count - filtered.count} versions due to cooldown")
         end
+
+        # If all releases were filtered out due to cooldown and we have a current version, use it as fallback
+        if filtered.empty? && !releases.empty? && dependency.version
+          current_version_str = dependency.version
+
+          Dependabot.logger.info(
+            "All versions filtered by cooldown for #{dependency.name}, " \
+            "falling back to current version #{current_version_str}"
+          )
+
+          # Create a PackageRelease for the current version
+          current_version = version_class.new(current_version_str)
+          current_release = Dependabot::Package::PackageRelease.new(
+            version: current_version,
+            released_at: nil,
+            tag: nil
+          )
+          return [current_release]
+        end
+
         filtered
       end
 

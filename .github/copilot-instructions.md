@@ -102,6 +102,11 @@ rspec spec                       # Run relevant tests
 - All existing tests must continue to pass after your changes
 - Add tests for new functionality before implementing the feature
 - When fixing bugs, add a test that reproduces the issue first
+- **NEVER test private methods directly** - tests should only call public interfaces
+- **NEVER modify production code visibility to accommodate tests** - if tests need access to private methods, the test design is wrong
+- **NEVER add public methods solely for testing** - this pollutes the production API and creates maintenance burden
+- Tests should verify behavior through public APIs, not implementation details
+- Tests should exercise production code paths (e.g., `fetch_files`) rather than isolated helper methods
 
 ### Code Style and Validation
 
