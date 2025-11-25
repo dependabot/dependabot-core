@@ -68,8 +68,12 @@ module Dependabot
               # Type guard above ensures requirement_value is a String
               requirement_string = T.let(requirement_value, String)
               range_parts = extract_range_parts(requirement_string)
-              range_parts.empty? ? nil : requirement_class.requirements_array(range_parts.join(","))
-            end.flatten,
+              next if range_parts.empty?
+
+              # Join range parts and create a single requirement that handles comma-separated constraints
+              range_requirement_string = range_parts.join(",")
+              requirement_class.new(range_requirement_string)
+            end.compact,
             T::Array[Dependabot::Requirement]
           )
         end
@@ -78,7 +82,7 @@ module Dependabot
         def extract_range_parts(requirement_string)
           T.let(
             requirement_string.split(",").map(&:strip).select do |part|
-              part.match?(/^\s*(<|>|>=|<=|!=)\s*\d/)
+              part.match?(/^\s*(<|>|>=|<=|!=)\s*/)
             end,
             T::Array[String]
           )
