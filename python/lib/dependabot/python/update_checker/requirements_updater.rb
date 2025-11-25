@@ -279,9 +279,11 @@ module Dependabot
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
         def new_version_satisfies?(req)
-          requirement_class
-            .requirements_array(req.fetch(:requirement))
-            .any? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
+          requirement_string = req.fetch(:requirement)
+          return true if requirement_string.nil?
+
+          # Handle comma-separated constraints properly
+          requirement_class.new(requirement_string).satisfied_by?(T.must(latest_resolvable_version))
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
@@ -308,8 +310,16 @@ module Dependabot
 
           return updated_equality if non_equality_constraints.empty?
 
-          # Combine updated equality with preserved constraints
-          ([updated_equality] + non_equality_constraints).join(",")
+          # Preserve original order: replace equality constraint in place, keep others as-is
+          result_parts = requirement_strings.map do |r|
+            if requirement_class.new(r).exact? || r.match?(/^(=+|\d)/)
+              updated_equality
+            else
+              r # Keep non-equality constraints unchanged
+            end
+          end
+
+          result_parts.join(",")
         end
 
         sig { params(new_version: String, old_version: String).returns(String) }
