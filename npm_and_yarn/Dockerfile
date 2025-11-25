@@ -41,8 +41,12 @@ RUN corepack install pnpm@$PNPM_VERSION --global
 # Install yarn berry and set it to a stable version
 RUN corepack install yarn@$YARN_VERSION --global
 
-# Install npm and set it to a stable version
-RUN corepack install npm@$NPM_VERSION --global
+# Install and activate the latest npm globally
+RUN corepack install npm@$NPM_VERSION --global \
+  # Pre-cache popular older versions (npm 8, 9, 10) for on-demand activation
+  && corepack prepare npm@10 \
+  && corepack prepare npm@9 \
+  && corepack prepare npm@8
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
