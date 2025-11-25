@@ -1074,6 +1074,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       updated_npm_lock_content
     end
 
+    context "when updating both regular and optional dependencies" do
+      let(:files) { project_dependency_files("npm8/mixed_dependencies") }
+      let(:dependencies) { [regular_dependency, optional_dependency_obj] }
+
+      let(:regular_dependency) do
+        Dependabot::Dependency.new(
+          name: "fetch-factory",
+          version: "0.0.2",
+          previous_version: "0.0.1",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^0.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^0.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      let(:optional_dependency_obj) do
+        Dependabot::Dependency.new(
+          name: "@rollup/rollup-linux-x64-gnu",
+          version: "4.53.2",
+          previous_version: "4.52.5",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^4.53.2",
+            groups: ["optionalDependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "^4.52.5",
+            groups: ["optionalDependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "handles regular and optional dependencies separately" do
+        # Expect individual calls for each dependency:
+        # 1. Regular dependency without --no-save
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .with(include("fetch-factory@0.0.2"), anything) do |command, _options|
+            expect(command).not_to include("--no-save")
+            ""
+          end
+
+        # 2. Optional dependency with --no-save
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .with(include("@rollup/rollup-linux-x64-gnu@4.53.2"), anything) do |command, _options|
+            expect(command).to include("--no-save")
+            ""
+          end
+
+        updated_npm_lock_content
+      end
+    end
+
     describe "#optional_dependency?" do
       it "correctly identifies optional dependencies" do
         optional_dep = Dependabot::Dependency.new(
