@@ -42,7 +42,7 @@ module Dependabot
 
         if registry_info[:registry] # Prevent the https from being stripped in the process
           registry = registry_info[:registry]
-          registry = "https://#{registry}" unless registry.start_with?("http://", "https://")
+          registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
           env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
         end
 
