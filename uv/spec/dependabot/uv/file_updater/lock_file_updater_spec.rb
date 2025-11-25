@@ -398,7 +398,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
-  # ADD DEDICATED ERROR HANDLING TESTS
   describe "#replace_dep" do
     subject(:replace_dep) { updater.send(:replace_dep, dependency, content, new_req, old_req) }
 
