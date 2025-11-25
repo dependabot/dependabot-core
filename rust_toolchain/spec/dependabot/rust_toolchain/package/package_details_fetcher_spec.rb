@@ -7,6 +7,8 @@ require "dependabot/rust_toolchain/package/package_details_fetcher"
 RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
   subject(:finder) { described_class.new(dependency: dependency) }
 
+  let(:manifests_url_with_timestamp) { /\A#{Regexp.escape(described_class::MANIFESTS_URL)}(\?t=\d+)?\z/o }
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "rust-toolchain",
@@ -33,8 +35,9 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
     end
 
     before do
+      # Stub any cache-busted URL variant without assertions inside the hook
       allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: described_class::MANIFESTS_URL)
+        .with(url: manifests_url_with_timestamp)
         .and_return(instance_double(Excon::Response, body: manifests_response))
     end
 
@@ -108,8 +111,8 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
 
     it "handles network errors gracefully" do
       allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: described_class::MANIFESTS_URL)
-        .and_raise(Excon::Error::Timeout.new("Request timeout"))
+        .with(url: manifests_url_with_timestamp)
+        .and_raise(Excon::Error::Timeout, "Request timeout")
 
       expect { finder.fetch }.to raise_error(Excon::Error::Timeout)
     end

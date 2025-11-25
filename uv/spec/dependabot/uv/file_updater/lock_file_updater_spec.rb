@@ -311,51 +311,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
-  describe "#declaration_regex" do
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "redis",
-        version: "4.6.0",
-        requirements: [{
-          file: "pyproject.toml",
-          requirement: "~=4.6.0",
-          groups: [],
-          source: nil
-        }],
-        previous_requirements: [{
-          file: "pyproject.toml",
-          requirement: "~=4.5.4",
-          groups: [],
-          source: nil
-        }],
-        previous_version: "4.5.4",
-        package_manager: "uv"
-      )
-    end
-
-    let(:old_req) { dependency.previous_requirements.first }
-
-    it "correctly handles tilde requirements" do
-      regex = updater.send(:declaration_regex, dependency, old_req)
-      expect { "some text" =~ regex }.not_to raise_error
-    end
-
-    it "matches tilde requirements in pyproject.toml" do
-      content = <<~TOML
-        [project]
-        name = "myproject"
-        dependencies = [
-            "redis~=4.5.4",
-        ]
-      TOML
-
-      regex = updater.send(:declaration_regex, dependency, old_req)
-      match = content.match(regex)
-      expect(match).to be_a(MatchData)
-      expect(match[:declaration]).to eq("redis~=4.5.4")
-    end
-  end
-
   describe "#lock_index_options" do
     subject(:lock_index_options) { updater.send(:lock_index_options) }
 
@@ -443,7 +398,204 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
-  # ADD DEDICATED ERROR HANDLING TESTS
+  describe "#replace_dep" do
+    subject(:replace_dep) { updater.send(:replace_dep, dependency, content, new_req, old_req) }
+
+    let(:content) do
+      <<~TOML
+        [project]
+        name = "myproject"
+        dependencies = [
+            "fastapi>=0.115.12,<0.116",
+            "uvicorn>=0.34.0,<0.35",
+        ]
+      TOML
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: "0.115.12",
+        requirements: [{
+          file: "pyproject.toml",
+          requirement: ">=0.115.12,<0.122",
+          groups: [],
+          source: nil
+        }],
+        previous_requirements: [{
+          file: "pyproject.toml",
+          requirement: ">=0.115.12,<0.116",
+          groups: [],
+          source: nil
+        }],
+        previous_version: "0.115.12",
+        package_manager: "uv"
+      )
+    end
+
+    let(:new_req) { { requirement: ">=0.115.12,<0.122" } }
+    let(:old_req) { { requirement: ">=0.115.12,<0.116" } }
+
+    it "replaces the requirement with the new version" do
+      result = replace_dep
+      expect(result).to include('"fastapi>=0.115.12,<0.122"')
+      expect(result).not_to include('"fastapi>=0.115.12,<0.116"')
+    end
+
+    it "preserves other dependencies" do
+      result = replace_dep
+      expect(result).to include('"uvicorn>=0.34.0,<0.35"')
+    end
+
+    context "when operators are in different order" do
+      let(:old_req) { { requirement: "<0.116,>=0.115.12" } }
+
+      it "still matches and replaces correctly" do
+        result = replace_dep
+        expect(result).to include('"fastapi>=0.115.12,<0.122"')
+        expect(result).not_to include('"fastapi>=0.115.12,<0.116"')
+      end
+    end
+
+    context "when there are multiple dependencies with the same name" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "fastapi>=0.100.0,<0.101",
+          ]
+
+          [dependency-groups]
+          dev = [
+              "fastapi>=0.115.12,<0.116",
+          ]
+        TOML
+      end
+
+      it "only replaces the matching version" do
+        result = replace_dep
+        expect(result).to include('"fastapi>=0.100.0,<0.101"')
+        expect(result).to include('"fastapi>=0.115.12,<0.122"')
+        expect(result).not_to include('"fastapi>=0.115.12,<0.116"')
+      end
+    end
+
+    context "with exact version (==)" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "fastapi==0.115.12",
+          ]
+        TOML
+      end
+
+      let(:new_req) { { requirement: "==0.122.0" } }
+      let(:old_req) { { requirement: "==0.115.12" } }
+
+      it "replaces the exact version" do
+        result = replace_dep
+        expect(result).to include('"fastapi==0.122.0"')
+        expect(result).not_to include('"fastapi==0.115.12"')
+      end
+    end
+
+    context "with tilde requirement (~=)" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "fastapi~=0.115.0",
+          ]
+        TOML
+      end
+
+      let(:new_req) { { requirement: "~=0.122.0" } }
+      let(:old_req) { { requirement: "~=0.115.0" } }
+
+      it "replaces the tilde requirement" do
+        result = replace_dep
+        expect(result).to include('"fastapi~=0.122.0"')
+        expect(result).not_to include('"fastapi~=0.115.0"')
+      end
+    end
+
+    context "with single quotes" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              'fastapi>=0.115.12,<0.116',
+          ]
+        TOML
+      end
+
+      it "preserves single quotes" do
+        result = replace_dep
+        expect(result).to include("'fastapi>=0.115.12,<0.122'")
+        expect(result).not_to include("'fastapi>=0.115.12,<0.116'")
+      end
+    end
+  end
+
+  describe "#requirements_match?" do
+    subject(:requirements_match) { updater.send(:requirements_match?, req1, req2) }
+
+    context "when requirements are identical" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { ">=0.115.12,<0.116" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have operators in different order" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { "<0.116,>=0.115.12" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have different whitespace" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { ">=0.115.12, <0.116" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have three constraints in different order" do
+      let(:req1) { ">=1.0.0,<2.0.0,!=1.5.0" }
+      let(:req2) { "!=1.5.0,>=1.0.0,<2.0.0" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements are different" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { ">=0.115.12,<0.122" }
+
+      it "returns false" do
+        expect(requirements_match).to be false
+      end
+    end
+
+    context "when one requirement is a subset of another" do
+      let(:req1) { ">=0.115.12" }
+      let(:req2) { ">=0.115.12,<0.116" }
+
+      it "returns false" do
+        expect(requirements_match).to be false
+      end
+    end
+  end
+
   describe "#handle_uv_error" do
     subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
 

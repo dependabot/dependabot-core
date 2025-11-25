@@ -17,17 +17,34 @@ module Dependabot
         # Note: Missing compat entry (nil/empty) means any version is acceptable
         return [new(">= 0")] if requirement_string.nil? || requirement_string.empty?
 
-        # Split by comma for multiple constraints
         constraints = requirement_string.split(",").map(&:strip)
 
-        constraints.map do |constraint|
-          # Handle Julia-specific patterns - returns an array of gem requirement strings
-          normalized_constraints = normalize_julia_constraint(constraint)
-          # Pass the array to Gem::Requirement, which accepts multiple conditions
-          new(normalized_constraints)
+        if compound_constraint?(constraints)
+          parse_compound_constraint(constraints)
+        else
+          parse_separate_constraints(constraints)
         end
       rescue Gem::Requirement::BadRequirementError
         [new(">= 0")]
+      end
+
+      sig { params(constraints: T::Array[String]).returns(T::Boolean) }
+      def self.compound_constraint?(constraints)
+        # Compound constraints (e.g., ">= 1.0, < 2.0") have operators and multiple parts
+        constraints.length > 1 && constraints.any? { |c| c.match?(/^[<>=~^]/) }
+      end
+
+      sig { params(constraints: T::Array[String]).returns(T::Array[Dependabot::Julia::Requirement]) }
+      def self.parse_compound_constraint(constraints)
+        # Handle compound constraints (e.g., ">= 1.0, < 2.0") as a single requirement
+        normalized_constraints = constraints.flat_map { |c| normalize_julia_constraint(c) }
+        [new(normalized_constraints)]
+      end
+
+      sig { params(constraints: T::Array[String]).returns(T::Array[Dependabot::Julia::Requirement]) }
+      def self.parse_separate_constraints(constraints)
+        # Handle separate version specs (e.g., "0.34, 0.35") as multiple requirements
+        constraints.map { |constraint| new(normalize_julia_constraint(constraint)) }
       end
 
       sig { params(requirement_string: String).returns(T::Array[Dependabot::Julia::Requirement]) }

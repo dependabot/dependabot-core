@@ -1,10 +1,10 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "yaml"
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
-require "dependabot/conda/python_package_classifier"
 
 module Dependabot
   module Conda
@@ -31,101 +31,150 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        []
+        unless allow_beta_ecosystems?
+          raise Dependabot::DependencyFileNotFound.new(
+            nil,
+            "Conda support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it."
+          )
+        end
+
+        fetched_files = []
+
+        # Try to fetch environment.yml first, then environment.yaml
+        environment_file = fetch_file_if_present("environment.yml") ||
+                           fetch_file_if_present("environment.yaml")
+
+        if environment_file
+          # Validate it's a proper conda environment file
+          validation = validate_conda_environment(environment_file)
+          unless validation[:valid]
+            raise(
+              Dependabot::DependencyFileNotFound.new(
+                File.join(directory, environment_file.name),
+                unsupported_environment_message(validation[:reason])
+              )
+            )
+          end
+          fetched_files << environment_file
+        end
+
+        return fetched_files if fetched_files.any?
+
+        raise(
+          Dependabot::DependencyFileNotFound,
+          File.join(directory, "environment.yml")
+        )
       end
 
       private
 
-      # Check if an environment file contains Python packages we can manage
-      sig { params(file: DependencyFile).returns(T::Boolean) }
-      def environment_contains_manageable_packages?(file)
+      # Validate that environment file is a proper conda manifest with manageable packages
+      # Returns a hash with :valid (Boolean) and :reason (Symbol or nil)
+      sig { params(file: DependencyFile).returns(T::Hash[Symbol, T.untyped]) }
+      def validate_conda_environment(file)
         content = file.content
-        return false unless content
+        return { valid: false, reason: :no_content } unless content
 
-        parsed_yaml = begin
-          parse_yaml_content(content)
-        rescue Psych::SyntaxError => e
-          Dependabot.logger.error("YAML parsing error: #{e.message}")
-          nil
-        end
-        return false unless parsed_yaml
+        parsed_yaml = parse_and_validate_yaml(content)
+        return { valid: false, reason: :invalid_yaml } unless parsed_yaml
 
-        manageable_conda_packages?(parsed_yaml) || manageable_pip_packages?(parsed_yaml)
+        dependencies = parsed_yaml["dependencies"]
+        return { valid: false, reason: :no_dependencies } unless dependencies.is_a?(Array)
+        return { valid: false, reason: :empty_dependencies } if dependencies.empty?
+
+        # Check if all packages are fully qualified (no manageable packages)
+        return { valid: false, reason: :all_fully_qualified } unless manageable_packages?(dependencies)
+
+        { valid: true, reason: nil }
       end
 
-      # Parse YAML content and return parsed hash or nil
+      sig { params(content: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      def parse_and_validate_yaml(content)
+        parsed_yaml = parse_yaml_content(content)
+        return nil unless parsed_yaml
+        return nil unless parsed_yaml.is_a?(Hash)
+
+        parsed_yaml
+      rescue Psych::SyntaxError => e
+        Dependabot.logger.error("YAML parsing error: #{e.message}")
+        nil
+      end
+
+      # Check if there are any manageable packages (simple specs or pip)
+      sig { params(dependencies: T.untyped).returns(T::Boolean) }
+      def manageable_packages?(dependencies)
+        return false unless dependencies.is_a?(Array)
+
+        has_simple_conda = dependencies.any? do |dep|
+          dep.is_a?(String) && !fully_qualified_spec?(dep)
+        end
+
+        has_pip = dependencies.any? { |dep| dep.is_a?(Hash) && dep.key?("pip") }
+
+        has_simple_conda || has_pip
+      end
+
       sig { params(content: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
       def parse_yaml_content(content)
-        require "yaml"
         parsed = YAML.safe_load(content)
         parsed.is_a?(Hash) ? parsed : nil
       end
 
-      # Check if the parsed YAML contains manageable conda packages
-      sig { params(parsed_yaml: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
-      def manageable_conda_packages?(parsed_yaml)
-        dependencies = parsed_yaml["dependencies"]
-        return false unless dependencies.is_a?(Array)
-
-        simplified_packages = dependencies.select do |dep|
-          dep.is_a?(String) && !fully_qualified_spec?(dep) &&
-            PythonPackageClassifier.python_package?(PythonPackageClassifier.extract_package_name(dep))
-        end
-        simplified_packages.any?
-      end
-
-      # Check if the parsed YAML contains manageable pip packages
-      sig { params(parsed_yaml: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
-      def manageable_pip_packages?(parsed_yaml)
-        dependencies = parsed_yaml["dependencies"]
-        return false unless dependencies.is_a?(Array)
-
-        pip_deps = dependencies.find { |dep| dep.is_a?(Hash) && dep.key?("pip") }
-        return false unless pip_deps && pip_deps["pip"].is_a?(Array)
-
-        python_pip_packages = pip_deps["pip"].select do |pip_dep|
-          pip_dep.is_a?(String) &&
-            PythonPackageClassifier.python_package?(PythonPackageClassifier.extract_package_name(pip_dep))
-        end
-        python_pip_packages.any?
-      end
-
-      # Check if a package specification is fully qualified (build string included)
       sig { params(spec: String).returns(T::Boolean) }
       def fully_qualified_spec?(spec)
-        # Fully qualified specs have format: package=version=build_string
-        # e.g., "numpy=1.21.0=py39h20f2e39_0"
+        # Fully qualified: package=version=build_string (e.g., numpy=1.21.0=py39h20f2e39_0)
+        return false if spec.include?("==")
+        return false if spec.include?("[")
+
         parts = spec.split("=")
         return false unless parts.length >= 3
 
         build_string = parts[2]
-        return false unless build_string
+        return false unless build_string && !build_string.empty?
 
         build_string.match?(/^[a-zA-Z0-9_]+$/)
       end
 
-      sig { returns(String) }
-      def unsupported_environment_message
-        <<~MSG
-          This Conda environment file is not currently supported by Dependabot.
+      sig { params(reason: T.nilable(Symbol)).returns(String) }
+      def unsupported_environment_message(reason)
+        case reason
+        when :all_fully_qualified
+          <<~MSG
+            This environment file contains only fully qualified package specifications with build strings.
 
-          Dependabot-Conda supports Python packages only and requires one of the following:
+            Dependabot cannot update packages with build strings like:
+              - numpy=1.21.0=py39h20f2e39_0
 
-          1. **Simplified conda specifications**: Dependencies using simple version syntax (e.g., numpy=1.21.0)
-          2. **Pip section with Python packages**: A 'pip:' section containing Python packages from PyPI
+            To fix, remove the build string. Dependabot supports simplified specifications \
+            (e.g., numpy=1.21.0,r-base>=4.0)
+          MSG
+        when :no_dependencies, :empty_dependencies
+          <<~MSG
+            This environment file has no dependencies to manage.
 
-          **Not supported:**
-          - Fully qualified conda specifications (e.g., numpy=1.21.0=py39h20f2e39_0)
-          - Non-Python packages (R packages, system tools, etc.)
-          - Environments without any Python packages
+            Add at least one package to the dependencies section:
+              dependencies:
+                - python>=3.9
+                - numpy>=1.21.0
+          MSG
+        when :invalid_yaml
+          <<~MSG
+            This environment file contains invalid YAML syntax.
 
-          To make your environment compatible:
-          - Use simplified conda package specifications for conda packages
-          - Add a pip section for PyPI packages
-          - Focus on Python packages only
+            Please fix the YAML syntax errors before Dependabot can process this file.
+          MSG
+        else
+          <<~MSG
+            This Conda environment file is not supported by Dependabot.
 
-          For more information, see the Dependabot-Conda documentation.
-        MSG
+            Dependabot supports:
+            - Simplified conda specifications (e.g., numpy=1.21.0, r-base>=4.0)
+            - Pip dependencies in the pip section
+
+            Not supported:
+            - Fully qualified specifications with build strings (e.g., numpy=1.21.0=py39h20f2e39_0)
+          MSG
+        end
       end
     end
   end

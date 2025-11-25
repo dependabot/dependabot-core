@@ -6,7 +6,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/conda/version"
 require "dependabot/conda/requirement"
-require "dependabot/conda/python_package_classifier"
+require "dependabot/requirements_update_strategy"
 
 module Dependabot
   module Conda
@@ -50,28 +50,24 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
+        return nil if dependency.requirements.all? { |req| req[:requirement].nil? || req[:requirement] == "*" }
+
         @latest_version ||= fetch_latest_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
-        # For now, same as latest_version since we're not doing full dependency resolution
         latest_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version
-        # For Phase 3, delegate to latest_version_finder
-        # This will be enhanced with actual conda search and PyPI integration
         latest_version
       end
 
       sig { override.returns(T::Boolean) }
       def up_to_date?
         return true if latest_version.nil?
-
-        # If dependency has no version (range constraint like >=2.0),
-        # we can't determine if it's up-to-date, so assume it needs checking
         return false if dependency.version.nil?
 
         T.must(latest_version) <= Dependabot::Conda::Version.new(dependency.version)
@@ -79,8 +75,6 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
-        # For conda, we don't have lock files, so requirements can always be updated
-        # This is unlike other ecosystems that have lock files (package-lock.json, Pipfile.lock, etc.)
         true
       end
 
@@ -102,17 +96,18 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
-        target_version = preferred_resolvable_version
-        return dependency.requirements unless target_version
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          update_strategy: requirements_update_strategy,
+          latest_resolvable_version: preferred_resolvable_version&.to_s
+        ).updated_requirements
+      end
 
-        dependency.requirements.map do |req|
-          req.merge(
-            requirement: update_requirement_string(
-              req[:requirement] || "=#{dependency.version}",
-              target_version.to_s
-            )
-          )
-        end
+      sig { override.returns(Dependabot::RequirementsUpdateStrategy) }
+      def requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
+
+        RequirementsUpdateStrategy::BumpVersions
       end
 
       private
@@ -140,11 +135,8 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_resolvable_security_fix_version
-        # Delegate to latest_version_finder for security fix resolution
-        # This leverages Python ecosystem's security advisory infrastructure
         fix_version = latest_version_finder.lowest_security_fix_version
 
-        # If no security fix version is found, fall back to latest_resolvable_version
         if fix_version.nil?
           fallback = latest_resolvable_version
           return fallback.is_a?(String) ? Dependabot::Conda::Version.new(fallback) : fallback
@@ -155,7 +147,6 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        # No lock file support for Conda
         false
       end
 
@@ -163,49 +154,11 @@ module Dependabot
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
       end
-
-      sig { params(requirement_string: String, new_version: String).returns(String) }
-      def update_requirement_string(requirement_string, new_version)
-        # Parse the current requirement to preserve the operator type
-        case requirement_string
-        when /^=([0-9])/
-          # Conda exact version: =1.26 -> =2.3.2
-          "=#{new_version}"
-        when /^==([0-9])/
-          # Pip exact version: ==1.26 -> ==2.3.2
-          "==#{new_version}"
-        when /^>=([0-9])/
-          # Range constraint: preserve as range but update to new version
-          ">=#{new_version}"
-        when /^>([0-9])/
-          # Greater than: >1.26 -> >2.3.2
-          ">#{new_version}"
-        when /^<=([0-9])/
-          # Less than or equal: keep as is (shouldn't be updated)
-          requirement_string
-        when /^<([0-9])/
-          # Less than: keep as is (shouldn't be updated)
-          requirement_string
-        when /^!=([0-9])/
-          # Not equal: keep as is
-          requirement_string
-        when /^~=([0-9])/
-          # Compatible release: ~=1.26 -> ~=2.3.2
-          "~=#{new_version}"
-        else
-          # Default to conda-style equality for unknown patterns
-          "=#{new_version}"
-        end
-      end
-
-      sig { params(package_name: String).returns(T::Boolean) }
-      def python_package?(package_name)
-        PythonPackageClassifier.python_package?(package_name)
-      end
     end
   end
 end
 
 require_relative "update_checker/latest_version_finder"
+require_relative "update_checker/requirements_updater"
 
 Dependabot::UpdateCheckers.register("conda", Dependabot::Conda::UpdateChecker)

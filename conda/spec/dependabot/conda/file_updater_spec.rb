@@ -483,6 +483,46 @@ RSpec.describe Dependabot::Conda::FileUpdater do
         expect(updated_files.first.content).to include("pydantic-settings==2.1.0")
       end
     end
+
+    context "when updating dependencies with bracket syntax" do
+      let(:environment_content) { fixture("environment_bracket_syntax.yml") }
+      let(:dependencies) do
+        [Dependabot::Dependency.new(
+          name: "conda-anaconda-telemetry",
+          version: "0.3.0",
+          previous_version: "0.2.0",
+          package_manager: "conda",
+          requirements: [{
+            requirement: ">=0.3.0",
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=0.2.0",
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )]
+      end
+
+      it "updates the version constraint inside brackets" do
+        updated_files = updater.updated_dependency_files
+
+        expect(updated_files.first.content).to include("conda-anaconda-telemetry[version='>=0.3.0']")
+        expect(updated_files.first.content).not_to include("conda-anaconda-telemetry[version='>=0.2.0']")
+      end
+
+      it "preserves the bracket syntax format" do
+        updated_files = updater.updated_dependency_files
+        updated_content = updated_files.first.content
+
+        # Should still use bracket syntax, not convert to standard format
+        expect(updated_content).to match(/conda-anaconda-telemetry\[version='>=\d+\.\d+\.\d+'\]/)
+        expect(updated_content).not_to include("conda-anaconda-telemetry>=")
+      end
+    end
   end
 
   describe "#check_required_files" do
