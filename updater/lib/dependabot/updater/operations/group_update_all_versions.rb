@@ -88,9 +88,8 @@ module Dependabot
             if pr_exists_for_dependency_group?(group)
               existing_pr = job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }
               pr_number = existing_pr&.[]("pr_number")
-              pr_number_text = pr_number ? "##{pr_number} " : ""
 
-              Dependabot.logger.info("Detected existing pull request #{pr_number_text}for '#{group.name}'.")
+              Dependabot.logger.info("Detected existing pull request ##{pr_number} for '#{group.name}'.")
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
