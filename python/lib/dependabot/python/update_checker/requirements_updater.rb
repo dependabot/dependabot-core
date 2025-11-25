@@ -279,11 +279,9 @@ module Dependabot
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
         def new_version_satisfies?(req)
-          requirement_string = req.fetch(:requirement)
-          return true if requirement_string.nil?
-
-          # Handle comma-separated constraints properly
-          requirement_class.new(requirement_string).satisfied_by?(T.must(latest_resolvable_version))
+          requirement_class
+            .requirements_array(req.fetch(:requirement))
+            .any? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
