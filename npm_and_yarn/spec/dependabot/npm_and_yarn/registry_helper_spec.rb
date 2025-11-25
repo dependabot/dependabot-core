@@ -90,6 +90,29 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       end
     end
 
+    context "when credentials are provided with npm_registry type and replaces-base" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          {
+            "type" => "npm_registry",
+            "registry" => "artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => true
+          }
+        ]
+      end
+
+      it "returns registry with https scheme and token" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).to eq(
+          "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
+          "COREPACK_NPM_TOKEN" => "my-token"
+        )
+      end
+    end
+
     context "when npmrc has registry but no token" do
       let(:registry_config_files) { { npmrc: npmrc_without_token_file } }
 
