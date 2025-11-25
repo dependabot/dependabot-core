@@ -46,19 +46,20 @@ module Dependabot
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_latest_versions_filter(releases)
-          # Filter based on range requirements only (e.g., <, >, >=, <=, !=)
-          # This allows finding the latest version while respecting upper/lower bounds
-          # but ignoring pinning constraints like ==, ~=, ^ which are the target of the update
+          # Filter based on UPPER BOUND constraints only (<, <=, !=)
+          # We want to find the latest version that doesn't exceed upper limits
+          # Lower bounds (>, >=) should NOT restrict - we want newer versions above lower bounds
+          # Pinning constraints (==, ~=, ^) are the target of updates and should be ignored
           return releases if dependency.requirements.empty?
 
-          reqs = extract_range_requirements
+          reqs = extract_upper_bound_requirements
           return releases if reqs.empty?
 
           releases.select { |release| reqs.all? { |req| req.satisfied_by?(release.version) } }
         end
 
         sig { returns(T::Array[Dependabot::Requirement]) }
-        def extract_range_requirements
+        def extract_upper_bound_requirements
           T.let(
             dependency.requirements.filter_map do |r|
               requirement_value = r.fetch(:requirement, nil)
@@ -67,22 +68,25 @@ module Dependabot
 
               # Type guard above ensures requirement_value is a String
               requirement_string = T.let(requirement_value, String)
-              range_parts = extract_range_parts(requirement_string)
-              next if range_parts.empty?
+              upper_bound_parts = extract_upper_bound_parts(requirement_string)
+              next if upper_bound_parts.empty?
 
-              # Join range parts and create a single requirement that handles comma-separated constraints
-              range_requirement_string = range_parts.join(",")
-              requirement_class.new(range_requirement_string)
+              # Join upper bound parts and create a single requirement
+              upper_bound_requirement_string = upper_bound_parts.join(",")
+              requirement_class.new(upper_bound_requirement_string)
             end.compact,
             T::Array[Dependabot::Requirement]
           )
         end
 
         sig { params(requirement_string: String).returns(T::Array[String]) }
-        def extract_range_parts(requirement_string)
+        def extract_upper_bound_parts(requirement_string)
+          # Only extract UPPER BOUND constraints: <, <=, !=
+          # NOT lower bounds (>, >=) - we want to find newer versions above lower bounds
           T.let(
             requirement_string.split(",").map(&:strip).select do |part|
-              part.match?(/^\s*(<|>|>=|<=|!=)\s*/)
+              # Match < or <= (but not <=>) or != followed by version
+              part.match?(/^\s*(<(?!=)|<=|!=)\s*\d/)
             end,
             T::Array[String]
           )
