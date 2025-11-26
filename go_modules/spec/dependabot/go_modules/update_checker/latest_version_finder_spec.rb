@@ -93,7 +93,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           expect(Dependabot::SharedHelpers)
             .to have_received(:run_shell_command)
             .with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
-                  { fingerprint: "go list -m -versions -json <dependency_name>" })
+                  fingerprint: "go list -m -versions -json <dependency_name>")
         end
       end
 
