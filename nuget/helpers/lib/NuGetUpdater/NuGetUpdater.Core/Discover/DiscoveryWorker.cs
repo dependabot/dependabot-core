@@ -174,7 +174,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         ImmutableArray<string> projects;
         try
         {
-            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints);
+            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager);
         }
         catch (InvalidProjectFileException e)
         {
@@ -222,10 +222,10 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    private async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints)
+    private async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager)
     {
-        HashSet<string> expandedProjects = new();
-        HashSet<string> seenProjects = new();
+        HashSet<string> expandedProjects = new(PathComparer.Instance);
+        HashSet<string> seenProjects = new(PathComparer.Instance);
         Stack<string> filesToExpand = new(entryPoints);
         while (filesToExpand.Count > 0)
         {
@@ -252,31 +252,51 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                         filesToExpand.Push(projectPath);
                     }
                 }
-                else if (extension == ".proj")
+
+                if (experimentsManager.UseSingleRestore)
                 {
-                    IEnumerable<string> foundProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectFile", "ProjectReference");
-                    foreach (string foundProject in foundProjects)
+                    // projects get shunted directly to the result because regular discovery handles it from there
+                    switch (extension)
                     {
-                        filesToExpand.Push(foundProject);
+                        case ".proj":
+                        case ".csproj":
+                        case ".fbproj":
+                        case ".fsproj":
+                            expandedProjects.Add(candidateEntryPoint);
+                            break;
+                        default:
+                            // unsupported project
+                            break;
                     }
                 }
                 else
                 {
-                    switch (extension)
+                    if (extension == ".proj")
                     {
-                        case ".csproj":
-                        case ".fsproj":
-                        case ".vbproj":
-                            // keep this project and check for references
-                            expandedProjects.Add(candidateEntryPoint);
-                            IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectReference");
-                            foreach (string referencedProject in referencedProjects)
-                            {
-                                filesToExpand.Push(referencedProject);
-                            }
-                            break;
-                        default:
-                            continue;
+                        IEnumerable<string> foundProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectFile", "ProjectReference");
+                        foreach (string foundProject in foundProjects)
+                        {
+                            filesToExpand.Push(foundProject);
+                        }
+                    }
+                    else
+                    {
+                        switch (extension)
+                        {
+                            case ".csproj":
+                            case ".fsproj":
+                            case ".vbproj":
+                                // keep this project and check for references
+                                expandedProjects.Add(candidateEntryPoint);
+                                IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectReference");
+                                foreach (string referencedProject in referencedProjects)
+                                {
+                                    filesToExpand.Push(referencedProject);
+                                }
+                                break;
+                            default:
+                                continue;
+                        }
                     }
                 }
             }
@@ -329,6 +349,26 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         try
         {
+            // get all packages.config results first
+            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager);
+            foreach (var expandedProject in expandedProjects)
+            {
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, expandedProject, _logger);
+                if (packagesConfigResult is not null)
+                {
+                    var relativeProjectPath = Path.GetRelativePath(workspacePath, expandedProject).NormalizePathToUnix();
+                    results[relativeProjectPath] = new ProjectDiscoveryResult()
+                    {
+                        FilePath = relativeProjectPath,
+                        Dependencies = packagesConfigResult.Dependencies,
+                        TargetFrameworks = packagesConfigResult.TargetFrameworks,
+                        ImportedFiles = [], // no imported files resolved for packages.config scenarios
+                        AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                    };
+                }
+            }
+
+            // now check all sdk projects
             foreach (var projectPath in normalizedProjectPaths)
             {
                 if (_processedProjectPaths.Contains(projectPath))
@@ -339,8 +379,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 _processedProjectPaths.Add(projectPath);
 
                 var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath).NormalizePathToUnix();
-                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, projectPath, _logger);
-                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
+                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
 
                 // Determine if there were unrestored MSBuildSdks
                 var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
@@ -349,46 +388,25 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
                     if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
                     {
-                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
+                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _experimentsManager, _logger);
                     }
                 }
 
                 foreach (var projectResult in projectResults)
                 {
-                    if (results.ContainsKey(projectResult.FilePath))
-                    {
-                        continue;
-                    }
-
                     // If we had packages.config dependencies, merge them with the project dependencies
-                    if (projectResult.FilePath == relativeProjectPath && packagesConfigResult is not null)
+                    if (results.TryGetValue(projectResult.FilePath, out var packagesConfigResult))
                     {
                         var packagesConfigDependencies = packagesConfigResult.Dependencies
                             .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
                             .ToImmutableArray();
 
-                        results[projectResult.FilePath] = projectResult with
-                        {
-                            Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
-                        };
-                    }
-                    else
-                    {
-                        results[projectResult.FilePath] = projectResult;
-                    }
-                }
-
-                if (packagesConfigResult is not null)
-                {
-                    // we might have to merge this dependency with some others
-                    if (results.TryGetValue(relativeProjectPath, out var existingProjectDiscovery))
-                    {
                         // merge SDK and packages.config results
-                        var mergedDependencies = existingProjectDiscovery.Dependencies.Concat(packagesConfigResult.Dependencies)
+                        var mergedDependencies = projectResult.Dependencies.Concat(packagesConfigResult.Dependencies)
                             .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
                             .OrderBy(d => d.Name)
                             .ToImmutableArray();
-                        var mergedTargetFrameworks = existingProjectDiscovery.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
+                        var mergedTargetFrameworks = projectResult.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
                             .Select(t =>
                             {
                                 try
@@ -405,34 +423,27 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                             .Distinct()
                             .OrderBy(tfm => tfm)
                             .ToImmutableArray();
-                        var mergedProperties = existingProjectDiscovery.Properties; // packages.config discovery doesn't produce properties
-                        var mergedImportedFiles = existingProjectDiscovery.ImportedFiles; // packages.config discovery doesn't produce imported files
-                        var mergedAdditionalFiles = existingProjectDiscovery.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
+                        var mergedProperties = projectResult.Properties; // packages.config discovery doesn't produce properties
+                        var mergedImportedFiles = projectResult.ImportedFiles; // packages.config discovery doesn't produce imported files
+                        var mergedAdditionalFiles = projectResult.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .OrderBy(f => f)
                             .ToImmutableArray();
                         var mergedResult = new ProjectDiscoveryResult()
                         {
-                            FilePath = existingProjectDiscovery.FilePath,
+                            FilePath = projectResult.FilePath,
                             Dependencies = mergedDependencies,
                             TargetFrameworks = mergedTargetFrameworks,
                             Properties = mergedProperties,
                             ImportedFiles = mergedImportedFiles,
                             AdditionalFiles = mergedAdditionalFiles,
                         };
-                        results[relativeProjectPath] = mergedResult;
+                        results[projectResult.FilePath] = mergedResult;
                     }
                     else
                     {
-                        // add packages.config results
-                        results[relativeProjectPath] = new ProjectDiscoveryResult()
-                        {
-                            FilePath = relativeProjectPath,
-                            Dependencies = packagesConfigResult.Dependencies,
-                            TargetFrameworks = packagesConfigResult.TargetFrameworks,
-                            ImportedFiles = [], // no imported files resolved for packages.config scenarios
-                            AdditionalFiles = packagesConfigResult.AdditionalFiles,
-                        };
+                        // nothing to merge, just set it
+                        results[projectResult.FilePath] = projectResult;
                     }
                 }
             }
