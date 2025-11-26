@@ -53,8 +53,24 @@ internal static class SdkProjectDiscovery
         "web.config",
     };
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ILogger logger)
+    // these are the targets that are necessary to evaluate for a single restore operation
+    private static readonly ImmutableArray<string> SingleRestoreTargetNames =
+    [
+        "Restore",
+        "ResolveProjectReferences",
+        "ResolvePackageAssets"
+    ];
+
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
+        var extension = Path.GetExtension(startingProjectPath)?.ToLowerInvariant();
+        switch (extension)
+        {
+            case ".sln":
+            case ".slnx":
+                throw new NotSupportedException("SDK discovery can't be directly called on a solution file.");
+        }
+
         // N.b., there are many paths used in this function.  The MSBuild binary log always reports fully qualified paths, so that's what will be used
         // throughout until the very end when the appropriate kind of relative path is returned.
 
@@ -91,8 +107,10 @@ internal static class SdkProjectDiscovery
         //    projectPath  additionalFiles
 
         var requiresManualPackageResolution = false;
-        var tfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, logger);
-        foreach (var tfm in tfms)
+        var discoveredTfms = experimentsManager.UseSingleRestore
+            ? ["unused-for-single-restore"] // we need to ensure we do the following just once because it'll restore all relevant projects
+            : await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, logger);
+        foreach (var discoveredTfm in discoveredTfms)
         {
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
@@ -106,14 +124,36 @@ internal static class SdkProjectDiscovery
                     "build",
                     startingProjectPath,
                     "/t:_DiscoverDependencies",
-                    $"/p:TargetFramework={tfm}",
+                    $"/p:TargetFramework={discoveredTfm}",
                     $"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
                     $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
-                    "/p:TreatWarningsAsErrors=false", // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
-                    "/p:MSBuildTreatWarningsAsErrors=false",
-                    $"/bl:{binLogPath}"
                 };
+
+                if (experimentsManager.UseSingleRestore)
+                {
+                    // when using single restore, we can directly invoke the relevant targets
+                    args = ["msbuild", startingProjectPath];
+                    var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
+                    var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
+                    if (useDirectRestore)
+                    {
+                        // directly call the required targets
+                        args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
+                    }
+                    else
+                    {
+                        // delegate to the inner build and call those targets
+                        args.Add("/t:Build");
+                        args.Add($"/p:InnerTargets=\"{string.Join(";", SingleRestoreTargetNames)}\"");
+                    }
+                }
+
+                // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
+                args.Add("/p:TreatWarningsAsErrors=false");
+                args.Add("/p:MSBuildTreatWarningsAsErrors=false");
+                args.Add($"/bl:{binLogPath}");
+
                 var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
                 if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
                 {
@@ -249,6 +289,12 @@ internal static class SdkProjectDiscovery
                                     break;
                                 }
 
+                                var evaluatedTfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                if (evaluatedTfm is null)
+                                {
+                                    break;
+                                }
+
                                 var removedReferences = target.Children.OfType<RemoveItem>().FirstOrDefault(r => r.Name == "Reference");
                                 var addedReferences = target.Children.OfType<AddItem>().FirstOrDefault(r => r.Name == "Reference");
                                 if (removedReferences is null || addedReferences is null)
@@ -266,7 +312,7 @@ internal static class SdkProjectDiscovery
                                     }
 
                                     var existingProjectPackagesByTfm = packagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
-                                    var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(evaluatedTfm, () => new(StringComparer.OrdinalIgnoreCase));
                                     if (!existingProjectPackages.ContainsKey(removedPackageName))
                                     {
                                         continue;
@@ -296,7 +342,7 @@ internal static class SdkProjectDiscovery
                                     }
 
                                     var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
-                                    var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    var packagesPerTfm = packagesPerThisProject.GetOrAdd(evaluatedTfm, () => new(StringComparer.OrdinalIgnoreCase));
                                     packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
                                     var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectEvaluation.ProjectFile).NormalizePathToUnix();
                                     logger.Info($"Re-added SDK managed package [{removedPackageName}/{replacementPackageVersion}] to project [{relativeProjectPath}]");
@@ -330,9 +376,10 @@ internal static class SdkProjectDiscovery
             packagesPerProject = await RebuildPackagesPerProject(
                 repoRootPath,
                 startingProjectPath,
-                tfms,
+                discoveredTfms,
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
+                experimentsManager,
                 logger
             );
         }
@@ -557,6 +604,7 @@ internal static class SdkProjectDiscovery
         ImmutableArray<string> targetFrameworks,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
+        ExperimentsManager experimentsManager,
         ILogger logger
     )
     {
@@ -573,7 +621,7 @@ internal static class SdkProjectDiscovery
 
             var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
-            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, logger);
+            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
             var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
 
             // re-build packagesPerProject
