@@ -23,7 +23,7 @@ USER root
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 
-# TODO: Now that switched from `pyenv install` which compiled from source to downloading / copying a pre-compiled python
+# TODO: Now that we've switched from `pyenv install` which compiled from source to downloading / copying a pre-compiled python
 # we could entirely drop pyenv if we change our ruby code that calls `pyenv exec` to track which version of python to
 # call and uses the full python paths.
 ENV PYENV_ROOT=/usr/local/.pyenv \
@@ -47,9 +47,7 @@ RUN mkdir "${PYENV_ROOT}/versions"
 FROM docker.io/library/python:$PY_3_9-bookworm AS upstream-python-3.9
 FROM python-core AS python-3.9
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_9"
-COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin /usr/local/include /usr/local/lib $PYTHON_INSTALL_LOCATION/
 # `pip` and other scripts need their shebangs rewritten for the new location
 RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
 # Ensure pyenv works and it's the python version we expect
@@ -65,9 +63,7 @@ RUN cd $PYENV_ROOT/versions \
 FROM docker.io/library/python:$PY_3_10-bookworm AS upstream-python-3.10
 FROM python-core AS python-3.10
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_10"
-COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/bin /usr/local/include /usr/local/lib $PYTHON_INSTALL_LOCATION/
 # `pip` and other scripts need their shebangs rewritten for the new location
 RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
 # Ensure pyenv works and it's the python version we expect
@@ -83,9 +79,7 @@ RUN cd $PYENV_ROOT/versions \
 FROM docker.io/library/python:$PY_3_11-bookworm AS upstream-python-3.11
 FROM python-core AS python-3.11
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_11"
-COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/bin /usr/local/include /usr/local/lib $PYTHON_INSTALL_LOCATION/
 # `pip` and other scripts need their shebangs rewritten for the new location
 RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
 # Ensure pyenv works and it's the python version we expect
@@ -101,9 +95,7 @@ RUN cd $PYENV_ROOT/versions \
 FROM docker.io/library/python:$PY_3_12-bookworm AS upstream-python-3.12
 FROM python-core AS python-3.12
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_12"
-COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/bin /usr/local/include /usr/local/lib $PYTHON_INSTALL_LOCATION/
 # `pip` and other scripts need their shebangs rewritten for the new location
 RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
 # Ensure pyenv works and it's the python version we expect
@@ -119,9 +111,7 @@ RUN cd $PYENV_ROOT/versions \
 FROM docker.io/library/python:$PY_3_13-bookworm AS upstream-python-3.13
 FROM python-core AS python-3.13
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_13"
-COPY --from=upstream-python-3.13 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.13 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.13 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+COPY --from=upstream-python-3.13 --chown=dependabot:dependabot /usr/local/bin /usr/local/include /usr/local/lib $PYTHON_INSTALL_LOCATION/
 # `pip` and other scripts need their shebangs rewritten for the new location
 RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
 # Ensure pyenv works and it's the python version we expect
@@ -136,9 +126,7 @@ RUN cd $PYENV_ROOT/versions \
 FROM docker.io/library/python:$PY_3_14-bookworm AS upstream-python-3.14
 FROM python-core AS python-3.14
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_14"
-COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
+COPY --from=upstream-python-3.14 --chown=dependabot:dependabot /usr/local/bin /usr/local/include /usr/local/lib $PYTHON_INSTALL_LOCATION/
 # `pip` and other scripts need their shebangs rewritten for the new location
 RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!${PYTHON_INSTALL_LOCATION}/bin/python|" {} +
 # Ensure pyenv works and it's the python version we expect
