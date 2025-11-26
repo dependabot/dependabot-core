@@ -168,6 +168,7 @@ RUN apt-get update \
 USER dependabot
 
 COPY --chown=dependabot:dependabot uv $DEPENDABOT_HOME/uv
+COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 

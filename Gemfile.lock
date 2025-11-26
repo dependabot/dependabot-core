@@ -204,6 +204,7 @@ PATH
   specs:
     dependabot-uv (0.349.0)
       dependabot-common (= 0.349.0)
+      dependabot-python (= 0.349.0)
 
 PATH
   remote: vcpkg
