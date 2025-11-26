@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
@@ -20,6 +21,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
 
-COPY --chown=dependabot:dependabot terraform $DEPENDABOT_HOME/terraform
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents terraform common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
