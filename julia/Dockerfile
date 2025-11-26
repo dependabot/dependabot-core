@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 USER root
@@ -22,6 +23,5 @@ RUN bash /opt/julia/helpers/build
 # The Julia depot (~/.julia) is already in place from the build step above
 # It contains precompiled packages, registries, and artifacts for fast startup
 
-COPY --chown=dependabot:dependabot julia $DEPENDABOT_HOME/julia
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents julia common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
