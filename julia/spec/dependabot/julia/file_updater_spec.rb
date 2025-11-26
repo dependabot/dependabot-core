@@ -342,6 +342,101 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(notice.description).to include("Unsatisfiable requirements")
       end
     end
+
+    context "when adding a new compat entry to existing [compat] section" do
+      let(:project_file_content) do
+        <<~TOML
+          name = "TestProject"
+          uuid = "1234e567-e89b-12d3-a456-789012345678"
+          version = "0.1.0"
+
+          [deps]
+          Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+          CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+          Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+          [compat]
+          Aqua = "0.8"
+          CUDA = "5"
+          julia = "1.10"
+        TOML
+      end
+
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: project_file_content
+        )
+      end
+
+      let(:dependency_files) { [project_file] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Statistics",
+          version: "1.11.1",
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{
+            requirement: "<0.0.1, 1",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [],
+          metadata: { julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2" }
+        )
+      end
+
+      it "inserts the new entry in alphabetical order" do
+        updated_files = updater.updated_dependency_files
+        project_toml = updated_files.first
+
+        compat_section = project_toml.content.match(/\[compat\]\n(.*?)(?:\n\[|\z)/m)[1]
+        lines = compat_section.split("\n").reject(&:empty?)
+
+        expect(lines[0]).to include("Aqua")
+        expect(lines[1]).to include("CUDA")
+        expect(lines[2]).to include("Statistics")
+        expect(lines[3]).to include("julia")
+      end
+
+      it "maintains alphabetical order when adding entry at the beginning" do
+        dependency = Dependabot::Dependency.new(
+          name: "Statistics",
+          version: "1.11.1",
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{
+            requirement: "<0.0.1, 1",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [],
+          metadata: { julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2" }
+        )
+
+        updater = described_class.new(
+          dependencies: [dependency],
+          dependency_files: dependency_files,
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        )
+
+        updated_files = updater.updated_dependency_files
+        project_toml = updated_files.first
+
+        compat_section = project_toml.content.match(/\[compat\]\n(.*?)(?:\n\[|\z)/m)[1]
+        entry_names = compat_section.scan(/^([A-Za-z_]+)\s*=/).flatten
+
+        expect(entry_names).to eq(%w(Aqua CUDA Statistics julia))
+      end
+    end
   end
 
   describe "#manifest_file_for_path" do
