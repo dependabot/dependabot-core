@@ -286,38 +286,36 @@ module Dependabot
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
         def find_and_update_equality_match(requirement_strings)
-          updated_equality = if requirement_strings.any? { |r| requirement_class.new(r).exact? }
-                               # True equality match
-                               T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
-                                .sub(
-                                  RequirementParser::VERSION,
-                                  T.must(latest_resolvable_version).to_s
-                                )
-                             else
-                               # Prefix match
-                               T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
-                                .sub(RequirementParser::VERSION) do |v|
-                                 at_same_precision(T.must(latest_resolvable_version).to_s, v)
-                               end
-                             end
+          updated_equality = update_equality_constraint(requirement_strings)
+          return updated_equality unless non_equality_constraints?(requirement_strings)
 
-          # Preserve non-equality constraints (like <5.1, >=2.0, etc.)
-          non_equality_constraints = requirement_strings.reject do |r|
-            requirement_class.new(r).exact? || r.match?(/^(=+|\d)/)
+          build_result_with_preserved_constraints(requirement_strings, updated_equality)
+        end
+
+        sig { params(requirement_strings: T::Array[String]).returns(String) }
+        def update_equality_constraint(requirement_strings)
+          if requirement_strings.any? { |r| requirement_class.new(r).exact? }
+            T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
+             .sub(RequirementParser::VERSION, T.must(latest_resolvable_version).to_s)
+          else
+            T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
+             .sub(RequirementParser::VERSION) { |v| at_same_precision(T.must(latest_resolvable_version).to_s, v) }
           end
+        end
 
-          return updated_equality if non_equality_constraints.empty?
+        sig { params(requirement_string: String).returns(T::Boolean) }
+        def equality_constraint?(requirement_string)
+          requirement_class.new(requirement_string).exact? || requirement_string.match?(/^(=+|\d)/)
+        end
 
-          # Preserve original order: replace equality constraint in place, keep others as-is
-          result_parts = requirement_strings.map do |r|
-            if requirement_class.new(r).exact? || r.match?(/^(=+|\d)/)
-              updated_equality
-            else
-              r # Keep non-equality constraints unchanged
-            end
-          end
+        sig { params(requirement_strings: T::Array[String]).returns(T::Boolean) }
+        def non_equality_constraints?(requirement_strings)
+          requirement_strings.any? { |r| !equality_constraint?(r) }
+        end
 
-          result_parts.join(",")
+        sig { params(requirement_strings: T::Array[String], updated_equality: String).returns(String) }
+        def build_result_with_preserved_constraints(requirement_strings, updated_equality)
+          requirement_strings.map { |r| equality_constraint?(r) ? updated_equality : r }.join(",")
         end
 
         sig { params(new_version: String, old_version: String).returns(String) }
