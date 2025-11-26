@@ -321,14 +321,46 @@ module Dependabot
 
       sig { params(content: String, dependency_name: String, requirement: String).returns(String) }
       def add_compat_entry_to_content(content, dependency_name, requirement)
-        # Find [compat] section or create it
         if content.match?(/^\s*\[compat\]\s*$/m)
-          # Add to existing [compat] section
-          content.gsub(/(\[compat\]\s*\n)/, "\\1#{dependency_name} = \"#{requirement}\"\n")
+          compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
+          return content unless compat_section_match
+
+          compat_section = T.must(compat_section_match[1])
+          entries = parse_compat_entries(compat_section)
+          entries[dependency_name] = requirement
+          sorted_entries = sort_compat_entries(entries)
+          new_compat_section = build_compat_section(sorted_entries)
+
+          content.sub(T.must(compat_section_match[0]), "[compat]\n#{new_compat_section}")
         else
-          # Add new [compat] section at the end
           content + "\n[compat]\n#{dependency_name} = \"#{requirement}\"\n"
         end
+      end
+
+      sig { params(compat_section: String).returns(T::Hash[String, String]) }
+      def parse_compat_entries(compat_section)
+        entries = {}
+        compat_section.each_line do |line|
+          next if line.strip.empty? || line.strip.start_with?("#")
+
+          match = line.match(/^\s*([^=\s]+)\s*=\s*(.+?)(?:\s*#.*)?$/)
+          next unless match
+
+          key = T.must(match[1]).strip
+          value = T.must(match[2]).strip.gsub(/^["']|["']$/, "")
+          entries[key] = value
+        end
+        entries
+      end
+
+      sig { params(entries: T::Hash[String, String]).returns(T::Hash[String, String]) }
+      def sort_compat_entries(entries)
+        entries.sort.to_h
+      end
+
+      sig { params(entries: T::Hash[String, String]).returns(String) }
+      def build_compat_section(entries)
+        entries.map { |name, requirement| "#{name} = \"#{requirement}\"\n" }.join
       end
     end
   end

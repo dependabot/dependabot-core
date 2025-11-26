@@ -39,7 +39,13 @@ module Dependabot
         registry_info = find_registry_and_token
 
         env_variables = {}
-        env_variables[COREPACK_NPM_REGISTRY_ENV] = registry_info[:registry] if registry_info[:registry]
+
+        if registry_info[:registry] # Prevent the https from being stripped in the process
+          registry = registry_info[:registry]
+          registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
+          env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
+        end
+
         env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
 
         env_variables

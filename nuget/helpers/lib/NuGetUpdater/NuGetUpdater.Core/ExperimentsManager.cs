@@ -8,12 +8,14 @@ namespace NuGetUpdater.Core;
 public record ExperimentsManager
 {
     public bool GenerateSimplePrBody { get; init; } = false;
+    public bool UseSingleRestore { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
         return new()
         {
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
+            ["nuget_use_single_restore"] = UseSingleRestore,
         };
     }
 
@@ -22,6 +24,7 @@ public record ExperimentsManager
         return new ExperimentsManager()
         {
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
+            UseSingleRestore = IsEnabled(experiments, "nuget_use_single_restore"),
         };
     }
 

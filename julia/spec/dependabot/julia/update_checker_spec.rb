@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/julia/update_checker"
+require "dependabot/julia/package/package_details_fetcher"
 
 RSpec.describe Dependabot::Julia::UpdateChecker do
   let(:checker) do

@@ -587,6 +587,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         // Normally this would cause a restore failure which means discovery would also fail
         // This test ensures we can still run discovery
         await TestDiscoverAsync(
+            useSingleRestore: false,
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0", [(null, [("Transitive.Package", "2.0.0")])]),
                 MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
@@ -629,7 +630,136 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         );
     }
 
-    private static async Task TestDiscoverAsync(string startingDirectory, string projectPath, TestFile[] files, ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, MockNuGetPackage[]? packages = null)
+    [Fact]
+    public async Task DependenciesCanBeDiscoveredWithoutCompiling_FromProjectWithSingleTfm()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var errorSentinelPath = Path.Combine(tempDir.DirectoryPath, "error-sentinel.txt");
+        await TestDiscoverAsync(
+            useSingleRestore: true,
+            startingDirectory: "src",
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            ],
+            projectPath: "src/project.csproj",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/Directory.Build.props", "<Project />"),
+                ("src/Directory.Packages.props", "<Project />"),
+                ("src/Directory.Build.targets", $"""
+                    <Project>
+                      <Target Name="_TEST_ThisShouldNotExecute_" AfterTargets="CoreCompile">
+                        <WriteLinesToFile File="{errorSentinelPath}" Lines="this should not have happened" Overwrite="true" />
+                      </Target>
+                    </Project>
+                    """),
+            ],
+            expectedProjects: [
+                new()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies =
+                    [
+                        new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                    ],
+                    ImportedFiles = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props"],
+                    Properties =
+                    [
+                        new("TargetFramework", "net8.0", "src/project.csproj"),
+                    ],
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                },
+            ]
+        );
+        Assert.False(File.Exists(errorSentinelPath), "Build targets should not have executed during discovery");
+    }
+
+    [Fact]
+    public async Task DependenciesCanBeDiscoveredWithoutCompiling_FromProjectWithMultipleTfms()
+    {
+        using var tempDir = new TemporaryDirectory();
+        var errorSentinelPath = Path.Combine(tempDir.DirectoryPath, "error-sentinel.txt");
+        await TestDiscoverAsync(
+            useSingleRestore: true,
+            startingDirectory: "src",
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            ],
+            projectPath: "src/project.csproj",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/Directory.Build.props", "<Project />"),
+                ("src/Directory.Packages.props", "<Project />"),
+                ("src/Directory.Build.targets", $"""
+                    <Project>
+                      <Target Name="_TEST_ThisShouldNotExecute_" AfterTargets="CoreCompile">
+                        <WriteLinesToFile File="{errorSentinelPath}" Lines="this should not have happened" Overwrite="true" />
+                      </Target>
+                    </Project>
+                    """),
+            ],
+            expectedProjects: [
+                new()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies =
+                    [
+                        new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0", "net9.0"], IsDirect: true)
+                    ],
+                    ImportedFiles = ["Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props"],
+                    Properties =
+                    [
+                        new("TargetFrameworks", "net8.0;net9.0", "src/project.csproj"),
+                    ],
+                    TargetFrameworks = ["net8.0", "net9.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                },
+            ]
+        );
+        Assert.False(File.Exists(errorSentinelPath), "Build targets should not have executed during discovery");
+    }
+
+    private static async Task TestDiscoverAsync(
+        string startingDirectory,
+        string projectPath,
+        TestFile[] files,
+        ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
+        MockNuGetPackage[]? packages = null
+    )
+    {
+        await TestDiscoverAsync(useSingleRestore: true, startingDirectory, projectPath, files, expectedProjects, packages);
+        await TestDiscoverAsync(useSingleRestore: false, startingDirectory, projectPath, files, expectedProjects, packages);
+    }
+
+    private static async Task TestDiscoverAsync(
+        bool useSingleRestore,
+        string startingDirectory,
+        string projectPath,
+        TestFile[] files,
+        ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
+        MockNuGetPackage[]? packages = null
+    )
     {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
 
@@ -637,7 +767,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, logger);
+        var experimentsManager = new ExperimentsManager() { UseSingleRestore = useSingleRestore };
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
         ValidateProjectResults(expectedProjects, projectDiscovery);
     }
 }
