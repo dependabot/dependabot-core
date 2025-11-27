@@ -1200,7 +1200,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           expect(parsed_result.dig("packages", "", "optionalDependencies", "@rollup/rollup-linux-x64-gnu"))
             .to eq("^4.53.2")
 
-          # Critical: Ensure the optional dependency is NOT moved to the dependencies section (this was the bug)
+          # Critical: Ensure the optional dependency is NOT moved to the dependencies section
           dependencies_section = parsed_result.dig("packages", "", "dependencies")
           if dependencies_section
             expect(dependencies_section).not_to have_key("@rollup/rollup-linux-x64-gnu")
