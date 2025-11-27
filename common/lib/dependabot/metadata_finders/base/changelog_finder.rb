@@ -180,7 +180,7 @@ module Dependabot
         sig { params(files: T::Array[T.untyped]).returns(T.untyped) }
         def select_best_changelog(files)
           CHANGELOG_NAMES.each do |name|
-            candidates = files.select { |f| f.name =~ /#{name}/i }
+            candidates = files.select { |f| f.name =~ /\A#{name}/i }
             file = candidates.first if candidates.one?
             file ||=
               candidates.find do |f|

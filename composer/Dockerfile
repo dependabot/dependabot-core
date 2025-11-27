@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COMPOSER_V2_VERSION=2.8.10
 ARG PHP_VERSION=8.4
@@ -53,6 +54,5 @@ COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 
 RUN bash /opt/composer/helpers/v2/build
 
-COPY --chown=dependabot:dependabot composer $DEPENDABOT_HOME/composer
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents composer common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
