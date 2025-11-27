@@ -1,0 +1,9 @@
+{
+  "name": "optional-dep-test",
+  "version": "1.0.0",
+  "description": "Test optional dependency updates",
+  "license": "ISC",
+  "optionalDependencies": {
+    "etag": "^1.0.0"
+  }
+}
