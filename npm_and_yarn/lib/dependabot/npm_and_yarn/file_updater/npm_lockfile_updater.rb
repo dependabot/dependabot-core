@@ -343,8 +343,8 @@ module Dependabot
         #   to work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are
         #   run when installing git dependencies
-        # - `--no-save` when updating optional dependencies to prevent npm from
-        #   modifying package-lock.json and adding optional deps to dependencies section
+        # - `--save-optional` when updating optional dependencies to ensure they
+        #   stay in optionalDependencies section and allow version upgrades
         sig { params(install_args: T::Array[String], has_optional_dependencies: T::Boolean).returns(String) }
         def run_npm_install_lockfile_only(install_args = [], has_optional_dependencies: false)
           command_args = [
@@ -357,7 +357,7 @@ module Dependabot
             "--package-lock-only"
           ]
 
-          command_args << "--no-save" if has_optional_dependencies
+          command_args << "--save-optional" if has_optional_dependencies
 
           command = command_args.join(" ")
 
@@ -371,7 +371,7 @@ module Dependabot
             "--package-lock-only"
           ]
 
-          fingerprint_args << "--no-save" if has_optional_dependencies
+          fingerprint_args << "--save-optional" if has_optional_dependencies
 
           fingerprint = fingerprint_args.join(" ")
 
