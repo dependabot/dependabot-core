@@ -1,0 +1,9 @@
+version: 2.0
+shards:
+  kemal:
+    git: https://github.com/kemalcr/kemal.git
+    version: 1.0.0
+
+  webmock:
+    git: https://github.com/manastech/webmock.cr.git
+    version: 0.14.0

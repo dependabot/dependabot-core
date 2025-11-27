@@ -34,6 +34,9 @@ composer:
 conda:
   - *shared
   - 'conda/**'
+crystal_shards:
+  - *shared
+  - 'crystal_shards/**'
 devcontainers:
   - *shared
   - 'devcontainers/**'

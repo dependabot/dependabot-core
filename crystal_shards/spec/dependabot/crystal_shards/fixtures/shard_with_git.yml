@@ -1,0 +1,16 @@
+name: my_shard
+version: 1.0.0
+
+dependencies:
+  kemal:
+    github: kemalcr/kemal
+    version: ~> 1.0.0
+
+  radix:
+    git: https://github.com/luislavena/radix.git
+    branch: master
+
+development_dependencies:
+  webmock:
+    github: manastech/webmock.cr
+    tag: v0.14.0

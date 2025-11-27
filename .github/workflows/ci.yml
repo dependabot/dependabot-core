@@ -23,6 +23,7 @@ jobs:
           - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ecosystem: composer }
           - { path: conda, name: conda, ecosystem: conda }
+          - { path: crystal_shards, name: crystal_shards, ecosystem: crystal_shards }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
           - { path: docker, name: docker, ecosystem: docker }
