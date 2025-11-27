@@ -102,6 +102,13 @@ module Dependabot
         dependency_change.updated_dependencies.clear
         dependency_change.updated_dependencies.concat(group_eligible_deps)
 
+        # Remove filtered dependencies from group.dependencies to prevent them from being marked as "handled"
+        # This is critical for refresh scenarios where a dependency's update type changes (e.g., minor → major)
+        if filtered_out_deps.any?
+          filtered_dep_names = filtered_out_deps.to_set(&:name)
+          @group.dependencies.reject! { |dep| filtered_dep_names.include?(dep.name) }
+        end
+
         @filtered_dependencies = filtered_out_deps if filtered_out_deps.any?
 
         directory = dependency_change.job.source.directory || "."
@@ -165,7 +172,11 @@ module Dependabot
 
         Array(dependency_change.updated_dependencies).each do |dep|
           if group_contains_dependency?(dep, directory) && allowed_by_config?(dep, job)
-            if dependency_belongs_to_more_specific_group?(dep, directory)
+            # Check if dependency matches group's update-types rules
+            if !matches_group_update_types?(dep)
+              annotate_dependency_selection(dep, :filtered_by_update_types)
+              filtered_out_deps << dep
+            elsif dependency_belongs_to_more_specific_group?(dep, directory)
               annotate_dependency_selection(dep, :belongs_to_more_specific_group)
               filtered_out_deps << dep
             else
@@ -201,6 +212,7 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency, directory: String).returns(T::Boolean) }
       def dependency_belongs_to_more_specific_group?(dep, directory)
+        # First check pattern-based specificity
         contains_checker = T.let(
           proc { |group, dependency, dir| group_contains_dependency_for_group?(group, dependency, dir) },
           T.proc.params(
@@ -210,9 +222,32 @@ module Dependabot
           ).returns(T::Boolean)
         )
 
-        @specificity_calculator.dependency_belongs_to_more_specific_group?(
-          @group, dep, @snapshot.groups, contains_checker, directory
-        )
+        # For dependencies with version info, also consider update-types specificity
+        # A group is "more specific" if it has a narrower pattern OR matches update-types better
+        actual_update_type = calculate_dependency_update_type(dep)
+
+        @snapshot.groups.any? do |other_group|
+          next if other_group == @group
+          next unless contains_checker.call(other_group, dep, directory)
+
+          # Check pattern specificity
+          pattern_more_specific = @specificity_calculator.dependency_belongs_to_more_specific_group?(
+            @group, dep, [other_group], contains_checker, directory
+          )
+
+          # If we have update-type info, check if the other group matches update-types while current doesn't
+          if actual_update_type && dep.previous_version && dep.version
+            current_matches_update_types = matches_group_update_types?(dep)
+            other_matches_update_types = group_matches_update_types?(other_group, dep, actual_update_type)
+
+            # Other group is more specific if it matches update-types and current doesn't
+            update_type_more_specific = !current_matches_update_types && other_matches_update_types
+
+            pattern_more_specific || update_type_more_specific
+          else
+            pattern_more_specific
+          end
+        end
       end
 
       sig do
@@ -232,6 +267,64 @@ module Dependabot
         return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
 
         job.allowed_update?(dep, check_previous_version: true)
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+      def matches_group_update_types?(dep)
+        update_types = T.unsafe(@group.rules["update-types"])
+        return true unless update_types.is_a?(Array) && update_types.any?
+
+        # If we don't have version information, we can't determine update type
+        # Allow it through (it's a new dependency)
+        return true unless dep.previous_version && dep.version
+
+        actual_update_type = calculate_dependency_update_type(dep)
+        return true unless actual_update_type # Can't determine, allow through
+
+        update_types.include?(actual_update_type)
+      end
+
+      sig do
+        params(
+          group: Dependabot::DependencyGroup,
+          dep: Dependabot::Dependency,
+          actual_update_type: String
+        ).returns(T::Boolean)
+      end
+      def group_matches_update_types?(group, dep, actual_update_type)
+        update_types = T.unsafe(group.rules["update-types"])
+        return true unless update_types.is_a?(Array) && update_types.any?
+        return true unless dep.previous_version && dep.version
+
+        update_types.include?(actual_update_type)
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
+      def calculate_dependency_update_type(dep)
+        prev_version = dep.previous_version
+        new_version = dep.version
+
+        return nil unless prev_version && new_version
+        return nil unless Dependabot::Version.correct?(prev_version) && Dependabot::Version.correct?(new_version)
+
+        prev = Dependabot::Version.new(prev_version)
+        curr = Dependabot::Version.new(new_version)
+
+        prev_major = T.cast(prev.segments[0] || 0, Integer)
+        curr_major = T.cast(curr.segments[0] || 0, Integer)
+        return "major" if curr_major > prev_major
+
+        prev_minor = T.cast(prev.segments[1] || 0, Integer)
+        curr_minor = T.cast(curr.segments[1] || 0, Integer)
+        return "minor" if curr_minor > prev_minor
+
+        prev_patch = T.cast(prev.segments[2] || 0, Integer)
+        curr_patch = T.cast(curr.segments[2] || 0, Integer)
+        return "patch" if curr_patch > prev_patch
+
+        nil
+      rescue StandardError
+        nil
       end
 
       sig { params(dep_name: String, pattern: String).returns(T::Boolean) }

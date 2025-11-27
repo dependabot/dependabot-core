@@ -498,13 +498,244 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
   end
 
+  describe "update-types filtering" do
+    let(:group_rules) do
+      {
+        "patterns" => ["*"],
+        "update-types" => ["major"]
+      }
+    end
+
+    let(:major_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "major-updates",
+        dependencies: [],
+        rules: { "patterns" => ["*"], "update-types" => ["major"] }
+      )
+    end
+
+    let(:minor_patch_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "minor-and-patch",
+        dependencies: [],
+        rules: { "patterns" => ["*"], "update-types" => ["minor", "patch"] }
+      )
+    end
+
+    let(:major_selector) { described_class.new(group: major_group, dependency_snapshot: dependency_snapshot) }
+    let(:minor_selector) { described_class.new(group: minor_patch_group, dependency_snapshot: dependency_snapshot) }
+
+    describe "#calculate_dependency_update_type" do
+      it "returns 'major' for major version bump" do
+        dep = create_dependency("rails", "8.0.0", previous_version: "7.0.0")
+        result = major_selector.send(:calculate_dependency_update_type, dep)
+        expect(result).to eq("major")
+      end
+
+      it "returns 'minor' for minor version bump" do
+        dep = create_dependency("rails", "7.1.0", previous_version: "7.0.0")
+        result = major_selector.send(:calculate_dependency_update_type, dep)
+        expect(result).to eq("minor")
+      end
+
+      it "returns 'patch' for patch version bump" do
+        dep = create_dependency("rails", "7.0.1", previous_version: "7.0.0")
+        result = major_selector.send(:calculate_dependency_update_type, dep)
+        expect(result).to eq("patch")
+      end
+
+      it "returns nil when version is invalid" do
+        dep = create_dependency("rails", "invalid", previous_version: "7.0.0")
+        result = major_selector.send(:calculate_dependency_update_type, dep)
+        expect(result).to be_nil
+      end
+
+      it "returns nil when previous_version is missing" do
+        dep = create_dependency("rails", "8.0.0", previous_version: nil)
+        result = major_selector.send(:calculate_dependency_update_type, dep)
+        expect(result).to be_nil
+      end
+
+      it "returns nil when version is missing" do
+        dep = instance_double(Dependabot::Dependency, previous_version: "7.0.0", version: nil)
+        result = major_selector.send(:calculate_dependency_update_type, dep)
+        expect(result).to be_nil
+      end
+    end
+
+    describe "#matches_group_update_types?" do
+      it "returns true when dependency is a major update and group accepts major" do
+        dep = create_dependency("rails", "8.0.0", previous_version: "7.0.0")
+        result = major_selector.send(:matches_group_update_types?, dep)
+        expect(result).to be true
+      end
+
+      it "returns false when dependency is a minor update and group only accepts major" do
+        dep = create_dependency("rails", "7.1.0", previous_version: "7.0.0")
+        result = major_selector.send(:matches_group_update_types?, dep)
+        expect(result).to be false
+      end
+
+      it "returns true when dependency is a minor update and group accepts minor" do
+        dep = create_dependency("rails", "7.1.0", previous_version: "7.0.0")
+        result = minor_selector.send(:matches_group_update_types?, dep)
+        expect(result).to be true
+      end
+
+      it "returns true when dependency is a patch update and group accepts patch" do
+        dep = create_dependency("rails", "7.0.1", previous_version: "7.0.0")
+        result = minor_selector.send(:matches_group_update_types?, dep)
+        expect(result).to be true
+      end
+
+      it "returns true when group has no update-types rules" do
+        no_update_types_group = instance_double(
+          Dependabot::DependencyGroup,
+          name: "all-updates",
+          dependencies: [],
+          rules: { "patterns" => ["*"] }
+        )
+        selector = described_class.new(group: no_update_types_group, dependency_snapshot: dependency_snapshot)
+        dep = create_dependency("rails", "8.0.0", previous_version: "7.0.0")
+
+        result = selector.send(:matches_group_update_types?, dep)
+        expect(result).to be true
+      end
+
+      it "returns true when dependency has no version info (new dependency)" do
+        dep = create_dependency("rails", "8.0.0", previous_version: nil)
+        result = major_selector.send(:matches_group_update_types?, dep)
+        expect(result).to be true
+      end
+    end
+
+    describe "#group_matches_update_types?" do
+      it "returns true when update type matches group's update-types" do
+        dep = create_dependency("rails", "8.0.0", previous_version: "7.0.0")
+        result = major_selector.send(:group_matches_update_types?, major_group, dep, "major")
+        expect(result).to be true
+      end
+
+      it "returns false when update type does not match group's update-types" do
+        dep = create_dependency("rails", "7.1.0", previous_version: "7.0.0")
+        result = major_selector.send(:group_matches_update_types?, major_group, dep, "minor")
+        expect(result).to be false
+      end
+
+      it "returns true when group has no update-types rules" do
+        no_rules_group = instance_double(
+          Dependabot::DependencyGroup,
+          name: "all",
+          rules: { "patterns" => ["*"] }
+        )
+        dep = create_dependency("rails", "8.0.0", previous_version: "7.0.0")
+
+        result = major_selector.send(:group_matches_update_types?, no_rules_group, dep, "major")
+        expect(result).to be true
+      end
+    end
+
+    describe "#filter_to_group! with update-types" do
+      let(:rails_major) { create_dependency("rails", "8.0.0", previous_version: "7.0.0") }
+      let(:pg_minor) { create_dependency("pg", "1.5.0", previous_version: "1.4.0") }
+      let(:redis_patch) { create_dependency("redis", "5.0.1", previous_version: "5.0.0") }
+
+      let(:dependency_change) do
+        create_dependency_change(
+          job: job,
+          dependencies: [rails_major, pg_minor, redis_patch],
+          files: []
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement).and_return(true)
+
+        allow(major_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(major_group).to receive(:contains?).and_return(true)
+        allow(major_group).to receive(:dependencies).and_return([rails_major, pg_minor, redis_patch])
+
+        allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+      end
+
+      it "filters to only major updates when group has update-types: ['major']" do
+        major_selector.filter_to_group!(dependency_change)
+
+        expect(dependency_change.updated_dependencies).to receive(:clear)
+        expect(dependency_change.updated_dependencies).to receive(:concat) do |deps|
+          expect(deps.map(&:name)).to eq(["rails"])
+        end
+
+        major_selector.filter_to_group!(dependency_change)
+      end
+
+      it "removes filtered dependencies from group.dependencies" do
+        expect(major_group.dependencies).to include(pg_minor, redis_patch)
+
+        major_selector.filter_to_group!(dependency_change)
+
+        expect(major_group.dependencies).to receive(:reject!)
+        major_selector.filter_to_group!(dependency_change)
+      end
+    end
+
+    describe "#dependency_belongs_to_more_specific_group? with update-types" do
+      let(:dependency_snapshot) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          ecosystem: "bundler",
+          groups: [major_group, minor_patch_group]
+        )
+      end
+
+      let(:rails_major) { create_dependency("rails", "8.0.0", previous_version: "7.0.0") }
+      let(:pg_minor) { create_dependency("pg", "1.5.0", previous_version: "1.4.0") }
+
+      before do
+        allow(major_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(major_group).to receive(:contains?).and_return(true)
+        allow(minor_patch_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(minor_patch_group).to receive(:contains?).and_return(true)
+      end
+
+      it "considers minor-patch group more specific for minor updates" do
+        # When checking if major group should handle a minor update
+        # The minor-patch group is "more specific" because it matches the update type
+        result = major_selector.send(:dependency_belongs_to_more_specific_group?, pg_minor, "/")
+
+        expect(result).to be true
+      end
+
+      it "considers major group more specific for major updates when current is minor-patch" do
+        minor_selector_instance = described_class.new(group: minor_patch_group, dependency_snapshot: dependency_snapshot)
+
+        # When checking if minor-patch group should handle a major update
+        # The major group is "more specific" because it matches the update type
+        result = minor_selector_instance.send(:dependency_belongs_to_more_specific_group?, rails_major, "/")
+
+        expect(result).to be true
+      end
+
+      it "returns false when current group matches update type and other doesn't" do
+        # When major group is checking a major update, no other group is more specific
+        result = major_selector.send(:dependency_belongs_to_more_specific_group?, rails_major, "/")
+
+        expect(result).to be false
+      end
+    end
+  end
+
   private
 
-  def create_dependency(name, version)
+  def create_dependency(name, version, previous_version: nil)
     instance_double(
       Dependabot::Dependency,
       name: name,
-      version: version
+      version: version,
+      previous_version: previous_version
     ).tap do |dep|
       allow(dep).to receive(:attribution_source_group=)
       allow(dep).to receive(:attribution_selection_reason=)
