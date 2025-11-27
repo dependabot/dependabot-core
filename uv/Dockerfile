@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 # This list must match the versions specified in
 # uv/lib/dependabot/uv/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # Python versions are pinned to the release of each minor/patch version.
@@ -167,9 +168,7 @@ RUN apt-get update \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot uv $DEPENDABOT_HOME/uv
-COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents uv python common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
@@ -205,6 +204,5 @@ RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo
 # Install uv by copying from the official image
 COPY --from=uv /uv /uvx /usr/local/bin/
 
-COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents cargo common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

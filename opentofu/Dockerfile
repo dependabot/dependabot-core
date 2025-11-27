@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
@@ -21,6 +22,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot opentofu/helpers /opt/opentofu/helpers
 RUN bash /opt/opentofu/helpers/build
 
-COPY --chown=dependabot:dependabot opentofu $DEPENDABOT_HOME/opentofu
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents opentofu common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
