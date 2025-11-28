@@ -164,6 +164,9 @@ RUN apt-get update \
     tzdata \
     # Needed to build `gssapi`/`krb5`
     libkrb5-dev \
+    # Used by pycairo and pygobject
+    libcairo2-dev \
+    libgirepository-2.0-dev \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
