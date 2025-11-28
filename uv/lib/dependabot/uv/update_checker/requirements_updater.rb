@@ -150,13 +150,16 @@ module Dependabot
               # version (and remove any other requirements)
               v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
               bump_version(v_req, latest_resolvable_version.to_s)
-            elsif new_version_satisfies?(req)
-              # Otherwise we're looking at a range operator. No change
+              req.fetch(:requirement)
+            elsif requirement_strings.find { |r| r.start_with?("<", ">") }
+              # For range operators (>=, >, <, <=), update bounds to reference the new version.
+              # Even when the new version already satisfies existing requirements (e.g., >=2.11.7
+              # satisfies 2.12.5), we still update them (e.g., to >=2.12.5) to keep pyproject.toml
+              # in sync with uv.lock and avoid confusing bump pull requests.
+              update_requirements_range(requirement_strings)
+            else
               # required if it's already satisfied
               req.fetch(:requirement)
-            else
-              # But if it's not, update it
-              update_requirements_range(requirement_strings)
             end
 
           req.merge(requirement: new_requirement)
@@ -320,15 +323,19 @@ module Dependabot
           ruby_requirements =
             requirement_strings.map { |r| requirement_class.new(r) }
 
-          updated_requirement_strings = ruby_requirements.flat_map do |r|
-            next r.to_s if r.satisfied_by?(T.must(latest_resolvable_version))
-
+        updated_requirement_strings = ruby_requirements.flat_map do |r|
             case op = r.requirements.first.first
             when "<"
+              next r.to_s if r.satisfied_by?(T.must(latest_resolvable_version))
               "<" + update_greatest_version(r.requirements.first.last, T.must(latest_resolvable_version))
             when "<="
+              next r.to_s if r.satisfied_by?(T.must(latest_resolvable_version))
               "<=" + latest_resolvable_version.to_s
-            when "!=", ">", ">="
+            when ">="
+              ">=" + latest_resolvable_version.to_s
+            when ">"
+              ">" + latest_resolvable_version.to_s
+            when "!="
               raise UnfixableRequirement
             else
               raise "Unexpected op for unsatisfied requirement: #{op}"
