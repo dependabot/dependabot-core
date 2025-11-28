@@ -126,7 +126,6 @@ module Dependabot
     def to_h
       details = {
         "name" => name,
-        "content" => content,
         "directory" => directory,
         "type" => type,
         "support_file" => support_file,
@@ -134,6 +133,7 @@ module Dependabot
         "deleted" => deleted,
         "operation" => operation
       }
+      details["content"] = content unless content.nil?
       details["mode"] = mode if mode
 
       details["symlink_target"] = symlink_target if symlink_target

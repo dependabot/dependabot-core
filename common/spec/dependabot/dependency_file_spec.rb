@@ -305,6 +305,38 @@ RSpec.describe Dependabot::DependencyFile do
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
     end
+
+    context "with a deleted file with nil content" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: nil,
+          operation: Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "returns the correct array without content key" do
+        expect(file_hash).to eq(
+          "name" => "Gemfile",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "does not include content in the hash" do
+        expect(file_hash).not_to have_key("content")
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file).to be_deleted
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+    end
   end
 
   describe "#==" do
