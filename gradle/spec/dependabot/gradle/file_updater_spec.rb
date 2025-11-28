@@ -670,19 +670,23 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           end
 
+          let(:distribution_url) do
+            "https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
+          end
+
           let(:dependency) do
             requirements = [{
               file: "gradle/wrapper/gradle-wrapper.properties",
               requirement: "9.0.0",
               groups: [],
-              source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              source: { type: "gradle-distribution", url: distribution_url, property: "distributionUrl" }
             }]
             if checksum
               requirements << {
                 file: "gradle/wrapper/gradle-wrapper.properties",
                 requirement: updated_checksum,
                 groups: [],
-                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionSha256Sum" }
+                source: { type: "gradle-distribution", url: distribution_url, property: "distributionSha256Sum" }
               }
             end
 
@@ -713,14 +717,23 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           before do
             allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            allow(File).to receive(:exist?).and_return(true)
+            allow(FileUtils).to receive(:chmod)
           end
 
           its(:content) do
-            expected_command = "gradle --no-daemon --stacktrace wrapper --no-validate-url --gradle-version 9.0.0"
+            expected_command = %W(
+              ./gradlew --no-daemon --stacktrace wrapper --gradle-version 9.0.0 --no-validate-url
+              --distribution-type #{type}
+            ).join(" ")
+            expected_env = { "JAVA_OPTS" => %w(
+              -Dhttp.proxyHost=host.docker.internal
+              -Dhttp.proxyPort=1080
+              -Dhttps.proxyHost=host.docker.internal
+              -Dhttps.proxyPort=1080
+            ).join(" ") }
 
-            is_expected.to include(
-              "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-#{type}.zip"
-            )
+            is_expected.to include("distributionUrl=#{distribution_url}")
 
             if checksum
               expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
@@ -729,7 +742,11 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               is_expected.not_to include("distributionSha256Sum=")
             end
 
-            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(expected_command, cwd: anything)
+            expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+              expected_command,
+              cwd: anything,
+              env: expected_env
+            )
           end
         end
 

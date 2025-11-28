@@ -37,6 +37,9 @@ module Dependabot
           )
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
           # We only run this updater if it's a distribution dependency
@@ -49,29 +52,57 @@ module Dependabot
           # If we don't have any files in the build files don't generate one
           return [] unless local_files.any?
 
+          # we only run this updater if the build file has a requirement for this dependency
+          target_requirements = dependency.requirements.select do |req|
+            T.let(req[:file], String) == build_file.name
+          end
+          return [] unless target_requirements.any?
+
           updated_files = dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
             cwd = File.join(temp_dir, base_path(build_file))
 
-            # Create gradle.properties file with proxy settings
-            # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
-            write_properties_file(properties_filename)
-
-            command_parts = %w(gradle --no-daemon --stacktrace) + command_args
-            command = Shellwords.join(command_parts)
+            has_local_script = File.exist?(File.join(cwd, "./gradlew"))
+            command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements)
+            command = Shellwords.join([has_local_script ? "./gradlew" : "gradle"] + command_parts)
 
             Dir.chdir(cwd) do
-              SharedHelpers.run_shell_command(command, cwd: cwd)
+              FileUtils.chmod("+x", "./gradlew") if has_local_script
+
+              properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
+              validate_option = get_validate_distribution_url_option(properties_file)
+              env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
+
+              begin
+                # first attempt: run the wrapper task via the local gradle wrapper (if present)
+                # `gradle-wrapper.jar` might be too old to run on host's Java version
+                SharedHelpers.run_shell_command(command, cwd: cwd, env: env)
+              rescue SharedHelpers::HelperSubprocessFailed => e
+                raise e unless has_local_script # already field with system one, there is no point to retry
+
+                Dependabot.logger.warn("Running #{command} failed, retrying first with system Gradle: #{e.message}")
+
+                # second attempt: run the wrapper task via system gradle and then retry via local wrapper
+                system_command = Shellwords.join(["gradle"] + command_parts)
+                SharedHelpers.run_shell_command(system_command, cwd: cwd, env: env) # run via system gradle
+                SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
+              end
+
+              # Restore previous validateDistributionUrl option if it existed
+              override_validate_distribution_url_option(properties_file, validate_option)
+
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
-              puts "Failed to update files: #{e.message}"
+              Dependabot.logger.error("Failed to update files: #{e.message}")
               return updated_files
             end
           end
           updated_files
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -80,12 +111,20 @@ module Dependabot
           @target_files.any? { |r| "/#{file.name}".end_with?(r) }
         end
 
-        sig { returns(T::Array[String]) }
-        def command_args
-          version = T.let(dependency.requirements[0]&.[](:requirement), String)
-          checksum = T.let(dependency.requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
+        sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[String]) }
+        def command_args(requirements)
+          version = T.let(requirements[0]&.[](:requirement), String)
+          checksum = T.let(requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
+          distribution_url = T.let(requirements[0]&.[](:source), T::Hash[Symbol, String])[:url]
+          distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
-          args = %W(wrapper --no-validate-url --gradle-version #{version})
+          # --no-validate-url is required to bypass HTTP proxy issues when running ./gradlew
+          # This prevents validation failures during the wrapper update process
+          # Note: This temporarily sets validateDistributionUrl=false in gradle-wrapper.properties
+          # The original value is restored after the wrapper task completes
+          # see method `get_validate_distribution_url_option` for more details
+          args = %W(wrapper --gradle-version #{version} --no-validate-url) # see
+          args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
         end
@@ -135,8 +174,35 @@ module Dependabot
           end
         end
 
-        sig { params(file_name: String).void }
-        def write_properties_file(file_name) # rubocop:disable Metrics/PerceivedComplexity
+        # This is a consequence of the lack of proper proxy support in Gradle Wrapper
+        # During the update process, Gradle Wrapper logic will try to validate the distribution URL
+        # by performing an HTTP request. If the environment requires a proxy, this validation will fail
+        # We need to add the `--no-validate-url` the commandline args to disable this validation
+        # However, this change is persistent in the `gradle-wrapper.properties` file
+        # To avoid side effects, we read the existing value before the update and restore it afterward
+        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
+        def get_validate_distribution_url_option(properties_file)
+          return nil unless File.exist?(properties_file)
+
+          properties_content = File.read(properties_file)
+          properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
+        end
+
+        sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
+        def override_validate_distribution_url_option(properties_file, value)
+          return unless File.exist?(properties_file)
+
+          properties_content = File.read(properties_file)
+          updated_content = properties_content.gsub(
+            /^validateDistributionUrl=(.*)\n/,
+            value ? "validateDistributionUrl=#{value}\n" : ""
+          )
+          File.write(properties_file, updated_content)
+        end
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        sig { returns(T::Array[String]) }
+        def proxy_args
           http_proxy = ENV.fetch("HTTP_PROXY", nil)
           https_proxy = ENV.fetch("HTTPS_PROXY", nil)
           http_split = http_proxy&.split(":")
@@ -145,13 +211,15 @@ module Dependabot
           https_proxy_host = https_split&.fetch(1, nil)&.gsub("//", "") || "host.docker.internal"
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
-          properties_content = "
-systemProp.http.proxyHost=#{http_proxy_host}
-systemProp.http.proxyPort=#{http_proxy_port}
-systemProp.https.proxyHost=#{https_proxy_host}
-systemProp.https.proxyPort=#{https_proxy_port}"
-          File.write(file_name, properties_content)
+
+          args = []
+          args += %W(-Dhttp.proxyHost=#{http_proxy_host}) if http_proxy_host
+          args += %W(-Dhttp.proxyPort=#{http_proxy_port}) if http_proxy_port
+          args += %W(-Dhttps.proxyHost=#{https_proxy_host}) if https_proxy_host
+          args += %W(-Dhttps.proxyPort=#{https_proxy_port}) if https_proxy_port
+          args
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
