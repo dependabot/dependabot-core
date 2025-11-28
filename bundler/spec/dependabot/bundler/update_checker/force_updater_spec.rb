@@ -368,5 +368,38 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "when dependency has a private git source" do
+      let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
+      let(:dependency_name) { "business" }
+      let(:current_version) { "1.4.0" }
+      let(:target_version) { "1.5.0" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.4.0",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "configures git credentials before attempting resolution" do
+        # Verify that SharedHelpers.with_git_configured is called
+        expect(Dependabot::SharedHelpers)
+          .to receive(:with_git_configured)
+          .with(credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }])
+          .and_call_original
+
+        # This will attempt to resolve but fail because the git repo doesn't exist
+        # The important thing is that git credentials are configured
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
