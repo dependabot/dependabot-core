@@ -1,24 +1,15 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "cgi"
-require "excon"
-require "nokogiri"
 require "sorbet-runtime"
-
-require "dependabot/dependency"
 require "dependabot/uv/update_checker"
-require "dependabot/update_checkers/version_filters"
-require "dependabot/registry_client"
-require "dependabot/uv/authed_url_builder"
-require "dependabot/uv/name_normaliser"
-require "dependabot/uv/package/package_registry_finder"
-require "dependabot/uv/package/package_details_fetcher"
+require "dependabot/uv/package"
 require "dependabot/package/package_latest_version_finder"
 
 module Dependabot
   module Uv
     class UpdateChecker
+      # UV uses the same PyPI registry for package lookups as Python
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
@@ -26,11 +17,14 @@ module Dependabot
           override.returns(T.nilable(Dependabot::Package::PackageDetails))
         end
         def package_details
-          @package_details ||= Package::PackageDetailsFetcher.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).fetch
+          @package_details ||= T.let(
+            Package::PackageDetailsFetcher.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
+            ).fetch,
+            T.nilable(Dependabot::Package::PackageDetails)
+          )
         end
 
         sig { override.returns(T::Boolean) }
