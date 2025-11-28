@@ -499,7 +499,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
             context "when a range requirement was specified" do
               let(:pyproject_req_string) { ">=1.3.0" }
 
-              it { is_expected.to eq(pyproject_req) }
+              its([:requirement]) { is_expected.to eq(">=1.5.0") }
 
               context "when the requirement version is too high" do
                 let(:pyproject_req_string) { ">=2.0.0" }
@@ -510,18 +510,63 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
               context "when the requirement had a local version" do
                 let(:pyproject_req_string) { ">=1.3.0+gc.1" }
 
-                it { is_expected.to eq(pyproject_req) }
+                its([:requirement]) { is_expected.to eq(">=1.5.0") }
               end
 
               context "with an upper bound" do
                 let(:pyproject_req_string) { ">=1.3.0, <=1.5.0" }
 
-                it { is_expected.to eq(pyproject_req) }
+                its([:requirement]) { is_expected.to eq(">=1.5.0,<=1.5.0") }
 
                 context "when needing an update" do
                   let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
                   its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+                end
+              end
+
+              context "with > operator" do
+                let(:pyproject_req_string) { ">1.3.0" }
+
+                its([:requirement]) { is_expected.to eq(">1.5.0") }
+              end
+
+              context "with multiple range operators" do
+                let(:pyproject_req_string) { ">=1.3.0,<2.0.0" }
+
+                its([:requirement]) { is_expected.to eq(">=1.5.0,<2.0.0") }
+              end
+
+              context "when already satisfied but should still update" do
+                let(:pyproject_req_string) { ">=1.4.0" }
+                let(:latest_resolvable_version) { "1.4.5" }
+
+                its([:requirement]) { is_expected.to eq(">=1.4.5") }
+              end
+
+              context "with has_lockfile true" do
+                let(:has_lockfile) { true }
+                let(:pyproject_req_string) { ">=1.3.0" }
+
+                its([:requirement]) { is_expected.to eq(">=1.5.0") }
+
+                context "when version satisfies requirement" do
+                  let(:pyproject_req_string) { ">=1.2.0" }
+
+                  its([:requirement]) { is_expected.to eq(">=1.5.0") }
+                end
+              end
+
+              context "without has_lockfile" do
+                let(:has_lockfile) { false }
+                let(:pyproject_req_string) { ">=1.3.0" }
+
+                its([:requirement]) { is_expected.to eq(">=1.3.0") }
+
+                context "when version does not satisfy requirement" do
+                  let(:pyproject_req_string) { ">=2.0.0" }
+
+                  its([:requirement]) { is_expected.to eq(:unfixable) }
                 end
               end
             end
