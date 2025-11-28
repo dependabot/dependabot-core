@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 
+using NuGet;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
@@ -12,8 +14,8 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-using TestFile = (string Path, string Content);
 using RawTestFile = (string Path, byte[] Content);
+using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
@@ -983,6 +985,162 @@ public class EndToEndTests
                                 </Project>
                                 """
                         }
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task WithAdditionalPackageSources()
+    {
+        // prepare the main package source
+        using var http1 = TestHttpServer.CreateTestNuGetFeed(MockNuGetPackage.CommonPackages);
+
+        // prepare a package source with a single package - old version
+        using var http2 = TestHttpServer.CreateTestNuGetFeed(
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0")
+        );
+
+        // prepare a package source with a single package - new version
+        using var http3 = TestHttpServer.CreateTestNuGetFeed(
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0")
+        );
+
+        await RunAsync(
+            experimentsManager: new ExperimentsManager() { AdditionalPackageSources = true },
+            packages: [],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                }
+            },
+            files: [
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("nuget.config", $"""
+                    <configuration>
+                      <config>
+                        <add key="DependabotAdditionalPackageSource" value="{http2.BaseUrl.TrimEnd('/')}/index.json" />
+                        <add key="DependabotAdditionalPackageSource" value="{http3.BaseUrl.TrimEnd('/')}/index.json" />
+                      </config>
+                      <packageSources>
+                        <clear />
+                        <add key="package_feed_1" value="{http1.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: null, // use real worker
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/Directory.Build.props",
+                        "/Directory.Build.targets",
+                        "/Directory.Packages.props",
+                        "/project.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/",
+                            Name = "project.csproj",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net8.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """
+                        },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
                     CommitMessage = TestPullRequestCommitMessage,
