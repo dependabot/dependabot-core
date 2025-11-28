@@ -11,11 +11,25 @@ module Dependabot
 
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
+      # Generic ISO 8601-like date/timestamp format supporting various prefixes and formats
+      # Breaks down into readable components:
+      # - Prefix: optional prefix like "RELEASE.", "v", "build.", "build_"
+      # - Date: YYYY-MM-DD (required)
+      # - Time: T + HH:MM:SS or HH-MM-SS (optional, but if T is present, full time must be valid)
+      # - Milliseconds: .sss (optional, only if time is present)
+      # - Timezone: Z or +/-HH:MM or +/-HHMM (optional, only if time is present)
+      # - Suffix: any additional content after the date/timestamp (optional)
+      ISO_DATE_PART = /[0-9]{4}-[0-9]{2}-[0-9]{2}/ # YYYY-MM-DD
+      ISO_TIME_PART = /T[0-9]{2}[-:][0-9]{2}[-:][0-9]{2}/ # THH:MM:SS or THH-MM-SS
+      ISO_MILLIS_PART = /\.[0-9]{1,3}/ # .sss
+      ISO_TIMEZONE_PART = /Z|[+-][0-9]{2}:?[0-9]{2}/ # Z or +/-HH:MM or +/-HHMM
+      ISO_TIMESTAMP_REGEX = /^(?<prefix>(?:[a-z]+\.|[a-z]+_|v)?)?(?<version>#{ISO_DATE_PART}(?:#{ISO_TIME_PART}(?:#{ISO_MILLIS_PART})?(?:#{ISO_TIMEZONE_PART})?)?(?![T]))(?<suffix>.+)?$/i # rubocop:disable Layout/LineLength
       VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
       VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-_]*-)?#{VERSION_REGEX}$/i
       VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =
         /
+          #{ISO_TIMESTAMP_REGEX}|
           #{VERSION_WITH_PFX}|
           #{VERSION_WITH_SFX}|
           #{VERSION_WITH_PFX_AND_SFX}
@@ -51,10 +65,14 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def comparable_formats(other_format, other_prefix, other_suffix)
-        return false unless prefix.nil? && suffix.nil? && other_prefix.nil? && other_suffix.nil?
+        # Allow comparison between different year/month formats
+        if prefix.nil? && suffix.nil? && other_prefix.nil? && other_suffix.nil?
+          formats = %i(year_month year_month_day)
+          return (format == :build_num && formats.include?(other_format)) || (formats.include?(format) && other_format == :build_num) # rubocop:disable Layout/LineLength
+        end
 
-        formats = %i(year_month year_month_day)
-        (format == :build_num && formats.include?(other_format)) || (formats.include?(format) && other_format == :build_num) # rubocop:disable Layout/LineLength
+        # Allow comparison between ISO timestamp tags regardless of prefix
+        format == :iso_timestamp && other_format == :iso_timestamp
       end
 
       sig { params(other: Tag).returns(T::Boolean) }
@@ -96,6 +114,9 @@ module Dependabot
         return false unless numeric_version
         return true if name == numeric_version
 
+        # ISO timestamp tags are considered canonical when they match the expected format
+        return true if name.match?(ISO_TIMESTAMP_REGEX)
+
         # .NET tags are suffixed with -sdk
         return true if numeric_version && name == numeric_version.to_s + "-sdk"
 
@@ -104,12 +125,14 @@ module Dependabot
 
       sig { returns T.nilable(String) }
       def prefix
-        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("prefix")
+        result = name.match(NAME_WITH_VERSION)&.named_captures&.fetch("prefix")
+        result&.empty? ? nil : result
       end
 
       sig { returns T.nilable(String) }
       def suffix
-        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("suffix")
+        result = name.match(NAME_WITH_VERSION)&.named_captures&.fetch("suffix")
+        result&.empty? ? nil : result
       end
 
       sig { returns T.nilable(String) }
@@ -120,27 +143,23 @@ module Dependabot
       sig { returns(Symbol) }
       def format
         return :sha_suffixed if name.match?(/(^|\-g?)[0-9a-f]{7,}$/)
+        return :iso_timestamp if name.match?(ISO_TIMESTAMP_REGEX)
         return :year_month if version&.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if version&.match?(/^[12](?:\d{5}|\d{7})(?:[.\-]|$)/)
         return :build_num if version&.match?(/^\d+$/)
 
-        # As an example, "21-ea-32", "22-ea-7", and "22-ea-jdk-nanoserver-1809"
-        # are mapped to "<version>-ea-<build_num>", "<version>-ea-<build_num>",
-        # and "<version>-ea-jdk-nanoserver-<build_num>" respectively.
-        #
-        # That means only "22-ea-7" will be considered as a viable update
-        # candidate for "21-ea-32", since it's the only one that respects that
-        # format.
-        if version&.match?(WORDS_WITH_BUILD)
-          return :"<version>#{T.must(version).match(WORDS_WITH_BUILD).to_s.gsub(/-[0-9]+/, '-<build_num>')}"
-        end
-
-        :normal
+        words_build_format || :normal
       end
 
       sig { returns(T.nilable(String)) }
       def numeric_version
         return unless comparable?
+
+        # For ISO timestamp formats, preserve the original case and normalize separators
+        if name.match?(ISO_TIMESTAMP_REGEX)
+          # Normalize time separators to hyphens for consistent comparison (only if time is present)
+          return version&.gsub(/T(\d{2}):(\d{2}):(\d{2})/, 'T\1-\2-\3')
+        end
 
         version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
       end
@@ -153,6 +172,23 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def segments
         T.must(numeric_version).split(/[.-]/)
+      end
+
+      private
+
+      sig { returns(T.nilable(Symbol)) }
+      def words_build_format
+        return unless version&.match?(WORDS_WITH_BUILD)
+
+        # As an example, "21-ea-32", "22-ea-7", and "22-ea-jdk-nanoserver-1809"
+        # are mapped to "<version>-ea-<build_num>", "<version>-ea-<build_num>",
+        # and "<version>-ea-jdk-nanoserver-<build_num>" respectively.
+        #
+        # That means only "22-ea-7" will be considered as a viable update
+        # candidate for "21-ea-32", since it's the only one that respects that
+        # format.
+        build_pattern = T.must(version).match(WORDS_WITH_BUILD).to_s.gsub(/-[0-9]+/, "-<build_num>")
+        :"<version>#{build_pattern}"
       end
     end
   end
