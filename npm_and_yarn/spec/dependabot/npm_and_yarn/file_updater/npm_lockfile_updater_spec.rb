@@ -1071,7 +1071,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       expect(install_arg).to eq("@rollup/rollup-linux-x64-gnu@4.53.2")
 
       # Test the run_npm_install_lockfile_only method includes --save-optional
-      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+      expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
         expect(command).to include("--save-optional")
         expect(command).to include("--package-lock-only")
         expect(command).to include("--force")
@@ -1134,7 +1134,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         optional_install_arg = updater.send(:npm_install_args, optional_dependency_obj)
 
         # Test run_npm_install_lockfile_only without --save-optional for regular deps
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
           expect(command).not_to include("--save-optional")
           expect(command).to include("--package-lock-only")
           expect(command).to include("--force")
@@ -1143,7 +1143,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         updater.send(:run_npm_install_lockfile_only, [regular_install_arg], has_optional_dependencies: false)
 
         # Test run_npm_install_lockfile_only with --save-optional for optional deps
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
           expect(command).to include("--save-optional")
           expect(command).to include("--package-lock-only")
           expect(command).to include("--force")
@@ -1152,7 +1152,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         updater.send(:run_npm_install_lockfile_only, [optional_install_arg], has_optional_dependencies: true)
       end
 
-      context "lockfile content verification" do
+      context "when verifying lockfile content" do
         it "correctly updates lockfile with optional dependencies staying in optionalDependencies section" do
           # Use actual file update process without mocking the core functionality
           expected_updated_content = fixture(
@@ -1163,12 +1163,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           test_updater = described_class.new(
             lockfile: package_lock,
             dependency_files: files,
-            dependencies: [dependency],  # This will be the optional dependency due to our context
+            dependencies: [dependency],
             credentials: credentials
           )
 
           # Mock the npm command to return success but don't override the file reading
-          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, options|
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
             # Verify the command includes --save-optional for optional dependencies
             expect(command).to include("--save-optional")
             expect(command).to include("@rollup/rollup-linux-x64-gnu@4.53.2")
@@ -1202,9 +1202,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           # Critical: Ensure the optional dependency is NOT moved to the dependencies section
           dependencies_section = parsed_result.dig("packages", "", "dependencies")
-          if dependencies_section
-            expect(dependencies_section).not_to have_key("@rollup/rollup-linux-x64-gnu")
-          end
+          expect(dependencies_section).not_to have_key("@rollup/rollup-linux-x64-gnu") if dependencies_section
         end
 
         it "handles mixed dependencies correctly without moving optional deps to dependencies section" do
