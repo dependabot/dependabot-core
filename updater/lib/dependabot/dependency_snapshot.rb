@@ -75,8 +75,10 @@ module Dependabot
     # by the project configuration.
     sig { returns(T::Array[Dependabot::Dependency]) }
     def allowed_dependencies
-      # If job.dependencies is explicitly set, filter to only those dependencies
-      if job.dependencies&.any?
+      # If job.dependencies is explicitly set and we're not updating an existing PR,
+      # filter to only those dependencies. When updating a PR, job.dependencies
+      # tracks what's in the existing PR, not what should be filtered.
+      if job.dependencies&.any? && !job.updating_a_pull_request?
         job_dependency_names = T.must(job.dependencies).map(&:downcase)
         dependencies.select { |d| job_dependency_names.include?(d.name.downcase) }
       else

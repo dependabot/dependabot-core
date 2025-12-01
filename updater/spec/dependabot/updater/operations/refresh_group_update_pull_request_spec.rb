@@ -7,6 +7,7 @@ require "support/dependency_file_helpers"
 
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
+require "dependabot/fetched_files"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_group_update_pull_request"

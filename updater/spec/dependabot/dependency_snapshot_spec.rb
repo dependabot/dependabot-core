@@ -270,6 +270,7 @@ RSpec.describe Dependabot::DependencySnapshot do
           dependency_groups: dependency_groups,
           dependencies: ["dummy-pkg-a"],
           allowed_update?: false,
+          updating_a_pull_request?: false,
           dependency_group_to_refresh: nil,
           experiments: { large_hadron_collider: true }
         )
@@ -304,6 +305,7 @@ RSpec.describe Dependabot::DependencySnapshot do
           dependency_groups: dependency_groups,
           dependencies: ["dummy-pkg-a"],
           allowed_update?: true,
+          updating_a_pull_request?: false,
           dependency_group_to_refresh: nil,
           experiments: { large_hadron_collider: true }
         )
