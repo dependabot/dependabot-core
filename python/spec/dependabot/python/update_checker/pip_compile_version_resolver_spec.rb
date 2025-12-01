@@ -341,6 +341,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
+
+    context "with pycairo and pygobject dependencies", :slow do
+      let(:manifest_fixture_name) { "pycairo_pygobject.in" }
+      let(:generated_fixture_name) { "pip_compile_pycairo_pygobject.txt" }
+      let(:dependency_name) { "pycairo" }
+      let(:dependency_version) { "1.26.0" }
+      let(:updated_requirement) { ">=1.26.0" }
+
+      it { is_expected.to be >= Gem::Version.new("1.26.0") }
+    end
   end
 
   describe "#resolvable?" do
