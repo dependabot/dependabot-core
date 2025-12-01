@@ -63,7 +63,7 @@ To aid with that, we created the [example-cli-usage](https://github.com/dependab
 
 ## Write your own Ruby-based tool
 
-Alternatively, because Dependabot-Core is a Ruby library, you can write your own ruby-based wrapper that leverages the Dependabot-core code. The tricky bit is you'll need to manage the dependency environment yourself, for example making sure the appropriate version of Go or Python or whatever language you need is present in the local environment.
+Alternatively, because Dependabot-Core is a Ruby library, you can write your own ruby-based wrapper that leverages the Dependabot-core code. The tricky bit is Dependabot assumes it's running in an isolated, throw-away environment so you'll need to handle all that yourself. For example protecting against security risks of arbitrary code execution exfiltrating credentials, ensuring the appropriate version of Go or Python or whatever language you need is available, and handling when Dependabot makes changes to its runtime environment.
 
 ## Dependabot on CI
 
