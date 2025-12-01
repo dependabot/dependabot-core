@@ -131,14 +131,31 @@ module Dependabot
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_pyproject_version_if_needed(req)
-          return req if new_version_satisfies?(req)
+          return req if new_version_satisfies?(req) && !has_lockfile
 
-          update_pyproject_version(req)
+          requirement_strings = req.fetch(:requirement).split(",").map(&:strip)
+
+          bump_compat_if_satisfied = false
+          bump_lower_bounds = has_lockfile && requirement_strings.any? { |r| r.start_with?("<", ">") }
+
+          update_pyproject_version(
+            req,
+            bump_lower_bounds: bump_lower_bounds,
+            bump_compat_if_satisfied: bump_compat_if_satisfied
+          )
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
-        def update_pyproject_version(req)
+        sig do
+          params(
+            req: T::Hash[Symbol, T.untyped],
+            bump_lower_bounds: T::Boolean,
+            bump_compat_if_satisfied: T::Boolean
+          ).returns(T::Hash[Symbol, T.untyped])
+        end
+        def update_pyproject_version(req, bump_lower_bounds: has_lockfile, bump_compat_if_satisfied: true)
           requirement_strings = req[:requirement].split(",").map(&:strip)
+
+          requires_update = !new_version_satisfies?(req)
 
           new_requirement =
             if requirement_strings.any? { |r| r.match?(/^=|^\d/) }
@@ -149,14 +166,18 @@ module Dependabot
               # If a compatibility operator is being used, just bump its
               # version (and remove any other requirements)
               v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
-              bump_version(v_req, latest_resolvable_version.to_s)
-              req.fetch(:requirement)
+
+              if !requires_update && !bump_compat_if_satisfied
+                req.fetch(:requirement)
+              else
+                bump_version(v_req, latest_resolvable_version.to_s)
+              end
             elsif requirement_strings.find { |r| r.start_with?("<", ">") }
               # For range operators (>=, >, <, <=), update bounds to reference the new version.
               # Even when the new version already satisfies existing requirements (e.g., >=2.11.7
               # satisfies 2.12.5), we still update them (e.g., to >=2.12.5) to keep pyproject.toml
               # in sync with uv.lock and avoid confusing bump pull requests.
-              update_requirements_range(requirement_strings)
+              update_requirements_range(requirement_strings, bump_lower_bounds: bump_lower_bounds)
             else
               # required if it's already satisfied
               req.fetch(:requirement)
@@ -318,29 +339,50 @@ module Dependabot
             .join(".")
         end
 
-        sig { params(requirement_strings: T::Array[String]).returns(String) }
-        def update_requirements_range(requirement_strings)
-          ruby_requirements =
-            requirement_strings.map { |r| requirement_class.new(r) }
+        sig do
+          params(
+            req: Dependabot::Uv::Requirement,
+            latest_version: Dependabot::Uv::Version,
+            bump_lower_bounds: T::Boolean
+          ).returns(T.nilable(String))
+        end
+        def updated_range_requirement_string(req, latest_version, bump_lower_bounds)
+          op, version = req.requirements.first
 
-        updated_requirement_strings = ruby_requirements.flat_map do |r|
-            case op = r.requirements.first.first
-            when "<"
-              next r.to_s if r.satisfied_by?(T.must(latest_resolvable_version))
-              "<" + update_greatest_version(r.requirements.first.last, T.must(latest_resolvable_version))
-            when "<="
-              next r.to_s if r.satisfied_by?(T.must(latest_resolvable_version))
-              "<=" + latest_resolvable_version.to_s
-            when ">="
-              ">=" + latest_resolvable_version.to_s
-            when ">"
-              ">" + latest_resolvable_version.to_s
-            when "!="
-              raise UnfixableRequirement
-            else
-              raise "Unexpected op for unsatisfied requirement: #{op}"
-            end
-          end.compact
+          case op
+          when "<"
+            return req.to_s if req.satisfied_by?(latest_version)
+
+            "<" + update_greatest_version(version, latest_version)
+          when "<="
+            return req.to_s if req.satisfied_by?(latest_version)
+
+            "<=" + latest_version.to_s
+          when ">=", ">"
+            raise UnfixableRequirement unless req.satisfied_by?(latest_version)
+
+            bump_lower_bounds ? op + latest_version.to_s : req.to_s
+
+          when "!="
+            raise UnfixableRequirement
+          else
+            raise "Unexpected op for unsatisfied requirement: #{op}"
+          end
+        end
+
+        sig do
+          params(
+            requirement_strings: T::Array[String],
+            bump_lower_bounds: T::Boolean
+          ).returns(String)
+        end
+        def update_requirements_range(requirement_strings, bump_lower_bounds: false)
+          latest_version = T.must(latest_resolvable_version)
+          ruby_requirements = requirement_strings.map { |r| requirement_class.new(r) }
+
+          updated_requirement_strings = ruby_requirements.filter_map do |req|
+            updated_range_requirement_string(req, latest_version, bump_lower_bounds)
+          end
 
           updated_requirement_strings
             .sort_by { |r| requirement_class.new(r).requirements.first.last }

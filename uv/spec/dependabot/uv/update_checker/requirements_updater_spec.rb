@@ -521,7 +521,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
                 context "when needing an update" do
                   let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                  its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+                  its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
                 end
               end
 
