@@ -23,17 +23,20 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
-# Configure Node to use our custom CA bundle
+# Configure Bun to use our custom CA bundle
+# Even though Bun doesn't use Node, it respects this environment variable: https://bun.com/blog/bun-v1.1.22#node-extra-ca-certs
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+# Silence warning messages that aren't useful within the Dependabot context.
+# These env vars are not used by Bun directly, but only the Dependabot native helpers which currently rely on npm/yarn.
+# CAUTION: `NPM_CONFIG_*` vars take precedence over the user's .npmrc settings. For these it always makes sense, but for
+# other non-default configs it might be better to set them in a global .npmrc instead so users' .npmrc settings are respected.
+ENV NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot bun/helpers /opt/bun/helpers
 RUN bash /opt/bun/helpers/build
-
-# Create the config file manually instead of using npm config set as this
-# executes the package manager outputs to every job log
-# This is here because bun supports .npmrc as well. See https://bun.com/docs/pm/npmrc#npmrc-support
-COPY --chown=dependabot:dependabot updater/config/.npmrc $DEPENDABOT_HOME/
 
 COPY --chown=dependabot:dependabot --parents bun common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
