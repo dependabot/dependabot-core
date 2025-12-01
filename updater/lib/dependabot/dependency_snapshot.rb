@@ -75,8 +75,10 @@ module Dependabot
     # by the project configuration.
     sig { returns(T::Array[Dependabot::Dependency]) }
     def allowed_dependencies
-      if job.security_updates_only?
-        dependencies.select { |d| T.must(job.dependencies).include?(d.name) }
+      # If job.dependencies is explicitly set, filter to only those dependencies
+      if job.dependencies&.any?
+        job_dependency_names = T.must(job.dependencies).map(&:downcase)
+        dependencies.select { |d| job_dependency_names.include?(d.name.downcase) }
       else
         dependencies.select { |d| job.allowed_update?(d) }
       end

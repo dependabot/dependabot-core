@@ -8,6 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/errors"
 
 require "dependabot/dependency_snapshot"
+require "dependabot/fetched_files"
 require "dependabot/job"
 
 require "dependabot/bundler"
@@ -283,6 +284,41 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
         expect(snapshot.dependencies.count).to be(2)
         expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
+        expect(snapshot.allowed_dependencies.map(&:name)).to eql(%w(dummy-pkg-a))
+      end
+    end
+
+    context "when it's a regular version update and has dependencies" do
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
+      end
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          package_manager: "bundler",
+          security_updates_only?: false,
+          repo_contents_path: nil,
+          credentials: [],
+          reject_external_code?: false,
+          source: source,
+          dependency_groups: dependency_groups,
+          dependencies: ["dummy-pkg-a"],
+          allowed_update?: true,
+          dependency_group_to_refresh: nil,
+          experiments: { large_hadron_collider: true }
+        )
+      end
+
+      it "filters to only the specified dependencies" do
+        snapshot = create_dependency_snapshot
+
+        expect(snapshot).to be_a(described_class)
+        expect(snapshot.base_commit_sha).to eql("mock-sha")
+        expect(snapshot.dependency_files).to all(be_a(Dependabot::DependencyFile))
+        expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
+        expect(snapshot.dependencies.count).to be(2)
+        expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
+        # Should filter to only dummy-pkg-a even though both dependencies are present
         expect(snapshot.allowed_dependencies.map(&:name)).to eql(%w(dummy-pkg-a))
       end
     end
