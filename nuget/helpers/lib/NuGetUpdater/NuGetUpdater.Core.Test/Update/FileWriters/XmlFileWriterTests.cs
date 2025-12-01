@@ -1833,4 +1833,78 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task MultipleEdits_AttributeSpansChange()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency" Version="9.0.0" />
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/9.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/10.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency" Version="10.0.0" />
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency" Version="10.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task MultipleEdits_ElementSpansChange()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>9.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>9.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/9.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/10.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>10.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>10.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }
