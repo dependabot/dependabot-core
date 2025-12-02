@@ -87,7 +87,7 @@ module Dependabot
           groups_without_pr = dependency_snapshot.groups.filter_map do |group|
             if pr_exists_for_dependency_group?(group)
               existing_pr = job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }
-              pr_number = existing_pr&.[]("pr_number")
+              pr_number = existing_pr["pr_number"] if existing_pr
 
               Dependabot.logger.info("Detected existing pull request ##{pr_number} for '#{group.name}'.")
               Dependabot.logger.info(
