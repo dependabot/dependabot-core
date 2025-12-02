@@ -10,6 +10,7 @@ require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/metadata_finder"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/dependency_grapher"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler

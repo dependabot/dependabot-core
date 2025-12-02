@@ -1,0 +1,9 @@
+{
+  "name": "grapher-yarn-berry-no-lockfile",
+  "version": "1.0.0",
+  "description": "Test project for yarn berry grapher without lockfile",
+  "packageManager": "yarn@3.6.0",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
