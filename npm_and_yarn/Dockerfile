@@ -36,13 +36,15 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
-RUN corepack install pnpm@$PNPM_VERSION --global \
-  && corepack install yarn@$YARN_VERSION --global \
-  && corepack install npm@$NPM_VERSION --global \
-  # Pre-cache popular older versions of npm for on-demand activation
-  && corepack prepare npm@10 \
-  && corepack prepare npm@9 \
-  && corepack prepare npm@8
+RUN <<EOF
+corepack install pnpm@$PNPM_VERSION --global
+corepack install yarn@$YARN_VERSION --global
+corepack install npm@$NPM_VERSION --global
+# Pre-cache popular older versions of npm for on-demand activation
+corepack prepare npm@10
+corepack prepare npm@9
+corepack prepare npm@8
+EOF
 
 # Configure Node to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
