@@ -7,6 +7,7 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     software-properties-common \
+  # Install PHP and its packages
   && add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -36,6 +37,7 @@ RUN apt-get update \
     php${PHP_VERSION}-zmq \
     php${PHP_VERSION}-mcrypt \
   && rm -rf /var/lib/apt/lists/* \
+  # Install Composer
   && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
 
 USER dependabot
