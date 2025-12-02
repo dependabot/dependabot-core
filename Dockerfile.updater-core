@@ -11,6 +11,12 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
+
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+ENV DEPENDABOT_HOME="/home/dependabot"
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-${TARGETARCH}.tar.gz"
+
 # Configures Ubuntu to use Azure mirrors, which are often faster and more reliable
 # From https://github.com/Azure/LinuxPatchExtension/blob/master/src/tools/references/apt/sources.list.d/ubuntu.sources
 # This is also used in other places such as the runner builds: https://github.com/actions/runner-images/blob/2f8d6ab9ef24fd8bda80b5259650fe1dc4311320/images/ubuntu/scripts/build/configure-apt-sources.sh#L11
@@ -100,40 +106,40 @@ EOF
   apt purge software-properties-common apt-transport-https -y
   apt-get autoremove -y
   rm -rf /var/lib/apt/lists/*
-EOT
 
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-RUN <<EOT
   # Check if the group and user already exist, if not create them
   if ! getent group "$USER_GID"; then
     groupadd --gid "$USER_GID" dependabot
   else
     GROUP_NAME=$(getent group "$USER_GID" | awk -F':' '{print $1}')
     groupmod -n dependabot "$GROUP_NAME"
-  fi
+   fi
 
-  if ! getent passwd "$USER_UID"; then
-    useradd --uid "$USER_UID" --gid "$USER_GID" -m dependabot
-  else
-    USER_NAME=$(getent passwd "$USER_UID" | awk -F':' '{print $1}')
-    OLD_HOME=$(getent passwd "$USER_UID" | awk -F':' '{print $6}')
-    usermod -l dependabot "$USER_NAME"
-    # Rename the home directory if it exists and isn't already /home/dependabot
-    if [ -d "$OLD_HOME" ] && [ "$OLD_HOME" != "/home/dependabot" ]; then
-      usermod -d /home/dependabot -m dependabot
+    if ! getent passwd "$USER_UID"; then
+      useradd --uid "$USER_UID" --gid "$USER_GID" -m dependabot
+    else
+      USER_NAME=$(getent passwd "$USER_UID" | awk -F':' '{print $1}')
+      OLD_HOME=$(getent passwd "$USER_UID" | awk -F':' '{print $6}')
+      usermod -l dependabot "$USER_NAME"
+      # Rename the home directory if it exists and isn't already /home/dependabot
+      if [ -d "$OLD_HOME" ] && [ "$OLD_HOME" != "/home/dependabot" ]; then
+        usermod -d /home/dependabot -m dependabot
+      fi
     fi
-  fi
 
-  mkdir -p /opt
-  chown dependabot:dependabot /opt
-  chgrp dependabot /etc/ssl/certs
-  chmod g+w /etc/ssl/certs
+   mkdir -p /opt
+   chown dependabot:dependabot /opt
+   chgrp dependabot /etc/ssl/certs
+   chmod g+w /etc/ssl/certs
+
+   # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
+   curl -sL $SHIM -o git-shim.tar.gz
+   mkdir -p $DEPENDABOT_HOME/bin
+   tar -xvf git-shim.tar.gz -C $DEPENDABOT_HOME/bin
+   rm git-shim.tar.gz
 EOT
 
 USER dependabot
-ENV DEPENDABOT_HOME="/home/dependabot"
 WORKDIR $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
@@ -147,12 +153,7 @@ ENV DEPENDABOT=true
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
 
-# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-${TARGETARCH}.tar.gz"
-RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
-
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
-
 COPY --chown=dependabot:dependabot --parents */.bundle */*.gemspec common/lib/dependabot.rb LICENSE omnibus $DEPENDABOT_HOME
 
 # prevent having all the source in every ecosystem image
