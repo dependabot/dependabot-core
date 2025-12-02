@@ -6,8 +6,8 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    software-properties-common
-RUN add-apt-repository ppa:ondrej/php \
+    software-properties-common \
+  && add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
     php${PHP_VERSION} \
@@ -35,9 +35,8 @@ RUN add-apt-repository ppa:ondrej/php \
     php${PHP_VERSION}-zip \
     php${PHP_VERSION}-zmq \
     php${PHP_VERSION}-mcrypt \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
+  && rm -rf /var/lib/apt/lists/* \
+  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
 
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
