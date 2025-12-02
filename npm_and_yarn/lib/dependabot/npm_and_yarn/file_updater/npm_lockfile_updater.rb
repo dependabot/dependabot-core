@@ -866,6 +866,10 @@ module Dependabot
             updated_lockfile_content, parsed_updated_lockfile_content
           )
 
+          updated_lockfile_content = remove_optional_dependencies_from_dependencies_section(
+            updated_lockfile_content, parsed_updated_lockfile_content
+          )
+
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
           replace_tarball_urls(updated_lockfile_content)
@@ -988,6 +992,61 @@ module Dependabot
           end
 
           updated_lockfile_content
+        end
+
+        sig do
+          params(
+            updated_lockfile_content: String,
+            parsed_updated_lockfile_content: T::Hash[String, T.untyped]
+          )
+            .returns(String)
+        end
+        def remove_optional_dependencies_from_dependencies_section(
+          updated_lockfile_content,
+          parsed_updated_lockfile_content
+        )
+          return updated_lockfile_content unless parsed_package_json["optionalDependencies"]
+
+          optional_deps = parsed_package_json["optionalDependencies"].keys
+          dependencies_in_lockfile = parsed_updated_lockfile_content.dig("packages", "", "dependencies")
+
+          return updated_lockfile_content unless dependencies_in_lockfile
+
+          misplaced_deps = find_misplaced_optional_deps(optional_deps, dependencies_in_lockfile)
+          return updated_lockfile_content if misplaced_deps.empty?
+
+          remove_misplaced_deps_from_lockfile(parsed_updated_lockfile_content, misplaced_deps)
+
+          indent = detect_indentation(updated_lockfile_content)
+          JSON.pretty_generate(parsed_updated_lockfile_content, indent: indent)
+        end
+
+        sig do
+          params(
+            optional_deps: T::Array[String],
+            dependencies_in_lockfile: T::Hash[String, T.untyped]
+          )
+            .returns(T::Array[String])
+        end
+        def find_misplaced_optional_deps(optional_deps, dependencies_in_lockfile)
+          optional_deps.select { |dep| dependencies_in_lockfile.key?(dep) }
+        end
+
+        sig do
+          params(
+            lockfile_json: T::Hash[String, T.untyped],
+            misplaced_deps: T::Array[String]
+          )
+            .void
+        end
+        def remove_misplaced_deps_from_lockfile(lockfile_json, misplaced_deps)
+          misplaced_deps.each do |dep_name|
+            lockfile_json.dig("packages", "")&.fetch("dependencies", {})&.delete(dep_name)
+          end
+
+          # Remove the entire dependencies key if it's now empty
+          deps = lockfile_json.dig("packages", "", "dependencies")
+          lockfile_json.dig("packages", "")&.delete("dependencies") if deps && deps.empty?
         end
 
         sig { params(updated_lockfile_content: String).returns(String) }
