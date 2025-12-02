@@ -4,43 +4,43 @@ ARG COMPOSER_V2_VERSION=2.8.10
 ARG PHP_VERSION=8.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN <<EOF
-apt-get update
-apt-get upgrade -y
-apt-get install -y --no-install-recommends software-properties-common
+  apt-get update
+  apt-get upgrade -y
+  apt-get install -y --no-install-recommends software-properties-common
 
-# Install PHP and its packages
-add-apt-repository ppa:ondrej/php
-apt-get update
-apt-get install -y --no-install-recommends \
-  php${PHP_VERSION} \
-  php${PHP_VERSION}-apcu \
-  php${PHP_VERSION}-bcmath \
-  php${PHP_VERSION}-cli \
-  php${PHP_VERSION}-common \
-  php${PHP_VERSION}-curl \
-  php${PHP_VERSION}-gd \
-  php${PHP_VERSION}-gettext \
-  php${PHP_VERSION}-gmp \
-  php${PHP_VERSION}-imagick \
-  php${PHP_VERSION}-imap \
-  php${PHP_VERSION}-intl \
-  php${PHP_VERSION}-ldap \
-  php${PHP_VERSION}-mbstring \
-  php${PHP_VERSION}-memcached \
-  php${PHP_VERSION}-mongodb \
-  php${PHP_VERSION}-mysql \
-  php${PHP_VERSION}-redis \
-  php${PHP_VERSION}-soap \
-  php${PHP_VERSION}-sqlite3 \
-  php${PHP_VERSION}-tidy \
-  php${PHP_VERSION}-xml \
-  php${PHP_VERSION}-zip \
-  php${PHP_VERSION}-zmq \
-  php${PHP_VERSION}-mcrypt
-rm -rf /var/lib/apt/lists/*
+  # Install PHP and its packages
+  add-apt-repository ppa:ondrej/php
+  apt-get update
+  apt-get install -y --no-install-recommends \
+    php${PHP_VERSION} \
+    php${PHP_VERSION}-apcu \
+    php${PHP_VERSION}-bcmath \
+    php${PHP_VERSION}-cli \
+    php${PHP_VERSION}-common \
+    php${PHP_VERSION}-curl \
+    php${PHP_VERSION}-gd \
+    php${PHP_VERSION}-gettext \
+    php${PHP_VERSION}-gmp \
+    php${PHP_VERSION}-imagick \
+    php${PHP_VERSION}-imap \
+    php${PHP_VERSION}-intl \
+    php${PHP_VERSION}-ldap \
+    php${PHP_VERSION}-mbstring \
+    php${PHP_VERSION}-memcached \
+    php${PHP_VERSION}-mongodb \
+    php${PHP_VERSION}-mysql \
+    php${PHP_VERSION}-redis \
+    php${PHP_VERSION}-soap \
+    php${PHP_VERSION}-sqlite3 \
+    php${PHP_VERSION}-tidy \
+    php${PHP_VERSION}-xml \
+    php${PHP_VERSION}-zip \
+    php${PHP_VERSION}-zmq \
+    php${PHP_VERSION}-mcrypt
+  rm -rf /var/lib/apt/lists/*
 
-# Install Composer
-curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
+  # Install Composer
+  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
 EOF
 
 USER dependabot
