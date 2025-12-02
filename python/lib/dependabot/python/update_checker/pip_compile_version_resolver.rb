@@ -431,8 +431,9 @@ module Dependabot
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
-              compiled_file = compiled_file_for_filename(fn)
-              compiled_file_includes_dependency?(compiled_file)
+              compiled_files_for_filename(fn).any? do |compiled_file|
+                compiled_file_includes_dependency?(compiled_file)
+              end
             end
 
           filenames = [*files_from_reqs, *files_from_compiled_files].uniq
@@ -440,17 +441,27 @@ module Dependabot
           order_filenames_for_compilation(filenames)
         end
 
+        # Returns the first compiled file for a given source filename
+        # Used for backward compatibility in places where only one file is needed
         sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
         def compiled_file_for_filename(filename)
-          compiled_file =
-            compiled_files
-            .find { |f| T.must(f.content).match?(output_file_regex(filename)) }
+          compiled_files_for_filename(filename).first
+        end
 
-          compiled_file ||=
-            compiled_files
-            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+        # Returns all compiled files (.txt) that were generated from the given source file (.in)
+        # A single .in file may generate multiple .txt files with different --output-file options
+        sig { params(filename: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def compiled_files_for_filename(filename)
+          # First, find all files that have an --output-file header referencing this input file
+          files_with_output_header = compiled_files.select do |f|
+            T.must(f.content).match?(output_file_regex(filename))
+          end
 
-          compiled_file
+          return files_with_output_header if files_with_output_header.any?
+
+          # Fall back to convention-based matching (input.in -> input.txt)
+          default_output = compiled_files.find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+          default_output ? [default_output] : []
         end
 
         sig { params(filename: String).returns(String) }
