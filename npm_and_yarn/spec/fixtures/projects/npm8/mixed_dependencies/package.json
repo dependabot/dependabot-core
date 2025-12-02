@@ -1,0 +1,17 @@
+{
+  "name": "mixed-dependencies-test",
+  "version": "1.0.0",
+  "description": "Test package with both regular and optional dependencies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "fetch-factory": "^0.0.1"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.52.5"
+  },
+  "author": "",
+  "license": "ISC"
+}
