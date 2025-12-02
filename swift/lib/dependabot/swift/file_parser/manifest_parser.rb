@@ -13,7 +13,7 @@ module Dependabot
 
         DEPENDENCY =
           /(?<declaration>\.package\(\s*
-            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})\s*
+            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})(?:\s*,\s*traits:\s*\[[^\]]*\])?\s*
            \))/x
 
         sig do
