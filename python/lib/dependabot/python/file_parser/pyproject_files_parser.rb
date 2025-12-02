@@ -19,6 +19,8 @@ module Dependabot
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
+        # Dependabot cannot update dependencies specified via git, path, or url.
+        # Path dependencies include local directories and files (.whl, .tar.gz, .zip).
         UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
