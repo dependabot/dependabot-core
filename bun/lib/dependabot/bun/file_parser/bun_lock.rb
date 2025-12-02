@@ -34,6 +34,7 @@ module Dependabot
 
             # configVersion was introduced in Bun v1.3.2 to control install behavior.
             # When present, it must be preserved or Bun will use different install defaults.
+            # See https://bun.sh/blog/bun-v1.3.2#lockfile-configversion-stabilizes-install-defaults
             if content.key?("configVersion")
               config_version = content["configVersion"]
               unless config_version.is_a?(Integer) && config_version >= 0
