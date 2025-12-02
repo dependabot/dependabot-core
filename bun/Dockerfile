@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
@@ -22,18 +23,17 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
+# Configure Node to use our custom CA bundle
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot bun/helpers /opt/bun/helpers
 RUN bash /opt/bun/helpers/build
 
-# Create the config file manually instead of using yarn/npm config set as this
+# Create the config file manually instead of using npm config set as this
 # executes the package manager outputs to every job log
 # This is here because bun supports .npmrc as well. See https://bun.com/docs/pm/npmrc#npmrc-support
 COPY --chown=dependabot:dependabot updater/config/.npmrc $DEPENDABOT_HOME/
 
-# Configure Node to use our custom CA bundle
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
-COPY --chown=dependabot:dependabot bun $DEPENDABOT_HOME/bun
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents bun common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

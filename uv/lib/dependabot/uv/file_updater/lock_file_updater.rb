@@ -127,16 +127,39 @@ module Dependabot
         def replace_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
+          escaped_name = Regexp.escape(dep.name)
 
-          declaration_regex = declaration_regex(dep, old_r)
-          declaration_match = content.match(declaration_regex)
-          if declaration_match
-            declaration = declaration_match[:declaration]
-            new_declaration = T.must(declaration).sub(old_req, new_req)
-            content.sub(T.must(declaration), new_declaration)
-          else
-            content
+          regex = /(["']#{escaped_name})([^"']+)(["'])/x
+
+          replaced = T.let(false, T::Boolean)
+
+          updated_content = content.gsub(regex) do
+            captured_requirement = Regexp.last_match(2)
+
+            if requirements_match?(T.must(captured_requirement), old_req)
+              replaced = true
+              "#{Regexp.last_match(1)}#{new_req}#{Regexp.last_match(3)}"
+            else
+              Regexp.last_match(0)
+            end
           end
+
+          unless replaced
+            updated_content = content.sub(regex) do
+              "#{Regexp.last_match(1)}#{new_req}#{Regexp.last_match(3)}"
+            end
+          end
+
+          updated_content
+        end
+
+        sig { params(req1: String, req2: String).returns(T::Boolean) }
+        def requirements_match?(req1, req2)
+          normalize = lambda do |req|
+            req.split(",").map(&:strip).sort.join(",")
+          end
+
+          normalize.call(req1) == normalize.call(req2)
         end
 
         sig { returns(String) }
@@ -262,7 +285,13 @@ module Dependabot
           options_fingerprint = lock_options_fingerprint(options)
 
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec uv lock --upgrade-package #{T.must(dependency).name} #{options}"
+          # Include the target version to respect ignore conditions and avoid upgrading
+          # to the absolute latest version (which may be blocked by ignore rules)
+          dep_name = T.must(dependency).name
+          dep_version = T.must(dependency).version
+          package_spec = dep_version ? "#{dep_name}==#{dep_version}" : dep_name
+
+          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
           run_command(command, fingerprint:)
@@ -311,24 +340,6 @@ module Dependabot
         sig { params(url: String).returns(String) }
         def sanitize_env_name(url)
           url.gsub(%r{^https?://}, "").gsub(/[^a-zA-Z0-9]/, "_").upcase
-        end
-
-        sig { params(dep: T.untyped, old_req: T.untyped).returns(Regexp) }
-        def declaration_regex(dep, old_req)
-          escaped_name = Regexp.escape(dep.name)
-          # Extract the requirement operator and version
-          operator = old_req.fetch(:requirement).match(/^(.+?)[0-9]/)&.captures&.first
-          # Escape special regex characters in the operator
-          escaped_operator = Regexp.escape(operator) if operator
-
-          # Match various formats of dependency declarations:
-          # 1. "dependency==1.0.0" (with quotes around the entire string)
-          # 2. dependency==1.0.0 (without quotes)
-          # The declaration should only include the package name, operator, and version
-          # without the enclosing quotes
-          /
-            ["']?(?<declaration>#{escaped_name}\s*#{escaped_operator}[\d\.\*]+)["']?
-          /x
         end
 
         sig { returns(String) }
