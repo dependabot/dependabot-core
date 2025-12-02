@@ -14,9 +14,10 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 # Configures Ubuntu to use Azure mirrors, which are often faster and more reliable
 # From https://github.com/Azure/LinuxPatchExtension/blob/master/src/tools/references/apt/sources.list.d/ubuntu.sources
 # This is also used in other places such as the runner builds: https://github.com/actions/runner-images/blob/2f8d6ab9ef24fd8bda80b5259650fe1dc4311320/images/ubuntu/scripts/build/configure-apt-sources.sh#L11
-RUN set -e; \
-    release=$( . /etc/os-release && echo "$VERSION_CODENAME" ); \
-    cat <<EOF | tee /etc/apt/sources.list.d/ubuntu.sources
+RUN <<EOT
+  set -e
+  release=$( . /etc/os-release && echo "$VERSION_CODENAME" )
+  cat <<EOF | tee /etc/apt/sources.list.d/ubuntu.sources
 
 # Prefer Azure mirrors
 Types: deb
@@ -58,55 +59,48 @@ Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 EOF
 
-RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends \
-    # needed to run add-apt-repository
+  apt-get update
+  apt-get upgrade -y
+  # software-properties-common is needed to run add-apt-repository
+  # curl is used to download the git-lfs GPG key as well as dev dependencies for CI
+  apt-get install -y --no-install-recommends \
     software-properties-common \
-    # Used to download the git-lfs GPG key as well as dev dependencies for CI
-    curl \
-    # Add git core ppa to get a more recent git version than the one provided by ubuntu
-    && add-apt-repository -y ppa:git-core/ppa \
-    # Install the git-lfs mirror. See https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md
-    # We need this because the version of git-lfs provided by Ubuntu is outdated
-    # apt-transport-https is a temporary dependency to install the git-lfs apt source
-    && apt-get install -y --no-install-recommends apt-transport-https \
-    && mkdir -p /etc/apt/keyrings \
-           && curl -fsSL 'https://packagecloud.io/github/git-lfs/gpgkey' | gpg --dearmor > /etc/apt/keyrings/github_git-lfs-archive-keyring.gpg \
-           && release=$( . /etc/os-release && echo "$VERSION_CODENAME" ) \
-           && echo "deb [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
-              > /etc/apt/sources.list.d/github_git-lfs.list \
-           && echo "deb-src [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
-              >> /etc/apt/sources.list.d/github_git-lfs.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    # dev dependencies for CI
+    curl
+  # Add git core ppa to get a more recent git version than the one provided by ubuntu
+  add-apt-repository -y ppa:git-core/ppa
+  # Install the git-lfs mirror. See https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md
+  # We need this because the version of git-lfs provided by Ubuntu is outdated
+  # apt-transport-https is a temporary dependency to install the git-lfs apt source
+  apt-get install -y --no-install-recommends apt-transport-https
+  mkdir -p /etc/apt/keyrings
+  curl -fsSL 'https://packagecloud.io/github/git-lfs/gpgkey' | gpg --dearmor > /etc/apt/keyrings/github_git-lfs-archive-keyring.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
+    > /etc/apt/sources.list.d/github_git-lfs.list
+  echo "deb-src [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
+    >> /etc/apt/sources.list.d/github_git-lfs.list
+  apt-get update
+  apt-get install -y --no-install-recommends \
     build-essential \
     libgmp-dev \
-    # Compression libs
     zlib1g-dev \
     unzip \
     zstd \
-    # VCS section
     git \
     git-lfs \
     bzr \
     mercurial \
-    # needed to sign commits
     gnupg2 \
-    # for git repo access with ssh key credentials
     openssh-client \
-    # Installs certs in dependabot-action and CLI
     ca-certificates \
-    # used to check if a file is binary in the VendorUpdater
     file \
-    # used by Ruby to parse YAML
     libyaml-dev \
-    locales \
-  && locale-gen en_US.UTF-8 \
+    locales
+  locale-gen en_US.UTF-8
   # No longer needed post git-core ppa addition and git-lfs install
-  && apt purge software-properties-common apt-transport-https -y && apt-get autoremove -y \
-  && rm -rf /var/lib/apt/lists/*
+  apt purge software-properties-common apt-transport-https -y
+  apt-get autoremove -y
+  rm -rf /var/lib/apt/lists/*
+EOT
 
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
