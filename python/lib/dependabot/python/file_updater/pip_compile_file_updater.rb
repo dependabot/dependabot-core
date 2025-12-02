@@ -109,16 +109,11 @@ module Dependabot
 
             filenames_to_compile.each do |filename|
               # Compile the file for each of its output files
-              # A single .in file may generate multiple .txt files
+              # A single .in file may generate multiple .txt files with different --output-file options
               output_files = compiled_files_for_filename(filename)
-              if output_files.any?
-                output_files.each do |output_file|
-                  compile_file(filename, output_file)
-                end
-              else
-                # No known output file, use default compilation
-                compile_file(filename, nil)
-              end
+              # When no output files are found, compile with nil to use default pip-compile behavior
+              output_files = [nil] if output_files.empty?
+              output_files.each { |output_file| compile_file(filename, output_file) }
             end
 
             # Remove any .python-version file before parsing the reqs
