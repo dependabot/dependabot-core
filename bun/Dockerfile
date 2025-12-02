@@ -23,13 +23,8 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
-# Configure Node to use our custom CA bundle
+# Configure Bun to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
-# Create the config file manually instead of using npm config set as this
-# executes the package manager outputs to every job log
-# This is here because bun supports .npmrc as well. See https://bun.com/docs/pm/npmrc#npmrc-support
-COPY --chown=dependabot:dependabot updater/config/.npmrc $DEPENDABOT_HOME/
 
 COPY --chown=dependabot:dependabot --parents bun common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
