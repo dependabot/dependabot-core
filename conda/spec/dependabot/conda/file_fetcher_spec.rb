@@ -58,298 +58,283 @@ RSpec.describe Dependabot::Conda::FileFetcher do
   describe "#fetch_files" do
     subject(:files) { file_fetcher.fetch_files }
 
-    context "with beta ecosystems disabled" do
-      before do
-        allow(file_fetcher).to receive(:allow_beta_ecosystems?).and_return(false)
-      end
-
-      it "raises error with beta message" do
-        expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-          expect(error.message).to include("beta")
-          expect(error.message).to include("ALLOW_BETA_ECOSYSTEMS")
-        end
-      end
+    before do
+      allow(file_fetcher).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: repo_contents_json,
+          headers: { "content-type" => "application/json" }
+        )
     end
 
-    context "with beta ecosystems enabled" do
+    context "when environment.yml exists with simple conda packages" do
+      let(:repo_contents_json) do
+        JSON.dump(
+          [{
+            "name" => "environment.yml",
+            "type" => "file",
+            "size" => 100
+          }]
+        )
+      end
+
       before do
-        allow(file_fetcher).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
-        stub_request(:get, url + "?ref=sha")
-          .with(headers: { "Authorization" => "token token" })
+        stub_request(:get, url + "environment.yml?ref=sha")
           .to_return(
             status: 200,
-            body: repo_contents_json,
+            body: fixture("github", "contents_environment_yml.json"),
             headers: { "content-type" => "application/json" }
           )
       end
 
-      context "when environment.yml exists with simple conda packages" do
-        let(:repo_contents_json) do
-          JSON.dump(
-            [{
-              "name" => "environment.yml",
-              "type" => "file",
-              "size" => 100
-            }]
+      it "fetches environment.yml" do
+        expect(files.count).to eq(1)
+        expect(files.first.name).to eq("environment.yml")
+      end
+
+      it "returns DependencyFile objects" do
+        expect(files.first).to be_a(Dependabot::DependencyFile)
+      end
+    end
+
+    context "when environment.yaml exists" do
+      let(:repo_contents_json) do
+        JSON.dump(
+          [{
+            "name" => "environment.yaml",
+            "type" => "file"
+          }]
+        )
+      end
+
+      before do
+        stub_request(:get, url + "environment.yaml?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_environment_yaml.json"),
+            headers: { "content-type" => "application/json" }
           )
+      end
+
+      it "fetches environment.yaml" do
+        expect(files.count).to eq(1)
+        expect(files.first.name).to eq("environment.yaml")
+      end
+    end
+
+    context "when both environment files exist" do
+      let(:repo_contents_json) do
+        JSON.dump(
+          [
+            { "name" => "environment.yml", "type" => "file" },
+            { "name" => "environment.yaml", "type" => "file" }
+          ]
+        )
+      end
+
+      before do
+        stub_request(:get, url + "environment.yml?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_environment_yml.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches environment.yml (priority)" do
+        expect(files.count).to eq(1)
+        expect(files.first.name).to eq("environment.yml")
+      end
+    end
+
+    context "when no environment file exists" do
+      let(:repo_contents_json) { JSON.dump([{ "name" => "README.md", "type" => "file" }]) }
+
+      it "raises DependencyFileNotFound" do
+        expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "when environment file has no manageable packages" do
+      let(:repo_contents_json) do
+        JSON.dump([{ "name" => "environment.yml", "type" => "file" }])
+      end
+
+      before do
+        stub_request(:get, url + "environment.yml?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              {
+                "type" => "file",
+                "encoding" => "base64",
+                "content" => Base64.encode64(unsupported_content)
+              }
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      context "with only fully qualified packages" do
+        let(:unsupported_content) do
+          <<~YAML
+            dependencies:
+              - python=3.9.7=h60c2a47_0_cpython
+              - numpy=1.21.0=py39h20f2e39_0
+          YAML
         end
 
-        before do
-          stub_request(:get, url + "environment.yml?ref=sha")
-            .to_return(
-              status: 200,
-              body: fixture("github", "contents_environment_yml.json"),
-              headers: { "content-type" => "application/json" }
-            )
+        it "raises error with specific fully qualified message" do
+          expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.message).to include("fully qualified package specifications")
+          end
+        end
+      end
+
+      context "with empty dependencies" do
+        let(:unsupported_content) do
+          <<~YAML
+            dependencies: []
+          YAML
         end
 
-        it "fetches environment.yml" do
+        it "raises error with specific no dependencies message" do
+          expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.message).to include("no dependencies to manage")
+          end
+        end
+      end
+
+      context "with missing dependencies key" do
+        let(:unsupported_content) do
+          <<~YAML
+            name: myenv
+            channels:
+              - conda-forge
+          YAML
+        end
+
+        it "raises error with specific no dependencies message" do
+          expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.message).to include("no dependencies to manage")
+          end
+        end
+      end
+
+      context "with invalid YAML" do
+        let(:unsupported_content) { "invalid: yaml: [unclosed" }
+
+        it "raises error with specific YAML syntax message" do
+          expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.message).to include("invalid YAML syntax")
+          end
+        end
+      end
+
+      context "with non-Hash YAML" do
+        let(:unsupported_content) { "- just\n- a\n- list" }
+
+        it "raises error with specific YAML syntax message" do
+          expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.message).to include("invalid YAML syntax")
+          end
+        end
+      end
+
+      context "with non-Array dependencies" do
+        let(:unsupported_content) do
+          <<~YAML
+            dependencies: "not an array"
+          YAML
+        end
+
+        it "raises error with specific no dependencies message" do
+          expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.message).to include("no dependencies to manage")
+          end
+        end
+      end
+    end
+
+    context "when environment file has manageable packages" do
+      let(:repo_contents_json) do
+        JSON.dump([{ "name" => "environment.yml", "type" => "file" }])
+      end
+
+      before do
+        stub_request(:get, url + "environment.yml?ref=sha")
+          .to_return(
+            status: 200,
+            body: JSON.dump(
+              {
+                "type" => "file",
+                "encoding" => "base64",
+                "content" => Base64.encode64(valid_content)
+              }
+            ),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      context "with simple conda packages" do
+        let(:valid_content) do
+          <<~YAML
+            dependencies:
+              - python=3.11
+              - numpy>=1.24.0
+              - r-base=4.0
+          YAML
+        end
+
+        it "successfully fetches the file" do
           expect(files.count).to eq(1)
           expect(files.first.name).to eq("environment.yml")
         end
-
-        it "returns DependencyFile objects" do
-          expect(files.first).to be_a(Dependabot::DependencyFile)
-        end
       end
 
-      context "when environment.yaml exists" do
-        let(:repo_contents_json) do
-          JSON.dump(
-            [{
-              "name" => "environment.yaml",
-              "type" => "file"
-            }]
-          )
+      context "with pip packages" do
+        let(:valid_content) do
+          <<~YAML
+            dependencies:
+              - python=3.11
+              - pip:
+                - requests>=2.28.0
+          YAML
         end
 
-        before do
-          stub_request(:get, url + "environment.yaml?ref=sha")
-            .to_return(
-              status: 200,
-              body: fixture("github", "contents_environment_yaml.json"),
-              headers: { "content-type" => "application/json" }
-            )
-        end
-
-        it "fetches environment.yaml" do
+        it "successfully fetches the file" do
           expect(files.count).to eq(1)
-          expect(files.first.name).to eq("environment.yaml")
         end
       end
 
-      context "when both environment files exist" do
-        let(:repo_contents_json) do
-          JSON.dump(
-            [
-              { "name" => "environment.yml", "type" => "file" },
-              { "name" => "environment.yaml", "type" => "file" }
-            ]
-          )
+      context "with only pip packages (no conda)" do
+        let(:valid_content) do
+          <<~YAML
+            dependencies:
+              - pip:
+                - requests>=2.28.0
+                - flask>=3.0
+          YAML
         end
 
-        before do
-          stub_request(:get, url + "environment.yml?ref=sha")
-            .to_return(
-              status: 200,
-              body: fixture("github", "contents_environment_yml.json"),
-              headers: { "content-type" => "application/json" }
-            )
-        end
-
-        it "fetches environment.yml (priority)" do
+        it "successfully fetches the file" do
           expect(files.count).to eq(1)
-          expect(files.first.name).to eq("environment.yml")
         end
       end
 
-      context "when no environment file exists" do
-        let(:repo_contents_json) { JSON.dump([{ "name" => "README.md", "type" => "file" }]) }
-
-        it "raises DependencyFileNotFound" do
-          expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
-        end
-      end
-
-      context "when environment file has no manageable packages" do
-        let(:repo_contents_json) do
-          JSON.dump([{ "name" => "environment.yml", "type" => "file" }])
+      context "with mixed fully-qualified and simple packages" do
+        let(:valid_content) do
+          <<~YAML
+            dependencies:
+              - numpy=1.24.0
+              - python=3.9.7=h60c2a47_0_cpython
+          YAML
         end
 
-        before do
-          stub_request(:get, url + "environment.yml?ref=sha")
-            .to_return(
-              status: 200,
-              body: JSON.dump(
-                {
-                  "type" => "file",
-                  "encoding" => "base64",
-                  "content" => Base64.encode64(unsupported_content)
-                }
-              ),
-              headers: { "content-type" => "application/json" }
-            )
-        end
-
-        context "with only fully qualified packages" do
-          let(:unsupported_content) do
-            <<~YAML
-              dependencies:
-                - python=3.9.7=h60c2a47_0_cpython
-                - numpy=1.21.0=py39h20f2e39_0
-            YAML
-          end
-
-          it "raises error with specific fully qualified message" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("fully qualified package specifications")
-            end
-          end
-        end
-
-        context "with empty dependencies" do
-          let(:unsupported_content) do
-            <<~YAML
-              dependencies: []
-            YAML
-          end
-
-          it "raises error with specific no dependencies message" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("no dependencies to manage")
-            end
-          end
-        end
-
-        context "with missing dependencies key" do
-          let(:unsupported_content) do
-            <<~YAML
-              name: myenv
-              channels:
-                - conda-forge
-            YAML
-          end
-
-          it "raises error with specific no dependencies message" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("no dependencies to manage")
-            end
-          end
-        end
-
-        context "with invalid YAML" do
-          let(:unsupported_content) { "invalid: yaml: [unclosed" }
-
-          it "raises error with specific YAML syntax message" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("invalid YAML syntax")
-            end
-          end
-        end
-
-        context "with non-Hash YAML" do
-          let(:unsupported_content) { "- just\n- a\n- list" }
-
-          it "raises error with specific YAML syntax message" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("invalid YAML syntax")
-            end
-          end
-        end
-
-        context "with non-Array dependencies" do
-          let(:unsupported_content) do
-            <<~YAML
-              dependencies: "not an array"
-            YAML
-          end
-
-          it "raises error with specific no dependencies message" do
-            expect { files }.to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.message).to include("no dependencies to manage")
-            end
-          end
-        end
-      end
-
-      context "when environment file has manageable packages" do
-        let(:repo_contents_json) do
-          JSON.dump([{ "name" => "environment.yml", "type" => "file" }])
-        end
-
-        before do
-          stub_request(:get, url + "environment.yml?ref=sha")
-            .to_return(
-              status: 200,
-              body: JSON.dump(
-                {
-                  "type" => "file",
-                  "encoding" => "base64",
-                  "content" => Base64.encode64(valid_content)
-                }
-              ),
-              headers: { "content-type" => "application/json" }
-            )
-        end
-
-        context "with simple conda packages" do
-          let(:valid_content) do
-            <<~YAML
-              dependencies:
-                - python=3.11
-                - numpy>=1.24.0
-                - r-base=4.0
-            YAML
-          end
-
-          it "successfully fetches the file" do
-            expect(files.count).to eq(1)
-            expect(files.first.name).to eq("environment.yml")
-          end
-        end
-
-        context "with pip packages" do
-          let(:valid_content) do
-            <<~YAML
-              dependencies:
-                - python=3.11
-                - pip:
-                  - requests>=2.28.0
-            YAML
-          end
-
-          it "successfully fetches the file" do
-            expect(files.count).to eq(1)
-          end
-        end
-
-        context "with only pip packages (no conda)" do
-          let(:valid_content) do
-            <<~YAML
-              dependencies:
-                - pip:
-                  - requests>=2.28.0
-                  - flask>=3.0
-            YAML
-          end
-
-          it "successfully fetches the file" do
-            expect(files.count).to eq(1)
-          end
-        end
-
-        context "with mixed fully-qualified and simple packages" do
-          let(:valid_content) do
-            <<~YAML
-              dependencies:
-                - numpy=1.24.0
-                - python=3.9.7=h60c2a47_0_cpython
-            YAML
-          end
-
-          it "successfully fetches the file (has at least one simple spec)" do
-            expect(files.count).to eq(1)
-          end
+        it "successfully fetches the file (has at least one simple spec)" do
+          expect(files.count).to eq(1)
         end
       end
     end
