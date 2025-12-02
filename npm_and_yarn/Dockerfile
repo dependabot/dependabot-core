@@ -49,6 +49,9 @@ RUN corepack install npm@$NPM_VERSION --global \
   && corepack prepare npm@9 \
   && corepack prepare npm@8
 
+# Configure Node to use our custom CA bundle
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 RUN bash /opt/npm_and_yarn/helpers/build
@@ -60,10 +63,7 @@ RUN bash /opt/npm_and_yarn/helpers/build
 
 # Create the config file manually instead of using yarn/npm config set as this
 # executes the package manager outputs to every job log
-COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
-
-# For Yarn Berry we can set this via an environment variable
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+COPY --chown=dependabot:dependabot updater/config/.npmrc $DEPENDABOT_HOME/
 
 # END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
