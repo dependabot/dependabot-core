@@ -44,6 +44,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           persist-credentials: false
+          submodules: recursive
           path: pr
 
       - name: Checkout base branch
@@ -51,7 +52,8 @@ jobs:
         with:
           ref: ${{ github.base_ref }}
           persist-credentials: false
+          submodules: recursive
           path: base
 
       - name: Check layer count
-        run: pr/script/docker-layer-count-check "${{ matrix.dockerfile.path }}" base pr
+        run: pr/script/docker-layer-count-check "${{ matrix.dockerfile.ecosystem }}" base pr

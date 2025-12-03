@@ -55,11 +55,7 @@ ecosystems in the future.
 
 When modifying Dockerfiles in ecosystem directories (e.g., `bundler/Dockerfile`, `npm_and_yarn/Dockerfile`), a CI check verifies that your changes don't increase the number of Docker layers. This check helps maintain Docker build performance and caching efficiency.
 
-**What creates a layer?** The following Dockerfile instructions create new layers:
-- `FROM`
-- `RUN`
-- `COPY`
-- `ADD`
+**How it works:** The check builds both the base branch and PR branch Docker images, then uses `docker history` to accurately count the layers in the final image. This approach correctly handles multi-stage builds by only counting layers in the final image.
 
 **If the check fails**, consider these approaches:
 - Combine multiple `RUN` commands using `&&`
