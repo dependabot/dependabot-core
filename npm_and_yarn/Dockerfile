@@ -41,9 +41,7 @@ RUN <<EOF
   corepack install yarn@$YARN_VERSION --global
   corepack install npm@$NPM_VERSION --global
   # Pre-cache popular older versions of npm for on-demand activation
-  corepack prepare npm@10
-  corepack prepare npm@9
-  corepack prepare npm@8
+  corepack install -g --cache-only npm@10 npm@9 npm@8
 EOF
 
 # Configure Node to use our custom CA bundle
