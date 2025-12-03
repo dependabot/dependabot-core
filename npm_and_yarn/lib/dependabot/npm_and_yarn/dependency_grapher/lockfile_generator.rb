@@ -8,6 +8,7 @@ require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
+require "yaml"
 require "dependabot/npm_and_yarn/registry_helper"
 
 module Dependabot
@@ -215,21 +216,100 @@ module Dependabot
         def build_registry_env_variables
           return {} unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
 
-          # Use RegistryHelper which checks credentials first, then config files
-          registry_helper = RegistryHelper.new(
-            extract_registry_config_files,
-            credentials
-          )
-          registry_helper.find_corepack_env_variables
+          registry, token = find_registry_and_token
+
+          env = {}
+          env["COREPACK_NPM_REGISTRY"] = registry if registry
+          env["COREPACK_NPM_TOKEN"] = token if token
+          env
         end
 
-        sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
-        def extract_registry_config_files
-          {
-            npmrc: dependency_files.find { |f| f.name.end_with?(".npmrc") },
-            yarnrc: dependency_files.find { |f| f.name.end_with?(".yarnrc") },
-            yarnrc_yml: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
-          }
+        sig { returns([T.nilable(String), T.nilable(String)]) }
+        def find_registry_and_token
+          # Priority: credentials > .npmrc > .yarnrc > .yarnrc.yml
+          registry, token = extract_from_credentials
+          return [registry, token] if registry
+
+          npmrc = dependency_files.find { |f| f.name.end_with?(".npmrc") }
+          if npmrc
+            registry, token = extract_from_npmrc(npmrc)
+            return [registry, token] if registry
+          end
+
+          yarnrc = dependency_files.find { |f| f.name.end_with?(".yarnrc") }
+          if yarnrc
+            registry, token = extract_from_yarnrc(yarnrc)
+            return [registry, token] if registry
+          end
+
+          yarnrc_yml = dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+          if yarnrc_yml
+            registry, token = extract_from_yarnrc_yml(yarnrc_yml)
+            return [registry, token] if registry
+          end
+
+          [nil, nil]
+        end
+
+        sig { returns([T.nilable(String), T.nilable(String)]) }
+        def extract_from_credentials
+          credentials.each do |cred|
+            next unless cred["type"] == "npm_registry"
+            next unless cred.replaces_base?
+
+            registry = T.let(cred["registry"], T.nilable(String))
+            token = T.let(cred["token"], T.nilable(String))
+
+            if registry && !registry.start_with?("http://", "https://")
+              registry = "https://#{registry}"
+            end
+
+            return [registry, token]
+          end
+
+          [nil, nil]
+        end
+
+        sig { params(npmrc_file: Dependabot::DependencyFile).returns([T.nilable(String), T.nilable(String)]) }
+        def extract_from_npmrc(npmrc_file)
+          content = T.let(npmrc_file.content, T.nilable(String))
+          return [nil, nil] unless content
+
+          registry = T.let(content[/^registry\s*=\s*(.+)$/, 1], T.nilable(String))
+          registry = registry&.strip
+          token = T.let(content[/^_authToken\s*=\s*(.+)$/, 1], T.nilable(String))
+          token = token&.strip
+
+          [registry, token]
+        end
+
+        sig { params(yarnrc_file: Dependabot::DependencyFile).returns([T.nilable(String), T.nilable(String)]) }
+        def extract_from_yarnrc(yarnrc_file)
+          content = T.let(yarnrc_file.content, T.nilable(String))
+          return [nil, nil] unless content
+
+          registry = T.let(content[/^registry\s+"(.+)"$/, 1], T.nilable(String))
+          registry = registry&.strip
+          token = T.let(content[/^"?_authToken"?\s+"(.+)"$/, 1], T.nilable(String))
+          token = token&.strip
+
+          [registry, token]
+        end
+
+        sig { params(yarnrc_yml_file: Dependabot::DependencyFile).returns([T.nilable(String), T.nilable(String)]) }
+        def extract_from_yarnrc_yml(yarnrc_yml_file)
+          content = T.let(yarnrc_yml_file.content, T.nilable(String))
+          return [nil, nil] unless content
+
+          parsed_data = T.unsafe(YAML.safe_load(content, permitted_classes: [Symbol, String]))
+          parsed = parsed_data.is_a?(Hash) ? parsed_data : {}
+
+          registry = T.cast(parsed["npmRegistryServer"], T.nilable(String))
+          token = T.cast(parsed["npmAuthToken"], T.nilable(String))
+
+          [registry, token]
+        rescue Psych::SyntaxError
+          [nil, nil]
         end
       end
     end
