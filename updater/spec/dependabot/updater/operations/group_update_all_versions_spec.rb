@@ -279,7 +279,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         it "logs the PR number when it exists" do
           allow(Dependabot.logger).to receive(:info).and_call_original
           expect(Dependabot.logger).to receive(:info).once
-                                                     .with("Detected existing pull request #123 for 'dummy-group'.")
+                                                     .with("Detected existing pull request #123 for the dependency
+                                                     group 'dummy-group'.")
           perform
         end
       end
