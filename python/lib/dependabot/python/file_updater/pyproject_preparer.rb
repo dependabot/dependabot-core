@@ -77,6 +77,27 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
+        sig { returns(T.nilable(String)) }
+        def remove_path_dependencies_from_lockfile
+          return nil unless lockfile
+
+          lockfile_object = TomlRB.parse(T.must(lockfile).content)
+          packages = lockfile_object["package"] || []
+
+          # Remove packages with path-based sources (directory, file, url)
+          path_source_types = %w(directory file url)
+          packages.reject! do |package|
+            source_type = package.dig("source", "type")
+            path_source_types.include?(source_type)
+          end
+
+          lockfile_object["package"] = packages
+          TomlRB.dump(lockfile_object)
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          # If lockfile is malformed, return nil and let Poetry regenerate it
+          nil
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }

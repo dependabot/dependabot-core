@@ -270,4 +270,56 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       end
     end
   end
+
+  describe "#remove_path_dependencies_from_lockfile" do
+    subject(:remove_path_dependencies_from_lockfile) { preparer.remove_path_dependencies_from_lockfile }
+
+    context "with a lockfile containing path dependencies" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: poetry_lock_body
+        )
+      end
+      let(:poetry_lock_body) do
+        fixture("poetry_locks", "dir_dependency.lock")
+      end
+      let(:pyproject_fixture_name) { "dir_dependency.toml" }
+
+      it "removes path dependencies from lockfile" do
+        expect(remove_path_dependencies_from_lockfile).not_to include('name = "toml"')
+      end
+
+      it "keeps non-path dependencies" do
+        expect(remove_path_dependencies_from_lockfile).to include('name = "pytest"')
+      end
+    end
+
+    context "with a lockfile containing file path dependencies" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "file_dependency.lock")
+        )
+      end
+      let(:pyproject_fixture_name) { "file_dependency.toml" }
+
+      it "removes file path dependencies from lockfile" do
+        expect(remove_path_dependencies_from_lockfile).not_to include('name = "toml"')
+      end
+
+      it "keeps non-path dependencies" do
+        expect(remove_path_dependencies_from_lockfile).to include('name = "pytest"')
+      end
+    end
+
+    context "without a lockfile" do
+      let(:lockfile) { nil }
+      let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
+
+      it "returns nil" do
+        expect(remove_path_dependencies_from_lockfile).to be_nil
+      end
+    end
+  end
 end

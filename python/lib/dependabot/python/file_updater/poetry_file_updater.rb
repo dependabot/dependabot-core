@@ -225,6 +225,13 @@ module Dependabot
             .update_python_requirement(language_version_manager.python_version)
         end
 
+        sig { returns(T.nilable(String)) }
+        def cleaned_poetry_lockfile
+          PyprojectPreparer
+            .new(pyproject_content: T.must(pyproject&.content), lockfile: lockfile)
+            .remove_path_dependencies_from_lockfile
+        end
+
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
         def lock_declaration_to_new_version!(poetry_object, dep)
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
@@ -300,7 +307,12 @@ module Dependabot
           # Overwrite the .python-version with updated content
           File.write(".python-version", language_version_manager.python_major_minor)
 
-          # Overwrite the pyproject with updated content
+          # Overwrite the poetry.lock with cleaned content (path dependencies removed)
+          if lockfile && (cleaned_lockfile = cleaned_poetry_lockfile)
+            File.write("poetry.lock", cleaned_lockfile)
+          end
+
+          # Overwrite the pyproject with updated content (must be last to return its result)
           File.write("pyproject.toml", pyproject_content)
         end
 
