@@ -32,6 +32,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
   describe "#generate" do
@@ -51,7 +53,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
           .with(
             "install --package-lock-only --ignore-scripts --force --dry-run false",
-            fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false"
+            fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false",
+            env: {}
           )
       end
 
@@ -271,6 +274,239 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
 
         generator.generate
+      end
+    end
+  end
+
+  describe "private registry environment variables" do
+    let(:package_manager) { "npm" }
+    let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
+
+    context "when enable_private_registry_for_corepack experiment is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_private_registry_for_corepack).and_return(false)
+      end
+
+      it "passes empty env hash to npm command" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
+
+        generator.generate
+
+        expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+          .with(
+            "install --package-lock-only --ignore-scripts --force --dry-run false",
+            fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false",
+            env: {}
+          )
+      end
+    end
+
+    context "when enable_private_registry_for_corepack experiment is enabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_private_registry_for_corepack).and_return(true)
+      end
+
+      context "with npm registry credentials" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "custom-registry.com",
+                "token" => "my-secret-token",
+                "replaces-base" => true
+              }
+            )
+          ]
+        end
+
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"name": "test", "version": "1.0.0"}'
+            )
+          ]
+        end
+
+        it "passes COREPACK_NPM_REGISTRY and COREPACK_NPM_TOKEN to npm command" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
+
+          generator.generate
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+            .with(
+              "install --package-lock-only --ignore-scripts --force --dry-run false",
+              fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false",
+              env: {
+                "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
+                "COREPACK_NPM_TOKEN" => "my-secret-token"
+              }
+            )
+        end
+      end
+
+      context "with .npmrc file containing registry" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"name": "test", "version": "1.0.0"}'
+            ),
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "registry=https://my-registry.com/\n_authToken=my-token"
+            )
+          ]
+        end
+
+        it "passes COREPACK_NPM_REGISTRY and COREPACK_NPM_TOKEN from .npmrc" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
+
+          generator.generate
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+            .with(
+              "install --package-lock-only --ignore-scripts --force --dry-run false",
+              fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false",
+              env: {
+                "COREPACK_NPM_REGISTRY" => "https://my-registry.com/",
+                "COREPACK_NPM_TOKEN" => "my-token"
+              }
+            )
+        end
+      end
+
+      context "with .yarnrc file containing registry" do
+        let(:package_manager) { "yarn" }
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"name": "test", "version": "1.0.0"}'
+            ),
+            Dependabot::DependencyFile.new(
+              name: ".yarnrc",
+              content: "registry \"https://yarn-registry.com/\"\n_authToken \"yarn-token\""
+            )
+          ]
+        end
+
+        it "extracts registry from .yarnrc for environment variables" do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("yarn.lock").and_return(false)
+
+          # The build_registry_env_variables should extract from .yarnrc
+          expect(generator.send(:build_registry_env_variables)).to eq(
+            "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
+            "COREPACK_NPM_TOKEN" => "yarn-token"
+          )
+        end
+      end
+
+      context "with .yarnrc.yml file containing registry" do
+        let(:package_manager) { "yarn" }
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"name": "test", "version": "1.0.0"}'
+            ),
+            Dependabot::DependencyFile.new(
+              name: ".yarnrc.yml",
+              content: "npmRegistryServer: \"https://yarnrc-yml-registry.com/\"\n" \
+                       "npmAuthToken: \"yarnrc-yml-token\""
+            )
+          ]
+        end
+
+        it "extracts registry from .yarnrc.yml for environment variables" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:setup_yarn_berry)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("yarn.lock").and_return(false)
+
+          # The build_registry_env_variables should extract from .yarnrc.yml
+          expect(generator.send(:build_registry_env_variables)).to eq(
+            "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
+            "COREPACK_NPM_TOKEN" => "yarnrc-yml-token"
+          )
+        end
+      end
+
+      context "with both credentials and .npmrc (credentials take priority)" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "credential-registry.com",
+                "token" => "credential-token",
+                "replaces-base" => true
+              }
+            )
+          ]
+        end
+
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"name": "test", "version": "1.0.0"}'
+            ),
+            Dependabot::DependencyFile.new(
+              name: ".npmrc",
+              content: "registry=https://npmrc-registry.com/\n_authToken=npmrc-token"
+            )
+          ]
+        end
+
+        it "uses credentials instead of .npmrc (credentials have priority)" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
+
+          generator.generate
+
+          # Credentials take priority over .npmrc
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+            .with(
+              "install --package-lock-only --ignore-scripts --force --dry-run false",
+              fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false",
+              env: {
+                "COREPACK_NPM_REGISTRY" => "https://credential-registry.com",
+                "COREPACK_NPM_TOKEN" => "credential-token"
+              }
+            )
+        end
+      end
+
+      context "without any registry configuration" do
+        let(:credentials) { [] }
+
+        it "passes empty env hash to npm command" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
+          allow(File).to receive(:exist?).and_call_original
+          allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
+
+          generator.generate
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
+            .with(
+              "install --package-lock-only --ignore-scripts --force --dry-run false",
+              fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false",
+              env: {}
+            )
+        end
       end
     end
   end

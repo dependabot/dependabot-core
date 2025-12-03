@@ -8,6 +8,7 @@ require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
+require "dependabot/npm_and_yarn/registry_helper"
 
 module Dependabot
   module NpmAndYarn
@@ -118,7 +119,8 @@ module Dependabot
           # Use --force to ignore platform checks
           # Use --dry-run false because global .npmrc may have dry-run: true set
           command = "install --package-lock-only --ignore-scripts --force --dry-run false"
-          Helpers.run_npm_command(command, fingerprint: command)
+          env = build_registry_env_variables
+          Helpers.run_npm_command(command, fingerprint: command, env: env)
         end
 
         sig { void }
@@ -207,6 +209,27 @@ module Dependabot
               "Authentication error. Check that credentials are configured correctly."
             )
           end
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def build_registry_env_variables
+          return {} unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
+
+          # Use RegistryHelper which checks credentials first, then config files
+          registry_helper = RegistryHelper.new(
+            extract_registry_config_files,
+            credentials
+          )
+          registry_helper.find_corepack_env_variables
+        end
+
+        sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+        def extract_registry_config_files
+          {
+            npmrc: dependency_files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc: dependency_files.find { |f| f.name.end_with?(".yarnrc") },
+            yarnrc_yml: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+          }
         end
       end
     end
