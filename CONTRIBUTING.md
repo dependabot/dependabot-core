@@ -58,7 +58,7 @@ When modifying Dockerfiles in ecosystem directories (e.g., `bundler/Dockerfile`,
 **How it works:** The check builds both the base branch and PR branch Docker images, then uses `docker history` to accurately count the layers in the final image. This approach correctly handles multi-stage builds by only counting layers in the final image.
 
 **If the check fails**, consider these approaches:
-- Combine multiple `RUN` commands using `&&`
+- Combine multiple `RUN` commands using `&&` or [HEREDOC syntax](https://www.docker.com/blog/introduction-to-heredocs-in-dockerfiles/) for better readability
 - Combine multiple `COPY` commands where possible
 - Review if the additional layer is truly necessary
 
