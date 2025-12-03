@@ -87,7 +87,7 @@ module Dependabot
 
         @credentials.each do |cred|
           next unless cred["type"] == "npm_registry" # Skip if not an npm registry
-          next unless cred.replaces_base? # Skip if not a reverse-proxy registry
+          next unless cred["replaces-base"] # Skip if not a reverse-proxy registry
 
           # Set the registry if it's not already set
           registries[:registry] ||= cred["registry"]
