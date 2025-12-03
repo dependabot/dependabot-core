@@ -11,6 +11,7 @@ module Dependabot
       # Extracts include() statements from MODULE.bazel files and fetches the included files.
       # Bazel's include() directive allows splitting MODULE.bazel content across multiple files.
       # The include() statement uses Bazel label syntax: include("//path:file.MODULE.bazel")
+      # See https://bazel.build/rules/lib/globals/module#include
       class IncludeExtractor
         extend T::Sig
 
