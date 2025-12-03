@@ -108,8 +108,8 @@ jobs:
           else
             # Count layer-creating instructions
             # Using grep with extended regex to match FROM, RUN, COPY, ADD at the start of lines
-            # Excluding comments and accounting for multi-line commands (lines ending with \)
-            COUNT=$(grep -cE '^\s*(FROM|RUN|COPY|ADD)\s' "$DOCKERFILE_PATH" || echo "0")
+            # Using word boundary \b for robust matching of instructions
+            COUNT=$(grep -cE '^\s*(FROM|RUN|COPY|ADD)\b' "$DOCKERFILE_PATH" || echo "0")
             echo "Base branch layer count: $COUNT"
             echo "count=$COUNT" >> "$GITHUB_OUTPUT"
             echo "is-new=false" >> "$GITHUB_OUTPUT"
@@ -125,8 +125,8 @@ jobs:
             echo "count=0" >> "$GITHUB_OUTPUT"
             echo "is-deleted=true" >> "$GITHUB_OUTPUT"
           else
-            # Count layer-creating instructions
-            COUNT=$(grep -cE '^\s*(FROM|RUN|COPY|ADD)\s' "$DOCKERFILE_PATH" || echo "0")
+            # Count layer-creating instructions using word boundary for robust matching
+            COUNT=$(grep -cE '^\s*(FROM|RUN|COPY|ADD)\b' "$DOCKERFILE_PATH" || echo "0")
             echo "PR branch layer count: $COUNT"
             echo "count=$COUNT" >> "$GITHUB_OUTPUT"
             echo "is-deleted=false" >> "$GITHUB_OUTPUT"
