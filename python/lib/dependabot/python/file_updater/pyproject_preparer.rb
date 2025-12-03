@@ -140,9 +140,7 @@ module Dependabot
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
-            poetry_object[key].each do |dep_name, dep_spec|
-              poetry_object[key].delete(dep_name) if path_dependency?(dep_spec)
-            end
+            poetry_object[key].reject! { |_dep_name, dep_spec| path_dependency?(dep_spec) }
           end
         end
 
@@ -152,9 +150,7 @@ module Dependabot
           groups.each do |_group_name, group_spec|
             next unless group_spec["dependencies"]
 
-            group_spec["dependencies"].each do |dep_name, dep_spec|
-              group_spec["dependencies"].delete(dep_name) if path_dependency?(dep_spec)
-            end
+            group_spec["dependencies"].reject! { |_dep_name, dep_spec| path_dependency?(dep_spec) }
           end
         end
 
