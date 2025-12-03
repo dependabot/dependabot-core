@@ -73,6 +73,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
   after do
@@ -1334,6 +1336,237 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         expect(test_updater.send(:optional_dependency?, optional_dep)).to be(true)
         expect(test_updater.send(:optional_dependency?, regular_dep)).to be(false)
+      end
+    end
+
+    describe "#build_registry_env_variables" do
+      let(:files) { project_dependency_files("npm8/simple") }
+
+      context "when experiment flag is disabled" do
+        let(:test_updater) do
+          described_class.new(
+            lockfile: files.find { |f| f.name == "package-lock.json" },
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_private_registry_for_corepack).and_return(false)
+        end
+
+        it "returns nil" do
+          expect(test_updater.send(:build_registry_env_variables)).to be_nil
+        end
+      end
+
+      context "when experiment flag is enabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_private_registry_for_corepack).and_return(true)
+        end
+
+        context "with npm_registry credentials" do
+          let(:test_credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "https://npm.private.registry",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }]
+          end
+
+          let(:test_updater) do
+            described_class.new(
+              lockfile: files.find { |f| f.name == "package-lock.json" },
+              dependency_files: files,
+              dependencies: dependencies,
+              credentials: test_credentials
+            )
+          end
+
+          it "returns both registry and token environment variables" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
+                "COREPACK_NPM_TOKEN" => "secret_token"
+              }
+            )
+          end
+        end
+
+        context "with npm_registry credentials but replaces-base is false" do
+          let(:test_credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "https://npm.private.registry",
+              "token" => "secret_token",
+              "replaces-base" => false
+            }]
+          end
+
+          let(:test_updater) do
+            described_class.new(
+              lockfile: files.find { |f| f.name == "package-lock.json" },
+              dependency_files: files,
+              dependencies: dependencies,
+              credentials: test_credentials
+            )
+          end
+
+          it "returns empty hash" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq({})
+          end
+        end
+
+        context "without npm_registry credentials" do
+          let(:test_updater) do
+            described_class.new(
+              lockfile: files.find { |f| f.name == "package-lock.json" },
+              dependency_files: files,
+              dependencies: dependencies,
+              credentials: credentials
+            )
+          end
+
+          it "returns empty hash" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq({})
+          end
+        end
+
+        context "with .npmrc file containing registry" do
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".npmrc",
+                content: "registry=https://custom.registry.com\n_authToken=custom_token"
+              )
+            ]
+          end
+
+          let(:test_updater) do
+            described_class.new(
+              lockfile: test_files.find { |f| f.name == "package-lock.json" },
+              dependency_files: test_files,
+              dependencies: dependencies,
+              credentials: credentials
+            )
+          end
+
+          it "returns registry and token from .npmrc" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
+                "COREPACK_NPM_TOKEN" => "custom_token"
+              }
+            )
+          end
+        end
+
+        context "with .yarnrc file containing registry" do
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".yarnrc",
+                content: "registry \"https://yarn.registry.com\"\n_authToken \"yarn_token\""
+              )
+            ]
+          end
+
+          let(:test_updater) do
+            described_class.new(
+              lockfile: test_files.find { |f| f.name == "package-lock.json" },
+              dependency_files: test_files,
+              dependencies: dependencies,
+              credentials: credentials
+            )
+          end
+
+          it "returns registry and token from .yarnrc" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
+                "COREPACK_NPM_TOKEN" => "yarn_token"
+              }
+            )
+          end
+        end
+
+        context "with .yarnrc.yml file containing registry" do
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".yarnrc.yml",
+                content: "npmRegistryServer: https://yarn2.registry.com\nnpmAuthToken: yarn2_token"
+              )
+            ]
+          end
+
+          let(:test_updater) do
+            described_class.new(
+              lockfile: test_files.find { |f| f.name == "package-lock.json" },
+              dependency_files: test_files,
+              dependencies: dependencies,
+              credentials: credentials
+            )
+          end
+
+          it "returns registry and token from .yarnrc.yml" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
+                "COREPACK_NPM_TOKEN" => "yarn2_token"
+              }
+            )
+          end
+        end
+
+        context "when credentials take priority over config files" do
+          let(:test_credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "https://creds.registry.com",
+              "token" => "creds_token",
+              "replaces-base" => true
+            }]
+          end
+
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".npmrc",
+                content: "registry=https://npmrc.registry.com\n_authToken=npmrc_token"
+              )
+            ]
+          end
+
+          let(:test_updater) do
+            described_class.new(
+              lockfile: test_files.find { |f| f.name == "package-lock.json" },
+              dependency_files: test_files,
+              dependencies: dependencies,
+              credentials: test_credentials
+            )
+          end
+
+          it "uses credentials over .npmrc" do
+            env_vars = test_updater.send(:build_registry_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",
+                "COREPACK_NPM_TOKEN" => "creds_token"
+              }
+            )
+          end
+        end
       end
     end
   end
