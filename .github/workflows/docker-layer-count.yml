@@ -28,7 +28,9 @@ jobs:
 
       - name: Find changed Dockerfiles
         id: find-dockerfiles
-        run: script/docker-layer-count-detect "${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: script/docker-layer-count-detect "$BASE_REF"
 
   check-layers:
     name: Check Layers - ${{ matrix.dockerfile.ecosystem }}
@@ -56,4 +58,6 @@ jobs:
           path: base
 
       - name: Check layer count
-        run: pr/script/docker-layer-count-check "${{ matrix.dockerfile.ecosystem }}" base pr
+        env:
+          ECOSYSTEM: ${{ matrix.dockerfile.ecosystem }}
+        run: pr/script/docker-layer-count-check "$ECOSYSTEM" base pr
