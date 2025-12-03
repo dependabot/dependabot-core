@@ -94,12 +94,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       let(:registry_config_files) { {} }
       let(:credentials) do
         [
-          {
-            "type" => "npm_registry",
-            "registry" => "artifactory.example.com/npm",
-            "token" => "my-token",
-            "replaces-base" => true
-          }
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "artifactory.example.com/npm",
+              "token" => "my-token",
+              "replaces-base" => true
+            }
+          )
         ]
       end
 
