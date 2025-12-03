@@ -224,6 +224,7 @@ module Dependabot
           env
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns([T.nilable(String), T.nilable(String)]) }
         def find_registry_and_token
           # Priority: credentials > .npmrc > .yarnrc > .yarnrc.yml
@@ -250,6 +251,7 @@ module Dependabot
 
           [nil, nil]
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns([T.nilable(String), T.nilable(String)]) }
         def extract_from_credentials
@@ -260,9 +262,7 @@ module Dependabot
             registry = T.let(cred["registry"], T.nilable(String))
             token = T.let(cred["token"], T.nilable(String))
 
-            if registry && !registry.start_with?("http://", "https://")
-              registry = "https://#{registry}"
-            end
+            registry = "https://#{registry}" if registry && !registry.start_with?("http://", "https://")
 
             return [registry, token]
           end
@@ -301,8 +301,10 @@ module Dependabot
           content = T.let(yarnrc_yml_file.content, T.nilable(String))
           return [nil, nil] unless content
 
-          parsed_data = T.unsafe(YAML.safe_load(content, permitted_classes: [Symbol, String]))
-          parsed = parsed_data.is_a?(Hash) ? parsed_data : {}
+          yaml_data = YAML.safe_load(content, permitted_classes: [Symbol, String])
+          # T.let asserts the type - YAML returns Hash or nil, we provide empty hash as fallback
+          parsed = T.let(yaml_data, T.nilable(T::Hash[T.untyped, T.untyped]))
+          return [nil, nil] unless parsed
 
           registry = T.cast(parsed["npmRegistryServer"], T.nilable(String))
           token = T.cast(parsed["npmAuthToken"], T.nilable(String))
