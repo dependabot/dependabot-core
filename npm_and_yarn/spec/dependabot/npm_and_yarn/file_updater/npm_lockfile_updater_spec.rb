@@ -1389,10 +1389,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           it "returns both registry and token environment variables" do
             env_vars = test_updater.send(:build_registry_env_variables)
-            expect(env_vars).to eq({
-              "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
-              "COREPACK_NPM_TOKEN" => "secret_token"
-            })
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
+                "COREPACK_NPM_TOKEN" => "secret_token"
+              }
+            )
           end
         end
 
@@ -1458,10 +1460,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           it "returns registry and token from .npmrc" do
             env_vars = test_updater.send(:build_registry_env_variables)
-            expect(env_vars).to eq({
-              "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
-              "COREPACK_NPM_TOKEN" => "custom_token"
-            })
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
+                "COREPACK_NPM_TOKEN" => "custom_token"
+              }
+            )
           end
         end
 
@@ -1486,10 +1490,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           it "returns registry and token from .yarnrc" do
             env_vars = test_updater.send(:build_registry_env_variables)
-            expect(env_vars).to eq({
-              "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
-              "COREPACK_NPM_TOKEN" => "yarn_token"
-            })
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
+                "COREPACK_NPM_TOKEN" => "yarn_token"
+              }
+            )
           end
         end
 
@@ -1514,10 +1520,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           it "returns registry and token from .yarnrc.yml" do
             env_vars = test_updater.send(:build_registry_env_variables)
-            expect(env_vars).to eq({
-              "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
-              "COREPACK_NPM_TOKEN" => "yarn2_token"
-            })
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
+                "COREPACK_NPM_TOKEN" => "yarn2_token"
+              }
+            )
           end
         end
 
@@ -1551,10 +1559,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           it "uses credentials over .npmrc" do
             env_vars = test_updater.send(:build_registry_env_variables)
-            expect(env_vars).to eq({
-              "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",
-              "COREPACK_NPM_TOKEN" => "creds_token"
-            })
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",
+                "COREPACK_NPM_TOKEN" => "creds_token"
+              }
+            )
           end
         end
       end
