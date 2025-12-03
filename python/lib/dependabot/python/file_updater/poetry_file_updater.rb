@@ -177,11 +177,19 @@ module Dependabot
             begin
               content = updated_pyproject_content
               content = sanitize(T.must(content))
+              content = remove_path_dependencies(content)
               content = freeze_other_dependencies(content)
               content = freeze_dependencies_being_updated(content)
               content = update_python_requirement(content)
               content
             end
+        end
+
+        sig { params(pyproject_content: String).returns(String) }
+        def remove_path_dependencies(pyproject_content)
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .remove_path_dependencies
         end
 
         sig { params(pyproject_content: String).returns(String) }

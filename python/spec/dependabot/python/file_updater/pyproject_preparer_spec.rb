@@ -221,4 +221,53 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("subdirectory = \"python\"\n") }
     end
   end
+
+  describe "#remove_path_dependencies" do
+    subject(:remove_path_dependencies) { preparer.remove_path_dependencies }
+
+    context "with a directory path dependency" do
+      let(:pyproject_fixture_name) { "dir_dependency.toml" }
+
+      it "removes the path dependency" do
+        expect(remove_path_dependencies).not_to include("toml")
+      end
+
+      it "keeps non-path dependencies" do
+        expect(remove_path_dependencies).to include("pytest")
+      end
+    end
+
+    context "with a .whl file path dependency" do
+      let(:pyproject_fixture_name) { "whl_path_dependency.toml" }
+
+      it "removes the .whl path dependency" do
+        expect(remove_path_dependencies).not_to include("ts-launchpad")
+      end
+
+      it "keeps non-path dependencies" do
+        expect(remove_path_dependencies).to include("requests")
+      end
+    end
+
+    context "with a file path dependency" do
+      let(:pyproject_fixture_name) { "file_dependency.toml" }
+
+      it "removes the file path dependency" do
+        expect(remove_path_dependencies).not_to include("toml")
+      end
+
+      it "keeps non-path dependencies" do
+        expect(remove_path_dependencies).to include("pytest")
+      end
+    end
+
+    context "with no path dependencies" do
+      let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
+
+      it "keeps all dependencies" do
+        expect(remove_path_dependencies).to include("geopy")
+        expect(remove_path_dependencies).to include("pytest")
+      end
+    end
+  end
 end

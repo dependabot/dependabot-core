@@ -64,6 +64,19 @@ module Dependabot
             .gsub('#{', "{")
         end
 
+        sig { returns(String) }
+        def remove_path_dependencies
+          pyproject_object = TomlRB.parse(pyproject_content)
+          poetry_object = pyproject_object.dig("tool", "poetry")
+
+          return pyproject_content unless poetry_object
+
+          remove_path_deps_from_dependency_types(poetry_object)
+          remove_path_deps_from_groups(poetry_object)
+
+          TomlRB.dump(pyproject_object)
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
@@ -121,6 +134,34 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { params(poetry_object: T::Hash[String, T.untyped]).void }
+        def remove_path_deps_from_dependency_types(poetry_object)
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
+            next unless poetry_object[key]
+
+            poetry_object[key].each do |dep_name, dep_spec|
+              poetry_object[key].delete(dep_name) if path_dependency?(dep_spec)
+            end
+          end
+        end
+
+        sig { params(poetry_object: T::Hash[String, T.untyped]).void }
+        def remove_path_deps_from_groups(poetry_object)
+          groups = poetry_object["group"] || {}
+          groups.each do |_group_name, group_spec|
+            next unless group_spec["dependencies"]
+
+            group_spec["dependencies"].each do |dep_name, dep_spec|
+              group_spec["dependencies"].delete(dep_name) if path_dependency?(dep_spec)
+            end
+          end
+        end
+
+        sig { params(dep_spec: T.untyped).returns(T::Boolean) }
+        def path_dependency?(dep_spec)
+          dep_spec.is_a?(Hash) && !dep_spec["path"].nil?
+        end
 
         sig { params(dep_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
         def locked_details(dep_name)
