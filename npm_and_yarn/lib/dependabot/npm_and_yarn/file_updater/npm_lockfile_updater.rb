@@ -375,7 +375,25 @@ module Dependabot
 
           fingerprint = fingerprint_args.join(" ")
 
-          Helpers.run_npm_command(command, fingerprint: fingerprint)
+          env = build_registry_env_variables
+
+          Helpers.run_npm_command(command, fingerprint: fingerprint, env: env)
+        end
+
+        sig { returns(T.nilable(T::Hash[String, String])) }
+        def build_registry_env_variables
+          return nil unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
+
+          registry_helper = NpmAndYarn::RegistryHelper.new(
+            {
+              npmrc: dependency_files.find { |f| f.name.end_with?(".npmrc") },
+              yarnrc: dependency_files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
+              yarnrc_yml: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+            },
+            credentials
+          )
+
+          registry_helper.find_corepack_env_variables
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
