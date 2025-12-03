@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# Checks Docker layer counts between two versions of a Dockerfile.
+# Compares the layer count in a base branch against a PR branch.
+#
+# Usage: docker-layer-count-check <dockerfile_path> <base_dir> <pr_dir>
+#
+# Arguments:
+#   dockerfile_path: Path to the Dockerfile relative to repo root (e.g., "bundler/Dockerfile")
+#   base_dir: Directory containing the base branch checkout
+#   pr_dir: Directory containing the PR branch checkout
+#
+# Exit codes:
+#   0: Success (layers unchanged or reduced)
+#   1: Failure (layers increased)
+#
+# Outputs (via GITHUB_OUTPUT if set, otherwise stdout):
+#   status: "success" or "failure"
+#   message: Description of the result
+
+set -euo pipefail
+
+DOCKERFILE_PATH="${1:-}"
+BASE_DIR="${2:-}"
+PR_DIR="${3:-}"
+
+if [ -z "$DOCKERFILE_PATH" ] || [ -z "$BASE_DIR" ] || [ -z "$PR_DIR" ]; then
+  echo "Usage: $0 <dockerfile_path> <base_dir> <pr_dir>" >&2
+  exit 1
+fi
+
+ECOSYSTEM=$(dirname "$DOCKERFILE_PATH")
+if [ "$DOCKERFILE_PATH" = "Dockerfile.updater-core" ]; then
+  ECOSYSTEM="updater-core"
+fi
+
+# Count layer-creating instructions in a Dockerfile
+# Layer-creating instructions: FROM, RUN, COPY, ADD
+count_layers() {
+  local file="$1"
+  if [ ! -f "$file" ]; then
+    echo "0"
+    return
+  fi
+  # Using grep with extended regex to match FROM, RUN, COPY, ADD at the start of lines
+  # Using word boundary \b for robust matching of instructions
+  grep -cE '^\s*(FROM|RUN|COPY|ADD)\b' "$file" 2>/dev/null || echo "0"
+}
+
+# Set output helper
+set_output() {
+  local name="$1"
+  local value="$2"
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "${name}=${value}" >> "$GITHUB_OUTPUT"
+  fi
+  echo "${name}=${value}"
+}
+
+BASE_FILE="${BASE_DIR}/${DOCKERFILE_PATH}"
+PR_FILE="${PR_DIR}/${DOCKERFILE_PATH}"
+
+# Check if files exist
+IS_NEW="false"
+IS_DELETED="false"
+
+if [ ! -f "$BASE_FILE" ]; then
+  IS_NEW="true"
+  BASE_COUNT=0
+  echo "Dockerfile doesn't exist in base branch (new file)" >&2
+else
+  BASE_COUNT=$(count_layers "$BASE_FILE")
+  echo "Base branch layer count: $BASE_COUNT" >&2
+fi
+
+if [ ! -f "$PR_FILE" ]; then
+  IS_DELETED="true"
+  PR_COUNT=0
+  echo "Dockerfile doesn't exist in PR branch (deleted file)" >&2
+else
+  PR_COUNT=$(count_layers "$PR_FILE")
+  echo "PR branch layer count: $PR_COUNT" >&2
+fi
+
+# Write summary if GITHUB_STEP_SUMMARY is set
+write_summary() {
+  if [ -z "${GITHUB_STEP_SUMMARY:-}" ]; then
+    return
+  fi
+  
+  echo "## Docker Layer Count Check: ${ECOSYSTEM}" >> "$GITHUB_STEP_SUMMARY"
+  echo "" >> "$GITHUB_STEP_SUMMARY"
+  echo "| Dockerfile | Base Layers | PR Layers | Change |" >> "$GITHUB_STEP_SUMMARY"
+  echo "|------------|-------------|-----------|--------|" >> "$GITHUB_STEP_SUMMARY"
+  
+  if [ "$IS_DELETED" = "true" ]; then
+    echo "| ${DOCKERFILE_PATH} | ${BASE_COUNT} | (deleted) | ✅ Removed |" >> "$GITHUB_STEP_SUMMARY"
+  elif [ "$IS_NEW" = "true" ]; then
+    echo "| ${DOCKERFILE_PATH} | (new) | ${PR_COUNT} | ℹ️ New file |" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "> **Note:** New Dockerfile added with ${PR_COUNT} layers" >> "$GITHUB_STEP_SUMMARY"
+  elif [ "$PR_COUNT" -gt "$BASE_COUNT" ]; then
+    local diff=$((PR_COUNT - BASE_COUNT))
+    echo "| ${DOCKERFILE_PATH} | ${BASE_COUNT} | ${PR_COUNT} | ❌ +${diff} |" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "> **Error:** This PR adds ${diff} layer(s) to ${DOCKERFILE_PATH}" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "### How to fix" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "To maintain Docker build performance and caching efficiency, please combine your changes with existing layers where possible:" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "- Combine multiple \`RUN\` commands using \`&&\`" >> "$GITHUB_STEP_SUMMARY"
+    echo "- Combine multiple \`COPY\` commands where possible" >> "$GITHUB_STEP_SUMMARY"
+    echo "- Consider if the change is truly necessary" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "If adding layers is intentional and necessary, please explain in the PR description." >> "$GITHUB_STEP_SUMMARY"
+  elif [ "$PR_COUNT" -lt "$BASE_COUNT" ]; then
+    local diff=$((BASE_COUNT - PR_COUNT))
+    echo "| ${DOCKERFILE_PATH} | ${BASE_COUNT} | ${PR_COUNT} | ✅ -${diff} |" >> "$GITHUB_STEP_SUMMARY"
+    echo "" >> "$GITHUB_STEP_SUMMARY"
+    echo "> **Success:** This PR removes ${diff} layer(s) from ${DOCKERFILE_PATH} 🎉" >> "$GITHUB_STEP_SUMMARY"
+  else
+    echo "| ${DOCKERFILE_PATH} | ${BASE_COUNT} | ${PR_COUNT} | ✅ No change |" >> "$GITHUB_STEP_SUMMARY"
+  fi
+}
+
+# Determine result and exit
+write_summary
+
+if [ "$IS_DELETED" = "true" ]; then
+  set_output "status" "success"
+  set_output "message" "Dockerfile was deleted"
+  exit 0
+elif [ "$IS_NEW" = "true" ]; then
+  set_output "status" "success"
+  set_output "message" "New Dockerfile with ${PR_COUNT} layers"
+  exit 0
+elif [ "$PR_COUNT" -gt "$BASE_COUNT" ]; then
+  DIFF=$((PR_COUNT - BASE_COUNT))
+  set_output "status" "failure"
+  set_output "message" "Added ${DIFF} layer(s)"
+  echo "::error::${DOCKERFILE_PATH}: Added ${DIFF} layer(s)" >&2
+  exit 1
+elif [ "$PR_COUNT" -lt "$BASE_COUNT" ]; then
+  DIFF=$((BASE_COUNT - PR_COUNT))
+  set_output "status" "success"
+  set_output "message" "Removed ${DIFF} layer(s)"
+  exit 0
+else
+  set_output "status" "success"
+  set_output "message" "No layer change"
+  exit 0
+fi
