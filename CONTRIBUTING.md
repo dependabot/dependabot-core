@@ -10,6 +10,7 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 - [Project layout](#project-layout)
 - [How to structure your Git Commits](#how-to-structure-your-git-commits)
 - [Contributing new ecosystems](#contributing-new-ecosystems)
+- [CI Checks](#ci-checks)
 
 ## Contribution workflow
 
@@ -47,6 +48,25 @@ fork of core, e.g. [dependabot-lein-runner](https://github.com/CGA1123/dependabo
 We are investing more developer time directly in `dependabot-core` to improve our architecture so that
 each ecosystem is more isolated and testable. Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
+
+## CI Checks
+
+### Docker Layer Count Check
+
+When modifying Dockerfiles in ecosystem directories (e.g., `bundler/Dockerfile`, `npm_and_yarn/Dockerfile`), a CI check verifies that your changes don't increase the number of Docker layers. This check helps maintain Docker build performance and caching efficiency.
+
+**What creates a layer?** The following Dockerfile instructions create new layers:
+- `FROM`
+- `RUN`
+- `COPY`
+- `ADD`
+
+**If the check fails**, consider these approaches:
+- Combine multiple `RUN` commands using `&&`
+- Combine multiple `COPY` commands where possible
+- Review if the additional layer is truly necessary
+
+**Note:** This check is informational and does not block PR merging. If adding layers is intentional and necessary, please explain the reasoning in your PR description.
 
 ## Stalebot
 
