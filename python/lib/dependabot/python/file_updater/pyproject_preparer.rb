@@ -148,7 +148,7 @@ module Dependabot
         def remove_path_deps_from_groups(poetry_object)
           groups = poetry_object["group"] || {}
           groups.each do |_group_name, group_spec|
-            next unless group_spec["dependencies"]
+            next unless group_spec.is_a?(Hash) && group_spec["dependencies"]
 
             group_spec["dependencies"].reject! { |_dep_name, dep_spec| path_dependency?(dep_spec) }
           end
