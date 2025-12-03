@@ -382,7 +382,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     it "includes the expected options in the command and fingerprint" do
-      expected_command = "pyenv exec uv lock --upgrade-package requests " \
+      expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
                          "--index https://token@example.com/simple " \
                          "--default-index https://another_token@another.com/simple"
       expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
@@ -395,6 +395,45 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expected_command,
         fingerprint: expected_fingerprint
       )
+    end
+
+    context "when dependency version is nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: nil,
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: nil,
+          package_manager: "uv"
+        )
+      end
+
+      it "uses only the package name without version constraint" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint
+        )
+      end
     end
   end
 

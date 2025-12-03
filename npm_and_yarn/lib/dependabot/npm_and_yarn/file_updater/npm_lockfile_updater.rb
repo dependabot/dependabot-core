@@ -284,14 +284,18 @@ module Dependabot
           # TODO: Update the npm 6 updater to use these args as we currently
           # do the same in the js updater helper, we've kept it separate for
           # the npm 7 rollout
-          install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
-          run_npm_install_lockfile_only(install_args)
+          top_level_dependencies.each do |dependency|
+            install_args = [npm_install_args(dependency)]
+            is_optional = optional_dependency?(dependency)
+            run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
+          end
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
-            run_npm_install_lockfile_only
+            # Run final install without specific dependencies
+            run_npm_install_lockfile_only([], has_optional_dependencies: false)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -339,9 +343,11 @@ module Dependabot
         #   to work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are
         #   run when installing git dependencies
-        sig { params(install_args: T::Array[String]).returns(String) }
-        def run_npm_install_lockfile_only(install_args = [])
-          command = [
+        # - `--save-optional` when updating optional dependencies to ensure they
+        #   stay in optionalDependencies section and allow version upgrades
+        sig { params(install_args: T::Array[String], has_optional_dependencies: T::Boolean).returns(String) }
+        def run_npm_install_lockfile_only(install_args = [], has_optional_dependencies: false)
+          command_args = [
             "install",
             *install_args,
             "--force",
@@ -349,9 +355,13 @@ module Dependabot
             "false",
             "--ignore-scripts",
             "--package-lock-only"
-          ].join(" ")
+          ]
 
-          fingerprint = [
+          command_args << "--save-optional" if has_optional_dependencies
+
+          command = command_args.join(" ")
+
+          fingerprint_args = [
             "install",
             install_args.empty? ? "" : "<install_args>",
             "--force",
@@ -359,9 +369,31 @@ module Dependabot
             "false",
             "--ignore-scripts",
             "--package-lock-only"
-          ].join(" ")
+          ]
 
-          Helpers.run_npm_command(command, fingerprint: fingerprint)
+          fingerprint_args << "--save-optional" if has_optional_dependencies
+
+          fingerprint = fingerprint_args.join(" ")
+
+          env = build_registry_env_variables
+
+          Helpers.run_npm_command(command, fingerprint: fingerprint, env: env)
+        end
+
+        sig { returns(T.nilable(T::Hash[String, String])) }
+        def build_registry_env_variables
+          return nil unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
+
+          registry_helper = NpmAndYarn::RegistryHelper.new(
+            {
+              npmrc: dependency_files.find { |f| f.name.end_with?(".npmrc") },
+              yarnrc: dependency_files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
+              yarnrc_yml: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+            },
+            credentials
+          )
+
+          registry_helper.find_corepack_env_variables
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
@@ -405,6 +437,13 @@ module Dependabot
         def dependency_in_lockfile?(dependency)
           lockfile_dependencies.any? do |dep|
             dep.name == dependency.name
+          end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def optional_dependency?(dependency)
+          dependency.requirements.any? do |req|
+            req[:groups]&.include?("optionalDependencies")
           end
         end
 
