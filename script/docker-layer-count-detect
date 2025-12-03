@@ -13,6 +13,9 @@
 
 set -euo pipefail
 
+# Pattern to match ecosystem Dockerfiles (in ecosystem directories and root)
+DOCKERFILE_PATTERN='^[^/]+/Dockerfile$|^Dockerfile\.updater-core$'
+
 BASE_REF="${1:-}"
 
 if [ -z "$BASE_REF" ]; then
@@ -23,8 +26,8 @@ fi
 # Get changed files between base and head
 CHANGED_FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD")
 
-# Filter for Dockerfiles (in ecosystem directories and root)
-CHANGED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E '^[^/]+/Dockerfile$|^Dockerfile\.updater-core$' || true)
+# Filter for Dockerfiles
+CHANGED_DOCKERFILES=$(echo "$CHANGED_FILES" | grep -E "$DOCKERFILE_PATTERN" || true)
 
 if [ -z "$CHANGED_DOCKERFILES" ]; then
   echo "No Dockerfile changes detected" >&2

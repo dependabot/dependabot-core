@@ -19,6 +19,10 @@
 
 set -euo pipefail
 
+# Pattern to match layer-creating instructions in Dockerfiles
+# These instructions create new filesystem layers: FROM, RUN, COPY, ADD
+LAYER_INSTRUCTION_PATTERN='^\s*(FROM|RUN|COPY|ADD)\b'
+
 DOCKERFILE_PATH="${1:-}"
 BASE_DIR="${2:-}"
 PR_DIR="${3:-}"
@@ -34,16 +38,14 @@ if [ "$DOCKERFILE_PATH" = "Dockerfile.updater-core" ]; then
 fi
 
 # Count layer-creating instructions in a Dockerfile
-# Layer-creating instructions: FROM, RUN, COPY, ADD
 count_layers() {
   local file="$1"
   if [ ! -f "$file" ]; then
     echo "0"
     return
   fi
-  # Using grep with extended regex to match FROM, RUN, COPY, ADD at the start of lines
-  # Using word boundary \b for robust matching of instructions
-  grep -cE '^\s*(FROM|RUN|COPY|ADD)\b' "$file" 2>/dev/null || echo "0"
+  # Using grep with extended regex to match layer-creating instructions at the start of lines
+  grep -cE "$LAYER_INSTRUCTION_PATTERN" "$file" 2>/dev/null || echo "0"
 }
 
 # Set output helper
