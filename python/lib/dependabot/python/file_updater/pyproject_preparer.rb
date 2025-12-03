@@ -84,7 +84,10 @@ module Dependabot
           lockfile_object = TomlRB.parse(T.must(lockfile).content)
           packages = lockfile_object["package"] || []
 
-          # Remove packages with path-based sources (directory, file, url)
+          # Remove packages with local sources that won't exist in Dependabot environment:
+          # - directory: local directory paths
+          # - file: local file paths (.whl, .tar.gz, etc.)
+          # - url: direct file URLs (not package registry URLs)
           path_source_types = %w(directory file url)
           packages.reject! do |package|
             source_type = package.dig("source", "type")
