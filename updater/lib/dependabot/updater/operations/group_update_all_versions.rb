@@ -90,8 +90,7 @@ module Dependabot
               pr_number = existing_pr["pr_number"] if existing_pr
 
               Dependabot.logger.info(
-                "Detected existing pull request ##{pr_number} for the
-              dependency group '#{group.name}'."
+                "Detected existing pull request ##{pr_number} for the dependency group '#{group.name}'."
               )
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
