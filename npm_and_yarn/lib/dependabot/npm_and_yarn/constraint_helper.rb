@@ -261,9 +261,16 @@ module Dependabot
 
           full_version = Regexp.last_match(1)
 
-          # Normalize version: if full_version does not have patch version, add ".0"
+          # Normalize version: ensure it has major.minor.patch format
           version_parts = T.must(full_version).split(".")
-          full_version = "#{full_version}.0" if version_parts.length == 2
+          full_version = case version_parts.length
+                         when 1
+                           "#{full_version}.0.0" # major only -> major.0.0
+                         when 2
+                           "#{full_version}.0"   # major.minor -> major.minor.0
+                         else
+                           full_version          # already major.minor.patch
+                         end
 
           _, major, minor = version_components(full_version)
           return nil if major.nil?
