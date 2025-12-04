@@ -199,6 +199,22 @@ RSpec.describe Dependabot::Cargo::Version do
           expect(ignored_major_versions).to eq([">= 0.0.2.a"])
         end
       end
+
+      context "with a 0.0 version (missing patch)" do
+        let(:version_string) { "0.0" }
+
+        it "handles missing patch version gracefully" do
+          expect(ignored_major_versions).to eq([">= 0.0.1.a"])
+        end
+      end
+
+      context "with a 0.y version (missing patch)" do
+        let(:version_string) { "0.5" }
+
+        it "treats minor changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.6.a"])
+        end
+      end
     end
 
     describe ".update_type" do
