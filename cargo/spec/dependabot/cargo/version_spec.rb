@@ -132,7 +132,7 @@ RSpec.describe Dependabot::Cargo::Version do
         let(:version_string) { "0.0.3" }
 
         it "treats patch changes as major (breaking)" do
-          expect(ignored_patch_versions).to eq([">= 1.a"])
+          expect(ignored_patch_versions).to eq([">= 0.0.4.a"])
         end
       end
     end
@@ -152,7 +152,51 @@ RSpec.describe Dependabot::Cargo::Version do
         let(:version_string) { "0.2.3" }
 
         it "treats minor changes as major (breaking)" do
-          expect(ignored_minor_versions).to eq([">= 1.a"])
+          expect(ignored_minor_versions).to eq([">= 0.3.a"])
+        end
+      end
+    end
+
+    describe "#ignored_major_versions" do
+      subject(:ignored_major_versions) { version.ignored_major_versions }
+
+      context "with a standard 1.y.z version" do
+        let(:version_string) { "1.2.3" }
+
+        it "uses standard semantic versioning" do
+          expect(ignored_major_versions).to eq([">= 2.a"])
+        end
+      end
+
+      context "with a 0.y.z version (y > 0)" do
+        let(:version_string) { "0.15.5" }
+
+        it "treats minor changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.16.a"])
+        end
+      end
+
+      context "with another 0.y.z version" do
+        let(:version_string) { "0.2.3" }
+
+        it "treats minor changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.3.a"])
+        end
+      end
+
+      context "with a 0.0.z version" do
+        let(:version_string) { "0.0.3" }
+
+        it "treats patch changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.0.4.a"])
+        end
+      end
+
+      context "with a 0.0.1 version" do
+        let(:version_string) { "0.0.1" }
+
+        it "treats patch changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.0.2.a"])
         end
       end
     end
