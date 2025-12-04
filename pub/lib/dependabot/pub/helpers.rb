@@ -456,8 +456,10 @@ module Dependabot
           # If the flutter constraint is an exact version (no range operators)
           # and the lockfile has a range constraint, fix it
           if exact_version?(flutter_constraint)
+            # Match the flutter constraint line in the sdks section
+            # Handles various whitespace patterns
             lockfile_content = lockfile_content.gsub(
-              /^(\s+flutter:\s+)">=#{Regexp.escape(flutter_constraint)}"$/,
+              /(^\s*flutter:\s*)">=#{Regexp.escape(flutter_constraint)}"/m,
               "\\1\"#{flutter_constraint}\""
             )
           end
@@ -474,8 +476,13 @@ module Dependabot
       def exact_version?(constraint)
         return false unless constraint.is_a?(String)
 
-        # Check if the constraint doesn't contain range operators like >, <, ^, >=, <=, etc.
-        !constraint.match?(/[><^]/) && constraint.strip.match?(/^\d+\.\d+\.\d+/)
+        # Check if the constraint doesn't contain range operators
+        # Supports: >, <, ^, ~, >=, <=, !=, and, or
+        return false if constraint.match?(/[><^~]|>=|<=|!=|and|or/i)
+
+        # Check if it's a valid Dart version format
+        # Allows: X.Y, X.Y.Z, X.Y.Z-prerelease, X.Y.Z+build
+        constraint.strip.match?(/^\d+\.\d+(\.\d+)?([+-].*)?$/)
       end
     end
   end
