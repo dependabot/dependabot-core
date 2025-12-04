@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/julia/update_checker"
+require "dependabot/julia/package/package_details_fetcher"
 
 RSpec.describe Dependabot::Julia::UpdateChecker do
   let(:checker) do
@@ -139,6 +140,109 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
       if updated_requirements.any?
         expect(updated_requirements.first).to include(:requirement)
         expect(updated_requirements.first[:requirement]).to be_a(String)
+      end
+    end
+  end
+
+  describe "ignored versions" do
+    let(:ignored_versions) { [">= 1.a"] }
+
+    before do
+      # Mock the package details fetcher to return specific versions
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return([
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Julia::Version.new("0.4.1"),
+            released_at: Time.now - (100 * 24 * 60 * 60)
+          ),
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Julia::Version.new("0.5.0"),
+            released_at: Time.now - (90 * 24 * 60 * 60)
+          ),
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Julia::Version.new("0.9.0"),
+            released_at: Time.now - (80 * 24 * 60 * 60)
+          ),
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Julia::Version.new("1.0.0"),
+            released_at: Time.now - (70 * 24 * 60 * 60)
+          ),
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Julia::Version.new("2.0.0"),
+            released_at: Time.now - (60 * 24 * 60 * 60)
+          )
+        ])
+    end
+
+    context "when ignoring major version updates" do
+      it "filters out major versions" do
+        expect(checker.latest_version).to eq(Gem::Version.new("0.9.0"))
+      end
+
+      it "logs filtered versions" do
+        allow(Dependabot.logger).to receive(:info)
+        checker.latest_version
+        expect(Dependabot.logger).to have_received(:info)
+          .with("Filtered out 2 ignored versions")
+      end
+    end
+
+    context "when all versions are ignored" do
+      let(:ignored_versions) { [">= 0"] }
+
+      it "returns nil" do
+        expect(checker.latest_version).to be_nil
+      end
+    end
+
+    context "when ignoring specific version ranges" do
+      let(:ignored_versions) { [">= 0.5, < 1.0"] }
+
+      it "filters out versions in the specified range" do
+        expect(checker.latest_version).to eq(Gem::Version.new("2.0.0"))
+      end
+    end
+
+    context "when raise_on_ignored is true" do
+      let(:ignored_versions) { [">= 0.5"] }
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: true,
+          security_advisories: security_advisories,
+          options: {}
+        )
+      end
+
+      before do
+        # Set up the same mocks for this new checker instance
+        allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+          .to receive(:fetch_package_releases)
+          .and_return([
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new("0.4.1"),
+              released_at: Time.now - (100 * 24 * 60 * 60)
+            ),
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new("0.5.0"),
+              released_at: Time.now - (90 * 24 * 60 * 60)
+            ),
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new("1.0.0"),
+              released_at: Time.now - (70 * 24 * 60 * 60)
+            )
+          ])
+        allow(Dependabot.logger).to receive(:info)
+      end
+
+      it "logs when all newer versions are ignored" do
+        expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+        expect(Dependabot.logger).to have_received(:info)
+          .with("All updates for Example were ignored")
       end
     end
   end

@@ -257,6 +257,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
+      context "with a file containing changelog name in the middle" do
+        let(:github_response) do
+          fixture("github", "business_files_with_misleading_release_doc.json")
+        end
+
+        before do
+          stub_request(:get, github_url + "?ref=v1.4.0")
+            .to_return(status: github_status,
+                       body: github_response,
+                       headers: { "Content-Type" => "application/json" })
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "with a docs folder" do
         let(:source) do
           Dependabot::Source.new(

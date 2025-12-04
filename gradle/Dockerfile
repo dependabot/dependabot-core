@@ -1,8 +1,9 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Install Java
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jdk \
+    openjdk-21-jdk-headless \
     ca-certificates-java \
     wget \
     && rm -rf /var/lib/apt/lists/*
@@ -32,7 +33,5 @@ RUN set -o errexit -o nounset \
     && echo "Testing Gradle installation" \
     && gradle --version
 
-COPY --chown=dependabot:dependabot maven $DEPENDABOT_HOME/maven
-COPY --chown=dependabot:dependabot gradle $DEPENDABOT_HOME/gradle
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents gradle maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

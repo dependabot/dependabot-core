@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
@@ -35,14 +36,16 @@ RUN mkdir -p /etc/apt/keyrings \
 
 USER dependabot
 
-# Install pnpm and set it to a stable version
-RUN corepack install pnpm@$PNPM_VERSION --global
+RUN <<EOF
+  corepack install pnpm@$PNPM_VERSION --global
+  corepack install yarn@$YARN_VERSION --global
+  corepack install npm@$NPM_VERSION --global
+  # Pre-cache popular older versions of npm for on-demand activation
+  corepack install -g --cache-only npm@10 npm@9 npm@8
+EOF
 
-# Install yarn berry and set it to a stable version
-RUN corepack install yarn@$YARN_VERSION --global
-
-# Install npm and set it to a stable version
-RUN corepack install npm@$NPM_VERSION --global
+# Configure Node to use our custom CA bundle
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
@@ -55,13 +58,9 @@ RUN bash /opt/npm_and_yarn/helpers/build
 
 # Create the config file manually instead of using yarn/npm config set as this
 # executes the package manager outputs to every job log
-COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
-
-# For Yarn Berry we can set this via an environment variable
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+COPY --chown=dependabot:dependabot updater/config/.npmrc $DEPENDABOT_HOME/
 
 # END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
-COPY --chown=dependabot:dependabot npm_and_yarn $DEPENDABOT_HOME/npm_and_yarn
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents npm_and_yarn common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
