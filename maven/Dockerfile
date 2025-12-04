@@ -5,7 +5,7 @@ FROM maven:3.9.9 as maven
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jdk \
+    openjdk-21-jdk-headless \
     ca-certificates-java \
     && rm -rf /var/lib/apt/lists/*
 
