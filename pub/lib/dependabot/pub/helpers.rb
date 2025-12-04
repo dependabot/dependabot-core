@@ -112,7 +112,12 @@ module Dependabot
           run_dependency_services("apply", stdin_data: dependencies_to_json(dependency_changes)) do |temp_dir|
             dependency_files.map do |f|
               updated_file = f.dup
-              updated_file.content = File.read(File.join(temp_dir, f.name))
+              content = File.read(File.join(temp_dir, f.name))
+              # Fix flutter SDK constraint in pubspec.lock if it was incorrectly converted to a range
+              if f.name == "pubspec.lock"
+                content = fix_flutter_sdk_constraint(content)
+              end
+              updated_file.content = content
               updated_file
             end
           end,
@@ -431,6 +436,49 @@ module Dependabot
             }
           )
         end
+      end
+
+      # Fixes the flutter SDK constraint in pubspec.lock content.
+      # The pub package incorrectly converts exact flutter SDK versions to ranges.
+      # For example, "3.35.6" becomes ">=3.35.6" in the lockfile.
+      # This method restores the exact version from the pubspec.yaml.
+      sig { params(lockfile_content: String).returns(String) }
+      def fix_flutter_sdk_constraint(lockfile_content)
+        # Find the original flutter SDK constraint from pubspec.yaml
+        pubspec = dependency_files.find { |f| f.name == "pubspec.yaml" }
+        return lockfile_content unless pubspec
+
+        # Parse the pubspec.yaml to find the flutter SDK constraint
+        require "yaml"
+        begin
+          parsed_pubspec = YAML.safe_load(T.must(pubspec.content))
+          flutter_constraint = parsed_pubspec.dig("environment", "flutter")
+          return lockfile_content unless flutter_constraint
+
+          # If the flutter constraint is an exact version (no range operators)
+          # and the lockfile has a range constraint, fix it
+          if exact_version?(flutter_constraint)
+            lockfile_content = lockfile_content.gsub(
+              /^(\s+flutter:\s+)">=#{Regexp.escape(flutter_constraint)}"$/,
+              "\\1\"#{flutter_constraint}\""
+            )
+          end
+        rescue Psych::SyntaxError, Psych::DisallowedClass
+          # If we can't parse the pubspec, just return the original lockfile
+          return lockfile_content
+        end
+
+        lockfile_content
+      end
+
+      # Checks if a version constraint string is an exact version (no range operators)
+      sig { params(constraint: T.nilable(String)).returns(T::Boolean) }
+      def exact_version?(constraint)
+        return false unless constraint.is_a?(String)
+
+        # Check if the constraint doesn't contain range operators like >, <, ^, >=, <=, etc.
+        !constraint.match?(/[><^]/) && constraint.strip.match?(/^\d+\.\d+\.\d+/)
+      end
       end
     end
   end

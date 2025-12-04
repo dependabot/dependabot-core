@@ -229,4 +229,34 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       expect(lockfile(updated_files)).to include "version: \"1.7.0\""
     end
   end
+
+  describe "#updated_dependency_files preserves exact flutter SDK version" do
+    let(:project) { "flutter_sdk_exact_version" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "collection",
+        version: "1.18.0",
+        requirements: [{
+          file: "pubspec.yaml",
+          requirement: "^1.15.0",
+          groups: ["direct"],
+          source: nil
+        }],
+        previous_version: "1.15.0",
+        previous_requirements: [{
+          file: "pubspec.yaml",
+          requirement: "^1.15.0",
+          groups: ["direct"],
+          source: nil
+        }],
+        package_manager: "pub"
+      )
+    end
+
+    it "keeps exact flutter SDK version instead of converting to range" do
+      updated_files = updater.updated_dependency_files
+      expect(lockfile(updated_files)).to include "flutter: \"3.35.6\""
+      expect(lockfile(updated_files)).not_to include "flutter: \">=3.35.6\""
+    end
+  end
 end
