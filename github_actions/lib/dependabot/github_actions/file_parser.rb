@@ -52,7 +52,7 @@ module Dependabot
       end
 
       sig do
-        params(dep: Dependabot::Dependency, resolved: T.nilable(Gem::Version), tag: T.nilable(T::Hash[Symbol, String]))
+        params(dep: Dependabot::Dependency, resolved: T.nilable(Gem::Version), tag: T.nilable(String))
           .returns(Dependabot::Dependency)
       end
       def dependency_from_resolved_tag(dep, resolved, tag)
@@ -65,7 +65,7 @@ module Dependabot
             source: {
               type: "git",
               url: dep.requirements.first&.dig(:source, :url),
-              ref: tag.to_s,
+              ref: tag,
               branch: nil
             },
             file: dep.requirements.first&.dig(:file),
