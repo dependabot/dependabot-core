@@ -86,7 +86,7 @@ module Dependabot
         # For 0.0.z versions, patch changes are breaking
         # So ignoring "major" means ignoring all >= 0.0.(z+1)
         if major.zero? && minor.zero?
-          patch = (parts[2] || 0).to_i
+          patch = parts[2].to_i
           lower_parts = [0, 0, patch + 1] + [lowest_prerelease_suffix]
           return [">= #{lower_parts.join('.')}"]
         end
