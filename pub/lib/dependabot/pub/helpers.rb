@@ -114,9 +114,7 @@ module Dependabot
               updated_file = f.dup
               content = File.read(File.join(temp_dir, f.name))
               # Fix flutter SDK constraint in pubspec.lock if it was incorrectly converted to a range
-              if f.name == "pubspec.lock"
-                content = fix_flutter_sdk_constraint(content)
-              end
+              content = fix_flutter_sdk_constraint(content) if f.name == "pubspec.lock"
               updated_file.content = content
               updated_file
             end
@@ -478,7 +476,6 @@ module Dependabot
 
         # Check if the constraint doesn't contain range operators like >, <, ^, >=, <=, etc.
         !constraint.match?(/[><^]/) && constraint.strip.match?(/^\d+\.\d+\.\d+/)
-      end
       end
     end
   end
