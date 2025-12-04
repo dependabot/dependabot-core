@@ -5,7 +5,7 @@ FROM maven:3.9.9 as maven
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jdk \
+    openjdk-21-jdk-headless \
     ca-certificates-java \
     && rm -rf /var/lib/apt/lists/*
 
@@ -18,7 +18,7 @@ RUN ln -s ${MAVEN_HOME}/bin/mvn /usr/bin/mvn
 USER dependabot
 
 ENV PATH=$JAVA_HOME/bin:$PATH
-ENV MAVEN_CONFIG "$DEPENDABOT_HOME/.m2"
+ENV MAVEN_ARGS="-Dmaven.repo.local=$DEPENDABOT_HOME/.m2"
 
 COPY --chown=dependabot:dependabot --parents maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
