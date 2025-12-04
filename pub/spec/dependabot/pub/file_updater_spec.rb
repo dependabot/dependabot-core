@@ -333,6 +333,9 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     it "returns true for exact versions" do
       expect(updater_instance.send(:exact_version?, "3.35.6")).to be true
       expect(updater_instance.send(:exact_version?, "1.2.3")).to be true
+      expect(updater_instance.send(:exact_version?, "1.2")).to be true
+      expect(updater_instance.send(:exact_version?, "3.35.6-dev.1.2")).to be true
+      expect(updater_instance.send(:exact_version?, "3.35.6+build.123")).to be true
     end
 
     it "returns false for range constraints" do
@@ -340,6 +343,10 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       expect(updater_instance.send(:exact_version?, "^3.35.6")).to be false
       expect(updater_instance.send(:exact_version?, ">3.35.6")).to be false
       expect(updater_instance.send(:exact_version?, "<4.0.0")).to be false
+      expect(updater_instance.send(:exact_version?, "<=4.0.0")).to be false
+      expect(updater_instance.send(:exact_version?, "~3.35.6")).to be false
+      expect(updater_instance.send(:exact_version?, "!=3.35.6")).to be false
+      expect(updater_instance.send(:exact_version?, ">=3.0.0 <4.0.0")).to be false
     end
 
     it "returns false for nil or non-string values" do
@@ -348,7 +355,8 @@ RSpec.describe Dependabot::Pub::FileUpdater do
 
     it "returns false for invalid version strings" do
       expect(updater_instance.send(:exact_version?, "invalid")).to be false
-      expect(updater_instance.send(:exact_version?, "1.2")).to be false
+      expect(updater_instance.send(:exact_version?, "1")).to be false
+      expect(updater_instance.send(:exact_version?, "abc.def")).to be false
     end
   end
 end
