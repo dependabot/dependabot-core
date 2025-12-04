@@ -564,6 +564,12 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
         ]
       end
 
+      before do
+        stub_request(:get, "https://npm.pkg.github.com/@types%2Fk6")
+          .with(headers: { "Authorization" => "Bearer github_token" })
+          .to_return(status: 404)
+      end
+
       it "should use the public npm registry, not the replaces-base registry" do
         expect(finder.registry).to eq("registry.npmjs.org")
       end
