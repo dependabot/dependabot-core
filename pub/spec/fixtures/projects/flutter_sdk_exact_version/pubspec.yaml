@@ -1,0 +1,8 @@
+name: flutter_sdk_test
+environment:
+  sdk: 3.9.2
+  flutter: 3.35.6
+dependencies:
+  collection: ^1.15.0
+  flutter:
+    sdk: flutter
