@@ -188,14 +188,14 @@ module Dependabot
         sig { params(pyproject_content: String).returns(String) }
         def remove_path_dependencies(pyproject_content)
           PyprojectPreparer
-            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .new(pyproject_content: pyproject_content, lockfile: cleaned_lockfile || lockfile)
             .remove_path_dependencies
         end
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
           PyprojectPreparer
-            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .new(pyproject_content: pyproject_content, lockfile: cleaned_lockfile || lockfile)
             .freeze_top_level_dependencies_except(dependencies)
         end
 
@@ -226,10 +226,21 @@ module Dependabot
         end
 
         sig { returns(T.nilable(String)) }
-        def cleaned_poetry_lockfile
+        def cleaned_poetry_lockfile_content
           PyprojectPreparer
             .new(pyproject_content: T.must(pyproject&.content), lockfile: lockfile)
             .remove_path_dependencies_from_lockfile
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def cleaned_lockfile
+          return nil unless lockfile
+          return nil unless (cleaned_content = cleaned_poetry_lockfile_content)
+
+          Dependabot::DependencyFile.new(
+            name: T.must(lockfile).name,
+            content: cleaned_content
+          )
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
@@ -308,8 +319,8 @@ module Dependabot
           File.write(".python-version", language_version_manager.python_major_minor)
 
           # Overwrite the poetry.lock with cleaned content (path dependencies removed)
-          if lockfile && (cleaned_lockfile = cleaned_poetry_lockfile)
-            File.write("poetry.lock", cleaned_lockfile)
+          if lockfile && (cleaned_content = cleaned_poetry_lockfile_content)
+            File.write("poetry.lock", cleaned_content)
           end
 
           # Overwrite the pyproject with updated content (must be last to return its result)
