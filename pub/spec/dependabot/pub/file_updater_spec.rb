@@ -230,33 +230,125 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     end
   end
 
-  describe "#updated_dependency_files preserves exact flutter SDK version" do
-    let(:project) { "flutter_sdk_exact_version" }
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "collection",
-        version: "1.18.0",
-        requirements: [{
-          file: "pubspec.yaml",
-          requirement: "^1.15.0",
-          groups: ["direct"],
-          source: nil
-        }],
-        previous_version: "1.15.0",
-        previous_requirements: [{
-          file: "pubspec.yaml",
-          requirement: "^1.15.0",
-          groups: ["direct"],
-          source: nil
-        }],
-        package_manager: "pub"
+  describe "fix_flutter_sdk_constraint helper method" do
+    let(:pubspec_content) do
+      <<~YAML
+        environment:
+          sdk: 3.9.2
+          flutter: 3.35.6
+      YAML
+    end
+
+    let(:updater_instance) do
+      described_class.new(
+        dependencies: [],
+        dependency_files: [
+          Dependabot::DependencyFile.new(
+            name: "pubspec.yaml",
+            content: pubspec_content
+          )
+        ],
+        credentials: [],
+        options: {}
       )
     end
 
-    it "keeps exact flutter SDK version instead of converting to range" do
-      updated_files = updater.updated_dependency_files
-      expect(lockfile(updated_files)).to include "flutter: \"3.35.6\""
-      expect(lockfile(updated_files)).not_to include "flutter: \">=3.35.6\""
+    it "converts range constraint back to exact version" do
+      lockfile_with_range = <<~LOCK
+        sdks:
+          dart: "3.9.2"
+          flutter: ">=3.35.6"
+      LOCK
+
+      fixed = updater_instance.send(:fix_flutter_sdk_constraint, lockfile_with_range)
+      expect(fixed).to include 'flutter: "3.35.6"'
+      expect(fixed).not_to include 'flutter: ">=3.35.6"'
+    end
+
+    it "preserves exact version if already correct" do
+      lockfile_with_exact = <<~LOCK
+        sdks:
+          dart: "3.9.2"
+          flutter: "3.35.6"
+      LOCK
+
+      fixed = updater_instance.send(:fix_flutter_sdk_constraint, lockfile_with_exact)
+      expect(fixed).to eq lockfile_with_exact
+    end
+
+    context "with flutter range constraint in pubspec" do
+      let(:pubspec_content) do
+        <<~YAML
+          environment:
+            sdk: 3.9.2
+            flutter: '>=3.24.0'
+        YAML
+      end
+
+      it "does not modify lockfile with range operator" do
+        lockfile_content = <<~LOCK
+          sdks:
+            dart: "3.9.2"
+            flutter: ">=3.35.6"
+        LOCK
+
+        # Should not modify because pubspec has a range
+        fixed = updater_instance.send(:fix_flutter_sdk_constraint, lockfile_content)
+        expect(fixed).to eq lockfile_content
+      end
+    end
+
+    context "with missing flutter constraint in pubspec" do
+      let(:pubspec_content) do
+        <<~YAML
+          environment:
+            sdk: 3.9.2
+        YAML
+      end
+
+      it "handles missing flutter constraint" do
+        lockfile_content = "sdks:\n  dart: \"3.9.2\""
+
+        fixed = updater_instance.send(:fix_flutter_sdk_constraint, lockfile_content)
+        expect(fixed).to eq lockfile_content
+      end
+    end
+  end
+
+  describe "exact_version? helper method" do
+    let(:updater_instance) do
+      described_class.new(
+        dependencies: [],
+        dependency_files: [
+          Dependabot::DependencyFile.new(
+            name: "pubspec.yaml",
+            content: "environment:\n  sdk: 3.9.2"
+          )
+        ],
+        credentials: [],
+        options: {}
+      )
+    end
+
+    it "returns true for exact versions" do
+      expect(updater_instance.send(:exact_version?, "3.35.6")).to be true
+      expect(updater_instance.send(:exact_version?, "1.2.3")).to be true
+    end
+
+    it "returns false for range constraints" do
+      expect(updater_instance.send(:exact_version?, ">=3.35.6")).to be false
+      expect(updater_instance.send(:exact_version?, "^3.35.6")).to be false
+      expect(updater_instance.send(:exact_version?, ">3.35.6")).to be false
+      expect(updater_instance.send(:exact_version?, "<4.0.0")).to be false
+    end
+
+    it "returns false for nil or non-string values" do
+      expect(updater_instance.send(:exact_version?, nil)).to be false
+    end
+
+    it "returns false for invalid version strings" do
+      expect(updater_instance.send(:exact_version?, "invalid")).to be false
+      expect(updater_instance.send(:exact_version?, "1.2")).to be false
     end
   end
 end
