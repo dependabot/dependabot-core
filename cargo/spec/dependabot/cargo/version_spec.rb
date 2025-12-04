@@ -328,5 +328,55 @@ RSpec.describe Dependabot::Cargo::Version do
         end
       end
     end
+
+    describe "integration with ignore conditions" do
+      # These tests verify that the ignored_major_versions method works correctly
+      # with the IgnoreCondition class, which is how @dependabot ignore commands work
+
+      context "when ignoring major versions for 0.y.z packages" do
+        let(:version_string) { "0.15.5" }
+
+        it "correctly ignores breaking minor version bumps" do
+          # In Cargo semver, 0.15.5 -> 0.16.0 is a major/breaking change
+          ignored = version.ignored_major_versions
+          req = Gem::Requirement.new(ignored.first)
+
+          expect(req.satisfied_by?(described_class.new("0.15.6"))).to be(false) # patch is allowed
+          expect(req.satisfied_by?(described_class.new("0.16.0"))).to be(true)  # minor bump is ignored
+          expect(req.satisfied_by?(described_class.new("0.17.0"))).to be(true)  # minor bump is ignored
+          expect(req.satisfied_by?(described_class.new("1.0.0"))).to be(true)   # major bump is ignored
+        end
+      end
+
+      context "when ignoring major versions for 0.0.z packages" do
+        let(:version_string) { "0.0.3" }
+
+        it "correctly ignores breaking patch version bumps" do
+          # In Cargo semver, 0.0.3 -> 0.0.4 is a major/breaking change
+          ignored = version.ignored_major_versions
+          req = Gem::Requirement.new(ignored.first)
+
+          expect(req.satisfied_by?(described_class.new("0.0.4"))).to be(true)  # patch bump is ignored
+          expect(req.satisfied_by?(described_class.new("0.0.5"))).to be(true)  # patch bump is ignored
+          expect(req.satisfied_by?(described_class.new("0.1.0"))).to be(true)  # minor bump is ignored
+          expect(req.satisfied_by?(described_class.new("1.0.0"))).to be(true)  # major bump is ignored
+        end
+      end
+
+      context "when ignoring major versions for standard >= 1.0 packages" do
+        let(:version_string) { "2.3.4" }
+
+        it "correctly ignores major version bumps only" do
+          # Standard semver: only actual major version bumps are ignored
+          ignored = version.ignored_major_versions
+          req = Gem::Requirement.new(ignored.first)
+
+          expect(req.satisfied_by?(described_class.new("2.3.5"))).to be(false) # patch is allowed
+          expect(req.satisfied_by?(described_class.new("2.4.0"))).to be(false) # minor is allowed
+          expect(req.satisfied_by?(described_class.new("3.0.0"))).to be(true)  # major bump is ignored
+          expect(req.satisfied_by?(described_class.new("4.0.0"))).to be(true)  # major bump is ignored
+        end
+      end
+    end
   end
 end
