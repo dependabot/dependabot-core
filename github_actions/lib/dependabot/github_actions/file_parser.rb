@@ -51,6 +51,10 @@ module Dependabot
         @package_manager ||= T.let(PackageManager.new, T.nilable(Dependabot::GithubActions::PackageManager))
       end
 
+      sig do
+        params(dep: Dependabot::Dependency, resolved: T.nilable(Gem::Version), tag: T.nilable(T::Hash[Symbol, String]))
+          .returns(Dependabot::Dependency)
+      end
       def dependency_from_resolved_tag(dep, resolved, tag)
         Dependency.new(
           name: dep.name,
