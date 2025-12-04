@@ -285,7 +285,13 @@ module Dependabot
           options_fingerprint = lock_options_fingerprint(options)
 
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec uv lock --upgrade-package #{T.must(dependency).name} #{options}"
+          # Include the target version to respect ignore conditions and avoid upgrading
+          # to the absolute latest version (which may be blocked by ignore rules)
+          dep_name = T.must(dependency).name
+          dep_version = T.must(dependency).version
+          package_spec = dep_version ? "#{dep_name}==#{dep_version}" : dep_name
+
+          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
           run_command(command, fingerprint:)

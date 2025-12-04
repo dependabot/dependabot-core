@@ -3,7 +3,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Install Java
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jdk \
+    openjdk-21-jdk-headless \
     ca-certificates-java \
     wget \
     && rm -rf /var/lib/apt/lists/*
