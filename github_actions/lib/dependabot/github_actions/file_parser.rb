@@ -51,7 +51,7 @@ module Dependabot
         @package_manager ||= T.let(PackageManager.new, T.nilable(Dependabot::GithubActions::PackageManager))
       end
 
-      def build_resolved_dependency(dep, resolved, tag)
+      def dependency_from_resolved_tag(dep, resolved, tag)
         Dependency.new(
           name: dep.name,
           version: resolved.to_s,
@@ -97,7 +97,7 @@ module Dependabot
             # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
             if !dep.version && (resolved = git_checker.version_for_pinned_sha)
               tag = git_checker.local_tag_for_pinned_sha
-              dep = build_resolved_dependency(dep, resolved, tag)
+              dep = dependency_from_resolved_tag(dep, resolved, tag)
             end
           end
 
