@@ -166,7 +166,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            ref: "v3.5.2",
             branch: nil
           },
           metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" }
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
+            ref: "v3.5.0",
             branch: nil
           },
           metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" }
@@ -515,7 +515,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             source: {
               type: "git",
               url: "https://github.com/actions/checkout",
-              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              ref: "v2.1.0",
               branch: nil
             },
             metadata: {
@@ -565,7 +565,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             source: {
               type: "git",
               url: "https://github.com/actions/checkout",
-              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              ref: "v2.1.0",
               branch: nil
             },
             metadata: { declaration_string: "actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
@@ -621,7 +621,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             source: {
               type: "git",
               url: "https://ghes.other.com/inactions/checkout",
-              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              ref: "v2.1.0",
               branch: nil
             },
             metadata: { declaration_string: "inactions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }

@@ -51,6 +51,26 @@ module Dependabot
         @package_manager ||= T.let(PackageManager.new, T.nilable(Dependabot::GithubActions::PackageManager))
       end
 
+      def build_resolved_dependency(dep, resolved, tag)
+        Dependency.new(
+          name: dep.name,
+          version: resolved.to_s,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: dep.requirements.first&.dig(:source, :url),
+              ref: tag.to_s,
+              branch: nil
+            },
+            file: dep.requirements.first&.dig(:file),
+            metadata: { declaration_string: dep.requirements.first&.dig(:metadata, :declaration_string) }
+          }],
+          package_manager: dep.package_manager
+        )
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(Dependabot::FileParsers::Base::DependencySet) }
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
@@ -75,17 +95,9 @@ module Dependabot
             next unless git_checker.pinned?
 
             # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
-            unless dep.version
-              resolved = git_checker.version_for_pinned_sha
-
-              if resolved
-                dep = Dependency.new(
-                  name: dep.name,
-                  version: resolved.to_s,
-                  requirements: dep.requirements,
-                  package_manager: dep.package_manager
-                )
-              end
+            if !dep.version && (resolved = git_checker.version_for_pinned_sha)
+              tag = git_checker.local_tag_for_pinned_sha
+              dep = build_resolved_dependency(dep, resolved, tag)
             end
           end
 
