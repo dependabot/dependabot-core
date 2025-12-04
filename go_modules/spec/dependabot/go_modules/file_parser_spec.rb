@@ -416,6 +416,99 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect(dependencies.map(&:name)).to eq([])
       end
     end
+
+    context "when using tool directive (Go 1.24+)" do
+      let(:project_name) { "tool_directive" }
+      let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
+
+      it "includes both direct and tool dependencies as top-level" do
+        expect(dependencies.length).to eq(6)
+        top_level_deps = dependencies.select(&:top_level?)
+        expect(top_level_deps.length).to eq(2)
+
+        # Direct dependency
+        direct_dep = top_level_deps.find { |d| d.name == "rsc.io/quote" }
+        expect(direct_dep).to be_a(Dependabot::Dependency)
+        expect(direct_dep.name).to eq("rsc.io/quote")
+        expect(direct_dep.version).to eq("1.5.2")
+        expect(direct_dep.requirements).to eq(
+          [{
+            requirement: "v1.5.2",
+            file: "go.mod",
+            groups: [],
+            source: {
+              type: "default",
+              source: "rsc.io/quote"
+            }
+          }]
+        )
+
+        # Tool dependency (marked as indirect but should be treated as top-level)
+        tool_dep = top_level_deps.find { |d| d.name == "golang.org/x/tools" }
+        expect(tool_dep).to be_a(Dependabot::Dependency)
+        expect(tool_dep.name).to eq("golang.org/x/tools")
+        expect(tool_dep.version).to eq("0.27.0")
+        expect(tool_dep.requirements).to eq(
+          [{
+            requirement: "v0.27.0",
+            file: "go.mod",
+            groups: [],
+            source: {
+              type: "default",
+              source: "golang.org/x/tools"
+            }
+          }]
+        )
+      end
+
+      it "treats tool dependencies as top-level even when marked indirect" do
+        tool_dep = dependencies.find { |d| d.name == "golang.org/x/tools" }
+        expect(tool_dep.top_level?).to be true
+        expect(tool_dep.requirements).not_to be_empty
+      end
+
+      it "still treats regular indirect dependencies as indirect" do
+        indirect_deps = dependencies.reject(&:top_level?)
+        expect(indirect_deps.length).to eq(4)
+
+        expect(indirect_deps.map(&:name)).to contain_exactly(
+          "golang.org/x/mod",
+          "golang.org/x/sync",
+          "golang.org/x/text",
+          "rsc.io/sampler"
+        )
+        indirect_deps.each do |dep|
+          expect(dep.requirements).to be_empty
+        end
+      end
+    end
+
+    context "when tool dependency is also imported (direct)" do
+      let(:project_name) { "tool_directive_direct" }
+      let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
+
+      it "treats the tool module as a direct top-level dependency" do
+        tools_dep = dependencies.find { |d| d.name == "golang.org/x/tools" }
+        expect(tools_dep).to be_a(Dependabot::Dependency)
+        expect(tools_dep.top_level?).to be true
+        expect(tools_dep.requirements).to include(
+          {
+            requirement: "v0.27.0",
+            file: "go.mod",
+            groups: [],
+            source: {
+              type: "default",
+              source: "golang.org/x/tools"
+            }
+          }
+        )
+      end
+
+      it "does not list the tool module among indirect dependencies" do
+        indirect_names = dependencies.reject(&:top_level?).map(&:name)
+        expect(indirect_names).not_to include("golang.org/x/tools")
+      end
+    end
   end
 
   describe "#ecosystem" do
