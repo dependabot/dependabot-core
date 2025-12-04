@@ -548,6 +548,26 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
       it { is_expected.to eq("registry.npmrc.org/dependabot") }
     end
+
+    context "with replaces-base credential for scoped package without explicit scoped registry" do
+      let(:dependency_name) { "@types/k6" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://npm.pkg.github.com",
+              "token" => "github_token",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "should use the public npm registry, not the replaces-base registry" do
+        expect(finder.registry).to eq("registry.npmjs.org")
+      end
+    end
   end
 
   describe "#auth_headers" do
