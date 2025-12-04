@@ -45,6 +45,7 @@ module Dependabot
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @cleaned_lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
@@ -188,14 +189,14 @@ module Dependabot
         sig { params(pyproject_content: String).returns(String) }
         def remove_path_dependencies(pyproject_content)
           PyprojectPreparer
-            .new(pyproject_content: pyproject_content, lockfile: cleaned_lockfile || lockfile)
+            .new(pyproject_content: pyproject_content, lockfile: lockfile_for_prep)
             .remove_path_dependencies
         end
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
           PyprojectPreparer
-            .new(pyproject_content: pyproject_content, lockfile: cleaned_lockfile || lockfile)
+            .new(pyproject_content: pyproject_content, lockfile: lockfile_for_prep)
             .freeze_top_level_dependencies_except(dependencies)
         end
 
@@ -234,13 +235,21 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def cleaned_lockfile
-          return nil unless lockfile
-          return nil unless (cleaned_content = cleaned_poetry_lockfile_content)
+          @cleaned_lockfile ||=
+            begin
+              return nil unless lockfile
+              return nil unless (cleaned_content = cleaned_poetry_lockfile_content)
 
-          Dependabot::DependencyFile.new(
-            name: T.must(lockfile).name,
-            content: cleaned_content
-          )
+              Dependabot::DependencyFile.new(
+                name: T.must(lockfile).name,
+                content: cleaned_content
+              )
+            end
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def lockfile_for_prep
+          cleaned_lockfile || lockfile
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
