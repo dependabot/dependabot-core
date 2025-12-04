@@ -347,7 +347,9 @@ RSpec.describe Dependabot::Cargo::Version do
 
     describe "integration with ignore conditions" do
       # These tests verify that the ignored_major_versions method works correctly
-      # with the IgnoreCondition class, which is how @dependabot ignore commands work
+      # when used by Dependabot::Config::IgnoreCondition, which is how @dependabot
+      # ignore commands are implemented. The IgnoreCondition class calls these
+      # methods to determine which versions to filter out based on user ignore rules.
 
       context "when ignoring major versions for 0.y.z packages" do
         let(:version_string) { "0.15.5" }
