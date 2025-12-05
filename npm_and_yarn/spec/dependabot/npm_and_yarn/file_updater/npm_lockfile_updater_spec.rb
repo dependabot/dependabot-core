@@ -72,6 +72,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
@@ -1339,26 +1341,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
-    describe "#build_registry_env_variables" do
+    describe "Helpers.build_corepack_env_variables" do
       let(:files) { project_dependency_files("npm8/simple") }
 
       context "when experiment flag is disabled" do
-        let(:test_updater) do
-          described_class.new(
-            lockfile: files.find { |f| f.name == "package-lock.json" },
-            dependency_files: files,
-            dependencies: dependencies,
-            credentials: credentials
-          )
-        end
+        let(:test_credentials) { credentials }
 
         before do
           allow(Dependabot::Experiments).to receive(:enabled?)
             .with(:enable_private_registry_for_corepack).and_return(false)
+          Dependabot::NpmAndYarn::Helpers.dependency_files = files
+          Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
         end
 
         it "returns nil" do
-          expect(test_updater.send(:build_registry_env_variables)).to be_nil
+          expect(Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)).to be_nil
         end
       end
 
@@ -1370,25 +1367,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         context "with npm_registry credentials" do
           let(:test_credentials) do
-            [{
-              "type" => "npm_registry",
-              "registry" => "https://npm.private.registry",
-              "token" => "secret_token",
-              "replaces-base" => true
-            }]
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://npm.private.registry",
+                  "token" => "secret_token",
+                  "replaces-base" => true
+                }
+              )
+            ]
           end
 
-          let(:test_updater) do
-            described_class.new(
-              lockfile: files.find { |f| f.name == "package-lock.json" },
-              dependency_files: files,
-              dependencies: dependencies,
-              credentials: test_credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = files
+            Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
           end
 
           it "returns both registry and token environment variables" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
                 "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
@@ -1400,41 +1397,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         context "with npm_registry credentials but replaces-base is false" do
           let(:test_credentials) do
-            [{
-              "type" => "npm_registry",
-              "registry" => "https://npm.private.registry",
-              "token" => "secret_token",
-              "replaces-base" => false
-            }]
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://npm.private.registry",
+                  "token" => "secret_token",
+                  "replaces-base" => false
+                }
+              )
+            ]
           end
 
-          let(:test_updater) do
-            described_class.new(
-              lockfile: files.find { |f| f.name == "package-lock.json" },
-              dependency_files: files,
-              dependencies: dependencies,
-              credentials: test_credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = files
+            Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
           end
 
           it "returns empty hash" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq({})
           end
         end
 
         context "without npm_registry credentials" do
-          let(:test_updater) do
-            described_class.new(
-              lockfile: files.find { |f| f.name == "package-lock.json" },
-              dependency_files: files,
-              dependencies: dependencies,
-              credentials: credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
           end
 
           it "returns empty hash" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq({})
           end
         end
@@ -1449,17 +1442,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             ]
           end
 
-          let(:test_updater) do
-            described_class.new(
-              lockfile: test_files.find { |f| f.name == "package-lock.json" },
-              dependency_files: test_files,
-              dependencies: dependencies,
-              credentials: credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
           end
 
           it "returns registry and token from .npmrc" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
                 "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
@@ -1479,17 +1468,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             ]
           end
 
-          let(:test_updater) do
-            described_class.new(
-              lockfile: test_files.find { |f| f.name == "package-lock.json" },
-              dependency_files: test_files,
-              dependencies: dependencies,
-              credentials: credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
           end
 
           it "returns registry and token from .yarnrc" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
                 "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
@@ -1509,17 +1494,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             ]
           end
 
-          let(:test_updater) do
-            described_class.new(
-              lockfile: test_files.find { |f| f.name == "package-lock.json" },
-              dependency_files: test_files,
-              dependencies: dependencies,
-              credentials: credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
           end
 
           it "returns registry and token from .yarnrc.yml" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
                 "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
@@ -1531,12 +1512,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         context "when credentials take priority over config files" do
           let(:test_credentials) do
-            [{
-              "type" => "npm_registry",
-              "registry" => "https://creds.registry.com",
-              "token" => "creds_token",
-              "replaces-base" => true
-            }]
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://creds.registry.com",
+                  "token" => "creds_token",
+                  "replaces-base" => true
+                }
+              )
+            ]
           end
 
           let(:test_files) do
@@ -1548,17 +1533,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             ]
           end
 
-          let(:test_updater) do
-            described_class.new(
-              lockfile: test_files.find { |f| f.name == "package-lock.json" },
-              dependency_files: test_files,
-              dependencies: dependencies,
-              credentials: test_credentials
-            )
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
           end
 
           it "uses credentials over .npmrc" do
-            env_vars = test_updater.send(:build_registry_env_variables)
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
                 "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",

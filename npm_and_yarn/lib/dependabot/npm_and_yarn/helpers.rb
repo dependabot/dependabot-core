@@ -5,12 +5,40 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/experiments"
 require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
     module Helpers # rubocop:disable Metrics/ModuleLength
       extend T::Sig
+
+      # Thread-local storage for dependency files and credentials
+      # This allows automatic env variable injection without passing parameters everywhere
+      class << self
+        extend T::Sig
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def dependency_files=(files)
+          Thread.current[:npm_and_yarn_dependency_files] = files
+        end
+
+        sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+        def dependency_files
+          T.cast(Thread.current[:npm_and_yarn_dependency_files], T.nilable(T::Array[Dependabot::DependencyFile]))
+        end
+
+        sig { params(creds: T::Array[Dependabot::Credential]).void }
+        def credentials=(creds)
+          Thread.current[:npm_and_yarn_credentials] = creds
+        end
+
+        sig { returns(T.nilable(T::Array[Dependabot::Credential])) }
+        def credentials
+          T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
+        end
+      end
 
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
@@ -268,13 +296,14 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
+        merged_env = merge_corepack_env(env)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           package_manager_run_command(
             NpmPackageManager::NAME,
             command,
             fingerprint: fingerprint,
             output_observer: ->(output) { command_observer(output) },
-            env: env
+            env: merged_env
           )
         else
           Dependabot::SharedHelpers.run_shell_command(
@@ -508,6 +537,35 @@ module Dependabot
         end
 
         raise
+      end
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+      def self.merge_corepack_env(env)
+        corepack_env = build_corepack_env_variables
+        return env if corepack_env.nil? || corepack_env.empty?
+        return corepack_env if env.nil?
+
+        corepack_env.merge(env)
+      end
+
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      def self.build_corepack_env_variables
+        return nil unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
+        return nil if dependency_files.nil? || credentials.nil?
+
+        files = T.must(dependency_files)
+        creds = T.must(credentials)
+
+        registry_helper = RegistryHelper.new(
+          {
+            npmrc: files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc: files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
+            yarnrc_yml: files.find { |f| f.name.end_with?(".yarnrc.yml") }
+          },
+          creds
+        )
+
+        registry_helper.find_corepack_env_variables
       end
 
       private_class_method :run_single_yarn_command
