@@ -44,6 +44,9 @@ gradle:
 hex:
   - *common
   - 'hex/**'
+luarocks:
+  - *common
+  - 'luarocks/**'
 maven:
   - *common
   - 'maven/**'

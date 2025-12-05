@@ -68,6 +68,9 @@ hex:
 julia:
   - *shared
   - 'julia/**'
+luarocks:
+  - *shared
+  - 'luarocks/**'
 maven:
   - *shared
   - 'maven/**'
