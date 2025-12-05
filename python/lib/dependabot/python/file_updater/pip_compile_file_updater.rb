@@ -108,7 +108,12 @@ module Dependabot
             language_version_manager.install_required_python
 
             filenames_to_compile.each do |filename|
-              compile_file(filename)
+              # Compile the file for each of its output files
+              # A single .in file may generate multiple .txt files with different --output-file options
+              output_files = compiled_files_for_filename(filename)
+              # When no output files are found, compile with nil to use default pip-compile behavior
+              output_files = [nil] if output_files.empty?
+              output_files.each { |output_file| compile_file(filename, output_file) }
             end
 
             # Remove any .python-version file before parsing the reqs
@@ -128,11 +133,11 @@ module Dependabot
           end
         end
 
-        sig { params(filename: String).void }
-        def compile_file(filename)
+        sig { params(filename: String, output_file: T.nilable(Dependabot::DependencyFile)).void }
+        def compile_file(filename, output_file)
           # Shell out to pip-compile, generate a new set of requirements.
           # This is slow, as pip-compile needs to do installs.
-          options = pip_compile_options(filename)
+          options = pip_compile_options(filename, output_file)
           options_fingerprint = pip_compile_options_fingerprint(options)
 
           name_part = "pyenv exec pip-compile " \
@@ -516,14 +521,14 @@ module Dependabot
           )
         end
 
-        sig { params(filename: String).returns(String) }
-        def pip_compile_options(filename)
+        sig { params(filename: String, output_file: T.nilable(Dependabot::DependencyFile)).returns(String) }
+        def pip_compile_options(filename, output_file = nil)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
 
-          if (requirements_file = compiled_file_for_filename(filename))
-            options += pip_compile_options_from_compiled_file(requirements_file)
-          end
+          # Use the explicit output file if provided, otherwise fall back to finding one
+          requirements_file = output_file || compiled_file_for_filename(filename)
+          options += pip_compile_options_from_compiled_file(requirements_file) if requirements_file
 
           options.join(" ")
         end
@@ -584,8 +589,9 @@ module Dependabot
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
-              compiled_file = compiled_file_for_filename(fn)
-              compiled_file_includes_dependency?(compiled_file)
+              compiled_files_for_filename(fn).any? do |compiled_file|
+                compiled_file_includes_dependency?(compiled_file)
+              end
             end
 
           filenames = [*files_from_reqs, *files_from_compiled_files].uniq
@@ -593,17 +599,27 @@ module Dependabot
           order_filenames_for_compilation(filenames)
         end
 
+        # Returns the first compiled file for a given source filename
+        # Used for backward compatibility in places where only one file is needed
         sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
         def compiled_file_for_filename(filename)
-          compiled_file =
-            compiled_files
-            .find { |f| T.must(f.content).match?(output_file_regex(filename)) }
+          compiled_files_for_filename(filename).first
+        end
 
-          compiled_file ||=
-            compiled_files
-            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+        # Returns all compiled files (.txt) that were generated from the given source file (.in)
+        # A single .in file may generate multiple .txt files with different --output-file options
+        sig { params(filename: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def compiled_files_for_filename(filename)
+          # First, find all files that have an --output-file header referencing this input file
+          files_with_output_header = compiled_files.select do |f|
+            T.must(f.content).match?(output_file_regex(filename))
+          end
 
-          compiled_file
+          return files_with_output_header if files_with_output_header.any?
+
+          # Fall back to convention-based matching (input.in -> input.txt)
+          default_output = compiled_files.find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+          default_output ? [default_output] : []
         end
 
         sig { params(filename: T.any(String, Symbol)).returns(String) }
