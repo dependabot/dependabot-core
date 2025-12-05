@@ -89,6 +89,10 @@ module Dependabot
 
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
         def updated_yarn_lock(yarn_lock)
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           base_dir = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             write_temporary_dependency_files(yarn_lock)

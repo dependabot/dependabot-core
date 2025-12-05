@@ -113,6 +113,10 @@ module Dependabot
 
         sig { void }
         def run_npm_lockfile_generation
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           # Use --package-lock-only to generate lockfile without installing node_modules
           # Use --ignore-scripts to prevent running any scripts
           # Use --force to ignore platform checks

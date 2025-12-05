@@ -48,6 +48,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
   describe "#relevant_dependency_file" do
