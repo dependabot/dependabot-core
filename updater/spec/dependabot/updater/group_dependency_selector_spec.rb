@@ -151,10 +151,13 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
     context "when feature flag is enabled" do
       before do
+        allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
+
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement).and_return(true)
 
         allow(dependency_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        allow(dependency_group).to receive(:respond_to?).with(:applies_to).and_return(false)
         allow(dependency_group).to receive(:contains?) do |dep|
           %w(rails redis-client).include?(dep.name)
         end
@@ -203,6 +206,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
         allow(dependency_group).to receive(:respond_to?)
           .with(:contains_dependency?).and_return(false)
+        allow(dependency_group).to receive(:respond_to?)
+          .with(:applies_to).and_return(false)
 
         allow(dependency_group).to receive(:contains?) do |dep|
           %w(rails redis-client).include?(dep.name)
@@ -315,14 +320,22 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
 
     describe "#dependency_belongs_to_more_specific_group?" do
+      let(:specificity_calculator) do
+        instance_double(
+          Dependabot::Updater::PatternSpecificityCalculator,
+          dependency_belongs_to_more_specific_group?: false
+        )
+      end
+
       let(:generic_selector) do
         described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
       end
 
       before do
-        allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-        allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-        allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        [generic_group, docker_group, exact_group].each do |g|
+          allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
+        end
 
         allow(generic_group).to receive_messages(contains?: true, dependencies: [])
         allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
@@ -346,6 +359,105 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
     end
 
+    describe "update-type aware specificity" do
+      let(:specificity_calculator) do
+        instance_double(
+          Dependabot::Updater::PatternSpecificityCalculator,
+          dependency_belongs_to_more_specific_group?: false
+        )
+      end
+      let(:generic_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "all-dependencies",
+          dependencies: [],
+          rules: { "patterns" => ["*"] }
+        )
+      end
+
+      let(:docker_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "docker-dependencies",
+          dependencies: [],
+          rules: { "patterns" => ["docker*"], "update-types" => ["patch"] }
+        )
+      end
+
+      let(:snapshot_with_multiple_groups) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          ecosystem: "bundler",
+          groups: [generic_group, docker_group]
+        )
+      end
+
+      let(:generic_selector) do
+        described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+      end
+
+      let(:docker_dep_minor_update) do
+        Dependabot::Dependency.new(
+          name: "docker-compose",
+          package_manager: "bundler",
+          version: "2.1.0",
+          previous_version: "2.0.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 2.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ],
+          previous_requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 2.0.0",
+              groups: ["default"],
+              source: nil
+            }
+          ],
+          directory: "/api",
+          subdependency_metadata: [],
+          removed: false,
+          metadata: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement).and_return(true)
+
+        [generic_group, docker_group].each do |g|
+          allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
+        end
+
+        allow(Dependabot::Updater::PatternSpecificityCalculator).to receive(:new).and_return(specificity_calculator)
+        allow(generic_selector).to receive(:update_type_for_dependency).and_return("minor")
+
+        allow(generic_group).to receive_messages(contains?: true, dependencies: [])
+        allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+      end
+
+      it "does not filter dependency when more specific group disallows its update type" do
+        expect(generic_selector.send(:update_type_for_dependency, docker_dep_minor_update)).to eq("minor")
+        result = generic_selector.send(:dependency_belongs_to_more_specific_group?, docker_dep_minor_update, "/api")
+        expect(result).to be false
+
+        expect(specificity_calculator).to have_received(:dependency_belongs_to_more_specific_group?).with(
+          generic_group,
+          docker_dep_minor_update,
+          snapshot_with_multiple_groups.groups,
+          instance_of(Proc),
+          "/api",
+          applies_to: nil,
+          update_type: "minor"
+        )
+      end
+    end
+
     describe "#partition_dependencies with specificity filtering" do
       let(:dependency_change) do
         create_dependency_change(
@@ -364,9 +476,10 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           allow(Dependabot::Experiments).to receive(:enabled?)
             .with(:group_membership_enforcement).and_return(true)
 
-          allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-          allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-          allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          [generic_group, docker_group, exact_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
+          end
 
           allow(generic_group).to receive_messages(contains?: true, dependencies: [])
           allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
@@ -409,9 +522,10 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           allow(Dependabot::Experiments).to receive(:enabled?)
             .with(:group_membership_enforcement).and_return(true)
 
-          allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-          allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-          allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          [generic_group, docker_group, exact_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
+          end
 
           allow(generic_group).to receive_messages(contains?: true, dependencies: [])
           allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
@@ -453,9 +567,10 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement).and_return(true)
 
-        allow(generic_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-        allow(docker_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
-        allow(exact_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        [generic_group, docker_group, exact_group].each do |g|
+          allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
+        end
 
         allow(generic_group).to receive_messages(contains?: true, dependencies: [])
         allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
@@ -494,6 +609,208 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         expect(grouped[:belongs_to_more_specific_group]).to contain_exactly("docker-compose", "nginx")
         expect(grouped[:not_in_group]).to be_empty
         expect(grouped[:filtered_by_config]).to be_empty
+      end
+    end
+
+    describe "applies_to aware specificity" do
+      let(:generic_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "all-dependencies",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["*"] }
+        )
+      end
+
+      let(:security_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "security-dependencies",
+          dependencies: [],
+          applies_to: "security-updates",
+          rules: { "patterns" => ["docker*"] }
+        )
+      end
+
+      let(:snapshot_with_multiple_groups) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          ecosystem: "bundler",
+          groups: [generic_group, security_group]
+        )
+      end
+
+      let(:generic_selector) do
+        described_class.new(group: generic_group, dependency_snapshot: snapshot_with_multiple_groups)
+      end
+
+      let(:docker_dep) do
+        Dependabot::Dependency.new(
+          name: "docker-compose",
+          package_manager: "bundler",
+          version: "2.0.0",
+          previous_version: "1.9.0",
+          requirements: [
+            { file: "Gemfile", requirement: "~> 2.0.0", groups: ["default"], source: nil }
+          ],
+          previous_requirements: [
+            { file: "Gemfile", requirement: "~> 1.9.0", groups: ["default"], source: nil }
+          ],
+          directory: "/api",
+          subdependency_metadata: [],
+          removed: false,
+          metadata: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement).and_return(true)
+
+        [generic_group, security_group].each do |g|
+          allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+          allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+        end
+
+        allow(generic_group).to receive_messages(contains?: true, dependencies: [])
+        allow(security_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+      end
+
+      it "does not filter dependency when more specific group applies_to differs" do
+        result = generic_selector.send(:dependency_belongs_to_more_specific_group?, docker_dep, "/api")
+        expect(result).to be false
+      end
+    end
+
+    context "with all group rule options" do
+      let(:generic_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "generic",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["*"] }
+        )
+      end
+
+      let(:docker_minor_prod_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "docker-minor-prod",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["docker*"], "update-types" => ["minor"], "dependency-type" => "production" }
+        )
+      end
+
+      let(:docker_exact_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "docker-compose-exact",
+          dependencies: [],
+          applies_to: nil,
+          rules: { "patterns" => ["docker-compose"], "update-types" => ["minor"] }
+        )
+      end
+
+      let(:docker_security_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "docker-security",
+          dependencies: [],
+          applies_to: "security-updates",
+          rules: { "patterns" => ["docker*"], "update-types" => ["minor"] }
+        )
+      end
+
+      let(:excluded_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "docker-excluded",
+          dependencies: [],
+          applies_to: "version-updates",
+          rules: { "patterns" => ["docker*"], "exclude-patterns" => ["docker-compose"] }
+        )
+      end
+
+      let(:explicit_group) do
+        instance_double(
+          Dependabot::DependencyGroup,
+          name: "explicit",
+          dependencies: [],
+          applies_to: nil,
+          rules: { "patterns" => [] }
+        )
+      end
+
+      let(:snapshot) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          ecosystem: "bundler",
+          groups: [generic_group, docker_minor_prod_group, docker_exact_group, docker_security_group, excluded_group,
+                   explicit_group]
+        )
+      end
+
+      let(:generic_selector) { described_class.new(group: generic_group, dependency_snapshot: snapshot) }
+
+      let(:docker_prod_minor_dep) { create_dependency("docker-compose", "2.1.0", metadata: { dep_type: "production" }) }
+      let(:docker_dev_minor_dep) { create_dependency("docker-tool", "1.2.0", metadata: { dep_type: "development" }) }
+      let(:docker_prod_major_dep) { create_dependency("docker-compose", "3.0.0", metadata: { dep_type: "production" }) }
+
+      let(:dependency_change) do
+        create_dependency_change(
+          job: job,
+          dependencies: [docker_prod_minor_dep, docker_dev_minor_dep, docker_prod_major_dep],
+          files: [create_dependency_file("Gemfile.lock", "/api")]
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
+
+        [generic_group, docker_minor_prod_group, docker_exact_group, docker_security_group, excluded_group,
+         explicit_group].each do |g|
+          allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+          allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+        end
+
+        allow(generic_group).to receive(:contains?).and_return(true)
+        allow(docker_minor_prod_group).to receive(:contains?) do |dep|
+          dep.name.start_with?("docker") && dep.respond_to?(:metadata) && dep.metadata[:dep_type] == "production"
+        end
+        allow(docker_exact_group).to receive(:contains?) { |dep| dep.name == "docker-compose" }
+        allow(docker_security_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+        allow(excluded_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+        allow(explicit_group).to receive(:contains?) { |dep| dep == docker_dev_minor_dep }
+
+        allow(docker_minor_prod_group).to receive(:dependencies).and_return([])
+        allow(docker_exact_group).to receive(:dependencies).and_return([])
+        allow(docker_security_group).to receive(:dependencies).and_return([])
+        allow(excluded_group).to receive(:dependencies).and_return([])
+        allow(explicit_group).to receive(:dependencies).and_return([docker_dev_minor_dep])
+
+        allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+
+        allow(generic_selector).to receive(:update_type_for_dependency) do |dep|
+          case dep
+          when docker_prod_minor_dep then "minor"
+          when docker_dev_minor_dep then "minor"
+          when docker_prod_major_dep then "major"
+          end
+        end
+      end
+
+      it "filters to most specific allowed group based on all rules" do
+        eligible_deps, filtered_deps = generic_selector.send(:partition_dependencies, dependency_change)
+
+        eligible_names = eligible_deps.map(&:name)
+        filtered_names = filtered_deps.map(&:name)
+
+        expect(eligible_names).to contain_exactly("docker-compose") # major update stays in generic
+        # minor prod/dev rerouted to more specific groups
+        expect(filtered_names).to include("docker-compose", "docker-tool")
       end
     end
   end

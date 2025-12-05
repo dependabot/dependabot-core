@@ -143,8 +143,10 @@ module Dependabot
       return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
+      applies_to = group.applies_to if group.respond_to?(:applies_to)
+
       specificity_calculator.dependency_belongs_to_more_specific_group?(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory
+        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to: applies_to
       )
     end
   end
