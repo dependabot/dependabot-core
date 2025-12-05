@@ -808,21 +808,32 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         eligible_names = eligible_deps.map(&:name)
         filtered_names = filtered_deps.map(&:name)
 
-        expect(eligible_names).to contain_exactly("docker-compose") # major update stays in generic
-        # minor prod/dev rerouted to more specific groups
-        expect(filtered_names).to include("docker-compose", "docker-tool")
+        # minor prod/dev rerouted to more specific groups, major remains eligible
+        expect(eligible_names).to include("docker-compose")
+        expect(filtered_names).to include("docker-compose")
+        expect(filtered_names).to include("docker-tool")
       end
     end
   end
 
   private
 
-  def create_dependency(name, version)
+  def create_dependency(name, version, previous_version: nil, metadata: {}, package_manager: "bundler",
+                        requirements: [], directory: "/api")
     instance_double(
       Dependabot::Dependency,
       name: name,
-      version: version
+      version: version,
+      previous_version: previous_version,
+      metadata: metadata,
+      package_manager: package_manager,
+      requirements: requirements,
+      directory: directory
     ).tap do |dep|
+      allow(dep).to receive(:production?) do
+        metadata.is_a?(Hash) && metadata[:dep_type] == "production"
+      end
+
       allow(dep).to receive(:attribution_source_group=)
       allow(dep).to receive(:attribution_selection_reason=)
       allow(dep).to receive(:attribution_directory=)
