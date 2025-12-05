@@ -133,6 +133,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/luarocks"
 require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
@@ -370,6 +371,7 @@ valid_package_managers = %w(
   gradle
   helm
   hex
+  luarocks
   maven
   npm_and_yarn
   nuget

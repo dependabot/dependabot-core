@@ -2,6 +2,9 @@
 
 Luarocks support for [`dependabot-core`][core-repo].
 
+> Note: LuaRocks lockfiles (`luarocks.lock`) are not supported yet. Only
+> `.rockspec` manifests are fetched and updated.
+
 ### Running locally
 
 1. Start a development shell
@@ -22,15 +25,15 @@ Luarocks support for [`dependabot-core`][core-repo].
 This ecosystem is currently under development. See [NEW_ECOSYSTEMS.md](../NEW_ECOSYSTEMS.md) for implementation guidelines.
 
 #### Required Classes
-- [ ] FileFetcher
-- [ ] FileParser
-- [ ] UpdateChecker
-- [ ] FileUpdater
+- [x] FileFetcher
+- [x] FileParser
+- [x] UpdateChecker
+- [x] FileUpdater
 
 #### Optional Classes
 - [ ] MetadataFinder
-- [ ] Version
-- [ ] Requirement
+- [x] Version
+- [x] Requirement
 
 #### Supporting Infrastructure
 - [ ] Comprehensive unit tests

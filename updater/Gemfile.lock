@@ -139,6 +139,12 @@ PATH
       dependabot-common (= 0.351.0)
 
 PATH
+  remote: ../luarocks
+  specs:
+    dependabot-luarocks (0.351.0)
+      dependabot-common (= 0.351.0)
+
+PATH
   remote: ../maven
   specs:
     dependabot-maven (0.351.0)
@@ -576,6 +582,7 @@ DEPENDENCIES
   dependabot-helm!
   dependabot-hex!
   dependabot-julia!
+  dependabot-luarocks!
   dependabot-maven!
   dependabot-npm_and_yarn!
   dependabot-nuget!
@@ -662,6 +669,7 @@ CHECKSUMS
   dependabot-helm (0.351.0)
   dependabot-hex (0.351.0)
   dependabot-julia (0.351.0)
+  dependabot-luarocks (0.351.0)
   dependabot-maven (0.351.0)
   dependabot-npm_and_yarn (0.351.0)
   dependabot-nuget (0.351.0)
