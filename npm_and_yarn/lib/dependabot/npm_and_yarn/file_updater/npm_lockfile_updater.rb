@@ -139,6 +139,10 @@ module Dependabot
           return lockfile.content if npmrc_disables_lockfile?
           return lockfile.content unless updatable_dependencies.any?
 
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           @updated_lockfile_content ||= T.let(
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
@@ -375,25 +379,7 @@ module Dependabot
 
           fingerprint = fingerprint_args.join(" ")
 
-          env = build_registry_env_variables
-
-          Helpers.run_npm_command(command, fingerprint: fingerprint, env: env)
-        end
-
-        sig { returns(T.nilable(T::Hash[String, String])) }
-        def build_registry_env_variables
-          return nil unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
-
-          registry_helper = NpmAndYarn::RegistryHelper.new(
-            {
-              npmrc: dependency_files.find { |f| f.name.end_with?(".npmrc") },
-              yarnrc: dependency_files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
-              yarnrc_yml: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
-            },
-            credentials
-          )
-
-          registry_helper.find_corepack_env_variables
+          Helpers.run_npm_command(command, fingerprint: fingerprint)
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
