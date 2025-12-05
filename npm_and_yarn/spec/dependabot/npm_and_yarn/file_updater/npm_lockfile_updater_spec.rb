@@ -1388,8 +1388,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
-                "COREPACK_NPM_TOKEN" => "secret_token"
+                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry"
               }
             )
           end
@@ -1451,8 +1450,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
-                "COREPACK_NPM_TOKEN" => "custom_token"
+                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com"
               }
             )
           end
@@ -1477,8 +1475,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
-                "COREPACK_NPM_TOKEN" => "yarn_token"
+                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com"
               }
             )
           end
@@ -1503,8 +1500,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
-                "COREPACK_NPM_TOKEN" => "yarn2_token"
+                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com"
               }
             )
           end
@@ -1542,8 +1538,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",
-                "COREPACK_NPM_TOKEN" => "creds_token"
+                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com"
               }
             )
           end
