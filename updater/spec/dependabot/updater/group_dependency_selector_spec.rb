@@ -818,8 +818,15 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
   private
 
-  def create_dependency(name, version, previous_version: nil, metadata: {}, package_manager: "bundler",
-                        requirements: [], directory: "/api")
+  def create_dependency(
+    name,
+    version,
+    previous_version: nil,
+    metadata: {},
+    package_manager: "bundler",
+    requirements: [],
+    directory: "/api"
+  )
     instance_double(
       Dependabot::Dependency,
       name: name,
