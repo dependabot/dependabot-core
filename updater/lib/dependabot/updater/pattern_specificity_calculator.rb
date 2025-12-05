@@ -57,7 +57,7 @@ module Dependabot
         dep,
         groups,
         contains_checker,
-        _directory,
+        directory,
         applies_to: nil,
         update_type: nil
       )
@@ -69,54 +69,16 @@ module Dependabot
         current_group_specificity = calculate_group_specificity_for_dependency(current_group, dep)
         return false if current_group_specificity >= EXPLICIT_MEMBER_SCORE
 
-        more_specific_group_found?(
-          current_group_specificity,
-          current_group,
-          dep,
-          groups,
-          applies_to,
-          update_type,
-          contains_checker
-        )
-      end
-
-      # rubocop:disable Metrics/ParameterLists
-      sig do
-        params(
-          current_group_specificity: Integer,
-          current_group: Dependabot::DependencyGroup,
-          dep: Dependabot::Dependency,
-          groups: T::Array[Dependabot::DependencyGroup],
-          applies_to: T.nilable(String),
-          update_type: T.nilable(String),
-          contains_checker:
-            T.proc.params(
-              group: Dependabot::DependencyGroup,
-              dep: Dependabot::Dependency,
-              directory: T.nilable(String)
-            ).returns(T::Boolean)
-        ).returns(T::Boolean)
-      end
-      def more_specific_group_found?(
-        current_group_specificity,
-        current_group,
-        dep,
-        groups,
-        applies_to,
-        update_type,
-        contains_checker
-      )
         groups.any? do |other_group|
           next if other_group == current_group
           next unless update_type_allowed?(other_group, update_type)
           next unless applies_to_allowed?(other_group, applies_to)
-          next unless contains_checker.call(other_group, dep, dep.directory)
+          next unless contains_checker.call(other_group, dep, directory)
 
           other_group_specificity = calculate_group_specificity_for_dependency(other_group, dep)
           other_group_specificity > current_group_specificity
         end
       end
-      # rubocop:enable Metrics/ParameterLists
 
       private
 
