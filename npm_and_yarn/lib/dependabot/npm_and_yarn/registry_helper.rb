@@ -46,7 +46,8 @@ module Dependabot
           env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
         end
 
-        env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
+        # NOTE: We only set the registry, not the token
+        # The token should be configured in .npmrc for security
 
         env_variables
       end

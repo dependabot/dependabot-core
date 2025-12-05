@@ -518,12 +518,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     describe ".build_corepack_env_variables" do
-      it "builds environment variables from credentials" do
+      it "builds environment variables from credentials with only registry" do
         env = described_class.send(:build_corepack_env_variables)
 
         expect(env).not_to be_nil
         expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-        expect(env["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+        expect(env["COREPACK_NPM_TOKEN"]).to be_nil
       end
 
       context "when experiment flag is disabled" do
@@ -592,12 +592,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           ]
         end
 
-        it "builds env variables for replaces-base registry" do
+        it "builds env variables for replaces-base registry without token" do
           env = described_class.send(:build_corepack_env_variables)
 
           expect(env).not_to be_nil
           expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://custom.registry.com")
-          expect(env["COREPACK_NPM_TOKEN"]).to eq("custom-token")
+          expect(env["COREPACK_NPM_TOKEN"]).to be_nil
         end
       end
     end
@@ -669,11 +669,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
 
     describe ".run_npm_command integration" do
-      it "automatically injects corepack env variables" do
+      it "automatically injects corepack env variables with only registry" do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
           expect(options[:env]).not_to be_nil
           expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to be_nil
           ""
         end
 
