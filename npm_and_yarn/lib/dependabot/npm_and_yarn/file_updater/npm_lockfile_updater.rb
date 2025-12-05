@@ -139,6 +139,10 @@ module Dependabot
           return lockfile.content if npmrc_disables_lockfile?
           return lockfile.content unless updatable_dependencies.any?
 
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           @updated_lockfile_content ||= T.let(
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files

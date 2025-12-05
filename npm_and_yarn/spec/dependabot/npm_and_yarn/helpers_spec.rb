@@ -481,4 +481,266 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.node_version).to be_nil
     end
   end
+
+  describe "credential handling for corepack" do
+    let(:credentials) do
+      [
+        Dependabot::Credential.new(
+          "type" => "npm_registry",
+          "registry" => "jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual",
+          "token" => "test-token-123",
+          "replaces-base" => true
+        )
+      ]
+    end
+
+    let(:npmrc_file) do
+      Dependabot::DependencyFile.new(
+        name: ".npmrc",
+        content: "registry=https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual\n"
+      )
+    end
+
+    let(:dependency_files) { [npmrc_file] }
+
+    before do
+      described_class.dependency_files = dependency_files
+      described_class.credentials = credentials
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_private_registry_for_corepack).and_return(true)
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+    end
+
+    after do
+      described_class.dependency_files = []
+      described_class.credentials = []
+    end
+
+    describe ".build_corepack_env_variables" do
+      it "builds environment variables from credentials with only registry" do
+        env = described_class.send(:build_corepack_env_variables)
+
+        expect(env).not_to be_nil
+        expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+        expect(env["COREPACK_NPM_TOKEN"]).to be_nil
+      end
+
+      context "when experiment flag is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_private_registry_for_corepack).and_return(false)
+        end
+
+        it "returns nil" do
+          env = described_class.send(:build_corepack_env_variables)
+          expect(env).to be_nil
+        end
+      end
+
+      context "when dependency_files is empty" do
+        before { described_class.dependency_files = [] }
+
+        it "still builds env from credentials if present" do
+          env = described_class.send(:build_corepack_env_variables)
+          # Registry helper can still find registry from credentials even without files
+          expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+        end
+      end
+
+      context "when credentials is empty" do
+        before { described_class.credentials = [] }
+
+        it "still finds registry from .npmrc file" do
+          env = described_class.send(:build_corepack_env_variables)
+          # Can still extract registry from .npmrc even without credentials
+          expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+        end
+      end
+
+      context "with non-replaces-base credential" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              "type" => "npm_registry",
+              "registry" => "registry.npmjs.org",
+              "token" => "npm-token"
+            )
+          ]
+        end
+
+        it "returns env with registry from .npmrc" do
+          env = described_class.send(:build_corepack_env_variables)
+
+          # Returns env based on .npmrc content since credential doesn't replace base
+          expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+        end
+      end
+
+      context "with replaces-base credential" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              "type" => "npm_registry",
+              "registry" => "custom.registry.com",
+              "token" => "custom-token",
+              "replaces-base" => true
+            )
+          ]
+        end
+
+        it "builds env variables for replaces-base registry without token" do
+          env = described_class.send(:build_corepack_env_variables)
+
+          expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://custom.registry.com")
+          expect(env["COREPACK_NPM_TOKEN"]).to be_nil
+        end
+      end
+    end
+
+    describe ".merge_corepack_env" do
+      it "merges corepack env with provided env" do
+        original_env = { "PATH" => "/usr/bin", "NODE_ENV" => "test" }
+
+        # Stub build_corepack_env_variables to return known values
+        allow(described_class).to receive(:build_corepack_env_variables).and_return(
+          {
+            "COREPACK_NPM_REGISTRY" => "https://test.registry.com",
+            "COREPACK_NPM_TOKEN" => "test-token"
+          }
+        )
+
+        merged = described_class.send(:merge_corepack_env, original_env)
+
+        expect(merged["PATH"]).to eq("/usr/bin")
+        expect(merged["NODE_ENV"]).to eq("test")
+        expect(merged["COREPACK_NPM_REGISTRY"]).to eq("https://test.registry.com")
+        expect(merged["COREPACK_NPM_TOKEN"]).to eq("test-token")
+      end
+
+      it "returns original env when corepack env is nil" do
+        original_env = { "PATH" => "/usr/bin" }
+
+        allow(described_class).to receive(:build_corepack_env_variables).and_return(nil)
+
+        merged = described_class.send(:merge_corepack_env, original_env)
+
+        expect(merged).to eq(original_env)
+      end
+
+      it "returns original env when corepack env is empty" do
+        original_env = { "PATH" => "/usr/bin" }
+
+        allow(described_class).to receive(:build_corepack_env_variables).and_return({})
+
+        merged = described_class.send(:merge_corepack_env, original_env)
+
+        expect(merged).to eq(original_env)
+      end
+
+      it "returns corepack env when original env is nil" do
+        corepack_env = {
+          "COREPACK_NPM_REGISTRY" => "https://test.registry.com",
+          "COREPACK_NPM_TOKEN" => "test-token"
+        }
+
+        allow(described_class).to receive(:build_corepack_env_variables).and_return(corepack_env)
+
+        merged = described_class.send(:merge_corepack_env, nil)
+
+        expect(merged).to eq(corepack_env)
+      end
+
+      it "prefers provided env over corepack env for duplicate keys" do
+        original_env = { "COREPACK_NPM_TOKEN" => "override-token" }
+
+        allow(described_class).to receive(:build_corepack_env_variables).and_return(
+          { "COREPACK_NPM_TOKEN" => "default-token" }
+        )
+
+        merged = described_class.send(:merge_corepack_env, original_env)
+
+        expect(merged["COREPACK_NPM_TOKEN"]).to eq("override-token")
+      end
+    end
+
+    describe ".run_npm_command integration" do
+      it "automatically injects corepack env variables with only registry" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]).not_to be_nil
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to be_nil
+          ""
+        end
+
+        described_class.run_npm_command("install")
+      end
+
+      it "preserves manually provided env variables" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          ""
+        end
+
+        described_class.run_npm_command("install", env: { "CUSTOM_VAR" => "custom-value" })
+      end
+    end
+
+    describe "thread-local storage" do
+      it "isolates dependency_files across threads" do
+        thread1_files = [npmrc_file]
+        thread2_files = [Dependabot::DependencyFile.new(name: "other.npmrc", content: "")]
+
+        results = {}
+
+        threads = [
+          Thread.new do
+            described_class.dependency_files = thread1_files
+            sleep 0.01
+            results[:thread1] = described_class.dependency_files
+          end,
+          Thread.new do
+            described_class.dependency_files = thread2_files
+            sleep 0.01
+            results[:thread2] = described_class.dependency_files
+          end
+        ]
+
+        threads.each(&:join)
+
+        expect(results[:thread1]).to eq(thread1_files)
+        expect(results[:thread2]).to eq(thread2_files)
+      end
+
+      it "isolates credentials across threads" do
+        thread1_creds = credentials
+        thread2_creds = [Dependabot::Credential.new("type" => "git_source")]
+
+        results = {}
+
+        threads = [
+          Thread.new do
+            described_class.credentials = thread1_creds
+            sleep 0.01
+            results[:thread1] = described_class.credentials
+          end,
+          Thread.new do
+            described_class.credentials = thread2_creds
+            sleep 0.01
+            results[:thread2] = described_class.credentials
+          end
+        ]
+
+        threads.each(&:join)
+
+        expect(results[:thread1]).to eq(thread1_creds)
+        expect(results[:thread2]).to eq(thread2_creds)
+      end
+    end
+  end
 end

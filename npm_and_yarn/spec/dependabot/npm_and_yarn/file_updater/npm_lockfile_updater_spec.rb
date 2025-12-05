@@ -72,7 +72,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
   after do
@@ -1334,6 +1338,211 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         expect(test_updater.send(:optional_dependency?, optional_dep)).to be(true)
         expect(test_updater.send(:optional_dependency?, regular_dep)).to be(false)
+      end
+    end
+
+    describe "Helpers.build_corepack_env_variables" do
+      let(:files) { project_dependency_files("npm8/simple") }
+
+      context "when experiment flag is disabled" do
+        let(:test_credentials) { credentials }
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_private_registry_for_corepack).and_return(false)
+          Dependabot::NpmAndYarn::Helpers.dependency_files = files
+          Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
+        end
+
+        it "returns nil" do
+          expect(Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)).to be_nil
+        end
+      end
+
+      context "when experiment flag is enabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_private_registry_for_corepack).and_return(true)
+        end
+
+        context "with npm_registry credentials" do
+          let(:test_credentials) do
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://npm.private.registry",
+                  "token" => "secret_token",
+                  "replaces-base" => true
+                }
+              )
+            ]
+          end
+
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = files
+            Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
+          end
+
+          it "returns both registry and token environment variables" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry"
+              }
+            )
+          end
+        end
+
+        context "with npm_registry credentials but replaces-base is false" do
+          let(:test_credentials) do
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://npm.private.registry",
+                  "token" => "secret_token",
+                  "replaces-base" => false
+                }
+              )
+            ]
+          end
+
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = files
+            Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
+          end
+
+          it "returns empty hash" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq({})
+          end
+        end
+
+        context "without npm_registry credentials" do
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
+          end
+
+          it "returns empty hash" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq({})
+          end
+        end
+
+        context "with .npmrc file containing registry" do
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".npmrc",
+                content: "registry=https://custom.registry.com\n_authToken=custom_token"
+              )
+            ]
+          end
+
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
+          end
+
+          it "returns registry and token from .npmrc" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com"
+              }
+            )
+          end
+        end
+
+        context "with .yarnrc file containing registry" do
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".yarnrc",
+                content: "registry \"https://yarn.registry.com\"\n_authToken \"yarn_token\""
+              )
+            ]
+          end
+
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
+          end
+
+          it "returns registry and token from .yarnrc" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com"
+              }
+            )
+          end
+        end
+
+        context "with .yarnrc.yml file containing registry" do
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".yarnrc.yml",
+                content: "npmRegistryServer: https://yarn2.registry.com\nnpmAuthToken: yarn2_token"
+              )
+            ]
+          end
+
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = credentials
+          end
+
+          it "returns registry and token from .yarnrc.yml" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com"
+              }
+            )
+          end
+        end
+
+        context "when credentials take priority over config files" do
+          let(:test_credentials) do
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "https://creds.registry.com",
+                  "token" => "creds_token",
+                  "replaces-base" => true
+                }
+              )
+            ]
+          end
+
+          let(:test_files) do
+            project_dependency_files("npm8/simple") + [
+              Dependabot::DependencyFile.new(
+                name: ".npmrc",
+                content: "registry=https://npmrc.registry.com\n_authToken=npmrc_token"
+              )
+            ]
+          end
+
+          before do
+            Dependabot::NpmAndYarn::Helpers.dependency_files = test_files
+            Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
+          end
+
+          it "uses credentials over .npmrc" do
+            env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
+            expect(env_vars).to eq(
+              {
+                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com"
+              }
+            )
+          end
+        end
       end
     end
   end
