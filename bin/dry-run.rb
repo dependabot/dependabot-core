@@ -77,6 +77,7 @@ $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./julia/lib"
+$LOAD_PATH << "./luarocks/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
@@ -132,6 +133,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
+require "dependabot/luarocks"
 require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
@@ -369,6 +371,7 @@ valid_package_managers = %w(
   gradle
   helm
   hex
+  luarocks
   maven
   npm_and_yarn
   nuget

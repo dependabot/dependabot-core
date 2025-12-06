@@ -39,6 +39,7 @@ class RakeHelpers
       helm/dependabot-helm.gemspec
       hex/dependabot-hex.gemspec
       julia/dependabot-julia.gemspec
+      luarocks/dependabot-luarocks.gemspec
       maven/dependabot-maven.gemspec
       npm_and_yarn/dependabot-npm_and_yarn.gemspec
       nuget/dependabot-nuget.gemspec

@@ -44,6 +44,7 @@ Sentry.init do |config|
     helm|
     hex|
     julia|
+    luarocks|
     maven|
     npm_and_yarn|
     nuget|

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/bazel"
+require "dependabot/luarocks"
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/opentofu"

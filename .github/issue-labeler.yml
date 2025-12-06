@@ -81,3 +81,6 @@
 
 "L: julia":
     - '(julia)'
+
+"L: luarocks":
+    - '(luarocks)'
