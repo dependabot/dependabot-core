@@ -963,4 +963,353 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
     end
   end
+
+  describe "fetching include() statements" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with MODULE.bazel containing include() statements" do
+      let(:deps_dir_listing) do
+        [{ "name" => "dependencies.MODULE.bazel", "path" => "deps/dependencies.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/BUILD.bazel", "type" => "file" }].to_json
+      end
+      let(:tools_dir_listing) do
+        [{ "name" => "build.MODULE.bazel", "path" => "tools/build.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "tools/BUILD.bazel", "type" => "file" }].to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock directory listings for fetch_file_if_present
+        stub_request(:get, url + "deps?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: tools_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the included files
+        stub_request(:get, url + "deps/dependencies.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_dependencies_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/build.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock BUILD files for directories containing included files
+        stub_request(:get, url + "deps/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "deps/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "tools/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches the included MODULE.bazel files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/dependencies.MODULE.bazel",
+          "tools/build.MODULE.bazel"
+        )
+      end
+
+      it "fetches BUILD files for directories containing included files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/BUILD.bazel",
+          "tools/BUILD.bazel"
+        )
+      end
+
+      it "includes the main MODULE.bazel file" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+
+      it "fetches all files needed for bazel mod tidy to succeed" do
+        expected_files = [
+          "MODULE.bazel",
+          "deps/dependencies.MODULE.bazel",
+          "tools/build.MODULE.bazel",
+          "deps/BUILD.bazel",
+          "tools/BUILD.bazel"
+        ]
+        expect(fetched_files.map(&:name)).to include(*expected_files)
+      end
+    end
+
+    context "with nested include() statements" do
+      let(:deps_dir_listing) do
+        [{ "name" => "dependencies.MODULE.bazel", "path" => "deps/dependencies.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/BUILD.bazel", "type" => "file" },
+         { "name" => "java", "path" => "deps/java", "type" => "dir" }].to_json
+      end
+      let(:tools_dir_listing) do
+        [{ "name" => "build.MODULE.bazel", "path" => "tools/build.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "tools/BUILD.bazel", "type" => "file" }].to_json
+      end
+      let(:deps_java_dir_listing) do
+        [{ "name" => "java_deps.MODULE.bazel", "path" => "deps/java/java_deps.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/java/BUILD.bazel", "type" => "file" }].to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock directory listings for fetch_file_if_present
+        stub_request(:get, url + "deps?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: tools_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "deps/java?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_java_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the first included file which has a nested include
+        stub_request(:get, url + "deps/dependencies.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_dependencies_module_nested.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/build.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the nested included file
+        stub_request(:get, url + "deps/java/java_deps.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_java_deps_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock BUILD files for directories containing included files
+        stub_request(:get, url + "deps/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "deps/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "tools/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "deps/java/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "deps/java/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_java_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches recursively included MODULE.bazel files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/dependencies.MODULE.bazel",
+          "deps/java/java_deps.MODULE.bazel"
+        )
+      end
+
+      it "fetches BUILD files for all directories containing included files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/BUILD.bazel",
+          "deps/java/BUILD.bazel"
+        )
+      end
+    end
+
+    context "when included file is missing" do
+      let(:deps_dir_listing) do
+        [{ "name" => "dependencies.MODULE.bazel", "path" => "deps/dependencies.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/BUILD.bazel", "type" => "file" }].to_json
+      end
+      let(:tools_dir_listing) do
+        [{ "name" => "BUILD.bazel", "path" => "tools/BUILD.bazel", "type" => "file" }].to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock directory listings for fetch_file_if_present
+        stub_request(:get, url + "deps?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: tools_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # First included file exists
+        stub_request(:get, url + "deps/dependencies.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_dependencies_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Second included file is missing (not in directory listing)
+
+        # Mock BUILD files
+        stub_request(:get, url + "deps/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "deps/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "tools/BUILD.bazel?ref=sha").to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches available included files" do
+        expect(fetched_files.map(&:name)).to include("deps/dependencies.MODULE.bazel")
+      end
+
+      it "continues fetching other files when some includes are missing" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+        expect(fetched_files.map(&:name)).not_to include("tools/build.MODULE.bazel")
+      end
+    end
+
+    context "when MODULE.bazel has no include() statements" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "does not attempt to fetch additional included files" do
+        expect(fetched_files.map(&:name)).to eq(["MODULE.bazel"])
+      end
+    end
+  end
 end
