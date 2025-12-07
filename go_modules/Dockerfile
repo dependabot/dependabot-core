@@ -1,5 +1,5 @@
 # syntax=docker.io/docker/dockerfile:1.20
-FROM docker.io/library/golang:1.25.0-bookworm AS go
+FROM docker.io/library/golang:1.25.5-bookworm AS go
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
