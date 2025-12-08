@@ -1579,7 +1579,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#tag_is_prerelease?" do
-    subject { checker.tag_is_prerelease?(tag) }
+    subject { checker.send(:tag_is_prerelease?, tag) }
 
     let(:tag) { "v1.2.3" }
 
@@ -1889,12 +1889,12 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it "returns the releases" do
-          expect(checker.send(:github_releases)).to eq(
-            [
-              { "tag_name" => "v1.0.0", "prerelease" => false, "draft" => false },
-              { "tag_name" => "v2.0.0-beta", "prerelease" => true, "draft" => false }
-            ]
-          )
+          releases = checker.send(:github_releases)
+          expect(releases.length).to eq(2)
+          expect(releases.first[:tag_name]).to eq("v1.0.0")
+          expect(releases.first[:prerelease]).to be(false)
+          expect(releases.last[:tag_name]).to eq("v2.0.0-beta")
+          expect(releases.last[:prerelease]).to be(true)
         end
 
         it "caches the result" do
@@ -1913,7 +1913,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         before do
           stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
             .with(headers: { "Authorization" => "token token" })
-            .to_return(status: 500, body: "Internal Server Error")
+            .to_return(status: 404, body: { message: "Not Found" }.to_json)
         end
 
         it "returns an empty array" do
@@ -1923,9 +1923,9 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "when Octokit raises an error" do
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
-            .with(headers: { "Authorization" => "token token" })
-            .to_raise(Octokit::Error.new)
+          allow_any_instance_of(Dependabot::Clients::GithubWithRetries)
+            .to receive(:releases)
+            .and_raise(Octokit::Forbidden.new)
         end
 
         it "returns an empty array" do

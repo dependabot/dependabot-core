@@ -632,7 +632,7 @@ module Dependabot
             credentials: credentials
           )
           T.unsafe(client).releases(T.must(source).repo, per_page: 100)
-        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
+        rescue Octokit::Error
           []
         end,
         T.nilable(T::Array[T.untyped])
