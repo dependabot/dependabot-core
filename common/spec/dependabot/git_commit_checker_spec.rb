@@ -1600,7 +1600,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1629,7 +1629,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1658,7 +1658,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1700,7 +1700,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1729,7 +1729,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1758,7 +1758,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1787,7 +1787,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
@@ -1829,7 +1829,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 500, body: "Internal Server Error")
       end
@@ -1848,7 +1848,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 403,
@@ -1876,7 +1876,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "when API call succeeds" do
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
             .with(headers: { "Authorization" => "token token" })
             .to_return(
               status: 200,
@@ -1891,8 +1891,8 @@ RSpec.describe Dependabot::GitCommitChecker do
         it "returns the releases" do
           expect(checker.send(:github_releases)).to eq(
             [
-              { tag_name: "v1.0.0", prerelease: false, draft: false },
-              { tag_name: "v2.0.0-beta", prerelease: true, draft: false }
+              { "tag_name" => "v1.0.0", "prerelease" => false, "draft" => false },
+              { "tag_name" => "v2.0.0-beta", "prerelease" => true, "draft" => false }
             ]
           )
         end
@@ -1903,7 +1903,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           # Second call should not trigger another API request
           checker.send(:github_releases)
 
-          expect(WebMock).to have_requested(:get, "https://api.github.com/repos/gocardless/business/releases")
+          expect(WebMock).to have_requested(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
             .with(headers: { "Authorization" => "token token" })
             .once
         end
@@ -1911,7 +1911,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "when API call fails" do
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
             .with(headers: { "Authorization" => "token token" })
             .to_return(status: 500, body: "Internal Server Error")
         end
@@ -1923,7 +1923,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "when Octokit raises an error" do
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases")
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
             .with(headers: { "Authorization" => "token token" })
             .to_raise(Octokit::Error.new)
         end
