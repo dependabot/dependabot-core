@@ -34,6 +34,9 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :errored_fetching_subdependencies
 
+      sig { returns(T.nilable(StandardError)) }
+      attr_reader :subdependency_error
+
       sig do
         params(file_parser: Dependabot::FileParsers::Base).void
       end
@@ -42,6 +45,7 @@ module Dependabot
         @dependencies = T.let([], T::Array[Dependabot::Dependency])
         @prepared = T.let(false, T::Boolean)
         @errored_fetching_subdependencies = T.let(false, T::Boolean)
+        @subdependency_error = nil
       end
 
       # Each grapher must implement a heuristic to determine which dependency file should be used as the owner
@@ -104,6 +108,7 @@ module Dependabot
         end
       rescue StandardError => e
         @errored_fetching_subdependencies = true
+        @subdependency_error = e
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
         []
       end
