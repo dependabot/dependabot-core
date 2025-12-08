@@ -1,0 +1,34 @@
+[
+  {
+    "name": "build-requirements.in",
+    "path": ".github/requirements/build-requirements.in",
+    "sha": "abc123",
+    "size": 100,
+    "url": "https://api.github.com/repos/pyca/cryptography/contents/.github/requirements/build-requirements.in?ref=main",
+    "html_url": "https://github.com/pyca/cryptography/blob/main/.github/requirements/build-requirements.in",
+    "git_url": "https://api.github.com/repos/pyca/cryptography/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/pyca/cryptography/main/.github/requirements/build-requirements.in",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pyca/cryptography/contents/.github/requirements/build-requirements.in?ref=main",
+      "git": "https://api.github.com/repos/pyca/cryptography/git/blobs/abc123",
+      "html": "https://github.com/pyca/cryptography/blob/main/.github/requirements/build-requirements.in"
+    }
+  },
+  {
+    "name": "build-requirements.txt",
+    "path": ".github/requirements/build-requirements.txt",
+    "sha": "def456",
+    "size": 200,
+    "url": "https://api.github.com/repos/pyca/cryptography/contents/.github/requirements/build-requirements.txt?ref=main",
+    "html_url": "https://github.com/pyca/cryptography/blob/main/.github/requirements/build-requirements.txt",
+    "git_url": "https://api.github.com/repos/pyca/cryptography/git/blobs/def456",
+    "download_url": "https://raw.githubusercontent.com/pyca/cryptography/main/.github/requirements/build-requirements.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pyca/cryptography/contents/.github/requirements/build-requirements.txt?ref=main",
+      "git": "https://api.github.com/repos/pyca/cryptography/git/blobs/def456",
+      "html": "https://github.com/pyca/cryptography/blob/main/.github/requirements/build-requirements.txt"
+    }
+  }
+]
