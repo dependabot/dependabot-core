@@ -91,13 +91,13 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
       end
     end
 
-    context "cache busting" do
+    context "when cache busting" do
       it "includes cache-busting headers in requests" do
         github_response = [
           { name: "1.0.0", type: "dir" }
         ]
 
-        expect(octokit_client).to receive(:contents)
+        allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry",
                 hash_including(
                   path: "modules/test_module",
@@ -105,7 +105,9 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
                 ))
           .and_return(github_response)
 
-        client.all_module_versions("test_module")
+        versions = client.all_module_versions("test_module")
+
+        expect(versions).to eq(["1.0.0"])
       end
     end
   end
@@ -189,8 +191,10 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry",
-                hash_including(path: "modules/rules_go/0.57.0/source.json",
-                               headers: { "Cache-Control" => "no-cache" }))
+                hash_including(
+                  path: "modules/rules_go/0.57.0/source.json",
+                  headers: { "Cache-Control" => "no-cache" }
+                ))
           .and_return(github_response)
 
         source = client.get_source("rules_go", "0.57.0")
@@ -249,8 +253,10 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry",
-                hash_including(path: "modules/rules_go/0.57.0/MODULE.bazel",
-                               headers: { "Cache-Control" => "no-cache" }))
+                hash_including(
+                  path: "modules/rules_go/0.57.0/MODULE.bazel",
+                  headers: { "Cache-Control" => "no-cache" }
+                ))
           .and_return(github_response)
 
         content = client.get_module_bazel("rules_go", "0.57.0")
