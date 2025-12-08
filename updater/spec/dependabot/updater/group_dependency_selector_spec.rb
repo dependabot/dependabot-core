@@ -814,6 +814,536 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         expect(filtered_names).to include("docker-tool")
       end
     end
+
+    context "with complete multi-group interaction integration tests" do
+      context "with complete routing through multiple competing groups" do
+        let(:generic_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "generic",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"] }
+          )
+        end
+
+        let(:minor_updates_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "minor-updates",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"], "update-types" => ["minor"] }
+          )
+        end
+
+        let(:exact_rails_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "exact-rails",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["rails"] }
+          )
+        end
+
+        let(:snapshot) do
+          instance_double(
+            Dependabot::DependencySnapshot,
+            ecosystem: "bundler",
+            groups: [generic_group, minor_updates_group, exact_rails_group]
+          )
+        end
+
+        let(:rails_minor) { create_dependency("rails", "7.1.0", previous_version: "7.0.0") }
+        let(:axios_major) { create_dependency("axios", "2.0.0", previous_version: "1.5.0") }
+        let(:lodash_patch) { create_dependency("lodash", "4.17.22", previous_version: "4.17.21") }
+        let(:express_minor) { create_dependency("express", "5.1.0", previous_version: "5.0.0") }
+
+        let(:dependency_change) do
+          create_dependency_change(
+            job: job,
+            dependencies: [rails_minor, axios_major, lodash_patch, express_minor],
+            files: [create_dependency_file("Gemfile.lock", "/")]
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
+
+          [generic_group, minor_updates_group, exact_rails_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+            allow(g).to receive_messages(dependencies: [], contains?: true)
+          end
+
+          allow(exact_rails_group).to receive(:contains?) { |dep| dep.name == "rails" }
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+        end
+
+        it "routes rails to exact-rails group (highest specificity)" do
+          selector = described_class.new(group: generic_group, dependency_snapshot: snapshot)
+          allow(selector).to receive(:update_type_for_dependency).and_return("minor")
+
+          eligible_deps, filtered_deps = selector.send(:partition_dependencies, dependency_change)
+          expect(filtered_deps.map(&:name)).to include("rails")
+          expect(eligible_deps.map(&:name)).not_to include("rails")
+        end
+
+        it "demonstrates how update-types affects group selection priority" do
+          selector = described_class.new(group: generic_group, dependency_snapshot: snapshot)
+          allow(selector).to receive(:update_type_for_dependency) do |dep|
+            case dep
+            when rails_minor, express_minor then "minor"
+            when lodash_patch then "patch"
+            when axios_major then "major"
+            end
+          end
+
+          eligible_deps, filtered_deps = selector.send(:partition_dependencies, dependency_change)
+          expect(filtered_deps.map(&:name)).to include("rails")
+          expect(eligible_deps.map(&:name)).to include("axios", "lodash", "express")
+        end
+
+        it "demonstrates complete multi-group routing behavior" do
+          selectors = {
+            generic: described_class.new(group: generic_group, dependency_snapshot: snapshot),
+            minor_updates: described_class.new(group: minor_updates_group, dependency_snapshot: snapshot),
+            exact_rails: described_class.new(group: exact_rails_group, dependency_snapshot: snapshot)
+          }
+
+          selectors.each_value do |selector|
+            allow(selector).to receive(:update_type_for_dependency) do |dep|
+              case dep
+              when rails_minor, express_minor then "minor"
+              when lodash_patch then "patch"
+              when axios_major then "major"
+              end
+            end
+          end
+
+          results = selectors.transform_values do |selector|
+            selector.send(:partition_dependencies, dependency_change).first.map(&:name)
+          end
+
+          expect(results[:exact_rails]).to contain_exactly("rails")
+          expect(results[:minor_updates]).to include("express")
+          expect(results[:generic]).to include("axios", "lodash")
+        end
+      end
+
+      context "with applies_to filtering across version and security updates" do
+        let(:version_generic_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "version-generic",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"] }
+          )
+        end
+
+        let(:security_rails_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "security-rails",
+            dependencies: [],
+            applies_to: "security-updates",
+            rules: { "patterns" => ["rails"] }
+          )
+        end
+
+        let(:version_rails_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "version-rails",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["rails"] }
+          )
+        end
+
+        let(:snapshot) do
+          instance_double(
+            Dependabot::DependencySnapshot,
+            ecosystem: "bundler",
+            groups: [version_generic_group, security_rails_group, version_rails_group]
+          )
+        end
+
+        let(:rails_dep) { create_dependency("rails", "7.1.0", previous_version: "7.0.0") }
+        let(:axios_dep) { create_dependency("axios", "1.6.0", previous_version: "1.5.0") }
+        let(:lodash_dep) { create_dependency("lodash", "4.17.22", previous_version: "4.17.21") }
+
+        let(:dependency_change) do
+          create_dependency_change(
+            job: job,
+            dependencies: [rails_dep, axios_dep, lodash_dep],
+            files: [create_dependency_file("Gemfile.lock", "/")]
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
+
+          [version_generic_group, security_rails_group, version_rails_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+            allow(g).to receive_messages(dependencies: [], contains?: true)
+          end
+
+          allow(security_rails_group).to receive(:contains?) { |dep| dep.name == "rails" }
+          allow(version_rails_group).to receive(:contains?) { |dep| dep.name == "rails" }
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+        end
+
+        it "prevents routing to security-updates group during version update run" do
+          selector = described_class.new(group: version_generic_group, dependency_snapshot: snapshot)
+          allow(selector).to receive(:update_type_for_dependency).and_return("minor")
+
+          eligible_deps, filtered_deps = selector.send(:partition_dependencies, dependency_change)
+
+          expect(filtered_deps.map(&:name)).to include("rails")
+          expect(eligible_deps.map(&:name)).to include("axios", "lodash")
+        end
+
+        it "correctly applies applies_to filtering in specificity calculation" do
+          version_generic_selector = described_class.new(group: version_generic_group, dependency_snapshot: snapshot)
+          version_rails_selector = described_class.new(group: version_rails_group, dependency_snapshot: snapshot)
+
+          [version_generic_selector, version_rails_selector].each do |selector|
+            allow(selector).to receive(:update_type_for_dependency).and_return("minor")
+          end
+
+          generic_eligible = version_generic_selector.send(:partition_dependencies, dependency_change).first.map(&:name)
+          rails_eligible = version_rails_selector.send(:partition_dependencies, dependency_change).first.map(&:name)
+
+          expect(rails_eligible).to contain_exactly("rails")
+          expect(generic_eligible).to contain_exactly("axios", "lodash")
+        end
+      end
+
+      context "with explicit membership overriding pattern matching" do
+        let(:generic_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "generic",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"] }
+          )
+        end
+
+        let(:express_explicit_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "express-explicit",
+            dependencies: ["express"],
+            applies_to: "version-updates",
+            rules: { "patterns" => [] }
+          )
+        end
+
+        let(:prod_deps_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "prod-deps",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"], "dependency-type" => "production" }
+          )
+        end
+
+        let(:snapshot) do
+          instance_double(
+            Dependabot::DependencySnapshot,
+            ecosystem: "bundler",
+            groups: [generic_group, express_explicit_group, prod_deps_group]
+          )
+        end
+
+        let(:rails_dep) do
+          create_dependency("rails", "7.1.0", previous_version: "7.0.0", metadata: { dep_type: "production" })
+        end
+        let(:express_dep) do
+          create_dependency("express", "5.1.0", previous_version: "5.0.0", metadata: { dep_type: "production" })
+        end
+        let(:axios_dep) do
+          create_dependency("axios", "1.6.0", previous_version: "1.5.0", metadata: { dep_type: "development" })
+        end
+        let(:jest_dep) do
+          create_dependency("jest", "30.0.0", previous_version: "29.0.0", metadata: { dep_type: "development" })
+        end
+
+        let(:dependency_change) do
+          create_dependency_change(
+            job: job,
+            dependencies: [rails_dep, express_dep, axios_dep, jest_dep],
+            files: [create_dependency_file("Gemfile.lock", "/")]
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
+
+          [generic_group, express_explicit_group, prod_deps_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+          end
+
+          allow(generic_group).to receive_messages(dependencies: [], contains?: true)
+
+          allow(express_explicit_group).to receive(:dependencies).and_return(["express"])
+          allow(express_explicit_group).to receive(:contains?) { |dep| dep.name == "express" }
+
+          allow(prod_deps_group).to receive(:dependencies).and_return([])
+          allow(prod_deps_group).to receive(:contains?) do |dep|
+            dep.respond_to?(:metadata) && dep.metadata[:dep_type] == "production"
+          end
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+        end
+
+        it "routes express to explicit group despite matching other patterns" do
+          generic_selector = described_class.new(group: generic_group, dependency_snapshot: snapshot)
+          allow(generic_selector).to receive(:update_type_for_dependency).and_return("minor")
+          allow(express_explicit_group).to receive(:dependencies).and_return([express_dep])
+
+          eligible_deps, filtered_deps = generic_selector.send(:partition_dependencies, dependency_change)
+
+          expect(filtered_deps.map(&:name)).to include("express")
+          expect(eligible_deps.map(&:name)).not_to include("express")
+        end
+
+        it "routes express to explicit group even over more specific pattern matches" do
+          prod_selector = described_class.new(group: prod_deps_group, dependency_snapshot: snapshot)
+          allow(prod_selector).to receive(:update_type_for_dependency).and_return("minor")
+          allow(express_explicit_group).to receive(:dependencies).and_return([express_dep])
+
+          eligible_deps, filtered_deps = prod_selector.send(:partition_dependencies, dependency_change)
+
+          expect(filtered_deps.map(&:name)).to include("express")
+          expect(eligible_deps.map(&:name)).to include("rails")
+          expect(eligible_deps.map(&:name)).not_to include("axios", "jest")
+        end
+
+        it "demonstrates explicit membership (specificity 1000) overrides all patterns" do
+          selectors = {
+            generic: described_class.new(group: generic_group, dependency_snapshot: snapshot),
+            express_explicit: described_class.new(group: express_explicit_group, dependency_snapshot: snapshot),
+            prod_deps: described_class.new(group: prod_deps_group, dependency_snapshot: snapshot)
+          }
+
+          selectors.each_value do |selector|
+            allow(selector).to receive(:update_type_for_dependency).and_return("minor")
+          end
+          allow(express_explicit_group).to receive(:dependencies).and_return([express_dep])
+
+          results = selectors.transform_values do |selector|
+            selector.send(:partition_dependencies, dependency_change).first.map(&:name)
+          end
+
+          expect(results[:express_explicit]).to contain_exactly("express")
+          expect(results[:prod_deps]).to contain_exactly("rails")
+          expect(results[:generic]).to contain_exactly("rails", "axios", "jest")
+        end
+      end
+
+      context "with update-type filtering splitting dependencies by version change magnitude" do
+        let(:generic_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "generic",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"] }
+          )
+        end
+
+        let(:minor_patch_only_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "minor-patch-only",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"], "update-types" => %w(minor patch) }
+          )
+        end
+
+        let(:major_only_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "major-only",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"], "update-types" => ["major"] }
+          )
+        end
+
+        let(:snapshot) do
+          instance_double(
+            Dependabot::DependencySnapshot,
+            ecosystem: "bundler",
+            groups: [generic_group, minor_patch_only_group, major_only_group]
+          )
+        end
+
+        let(:webpack_minor) { create_dependency("webpack", "5.89.0", previous_version: "5.88.0") }
+        let(:babel_major) { create_dependency("babel", "8.0.0", previous_version: "7.23.0") }
+        let(:react_minor) { create_dependency("react", "18.3.0", previous_version: "18.2.0") }
+        let(:vue_patch) { create_dependency("vue", "3.4.28", previous_version: "3.4.27") }
+
+        let(:dependency_change) do
+          create_dependency_change(
+            job: job,
+            dependencies: [webpack_minor, babel_major, react_minor, vue_patch],
+            files: [create_dependency_file("package.json", "/")]
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
+
+          [generic_group, minor_patch_only_group, major_only_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+            allow(g).to receive_messages(dependencies: [], contains?: true)
+          end
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+        end
+
+        it "shows update-types filtering behavior with equal-specificity groups" do
+          generic_selector = described_class.new(group: generic_group, dependency_snapshot: snapshot)
+          allow(generic_selector).to receive(:update_type_for_dependency) do |dep|
+            case dep
+            when webpack_minor, react_minor then "minor"
+            when vue_patch then "patch"
+            when babel_major then "major"
+            end
+          end
+
+          eligible_deps, = generic_selector.send(:partition_dependencies, dependency_change)
+
+          expect(eligible_deps.map(&:name)).to include("webpack", "react", "vue", "babel")
+        end
+
+        it "demonstrates update-types affects competition but not specificity" do
+          selectors = {
+            generic: described_class.new(group: generic_group, dependency_snapshot: snapshot),
+            minor_patch: described_class.new(group: minor_patch_only_group, dependency_snapshot: snapshot),
+            major_only: described_class.new(group: major_only_group, dependency_snapshot: snapshot)
+          }
+
+          selectors.each_value do |selector|
+            allow(selector).to receive(:update_type_for_dependency) do |dep|
+              case dep
+              when webpack_minor, react_minor then "minor"
+              when vue_patch then "patch"
+              when babel_major then "major"
+              end
+            end
+          end
+
+          results = selectors.transform_values do |selector|
+            selector.send(:partition_dependencies, dependency_change).first.map(&:name)
+          end
+
+          expect(results[:minor_patch]).to include("webpack", "react", "vue")
+          expect(results[:major_only]).to include("babel")
+          expect(results[:generic]).to include("webpack", "react", "vue", "babel")
+        end
+      end
+
+      context "with exclude-patterns affecting specificity routing" do
+        let(:generic_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "generic",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["*"] }
+          )
+        end
+
+        let(:rails_except_test_group) do
+          instance_double(
+            Dependabot::DependencyGroup,
+            name: "rails-except-test",
+            dependencies: [],
+            applies_to: "version-updates",
+            rules: { "patterns" => ["rails*"], "exclude-patterns" => ["*-test"] }
+          )
+        end
+
+        let(:snapshot) do
+          instance_double(
+            Dependabot::DependencySnapshot,
+            ecosystem: "bundler",
+            groups: [generic_group, rails_except_test_group]
+          )
+        end
+
+        let(:rails_test) { create_dependency("rails-test", "1.2.0", previous_version: "1.1.0") }
+        let(:rails_helper) { create_dependency("rails-helper", "2.1.0", previous_version: "2.0.0") }
+        let(:rails_core) { create_dependency("rails", "7.1.0", previous_version: "7.0.0") }
+
+        let(:dependency_change) do
+          create_dependency_change(
+            job: job,
+            dependencies: [rails_test, rails_helper, rails_core],
+            files: [create_dependency_file("Gemfile.lock", "/")]
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
+
+          [generic_group, rails_except_test_group].each do |g|
+            allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
+            allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
+            allow(g).to receive(:dependencies).and_return([])
+          end
+
+          allow(generic_group).to receive(:contains?).and_return(true)
+          allow(rails_except_test_group).to receive(:contains?) do |dep|
+            dep.name.start_with?("rails") && !dep.name.end_with?("-test")
+          end
+
+          allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+        end
+
+        it "keeps rails-test in generic group due to exclusion pattern" do
+          generic_selector = described_class.new(group: generic_group, dependency_snapshot: snapshot)
+          allow(generic_selector).to receive(:update_type_for_dependency).and_return("minor")
+
+          eligible_deps, filtered_deps = generic_selector.send(:partition_dependencies, dependency_change)
+
+          expect(eligible_deps.map(&:name)).to include("rails-test")
+          expect(filtered_deps.map(&:name)).to include("rails-helper", "rails")
+        end
+
+        it "demonstrates exclude-patterns removing matches from specificity calculation" do
+          selectors = {
+            generic: described_class.new(group: generic_group, dependency_snapshot: snapshot),
+            rails_except_test: described_class.new(group: rails_except_test_group, dependency_snapshot: snapshot)
+          }
+
+          selectors.each_value do |selector|
+            allow(selector).to receive(:update_type_for_dependency).and_return("minor")
+          end
+
+          results = selectors.transform_values do |selector|
+            selector.send(:partition_dependencies, dependency_change).first.map(&:name)
+          end
+
+          expect(results[:rails_except_test]).to contain_exactly("rails-helper", "rails")
+          expect(results[:generic]).to contain_exactly("rails-test")
+        end
+      end
+    end
   end
 
   private
