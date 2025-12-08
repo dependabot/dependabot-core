@@ -146,11 +146,18 @@ module Dependabot
       resolved = grapher.resolved_dependencies
 
       if grapher.errored_fetching_subdependencies
-        error_handler.handle_job_error(
-          error: Dependabot::DependencyFileNotResolvable.new(
-            "Failed to fetch subdependencies in directory #{source.directory}"
+        if grapher.subdependency_error&.is_a?(Dependabot::DependabotError)
+          # If we've been provided with a DependabotError, relay it to the handler
+          error_handler.handle_job_error(error: grapher.subdependency_error)
+        else
+          # If the error is unexpected, or nil then we should treat it as a generic
+          # parsing problem.
+          error_handler.handle_job_error(
+            error: Dependabot::DependencyFileNotResolvable.new(
+              "Failed to fetch subdependencies in directory #{source.directory}"
+            )
           )
-        )
+        end
       end
 
       GithubApi::DependencySubmission.new(
