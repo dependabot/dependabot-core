@@ -26,7 +26,11 @@ module Dependabot
 
         sig { params(module_name: String).returns(T::Array[String]) }
         def all_module_versions(module_name)
-          contents = T.unsafe(github_client).contents(GITHUB_REPO, path: "modules/#{module_name}")
+          contents = T.unsafe(github_client).contents(
+            GITHUB_REPO,
+            path: "modules/#{module_name}",
+            headers: cache_busting_headers
+          )
           return [] unless contents.is_a?(Array)
 
           versions = contents.filter_map do |item|
@@ -66,7 +70,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/source.json"
 
           begin
-            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path, headers: cache_busting_headers)
             return nil unless content
 
             decoded_content = Base64.decode64(content.content)
@@ -82,7 +86,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           begin
-            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path, headers: cache_busting_headers)
             return nil unless content
 
             Base64.decode64(content.content)
@@ -102,7 +106,12 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           commits = begin
-            T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
+            T.unsafe(github_client).commits(
+              "bazelbuild/bazel-central-registry",
+              path: file_path,
+              per_page: 1,
+              headers: cache_busting_headers
+            )
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
           end
@@ -120,6 +129,13 @@ module Dependabot
             Dependabot::Clients::GithubWithRetries.for_github_dot_com(credentials: @credentials),
             T.nilable(Dependabot::Clients::GithubWithRetries)
           )
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def cache_busting_headers
+          # Use Cache-Control: no-cache to bypass any intermediate caches and ensure fresh data
+          # This prevents stale cached responses from being returned for frequently updated registry data
+          { "Cache-Control" => "no-cache" }
         end
 
         sig { params(version: String).returns(T::Array[Integer]) }

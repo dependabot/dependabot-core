@@ -31,7 +31,8 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
         ]
 
         allow(octokit_client).to receive(:contents)
-          .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go"))
+          .with("bazelbuild/bazel-central-registry",
+                hash_including(path: "modules/rules_go", headers: { "Cache-Control" => "no-cache" }))
           .and_return(github_response)
 
         versions = client.all_module_versions("rules_go")
@@ -48,7 +49,8 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
         ]
 
         allow(octokit_client).to receive(:contents)
-          .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/test_module"))
+          .with("bazelbuild/bazel-central-registry",
+                hash_including(path: "modules/test_module", headers: { "Cache-Control" => "no-cache" }))
           .and_return(github_response)
 
         versions = client.all_module_versions("test_module")
@@ -86,6 +88,24 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
         versions = client.all_module_versions("test_module")
 
         expect(versions).to eq([])
+      end
+    end
+
+    context "cache busting" do
+      it "includes cache-busting headers in requests" do
+        github_response = [
+          { name: "1.0.0", type: "dir" }
+        ]
+
+        expect(octokit_client).to receive(:contents)
+          .with("bazelbuild/bazel-central-registry",
+                hash_including(
+                  path: "modules/test_module",
+                  headers: { "Cache-Control" => "no-cache" }
+                ))
+          .and_return(github_response)
+
+        client.all_module_versions("test_module")
       end
     end
   end
@@ -168,7 +188,9 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
         github_response = OpenStruct.new(content: encoded_content)
 
         allow(octokit_client).to receive(:contents)
-          .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go/0.57.0/source.json"))
+          .with("bazelbuild/bazel-central-registry",
+                hash_including(path: "modules/rules_go/0.57.0/source.json",
+                               headers: { "Cache-Control" => "no-cache" }))
           .and_return(github_response)
 
         source = client.get_source("rules_go", "0.57.0")
@@ -226,7 +248,9 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
         github_response = OpenStruct.new(content: encoded_content)
 
         allow(octokit_client).to receive(:contents)
-          .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go/0.57.0/MODULE.bazel"))
+          .with("bazelbuild/bazel-central-registry",
+                hash_including(path: "modules/rules_go/0.57.0/MODULE.bazel",
+                               headers: { "Cache-Control" => "no-cache" }))
           .and_return(github_response)
 
         content = client.get_module_bazel("rules_go", "0.57.0")
