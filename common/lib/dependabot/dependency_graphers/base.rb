@@ -45,7 +45,6 @@ module Dependabot
         @dependencies = T.let([], T::Array[Dependabot::Dependency])
         @prepared = T.let(false, T::Boolean)
         @errored_fetching_subdependencies = T.let(false, T::Boolean)
-        @subdependency_error = nil
       end
 
       # Each grapher must implement a heuristic to determine which dependency file should be used as the owner
@@ -108,7 +107,7 @@ module Dependabot
         end
       rescue StandardError => e
         @errored_fetching_subdependencies = true
-        @subdependency_error = e
+        @subdependency_error = T.let(e, T.nilable(StandardError))
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
         []
       end

@@ -199,7 +199,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
       end
 
       describe "when go mod graph fails" do
-        context "due to an unexpected error" do
+        context "with an unexpected error" do
           # This scenario creates a condition where the go mod graph fails in a way that isn't trapped
           # by a descendent of Dependabot::DependabotError.
           #
@@ -209,8 +209,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
 
           before do
             allow(parser).to receive(:run_in_parsed_context).and_call_original
-            allow(parser).to receive(:run_in_parsed_context).
-              with("go mod graph").and_raise(go_mod_graph_error)
+            allow(parser).to receive(:run_in_parsed_context).with("go mod graph").and_raise(go_mod_graph_error)
           end
 
           it "sets the error flag without raising" do
@@ -232,7 +231,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           end
         end
 
-        context "due to a non-existent dependency" do
+        context "with a non-existent dependency" do
           let(:go_mod) do
             Dependabot::DependencyFile.new(
               name: "go.mod",
@@ -260,7 +259,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           end
         end
 
-        context "due to an unreachable dependency" do
+        context "with an unreachable dependency" do
           let(:go_mod) do
             Dependabot::DependencyFile.new(
               name: "go.mod",
@@ -288,7 +287,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           end
         end
 
-        context "due to a revision that doesn't exist" do
+        context "with a revision that doesn't exist" do
           let(:go_mod) do
             Dependabot::DependencyFile.new(
               name: "go.mod",
@@ -297,7 +296,7 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
             )
           end
 
-                    it "sets the error flag without raising" do
+          it "sets the error flag without raising" do
             grapher.resolved_dependencies
 
             expect(grapher.errored_fetching_subdependencies).to be(true)

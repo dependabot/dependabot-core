@@ -630,9 +630,11 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         expect(service).to receive(:record_update_job_error) do |args|
           expect(args[:error_type]).to eq("git_dependencies_not_reachable")
-          expect(args[:error_details]).to eq({
-            "dependency-urls": ["github.com/dependabot/cli"]
-          })
+          expect(args[:error_details]).to eq(
+            {
+              "dependency-urls": ["github.com/dependabot/cli"]
+            }
+          )
         end
 
         update_graph_processor.run
