@@ -46,7 +46,8 @@ module Dependabot
           env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
         end
 
-        env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
+        # NOTE: We only set the registry, not the token
+        # The token should be configured in .npmrc for security
 
         env_variables
       end
@@ -87,7 +88,15 @@ module Dependabot
 
         @credentials.each do |cred|
           next unless cred["type"] == "npm_registry" # Skip if not an npm registry
-          next unless cred["replaces-base"] # Skip if not a reverse-proxy registry
+
+          # Handle both Credential objects and plain hashes
+          replaces_base = if cred.respond_to?(:replaces_base?)
+                            cred.replaces_base?
+                          else
+                            cred["replaces-base"]
+                          end
+
+          next unless replaces_base # Skip if not a reverse-proxy registry
 
           # Set the registry if it's not already set
           registries[:registry] ||= cred["registry"]
@@ -95,10 +104,9 @@ module Dependabot
           # Set the token if it's not already set
           registries[:auth_token] ||= cred["token"]
         end
+
         registries
       end
-
-      # Find registry and token in .npmrc or .yarnrc file
       sig do
         params(
           file: T.nilable(Dependabot::DependencyFile),
