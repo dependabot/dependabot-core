@@ -39,6 +39,20 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
 
+      context "when the property is an nested property using project definition properties" do
+        let(:base_pom_fixture_name) { "pom_with_nested_properties.xml" }
+        let(:property_name) { "channels.maven.groupId" }
+
+        its([:value]) { is_expected.to eq("org.reproducer.channels") }
+      end
+
+      context "when the property is nested multiple times" do
+        let(:base_pom_fixture_name) { "pom_with_nested_properties.xml" }
+        let(:property_name) { "channels.maven.groupId.nested" }
+
+        its([:value]) { is_expected.to eq("org.reproducer.channels2") }
+      end
+
       context "when the property name starts with 'project' but not an attribute of the project" do
         let(:base_pom_fixture_name) { "property_name_starts_with_project_pom.xml" }
         let(:property_name) { "project.dependency.spring-boot.version" }
