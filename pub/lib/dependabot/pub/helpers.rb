@@ -14,6 +14,7 @@ require "dependabot/shared_helpers"
 
 module Dependabot
   module Pub
+    # rubocop:disable Metrics/ModuleLength
     module Helpers
       include Kernel
 
@@ -485,5 +486,6 @@ module Dependabot
         constraint.strip.match?(/^\d+\.\d+(\.\d+)?([+-].*)?$/)
       end
     end
+    # rubocop:enable Metrics/ModuleLength
   end
 end
