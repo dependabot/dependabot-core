@@ -271,7 +271,7 @@ module Dependabot
         relative_reqs_dir =
           requirements_dir.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
-        # Skip if the directory matches the base directory to avoid infinite recursion
+        # Skip if relative_reqs_dir is empty to prevent calling repo_contents with empty directory
         return [] if relative_reqs_dir.empty?
 
         repo_contents(dir: relative_reqs_dir)
