@@ -665,6 +665,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       before do
+        allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
+
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement).and_return(true)
 
@@ -802,16 +804,29 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
       end
 
-      it "filters to most specific allowed group based on all rules" do
+      it "routes dependencies to more specific groups based on combined rules" do
         eligible_deps, filtered_deps = generic_selector.send(:partition_dependencies, dependency_change)
 
+        # docker-compose v2.1.0 (minor update, production) → filtered to docker-compose-exact group
+        # docker-compose v3.0.0 (major update, production) → stays in generic group (no matching specific group)
+        # docker-tool (minor update, development) → filtered to explicit group
+
+        # The major update of docker-compose stays eligible for generic group
+        expect(eligible_deps).to include(docker_prod_major_dep)
+        expect(eligible_deps.select { |d| d.name == "docker-compose" }.count).to eq(1)
+
+        # The minor update of docker-compose is filtered to more specific group
+        expect(filtered_deps).to include(docker_prod_minor_dep)
+
+        # The development tool is filtered to explicit group
+        expect(filtered_deps).to include(docker_dev_minor_dep)
+
+        # Verify name-based summary
         eligible_names = eligible_deps.map(&:name)
         filtered_names = filtered_deps.map(&:name)
 
-        # minor prod/dev rerouted to more specific groups, major remains eligible
-        expect(eligible_names).to include("docker-compose")
-        expect(filtered_names).to include("docker-compose")
-        expect(filtered_names).to include("docker-tool")
+        expect(eligible_names).to eq(["docker-compose"])
+        expect(filtered_names).to contain_exactly("docker-compose", "docker-tool")
       end
     end
 
@@ -1357,6 +1372,39 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     requirements: [],
     directory: "/api"
   )
+    requirements = default_requirements_for(version, metadata) if requirements.empty?
+
+    build_dependency_double(
+      name: name,
+      version: version,
+      previous_version: previous_version,
+      metadata: metadata,
+      package_manager: package_manager,
+      requirements: requirements,
+      directory: directory
+    )
+  end
+
+  def default_requirements_for(version, metadata)
+    groups = metadata.is_a?(Hash) && metadata[:dep_type] == "development" ? ["development"] : ["default"]
+
+    [{
+      file: "Gemfile",
+      requirement: "~> #{version}",
+      groups: groups,
+      source: nil
+    }]
+  end
+
+  def build_dependency_double(
+    name:,
+    version:,
+    previous_version:,
+    metadata:,
+    package_manager:,
+    requirements:,
+    directory:
+  )
     instance_double(
       Dependabot::Dependency,
       name: name,
@@ -1367,21 +1415,32 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       requirements: requirements,
       directory: directory
     ).tap do |dep|
-      allow(dep).to receive(:production?) do
-        metadata.is_a?(Hash) && metadata[:dep_type] == "production"
-      end
-
-      allow(dep).to receive(:attribution_source_group=)
-      allow(dep).to receive(:attribution_selection_reason=)
-      allow(dep).to receive(:attribution_directory=)
-      allow(dep).to receive(:attribution_timestamp=)
-      allow(dep).to receive_messages(
-        attribution_source_group: nil,
-        attribution_selection_reason: nil,
-        attribution_directory: nil,
-        attribution_timestamp: nil
-      )
+      stub_production_check(dep, requirements)
+      stub_attribution_methods(dep)
     end
+  end
+
+  def stub_production_check(dep, requirements)
+    allow(dep).to receive(:production?) do
+      groups = requirements.flat_map { |r| r.fetch(:groups, []).map(&:to_s) }
+
+      groups.empty? || groups.include?("runtime") || groups.include?("default") || groups.any? do |g|
+        g.include?("prod")
+      end
+    end
+  end
+
+  def stub_attribution_methods(dep)
+    allow(dep).to receive(:attribution_source_group=)
+    allow(dep).to receive(:attribution_selection_reason=)
+    allow(dep).to receive(:attribution_directory=)
+    allow(dep).to receive(:attribution_timestamp=)
+    allow(dep).to receive_messages(
+      attribution_source_group: nil,
+      attribution_selection_reason: nil,
+      attribution_directory: nil,
+      attribution_timestamp: nil
+    )
   end
 
   def create_dependency_change(job:, dependencies:, files:)
