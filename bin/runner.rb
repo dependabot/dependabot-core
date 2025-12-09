@@ -239,9 +239,9 @@ option_parse = OptionParser.new do |opts|
     $options[:cache_steps].concat(value.split(",").map(&:strip))
   end
 
-  opts.on("--write", "Write the update to the cache directory") do |_value|
-    $options[:write] = true
-  end
+  # opts.on("--write", "Write the update to the cache directory") do |_value|
+  #   $options[:write] = true
+  # end
 
   opts.on("--reject-external-code", "Reject external code") do |_value|
     $options[:reject_external_code] = true
@@ -398,33 +398,6 @@ puts "=> Using repo identifier: #{$repo_name}"
 # Ensure the script does not exit prematurely
 begin
 
-  def show_diff(original_file, updated_file)
-    return unless original_file
-
-    if original_file.content == updated_file.content
-      puts "    no change to #{original_file.name}"
-      return
-    end
-
-    original_tmp_file = Tempfile.new("original")
-    original_tmp_file.write(original_file.content)
-    original_tmp_file.close
-
-    updated_tmp_file = Tempfile.new("updated")
-    updated_tmp_file.write(updated_file.content)
-    updated_tmp_file.close
-
-    diff = `diff -u #{original_tmp_file.path} #{updated_tmp_file.path}`.lines
-    added_lines = diff.count { |line| line.start_with?("+") }
-    removed_lines = diff.count { |line| line.start_with?("-") }
-
-    puts
-    puts "    ± #{original_file.realpath}"
-    puts "    ~~~"
-    puts diff.map { |line| "    " + line }.join
-    puts "    ~~~"
-    puts "    #{added_lines} insertions (+), #{removed_lines} deletions (-)"
-  end
 
   def cached_read(name)
     raise "Provide something to cache" unless block_given?
@@ -505,13 +478,6 @@ begin
         files_dir = File.dirname(files_path)
         FileUtils.mkdir_p(files_dir)
         File.write(files_path, file.content)
-      end
-      # Initialize a git repo so that changed files can be diffed
-      if $options[:write]
-        FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore")) if File.exist?(".gitignore")
-        Dir.chdir(cache_dir) do
-          system("git init . && git add . && git commit --allow-empty -m 'Init'")
-        end
       end
       data
     end
@@ -854,30 +820,18 @@ begin
 
     puts " => #{msg.pr_name.downcase}"
 
-    if $options[:write]
-      updated_files.each do |updated_file|
-        path = File.join(dependency_files_cache_dir, updated_file.name)
-        puts " => writing updated file ./#{path}"
-        dirname = File.dirname(path)
-        FileUtils.mkdir_p(dirname)
-        if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-          FileUtils.rm_f(path)
-        else
-          File.write(path, updated_file.decoded_content)
-        end
-      end
-    end
-
+    # Always write updated files to the local repository
     updated_files.each do |updated_file|
+      file_path = File.join($local_repo_path, $options[:directory], updated_file.name)
+      puts " => writing updated file: #{file_path}"
+      dirname = File.dirname(file_path)
+      FileUtils.mkdir_p(dirname)
       if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-        puts "deleted #{updated_file.name}"
+        FileUtils.rm_f(file_path)
+        puts "    deleted #{updated_file.name}"
       else
-        original_file = $files.find { |f| f.name == updated_file.name }
-        if original_file
-          show_diff(original_file, updated_file)
-        else
-          puts "added #{updated_file.name}"
-        end
+        File.write(file_path, updated_file.decoded_content)
+        puts "    updated #{updated_file.name}"
       end
     end
 
