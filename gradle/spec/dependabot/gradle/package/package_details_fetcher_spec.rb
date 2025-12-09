@@ -368,6 +368,8 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
   end
 
   describe "#parse_gradle_timestamp" do
+    subject(:parse_timestamp) { fetcher.send(:parse_gradle_timestamp, timestamp) }
+
     let(:fetcher) do
       described_class.new(
         dependency: dependency,
@@ -376,9 +378,6 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         forbidden_urls: []
       )
     end
-
-    subject(:parse_timestamp) { fetcher.send(:parse_gradle_timestamp, timestamp) }
-
     let(:dependency_requirements) do
       [{
         file: "build.gradle",
