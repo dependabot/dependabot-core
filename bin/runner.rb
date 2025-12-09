@@ -235,9 +235,9 @@ option_parse = OptionParser.new do |opts|
     $options[:dependency_names] = value.split(",").map { |o| o.strip.downcase }
   end
 
-  opts.on("--cache STEPS", "Cache e.g. files, dependencies") do |value|
-    $options[:cache_steps].concat(value.split(",").map(&:strip))
-  end
+  # opts.on("--cache STEPS", "Cache e.g. files, dependencies") do |value|
+  #   $options[:cache_steps].concat(value.split(",").map(&:strip))
+  # end
 
   # opts.on("--write", "Write the update to the cache directory") do |_value|
   #   $options[:write] = true
@@ -398,105 +398,15 @@ puts "=> Using repo identifier: #{$repo_name}"
 # Ensure the script does not exit prematurely
 begin
 
-
-  def cached_read(name)
-    raise "Provide something to cache" unless block_given?
-    return yield unless $options[:cache_steps].include?(name)
-
-    cache_path = File.join("tmp", $repo_name.split("/"), "cache", "#{name}.bin")
-    cache_dir = File.dirname(cache_path)
-    FileUtils.mkdir_p(cache_dir)
-    cached = File.read(cache_path) if File.exist?(cache_path)
-    # rubocop:disable Security/MarshalLoad
-    return Marshal.load(cached) if cached
-
-    # rubocop:enable Security/MarshalLoad
-
-    data = yield
-    File.write(cache_path, Marshal.dump(data))
-    data
-  end
-
-  def dependency_files_cache_dir
-    branch = $options[:branch] || ""
-    dir = $options[:directory]
-    File.join("dry-run", $repo_name.split("/"), branch, dir)
-  end
-
-  # rubocop:disable Metrics/AbcSize
-  # rubocop:disable Metrics/MethodLength
-  # rubocop:disable Metrics/CyclomaticComplexity
-  # rubocop:disable Metrics/PerceivedComplexity
-  def cached_dependency_files_read
-    cache_dir = dependency_files_cache_dir
-    cache_manifest_path = File.join(
-      cache_dir, "cache-manifest-#{$package_manager}.json"
-    )
-    FileUtils.mkdir_p(cache_dir)
-
-    cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
-    cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
-
-    all_files_cached = cached_dependency_files&.all? do |file|
-      File.exist?(File.join(cache_dir, file["name"]))
-    end
-
-    if all_files_cached && $options[:cache_steps].include?("files")
-      puts "=> reading dependency files from cache manifest: " \
-           "./#{cache_manifest_path}"
-      cached_dependency_files.map do |file|
-        file_content = File.read(File.join(cache_dir, file["name"]))
-        Dependabot::DependencyFile.new(
-          name: file["name"],
-          content: file_content,
-          directory: file["directory"] || "/",
-          support_file: file["support_file"] || false,
-          symlink_target: file["symlink_target"] || nil,
-          type: file["type"] || "file"
-        )
-      end
-    else
-      if $options[:cache_steps].include?("files")
-        puts "=> failed to read all dependency files from cache manifest: " \
-             "./#{cache_manifest_path}"
-      end
-      puts "=> fetching dependency files"
-      data = yield
-      puts "=> dumping fetched dependency files: ./#{cache_dir}"
-      manifest_data = data.map do |file|
-        {
-          name: file.name,
-          directory: file.directory,
-          symlink_target: file.symlink_target,
-          support_file: file.support_file,
-          type: file.type
-        }
-      end
-      File.write(cache_manifest_path, JSON.pretty_generate(manifest_data))
-      data.map do |file|
-        files_path = File.join(cache_dir, file.name)
-        files_dir = File.dirname(files_path)
-        FileUtils.mkdir_p(files_dir)
-        File.write(files_path, file.content)
-      end
-      data
-    end
-  end
   # rubocop:enable Metrics/PerceivedComplexity
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
 
   def fetch_files(fetcher)
-    if $repo_contents_path
-      puts "=> reading local repo from #{$repo_contents_path}"
-      # Fetch files directly from the local repository
-      fetcher.files
-    else
-      cached_dependency_files_read do
-        fetcher.files
-      end
-    end
+    puts "=> reading local repo from #{$repo_contents_path}"
+    # Fetch files directly from the local repository
+    fetcher.files
   rescue Dependabot::RepoNotFound => e
     puts " => handled error whilst fetching dependencies: RepoNotFound #{e.message}"
     exit 1 # Exit with a non-zero status for repo not found errors
@@ -511,7 +421,7 @@ begin
   end
 
   def parse_dependencies(parser)
-    cached_read("dependencies") { parser.parse }
+    parser.parse
   rescue StandardError => e
     error_details = Dependabot.parser_error_details(e)
     raise unless error_details
