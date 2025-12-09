@@ -1,3 +1,4 @@
+# When updating this file, please consider updating uv/helpers/requirements.txt
 pip==24.2
 pip-tools==7.4.1
 flake8==7.3.0
