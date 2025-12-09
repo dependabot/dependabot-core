@@ -12,6 +12,13 @@ module Dependabot
     module UpdateTypeHelper
       extend T::Sig
 
+      # Represents semantic version components (major, minor, patch)
+      class SemverParts < T::Struct
+        const :major, Integer
+        const :minor, Integer
+        const :patch, Integer
+      end
+
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.class_of(Dependabot::Version))) }
       def version_class_for(dep)
         return nil unless dep.respond_to?(:package_manager)
@@ -51,21 +58,23 @@ module Dependabot
         curr_parts = semver_parts(curr)
         return nil if prev_parts.nil? || curr_parts.nil?
 
-        prev_major, prev_minor, prev_patch = prev_parts
-        curr_major, curr_minor, curr_patch = curr_parts
+        return "major" if curr_parts.major > prev_parts.major
+        return "minor" if curr_parts.major == prev_parts.major && curr_parts.minor > prev_parts.minor
 
-        return "major" if curr_major > prev_major
-        return "minor" if curr_major == prev_major && curr_minor > prev_minor
-        return "patch" if curr_major == prev_major && curr_minor == prev_minor && curr_patch > prev_patch
+        if curr_parts.major == prev_parts.major &&
+           curr_parts.minor == prev_parts.minor &&
+           curr_parts.patch > prev_parts.patch
+          return "patch"
+        end
 
         nil
       end
 
-      sig { params(version: T.untyped).returns(T.nilable([Integer, Integer, Integer])) }
+      sig { params(version: T.untyped).returns(T.nilable(SemverParts)) }
       def semver_parts(version)
         if version.respond_to?(:semver_parts)
           parts = version.semver_parts
-          return parts if parts
+          return SemverParts.new(major: parts[0], minor: parts[1], patch: parts[2]) if parts
         end
 
         return nil unless version.respond_to?(:segments)
@@ -77,7 +86,7 @@ module Dependabot
         minor = segments[1] || 0
         patch = segments[2] || 0
 
-        [major, minor, patch]
+        SemverParts.new(major: major, minor: minor, patch: patch)
       end
     end
   end
