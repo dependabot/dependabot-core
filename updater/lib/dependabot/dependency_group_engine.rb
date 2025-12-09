@@ -146,7 +146,7 @@ module Dependabot
       applies_to = group.applies_to if group.respond_to?(:applies_to)
 
       specificity_calculator.dependency_belongs_to_more_specific_group?(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to: applies_to
+        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
       )
     end
   end
