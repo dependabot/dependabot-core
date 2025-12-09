@@ -1010,7 +1010,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      %w[.js .mjs .cjs .ts .tsx .jsx .json].each do |ext|
+      %w(.js .mjs .cjs .ts .tsx .jsx .json).each do |ext|
         context "with #{ext} file extension" do
           before do
             stub_request(:get, File.join(url, "package.json?ref=sha"))
