@@ -106,11 +106,24 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
+      end
+
+      it "populates release_details for the latest version" do
+        release_info = packagedetailsfetcher.send(:release_details)
+        expect(release_info).to be_a(Hash)
+        expect(release_info).to have_key("2.1.4.RELEASE")
+        expect(release_info["2.1.4.RELEASE"][:release_date]).to eq(Time.utc(2019, 4, 4, 5, 30, 33))
       end
 
       describe "the first version" do
@@ -134,6 +147,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
+          is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
         end
       end
     end
@@ -161,11 +179,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
           "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
+          "org.jetbrains.kotlin.jvm.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
       end
 
       describe "the first version" do
@@ -189,6 +213,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
+          is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
         end
       end
     end
@@ -334,6 +363,70 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
             is_expected.to eq("https://services.gradle.org")
           end
         end
+      end
+    end
+  end
+
+  describe "#parse_gradle_timestamp" do
+    let(:fetcher) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        forbidden_urls: []
+      )
+    end
+
+    subject(:parse_timestamp) { fetcher.send(:parse_gradle_timestamp, timestamp) }
+
+    let(:dependency_requirements) do
+      [{
+        file: "build.gradle",
+        requirement: "1.0.0",
+        groups: ["plugins"],
+        source: nil
+      }]
+    end
+    let(:dependency_name) { "test.plugin" }
+    let(:dependency_version) { "1.0.0" }
+
+    context "with valid timestamp" do
+      let(:timestamp) { "20191201191459" }
+
+      it "parses YYYYMMDDHHmmss format correctly" do
+        expect(parse_timestamp).to eq(Time.utc(2019, 12, 1, 19, 14, 59))
+      end
+    end
+
+    context "with nil timestamp" do
+      let(:timestamp) { nil }
+
+      it "returns nil" do
+        expect(parse_timestamp).to be_nil
+      end
+    end
+
+    context "with empty timestamp" do
+      let(:timestamp) { "" }
+
+      it "returns nil" do
+        expect(parse_timestamp).to be_nil
+      end
+    end
+
+    context "with invalid timestamp format" do
+      let(:timestamp) { "invalid" }
+
+      it "returns nil" do
+        expect(parse_timestamp).to be_nil
+      end
+    end
+
+    context "with non-numeric timestamp" do
+      let(:timestamp) { "abcd1201191459" }
+
+      it "returns nil" do
+        expect(parse_timestamp).to be_nil
       end
     end
   end

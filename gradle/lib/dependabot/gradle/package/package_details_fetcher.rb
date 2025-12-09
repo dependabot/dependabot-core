@@ -104,32 +104,55 @@ module Dependabot
           release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
           begin
-            repositories.map do |repository_details|
+            repositories.each do |repository_details|
               url = repository_details.fetch("url")
-              next unless url == Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
 
-              release_info_metadata(repository_details).css("a[title]").each do |link|
-                version_string = link["title"]
-                version = version_string.gsub(%r{/$}, "")
-                raw_date_text = link.next.text.strip.split("\n").last.strip
+              if url == Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
+                # Parse HTML directory listing for Maven Central
+                release_info_metadata(repository_details).css("a[title]").each do |link|
+                  version_string = link["title"]
+                  version = version_string.gsub(%r{/$}, "")
+                  raw_date_text = link.next.text.strip.split("\n").last.strip
 
-                release_date = begin
-                  Time.parse(raw_date_text)
-                rescue StandardError
-                  nil
+                  release_date = begin
+                    Time.parse(raw_date_text)
+                  rescue StandardError
+                    nil
+                  end
+
+                  next unless version && version_class.correct?(version)
+
+                  release_date_info[version] = {
+                    release_date: release_date
+                  }
                 end
+              elsif url == Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO
+                # Parse maven-metadata.xml for Gradle Plugin Portal
+                metadata_xml = dependency_metadata(repository_details)
 
-                next unless version && version_class.correct?(version)
+                # Get lastUpdated timestamp (format: YYYYMMDDHHmmss)
+                # This timestamp represents when the metadata was last updated, which
+                # typically corresponds to when the latest version was published
+                last_updated = metadata_xml.at_xpath("//metadata/versioning/lastUpdated")&.text&.strip
+                release_date = parse_gradle_timestamp(last_updated)
 
-                release_date_info[version] = {
-                  release_date: release_date
-                }
+                # Get the latest version from the metadata
+                latest_version = metadata_xml.at_xpath("//metadata/versioning/latest")&.text&.strip
+
+                # Only assign the timestamp to the latest version since we don't have
+                # per-version timestamps in the metadata
+                if latest_version && version_class.correct?(latest_version)
+                  release_date_info[latest_version] = {
+                    release_date: release_date
+                  }
+                end
               end
             end
 
             release_date_info
-          rescue StandardError
-            Dependabot.logger.error("Failed to get release date")
+          rescue StandardError => e
+            Dependabot.logger.error("Failed to get release date: #{e.class} - #{e.message}")
+            Dependabot.logger.error(e.backtrace&.join("\n") || "No backtrace available")
             {}
           end
         end
@@ -381,6 +404,16 @@ module Dependabot
             .gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
+        end
+
+        sig { params(timestamp: T.nilable(String)).returns(T.nilable(Time)) }
+        def parse_gradle_timestamp(timestamp)
+          return nil if timestamp.nil? || timestamp.empty?
+
+          # Parse YYYYMMDDHHmmss format
+          Time.strptime(timestamp, "%Y%m%d%H%M%S")
+        rescue ArgumentError
+          nil
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
