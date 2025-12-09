@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -28,10 +28,6 @@ module Dependabot
 
         package_manager = dep.package_manager
         Dependabot::Utils.version_class_for_package_manager(package_manager)
-      rescue RuntimeError => e
-        return nil if e.message.include?("Unregistered package_manager")
-
-        Kernel.raise
       end
 
       sig { params(version_class: T.untyped, prev_str: String, curr_str: String).returns(T.nilable(String)) }
@@ -49,11 +45,7 @@ module Dependabot
         return [nil, nil] unless version_class.respond_to?(:correct?)
         return [nil, nil] unless version_class.correct?(prev_str) && version_class.correct?(curr_str)
 
-        begin
-          [version_class.new(prev_str), version_class.new(curr_str)]
-        rescue StandardError
-          [nil, nil]
-        end
+        [version_class.new(prev_str), version_class.new(curr_str)]
       end
 
       sig do
@@ -76,7 +68,6 @@ module Dependabot
 
       sig { params(version: T.untyped).returns(T.nilable([Integer, Integer, Integer])) }
       def semver_parts(version)
-        # Prefer Dependabot::Version#semver_parts when available
         if version.respond_to?(:semver_parts)
           parts = T.unsafe(version).semver_parts
           return parts if parts
