@@ -222,7 +222,8 @@ option_parse = OptionParser.new do |opts|
   end
 
   opts.on("--dir DIRECTORY", "Dependency file directory") do |value|
-    $options[:directory] = value
+    # Ensure directory starts with "/" for proper path handling
+    $options[:directory] = value.start_with?("/") ? value : "/#{value}"
   end
 
   opts.on("--branch BRANCH", "Repo branch") do |value|
