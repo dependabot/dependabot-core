@@ -32,7 +32,7 @@ module Dependabot
 
         result = version_class.update_type(prev_str, curr_str)
         if result.nil?
-          Dependabot.logger.debug(
+          Dependabot.logger.info(
             "Version class #{version_class} could not determine update type for #{prev_str} -> #{curr_str}"
           )
         end
@@ -64,7 +64,7 @@ module Dependabot
                           curr_parts.minor == prev_parts.minor &&
                           curr_parts.patch > prev_parts.patch
 
-        Dependabot.logger.debug(
+        Dependabot.logger.info(
           "Could not classify semver update: #{prev_parts.major}.#{prev_parts.minor}.#{prev_parts.patch} -> " \
           "#{curr_parts.major}.#{curr_parts.minor}.#{curr_parts.patch}"
         )

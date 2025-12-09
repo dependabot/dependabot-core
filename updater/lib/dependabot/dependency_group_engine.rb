@@ -153,7 +153,7 @@ module Dependabot
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       applies_to = group.applies_to if group.respond_to?(:applies_to)
 
-      Dependabot.logger.debug(
+      Dependabot.logger.info(
         "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
 
@@ -162,7 +162,7 @@ module Dependabot
       )
 
       if belongs_to_more_specific
-        Dependabot.logger.debug(
+        Dependabot.logger.info(
           "Skipping #{dependency.name} for group '#{group.name}' - belongs to more specific group"
         )
       end
