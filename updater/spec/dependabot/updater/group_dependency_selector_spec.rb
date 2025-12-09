@@ -813,7 +813,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
         # The major update of docker-compose stays eligible for generic group
         expect(eligible_deps).to include(docker_prod_major_dep)
-        expect(eligible_deps.select { |d| d.name == "docker-compose" }.count).to eq(1)
+        expect(eligible_deps.count { |d| d.name == "docker-compose" }).to eq(1)
 
         # The minor update of docker-compose is filtered to more specific group
         expect(filtered_deps).to include(docker_prod_minor_dep)
