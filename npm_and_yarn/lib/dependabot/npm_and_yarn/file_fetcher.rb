@@ -372,7 +372,7 @@ module Dependabot
           end
 
           filename = path
-          # NPM/Yarn support loading path dependencies from tarballs or directories:
+          # NPM/Yarn support loading path dependencies from tarballs, directories, or individual files:
           # https://docs.npmjs.com/cli/pack.html
           filename = File.join(filename, MANIFEST_FILENAME) unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
