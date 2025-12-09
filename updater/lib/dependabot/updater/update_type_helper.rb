@@ -60,13 +60,14 @@ module Dependabot
 
         return "major" if curr_parts.major > prev_parts.major
         return "minor" if curr_parts.major == prev_parts.major && curr_parts.minor > prev_parts.minor
+        return "patch" if curr_parts.major == prev_parts.major &&
+                          curr_parts.minor == prev_parts.minor &&
+                          curr_parts.patch > prev_parts.patch
 
-        if curr_parts.major == prev_parts.major &&
-           curr_parts.minor == prev_parts.minor &&
-           curr_parts.patch > prev_parts.patch
-          return "patch"
-        end
-
+        Dependabot.logger.debug(
+          "Could not classify semver update: #{prev_parts.major}.#{prev_parts.minor}.#{prev_parts.patch} -> " \
+          "#{curr_parts.major}.#{curr_parts.minor}.#{curr_parts.patch}"
+        )
         nil
       end
 
