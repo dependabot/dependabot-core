@@ -9,10 +9,11 @@
 # This is a modified version that works with local repositories.
 #
 # Usage:
-#   ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER LOCAL_REPO_PATH
+#   ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER[,PACKAGE_MANAGER...] LOCAL_REPO_PATH
 #
 # Example:
 #   ruby bin/runner.rb go_modules /path/to/local/repo
+#   ruby bin/runner.rb go_modules,npm_and_yarn /path/to/local/repo
 #
 # Package managers:
 # - bazel
@@ -214,7 +215,7 @@ end
 
 # rubocop:disable Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
-  opts.banner = "usage: ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER LOCAL_REPO_PATH"
+  opts.banner = "usage: ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER[,PACKAGE_MANAGER...] LOCAL_REPO_PATH"
 
   opts.on("--provider PROVIDER", "SCM provider e.g. github, azure, bitbucket") do |value|
     $options[:provider] = value
@@ -340,7 +341,7 @@ if ARGV.length < 2
   exit 1
 end
 
-# Validate package manager
+# Validate package managers
 valid_package_managers = %w(
   bazel
   bun
@@ -372,13 +373,19 @@ valid_package_managers = %w(
   uv
   vcpkg
 )
-unless valid_package_managers.include?(ARGV[0])
-  puts "Invalid package manager: #{ARGV[0]}"
-  exit 1
+
+# Parse package managers (comma-separated)
+$package_managers = ARGV[0].split(",").map(&:strip)
+
+# Validate each package manager
+$package_managers.each do |pm|
+  unless valid_package_managers.include?(pm)
+    puts "Invalid package manager: #{pm}"
+    exit 1
+  end
 end
 
-# Get package manager and local repo path
-$package_manager = ARGV[0]
+# Get local repo path
 $local_repo_path = File.expand_path(ARGV[1])
 
 # Validate that the local repo path exists
@@ -393,6 +400,7 @@ repo_dir_name = path_parts[-1]
 $repo_name = "local/#{repo_dir_name}"
 
 puts "=> Running Dependabot on local repository: #{$local_repo_path}"
+puts "=> Processing ecosystems: #{$package_managers.join(', ')}"
 puts "=> Using repo identifier: #{$repo_name}"
 
 # Ensure the script does not exit prematurely
@@ -483,22 +491,33 @@ begin
     Dependabot::Config::File.new(updates: [])
   end
 
-  $update_config = begin
-    config = $config_file.update_config(
-      $package_manager,
-      directory: $options[:directory],
-      target_branch: $options[:branch]
-    )
-    config
-  rescue KeyError
-    raise Dependabot::DependabotError, "Invalid package manager: #{$package_manager}"
-  end
+  # Process each package manager
+  $package_managers.each do |package_manager|
+    $package_manager = package_manager
+    puts "\n" + "=" * 80
+    puts "Processing ecosystem: #{$package_manager}"
+    puts "=" * 80
+
+    $update_config = begin
+      config = $config_file.update_config(
+        $package_manager,
+        directory: $options[:directory],
+        target_branch: $options[:branch]
+      )
+      config
+    rescue KeyError
+      puts "⚠️  Skipping #{$package_manager}: Invalid package manager"
+      next
+    end
 
   fetcher_args = initial_fetcher_args.merge(update_config: $update_config)
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
-  return if $files.empty?
+  if $files.empty?
+    puts "⚠️  No dependency files found for #{$package_manager}, skipping"
+    next
+  end
 
   ecosystem_versions = fetcher.ecosystem_versions
   puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
@@ -757,6 +776,7 @@ begin
     puts " => handled error whilst updating #{dep.name}: #{error_details.fetch(:"error-type")} " \
          "#{error_details.fetch(:"error-detail")}"
   end
+  end # End of package_managers.each loop
 
   StackProf.stop if $options[:profile]
   StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
