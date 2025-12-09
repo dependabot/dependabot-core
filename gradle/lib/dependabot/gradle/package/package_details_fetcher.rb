@@ -154,18 +154,13 @@ module Dependabot
         end
         def parse_gradle_plugin_portal_release(repository_details, release_date_info)
           metadata_xml = dependency_metadata(repository_details)
-          # Get lastUpdated timestamp (format: YYYYMMDDHHmmss). This timestamp represents when the metadata
-          # was last updated, which typically corresponds to when the latest version was published
           last_updated = metadata_xml.at_xpath("//metadata/versioning/lastUpdated")&.text&.strip
           release_date = parse_gradle_timestamp(last_updated)
-          # Get the latest version from the metadata
           latest_version = metadata_xml.at_xpath("//metadata/versioning/latest")&.text&.strip
-          # Only assign the timestamp to the latest version since we don't have per-version timestamps
           return unless latest_version && version_class.correct?(latest_version)
 
-          release_date_info[latest_version] = {
-            release_date: release_date
-          }
+          Dependabot.logger.info("Parsed Gradle Plugin Portal release: #{latest_version} at #{release_date}")
+          release_date_info[latest_version] = { release_date: release_date }
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -422,7 +417,8 @@ module Dependabot
           return nil if timestamp.nil? || timestamp.empty?
 
           Time.strptime(timestamp, "%Y%m%d%H%M%S") # Parse YYYYMMDDHHmmss format
-        rescue ArgumentError
+        rescue ArgumentError => e
+          Dependabot.logger.warn("Failed to parse Gradle timestamp '#{timestamp}': #{e.message}")
           nil
         end
 
