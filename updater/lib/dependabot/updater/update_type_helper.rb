@@ -66,13 +66,13 @@ module Dependabot
       sig { params(version: T.untyped).returns(T.nilable([Integer, Integer, Integer])) }
       def semver_parts(version)
         if version.respond_to?(:semver_parts)
-          parts = T.unsafe(version).semver_parts
+          parts = version.semver_parts
           return parts if parts
         end
 
         return nil unless version.respond_to?(:segments)
 
-        segments = T.unsafe(version).segments
+        segments = version.segments
         return nil unless segments.is_a?(Array)
 
         [segments[0] || 0, segments[1] || 0, segments[2] || 0]
