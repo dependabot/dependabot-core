@@ -1581,10 +1581,10 @@ RSpec.describe Dependabot::GitCommitChecker do
   describe "#tag_is_prerelease?" do
     subject { checker.send(:tag_is_prerelease?, tag) }
 
-    let(:tag) { "v1.2.3" }
+    let(:tag) { Dependabot::GitRef.new(name: "v1.2.3", commit_sha: "abc123") }
 
     context "when tag has prerelease suffix" do
-      let(:tag) { "v1.2.3-beta" }
+      let(:tag) { Dependabot::GitRef.new(name: "v1.2.3-beta", commit_sha: "abc123") }
 
       it { is_expected.to be(true) }
     end
@@ -1685,9 +1685,9 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#github_release_prerelease?" do
-    subject { checker.send(:github_release_prerelease?, tag) }
+    subject { checker.send(:github_release_prerelease?, tag_name) }
 
-    let(:tag) { "v1.2.3" }
+    let(:tag_name) { "v1.2.3" }
 
     context "when dependency is from GitHub and release is marked as prerelease" do
       let(:source) do
@@ -1923,7 +1923,11 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "when Octokit raises an error" do
         before do
-          allow_any_instance_of(Dependabot::Clients::GithubWithRetries)
+          mock_client = double("GithubWithRetries")
+          allow(Dependabot::Clients::GithubWithRetries)
+            .to receive(:for_source)
+            .and_return(mock_client)
+          allow(mock_client)
             .to receive(:releases)
             .and_raise(Octokit::Forbidden.new)
         end
@@ -1944,6 +1948,10 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
+      before do
+        allow(checker).to receive(:listing_source_url).and_return("https://gitlab.com/some/repo")
+      end
+
       it "returns an empty array" do
         expect(checker.send(:github_releases)).to eq([])
       end
@@ -1951,6 +1959,10 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "when dependency has no source" do
       let(:source) { nil }
+
+      before do
+        allow(checker).to receive(:listing_source_url).and_return(nil)
+      end
 
       it "returns an empty array" do
         expect(checker.send(:github_releases)).to eq([])
