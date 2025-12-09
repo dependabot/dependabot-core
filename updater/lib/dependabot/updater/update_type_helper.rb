@@ -12,35 +12,33 @@ module Dependabot
     module UpdateTypeHelper
       extend T::Sig
 
-      sig { params(dep: Dependabot::Dependency).returns([T.nilable(String), T.nilable(String)]) }
-      def version_strings_for(dep)
-        prev = dep.respond_to?(:previous_version) ? dep.previous_version : nil
-        curr = dep.respond_to?(:version) ? dep.version : nil
-        [prev&.to_s, curr&.to_s]
-      end
-
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.class_of(Dependabot::Version))) }
       def version_class_for(dep)
         return nil unless dep.respond_to?(:package_manager)
 
-        package_manager = dep.package_manager
-        Dependabot::Utils.version_class_for_package_manager(package_manager)
+        Dependabot::Utils.version_class_for_package_manager(dep.package_manager)
       end
 
       sig { params(version_class: T.untyped, prev_str: String, curr_str: String).returns(T.nilable(String)) }
       def update_type_from_class(version_class, prev_str, curr_str)
         return unless version_class.respond_to?(:update_type)
 
-        version_class.update_type(prev_str, curr_str)
+        result = version_class.update_type(prev_str, curr_str)
+        if result.nil?
+          Dependabot.logger.debug(
+            "Version class #{version_class} could not determine update type for #{prev_str} -> #{curr_str}"
+          )
+        end
+        result
       end
 
       sig do
         params(version_class: T.untyped, prev_str: String, curr_str: String)
-          .returns([T.nilable(Dependabot::Version), T.nilable(Dependabot::Version)])
+          .returns(T.nilable([Dependabot::Version, Dependabot::Version]))
       end
       def build_versions(version_class, prev_str, curr_str)
-        return [nil, nil] unless version_class.respond_to?(:correct?)
-        return [nil, nil] unless version_class.correct?(prev_str) && version_class.correct?(curr_str)
+        return nil unless version_class.respond_to?(:correct?)
+        return nil unless version_class.correct?(prev_str) && version_class.correct?(curr_str)
 
         [version_class.new(prev_str), version_class.new(curr_str)]
       end
@@ -75,7 +73,11 @@ module Dependabot
         segments = version.segments
         return nil unless segments.is_a?(Array)
 
-        [segments[0] || 0, segments[1] || 0, segments[2] || 0]
+        major = segments[0] || 0
+        minor = segments[1] || 0
+        patch = segments[2] || 0
+
+        [major, minor, patch]
       end
     end
   end

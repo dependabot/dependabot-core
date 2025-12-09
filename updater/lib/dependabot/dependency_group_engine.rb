@@ -39,13 +39,21 @@ module Dependabot
       end
 
       # Filter out version updates when doing security updates and visa versa
-      groups = if job.security_updates_only?
-                 groups.select { |group| group.applies_to == "security-updates" }
-               else
-                 groups.select { |group| group.applies_to == "version-updates" }
-               end
+      filtered_groups = if job.security_updates_only?
+                          groups.select { |group| group.applies_to == "security-updates" }
+                        else
+                          groups.select { |group| group.applies_to == "version-updates" }
+                        end
 
-      new(dependency_groups: groups)
+      if filtered_groups.count != groups.count
+        filtered_count = groups.count - filtered_groups.count
+        update_type = job.security_updates_only? ? "security" : "version"
+        Dependabot.logger.info(
+          "Filtered #{filtered_count} group(s) not applicable to #{update_type} updates"
+        )
+      end
+
+      new(dependency_groups: filtered_groups)
     end
 
     sig { params(job: Dependabot::Job).void }
