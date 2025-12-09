@@ -364,8 +364,15 @@ module Dependabot
           path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
           raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
 
+          # Skip path dependencies that point to individual files (not packages)
+          # NPM supports file:./path/to/file.js but Dependabot doesn't need these for dependency analysis
+          if path.match?(/\.(js|mjs|cjs|ts|tsx|jsx|json)$/i)
+            Dependabot.logger.info("Skipping file-based path dependency '#{name}' at '#{path}'")
+            next
+          end
+
           filename = path
-          # NPM/Yarn support loading path dependencies from tarballs:
+          # NPM/Yarn support loading path dependencies from tarballs or directories:
           # https://docs.npmjs.com/cli/pack.html
           filename = File.join(filename, MANIFEST_FILENAME) unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path

@@ -971,6 +971,77 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
     end
+
+    context "when path points to a JavaScript file" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture_to_response("projects/npm8/path_dependency_file", "package.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture_to_response("projects/npm8/path_dependency_file", "package-lock.json"),
+            headers: json_header
+          )
+      end
+
+      it "skips the file-based path dependency and fetches only package files" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(package.json package-lock.json))
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("lib/foo.js")
+      end
+    end
+
+    context "when path points to various file types" do
+      before do
+        stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_lock_content.json"),
+            headers: json_header
+          )
+      end
+
+      %w[.js .mjs .cjs .ts .tsx .jsx .json].each do |ext|
+        context "with #{ext} file extension" do
+          before do
+            stub_request(:get, File.join(url, "package.json?ref=sha"))
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: JSON.dump(
+                  "content" => Base64.encode64(
+                    JSON.dump(
+                      {
+                        "name" => "test",
+                        "version" => "1.0.0",
+                        "devDependencies" => {
+                          "foo" => "file:./lib/foo#{ext}"
+                        }
+                      }
+                    )
+                  )
+                ),
+                headers: json_header
+              )
+          end
+
+          it "skips the file-based path dependency" do
+            expect(file_fetcher_instance.files.count).to eq(2)
+            expect(file_fetcher_instance.files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
+          end
+        end
+      end
+    end
   end
 
   context "with a path dependency in a yarn resolution" do
