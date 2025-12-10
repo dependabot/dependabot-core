@@ -157,17 +157,19 @@ module Dependabot
         "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
 
-      belongs_to_more_specific = specificity_calculator.dependency_belongs_to_more_specific_group?(
+      more_specific_group_name = specificity_calculator.find_most_specific_group_name(
         group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
       )
 
-      if belongs_to_more_specific
+      if more_specific_group_name
         Dependabot.logger.info(
-          "Skipping #{dependency.name} for group '#{group.name}' - belongs to more specific group"
+          "Skipping #{dependency.name} for group '#{group.name}' - " \
+          "belongs to more specific group '#{more_specific_group_name}'"
         )
+        return true
       end
 
-      belongs_to_more_specific
+      false
     end
   end
 end
