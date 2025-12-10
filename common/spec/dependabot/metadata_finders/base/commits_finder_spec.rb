@@ -844,6 +844,32 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
       it { is_expected.to be_nil }
     end
+
+    context "when no tags satisfy the previous requirements" do
+      let(:dependency_name) { "test-package" }
+      let(:dependency_version) { "2.0.0" }
+      let(:dependency_previous_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "package.json", requirement: "^2.0.0", groups: [], source: nil }]
+      end
+      let(:dependency_previous_requirements) do
+        [{ file: "package.json", requirement: "^1.0.0", groups: [], source: nil }]
+      end
+
+      before do
+        allow(builder)
+          .to receive_messages(
+            fetch_dependency_tags: %w(v3.0.0 v2.5.0 v2.1.0),
+            reliable_source_directory?: false
+          )
+      end
+
+      it "returns a fallback URL without crashing" do
+        expect(commits_url).to eq(
+          "https://github.com/gocardless/business/commits/v2.1.0"
+        )
+      end
+    end
   end
 
   describe "#commits" do
