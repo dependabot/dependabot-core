@@ -204,8 +204,21 @@ module Dependabot
       sig { params(version: String).returns(T::Array[Integer]) }
       def version_sort_key(version)
         cleaned = version.gsub(/^v/, "")
-        parts = cleaned.split(".")
-        parts.map { |part| part.match?(/^\d+$/) ? part.to_i : 0 }
+
+        # Handle pre-release versions (e.g., "1.7.0-rc4", "1.2.3-alpha1")
+        if cleaned.match?(/-/)
+          base_version, _pre_release = cleaned.split("-", 2)
+          base_parts = T.must(base_version).split(".").map { |part| part.match?(/^\d+$/) ? part.to_i : 0 }
+
+          # Pre-release versions should sort before their stable counterparts
+          # Use -1 as a marker for pre-release, making them sort before stable (0)
+          base_parts + [-1]
+        else
+          # Stable versions get 0 as the pre-release marker, making them sort after pre-releases
+          parts = cleaned.split(".")
+          numeric_parts = parts.map { |part| part.match?(/^\d+$/) ? part.to_i : 0 }
+          numeric_parts + [0]
+        end
       end
     end
   end

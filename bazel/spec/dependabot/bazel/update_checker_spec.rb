@@ -897,9 +897,9 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         sort_key_one_two_zero = checker.send(:version_sort_key, "1.2.0")
         sort_key_one_ten_zero = checker.send(:version_sort_key, "1.10.0")
 
-        expect(sort_key_one_zero_zero).to eq([1, 0, 0])
-        expect(sort_key_one_two_zero).to eq([1, 2, 0])
-        expect(sort_key_one_ten_zero).to eq([1, 10, 0])
+        expect(sort_key_one_zero_zero).to eq([1, 0, 0, 0])
+        expect(sort_key_one_two_zero).to eq([1, 2, 0, 0])
+        expect(sort_key_one_ten_zero).to eq([1, 10, 0, 0])
 
         # Verify correct ordering
         expect(sort_key_one_zero_zero <=> sort_key_one_two_zero).to eq(-1)
@@ -908,12 +908,32 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
       it "handles version prefixes" do
         sort_key = checker.send(:version_sort_key, "v1.2.3")
-        expect(sort_key).to eq([1, 2, 3])
+        expect(sort_key).to eq([1, 2, 3, 0])
       end
 
       it "handles non-numeric version parts" do
         sort_key = checker.send(:version_sort_key, "1.2.beta")
-        expect(sort_key).to eq([1, 2, 0])
+        expect(sort_key).to eq([1, 2, 0, 0])
+      end
+
+      it "handles pre-release versions correctly" do
+        stable_key = checker.send(:version_sort_key, "1.7.0")
+        rc_key = checker.send(:version_sort_key, "1.7.0-rc4")
+        alpha_key = checker.send(:version_sort_key, "1.7.0-alpha1")
+
+        # Stable versions should have 0 as pre-release marker
+        expect(stable_key).to eq([1, 7, 0, 0])
+        
+        # Pre-release versions should have -1 as pre-release marker
+        expect(rc_key).to eq([1, 7, 0, -1])
+        expect(alpha_key).to eq([1, 7, 0, -1])
+
+        # Stable versions should sort after (be greater than) pre-release versions
+        expect(stable_key <=> rc_key).to eq(1)
+        expect(stable_key <=> alpha_key).to eq(1)
+        
+        # Pre-release versions should be equal in sort order (both have -1)
+        expect(rc_key <=> alpha_key).to eq(0)
       end
     end
   end
