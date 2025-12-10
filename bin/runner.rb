@@ -102,6 +102,9 @@
 #   --check-only                     Check for outdated dependencies without writing
 #                                    updates to files. Prints list of outdated deps.
 #
+#   --adms                           Enable ADMS grouping: groups dependencies by
+#                                    update type (adms_major vs adms_minor_patch)
+#
 # ────────────────────────────────────────────────────────────────────────────
 # Supported Package Managers:
 # ────────────────────────────────────────────────────────────────────────────
@@ -193,6 +196,7 @@ require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
+require "dependabot/dependency_group"
 require "dependabot/simple_instrumentor"
 
 require "dependabot/bazel"
@@ -246,6 +250,7 @@ $options = {
   ignore_conditions: [],
   pull_request: false,
   check_only: false,
+  adms: false,
   cooldown: nil
 }
 
@@ -411,6 +416,30 @@ option_parse = OptionParser.new do |opts|
     $options[:check_only] = true
   end
 
+  opts.on(
+    "--format FORMAT",
+    "Output format for check-only mode: text (default) or json"
+  ) do |value|
+    unless %w[text json].include?(value)
+      raise OptionParser::InvalidArgument, "Invalid format: #{value}. Must be 'text' or 'json'"
+    end
+    $options[:format] = value
+  end
+
+  opts.on(
+    "--quiet",
+    "Suppress verbose error stack traces"
+  ) do
+    $options[:quiet] = true
+  end
+
+  opts.on(
+    "--adms",
+    "Enable ADMS grouping: groups dependencies by update type (major vs minor/patch)"
+  ) do
+    $options[:adms] = true
+  end
+
   opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
     Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
@@ -434,6 +463,11 @@ end
 
 # Parse options before validating arguments
 option_parse.parse!
+
+# Configure logger based on --quiet flag
+if $options[:quiet]
+  Dependabot.logger.level = Logger::FATAL
+end
 
 # Ensure valid arguments are provided
 if ARGV.length < 2
@@ -499,9 +533,14 @@ path_parts = $local_repo_path.split("/").reject(&:empty?)
 repo_dir_name = path_parts[-1]
 $repo_name = "local/#{repo_dir_name}"
 
-puts "=> Running Dependabot on local repository: #{$local_repo_path}"
-puts "=> Processing ecosystems: #{$package_managers.join(', ')}"
-puts "=> Using repo identifier: #{$repo_name}"
+# Helper method to print progress logs (suppressed with --quiet)
+def log_progress(message)
+  puts message unless $options[:quiet]
+end
+
+log_progress("=> Running Dependabot on local repository: #{$local_repo_path}")
+log_progress("=> Processing ecosystems: #{$package_managers.join(', ')}")
+log_progress("=> Using repo identifier: #{$repo_name}")
 
 # Ensure the script does not exit prematurely
 begin
@@ -512,7 +551,7 @@ begin
   # rubocop:enable Metrics/AbcSize
 
   def fetch_files(fetcher)
-    puts "=> reading local repo from #{$repo_contents_path}"
+    log_progress("=> reading local repo from #{$repo_contents_path}")
     # Fetch files directly from the local repository
     fetcher.files
   rescue Dependabot::RepoNotFound => e
@@ -591,12 +630,75 @@ begin
     Dependabot::Config::File.new(updates: [])
   end
 
+  # Parse groups from dependabot.yml and handle --adms flag
+  $dependency_groups = []
+
+  # Parse groups from dependabot.yml for this package manager/directory
+  dependabot_yml_path = File.join($local_repo_path, ".github", "dependabot.yml")
+  if File.exist?(dependabot_yml_path)
+    begin
+      config_yaml = YAML.load_file(dependabot_yml_path)
+      updates = config_yaml["updates"] || []
+
+      $package_managers.each do |pm|
+        package_ecosystem = Dependabot::Config::File::REVERSE_PACKAGE_MANAGER_LOOKUP.fetch(pm, pm)
+
+        update_config = updates.find do |u|
+          u["package-ecosystem"] == package_ecosystem && u["directory"] == $options[:directory]
+        end
+
+        if update_config && update_config["groups"]
+          update_config["groups"].each do |group_name, group_config|
+            $dependency_groups << {
+              "name" => group_name,
+              "rules" => group_config
+            }
+          end
+        end
+      end
+    rescue StandardError => e
+      puts "Warning: Could not parse groups from dependabot.yml: #{e.message}"
+    end
+  end
+
+  # Add ADMS groups if flag is set
+  if $options[:adms]
+    log_progress("✓ ADMS mode enabled: dependencies will be grouped by update type (adms_major, adms_minor_patch)")
+
+    $dependency_groups += [
+      {
+        "name" => "adms_minor_patch",
+        "rules" => {
+          "patterns" => ["*"],
+          "update-types" => ["minor", "patch"]
+        }
+      },
+      {
+        "name" => "adms_major",
+        "rules" => {
+          "patterns" => ["*"],
+          "update-types" => ["major"]
+        }
+      }
+    ]
+  end
+
+  # Create DependencyGroup objects
+  if $dependency_groups.any?
+    log_progress("📦 Using #{$dependency_groups.count} dependency groups: #{$dependency_groups.map { |g| g['name'] }.join(', ')}")
+    $dependency_group_objects = $dependency_groups.map do |group|
+      Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"] || {})
+    end
+  else
+    $dependency_group_objects = []
+  end
+
   # Process each package manager
   $package_managers.each do |package_manager|
     $package_manager = package_manager
-    puts "\n" + "=" * 80
-    puts "Processing ecosystem: #{$package_manager}"
-    puts "=" * 80
+    log_progress("\n" + "=" * 80)
+    log_progress("Processing ecosystem: #{$package_manager}")
+    log_progress("=" * 80)
 
     $update_config = begin
       config = $config_file.update_config(
@@ -620,10 +722,10 @@ begin
   end
 
   ecosystem_versions = fetcher.ecosystem_versions
-  puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
+  log_progress("🎈 Ecosystem Versions log: #{ecosystem_versions}") unless ecosystem_versions.nil?
 
   # Parse the dependency files
-  puts "=> parsing dependency files"
+  log_progress("=> parsing dependency files")
   parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,
@@ -733,7 +835,7 @@ begin
     end
   end
 
-  puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
+  log_progress("=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}")
 
   # Track outdated dependencies for --check-only mode
   $outdated_dependencies = []
@@ -745,33 +847,33 @@ begin
     checker = update_checker_for(dep)
     name_version = "\n=== #{dep.name} (#{dep.version})"
     vulnerable = checker.vulnerable? ? " (vulnerable 🚨)" : ""
-    puts name_version + vulnerable
+    log_progress(name_version + vulnerable)
 
-    puts " => checking for updates #{checker_count}/#{dependencies.count}"
-    puts " => latest available version is #{checker.latest_version}"
+    log_progress(" => checking for updates #{checker_count}/#{dependencies.count}")
+    log_progress(" => latest available version is #{checker.latest_version}")
 
     if $options[:security_updates_only] && !checker.vulnerable?
       if checker.version_class.correct?(checker.dependency.version)
-        puts "    (no security update needed as it's not vulnerable)"
+        log_progress("    (no security update needed as it's not vulnerable)")
       else
-        puts "    (can't update vulnerable dependencies for " \
+        log_progress("    (can't update vulnerable dependencies for " \
              "projects without a lockfile as the currently " \
-             "installed version isn't known 🚨)"
+             "installed version isn't known 🚨)")
       end
       next
     end
 
     if checker.vulnerable?
       if checker.lowest_security_fix_version
-        puts " => earliest available non-vulnerable version is " \
-             "#{checker.lowest_security_fix_version}"
+        log_progress(" => earliest available non-vulnerable version is " \
+             "#{checker.lowest_security_fix_version}")
       else
-        puts " => there is no available non-vulnerable version"
+        log_progress(" => there is no available non-vulnerable version")
       end
     end
 
     if checker.up_to_date?
-      puts "    (no update needed as it's already up-to-date)"
+      log_progress("    (no update needed as it's already up-to-date)")
       next
     end
 
@@ -780,7 +882,7 @@ begin
                              else
                                checker.latest_resolvable_version
                              end
-    puts " => latest allowed version is #{latest_allowed_version || dep.version}"
+    log_progress(" => latest allowed version is #{latest_allowed_version || dep.version}")
 
     requirements_to_unlock =
       if !checker.requirements_unlocked_or_can_be?
@@ -794,18 +896,18 @@ begin
         :update_not_possible
       end
 
-    puts " => requirements to unlock: #{requirements_to_unlock}"
+    log_progress(" => requirements to unlock: #{requirements_to_unlock}")
 
     if checker.respond_to?(:requirements_update_strategy)
-      puts " => requirements update strategy: " \
-           "#{checker.requirements_update_strategy}"
+      log_progress(" => requirements update strategy: " \
+           "#{checker.requirements_update_strategy}")
     end
 
     if requirements_to_unlock == :update_not_possible
       if checker.vulnerable? || $options[:security_updates_only]
-        puts "    (no security update possible 🙅‍♀️)"
+        log_progress("    (no security update possible 🙅‍♀️)")
       else
-        puts "    (no update possible 🙅‍♀️)"
+        log_progress("    (no update possible 🙅‍♀️)")
       end
 
       log_conflicting_dependencies(checker.conflicting_dependencies)
@@ -817,13 +919,13 @@ begin
     )
 
     if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
-      puts "    (no update possible, peer dependency can be updated)"
+      log_progress("    (no update possible, peer dependency can be updated)")
       next
     end
 
     if $options[:security_updates_only] &&
        updated_deps.none? { |d| security_fix?(d) }
-      puts "    (updated version is still vulnerable 🚨)"
+      log_progress("    (updated version is still vulnerable 🚨)")
       log_conflicting_dependencies(checker.conflicting_dependencies)
       next
     end
@@ -850,37 +952,57 @@ begin
       github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
     ).message
 
-    puts " => #{msg.pr_name.downcase}"
+    log_progress(" => #{msg.pr_name.downcase}")
 
     # Track outdated dependency for --check-only mode
     if $options[:check_only]
+      # Determine update type (major, minor, patch) for grouping
+      update_type = begin
+        current_v = Gem::Version.new(dep.version)
+        latest_v = Gem::Version.new(latest_allowed_version)
+        current_parts = current_v.segments
+        latest_parts = latest_v.segments
+
+        if current_parts[0] != latest_parts[0]
+          "major"
+        elsif current_parts[1] != latest_parts[1]
+          "minor"
+        else
+          "patch"
+        end
+      rescue StandardError
+        nil  # If version parsing fails, don't categorize
+      end
+
       $outdated_dependencies << {
         name: dep.name,
         current_version: dep.version,
         latest_version: latest_allowed_version,
-        ecosystem: $package_manager
+        ecosystem: $package_manager,
+        dependency: dep,  # Store full dependency object for grouping
+        update_type: update_type  # Store update type for update-types filtering
       }
-      puts "    (skipping file write in check-only mode)"
+      log_progress("    (skipping file write in check-only mode)")
     else
       # Write updated files to the local repository
       updated_files.each do |updated_file|
         file_path = File.join($local_repo_path, $options[:directory], updated_file.name)
-        puts " => writing updated file: #{file_path}"
+        log_progress(" => writing updated file: #{file_path}")
         dirname = File.dirname(file_path)
         FileUtils.mkdir_p(dirname)
         if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
           FileUtils.rm_f(file_path)
-          puts "    deleted #{updated_file.name}"
+          log_progress("    deleted #{updated_file.name}")
         else
           File.write(file_path, updated_file.decoded_content)
-          puts "    updated #{updated_file.name}"
+          log_progress("    updated #{updated_file.name}")
         end
       end
 
       if $options[:pull_request]
-        puts "Pull Request Title: #{msg.pr_name}"
-        puts "--description--\n#{msg.pr_message}\n--/description--"
-        puts "--commit--\n#{msg.commit_message}\n--/commit--"
+        log_progress("Pull Request Title: #{msg.pr_name}")
+        log_progress("--description--\n#{msg.pr_message}\n--/description--")
+        log_progress("--commit--\n#{msg.commit_message}\n--/commit--")
       end
     end
   rescue StandardError => e
@@ -895,22 +1017,135 @@ begin
   StackProf.stop if $options[:profile]
   StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
-  puts "🌍 Total requests made: '#{$network_trace_count}'"
+  log_progress("🌍 Total requests made: '#{$network_trace_count}'")
 
-  # Print check-only mode summary
+  # Print check-only mode summary with grouping
   if $options[:check_only]
-    puts "\n" + "=" * 80
-    if $outdated_dependencies&.any?
-      puts "📋 Check-only mode summary:"
-      puts "   Found #{$outdated_dependencies.count} outdated dependencies"
-      puts "=" * 80
-      puts "\nOutdated dependencies:"
-      $outdated_dependencies.each do |dep|
-        puts "  #{dep[:name]}"
+    # Organize dependencies into groups if groups are defined
+    grouped_deps = {}
+    ungrouped_deps = []
+
+    if $outdated_dependencies&.any? && $dependency_group_objects.any?
+      $outdated_dependencies.each do |dep_info|
+        dep = dep_info[:dependency]
+        dep_update_type = dep_info[:update_type]
+        matched_groups = []
+
+        $dependency_group_objects.each do |group|
+          # Check if dependency matches the group's pattern
+          if group.contains?(dep)
+            # Additionally check if update-types filter matches (if specified)
+            group_update_types = group.rules["update-types"]
+            if group_update_types.nil? || group_update_types.empty? || dep_update_type.nil? ||
+               group_update_types.include?(dep_update_type)
+              grouped_deps[group.name] ||= []
+              grouped_deps[group.name] << dep_info
+              matched_groups << group.name
+            end
+          end
+        end
+
+        ungrouped_deps << dep_info if matched_groups.empty?
       end
+    end
+
+    # Output in JSON or text format
+    if $options[:format] == "json"
+      # JSON output
+      output = {
+        outdated_count: $outdated_dependencies&.count || 0,
+        groups: []
+      }
+
+      if $outdated_dependencies&.any?
+        if $dependency_group_objects.any?
+          # Add grouped dependencies
+          grouped_deps.each do |group_name, deps|
+            output[:groups] << {
+              name: group_name,
+              count: deps.count,
+              dependencies: deps.map do |dep|
+                {
+                  name: dep[:name],
+                  current_version: dep[:current_version],
+                  latest_version: dep[:latest_version],
+                  ecosystem: dep[:ecosystem],
+                  update_type: dep[:update_type]
+                }
+              end
+            }
+          end
+
+          # Add ungrouped dependencies if any
+          if ungrouped_deps.any?
+            output[:groups] << {
+              name: "ungrouped",
+              count: ungrouped_deps.count,
+              dependencies: ungrouped_deps.map do |dep|
+                {
+                  name: dep[:name],
+                  current_version: dep[:current_version],
+                  latest_version: dep[:latest_version],
+                  ecosystem: dep[:ecosystem],
+                  update_type: dep[:update_type]
+                }
+              end
+            }
+          end
+        else
+          # No grouping, add all dependencies as a single group
+          output[:groups] << {
+            name: "all",
+            count: $outdated_dependencies.count,
+            dependencies: $outdated_dependencies.map do |dep|
+              {
+                name: dep[:name],
+                current_version: dep[:current_version],
+                latest_version: dep[:latest_version],
+                ecosystem: dep[:ecosystem],
+                update_type: dep[:update_type]
+              }
+            end
+          }
+        end
+      end
+
+      puts JSON.pretty_generate(output)
     else
-      puts "✅ All dependencies are up-to-date!"
-      puts "=" * 80
+      # Text output (default)
+      puts "\n" + "=" * 80
+      if $outdated_dependencies&.any?
+        puts "📋 Check-only mode summary:"
+        puts "   Found #{$outdated_dependencies.count} outdated dependencies"
+        puts "=" * 80
+
+        if $dependency_group_objects.any?
+          # Display groups
+          grouped_deps.each do |group_name, deps|
+            puts "\n📦 Group: #{group_name} (#{deps.count} dependencies)"
+            deps.each do |dep|
+              puts "  #{dep[:name]}"
+            end
+          end
+
+          # Display ungrouped dependencies
+          if ungrouped_deps.any?
+            puts "\n📋 Ungrouped dependencies (#{ungrouped_deps.count})"
+            ungrouped_deps.each do |dep|
+              puts "  #{dep[:name]}"
+            end
+          end
+        else
+          # No groups defined, just list all dependencies
+          puts "\nOutdated dependencies:"
+          $outdated_dependencies.each do |dep|
+            puts "  #{dep[:name]}"
+          end
+        end
+      else
+        puts "✅ All dependencies are up-to-date!"
+        puts "=" * 80
+      end
     end
   end
 
@@ -923,5 +1158,4 @@ rescue StandardError => e
 end
 
 # Ensure the script exits successfully if no errors occur
-puts "Dry-run completed successfully."
 exit 0
