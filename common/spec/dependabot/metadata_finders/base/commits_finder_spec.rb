@@ -99,6 +99,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             "compare/v1.3.0...v1.4.0"
           )
         end
+
+        context "when no tags satisfy the previous requirements" do
+          let(:dependency_previous_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "~> 99.0.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "falls back to commits URL without a previous tag" do
+            expect(commits_url)
+              .to eq("https://github.com/gocardless/business/commits/v1.4.0")
+          end
+        end
       end
     end
 
