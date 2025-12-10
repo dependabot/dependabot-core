@@ -99,6 +99,9 @@
 #
 #   --pull-request                   Output pull request metadata (title, description)
 #
+#   --check-only                     Check for outdated dependencies without writing
+#                                    updates to files. Prints list of outdated deps.
+#
 # ────────────────────────────────────────────────────────────────────────────
 # Supported Package Managers:
 # ────────────────────────────────────────────────────────────────────────────
@@ -242,6 +245,7 @@ $options = {
   vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false,
+  check_only: false,
   cooldown: nil
 }
 
@@ -398,6 +402,13 @@ option_parse = OptionParser.new do |opts|
     "Output pull request information metadata: title, description"
   ) do
     $options[:pull_request] = true
+  end
+
+  opts.on(
+    "--check-only",
+    "Check for outdated dependencies without writing updates to files"
+  ) do
+    $options[:check_only] = true
   end
 
   opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
@@ -724,6 +735,9 @@ begin
 
   puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
 
+  # Track outdated dependencies for --check-only mode
+  $outdated_dependencies = []
+
   # rubocop:disable Metrics/BlockLength
   checker_count = 0
   dependencies.each do |dep|
@@ -838,25 +852,36 @@ begin
 
     puts " => #{msg.pr_name.downcase}"
 
-    # Always write updated files to the local repository
-    updated_files.each do |updated_file|
-      file_path = File.join($local_repo_path, $options[:directory], updated_file.name)
-      puts " => writing updated file: #{file_path}"
-      dirname = File.dirname(file_path)
-      FileUtils.mkdir_p(dirname)
-      if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-        FileUtils.rm_f(file_path)
-        puts "    deleted #{updated_file.name}"
-      else
-        File.write(file_path, updated_file.decoded_content)
-        puts "    updated #{updated_file.name}"
+    # Track outdated dependency for --check-only mode
+    if $options[:check_only]
+      $outdated_dependencies << {
+        name: dep.name,
+        current_version: dep.version,
+        latest_version: latest_allowed_version,
+        ecosystem: $package_manager
+      }
+      puts "    (skipping file write in check-only mode)"
+    else
+      # Write updated files to the local repository
+      updated_files.each do |updated_file|
+        file_path = File.join($local_repo_path, $options[:directory], updated_file.name)
+        puts " => writing updated file: #{file_path}"
+        dirname = File.dirname(file_path)
+        FileUtils.mkdir_p(dirname)
+        if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
+          FileUtils.rm_f(file_path)
+          puts "    deleted #{updated_file.name}"
+        else
+          File.write(file_path, updated_file.decoded_content)
+          puts "    updated #{updated_file.name}"
+        end
       end
-    end
 
-    if $options[:pull_request]
-      puts "Pull Request Title: #{msg.pr_name}"
-      puts "--description--\n#{msg.pr_message}\n--/description--"
-      puts "--commit--\n#{msg.commit_message}\n--/commit--"
+      if $options[:pull_request]
+        puts "Pull Request Title: #{msg.pr_name}"
+        puts "--description--\n#{msg.pr_message}\n--/description--"
+        puts "--commit--\n#{msg.commit_message}\n--/commit--"
+      end
     end
   rescue StandardError => e
     error_details = Dependabot.updater_error_details(e)
@@ -871,6 +896,23 @@ begin
   StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
   puts "🌍 Total requests made: '#{$network_trace_count}'"
+
+  # Print check-only mode summary
+  if $options[:check_only]
+    puts "\n" + "=" * 80
+    if $outdated_dependencies&.any?
+      puts "📋 Check-only mode summary:"
+      puts "   Found #{$outdated_dependencies.count} outdated dependencies"
+      puts "=" * 80
+      puts "\nOutdated dependencies:"
+      $outdated_dependencies.each do |dep|
+        puts "  #{dep[:name]}"
+      end
+    else
+      puts "✅ All dependencies are up-to-date!"
+      puts "=" * 80
+    end
+  end
 
   # rubocop:enable Metrics/BlockLength
 
