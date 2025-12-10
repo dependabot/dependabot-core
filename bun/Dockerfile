@@ -5,7 +5,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COREPACK_VERSION=0.33.0
 
 # Check for updates at https://github.com/oven-sh/bun/releases
-ARG BUN_VERSION=1.3.3
+ARG BUN_VERSION=1.3.5
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=20
