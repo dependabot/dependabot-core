@@ -2,18 +2,106 @@
 # typed: true
 # frozen_string_literal: true
 
-# This script executes a full update run for a local repository (optionally for a
-# specific dependency only), and shows the proposed changes to any dependency
-# files without actually creating a pull request.
+# ============================================================================
+# RUNNER SCRIPT - Local Repository Dependency Updates
+# ============================================================================
 #
-# This is a modified version that works with local repositories.
+# This script executes a full dependency update run for a LOCAL repository and
+# writes the proposed changes directly to your local dependency files (go.mod,
+# package.json, Gemfile, etc.) without creating a pull request.
 #
+# ────────────────────────────────────────────────────────────────────────────
+# Key Difference from bin/dry-run.rb:
+# ────────────────────────────────────────────────────────────────────────────
+#
+# bin/dry-run.rb:
+#   - Works with REMOTE GitHub repositories (requires GitHub access token)
+#   - Fetches files from GitHub API
+#   - Must run inside a dev container (bin/docker-dev-shell)
+#   - Does NOT modify local files
+#   - Usage: ruby bin/dry-run.rb PACKAGE_MANAGER GITHUB_REPO
+#   - Example: ruby bin/dry-run.rb go_modules octocat/Hello-World
+#
+# bin/runner.rb (this script):
+#   - Works with LOCAL filesystem repositories (no GitHub token needed)
+#   - Reads files directly from your local path
+#   - Runs standalone on your machine (no container required)
+#   - WRITES updates directly to local dependency files
+#   - Usage: ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER LOCAL_REPO_ROOT_PATH
+#   - Example: ruby bin/runner.rb go_modules /Users/you/my-project
+#
+# ────────────────────────────────────────────────────────────────────────────
+# Prerequisites:
+# ────────────────────────────────────────────────────────────────────────────
+#
+# 1. Install Ruby dependencies:
+#    cd /path/to/dependabot-core
+#    bundle install               # Install root Gemfile dependencies
+#    cd updater && bundle install # Install updater Gemfile dependencies
+#
+# 2. Ensure required language runtimes are installed for your ecosystem:
+#    - go_modules: Go 1.21+ (install via: brew install go)
+#    - npm_and_yarn: Node.js (install via: brew install node)
+#    - bundler: Ruby (usually pre-installed on macOS)
+#    - pip/python: Python (install via: brew install python)
+#    - cargo: Rust (install via: brew install rust)
+#    - etc.
+#
+# ────────────────────────────────────────────────────────────────────────────
 # Usage:
-#   ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER[,PACKAGE_MANAGER...] LOCAL_REPO_PATH
+# ────────────────────────────────────────────────────────────────────────────
 #
-# Example:
-#   ruby bin/runner.rb go_modules /path/to/local/repo
-#   ruby bin/runner.rb go_modules,npm_and_yarn /path/to/local/repo
+#   ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER[,PACKAGE_MANAGER...] LOCAL_REPO_ROOT_PATH
+#
+# ────────────────────────────────────────────────────────────────────────────
+# Examples:
+# ────────────────────────────────────────────────────────────────────────────
+#
+# Basic usage (updates all dependencies):
+#   ruby bin/runner.rb go_modules /Users/you/my-go-project
+#
+# Multiple ecosystems:
+#   ruby bin/runner.rb go_modules,npm_and_yarn /Users/you/my-fullstack-app
+#
+# Subdirectory (if dependency files are not in repo root):
+#   ruby bin/runner.rb --dir /backend go_modules /Users/you/my-monorepo
+#   ruby bin/runner.rb --dir backend go_modules /Users/you/my-monorepo  # auto-adds leading /
+#
+# Update specific dependencies only:
+#   ruby bin/runner.rb --dep github.com/aws/aws-sdk-go-v2 go_modules /Users/you/my-project
+#
+# Update strategy (how to update version requirements):
+#   ruby bin/runner.rb --requirements-update-strategy bump_versions go_modules /path
+#
+# ────────────────────────────────────────────────────────────────────────────
+# Common Options:
+# ────────────────────────────────────────────────────────────────────────────
+#
+#   --dir DIRECTORY                  Subdirectory path (relative to repo root)
+#                                    Auto-prepends "/" if missing
+#                                    Example: --dir backend  OR  --dir /backend
+#
+#   --dep DEPENDENCIES               Comma-separated list of specific dependencies
+#                                    Example: --dep react,lodash
+#
+#   --requirements-update-strategy   How to update version requirements:
+#                                    - auto (default): Let Dependabot decide
+#                                    - lockfile_only: Only update lockfile
+#                                    - widen_ranges: Widen version ranges if needed
+#                                    - bump_versions: Always bump to new version
+#                                    - bump_versions_if_necessary: Bump only if needed
+#
+#   --security-updates-only          Only update vulnerable dependencies
+#
+#   --vendor-dependencies            Vendor dependencies (e.g., for Go modules)
+#
+#   --branch BRANCH                  Specify branch (defaults to repo's current branch)
+#
+#   --pull-request                   Output pull request metadata (title, description)
+#
+# ────────────────────────────────────────────────────────────────────────────
+# Supported Package Managers:
+# ────────────────────────────────────────────────────────────────────────────
 #
 # Package managers:
 # - bazel
@@ -215,7 +303,7 @@ end
 
 # rubocop:disable Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
-  opts.banner = "usage: ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER[,PACKAGE_MANAGER...] LOCAL_REPO_PATH"
+  opts.banner = "usage: ruby bin/runner.rb [OPTIONS] PACKAGE_MANAGER[,PACKAGE_MANAGER...] LOCAL_REPO_ROOT_PATH"
 
   opts.on("--provider PROVIDER", "SCM provider e.g. github, azure, bitbucket") do |value|
     $options[:provider] = value
