@@ -89,6 +89,13 @@ module Dependabot
           rels[match[:parent]] ||= []
           rels[match[:parent]] << match[:child]
         end
+      rescue Dependabot::DependencyFileNotParseable => e
+        # Attempt to recategorise the error as related to repo resolvability
+        repo_error_regex = FileUpdater::GoModUpdater::REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| e.message =~ r }
+        ResolvabilityErrors.handle(e.message) if repo_error_regex
+
+        # Re-raise the original error if we it isn't a resolvability problem.
+        raise e
       end
     end
   end

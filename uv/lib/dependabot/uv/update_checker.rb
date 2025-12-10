@@ -127,7 +127,12 @@ module Dependabot
         fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
 
-        return resolver.lowest_resolvable_security_fix_version if resolver_type == :requirements
+        # For requirements and lock_file resolver types, delegate to the resolver
+        if resolver_type == :requirements || resolver_type == :lock_file
+          resolved_fix = resolver.lowest_resolvable_security_fix_version
+          # If no security fix version is found, fall back to latest_resolvable_version
+          return resolved_fix || latest_resolvable_version
+        end
 
         resolver.resolvable?(version: fix_version) ? fix_version : nil
       end
@@ -216,7 +221,9 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions
           ),
           T.nilable(LockFileResolver)
         )
