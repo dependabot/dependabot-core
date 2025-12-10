@@ -135,7 +135,7 @@ module Dependabot
             xml = dependency_metadata(repository_details)
             next [] if xml.nil?
 
-            break extract_metadata_from_xml(xml, url)
+            extract_metadata_from_xml(xml, url)
           end
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?

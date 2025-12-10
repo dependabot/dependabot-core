@@ -1,0 +1,18 @@
+<metadata modelVersion="1.1.0">
+  <groupId>com.google.guava</groupId>
+  <artifactId>guava</artifactId>
+  <!--
+    This metadata example represents a repository that contains the dependency we are trying to update, but only an older version rather than the latest.
+    This demonstrates why it is important that Dependabot does not make any assumption about registry order based on discovery.
+    And that instead it should always check across all available repositories to determine the latest version.
+  -->
+  <versioning>
+    <latest>10.0</latest>
+    <release>10.0</release>
+    <versions>
+      <version>9.0</version>
+      <version>10.0</version>
+    </versions>
+    <lastUpdated>20171221012203</lastUpdated>
+  </versioning>
+</metadata>
