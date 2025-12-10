@@ -142,7 +142,6 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
       end
     end
-
   end
 
   describe ".required_files_in?" do
