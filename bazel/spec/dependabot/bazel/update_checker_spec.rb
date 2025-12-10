@@ -923,7 +923,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
         # Stable versions should have 0 as pre-release marker
         expect(stable_key).to eq([1, 7, 0, 0])
-        
+
         # Pre-release versions should have -1 as pre-release marker
         expect(rc_key).to eq([1, 7, 0, -1])
         expect(alpha_key).to eq([1, 7, 0, -1])
@@ -931,7 +931,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         # Stable versions should sort after (be greater than) pre-release versions
         expect(stable_key <=> rc_key).to eq(1)
         expect(stable_key <=> alpha_key).to eq(1)
-        
+
         # Pre-release versions should be equal in sort order (both have -1)
         expect(rc_key <=> alpha_key).to eq(0)
       end

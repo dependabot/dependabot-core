@@ -206,7 +206,7 @@ module Dependabot
         cleaned = version.gsub(/^v/, "")
 
         # Handle pre-release versions (e.g., "1.7.0-rc4", "1.2.3-alpha1")
-        if cleaned.match?(/-/)
+        if cleaned.include?("-")
           base_version, _pre_release = cleaned.split("-", 2)
           base_parts = T.must(base_version).split(".").map { |part| part.match?(/^\d+$/) ? part.to_i : 0 }
 
