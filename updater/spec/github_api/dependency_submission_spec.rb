@@ -46,20 +46,18 @@ RSpec.shared_examples "dependency_submission" do |empty|
 
   let(:resolved_dependencies) do
     {
-      "dummy-pkg-a" => {
+      "dummy-pkg-a" => Dependabot::DependencyGraphers::ResolvedDependency.new(
         package_url: "pkg:gem/dummy-pkg-a@2.0.0",
-        relationship: "direct",
-        scope: "runtime",
-        dependencies: [],
-        metadata: {}
-      },
-      "dummy-pkg-b" => {
+        direct: true,
+        runtime: true,
+        dependencies: []
+      ),
+      "dummy-pkg-b" => Dependabot::DependencyGraphers::ResolvedDependency.new(
         package_url: "pkg:gem/dummy-pkg-b@1.1.0",
-        relationship: "direct",
-        scope: "runtime",
-        dependencies: [],
-        metadata: {}
-      }
+        direct: false,
+        runtime: false,
+        dependencies: []
+      )
     }
   end
 
@@ -114,6 +112,14 @@ RSpec.shared_examples "dependency_submission" do |empty|
       expect(payload[:job][:id]).to eq("9999")
     end
 
+    it "affixes to use the updater sha if available" do
+      allow(Dependabot::Environment).to receive(:updater_sha).and_return("totally-legit-sha")
+
+      payload = dependency_submission.payload
+
+      expect(payload[:detector][:version]).to eq("#{Dependabot::VERSION}-totally-legit-sha")
+    end
+
     it "generates git attributes correctly" do
       payload = dependency_submission.payload
 
@@ -164,9 +170,13 @@ RSpec.shared_examples "dependency_submission" do |empty|
 
       dependency1 = lockfile[:resolved]["dummy-pkg-a"]
       expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+      expect(dependency1[:relationship]).to eql("direct")
+      expect(dependency1[:scope]).to eql("runtime")
 
       dependency2 = lockfile[:resolved]["dummy-pkg-b"]
       expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+      expect(dependency2[:relationship]).to eql("indirect")
+      expect(dependency2[:scope]).to eql("development")
     end
   end
 end

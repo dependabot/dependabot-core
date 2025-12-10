@@ -14,14 +14,6 @@ module Dependabot
       require_relative "file_updater/mixfile_updater"
       require_relative "file_updater/lockfile_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          /^.*mix\.exs$/,
-          /^.*mix\.lock$/
-        ]
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []

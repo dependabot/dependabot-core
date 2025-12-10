@@ -8,7 +8,11 @@ public static class ProcessEx
     /// <summary>
     /// Run the `dotnet` command with the given values.  This will exclude all `MSBuild*` environment variables from the execution.
     /// </summary>
-    public static Task<(int ExitCode, string Output, string Error)> RunDotnetWithoutMSBuildEnvironmentVariablesAsync(IEnumerable<string> arguments, string workingDirectory)
+    public static Task<(int ExitCode, string Output, string Error)> RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+        IEnumerable<string> arguments,
+        string workingDirectory,
+        IEnumerable<(string Name, string? Value)>? extraEnvironmentVariables = null
+    )
     {
         // When using the SDK specified by a `global.json` file, these environment variables need to be unset to
         // allow the new process to discover the correct MSBuild binaries to load, and not load the ones that
@@ -24,6 +28,11 @@ public static class ProcessEx
         };
 
         var environmentVariableOverrides = environmentVariablesToUnset.Select(name => (name, (string?)null));
+        if (extraEnvironmentVariables is not null)
+        {
+            environmentVariableOverrides = environmentVariableOverrides.Concat(extraEnvironmentVariables);
+        }
+
         return RunAsync("dotnet",
             arguments,
             workingDirectory,

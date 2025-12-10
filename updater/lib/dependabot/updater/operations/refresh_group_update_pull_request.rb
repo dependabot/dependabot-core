@@ -30,15 +30,12 @@ module Dependabot
         include GroupUpdateRefreshing
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
-        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
+        def self.applies_to?(job:)
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
           return false unless job.dependencies&.any?
           return false unless job.dependency_group_to_refresh
-          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
-            return false
-          end
 
           return true if job.source.directories && T.must(job.source.directories).count > 1
 
@@ -70,6 +67,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @group = T.let(dependency_snapshot.job_group, T.nilable(Dependabot::DependencyGroup))
         end
 
         sig { override.returns(Dependabot::Job) }
@@ -83,6 +81,11 @@ module Dependabot
 
         sig { override.returns(Dependabot::Service) }
         attr_reader :service
+
+        sig { override.returns(Dependabot::DependencyGroup) }
+        def group
+          T.must(@group)
+        end
 
         sig { void }
         def perform

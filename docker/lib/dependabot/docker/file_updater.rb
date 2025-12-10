@@ -12,14 +12,8 @@ module Dependabot
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /(docker|container)file/i
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
       COPY_FROM_REGEX = /COPY\s+.*--from\=/i
-
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [DOCKER_REGEXP, YAML_REGEXP]
-      end
 
       sig { override.returns(String) }
       def file_type

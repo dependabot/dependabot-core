@@ -34,3 +34,6 @@ spoom_report.html
 **/.mono/**/values.xml
 # Ignore Vim swap files
 *.swp
+
+# Test ecosystems from rake scaffold tests
+test_*/

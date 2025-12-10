@@ -415,6 +415,12 @@ module Dependabot
       # package version mentioned in .toml not found in package index
       PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
 
+      INCOMPATIBLE_ENRICH_CONSTRAINTS = /
+        Cannot\senrich\sdependency\swith\sincompatible\sconstraints:\s+
+        (?<dep>[^\s(]+)\s*\((?<ver_range_a>[^)]+)\)\s+and\s+
+        (?<dep_b>[^\s(]+)\s*\((?<ver_range_b>[^)]+)\)
+      /x
+
       # client access error codes while accessing package index
       CLIENT_ERROR_CODES = T.let(
         {
@@ -502,7 +508,6 @@ module Dependabot
         if (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS) ||
             error.message.match(INVALID_CONFIGURATION) || error.message.match(INVALID_VERSION) ||
             error.message.match(INVALID_LINK))
-
           raise DependencyFileNotResolvable, msg
         end
 
@@ -510,11 +515,12 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
+        handle_enrich_constraints(error)
+
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
 
         if error.message.match(POETRY_VIRTUAL_ENV_CONFIG) || error.message.match(ERR_LOCAL_PROJECT_PATH)
           msg = "Error while resolving pyproject.toml file"
-
           raise DependencyFileNotResolvable, msg
         end
 
@@ -548,6 +554,19 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
+
+      private
+
+      sig { params(error: Exception).void }
+      def handle_enrich_constraints(error)
+        if (msg = error.message.match(INCOMPATIBLE_ENRICH_CONSTRAINTS))
+          dep   = msg[:dep]
+          ver_a = msg[:ver_range_a]
+          ver_b = msg[:ver_range_b]
+          raise DependencyFileNotResolvable,
+                "Incompatible version constraints for #{dep}: #{ver_a} vs #{ver_b}"
+        end
+      end
     end
   end
 end

@@ -1,0 +1,35 @@
+[
+  {
+    "name": "MODULE.bazel",
+    "path": "MODULE.bazel",
+    "sha": "abc123",
+    "size": 1234,
+    "url": "https://api.github.com/repos/example/repo/contents/MODULE.bazel?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/MODULE.bazel",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/MODULE.bazel",
+    "type": "file"
+  },
+  {
+    "name": ".bazelrc",
+    "path": ".bazelrc",
+    "sha": "def456",
+    "size": 567,
+    "url": "https://api.github.com/repos/example/repo/contents/.bazelrc?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/.bazelrc",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/def456",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/.bazelrc",
+    "type": "file"
+  },
+  {
+    "name": "downloader.cfg",
+    "path": "downloader.cfg",
+    "sha": "ghi789",
+    "size": 890,
+    "url": "https://api.github.com/repos/example/repo/contents/downloader.cfg?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/downloader.cfg",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/ghi789",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/downloader.cfg",
+    "type": "file"
+  }
+]

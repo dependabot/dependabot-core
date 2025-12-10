@@ -5,6 +5,21 @@ require "sorbet-runtime"
 
 module Dependabot
   module DependencyGraphers
+    # This is a small value class that specifies the information we expect to be returned for each
+    # dependency strictly.
+    class ResolvedDependency < T::ImmutableStruct
+      # A valid purl for the dependency, e.g. pkg:/npm/tunnel@0.0.6
+      const :package_url, String
+      # Is this a direct dependency?
+      const :direct, T::Boolean
+      # Is this a runtime dependency?
+      const :runtime, T::Boolean
+      # A list of packages this dependency itself depends on if direct is false. Note that:
+      # - a valid purl for the parent dependency is preferable
+      # - the package name is acceptable **unless the ecosystem allows multiple versions of a package to be used**
+      const :dependencies, T::Array[String]
+    end
+
     class Base
       extend T::Sig
       extend T::Helpers
@@ -16,6 +31,12 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :prepared
 
+      sig { returns(T::Boolean) }
+      attr_reader :errored_fetching_subdependencies
+
+      sig { returns(T.nilable(StandardError)) }
+      attr_reader :subdependency_error
+
       sig do
         params(file_parser: Dependabot::FileParsers::Base).void
       end
@@ -23,6 +44,7 @@ module Dependabot
         @file_parser = file_parser
         @dependencies = T.let([], T::Array[Dependabot::Dependency])
         @prepared = T.let(false, T::Boolean)
+        @errored_fetching_subdependencies = T.let(false, T::Boolean)
       end
 
       # Each grapher must implement a heuristic to determine which dependency file should be used as the owner
@@ -41,18 +63,18 @@ module Dependabot
         @prepared = true
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, ResolvedDependency]) }
       def resolved_dependencies
         prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
-          resolved[dep.name] = {
-            package_url: build_purl(dep),
-            relationship: relationship_for(dep),
-            scope: scope_for(dep),
-            dependencies: fetch_subdependencies(dep),
-            metadata: {}
-          }
+          purl = build_purl(dep)
+          resolved[purl] = ResolvedDependency.new(
+            package_url: purl,
+            direct: dep.top_level?,
+            runtime: dep.production?,
+            dependencies: safe_fetch_subdependencies(dep).map { |d| build_purl(d) }
+          )
         end
       end
 
@@ -64,6 +86,30 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def dependency_files
         file_parser.dependency_files
+      end
+
+      sig { returns(T::Hash[String, Dependabot::Dependency]) }
+      def dependencies_by_name
+        @dependencies_by_name ||= T.let(
+          @dependencies.each_with_object({}) do |dep, hash|
+            hash[dep.name] = dep
+          end,
+          T.nilable(T::Hash[String, Dependabot::Dependency])
+        )
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
+      def safe_fetch_subdependencies(dependency)
+        return [] if @errored_fetching_subdependencies
+
+        fetch_subdependencies(dependency).filter_map do |dependency_name|
+          dependencies_by_name[dependency_name]
+        end
+      rescue StandardError => e
+        @errored_fetching_subdependencies = true
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        []
       end
 
       # Each grapher is expected to implement a method to look up the parents of a given dependency.
@@ -105,24 +151,6 @@ module Dependabot
           name: purl_name_for(dependency),
           version: purl_version_for(dependency)
         )
-      end
-
-      sig { params(dep: Dependabot::Dependency).returns(String) }
-      def relationship_for(dep)
-        if dep.top_level?
-          "direct"
-        else
-          "indirect"
-        end
-      end
-
-      sig { params(dependency: Dependabot::Dependency).returns(String) }
-      def scope_for(dependency)
-        if dependency.production?
-          "runtime"
-        else
-          "development"
-        end
       end
     end
   end

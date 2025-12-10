@@ -54,14 +54,14 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition: job_definition_with_fetched_files
+      job_definition:
     )
   end
 
   let(:dependency_snapshot) do
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
-      job_definition: job_definition_with_fetched_files
+      fetched_files:
     )
   end
 
@@ -85,13 +85,8 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   let(:supported_versions) { %w(2 3) }
   let(:deprecated_versions) { %w(1) }
 
-  let(:job_definition_with_fetched_files) do
-    job_definition.merge(
-      {
-        "base_commit_sha" => "mock-sha",
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    )
+  let(:fetched_files) do
+    Dependabot::FetchedFiles.new(base_commit_sha: "mock-sha", dependency_files:)
   end
 
   let(:dependency_files) do
@@ -285,10 +280,10 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
             [
               Dependabot::PullRequest::Dependency.new(
                 name: "dummy-pkg-a",
-                version: "2.0.1",
-                pr_number: 123
+                version: "2.0.1"
               )
-            ]
+            ],
+            pr_number: 123
           )
         ])
       end
@@ -337,22 +332,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
           RuntimeError,
           "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
         )
-      end
-    end
-
-    context "when an existing pull request matches the updated dependencies" do
-      before do
-        allow(stub_update_checker).to receive_messages(
-          up_to_date?: false,
-          requirements_unlocked_or_can_be?: true,
-          updated_dependencies: [dependency],
-          latest_version: Gem::Version.new("2.0.0")
-        )
-      end
-
-      it "does not create a pull request" do
-        expect(update_all_versions).not_to receive(:create_pull_request)
-        update_all_versions.send(:check_and_create_pull_request, dependency)
       end
     end
 

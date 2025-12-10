@@ -49,18 +49,12 @@ module Dependabot
       raise Dependabot::DependabotError, "job.source.directories is nil" if job.source.directories.nil?
       raise Dependabot::DependabotError, "job.source.directories is empty" unless job.source.directories&.any?
 
+      branch = job.source.branch || default_branch
+
       T.must(job.source.directories).each do |directory|
-        directory_source = create_source_for(directory)
-        directory_dependency_files = dependency_files_for(directory)
-
-        submission = if directory_dependency_files.empty?
-                       empty_submission(directory_source)
-                     else
-                       create_submission(directory_source, directory_dependency_files)
-                     end
-
-        Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-        service.create_dependency_submission(dependency_submission: submission)
+        # Each directory is processed with its own error handling so one failure will not
+        # block the overall job.
+        process_directory(branch:, directory:)
       end
     end
 
@@ -81,6 +75,30 @@ module Dependabot
     sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
 
+    sig { params(branch: String, directory: String).void }
+    def process_directory(branch:, directory:)
+      directory_source = create_source_for(directory)
+      directory_dependency_files = dependency_files_for(directory)
+
+      submission = if directory_dependency_files.empty?
+                     empty_submission(branch, directory_source)
+                   else
+                     create_submission(branch, directory_source, directory_dependency_files)
+                   end
+
+      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
+      service.create_dependency_submission(dependency_submission: submission)
+    rescue Dependabot::DependabotError => e
+      error_handler.handle_job_error(error: e)
+
+      # If we are not running in Actions, there's nothing more to do.
+      return unless Dependabot::Environment.github_actions?
+
+      # Send an empty submission so the snapshot service has a record that the job id has been completed.
+      empty_submission = empty_submission(branch, T.must(directory_source))
+      service.create_dependency_submission(dependency_submission: empty_submission)
+    end
+
     sig { params(directory: String).returns(Dependabot::Source) }
     def create_source_for(directory)
       job.source.dup.tap do |s|
@@ -93,12 +111,11 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
-    sig { params(source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
-    def empty_submission(source)
+    sig { params(branch: String, source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
+    def empty_submission(branch, source)
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
-        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
-        branch: source.branch || "main",
+        branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
@@ -108,11 +125,12 @@ module Dependabot
 
     sig do
       params(
+        branch: String,
         source: Dependabot::Source,
         files: T::Array[Dependabot::DependencyFile]
       ).returns(GithubApi::DependencySubmission)
     end
-    def create_submission(source, files)
+    def create_submission(branch, source, files)
       parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: files,
         repo_contents_path: job.repo_contents_path,
@@ -123,17 +141,49 @@ module Dependabot
       )
 
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
-      grapher.prepare!
+
+      # Build resolved dependencies first so subdependency fetching can set the error flag if it fails.
+      resolved = grapher.resolved_dependencies
+
+      handle_subdependency_error(grapher.subdependency_error, source) if grapher.errored_fetching_subdependencies
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
-        # FIXME(brrygrdn): We should obtain the ref from git -or- inject it via the backend service
-        branch: source.branch || "main",
+        branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
-        resolved_dependencies: grapher.resolved_dependencies
+        resolved_dependencies: resolved
       )
+    end
+
+    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
+    def handle_subdependency_error(error, source)
+      if error.is_a?(Dependabot::DependabotError)
+        # If we've been provided with a DependabotError, relay it to the handler
+        error_handler.handle_job_error(error: error)
+      else
+        # If the error is unexpected, or nil then we should treat it as a generic
+        # parsing problem.
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyFileNotResolvable.new(
+            "Failed to fetch subdependencies in directory #{source.directory}"
+          )
+        )
+      end
+    end
+
+    sig { returns(String) }
+    def default_branch
+      SharedHelpers.with_git_configured(credentials: job.credentials) do
+        Dir.chdir(T.must(job.repo_contents_path)) do
+          branch = SharedHelpers.run_shell_command(
+            "git symbolic-ref --short refs/remotes/origin/HEAD",
+            stderr_to_stdout: false
+          )
+          branch.strip.sub("origin/", "refs/heads/")
+        end
+      end
     end
   end
 end

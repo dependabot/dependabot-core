@@ -221,4 +221,66 @@ RSpec.describe namespace::LatestVersionFinder do
 
     it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
   end
+
+  # Regression test for version tag prefix handling
+  # Bug: Dependabot returns main branch commit instead of latest tag when
+  # dependency refs like "0.0.13" don't match prefixed tags like "v0.0.13"
+  describe "private repository with version tag prefixes" do
+    let(:upload_pack_fixture) { "private-repo-with-version-prefixes" }
+    let(:dependency_name) { "example-org/private-actions" }
+    let(:reference) { "0.0.13" }
+    let(:dependency_version) { "0.0.13" }
+
+    let(:dependency_source) do
+      {
+        type: "git",
+        url: "https://github.com/example-org/private-actions",
+        ref: "0.0.13",
+        branch: nil
+      }
+    end
+
+    describe "#latest_release" do
+      subject(:latest_release) { finder.latest_release }
+
+      it "correctly identifies v0.0.24 as the latest version" do
+        expect(latest_release).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+        expect(latest_release).not_to eq("a9594b7a3de691e58c1ff7f96448d9b93fd831e7")
+      end
+
+      it "handles dependencies with version tag prefixes correctly" do
+        # Regression test for issue where dependencies referencing "0.0.13"
+        # were not considered pinned when the actual Git tag was "v0.0.13"
+        package_details_fetcher = Dependabot::GithubActions::Package::PackageDetailsFetcher.new(
+          dependency: dependency,
+          credentials: [],
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: []
+        )
+
+        git_commit_checker = package_details_fetcher.send(:git_commit_checker)
+
+        # Dependency should be considered pinned even with version tag prefix mismatch
+        expect(git_commit_checker.pinned?).to be(true)
+
+        # PackageDetailsFetcher should return the latest version (not current commit)
+        release_list = package_details_fetcher.release_list_for_git_dependency
+        expect(release_list).to be_a(Dependabot::GithubActions::Version)
+        expect(release_list.to_s).to eq("0.0.24")
+      end
+    end
+
+    describe "#latest_version_tag" do
+      subject(:latest_version_tag) { finder.latest_version_tag }
+
+      it "returns tag information for v0.0.24" do
+        expect(latest_version_tag).to include(
+          tag: "v0.0.24",
+          commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de",
+          version: Dependabot::GithubActions::Version.new("0.0.24")
+        )
+      end
+    end
+  end
 end

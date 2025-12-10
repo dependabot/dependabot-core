@@ -4,6 +4,9 @@ common: &common
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/**'
+bazel:
+  - *common
+  - 'bazel/**'
 github_actions:
   - *common
   - 'github_actions/**'
@@ -68,12 +71,18 @@ swift:
 terraform:
   - *common
   - 'terraform/**'
+opentofu:
+  - *common
+  - 'opentofu/**'
 uv:
   - *common
   - 'uv/**'
 helm:
   - *common
   - 'helm/**'
+julia:
+  - *common
+  - 'julia/**'
 vcpkg:
   - *common
   - 'vcpkg/**'

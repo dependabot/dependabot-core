@@ -303,6 +303,38 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         handle_dependency_error
       end
     end
+
+    context "with a nil dependency" do
+      let(:dependency) { nil }
+
+      let(:error) do
+        StandardError.new("Something went wrong")
+      end
+
+      it "handles the nil dependency gracefully" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "unknown_error",
+          error_details: nil,
+          dependency: nil
+        )
+
+        expect(mock_service).to receive(:capture_exception).with(
+          error: error,
+          job: mock_job,
+          dependency: nil,
+          dependency_group: nil
+        )
+
+        expect(Dependabot.logger).to receive(:error).with(
+          "Error processing unknown dependency (StandardError)"
+        )
+        expect(Dependabot.logger).to receive(:error).with(
+          "Something went wrong"
+        )
+
+        handle_dependency_error
+      end
+    end
   end
 
   describe "handle_job_error" do

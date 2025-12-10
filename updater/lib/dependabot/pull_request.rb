@@ -22,24 +22,19 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :directory
 
-      sig { returns(T.nilable(Integer)) }
-      attr_reader :pr_number
-
       sig do
         params(
           name: String,
           version: T.nilable(String),
           removed: T::Boolean,
-          directory: T.nilable(String),
-          pr_number: T.nilable(Integer)
+          directory: T.nilable(String)
         ).void
       end
-      def initialize(name:, version:, removed: false, directory: nil, pr_number: nil)
+      def initialize(name:, version:, removed: false, directory: nil)
         @name = name
         @version = version
         @removed = removed
-        @directory = directory
-        @pr_number = pr_number
+        @directory = T.let(normalize_directory(directory), T.nilable(String))
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
@@ -56,25 +51,55 @@ module Dependabot
       def removed?
         removed
       end
+
+      sig { params(other: T.untyped).returns(T::Boolean) }
+      def ==(other)
+        return false unless other.is_a?(Dependency)
+
+        to_h == other.to_h
+      end
+
+      private
+
+      sig { params(directory: T.nilable(String)).returns(T.nilable(String)) }
+      def normalize_directory(directory)
+        return nil if directory.nil?
+
+        directory.to_s
+                 .sub(%r{/*\Z}, "")    # remove trailing slashes
+                 .sub(%r{\A/*}, "/")   # prefix with a single slash
+                 .sub(%r{\A/\Z}, "/.") # use `/.` as root
+      end
     end
 
     sig { returns(T::Array[Dependency]) }
     attr_reader :dependencies
 
+    sig { returns(T.nilable(Integer)) }
+    attr_reader :pr_number
+
     sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Dependabot::PullRequest]) }
     def self.create_from_job_definition(attributes)
       attributes.fetch(:existing_pull_requests).map do |pr|
-        new(
+        case pr
+        when Array
+          pr_number = pr.first["pr-number"]
+        when Hash
+          pr_number = pr["pr-number"]
+          pr = pr["dependencies"] # now pr becomes the dependencies array from the pr
+        end
+
+        dependencies =
           pr.map do |dep|
-            Dependency.new(
+            PullRequest::Dependency.new(
               name: dep.fetch("dependency-name"),
               version: dep.fetch("dependency-version", nil),
               removed: dep.fetch("dependency-removed", false),
-              directory: dep.fetch("directory", nil),
-              pr_number: dep.fetch("pr-number", nil)&.to_i
+              directory: dep.fetch("directory", nil)
             )
           end
-        )
+
+        new(dependencies, pr_number: pr_number)
       end
     end
 
@@ -92,9 +117,10 @@ module Dependabot
       )
     end
 
-    sig { params(dependencies: T::Array[PullRequest::Dependency]).void }
-    def initialize(dependencies)
+    sig { params(dependencies: T::Array[PullRequest::Dependency], pr_number: T.nilable(Integer)).void }
+    def initialize(dependencies, pr_number: nil)
       @dependencies = dependencies
+      @pr_number = pr_number
     end
 
     sig { params(other: PullRequest).returns(T::Boolean) }
@@ -107,9 +133,10 @@ module Dependabot
       end
     end
 
-    sig { params(name: String, version: String).returns(T::Boolean) }
-    def contains_dependency?(name, version)
-      dependencies.any? { |dep| dep.name == name && dep.version == version }
+    sig { params(name: String, version: String, dir: String).returns(T::Boolean) }
+    def contains_dependency?(name, version, dir)
+      dependency = PullRequest::Dependency.new(name:, version:, directory: dir)
+      dependencies.any?(dependency)
     end
 
     sig { returns(T::Boolean) }

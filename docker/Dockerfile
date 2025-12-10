@@ -1,5 +1,6 @@
+# syntax=docker.io/docker/dockerfile:1.20
 # From https://github.com/sigstore/cosign/releases
-FROM ghcr.io/sigstore/cosign/cosign:v2.6.0 AS cosign
+FROM ghcr.io/sigstore/cosign/cosign:v2.6.1 AS cosign
 # From https://github.com/regclient/regclient/releases
 FROM ghcr.io/regclient/regctl:v0.9.2 AS regctl
 
@@ -23,6 +24,5 @@ RUN REGCTL_VERSION=$(regctl version --format '{{.VCSTag}}') && \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker $DEPENDABOT_HOME/docker
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents docker common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

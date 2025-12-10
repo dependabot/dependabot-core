@@ -102,6 +102,11 @@ rspec spec                       # Run relevant tests
 - All existing tests must continue to pass after your changes
 - Add tests for new functionality before implementing the feature
 - When fixing bugs, add a test that reproduces the issue first
+- **NEVER test private methods directly** - tests should only call public interfaces
+- **NEVER modify production code visibility to accommodate tests** - if tests need access to private methods, the test design is wrong
+- **NEVER add public methods solely for testing** - this pollutes the production API and creates maintenance burden
+- Tests should verify behavior through public APIs, not implementation details
+- Tests should exercise production code paths (e.g., `fetch_files`) rather than isolated helper methods
 
 ### Code Style and Validation
 
@@ -159,14 +164,64 @@ bundle exec srb tc path/to/file.rb
 bundle exec srb tc -a path/to/file.rb
 ```
 
-**Important**: Sorbet's autocorrect feature (`-a` flag) should be used cautiously as it can cause more issues than it resolves. Only use autocorrect when you have high confidence that the changes will not break code functionality. 
+**Important**: Sorbet's autocorrect feature (`-a` flag) should be used cautiously as it can cause more issues than it resolves. Only use autocorrect when you have high confidence that the changes will not break code functionality.
 
 Autocorrect can handle some simple cases like:
-- Adding missing `override.` annotations for method overrides  
+- Adding missing `override.` annotations for method overrides
 - Adding `T.let` declarations for instance variables in strict-typed files
 - Adding type annotations for constants
 
 However, autocorrect often creates incorrect fixes for complex type mismatches, method signature issues, and structural problems. **Always manually resolve Sorbet errors** rather than relying on autocorrect, and carefully review any autocorrected changes to ensure they maintain code correctness and intent.
+
+### Code Comments and Documentation
+
+**Prioritize self-documenting code over comments**. Write clear, intention-revealing code with descriptive method and variable names that eliminate the need for explanatory comments.
+
+**When to use comments**:
+- **Business logic context**: Explain *why* something is done when the reason isn't obvious from the code
+- **Complex algorithms**: Document the approach or mathematical concepts
+- **Workarounds**: Explain why a non-obvious solution was necessary
+- **External constraints**: Document API limitations, system requirements, or ecosystem-specific behaviors
+- **TODO/FIXME**: Temporary markers for future improvements (with issue references when possible)
+
+**Avoid these comment types**:
+- **Implementation decisions**: Don't explain what was *not* implemented or alternative approaches considered
+- **Obvious code explanations**: Don't restate what the code clearly does
+- **Apologies or justifications**: Comments defending coding choices suggest code quality issues
+- **Outdated information**: Remove comments that no longer apply to current implementation
+- **Version history**: Use git history instead of inline change logs
+
+**Comment style guidelines**:
+```ruby
+# Good: Explains WHY, adds business context
+# Retry failed requests up to 3 times due to GitHub API rate limiting
+retry_count = 3
+
+# Bad: Explains WHAT the code does (obvious from code)
+# Set retry count to 3
+retry_count = 3
+
+# Good: Documents external constraint
+# GitHub API requires User-Agent header or returns 403
+headers['User-Agent'] = 'Dependabot/1.0'
+
+# Bad: Implementation decision discussion
+# We decided not to cache this because it would complicate the code
+# and other ecosystems don't do caching here either
+response = fetch_data(url)
+```
+
+**Prefer code refactoring over explanatory comments**:
+```ruby
+# Instead of commenting complex logic:
+# Calculate the SHA256 of downloaded file for security verification
+digest = Digest::SHA256.hexdigest(response.body)
+
+# Extract to a well-named method:
+def calculate_security_checksum(content)
+  Digest::SHA256.hexdigest(content)
+end
+```
 
 ### Native Helpers
 
@@ -262,6 +317,62 @@ bin/dry-run.rb {ecosystem} {repo} --profile
 - Native helpers: `{ecosystem}/helpers/`
 
 When implementing new ecosystems or modifying existing ones, always ensure the 7 core classes are implemented and follow the established inheritance patterns from `dependabot-common`.
+
+## Core Class Structure Pattern
+
+**CRITICAL**: All Dependabot core classes with nested helper classes must follow the exact pattern to avoid "superclass mismatch" errors. This pattern is used consistently across all established ecosystems (bundler, npm_and_yarn, go_modules, etc.).
+
+### Main Class Structure (applies to FileFetcher, FileParser, FileUpdater, UpdateChecker, etc.)
+```ruby
+# {ecosystem}/lib/dependabot/{ecosystem}/file_updater.rb (or file_fetcher.rb, file_parser.rb, etc.)
+require "dependabot/file_updaters"
+require "dependabot/file_updaters/base"
+
+module Dependabot
+  module {Ecosystem}
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      # require_relative statements go INSIDE the class
+      require_relative "file_updater/helper_class"
+
+      # Main logic here...
+    end
+  end
+end
+
+Dependabot::FileUpdaters.register("{ecosystem}", Dependabot::{Ecosystem}::FileUpdater)
+```
+
+### Helper Class Structure
+```ruby
+# {ecosystem}/lib/dependabot/{ecosystem}/file_updater/helper_class.rb
+require "dependabot/{ecosystem}/file_updater"
+
+module Dependabot
+  module {Ecosystem}
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      class HelperClass
+        # Helper logic nested INSIDE the main class
+      end
+    end
+  end
+end
+```
+
+### Key Rules:
+1. **Main classes** inherit from appropriate base: `Dependabot::FileUpdaters::Base`, `Dependabot::FileFetchers::Base`, etc.
+2. **Helper classes** are nested inside the main class
+3. **require_relative** statements go INSIDE the main class, not at module level
+4. **Helper classes require the main file** first: `require "dependabot/{ecosystem}/file_updater"`
+5. **Never define multiple top-level classes** with same name in the same namespace
+6. **Backward compatibility** can use static methods that delegate to instance methods
+
+### Applies To:
+- **FileFetcher** and its helpers (e.g., `FileFetcher::GitCommitChecker`)
+- **FileParser** and its helpers (e.g., `FileParser::ManifestParser`)
+- **FileUpdater** and its helpers (e.g., `FileUpdater::LockfileUpdater`)
+- **UpdateChecker** and its helpers (e.g., `UpdateChecker::VersionResolver`)
+- **MetadataFinder** and its helpers
+- **Version** and **Requirement** classes (if they have nested classes)
 
 ## Adding New Ecosystems
 

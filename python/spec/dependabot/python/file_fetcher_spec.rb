@@ -527,7 +527,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
       it "exposes the expected ecosystem_versions metric" do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
           {
-            languages: { python: { "max" => "3.9", "raw" => "unknown" } }
+            # When there is no version specified, we assume the max supported
+            languages: { python: { "max" => "3.14", "raw" => "unknown" } }
           }
         )
       end
@@ -860,6 +861,39 @@ RSpec.describe Dependabot::Python::FileFetcher do
             Dependabot::PathDependenciesNotReachable,
             "The following path based dependencies could not be retrieved: \"-e file:.\" at /requirements/base.in"
           )
+      end
+    end
+
+    context "with a path-based sdist/wheel dependency" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_local_model_archive.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".model/en_core_web_sm-3.4.1.tar.gz?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + ".model/en_core_web_sm-3.4.1.tar.gz/setup.py?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + ".model/en_core_web_sm-3.4.1.tar.gz/pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + ".model?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "does not raise an error when the sdist/wheel file is missing" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
       end
     end
 

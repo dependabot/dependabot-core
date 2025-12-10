@@ -77,7 +77,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     after { FileUtils.rm_rf(repo_contents_path) }
 
-    it "pulls files from lfs after cloning" do
+    it "pulls files from lfs after cloning", skip: "External issue - waiting for resolution" do
       # Calling #files triggers the clone
       expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("package.json", "yarn.lock", ".yarnrc.yml")
       expect(
@@ -381,20 +381,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: nil,
             headers: json_header
           )
-        stub_request(:get, File.join(url, "bun.lock?ref=sha"))
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(
-            status: 404,
-            body: nil,
-            headers: json_header
-          )
-        stub_request(:get, File.join(url, "packages/bun.lock?ref=sha"))
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(
-            status: 404,
-            body: nil,
-            headers: json_header
-          )
         # FileFetcher will iterate trying to find `pnpm-lock.yaml` upwards in the folder tree
         stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -541,58 +527,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "with a bun.lock but no package-lock.json file" do
-    before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: fixture("github", "contents_js_bun.json"),
-          headers: json_header
-        )
-      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 404)
-      stub_request(:get, File.join(url, "bun.lock?ref=sha"))
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: fixture("github", "bun_lock_content.json"),
-          headers: json_header
-        )
-    end
-
-    describe "fetching and parsing the bun.lock" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_beta_ecosystems).and_return(enable_beta_ecosystems)
-      end
-
-      context "when the experiment :enable_beta_ecosystems is inactive" do
-        let(:enable_beta_ecosystems) { false }
-
-        it "does not fetch or parse the the bun.lock" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(package.json))
-          expect(file_fetcher_instance.ecosystem_versions)
-            .to match({ package_managers: { "unknown" => an_instance_of(Integer) } })
-        end
-      end
-
-      context "when the experiment :enable_beta_ecosystems is active" do
-        let(:enable_beta_ecosystems) { true }
-
-        it "fetches and parses the bun.lock" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(package.json bun.lock))
-          expect(file_fetcher_instance.ecosystem_versions)
-            .to match({ package_managers: { "bun" => an_instance_of(Integer) } })
-        end
-      end
-    end
-  end
-
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -641,7 +575,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the npm lockfile" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 10 } }
+        { package_managers: { "npm" => 11 } }
       )
     end
   end
@@ -678,7 +612,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the package manager version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 10, "yarn" => 1 } }
+        { package_managers: { "npm" => 11, "yarn" => 1 } }
       )
     end
   end
@@ -1426,12 +1360,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           stub_request(
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
-            "bun.lock?ref=sha"
-          ).with(headers: { "Authorization" => "token token" })
-            .to_return(status: 404)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/bump/contents/" \
             "pnpm-workspace.yaml?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
@@ -2002,12 +1930,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
             "pnpm-lock.yaml?ref=sha"
-          ).with(headers: { "Authorization" => "token token" })
-            .to_return(status: 404)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/bump/contents/" \
-            "bun.lock?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
           stub_request(

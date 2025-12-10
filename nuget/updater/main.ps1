@@ -57,7 +57,6 @@ function Update-Files {
     $arguments += "--repo-contents-path", $env:DEPENDABOT_REPO_CONTENTS_PATH
     $arguments += "--api-url", $env:DEPENDABOT_API_URL
     $arguments += "--job-id", $env:DEPENDABOT_JOB_ID
-    $arguments += "--output-path", $env:DEPENDABOT_OUTPUT_PATH
     $arguments += "--base-commit-sha", $baseCommitSha
     if ("$env:DEPENDABOT_CASE_INSENSITIVE_REPO_CONTENTS_PATH" -ne "") {
         # ensure the updater gets this optional path
@@ -79,10 +78,19 @@ function Update-Files {
     $script:operationExitCode = $process.ExitCode
 }
 
+function Update-Dependencies {
+    Get-Files
+    if ($script:operationExitCode -ne 0) {
+        return
+    }
+
+    Update-Files
+}
+
 try {
     Switch ($args[0]) {
-        "fetch_files" { Get-Files }
-        "update_files" { Update-Files }
+        "fetch_files" { }
+        "update_files" { Update-Dependencies }
         default { throw "unknown command: $args[0]" }
     }
     exit $operationExitCode

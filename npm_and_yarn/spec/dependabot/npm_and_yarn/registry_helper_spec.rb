@@ -84,8 +84,29 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/",
-          "COREPACK_NPM_TOKEN" => "custom-token"
+          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/"
+        )
+      end
+    end
+
+    context "when credentials are provided with npm_registry type and replaces-base" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          {
+            "type" => "npm_registry",
+            "registry" => "artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => true
+          }
+        ]
+      end
+
+      it "returns registry with https scheme and token" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).to eq(
+          "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm"
         )
       end
     end
@@ -109,8 +130,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
-          "COREPACK_NPM_TOKEN" => "your-auth-token-here"
+          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/"
         )
       end
     end
@@ -134,8 +154,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
-          "COREPACK_NPM_TOKEN" => "yarnrc-yml-token"
+          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/"
         )
       end
     end

@@ -132,6 +132,11 @@ docker run --rm -ti \
   -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/bazel/.rubocop.yml:$CODE_DIR/bazel/.rubocop.yml" \
+  -v "$(pwd)/bazel/dependabot-bazel.gemspec:$CODE_DIR/bazel/dependabot-bazel.gemspec" \
+  -v "$(pwd)/bazel/lib:$CODE_DIR/bazel/lib" \
+  -v "$(pwd)/bazel/script:$CODE_DIR/bazel/script" \
+  -v "$(pwd)/bazel/spec:$CODE_DIR/bazel/spec" \
   -v "$(pwd)/bun/.rubocop.yml:$CODE_DIR/bun/.rubocop.yml" \
   -v "$(pwd)/bun/dependabot-bun.gemspec:$CODE_DIR/bun/dependabot-bun.gemspec" \
   -v "$(pwd)/bun/helpers:$CODE_DIR/bun/helpers" \
@@ -224,6 +229,12 @@ docker run --rm -ti \
   -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
   -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
   -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
+  -v "$(pwd)/julia/.rubocop.yml:$CODE_DIR/julia/.rubocop.yml" \
+  -v "$(pwd)/julia/dependabot-julia.gemspec:$CODE_DIR/julia/dependabot-julia.gemspec" \
+  -v "$(pwd)/julia/helpers:$CODE_DIR/julia/helpers" \
+  -v "$(pwd)/julia/lib:$CODE_DIR/julia/lib" \
+  -v "$(pwd)/julia/script:$CODE_DIR/julia/script" \
+  -v "$(pwd)/julia/spec:$CODE_DIR/julia/spec" \
   -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
@@ -245,6 +256,12 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
+  -v "$(pwd)/opentofu/.rubocop.yml:$CODE_DIR/opentofu/.rubocop.yml" \
+  -v "$(pwd)/opentofu/dependabot-opentofu.gemspec:$CODE_DIR/opentofu/dependabot-opentofu.gemspec" \
+  -v "$(pwd)/opentofu/helpers:$CODE_DIR/opentofu/helpers" \
+  -v "$(pwd)/opentofu/lib:$CODE_DIR/opentofu/lib" \
+  -v "$(pwd)/opentofu/script:$CODE_DIR/opentofu/script" \
+  -v "$(pwd)/opentofu/spec:$CODE_DIR/opentofu/spec" \
   -v "$(pwd)/pub/.rubocop.yml:$CODE_DIR/pub/.rubocop.yml" \
   -v "$(pwd)/pub/dependabot-pub.gemspec:$CODE_DIR/pub/dependabot-pub.gemspec" \
   -v "$(pwd)/pub/lib:$CODE_DIR/pub/lib" \

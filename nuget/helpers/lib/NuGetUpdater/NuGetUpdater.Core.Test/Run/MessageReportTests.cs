@@ -152,11 +152,12 @@ public class MessageReportTests
         yield return
         [
             // message
-            new PrivateSourceBadResponse(["url1", "url2"]),
+            new PrivateSourceBadResponse(["url1", "url2"], "some extra info"),
             // expected
             """
             Error type: private_source_bad_response
             - source: (url1|url2)
+            - message: some extra info
             """
         ];
 

@@ -1,0 +1,47 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.4 \)'
+pr-created expected.json
+
+# An existing pull request exists for 1.2.5 which is the latest version of dependency-a, but it's in another directory.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- expected.json --
+{
+  "dependency-a": { "version": "1.2.4" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.5
+        directory: "/another-directory"

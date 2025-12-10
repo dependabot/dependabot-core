@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_graphers"
+require "dependabot/environment"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
@@ -12,7 +13,7 @@ module GithubApi
   class DependencySubmission
     extend T::Sig
 
-    SNAPSHOT_VERSION = 0
+    SNAPSHOT_VERSION = 1
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
@@ -31,7 +32,7 @@ module GithubApi
     sig { returns(Dependabot::DependencyFile) }
     attr_reader :manifest_file
 
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
     attr_reader :resolved_dependencies
 
     sig do
@@ -41,7 +42,7 @@ module GithubApi
         sha: String,
         package_manager: String,
         manifest_file: Dependabot::DependencyFile,
-        resolved_dependencies: T::Hash[String, T.untyped]
+        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]
       ).void
     end
     def initialize(job_id:, branch:, sha:, package_manager:, manifest_file:, resolved_dependencies:)
@@ -69,7 +70,7 @@ module GithubApi
         },
         detector: {
           name: SNAPSHOT_DETECTOR_NAME,
-          version: Dependabot::VERSION,
+          version: detector_version,
           url: SNAPSHOT_DETECTOR_URL
         },
         manifests: manifests
@@ -100,6 +101,14 @@ module GithubApi
     end
 
     sig { returns(String) }
+    def detector_version
+      [
+        Dependabot::VERSION,
+        Dependabot::Environment.updater_sha
+      ].compact.join("-")
+    end
+
+    sig { returns(String) }
     def symbolic_ref
       return branch.gsub(%r{^/}, "") if branch.start_with?(%r{/?ref})
 
@@ -121,7 +130,14 @@ module GithubApi
           metadata: {
             ecosystem: package_manager
           },
-          resolved: resolved_dependencies
+          resolved: resolved_dependencies.transform_values do |resolved|
+            {
+              package_url: resolved.package_url,
+              relationship: resolved.direct ? "direct" : "indirect",
+              scope: resolved.runtime ? "runtime" : "development",
+              dependencies: resolved.dependencies
+            }
+          end
         }
       }
     end

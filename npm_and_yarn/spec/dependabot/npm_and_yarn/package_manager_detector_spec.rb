@@ -106,14 +106,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
       end
     end
 
-    context "when bun lock file exists and npm lockfile is absent" do
-      let(:lockfiles) { { bun: bun_lockfile } }
-
-      it "returns bun as the package manager" do
-        expect(detector.detect_package_manager).to eq("bun")
-      end
-    end
-
     context "when no lockfile but packageManager attribute exists in package.json" do
       let(:lockfiles) { {} }
 

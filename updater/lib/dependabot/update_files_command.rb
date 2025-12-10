@@ -4,6 +4,7 @@
 require "base64"
 require "json"
 require "dependabot/base_command"
+require "dependabot/fetched_files"
 require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
@@ -14,6 +15,11 @@ require "github_api/dependency_submission"
 module Dependabot
   class UpdateFilesCommand < BaseCommand
     extend T::Sig
+
+    sig { override.params(fetched_files: Dependabot::FetchedFiles).void }
+    def initialize(fetched_files)
+      @fetched_files = T.let(fetched_files, Dependabot::FetchedFiles)
+    end
 
     sig { override.void }
     def perform_job
@@ -27,13 +33,13 @@ module Dependabot
         begin
           dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
             job: job,
-            job_definition: Environment.job_definition
+            fetched_files: @fetched_files
           )
         rescue StandardError => e
           handle_parser_error(e)
           # If dependency file parsing has failed, there's nothing more we can do,
           # so let's mark the job as processed and stop.
-          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          return service.mark_job_as_processed(base_commit_sha)
         end
 
         # Update the service's metadata about this project
@@ -44,14 +50,10 @@ module Dependabot
         # As above, we can remove the responsibility for handling fatal/job halting
         # errors from Dependabot::Updater entirely.
         begin
-          Dependabot::Updater.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot
-          ).run
+          Dependabot::Updater.new(service:, job:, dependency_snapshot:).run
         rescue Dependabot::DependencyFileNotParseable => e
           handle_dependency_file_not_parseable_error(e)
-          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          return service.mark_job_as_processed(base_commit_sha)
         end
 
         # Wait for all PRs to be created
@@ -60,7 +62,7 @@ module Dependabot
         # Finally, mark the job as processed. The Dependabot::Updater may have
         # reported errors to the service, but we always consider the job as
         # successfully processed unless it actually raises.
-        service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
+        service.mark_job_as_processed(base_commit_sha)
       end
     end
 
@@ -78,7 +80,7 @@ module Dependabot
 
     sig { override.returns(T.nilable(String)) }
     def base_commit_sha
-      Environment.job_definition["base_commit_sha"]
+      @fetched_files.base_commit_sha
     end
 
     private

@@ -9,6 +9,17 @@ require "dependabot/dependency_graphers/base"
 module Dependabot
   module GoModules
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
+      # Used to capture output from `go mod graph`
+      #
+      # The parent and child are space-separated and we process one line at a time.
+      #
+      # Example output:
+      #   github.com/dependabot/core-test rsc.io/sampler@v1.3.0
+      #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
+      #   <---parent--->        <----child------>
+      #
+      GO_MOD_GRAPH_LINE_REGEX = T.let(/^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/, Regexp)
+
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
         # This cannot realistically happen as the parser will throw a runtime error on init without a go_mod file,
@@ -26,7 +37,9 @@ module Dependabot
       # doing this in the parser shouldn't add a huge overhead.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        dependency.metadata.fetch(:depends_on, [])
+        # go mod graph returns all dependencies it finds, even if it has been pruned. So filter those out.
+        dependency_names = @dependencies.map(&:name)
+        package_relationships.fetch(dependency.name, []).select { |child| dependency_names.include?(child) }
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -34,7 +47,7 @@ module Dependabot
         return @go_mod if defined?(@go_mod)
 
         @go_mod = T.let(
-          dependency_files.find { |f| f.name = "go.mod" },
+          dependency_files.find { |f| f.name == "go.mod" },
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -51,6 +64,38 @@ module Dependabot
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "golang"
+      end
+
+      sig { returns(T::Hash[String, T.untyped]) }
+      def package_relationships
+        @package_relationships ||= T.let(
+          fetch_package_relationships,
+          T.nilable(T::Hash[String, T.untyped])
+        )
+      end
+
+      sig { returns(T::Hash[String, T.untyped]) }
+      def fetch_package_relationships
+        T.cast(
+          file_parser,
+          Dependabot::GoModules::FileParser
+        ).run_in_parsed_context("go mod graph").lines.each_with_object({}) do |line, rels|
+          match = line.match(GO_MOD_GRAPH_LINE_REGEX)
+          unless match
+            Dependabot.logger.warn("Unexpected output from 'go mod graph': 'line'")
+            next
+          end
+
+          rels[match[:parent]] ||= []
+          rels[match[:parent]] << match[:child]
+        end
+      rescue Dependabot::DependencyFileNotParseable => e
+        # Attempt to recategorise the error as related to repo resolvability
+        repo_error_regex = FileUpdater::GoModUpdater::REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| e.message =~ r }
+        ResolvabilityErrors.handle(e.message) if repo_error_regex
+
+        # Re-raise the original error if we it isn't a resolvability problem.
+        raise e
       end
     end
   end

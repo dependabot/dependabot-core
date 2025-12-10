@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 ARG TARGETARCH
@@ -43,8 +44,7 @@ RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
 
 # Install .NET SDK
 # these versions should be kept in sync with the files `.devcontainer/devcontainer.json` and `nuget/helpers/lib/NuGetUpdater/global.json`
-ARG DOTNET_LTS_SDK_VERSION=8.0.412
-ARG DOTNET_STS_SDK_VERSION=9.0.302
+ARG DOTNET_SDK_VERSIONS="8.0.416 9.0.307 10.0.100"
 ARG DOTNET_SDK_INSTALL_URL=https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh
@@ -57,8 +57,9 @@ ENV NUGET_SCRATCH=/opt/nuget/helpers/tmp
 RUN curl --location --output "${DOTNET_INSTALL_SCRIPT_PATH}" "${DOTNET_SDK_INSTALL_URL}" \
  && chmod +x "${DOTNET_INSTALL_SCRIPT_PATH}" \
  && mkdir -p "${DOTNET_INSTALL_DIR}" \
- && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_LTS_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
- && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_STS_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
+ && for ver in ${DOTNET_SDK_VERSIONS}; do \
+      "${DOTNET_INSTALL_SCRIPT_PATH}" --version "$ver" --install-dir "${DOTNET_INSTALL_DIR}"; \
+    done \
  && chown -R dependabot:dependabot "$DOTNET_INSTALL_DIR"
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes
@@ -69,8 +70,7 @@ USER dependabot
 COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
-COPY --chown=dependabot:dependabot nuget $DEPENDABOT_HOME/nuget
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents nuget common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # ensure windows-style environment variables are set

@@ -305,7 +305,7 @@ module Dependabot
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
             T.let(
-              Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
+              Dependabot::GoModules::ReplaceStubber.new(T.must(repo_contents_path))
                                                                .stub_paths(manifest, directory),
               T.nilable(T::Hash[String, String])
             )

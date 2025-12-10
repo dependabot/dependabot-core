@@ -25,9 +25,6 @@ module Dependabot
         def self.applies_to?(job:)
           return true if job.multi_ecosystem_update?
           return false if job.updating_a_pull_request?
-          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
-            return false
-          end
 
           if job.security_updates_only?
             return true if job.dependencies && T.must(job.dependencies).count > 1
@@ -89,7 +86,12 @@ module Dependabot
           # the rest of the groups. This prevents multiple PRs from being created for the same dependency.
           groups_without_pr = dependency_snapshot.groups.filter_map do |group|
             if pr_exists_for_dependency_group?(group)
-              Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
+              existing_pr = job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }
+              pr_number = existing_pr["pr_number"] if existing_pr
+
+              Dependabot.logger.info(
+                "Detected existing pull request ##{pr_number} for the dependency group '#{group.name}'."
+              )
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
