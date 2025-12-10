@@ -80,7 +80,103 @@ module Dependabot
         end
       end
 
+      sig do
+        params(
+          current_group: Dependabot::DependencyGroup,
+          dep: Dependabot::Dependency,
+          groups: T::Array[Dependabot::DependencyGroup],
+          contains_checker:
+            T.proc.params(
+              group: Dependabot::DependencyGroup,
+              dep: Dependabot::Dependency,
+              directory: T.nilable(String)
+            ).returns(T::Boolean),
+          directory: T.nilable(String),
+          applies_to: T.nilable(String),
+          update_type: T.nilable(String)
+        ).returns(T.nilable(String))
+      end
+      def find_most_specific_group_name(
+        current_group,
+        dep,
+        groups,
+        contains_checker,
+        directory,
+        applies_to: nil,
+        update_type: nil
+      )
+        return nil unless can_check_specificity?(current_group, dep)
+
+        current_group_specificity = calculate_group_specificity_for_dependency(current_group, dep)
+        return nil if current_group_specificity >= EXPLICIT_MEMBER_SCORE
+
+        context = { applies_to: applies_to, update_type: update_type, directory: directory,
+                    contains_checker: contains_checker }
+        find_highest_specificity_group(current_group, dep, groups, context, current_group_specificity)&.name
+      end
+
       private
+
+      sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(T::Boolean) }
+      def can_check_specificity?(group, dep)
+        patterns = cast_patterns(group)
+        return false unless patterns&.any?
+
+        !excluded_by_group?(group, dep.name)
+      end
+
+      sig do
+        params(
+          current_group: Dependabot::DependencyGroup,
+          dep: Dependabot::Dependency,
+          groups: T::Array[Dependabot::DependencyGroup],
+          context: T::Hash[Symbol, T.untyped],
+          current_specificity: Integer
+        ).returns(T.nilable(Dependabot::DependencyGroup))
+      end
+      def find_highest_specificity_group(current_group, dep, groups, context, current_specificity)
+        most_specific_group = T.let(nil, T.nilable(Dependabot::DependencyGroup))
+        highest_specificity = current_specificity
+
+        groups.each do |other_group|
+          next if other_group == current_group
+          next unless group_matches_context?(other_group, dep, context)
+
+          other_group_specificity = calculate_group_specificity_for_dependency(other_group, dep)
+          if other_group_specificity > highest_specificity
+            highest_specificity = other_group_specificity
+            most_specific_group = other_group
+          end
+        end
+
+        most_specific_group
+      end
+
+      sig do
+        params(
+          group: Dependabot::DependencyGroup,
+          dep: Dependabot::Dependency,
+          context: T::Hash[Symbol, T.untyped]
+        ).returns(T::Boolean)
+      end
+      def group_matches_context?(group, dep, context)
+        update_type = T.cast(context[:update_type], T.nilable(String))
+        applies_to = T.cast(context[:applies_to], T.nilable(String))
+
+        return false unless update_type_allowed?(group, update_type)
+        return false unless applies_to_allowed?(group, applies_to)
+
+        contains_checker = T.cast(
+          context[:contains_checker],
+          T.proc.params(
+            group: Dependabot::DependencyGroup,
+            dep: Dependabot::Dependency,
+            directory: T.nilable(String)
+          ).returns(T::Boolean)
+        )
+        directory = T.cast(context[:directory], T.nilable(String))
+        contains_checker.call(group, dep, directory)
+      end
 
       sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(Integer) }
       def calculate_group_specificity_for_dependency(group, dep)
