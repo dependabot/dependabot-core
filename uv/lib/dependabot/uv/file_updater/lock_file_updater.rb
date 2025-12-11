@@ -12,6 +12,7 @@ require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
+require "dependabot/uv/requirement_suffix_helper"
 
 module Dependabot
   module Uv
@@ -26,10 +27,6 @@ module Dependabot
         UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
-        REQUIREMENT_SUFFIX_REGEX = T.let(
-          /\A(?<requirement>.*?)(?<suffix>\s*(?:;|#).*)?\z/m,
-          Regexp
-        )
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -140,7 +137,7 @@ module Dependabot
           updated_content = content.gsub(regex) do
             captured_requirement = Regexp.last_match(2)
 
-            requirement_body, suffix = split_requirement_suffix(T.must(captured_requirement))
+            requirement_body, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
 
             next Regexp.last_match(0) unless old_req
 
@@ -151,26 +148,16 @@ module Dependabot
               Regexp.last_match(0)
             end
           end
-
           unless replaced
             updated_content = content.sub(regex) do
               captured_requirement = Regexp.last_match(2)
-              _, suffix = split_requirement_suffix(T.must(captured_requirement))
+              _, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
 
               "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
             end
           end
 
           updated_content
-        end
-
-        sig { params(segment: String).returns(T::Array[String]) }
-        def split_requirement_suffix(segment)
-          match = REQUIREMENT_SUFFIX_REGEX.match(segment)
-          requirement = match ? match[:requirement] : segment
-          suffix = match&.[](:suffix) || ""
-
-          [T.must(requirement).strip, suffix]
         end
 
         sig { params(req1: String, req2: String).returns(T::Boolean) }
