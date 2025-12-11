@@ -84,9 +84,11 @@ module Dependabot
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
         EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
         NESTED_ALIAS = /nested aliases not supported/
+        # Patterns that indicate actual peer dependency resolution failures.
+        # Note: "ERESOLVE overriding peer dependency" is a warning in npm v8+, not an error.
+        # npm shows this as "npm WARN" and still completes successfully, so we don't treat it as fatal.
         PEER_DEPS_PATTERNS = T.let(
-          [/Cannot read properties of null/,
-           /ERESOLVE overriding peer dependency/].freeze,
+          [/Cannot read properties of null/].freeze,
           T::Array[Regexp]
         )
         PREMATURE_CLOSE = /premature close/

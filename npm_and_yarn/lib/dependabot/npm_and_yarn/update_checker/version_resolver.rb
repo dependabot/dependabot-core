@@ -88,10 +88,13 @@ module Dependabot
         # or with two semver constraints:
         # npm ERR! Could not resolve dependency:
         # npm ERR! peer @opentelemetry/api@">=1.0.0 <1.1.0" from @opentelemetry/context-async-hooks@1.0.1
+        #
+        # Note: npm WARN messages with "Could not resolve dependency" are not fatal errors.
+        # npm v8+ shows these as warnings but still completes successfully, so we only match npm ERR!
         NPM8_PEER_DEP_ERROR_REGEX =
           /
-            npm\s(?:WARN|ERR!)\sCould\snot\sresolve\sdependency:\n
-            npm\s(?:WARN|ERR!)\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
+            npm\sERR!\sCould\snot\sresolve\sdependency:\n
+            npm\sERR!\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x
 
         sig do
