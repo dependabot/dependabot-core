@@ -32,8 +32,6 @@ describe("npm8 subdependency-updater", () => {
         },
       };
 
-      // Use the internal function through module exports
-      // We'll need to expose it for testing
       const result = subdependencyUpdater.removeDependenciesFromLockfile(
         lockfile,
         ["follow-redirects"]
