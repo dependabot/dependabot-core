@@ -888,6 +888,23 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "with build-system requirements" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "build_system_pinned.toml")
+        )
+      end
+
+      it "sets groups for build-system deps" do
+        dep = dependencies.find { |d| d.name == "hatchling" }
+        expect(dep).not_to be_nil
+        req = dep.requirements.first
+        expect(req[:groups]).to include("build-system.requires")
+      end
+    end
+
     context "with a uv.lock file" do
       let(:files) { [pyproject, uv_lock] }
       let(:pyproject) do
@@ -927,6 +944,53 @@ RSpec.describe Dependabot::Uv::FileParser do
             )
           end
         end
+      end
+    end
+  end
+
+  describe "helper subprocess env injection" do
+    let(:expected_env) do
+      {
+        "SETUPTOOLS_SCM_PRETEND_VERSION" => "0.0.0",
+        "HATCH_BUILD_VERSION" => "0.0.0"
+      }
+    end
+
+    context "with requirements parsing" do
+      it "passes pretend version env to the helper" do
+        captured_env = nil
+
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_wrap_original do |m, *args, **kwargs|
+          captured_env = kwargs[:env]
+          m.call(*args, **kwargs)
+        end
+
+        parser.parse
+
+        expect(captured_env).to include(expected_env)
+      end
+    end
+
+    context "with pyproject parsing" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "dynamic_version_hatch_vcs.toml")
+        )
+      end
+
+      it "passes pretend version env to the helper" do
+        captured_env = nil
+
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_wrap_original do |m, *args, **kwargs|
+          captured_env = kwargs[:env]
+          m.call(*args, **kwargs)
+        end
+
+        parser.parse
+
+        expect(captured_env).to include(expected_env)
       end
     end
   end
