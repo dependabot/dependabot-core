@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const { exec } = require("child_process");
+const detectIndent = require("detect-indent");
 
 const execAsync = promisify(exec);
 
@@ -47,8 +48,7 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
   const lockfile = readFile(lockfileName);
   
   // Detect indentation to preserve formatting
-  const indentMatch = lockfile.match(/^(\s+)/m);
-  const indent = indentMatch ? indentMatch[1] : "  ";
+  const indent = detectIndent(lockfile).indent || "  ";
   
   const lockfileObject = JSON.parse(lockfile);
   
@@ -77,7 +77,9 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
         env: {
           ...process.env,
           // Ensure npm doesn't try to update the lockfile version
-          npm_config_lockfile_version: lockfileObject.lockfileVersion?.toString(),
+          npm_config_lockfile_version: lockfileObject.lockfileVersion
+            ? lockfileObject.lockfileVersion.toString()
+            : undefined,
         },
       }
     );
