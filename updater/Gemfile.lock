@@ -63,6 +63,12 @@ PATH
       dependabot-python (= 0.351.0)
 
 PATH
+  remote: ../crystal_shards
+  specs:
+    dependabot-crystal_shards (0.351.0)
+      dependabot-common (= 0.351.0)
+
+PATH
   remote: ../devcontainers
   specs:
     dependabot-devcontainers (0.351.0)
@@ -564,6 +570,7 @@ DEPENDENCIES
   dependabot-common!
   dependabot-composer!
   dependabot-conda!
+  dependabot-crystal_shards!
   dependabot-devcontainers!
   dependabot-docker!
   dependabot-docker_compose!
@@ -650,6 +657,7 @@ CHECKSUMS
   dependabot-common (0.351.0)
   dependabot-composer (0.351.0)
   dependabot-conda (0.351.0)
+  dependabot-crystal_shards (0.351.0)
   dependabot-devcontainers (0.351.0)
   dependabot-docker (0.351.0)
   dependabot-docker_compose (0.351.0)

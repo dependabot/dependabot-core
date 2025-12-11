@@ -1,0 +1,12 @@
+name: my_shard
+version: 1.0.0
+
+dependencies:
+  kemal:
+    github: kemalcr/kemal
+    version: ~> 1.0.0
+
+development_dependencies:
+  webmock:
+    github: manastech/webmock.cr
+    version: ~> 0.14.0

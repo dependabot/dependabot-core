@@ -38,7 +38,7 @@ Naming/PredicateMethod:
     - 'python/lib/dependabot/python/file_updater/requirement_replacer.rb'
     - 'uv/lib/dependabot/uv/file_updater/requirement_replacer.rb'
 
-# Offense count: 44
+# Offense count: 45
 RSpec/AnyInstance:
   Exclude:
     - 'bun/spec/dependabot/bun/update_checker_spec.rb'
@@ -47,6 +47,7 @@ RSpec/AnyInstance:
     - 'common/spec/dependabot/file_fetchers/base_spec.rb'
     - 'common/spec/dependabot/git_commit_checker_spec.rb'
     - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
+    - 'crystal_shards/spec/dependabot/crystal_shards/update_checker_spec.rb'
     - 'gradle/spec/dependabot/gradle/metadata_finder_spec.rb'
     - 'maven/spec/dependabot/maven/metadata_finder_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'

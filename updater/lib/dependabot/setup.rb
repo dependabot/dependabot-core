@@ -32,6 +32,7 @@ Sentry.init do |config|
     cargo|
     composer|
     conda|
+    crystal_shards|
     devcontainers|
     docker_compose|
     docker|
@@ -74,6 +75,7 @@ require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
+require "dependabot/crystal_shards"
 require "dependabot/devcontainers"
 require "dependabot/docker_compose"
 require "dependabot/docker"

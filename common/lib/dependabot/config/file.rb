@@ -66,6 +66,7 @@ module Dependabot
           "cargo" => "cargo",
           "composer" => "composer",
           "conda" => "conda",
+          "crystal" => "crystal_shards",
           "devcontainer" => "devcontainers",
           "docker-compose" => "docker_compose",
           "docker" => "docker",
