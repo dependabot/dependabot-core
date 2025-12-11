@@ -51,13 +51,6 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         foreach (var group in job.DependencyGroups)
         {
-            var existingGroupPr = job.ExistingGroupPullRequests.FirstOrDefault(pr => pr.DependencyGroupName == group.Name);
-            if (existingGroupPr is not null)
-            {
-                logger.Info($"Existing pull request found for group {group.Name}.  Skipping pull request creation.");
-                continue;
-            }
-
             logger.Info($"Starting update for group {group.Name}");
             var groupMatcher = group.GetGroupMatcher();
             var updateOperationsPerformed = new List<UpdateOperationBase>();
@@ -146,19 +139,29 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
             if (updateOperationsPerformed.Count > 0)
             {
-                var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], group.Name);
-                var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], group.Name);
-                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-                await apiHandler.CreatePullRequest(new CreatePullRequest()
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(
+                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
+                        considerVersions: true);
+                if (existingPullRequest is not null)
                 {
-                    Dependencies = [.. updatedDependencies],
-                    UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
-                    BaseCommitSha = baseCommitSha,
-                    CommitMessage = commitMessage,
-                    PrTitle = prTitle,
-                    PrBody = prBody,
-                    DependencyGroup = group.Name,
-                });
+                    logger.Info($"Pull request already exists for {string.Join(", ", existingPullRequest!.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}"))}");
+                }
+                else
+                {
+                    var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], group.Name);
+                    var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], group.Name);
+                    var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
+                    await apiHandler.CreatePullRequest(new CreatePullRequest()
+                    {
+                        Dependencies = [.. updatedDependencies],
+                        UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
+                        BaseCommitSha = baseCommitSha,
+                        CommitMessage = commitMessage,
+                        PrTitle = prTitle,
+                        PrBody = prBody,
+                        DependencyGroup = group.Name,
+                    });
+                }
             }
         }
     }
@@ -254,19 +257,29 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 if (updateOperationsPerformed.Count > 0)
                 {
-                    var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
-                    var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                    var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-                    await apiHandler.CreatePullRequest(new CreatePullRequest()
+                    var existingPullRequest = job.GetExistingPullRequestForDependencies(
+                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
+                        considerVersions: true);
+                    if (existingPullRequest is not null)
                     {
-                        Dependencies = [.. updatedDependencies],
-                        UpdatedDependencyFiles = [.. updatedDependencyFiles],
-                        BaseCommitSha = baseCommitSha,
-                        CommitMessage = commitMessage,
-                        PrTitle = prTitle,
-                        PrBody = prBody,
-                        DependencyGroup = null,
-                    });
+                        logger.Info($"Pull request already exists for {string.Join(", ", existingPullRequest!.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}"))}");
+                    }
+                    else
+                    {
+                        var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
+                        var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
+                        var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
+                        await apiHandler.CreatePullRequest(new CreatePullRequest()
+                        {
+                            Dependencies = [.. updatedDependencies],
+                            UpdatedDependencyFiles = [.. updatedDependencyFiles],
+                            BaseCommitSha = baseCommitSha,
+                            CommitMessage = commitMessage,
+                            PrTitle = prTitle,
+                            PrBody = prBody,
+                            DependencyGroup = null,
+                        });
+                    }
                 }
             }
         }
