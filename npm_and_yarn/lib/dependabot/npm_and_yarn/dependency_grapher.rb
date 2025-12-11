@@ -40,7 +40,7 @@ module Dependabot
 
         T.must(
           @package_json = T.let(
-            T.must(dependency_files.find { |f| f.name.end_with?(MANIFEST_FILENAME) }),
+            T.must(dependency_files.find { |f| f.name.end_with?(NpmAndYarn::MANIFEST_FILENAME) }),
             T.nilable(Dependabot::DependencyFile)
           )
         )
