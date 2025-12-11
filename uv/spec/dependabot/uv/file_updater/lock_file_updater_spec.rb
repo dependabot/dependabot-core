@@ -105,6 +105,59 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(lockfile.content).to include('version = "2.23.0"')
     end
 
+    context "with platform specific environment markers" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "example"
+          version = "1.0.0"
+          dependencies = [
+            "pyad>=0.6.0 ; sys_platform == 'win32'",
+            "pywin32>=310; sys_platform == 'win32'",
+            "colorama>=0.4.6"
+          ]
+        TOML
+      end
+
+      let(:lockfile_content) { "original lock content" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pywin32",
+          version: "311",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=311",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=310",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:updated_lockfile_content) { "updated lock content" }
+
+      before do
+        allow(updater).to receive(:updated_pyproject_content).and_call_original
+        allow(updater).to receive(:updated_lockfile_content_for).and_return("updated lock content")
+      end
+
+      it "preserves environment markers for all dependencies" do
+        pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(pyproject.content)
+          .to include("pyad>=0.6.0 ; sys_platform == 'win32'")
+        expect(pyproject.content)
+          .to include("pywin32>=311; sys_platform == 'win32'")
+      end
+    end
+
     context "when the lockfile doesn't change" do
       before do
         allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
