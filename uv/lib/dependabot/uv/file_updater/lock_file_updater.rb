@@ -105,7 +105,6 @@ module Dependabot
             raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
-
           end
 
           updated_files
