@@ -6,10 +6,10 @@ const { exec } = require("child_process");
 const execAsync = promisify(exec);
 
 /**
- * Recursively removes all dependencies matching the given names from an npm8 lockfile.
- * npm8 lockfiles (lockfileVersion 2+) have a different structure with:
- * - "packages" object containing all packages with "node_modules/<name>" keys
- * - nested "dependencies" within each package entry
+ * Removes all packages matching the given names from an npm8 lockfile.
+ * npm8 lockfiles (lockfileVersion 2+) have a "packages" object containing all packages
+ * with "node_modules/<name>" keys. We remove the package entries but keep the
+ * dependency references in parent packages - npm will resolve those when it regenerates.
  */
 function removeDependenciesFromLockfile(lockfile, dependencyNames) {
   if (!lockfile.packages) return lockfile;
@@ -28,26 +28,8 @@ function removeDependenciesFromLockfile(lockfile, dependencyNames) {
         return acc;
       }
 
-      // Recursively process nested dependencies if they exist
-      if (packageValue && typeof packageValue === "object") {
-        const processedPackageValue = { ...packageValue };
-        
-        // Remove from dependencies object if it exists
-        if (processedPackageValue.dependencies) {
-          processedPackageValue.dependencies = Object.entries(
-            processedPackageValue.dependencies
-          ).reduce((depAcc, [depName, depValue]) => {
-            if (!dependencyNames.includes(depName)) {
-              depAcc[depName] = depValue;
-            }
-            return depAcc;
-          }, {});
-        }
-
-        acc[packagePath] = processedPackageValue;
-      } else {
-        acc[packagePath] = packageValue;
-      }
+      // Keep all other packages as-is
+      acc[packagePath] = packageValue;
 
       return acc;
     },
@@ -110,4 +92,4 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
   return { [lockfileName]: updatedLockfile };
 }
 
-module.exports = { updateDependencyFile };
+module.exports = { updateDependencyFile, removeDependenciesFromLockfile };
