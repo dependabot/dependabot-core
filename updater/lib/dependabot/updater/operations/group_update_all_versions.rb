@@ -86,7 +86,12 @@ module Dependabot
           # the rest of the groups. This prevents multiple PRs from being created for the same dependency.
           groups_without_pr = dependency_snapshot.groups.filter_map do |group|
             if pr_exists_for_dependency_group?(group)
-              Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
+              existing_pr = job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }
+              pr_number = existing_pr["pr_number"] if existing_pr
+
+              Dependabot.logger.info(
+                "Detected existing pull request ##{pr_number} for the dependency group '#{group.name}'."
+              )
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )

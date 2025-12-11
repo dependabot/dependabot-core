@@ -12,6 +12,7 @@ require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
+require "dependabot/uv/requirement_suffix_helper"
 
 module Dependabot
   module Uv
@@ -136,17 +137,23 @@ module Dependabot
           updated_content = content.gsub(regex) do
             captured_requirement = Regexp.last_match(2)
 
-            if requirements_match?(T.must(captured_requirement), old_req)
+            requirement_body, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+            next Regexp.last_match(0) unless old_req
+
+            if requirements_match?(T.must(requirement_body), old_req)
               replaced = true
-              "#{Regexp.last_match(1)}#{new_req}#{Regexp.last_match(3)}"
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
             else
               Regexp.last_match(0)
             end
           end
-
           unless replaced
             updated_content = content.sub(regex) do
-              "#{Regexp.last_match(1)}#{new_req}#{Regexp.last_match(3)}"
+              captured_requirement = Regexp.last_match(2)
+              _, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
             end
           end
 
@@ -155,11 +162,12 @@ module Dependabot
 
         sig { params(req1: String, req2: String).returns(T::Boolean) }
         def requirements_match?(req1, req2)
-          normalize = lambda do |req|
-            req.split(",").map(&:strip).sort.join(",")
-          end
+          normalized_requirement(req1) == normalized_requirement(req2)
+        end
 
-          normalize.call(req1) == normalize.call(req2)
+        sig { params(req: String).returns(String) }
+        def normalized_requirement(req)
+          req.split(",").map(&:strip).sort.join(",")
         end
 
         sig { returns(String) }
@@ -285,7 +293,13 @@ module Dependabot
           options_fingerprint = lock_options_fingerprint(options)
 
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec uv lock --upgrade-package #{T.must(dependency).name} #{options}"
+          # Include the target version to respect ignore conditions and avoid upgrading
+          # to the absolute latest version (which may be blocked by ignore rules)
+          dep_name = T.must(dependency).name
+          dep_version = T.must(dependency).version
+          package_spec = dep_version ? "#{dep_name}==#{dep_version}" : dep_name
+
+          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
           run_command(command, fingerprint:)

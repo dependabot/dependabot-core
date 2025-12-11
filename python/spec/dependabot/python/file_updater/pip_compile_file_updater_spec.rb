@@ -104,6 +104,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
+    context "with multiple output files from a single input file" do
+      let(:dependency_files) { [manifest_file, generated_file, generated_file2] }
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("requirements", "pip_compile_multi_output_first.txt")
+        )
+      end
+      let(:generated_file2) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test-alt.txt",
+          content: fixture("requirements", "pip_compile_multi_output_second.txt")
+        )
+      end
+
+      it "updates both requirements.txt files" do
+        expect(updated_files.count).to eq(2)
+        updated_filenames = updated_files.map(&:name)
+        expect(updated_filenames).to include("requirements/test.txt")
+        expect(updated_filenames).to include("requirements/test-alt.txt")
+        updated_files.each do |file|
+          expect(file.content).to include("attrs==18.1.0")
+          expect(file.content).to include("# This file is autogen")
+        end
+      end
+    end
+
     context "with a custom header" do
       let(:generated_fixture_name) { "pip_compile_custom_header.txt" }
 

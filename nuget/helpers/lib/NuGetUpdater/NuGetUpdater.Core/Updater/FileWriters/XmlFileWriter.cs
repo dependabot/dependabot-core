@@ -22,6 +22,8 @@ public class XmlFileWriter : IFileWriter
     private const string PackageVersionElementName = "PackageVersion";
     private const string PropertyGroupElementName = "PropertyGroup";
 
+    private const string UpdaterAnnotationKind = "dependabot";
+
     private readonly ILogger _logger;
 
     // these file extensions are valid project entrypoints; everything else is ignored
@@ -357,10 +359,11 @@ public class XmlFileWriter : IFileWriter
                         currentVersionString = versionAttribute.Value;
                         updateVersionLocation = version =>
                         {
+                            var existingAnnotation = versionAttribute.GetAnnotations(UpdaterAnnotationKind).First();
                             var refoundVersionAttribute = filesAndContents[filePath]
                                 .DescendantNodes()
                                 .OfType<XmlAttributeSyntax>()
-                                .First(a => a.FullSpan.Start == versionAttribute.FullSpan.Start);
+                                .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == existingAnnotation));
                             ReplaceNode(filePath, refoundVersionAttribute, refoundVersionAttribute.WithValue(version));
                         };
                         goto doVersionUpdate;
@@ -373,10 +376,11 @@ public class XmlFileWriter : IFileWriter
                         currentVersionString = versionElement.GetContentValue();
                         updateVersionLocation = version =>
                         {
+                            var existingAnnotation = versionElement.AsNode.GetAnnotations(UpdaterAnnotationKind).First();
                             var refoundVersionElement = filesAndContents[filePath]
                                 .DescendantNodes()
                                 .OfType<IXmlElementSyntax>()
-                                .First(e => e.AsNode.FullSpan.Start == versionElement.AsNode.FullSpan.Start);
+                                .First(e => e.AsNode.GetAnnotations(UpdaterAnnotationKind).Any(an => an == existingAnnotation));
                             ReplaceNode(filePath, refoundVersionElement.AsNode, refoundVersionElement.WithContent(version).AsNode);
                         };
                         goto doVersionUpdate;
@@ -556,7 +560,18 @@ public class XmlFileWriter : IFileWriter
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         var contents = await File.ReadAllTextAsync(fullPath);
         var document = Parser.ParseText(contents);
-        return document;
+
+        // ensure relevant nodes have a unique annotation so we can do precise edits later
+        var documentWithAllAnnotations = document.ReplaceNodes(
+            document.DescendantNodes(),
+            (_, node) => node switch
+            {
+                var nodeType when nodeType is XmlAttributeSyntax or XmlElementSyntax
+                    => node.WithAnnotations(new SyntaxAnnotation(UpdaterAnnotationKind)),
+                _ => node,
+            });
+
+        return documentWithAllAnnotations;
     }
 
     private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, XmlDocumentSyntax document)

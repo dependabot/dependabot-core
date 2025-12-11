@@ -105,6 +105,59 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(lockfile.content).to include('version = "2.23.0"')
     end
 
+    context "with platform specific environment markers" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "example"
+          version = "1.0.0"
+          dependencies = [
+            "pyad>=0.6.0 ; sys_platform == 'win32'",
+            "pywin32>=310; sys_platform == 'win32'",
+            "colorama>=0.4.6"
+          ]
+        TOML
+      end
+
+      let(:lockfile_content) { "original lock content" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pywin32",
+          version: "311",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=311",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=310",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:updated_lockfile_content) { "updated lock content" }
+
+      before do
+        allow(updater).to receive(:updated_pyproject_content).and_call_original
+        allow(updater).to receive(:updated_lockfile_content_for).and_return("updated lock content")
+      end
+
+      it "preserves environment markers for all dependencies" do
+        pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(pyproject.content)
+          .to include("pyad>=0.6.0 ; sys_platform == 'win32'")
+        expect(pyproject.content)
+          .to include("pywin32>=311; sys_platform == 'win32'")
+      end
+    end
+
     context "when the lockfile doesn't change" do
       before do
         allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
@@ -382,7 +435,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     it "includes the expected options in the command and fingerprint" do
-      expected_command = "pyenv exec uv lock --upgrade-package requests " \
+      expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
                          "--index https://token@example.com/simple " \
                          "--default-index https://another_token@another.com/simple"
       expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
@@ -395,6 +448,45 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expected_command,
         fingerprint: expected_fingerprint
       )
+    end
+
+    context "when dependency version is nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: nil,
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: nil,
+          package_manager: "uv"
+        )
+      end
+
+      it "uses only the package name without version constraint" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint
+        )
+      end
     end
   end
 
