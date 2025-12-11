@@ -21,7 +21,6 @@ To enable OpenTofu support, add to your `dependabot.yml`:
 
 ```yaml
 version: 2
-enable-beta-ecosystems: true
 updates:
   - package-ecosystem: "opentofu"
     directory: "/"

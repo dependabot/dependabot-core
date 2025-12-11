@@ -22,9 +22,6 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_files
-        # Julia is currently in beta - only fetch files if beta ecosystems are enabled
-        return [] unless allow_beta_ecosystems?
-
         # Clone the repository temporarily to let Julia helper identify the correct files
         SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do |temp_dir|
           fetch_files_using_julia_helper(temp_dir)
