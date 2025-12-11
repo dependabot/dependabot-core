@@ -17,7 +17,6 @@ require "dependabot/uv/requirement_suffix_helper"
 module Dependabot
   module Uv
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
       class LockFileUpdater
         extend T::Sig
 
@@ -479,7 +478,6 @@ module Dependabot
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
