@@ -50,11 +50,15 @@ def parse_pep621_pep735_dependencies(pyproject_path):
             }
             return data
 
-    def parse_toml_section_pep621_dependencies(pyproject_path, dependencies, requirement_type=None):
+    def parse_toml_section_pep621_dependencies(
+        pyproject_path, dependencies, requirement_type=None
+    ):
         requirement_packages = []
 
         for dependency in dependencies:
-            parsed_dependency = parse_requirement(dependency, pyproject_path, requirement_type)
+            parsed_dependency = parse_requirement(
+                dependency, pyproject_path, requirement_type
+            )
             requirement_packages.append(parsed_dependency)
 
         return requirement_packages
