@@ -145,6 +145,27 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
     end
 
+    context "with npm8 and axios/follow-redirects subdependency" do
+      let(:dependency_files) { project_dependency_files("npm8/axios_follow_redirects") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "follow-redirects",
+          version: "1.15.2",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:latest_allowable_version) { "1.15.6" }
+
+      it "uses npm8 subdependency updater helper" do
+        expect(resolver).to receive(:run_npm_updater).and_call_original
+        # The actual version will depend on what npm resolves, but it should work
+        # without errors and return a version
+        expect(latest_resolvable_version).to be_a(Gem::Version)
+      end
+    end
+
     context "with a npm6 package-lock.json" do
       let(:dependency_files) { project_dependency_files("npm6/subdependency_update") }
 
