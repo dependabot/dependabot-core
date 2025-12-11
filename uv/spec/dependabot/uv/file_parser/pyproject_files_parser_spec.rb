@@ -276,7 +276,7 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         )
