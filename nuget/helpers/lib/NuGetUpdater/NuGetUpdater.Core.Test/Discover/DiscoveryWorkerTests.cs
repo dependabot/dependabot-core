@@ -3,6 +3,7 @@ using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -1616,5 +1617,40 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 ]
             }
         );
+    }
+
+    [Theory]
+    [InlineData(@"..\project2\project2.csproj")] // relative
+    [InlineData(@"$(MSBuildThisFileDirectory)..\project2\project2.csproj")] // absolute
+    public async Task ExpandEntryPoints(string projectReferencePath)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("src/project1/project1.csproj", $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="{projectReferencePath}" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project2/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj")], new ExperimentsManager()))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
+            Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
     }
 }
