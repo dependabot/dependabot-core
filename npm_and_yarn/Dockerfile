@@ -47,20 +47,15 @@ EOF
 # Configure Node to use our custom CA bundle
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
+# Silence warning messages that aren't useful within the Dependabot context.
+# CAUTION: `NPM_CONFIG_*` vars take precedence over the user's .npmrc settings. For these it always makes sense, but for
+# other non-default configs it might be better to set them in a global .npmrc instead so users' .npmrc settings are respected.
+ENV NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false
+
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 RUN bash /opt/npm_and_yarn/helpers/build
-
-# START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
-
-# TODO: Remove these hacks once we've deprecated npm 6 support as it no longer
-# spawns a child process to npm install git dependencies.
-
-# Create the config file manually instead of using yarn/npm config set as this
-# executes the package manager outputs to every job log
-COPY --chown=dependabot:dependabot updater/config/.npmrc $DEPENDABOT_HOME/
-
-# END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
 COPY --chown=dependabot:dependabot --parents npm_and_yarn common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
