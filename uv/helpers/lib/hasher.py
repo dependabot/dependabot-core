@@ -4,7 +4,6 @@ import plette
 import ssl
 import traceback
 from urllib.error import URLError
-from poetry.factory import Factory
 
 
 def get_dependency_hash(dependency_name, dependency_version, algorithm,
@@ -41,9 +40,3 @@ def get_pipfile_hash(directory):
         pipfile = plette.Pipfile.load(f)
 
     return json.dumps({"result": pipfile.get_hash().value})
-
-
-def get_pyproject_hash(directory):
-    p = Factory().create_poetry(directory)
-
-    return json.dumps({"result": p.locker._get_content_hash()})
