@@ -19,9 +19,9 @@ Updating the list of known versions might be tricky, here are the steps:
 
 1. Start a development shell
 
-  ```shell
-  $ bin/docker-dev-shell python
-  ```
+   ```shell
+   $ bin/docker-dev-shell python
+   ```
 
 2. Run tests
 
