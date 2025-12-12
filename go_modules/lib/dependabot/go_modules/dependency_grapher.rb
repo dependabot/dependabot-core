@@ -94,7 +94,7 @@ module Dependabot
         repo_error_regex = FileUpdater::GoModUpdater::REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| e.message =~ r }
         ResolvabilityErrors.handle(e.message) if repo_error_regex
 
-        # Re-raise the original error if we it isn't a resolvability problem.
+        # Re-raise the original error if it isn't a resolvability problem.
         raise e
       end
     end
