@@ -888,6 +888,23 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "with build-system requirements" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "build_system_pinned.toml")
+        )
+      end
+
+      it "sets groups for build-system deps" do
+        dep = dependencies.find { |d| d.name == "hatchling" }
+        expect(dep).not_to be_nil
+        req = dep.requirements.first
+        expect(req[:groups]).to include("build-system")
+      end
+    end
+
     context "with a uv.lock file" do
       let(:files) { [pyproject, uv_lock] }
       let(:pyproject) do

@@ -17,6 +17,7 @@ require "dependabot/uv/requirement_suffix_helper"
 module Dependabot
   module Uv
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class LockFileUpdater
         extend T::Sig
 
@@ -74,6 +75,16 @@ module Dependabot
           T.must(dependencies.first)
         end
 
+        sig { returns(T::Boolean) }
+        def build_system_only_dependency?
+          return false unless dependency
+
+          groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
+          return false if groups.empty?
+
+          groups.all?("build-system")
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
           return [] unless create_or_update_lock_file?
@@ -88,9 +99,10 @@ module Dependabot
               )
           end
 
-          if lockfile
+          if lockfile && !build_system_only_dependency?
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
+
             raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
@@ -467,6 +479,7 @@ module Dependabot
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
