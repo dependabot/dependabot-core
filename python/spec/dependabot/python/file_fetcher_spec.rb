@@ -638,6 +638,48 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "when the directory itself is a requirements directory" do
+      let(:directory) { "/.github/requirements/" }
+      let(:url_with_directory) { File.join(url, ".github/requirements/") }
+      let(:repo_contents) do
+        fixture("github", "contents_github_requirements_dir.json")
+      end
+
+      before do
+        stub_request(:get, url_with_directory + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: repo_contents,
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url_with_directory + "build-requirements.in?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url_with_directory + "build-requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the requirements files from the subdirectory" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(
+            %w(
+              build-requirements.in
+              build-requirements.txt
+            )
+          )
+      end
+    end
+
     context "with a cascading requirement" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_requirements.json")
