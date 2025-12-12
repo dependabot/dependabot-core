@@ -314,9 +314,14 @@ module Dependabot
 
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm8_subdependency_updater(sub_dependencies:)
-          dependency_names = sub_dependencies.map(&:name)
-          NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
-          { lockfile_basename => File.read(lockfile_basename) }
+          T.cast(
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "npm8:updateDependencyFile",
+              args: [Dir.pwd, lockfile_basename, sub_dependencies.map(&:to_h)]
+            ),
+            T::Hash[String, String]
+          )
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }

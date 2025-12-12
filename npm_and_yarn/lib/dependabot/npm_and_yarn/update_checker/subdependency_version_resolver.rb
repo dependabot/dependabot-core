@@ -186,9 +186,14 @@ module Dependabot
         def run_npm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
-
-              { lockfile_name => File.read(lockfile_name) }
+              T.cast(
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "npm8:updateDependencyFile",
+                  args: [Dir.pwd, lockfile_name, [dependency.to_h]]
+                ),
+                T::Hash[String, String]
+              )
             end
           end
         end
