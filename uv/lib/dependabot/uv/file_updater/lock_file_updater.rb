@@ -82,7 +82,7 @@ module Dependabot
           groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
           return false if groups.empty?
 
-          groups.all?("build-system.requires")
+          groups.all?("build-system")
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
