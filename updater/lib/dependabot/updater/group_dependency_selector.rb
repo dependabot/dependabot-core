@@ -3,11 +3,13 @@
 
 require "sorbet-runtime"
 require "wildcard_matcher"
+require "dependabot/utils"
 require "dependabot/dependency_attribution"
 require "dependabot/dependency_change"
 require "dependabot/dependency_group"
 require "dependabot/dependency_snapshot"
 require "dependabot/updater/pattern_specificity_calculator"
+require "dependabot/updater/update_type_helper"
 
 module Dependabot
   class Updater
@@ -28,6 +30,7 @@ module Dependabot
     #
     # Note: Filtering requires the :group_membership_enforcement feature to be enabled.
     class GroupDependencySelector
+      include UpdateTypeHelper
       extend T::Sig
 
       MAX_DEPENDENCIES_TO_LOG = 10
@@ -210,8 +213,11 @@ module Dependabot
           ).returns(T::Boolean)
         )
 
+        update_type = update_type_for_dependency(dep)
+        applies_to = group_applies_to
+
         @specificity_calculator.dependency_belongs_to_more_specific_group?(
-          @group, dep, @snapshot.groups, contains_checker, directory
+          @group, dep, @snapshot.groups, contains_checker, directory, applies_to:, update_type:
         )
       end
 
@@ -224,6 +230,32 @@ module Dependabot
         else
           group.contains?(dep)
         end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def group_applies_to
+        return nil unless @group.respond_to?(:applies_to)
+
+        T.unsafe(@group).applies_to
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
+      def update_type_for_dependency(dep)
+        prev_str = dep.respond_to?(:previous_version) ? dep.previous_version&.to_s : nil
+        curr_str = dep.respond_to?(:version) ? dep.version&.to_s : nil
+        return nil unless prev_str && curr_str
+
+        version_class = version_class_for(dep)
+        return nil unless version_class
+
+        update_type = update_type_from_class(version_class, prev_str, curr_str)
+        return update_type if update_type
+
+        versions = build_versions(version_class, prev_str, curr_str)
+        return nil unless versions
+
+        prev_ver, curr_ver = versions
+        classify_semver_update(prev_ver, curr_ver)
       end
 
       sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }
