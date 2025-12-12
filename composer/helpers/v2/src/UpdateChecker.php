@@ -17,19 +17,59 @@ final class UpdateChecker
         [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
         $httpBasicCredentials = [];
+        $bearerCredentials = [];
+        $githubOauthCredentials = [];
+        $gitlabOauthCredentials = [];
+        $gitlabTokenCredentials = [];
+        $bitbucketOauthCredentials = [];
 
         foreach ($gitCredentials as $credentials) {
-            $httpBasicCredentials[$credentials['host']] = [
-                'username' => $credentials['username'],
-                'password' => $credentials['password'],
-            ];
+            if (isset($credentials['host']) && isset($credentials['username']) && isset($credentials['password'])) {
+                $httpBasicCredentials[$credentials['host']] = [
+                    'username' => $credentials['username'],
+                    'password' => $credentials['password'],
+                ];
+            }
         }
 
         foreach ($registryCredentials as $credentials) {
-            $httpBasicCredentials[$credentials['registry']] = [
-                'username' => $credentials['username'],
-                'password' => $credentials['password'],
-            ];
+            $host = $credentials['registry'] ?? null;
+            if (!$host) {
+                continue;
+            }
+
+            // http-basic
+            if (isset($credentials['username']) && isset($credentials['password'])) {
+                $httpBasicCredentials[$host] = [
+                    'username' => $credentials['username'],
+                    'password' => $credentials['password'],
+                ];
+            }
+
+            $authType = $credentials['auth_type'] ?? null;
+            // bearer
+            if ($authType === 'bearer' && isset($credentials['token'])) {
+                $bearerCredentials[$host] = $credentials['token'];
+            }
+            // github-oauth
+            if ($authType === 'github-oauth' && isset($credentials['token'])) {
+                $githubOauthCredentials[$host] = $credentials['token'];
+            }
+            // gitlab-oauth
+            if ($authType === 'gitlab-oauth' && isset($credentials['token'])) {
+                $gitlabOauthCredentials[$host] = $credentials['token'];
+            }
+            // gitlab-token
+            if ($authType === 'gitlab-token' && isset($credentials['token'])) {
+                $gitlabTokenCredentials[$host] = $credentials['token'];
+            }
+            // bitbucket-oauth
+            if ($authType === 'bitbucket-oauth' && (isset($credentials['key']) || isset($credentials['consumer-key']) || isset($credentials['username'])) && (isset($credentials['secret']) || isset($credentials['consumer-secret']) || isset($credentials['password']))) {
+                $bitbucketOauthCredentials[$host] = [
+                    'consumer-key' => $credentials['key'] ?? $credentials['consumer-key'] ?? $credentials['username'] ?? '',
+                    'consumer-secret' => $credentials['secret'] ?? $credentials['consumer-secret'] ?? $credentials['password'] ?? '',
+                ];
+            }
         }
 
         $io = new ExceptionIO();
@@ -38,13 +78,28 @@ final class UpdateChecker
 
         $config = $composer->getConfig();
 
-        if (0 < count($httpBasicCredentials)) {
-            $config->merge([
-                'config' => [
-                    'http-basic' => $httpBasicCredentials,
-                ],
-            ]);
+        $configToMerge = ['config' => []];
+        if (!empty($httpBasicCredentials)) {
+            $configToMerge['config']['http-basic'] = $httpBasicCredentials;
+        }
+        if (!empty($bearerCredentials)) {
+            $configToMerge['config']['bearer'] = $bearerCredentials;
+        }
+        if (!empty($githubOauthCredentials)) {
+            $configToMerge['config']['github-oauth'] = $githubOauthCredentials;
+        }
+        if (!empty($gitlabOauthCredentials)) {
+            $configToMerge['config']['gitlab-oauth'] = $gitlabOauthCredentials;
+        }
+        if (!empty($gitlabTokenCredentials)) {
+            $configToMerge['config']['gitlab-token'] = $gitlabTokenCredentials;
+        }
+        if (!empty($bitbucketOauthCredentials)) {
+            $configToMerge['config']['bitbucket-oauth'] = $bitbucketOauthCredentials;
+        }
 
+        if (!empty($configToMerge['config'])) {
+            $config->merge($configToMerge);
             $io->loadConfiguration($config);
         }
 

@@ -622,6 +622,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         def git_credentials
+          # Pass git_source credentials if they have basic auth available. Composer expects http-basic for git hosts.
           credentials
             .select { |cred| cred["type"] == "git_source" }
             .select { |cred| cred["password"] }
@@ -629,9 +630,11 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         def registry_credentials
+          # Include composer repository credentials that use either basic auth (username/password)
+          # or token-based auth (token-based methods are handled in the PHP helper layer).
           credentials
             .select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY }
-            .select { |cred| cred["password"] }
+            .select { |cred| cred["password"] || cred["token"] || cred["auth_type"] }
         end
       end
     end
