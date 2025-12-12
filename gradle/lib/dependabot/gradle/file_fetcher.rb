@@ -192,6 +192,7 @@ module Dependabot
             file.content = Base64.encode64(T.must(file.content)) if file.content
             file.content_encoding = DependencyFile::ContentEncoding::BASE64
           end
+          file.mode = DependencyFile::Mode::EXECUTABLE if file.name.end_with?("gradlew", "gradlew.bat")
           file
         rescue Dependabot::DependencyFileNotFound
           # Gradle itself doesn't worry about missing subprojects, so we don't
