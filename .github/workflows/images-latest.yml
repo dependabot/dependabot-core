@@ -52,6 +52,7 @@ jobs:
           - { name: helm, ecosystem: helm }
           - { name: hex, ecosystem: mix }
           - { name: julia, ecosystem: julia }
+          - { name: luarocks, ecosystem: luarocks }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }

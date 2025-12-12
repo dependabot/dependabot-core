@@ -77,6 +77,7 @@ module Dependabot
           "gradle" => "gradle",
           "helm" => "helm",
           "julia" => "julia",
+          "luarocks" => "luarocks",
           "maven" => "maven",
           "mix" => "hex",
           "npm" => "npm_and_yarn",

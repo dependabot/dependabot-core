@@ -75,6 +75,11 @@
     "ecosystem": "julia"
   },
   {
+    "core": "luarocks",
+    "test": "luarocks",
+    "ecosystem": "luarocks"
+  },
+  {
     "core": "maven",
     "test": "maven",
     "ecosystem": "maven"
@@ -93,6 +98,11 @@
     "core": "nuget",
     "test": "nuget-resolvability",
     "ecosystem": "nuget"
+  },
+  {
+    "core": "opentofu",
+    "test": "opentofu",
+    "ecosystem": "opentofu"
   },
   {
     "core": "pub",
@@ -118,11 +128,6 @@
     "core": "terraform",
     "test": "terraform",
     "ecosystem": "terraform"
-  },
-  {
-    "core": "opentofu",
-    "test": "opentofu",
-    "ecosystem": "opentofu"
   },
   {
     "core": "vcpkg",
