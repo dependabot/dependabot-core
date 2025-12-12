@@ -679,4 +679,49 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
     end
   end
+
+  context "when the dependency submission API is unavailable" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      allow(service).to receive(:create_dependency_submission)
+        .and_raise(Dependabot::ApiError, "Service unavailable")
+      allow(service).to receive(:capture_exception)
+    end
+
+    it "records a snapshots_unavailable_graph_error and does not retry submission" do
+      expect(service).to receive(:record_update_job_error) do |args|
+        expect(args[:error_type]).to eq("snapshots_unavailable_graph_error")
+        expect(args[:error_details]).to include(
+          message: "Unable to submit data to the Dependency Snapshot API"
+        )
+      end
+
+      update_graph_processor.run
+    end
+
+    it "does not try to send an empty submission on this error" do
+      expect(service).to receive(:create_dependency_submission).once.and_raise(Dependabot::ApiError)
+      expect(service).to receive(:record_update_job_error)
+
+      update_graph_processor.run
+    end
+  end
 end
