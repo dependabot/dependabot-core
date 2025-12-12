@@ -901,7 +901,7 @@ RSpec.describe Dependabot::Uv::FileParser do
         dep = dependencies.find { |d| d.name == "hatchling" }
         expect(dep).not_to be_nil
         req = dep.requirements.first
-        expect(req[:groups]).to include("build-system.requires")
+        expect(req[:groups]).to include("build-system")
       end
     end
 
@@ -938,7 +938,7 @@ RSpec.describe Dependabot::Uv::FileParser do
               [{
                 requirement: ">=2.31.0",
                 file: "pyproject.toml",
-                groups: ["dependencies"],
+                groups: [],
                 source: nil
               }]
             )

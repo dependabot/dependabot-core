@@ -107,8 +107,7 @@ def parse_pep621_pep735_dependencies(pyproject_path):
             dependencies_toml = project_section['dependencies']
             runtime_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,
-                dependencies_toml,
-                "dependencies"
+                dependencies_toml
             )
             dependencies.extend(runtime_dependencies)
 
@@ -119,8 +118,7 @@ def parse_pep621_pep735_dependencies(pyproject_path):
             for group in optional_dependencies_toml:
                 group_dependencies = parse_toml_section_pep621_dependencies(
                     pyproject_path,
-                    optional_dependencies_toml[group],
-                    group
+                    optional_dependencies_toml[group]
                 )
                 dependencies.extend(group_dependencies)
 
@@ -138,7 +136,7 @@ def parse_pep621_pep735_dependencies(pyproject_path):
             build_system_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,
                 build_system_section['requires'],
-                "build-system.requires"
+                "build-system"
             )
             dependencies.extend(build_system_dependencies)
 

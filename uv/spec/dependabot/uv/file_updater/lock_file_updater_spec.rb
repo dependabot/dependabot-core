@@ -333,13 +333,13 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           requirements: [{
             file: "pyproject.toml",
             requirement: "==1.28.0",
-            groups: ["build-system.requires"],
+            groups: ["build-system"],
             source: nil
           }],
           previous_requirements: [{
             file: "pyproject.toml",
             requirement: "==1.27",
-            groups: ["build-system.requires"],
+            groups: ["build-system"],
             source: nil
           }],
           previous_version: "1.27",
@@ -375,13 +375,13 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           requirements: [{
             file: "pyproject.toml",
             requirement: ">=2.33.0",
-            groups: ["dependencies"],
+            groups: [],
             source: nil
           }],
           previous_requirements: [{
             file: "pyproject.toml",
             requirement: ">=2.31.0",
-            groups: ["dependencies"],
+            groups: [],
             source: nil
           }],
           previous_version: "2.32.3",
