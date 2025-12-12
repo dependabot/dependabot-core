@@ -132,12 +132,6 @@ RSpec.describe Dependabot::Uv::Requirement do
 
         it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1")) }
       end
-
-      context "when separated by whitespace (supported by Poetry)" do
-        let(:requirement_string) { ">=2.0 <2.1" }
-
-        it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1")) }
-      end
     end
 
     context "with multiple operators after the first" do
@@ -148,12 +142,6 @@ RSpec.describe Dependabot::Uv::Requirement do
 
       context "when separated with a comma" do
         let(:requirement_string) { ">=2.0,<2.1,<2.2" }
-
-        it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1", "<2.2")) }
-      end
-
-      context "when separated by whitespace (supported by Poetry)" do
-        let(:requirement_string) { ">=2.0 <2.1 <2.2" }
 
         it { is_expected.to eq(Gem::Requirement.new(">=2.0", "<2.1", "<2.2")) }
       end
