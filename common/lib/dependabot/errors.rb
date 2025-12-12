@@ -353,7 +353,9 @@ module Dependabot
       }
     when
       IncompatibleCPU,
-      NetworkUnsafeHTTP
+      NetworkUnsafeHTTP,
+      SnapshotsUnavailableGraphError,
+      UpdateGraphError
       error.detail
 
     when Dependabot::NotImplemented
@@ -893,6 +895,20 @@ module Dependabot
     sig { params(message: T.any(T.nilable(String), MatchData)).void }
     def initialize(message = nil)
       super("network_unsafe_http", message)
+    end
+  end
+
+  class SnapshotsUnavailableGraphError < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("snapshots_unavailable_graph_error", message)
+    end
+  end
+
+  class UpdateGraphError < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("update_graph_error", message)
     end
   end
 end
