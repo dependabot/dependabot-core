@@ -1,0 +1,4 @@
+-Xmx512m
+-Drevision=1.0.0
+--batch-mode
+-Dspringframework.version=4.3.12.RELEASE
