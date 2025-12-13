@@ -866,6 +866,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
 
       context "when property is defined in maven.config" do
+        subject(:updated_maven_config_file) do
+          updated_files.find { |f| f.name == ".mvn/maven.config" }
+        end
+
         let(:pom_body) { fixture("poms", "maven_config_property_pom.xml") }
         let(:maven_config) do
           Dependabot::DependencyFile.new(
@@ -904,10 +908,6 @@ RSpec.describe Dependabot::Maven::FileUpdater do
               package_manager: "maven"
             )
           ]
-        end
-
-        subject(:updated_maven_config_file) do
-          updated_files.find { |f| f.name == ".mvn/maven.config" }
         end
 
         it "updates the property value in maven.config" do
