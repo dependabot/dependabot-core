@@ -91,7 +91,7 @@ module Dependabot
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
-          has_lockfile: requirements_text_file?
+          has_lockfile: lockfile_present?
         ).updated_requirements
       end
 
@@ -414,6 +414,11 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def uv_lock
         dependency_files.select { |f| f.name == "uv.lock" }
+      end
+
+      sig { returns(T::Boolean) }
+      def lockfile_present?
+        dependency_files.any? { |f| f.name == "uv.lock" } || requirements_text_file?
       end
     end
   end
