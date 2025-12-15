@@ -187,7 +187,8 @@ module Dependabot
               # Server error - likely a temporary outage
               raise RegistryError.new(
                 response.status,
-                "Registry at #{hostname} is currently unavailable (HTTP #{response.status}). This may be a temporary outage - please try again later."
+                "Registry at #{hostname} is currently unavailable (HTTP #{response.status})." \
+                "This may be a temporary outage - please try again later."
               )
             when 401
               # Authentication required or failed

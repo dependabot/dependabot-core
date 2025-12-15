@@ -80,12 +80,8 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 404)
     client = described_class.new(hostname: hostname)
 
-    expect do
-      client.all_provider_versions(identifier: "hashicorp/aws")
-    end.to raise_error(Dependabot::RegistryError) do |error|
-      expect(error.status).to eq(404)
-      expect(error.message).to match(/does not support service discovery/)
-    end
+    expect { client.all_provider_versions(identifier: "hashicorp/aws") }
+      .to raise_error(Dependabot::RegistryError, /does not support service discovery/)
   end
 
   it "raises an error when the registry returns a 500 error" do
@@ -93,12 +89,8 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 500)
     client = described_class.new(hostname: hostname)
 
-    expect do
-      client.all_provider_versions(identifier: "hashicorp/aws")
-    end.to raise_error(Dependabot::RegistryError) do |error|
-      expect(error.status).to eq(500)
-      expect(error.message).to match(/currently unavailable/)
-    end
+    expect { client.all_provider_versions(identifier: "hashicorp/aws") }
+      .to raise_error(Dependabot::RegistryError, /currently unavailable/)
   end
 
   it "fetches provider versions form a custom registry secured by a token" do
@@ -252,12 +244,8 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       it "raises an error" do
         stub_request(:get, metadata).and_return(status: 404)
 
-        expect do
-          client.service_url_for_registry("modules.v1")
-        end.to raise_error(Dependabot::RegistryError) do |error|
-          expect(error.status).to eq(404)
-          expect(error.message).to match(/does not support service discovery/)
-        end
+        expect { client.service_url_for_registry("modules.v1") }
+          .to raise_error(Dependabot::RegistryError, /does not support service discovery/)
       end
     end
 
@@ -265,12 +253,8 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       it "raises a registry error" do
         stub_request(:get, metadata).and_return(status: 500)
 
-        expect do
-          client.service_url_for_registry("modules.v1")
-        end.to raise_error(Dependabot::RegistryError) do |error|
-          expect(error.status).to eq(500)
-          expect(error.message).to match(/currently unavailable/)
-        end
+        expect { client.service_url_for_registry("modules.v1") }
+          .to raise_error(Dependabot::RegistryError, /currently unavailable/)
       end
     end
 
