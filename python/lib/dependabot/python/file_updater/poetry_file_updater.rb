@@ -384,7 +384,8 @@ module Dependabot
         def preserve_package_extras(new_lockfile, original_lockfile)
           # Workaround for Poetry dropping [package.extras] sections:
           # 1. Dependabot freezes dependencies to exact versions to ensure single-package updates
-          # 2. Poetry optimizes the lockfile by dropping "unnecessary" metadata like [package.extras] for frozen packages
+          # 2. Poetry optimizes the lockfile by dropping "unnecessary" metadata like [package.extras] for
+          #    frozen packages
           # 3. We restore the extras sections from the original lockfile to preserve this valuable metadata
           #    that describes optional dependency groups (e.g., requests[security])
           # Note: We investigated using `poetry lock --no-update` but that flag doesn't exist.
