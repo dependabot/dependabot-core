@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling>=1.24", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dummy-project"
+dynamic = ["version", "dependencies"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.metadata]
+dependencies = [
+  "requests>=2.0.0",
+  "urllib3<3.0.0",
+]
+

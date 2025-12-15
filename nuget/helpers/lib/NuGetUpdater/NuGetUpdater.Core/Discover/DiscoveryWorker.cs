@@ -222,7 +222,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    private async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager)
+    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager)
     {
         HashSet<string> expandedProjects = new(PathComparer.Instance);
         HashSet<string> seenProjects = new(PathComparer.Instance);
@@ -330,7 +330,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             // referenced projects commonly use the Windows-style directory separator which can cause problems on Unix
             // but Windows is able to handle a Unix-style path, so we normalize everything to that then normalize again
             // with regards to relative paths, e.g., "some/path/" + "..\other\file" => "some/other/file"
-            string referencedProjectPath = Path.Join(projectDir, projectItem.EvaluatedInclude.NormalizePathToUnix());
+            string referencedProjectPath = Path.Combine(projectDir, projectItem.EvaluatedInclude.NormalizePathToUnix());
             string normalizedReferenceProjectPath = new FileInfo(referencedProjectPath).FullName;
             if (seenItems.Add(normalizedReferenceProjectPath))
             {
