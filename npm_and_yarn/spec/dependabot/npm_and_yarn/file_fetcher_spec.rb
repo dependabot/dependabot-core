@@ -394,6 +394,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "yarn_lock_content.json"),
             headers: json_header
           )
+        # FileFetcher will also try to find `pnpm-lock.yaml` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/package1/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
       end
 
       it "fetches the yarn.lock file at the root of the monorepo" do
@@ -500,6 +522,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 404, # Simulate file not found in nested project
+            body: nil,
+            headers: json_header
+          )
+        # FileFetcher will also try to find `yarn.lock` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/package1/yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
             body: nil,
             headers: json_header
           )
