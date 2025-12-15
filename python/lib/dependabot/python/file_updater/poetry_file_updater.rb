@@ -161,6 +161,10 @@ module Dependabot
                 match.gsub(/(["']).*(['"])\n\Z/, '\1' + original_locked_python + '\1' + "\n")
               end
 
+              # Preserve [package.extras] sections from original lockfile
+              original_lockfile_content = T.must(lockfile).content
+              new_lockfile = preserve_package_extras(new_lockfile, T.must(original_lockfile_content))
+
               tmp_hash =
                 TomlRB.parse(new_lockfile)["metadata"]["content-hash"]
               correct_hash = pyproject_hash_for(updated_pyproject_content.to_s)
@@ -372,6 +376,40 @@ module Dependabot
         sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        sig { params(new_lockfile: String, original_lockfile: String).returns(String) }
+        def preserve_package_extras(new_lockfile, original_lockfile)
+          # Parse both lockfiles
+          original_data = TomlRB.parse(original_lockfile)
+          new_data = TomlRB.parse(new_lockfile)
+
+          original_packages = original_data.fetch("package", [])
+          new_packages = new_data.fetch("package", [])
+
+          # Create a mapping of package name+version to extras from original lockfile
+          original_extras = {}
+          original_packages.each do |pkg|
+            next unless pkg["extras"]
+
+            key = "#{pkg['name']}-#{pkg['version']}"
+            original_extras[key] = pkg["extras"]
+          end
+
+          # Return early if no extras to preserve
+          return new_lockfile if original_extras.empty?
+
+          # Add extras to new packages that had them in the original
+          new_packages.each do |pkg|
+            key = "#{pkg['name']}-#{pkg['version']}"
+            next unless original_extras[key]
+            next if pkg["extras"] # Skip if already has extras
+
+            pkg["extras"] = original_extras[key]
+          end
+
+          # Serialize back to TOML
+          TomlRB.dump(new_data)
         end
 
         sig { returns(FileParser::PythonRequirementParser) }

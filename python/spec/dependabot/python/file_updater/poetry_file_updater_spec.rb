@@ -83,6 +83,63 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
     end
 
+    context "with a lockfile that has package extras" do
+      let(:pyproject_fixture_name) { "python_310.toml" }
+      let(:lockfile_fixture_name) { "python_310.lock" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "2.19.1",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "2.19.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "2.18.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "preserves package extras sections in the lockfile" do
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+        lockfile_obj = TomlRB.parse(updated_lockfile.content)
+
+        # Check that requests package has extras preserved
+        requests_packages = lockfile_obj["package"].select { |d| d["name"] == "requests" }
+        requests = requests_packages.find { |d| d["version"] == "2.19.1" }
+
+        # Verify the package has extras
+        expect(requests).not_to be_nil
+
+        # Check for packages with extras in original lockfile
+        original_lockfile_obj = TomlRB.parse(lockfile.content)
+        packages_with_extras = original_lockfile_obj["package"].select { |d| d["extras"] }
+
+        # Verify all packages with extras are preserved
+        packages_with_extras.each do |original_pkg|
+          updated_pkg = lockfile_obj["package"].find do |d|
+            d["name"] == original_pkg["name"] && d["version"] == original_pkg["version"]
+          end
+
+          expect(updated_pkg).not_to be_nil,
+                                     "Expected package #{original_pkg['name']}@#{original_pkg['version']} " \
+                                     "to exist in updated lockfile"
+          expect(updated_pkg["extras"]).to eq(original_pkg["extras"]),
+                                           "Expected extras for #{original_pkg['name']}@#{original_pkg['version']} " \
+                                           "to be preserved"
+        end
+      end
+    end
+
     context "with a specified Python version" do
       let(:pyproject_fixture_name) { "python_310.toml" }
       let(:lockfile_fixture_name) { "python_310.lock" }
