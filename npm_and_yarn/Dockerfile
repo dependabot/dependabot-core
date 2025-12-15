@@ -16,7 +16,7 @@ ARG YARN_VERSION=4.9.2
 # Always update NODEJS_VERSION with a compatible NPM_VERSION
 # See https://nodejs.org/en/about/previous-releases#looking-for-the-latest-release-of-a-version-branch for more information
 # Note : Always use the Active LTS version
-ARG NODEJS_VERSION=22
+ARG NODEJS_VERSION=24
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well

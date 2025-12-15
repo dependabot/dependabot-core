@@ -88,6 +88,13 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
+    rescue Dependabot::ApiError, HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      # If the submission API is down, we should raise this as a specific error type for visibility.
+      error_handler.handle_job_error(
+        error: Dependabot::SnapshotsUnavailableGraphError.new(
+          "Unable to submit data to the Dependency Snapshot API"
+        )
+      )
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
 
