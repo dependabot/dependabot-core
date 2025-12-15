@@ -1039,6 +1039,7 @@ module Dependabot
             next unless updated_details.is_a?(Hash)
 
             # Only restore if the package still exists in the updated lockfile and doesn't already have a license
+            # If npm generated a license field, we should trust npm's value over the old lockfile's value
             next if updated_details["license"]
 
             # Add the license to the parsed JSON structure
