@@ -885,6 +885,10 @@ module Dependabot
             updated_lockfile_content, parsed_updated_lockfile_content
           )
 
+          # Restore license fields from the original lockfile
+          # (npm 10.4.0+ no longer includes license fields in package-lock.json)
+          updated_lockfile_content = restore_license_fields(updated_lockfile_content, parsed_updated_lockfile_content)
+
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
           replace_tarball_urls(updated_lockfile_content)
@@ -1007,6 +1011,48 @@ module Dependabot
           end
 
           updated_lockfile_content
+        end
+
+        # NOTE: npm 10.4.0+ no longer includes license fields in package-lock.json
+        # This method restores license fields from the original lockfile to maintain
+        # consistency and support license auditing workflows
+        sig do
+          params(
+            updated_lockfile_content: String,
+            parsed_updated_lockfile_content: T::Hash[String, T.untyped]
+          )
+            .returns(String)
+        end
+        def restore_license_fields(updated_lockfile_content, parsed_updated_lockfile_content)
+          original_packages = parsed_lockfile.fetch("packages", {})
+          updated_packages = parsed_updated_lockfile_content.fetch("packages", {})
+
+          # Track if any licenses were restored
+          licenses_restored = T.let(false, T::Boolean)
+
+          # Restore license field for each package that had it in the original lockfile
+          original_packages.each do |package_path, original_details|
+            next unless original_details.is_a?(Hash)
+            next unless original_details["license"]
+
+            updated_details = updated_packages[package_path]
+            next unless updated_details.is_a?(Hash)
+
+            # Only restore if the package still exists in the updated lockfile and doesn't already have a license
+            next if updated_details["license"]
+
+            # Add the license to the parsed JSON structure
+            updated_details["license"] = original_details["license"]
+            licenses_restored = true
+          end
+
+          # If we restored any licenses, regenerate the JSON with proper formatting
+          if licenses_restored
+            indent = detect_indentation(updated_lockfile_content)
+            JSON.pretty_generate(parsed_updated_lockfile_content, indent: indent)
+          else
+            updated_lockfile_content
+          end
         end
 
         sig { params(updated_lockfile_content: String).returns(String) }

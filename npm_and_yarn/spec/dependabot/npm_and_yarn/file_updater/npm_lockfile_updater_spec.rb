@@ -198,6 +198,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "when the original lockfile has license fields" do
+      let(:files) { project_dependency_files("npm8/license_preservation") }
+
+      it "preserves license fields from the original lockfile" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+        # Check that root package license is preserved
+        expect(parsed_lockfile.dig("packages", "", "license")).to eq("MIT")
+
+        # Check that dependency licenses are preserved
+        expect(parsed_lockfile.dig("packages", "node_modules/fetch-factory", "license")).to eq("ISC")
+        expect(parsed_lockfile.dig("packages", "node_modules/etag", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/lodash", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/es6-promise", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/isomorphic-fetch", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/node-fetch", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/encoding", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/iconv-lite", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/is-stream", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/safer-buffer", "license")).to eq("MIT")
+        expect(parsed_lockfile.dig("packages", "node_modules/whatwg-fetch", "license")).to eq("MIT")
+      end
+    end
+
     context "when the original lockfile didn't have a packages name attribute" do
       let(:files) { project_dependency_files("npm8/packages_name_missing") }
       let(:dependency_name) { "etag" }
