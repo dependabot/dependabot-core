@@ -140,7 +140,7 @@ module Dependabot
         def replace_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
-          escaped_name = Regexp.escape(dep.name)
+          escaped_name = escape_package_name(dep.name)
 
           regex = /(["']#{escaped_name})([^"']+)(["'])/x
 
@@ -394,8 +394,9 @@ module Dependabot
         end
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
-        def escape(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]")
+        def escape_package_name(name)
+          # Per PEP 503, Python package names normalize -, _, and . to the same character
+          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }
