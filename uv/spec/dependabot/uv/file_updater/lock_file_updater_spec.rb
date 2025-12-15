@@ -105,6 +105,59 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(lockfile.content).to include('version = "2.23.0"')
     end
 
+    context "with platform specific environment markers" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "example"
+          version = "1.0.0"
+          dependencies = [
+            "pyad>=0.6.0 ; sys_platform == 'win32'",
+            "pywin32>=310; sys_platform == 'win32'",
+            "colorama>=0.4.6"
+          ]
+        TOML
+      end
+
+      let(:lockfile_content) { "original lock content" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pywin32",
+          version: "311",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=311",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=310",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:updated_lockfile_content) { "updated lock content" }
+
+      before do
+        allow(updater).to receive(:updated_pyproject_content).and_call_original
+        allow(updater).to receive(:updated_lockfile_content_for).and_return("updated lock content")
+      end
+
+      it "preserves environment markers for all dependencies" do
+        pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(pyproject.content)
+          .to include("pyad>=0.6.0 ; sys_platform == 'win32'")
+        expect(pyproject.content)
+          .to include("pywin32>=311; sys_platform == 'win32'")
+      end
+    end
+
     context "when the lockfile doesn't change" do
       before do
         allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
@@ -266,6 +319,96 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(updated_lock.content).not_to include('version = "2.31.0"')
         expect(updated_lock.content).not_to include("requests-2.31.0.tar.gz")
         expect(updated_lock.content).not_to include("requests-2.31.0-py3-none-any.whl")
+      end
+    end
+
+    context "when updating a build-system-only dependency" do
+      let(:pyproject_content) { fixture("pyproject_files", "build_system_pinned.toml") }
+      let(:lockfile_content) { fixture("uv_locks", "build_system_pinned.lock") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.28.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "==1.28.0",
+            groups: ["build-system"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "==1.27",
+            groups: ["build-system"],
+            source: nil
+          }],
+          previous_version: "1.27",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates only pyproject.toml, not the lockfile" do
+        allow(updater).to receive(:updated_pyproject_content).and_return(
+          pyproject_content.sub('"hatchling==1.27"', '"hatchling==1.28.0"')
+        )
+
+        updated_dependency_files = updater.updated_dependency_files
+
+        # Should update pyproject.toml
+        pyproj = updated_dependency_files.find { |f| f.name == "pyproject.toml" }
+        expect(pyproj).not_to be_nil
+        expect(pyproj.content).to include('"hatchling==1.28.0"')
+
+        # Should NOT include lockfile in updated files
+        expect(updated_dependency_files.map(&:name)).not_to include("uv.lock")
+      end
+    end
+
+    context "when updating a regular dependency" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.33.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.33.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates both pyproject.toml and lockfile" do
+        updated_lockfile = lockfile_content.sub('version = "2.32.3"', 'version = "2.33.0"')
+        updated_pyproject = pyproject_content.sub("requests>=2.31.0", "requests>=2.33.0")
+
+        allow(updater).to receive_messages(
+          updated_pyproject_content: updated_pyproject,
+          updated_lockfile_content_for: updated_lockfile
+        )
+
+        updated_dependency_files = updater.updated_dependency_files
+
+        # Should update both files
+        expect(updated_dependency_files.map(&:name)).to include("pyproject.toml")
+        expect(updated_dependency_files.map(&:name)).to include("uv.lock")
+
+        pyproj = updated_dependency_files.find { |f| f.name == "pyproject.toml" }
+        expect(pyproj.content).to include("requests>=2.33.0")
+
+        lockfile = updated_dependency_files.find { |f| f.name == "uv.lock" }
+        expect(lockfile.content).to include('version = "2.33.0"')
       end
     end
   end
