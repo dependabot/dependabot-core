@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using System.IO.Enumeration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml;
+using System.Xml.Linq;
 
 using NuGet.Versioning;
 
@@ -74,6 +76,11 @@ public class RunWorker
 
         try
         {
+            if (experimentsManager.AdditionalPackageSources)
+            {
+                await SetAdditionalPackageSourcesInNuGetConfig(repoContentsPath, _logger);
+            }
+
             var handler = GetUpdateHandler(job);
             _logger.Info($"Starting update job of type {handler.TagName}");
             await handler.HandleAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
@@ -91,6 +98,94 @@ public class RunWorker
 
         await _apiHandler.MarkAsProcessed(new(baseCommitSha));
         return result;
+    }
+
+    private async Task SetAdditionalPackageSourcesInNuGetConfig(DirectoryInfo repoContentsPath, ILogger logger)
+    {
+        var configFiles = GetNuGetConfigPaths(repoContentsPath);
+        foreach (var configFile in configFiles)
+        {
+            var originalContents = await File.ReadAllTextAsync(configFile);
+            var modifiedContents = PromoteAdditionalPackageSources(configFile, originalContents, logger);
+            await File.WriteAllTextAsync(configFile, modifiedContents);
+        }
+    }
+
+    internal static ImmutableArray<string> GetNuGetConfigPaths(DirectoryInfo repoContentsPath)
+    {
+        var configFiles = repoContentsPath.EnumerateFiles("NuGet.Config", new EnumerationOptions() { MatchCasing = MatchCasing.CaseInsensitive, RecurseSubdirectories = true }).ToImmutableArray();
+        var caseCorrectedConfigFiles = configFiles
+            .Where(cf => cf.Directory is not null)
+            .SelectMany(cf => cf.Directory!.EnumerateFiles().Where(f => f.Name.Equals("NuGet.Config", StringComparison.OrdinalIgnoreCase)))
+            .Select(f => f.FullName)
+            .Distinct()
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .ToImmutableArray();
+        return caseCorrectedConfigFiles;
+    }
+
+    private const string AdditionalPackageSourceKeyName = "DependabotAdditionalPackageSource";
+
+    internal static string PromoteAdditionalPackageSources(string path, string nugetConfigContents, ILogger logger)
+    {
+        var doc = XDocument.Parse(nugetConfigContents);
+        var packageSourcesElement = doc.Root?.Elements()
+            .FirstOrDefault(e => e.Name.LocalName.Equals("packageSources", StringComparison.OrdinalIgnoreCase));
+        if (packageSourcesElement is null)
+        {
+            logger.Warn($"Unable to find element /configuration/packageSources in file {path}");
+            return doc.ToString();
+        }
+
+        var additionalPackageSources = doc.Root?.Elements()
+            .FirstOrDefault(e => e.Name.LocalName.Equals("config", StringComparison.OrdinalIgnoreCase))?.Elements()
+            .Where(e => e.Name.LocalName.Equals("add", StringComparison.OrdinalIgnoreCase))
+            .Select(e => (GetAttributeValueByName(e, "key"), GetAttributeValueByName(e, "value")))
+            .Where(pair => pair.Item1 is not null && pair.Item2 is not null)
+            .Where(pair => pair.Item1!.Equals(AdditionalPackageSourceKeyName, StringComparison.OrdinalIgnoreCase))
+            .Select(pair => pair.Item2!)
+            .ToImmutableArray() ?? [];
+
+        var packageSourceMappingElement = doc.Root?.Elements()
+            .FirstOrDefault(e => e.Name.LocalName.Equals("packageSourceMapping", StringComparison.OrdinalIgnoreCase));
+
+        var additionalSourceSuffix = 1;
+        foreach (var additionalPackageSource in additionalPackageSources)
+        {
+            logger.Info($"Promoting additional package source {additionalPackageSource} in file {path}");
+            var sourceName = $"dependabot-additional-package-source-{additionalSourceSuffix++}";
+            packageSourcesElement.Add(new XElement("add",
+                new XAttribute("key", sourceName),
+                new XAttribute("value", additionalPackageSource),
+                additionalPackageSource.StartsWith("http://")
+                    ? new XAttribute("allowInsecureConnections", "true")
+                    : null));
+            packageSourceMappingElement?.Add(new XElement("packageSource",
+                new XAttribute("key", sourceName),
+                new XElement("package",
+                    new XAttribute("pattern", "*"))));
+        }
+
+        // this file will never be included in a PR so we can write a nicely formatted copy to make testing easier
+        var settings = new XmlWriterSettings
+        {
+            OmitXmlDeclaration = true,
+            Indent = true,
+            NewLineOnAttributes = false,
+        };
+        using var stringWriter = new StringWriter();
+        using (var xmlWriter = XmlWriter.Create(stringWriter, settings))
+        {
+            doc.Save(xmlWriter);
+        }
+
+        var updatedContents = stringWriter.ToString();
+        return updatedContents;
+    }
+
+    private static string? GetAttributeValueByName(XElement element, string attributeName)
+    {
+        return element.Attributes().FirstOrDefault(a => a.Name.LocalName.Equals(attributeName, StringComparison.OrdinalIgnoreCase))?.Value;
     }
 
     internal static ImmutableArray<UpdateOperationBase> PatchInOldVersions(ImmutableArray<UpdateOperationBase> updateOperations, ProjectDiscoveryResult? projectDiscovery)

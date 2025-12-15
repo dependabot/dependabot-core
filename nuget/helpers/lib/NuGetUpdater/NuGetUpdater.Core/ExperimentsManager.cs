@@ -7,6 +7,7 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    public bool AdditionalPackageSources { get; init; } = false;
     public bool GenerateSimplePrBody { get; init; } = false;
     public bool UseSingleRestore { get; init; } = false;
 
@@ -14,6 +15,7 @@ public record ExperimentsManager
     {
         return new()
         {
+            ["nuget_additional_package_sources"] = AdditionalPackageSources,
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_use_single_restore"] = UseSingleRestore,
         };
@@ -23,6 +25,7 @@ public record ExperimentsManager
     {
         return new ExperimentsManager()
         {
+            AdditionalPackageSources = IsEnabled(experiments, "nuget_additional_package_sources"),
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             UseSingleRestore = IsEnabled(experiments, "nuget_use_single_restore"),
         };
