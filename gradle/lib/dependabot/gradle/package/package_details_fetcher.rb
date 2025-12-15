@@ -153,7 +153,7 @@ module Dependabot
           end
         rescue StandardError => e
           Dependabot.logger.warn(
-            "Could not parse Maven-style release dates from #{repository_details.fetch("url")} " \
+            "Could not parse Maven-style release dates from #{repository_details.fetch('url')} " \
             "for #{dependency.name}: #{e.message}"
           )
         end
