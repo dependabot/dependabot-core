@@ -15,7 +15,7 @@ cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/test" \
   "$helpers_dir/run.js" \
-  "$helpers_dir/.eslintrc" \
+  "$helpers_dir/eslint.config.js" \
   "$helpers_dir/jest.config.js" \
   "$helpers_dir/package.json" \
   "$helpers_dir/package-lock.json" \
