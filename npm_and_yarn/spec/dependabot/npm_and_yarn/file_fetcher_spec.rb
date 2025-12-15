@@ -317,6 +317,89 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name)).to include(".yarnrc")
       end
     end
+
+    context "when source points to nested project" do
+      let(:repo) { "gocardless/bump" }
+      let(:directory) { "/packages/package1" }
+
+      before do
+        stub_request(:get, File.join(url, "packages/package1?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_js_library.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/package1/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+        # FileFetcher will iterate trying to find `.npmrc` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/.npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, ".yarnrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/.yarnrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/package-lock.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url, "packages/package1/package-lock.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        # FileFetcher will iterate trying to find `yarn.lock` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/package1/yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "yarn.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "yarn_lock_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the yarn.lock file at the root of the monorepo" do
+        expect(file_fetcher_instance.files.map(&:name)).to include("../../yarn.lock")
+      end
+    end
   end
 
   context "with a pnpm-lock.yaml but no package-lock.json file" do
@@ -381,7 +464,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: nil,
             headers: json_header
           )
+        stub_request(:get, File.join(url, "packages/package1/package-lock.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
         # FileFetcher will iterate trying to find `pnpm-lock.yaml` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/package1/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
         stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(
@@ -1354,6 +1447,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           stub_request(
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
+            "yarn.lock?ref=sha"
+          ).with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/" \
             "pnpm-lock.yaml?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
@@ -1924,6 +2023,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
             ".yarnrc?ref=sha"
+          ).with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/" \
+            "yarn.lock?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
           stub_request(

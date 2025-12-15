@@ -263,6 +263,10 @@ module Dependabot
         return @yarn_lock if defined?(@yarn_lock)
 
         @yarn_lock ||= T.let(fetch_file_if_present(YarnPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
+
+        return @yarn_lock if @yarn_lock || directory == "/"
+
+        @yarn_lock = fetch_file_from_parent_directories(YarnPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
