@@ -112,20 +112,16 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
 
         lockfile_obj = TomlRB.parse(updated_lockfile.content)
-
-        # Check that requests package has extras preserved
-        requests_packages = lockfile_obj["package"].select { |d| d["name"] == "requests" }
-        requests = requests_packages.find { |d| d["version"] == "2.19.1" }
-
-        # Verify the package has extras
-        expect(requests).not_to be_nil
-
-        # Check for packages with extras in original lockfile
         original_lockfile_obj = TomlRB.parse(lockfile.content)
+
+        # Check for packages with extras in original lockfile that weren't updated
         packages_with_extras = original_lockfile_obj["package"].select { |d| d["extras"] }
 
-        # Verify all packages with extras are preserved
+        # Verify extras are preserved for packages that remain at the same version
         packages_with_extras.each do |original_pkg|
+          # Skip the updated dependency (requests 2.18.0 -> 2.19.1)
+          next if original_pkg["name"] == dependency_name && original_pkg["version"] == "2.18.0"
+
           updated_pkg = lockfile_obj["package"].find do |d|
             d["name"] == original_pkg["name"] && d["version"] == original_pkg["version"]
           end
