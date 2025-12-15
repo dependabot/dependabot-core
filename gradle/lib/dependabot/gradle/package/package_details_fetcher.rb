@@ -101,20 +101,8 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
         # Extracts release dates from repository metadata to support the cooldown feature.
-        #
-        # Supported repositories:
-        # - Maven Central (https://repo.maven.apache.org/maven2): Parses HTML directory listings to extract
-        #   last modified dates for each version. This is necessary because Maven Central doesn't provide
-        #   a structured API for directory listings.
-        # - Gradle Plugin Portal (https://plugins.gradle.org/m2): Parses maven-metadata.xml to extract
-        #   the lastUpdated timestamp, which is only available for the latest version.
-        #
-        # Why only these repositories?
-        # - Maven Central and Gradle Plugin Portal cover 95%+ of public Gradle dependencies
-        # - Custom/private repositories have inconsistent structures and metadata formats
-        # - Many repositories don't expose release date information in any parseable format
-        # - Adding support for additional repositories would require repository-specific parsing logic
-        # - Users can configure custom cooldown settings if their repositories aren't supported
+        # Attempts to parse all repositories: Gradle Plugin Portal (maven-metadata.xml) and
+        # Maven-compatible repositories including Maven Central, Artifactory, Nexus, and custom mirrors.
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
           release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
@@ -122,10 +110,10 @@ module Dependabot
             repositories.each do |repository_details|
               url = repository_details.fetch("url")
 
-              if url == Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
-                parse_maven_central_releases(repository_details, release_date_info)
-              elsif url == Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO
+              if url == Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO
                 parse_gradle_plugin_portal_release(repository_details, release_date_info)
+              else
+                parse_maven_central_releases(repository_details, release_date_info)
               end
             end
 
@@ -149,9 +137,10 @@ module Dependabot
             next unless title
 
             version = title.gsub(%r{/$}, "")
-            raw_date_text = link.next.text.strip.split("\n").last.strip
+            next unless version_class.correct?(version)
 
             release_date = begin
+              raw_date_text = link.next.text.strip.split("\n").last.strip
               Time.parse(raw_date_text)
             rescue StandardError => e
               Dependabot.logger.warn(
@@ -160,12 +149,13 @@ module Dependabot
               nil
             end
 
-            next unless version && version_class.correct?(version)
-
-            release_date_info[version] = {
-              release_date: release_date
-            }
+            release_date_info[version] = { release_date: release_date }
           end
+        rescue StandardError => e
+          Dependabot.logger.warn(
+            "Could not parse Maven-style release dates from #{repository_details.fetch("url")} " \
+            "for #{dependency.name}: #{e.message}"
+          )
         end
 
         sig do
@@ -285,9 +275,8 @@ module Dependabot
             end
         end
 
-        # Fetches HTML directory listing from Maven Central. Uses CSS selector "a[title]" to extract
-        # version numbers from link titles and adjacent text nodes for dates. Caches results per repository.
-        # Example: <a href="1.0.0/" title="1.0.0/">1.0.0/</a>   2019-01-15 10:30    -
+        # Fetches HTML directory listing from Maven-compatible repositories.
+        # Uses CSS selector "a[title]" to extract versions and dates. Caches results per repository.
         sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
         def release_info_metadata(repository_details)
           @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
