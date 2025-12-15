@@ -163,7 +163,7 @@ module Dependabot
                 match.gsub(/(["']).*\1(?:\r?\n)\Z/, '\1' + original_locked_python + '\1' + line_ending)
               end
 
-              # Preserve [package.extras] sections from original lockfile
+              # Restore [package.extras] that Poetry drops for frozen dependencies
               original_lockfile_content = T.must(lockfile).content
               new_lockfile = preserve_package_extras(new_lockfile, T.must(original_lockfile_content))
 
@@ -382,6 +382,13 @@ module Dependabot
 
         sig { params(new_lockfile: String, original_lockfile: String).returns(String) }
         def preserve_package_extras(new_lockfile, original_lockfile)
+          # Workaround for Poetry dropping [package.extras] sections:
+          # 1. Dependabot freezes dependencies to exact versions to ensure single-package updates
+          # 2. Poetry optimizes the lockfile by dropping "unnecessary" metadata like [package.extras] for frozen packages
+          # 3. We restore the extras sections from the original lockfile to preserve this valuable metadata
+          #    that describes optional dependency groups (e.g., requests[security])
+          # Note: We investigated using `poetry lock --no-update` but that flag doesn't exist.
+
           # Parse both lockfiles
           original_data = TomlRB.parse(original_lockfile)
           new_data = TomlRB.parse(new_lockfile)
