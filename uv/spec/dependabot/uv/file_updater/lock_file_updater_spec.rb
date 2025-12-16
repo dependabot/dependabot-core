@@ -718,6 +718,103 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(result).not_to include("'fastapi>=0.115.12,<0.116'")
       end
     end
+
+    context "with package names containing dots, underscores, or hyphens (PyPI name normalization)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ruamel-yaml",
+          version: "0.18.6",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.18.6,<0.20",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.18.6,<0.19",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "0.18.6",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: ">=0.18.6,<0.20" } }
+      let(:old_req) { { requirement: ">=0.18.6,<0.19" } }
+
+      context "when package name uses dots" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel.yaml>=0.18.6,<0.19",
+            ]
+          TOML
+        end
+
+        it "replaces the requirement correctly" do
+          result = replace_dep
+          expect(result).to include('"ruamel.yaml>=0.18.6,<0.20"')
+          expect(result).not_to include('"ruamel.yaml>=0.18.6,<0.19"')
+        end
+      end
+
+      context "when dependency name uses hyphens and file uses hyphens" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel-yaml>=0.18.6,<0.19",
+            ]
+          TOML
+        end
+
+        it "still matches and replaces the requirement correctly" do
+          result = replace_dep
+          expect(result).to include('"ruamel-yaml>=0.18.6,<0.20"')
+          expect(result).not_to include('"ruamel-yaml>=0.18.6,<0.19"')
+        end
+      end
+
+      context "when dependency name uses hyphens but file uses underscores" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel_yaml>=0.18.6,<0.19",
+            ]
+          TOML
+        end
+
+        it "still matches and replaces the requirement correctly" do
+          result = replace_dep
+          expect(result).to include('"ruamel_yaml>=0.18.6,<0.20"')
+          expect(result).not_to include('"ruamel_yaml>=0.18.6,<0.19"')
+        end
+      end
+
+      context "with exact version (==)" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel.yaml==0.18.6",
+            ]
+          TOML
+        end
+
+        let(:new_req) { { requirement: "==0.20.0" } }
+        let(:old_req) { { requirement: "==0.18.6" } }
+
+        it "replaces the exact version" do
+          result = replace_dep
+          expect(result).to include('"ruamel.yaml==0.20.0"')
+          expect(result).not_to include('"ruamel.yaml==0.18.6"')
+        end
+      end
+    end
   end
 
   describe "#requirements_match?" do
