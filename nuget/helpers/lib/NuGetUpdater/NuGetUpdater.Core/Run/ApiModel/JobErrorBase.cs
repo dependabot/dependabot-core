@@ -74,6 +74,8 @@ public abstract record JobErrorBase : MessageBase
                 return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory), invalidData.Message);
             case InvalidProjectFileException invalidProjectFile:
                 return new DependencyFileNotParseable(Path.GetRelativePath(currentDirectory, invalidProjectFile.ProjectFile).NormalizePathToUnix());
+            case IOException ioException when ioException.Message.Contains("No space left on device", StringComparison.OrdinalIgnoreCase):
+                return new OutOfDisk();
             case MissingFileException missingFile:
                 return new DependencyFileNotFound(missingFile.FilePath, missingFile.Message);
             case PrivateSourceTimedOutException timeout:
