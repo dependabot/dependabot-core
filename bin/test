@@ -5,15 +5,15 @@ set -euo pipefail
 
 print_usage() {
   cat <<'USAGE'
-usage: bin/docker-test [--workdir DIR] ECOSYSTEM [COMMAND...]
+usage: bin/test [--workdir DIR] ECOSYSTEM [COMMAND...]
 
 Run a command inside the Dependabot Docker development image for ECOSYSTEM.
 Defaults to executing "bundle exec rspec spec" from the ecosystem directory.
 
 Examples:
-  bin/docker-test uv                     # run full UV rspec suite
-  bin/docker-test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
-  bin/docker-test uv --workdir dependabot-updater bundle exec rspec spec/functional
+  bin/test uv                     # run full UV rspec suite
+  bin/test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
+  bin/test uv --workdir dependabot-updater bundle exec rspec spec/functional
 USAGE
 }
 
