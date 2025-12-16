@@ -259,7 +259,14 @@ module Dependabot
               updated_files.merge!(run_npm_top_level_updater(top_level_dependencies: top_level_dependencies))
             end
             if sub_dependencies.any?
-              updated_files.merge!(T.must(run_npm_subdependency_updater(sub_dependencies: sub_dependencies)))
+              updated_files.merge!(
+                T.must(
+                  run_npm_subdependency_updater(
+                    sub_dependencies: sub_dependencies,
+                    top_level_dependencies_updated: top_level_dependencies.any?
+                  )
+                )
+              )
             end
             updated_files
           end
@@ -306,22 +313,43 @@ module Dependabot
         end
 
         sig do
-          params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T.nilable(T::Hash[String, String]))
+          params(
+            sub_dependencies: T::Array[Dependabot::Dependency],
+            top_level_dependencies_updated: T::Boolean
+          ).returns(T.nilable(T::Hash[String, String]))
         end
-        def run_npm_subdependency_updater(sub_dependencies:)
-          run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
+        def run_npm_subdependency_updater(sub_dependencies:, top_level_dependencies_updated:)
+          run_npm8_subdependency_updater(
+            sub_dependencies: sub_dependencies,
+            top_level_dependencies_updated: top_level_dependencies_updated
+          )
         end
 
-        sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
-        def run_npm8_subdependency_updater(sub_dependencies:)
-          T.cast(
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              function: "npm8:updateDependencyFile",
-              args: [Dir.pwd, lockfile_basename, sub_dependencies.map(&:to_h)]
-            ),
-            T::Hash[String, String]
-          )
+        sig do
+          params(
+            sub_dependencies: T::Array[Dependabot::Dependency],
+            top_level_dependencies_updated: T::Boolean
+          ).returns(T::Hash[String, String])
+        end
+        def run_npm8_subdependency_updater(sub_dependencies:, top_level_dependencies_updated:)
+          # When top-level dependencies were also updated, use the command-line approach
+          # as the top-level updater already handled most of the work
+          if top_level_dependencies_updated
+            dependency_names = sub_dependencies.map(&:name)
+            NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
+            { lockfile_basename => File.read(lockfile_basename) }
+          else
+            # When ONLY subdependencies are being updated, use the helper that removes
+            # and regenerates to ensure we get the latest compatible version
+            T.cast(
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "npm8:updateDependencyFile",
+                args: [Dir.pwd, lockfile_basename, sub_dependencies.map(&:to_h)]
+              ),
+              T::Hash[String, String]
+            )
+          end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
