@@ -1039,6 +1039,10 @@ module Dependabot
             # If npm generated a license field, we should trust npm's value over the old lockfile's value
             next if updated_details["license"]
 
+            # Only restore license if the version hasn't changed - we shouldn't carry over
+            # license info from an old version to a new version
+            next if original_details["version"] != updated_details["version"]
+
             # Use string manipulation to insert the license field to preserve exact formatting
             updated_lockfile_content = add_license_to_package(
               updated_lockfile_content,
