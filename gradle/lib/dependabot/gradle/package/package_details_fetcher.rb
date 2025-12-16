@@ -12,11 +12,11 @@ require "dependabot/gradle/distributions"
 require "dependabot/maven/utils/auth_headers_finder"
 require "sorbet-runtime"
 require "dependabot/gradle/metadata_finder"
+require "dependabot/gradle/package/release_date_extractor"
 
 module Dependabot
   module Gradle
     module Package
-      # rubocop:disable Metrics/ClassLength
       class PackageDetailsFetcher
         extend T::Sig
 
@@ -100,88 +100,17 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
-        # Extracts release dates from repository metadata to support the cooldown feature.
-        # Attempts both parsing strategies for all repositories:
-        # 1. Gradle Plugin Portal style: maven-metadata.xml with lastUpdated timestamp (latest version only)
-        # 2. Maven repository style: HTML directory listings with per-version dates
-        # This supports mirrors/proxies of both Maven Central and Gradle Plugin Portal.
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
-          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
-          begin
-            repositories.each do |repository_details|
-              # Try Gradle Plugin Portal style first (structured metadata)
-              parse_gradle_plugin_portal_release(repository_details, release_date_info)
-
-              # Try Maven repository style (HTML directory listing)
-              parse_maven_central_releases(repository_details, release_date_info)
-            end
-
-            release_date_info
-          rescue StandardError => e
-            Dependabot.logger.error("Failed to get release date for #{dependency.name}: #{e.class} - #{e.message}")
-            Dependabot.logger.error(e.backtrace&.join("\n") || "No backtrace available")
-            {}
-          end
-        end
-
-        sig do
-          params(
-            repository_details: T::Hash[String, T.untyped],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]]
-          ).void
-        end
-        def parse_maven_central_releases(repository_details, release_date_info)
-          release_info_metadata(repository_details).css("a[title]").each do |link|
-            title = link["title"]
-            next unless title
-
-            version = title.gsub(%r{/$}, "")
-            next unless version_class.correct?(version)
-            next if release_date_info.key?(version)
-
-            release_date = begin
-              raw_date_text = link.next.text.strip.split("\n").last.strip
-              Time.parse(raw_date_text)
-            rescue StandardError => e
-              Dependabot.logger.debug(
-                "Failed to parse release date for #{dependency.name} version #{version}: #{e.message}"
-              )
-              nil
-            end
-
-            release_date_info[version] = { release_date: release_date }
-          end
-        rescue StandardError => e
-          Dependabot.logger.debug(
-            "Could not parse Maven-style release dates from #{repository_details.fetch('url')} " \
-            "for #{dependency.name}: #{e.message}"
+          extractor = ReleaseDateExtractor.new(
+            dependency_name: dependency.name,
+            version_class: version_class
           )
-        end
 
-        sig do
-          params(
-            repository_details: T::Hash[String, T.untyped],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]]
-          ).void
-        end
-        def parse_gradle_plugin_portal_release(repository_details, release_date_info)
-          metadata_xml = dependency_metadata(repository_details)
-          last_updated = metadata_xml.at_xpath("//metadata/versioning/lastUpdated")&.text&.strip
-          latest_version = metadata_xml.at_xpath("//metadata/versioning/latest")&.text&.strip
-
-          return unless latest_version && version_class.correct?(latest_version)
-          return if release_date_info.key?(latest_version) # Skip if already found from Maven-style parsing
-
-          release_date = parse_gradle_timestamp(last_updated)
-          Dependabot.logger.info(
-            "Parsed Gradle Plugin Portal release for #{dependency.name}: #{latest_version} at #{release_date}"
-          )
-          release_date_info[latest_version] = { release_date: release_date }
-        rescue StandardError => e
-          Dependabot.logger.debug(
-            "Could not parse Gradle Plugin Portal metadata from #{repository_details.fetch('url')} " \
-            "for #{dependency.name}: #{e.message}"
+          extractor.extract(
+            repositories: repositories,
+            dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
+            release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
           )
         end
 
@@ -436,18 +365,6 @@ module Dependabot
           %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
 
-        sig { params(timestamp: T.nilable(String)).returns(T.nilable(Time)) }
-        def parse_gradle_timestamp(timestamp)
-          return nil if timestamp.nil? || timestamp.empty?
-
-          Time.strptime(timestamp, "%Y%m%d%H%M%S") # Parse YYYYMMDDHHmmss format
-        rescue ArgumentError => e
-          Dependabot.logger.warn(
-            "Failed to parse Gradle timestamp for #{dependency.name}: '#{timestamp}' - #{e.message}"
-          )
-          nil
-        end
-
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
@@ -466,7 +383,6 @@ module Dependabot
           auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
