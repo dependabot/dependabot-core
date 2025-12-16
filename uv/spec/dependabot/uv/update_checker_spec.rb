@@ -407,6 +407,115 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
     end
+
+    context "with a uv.lock file" do
+      let(:dependency_files) { [uv_lock_file, pyproject_file] }
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("uv_locks", "simple.lock")
+        )
+      end
+      let(:pyproject_file) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_simple.toml")
+        )
+      end
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.0.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "uv.lock",
+          requirement: ">=2.0.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_requests.html")
+      end
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "uv",
+            vulnerable_versions: ["<= 2.1.0"]
+          )
+        ]
+      end
+
+      it "returns the lowest security fix version from the lock file resolver" do
+        expect(checker.preferred_resolvable_version).to eq(Gem::Version.new("2.2.0"))
+      end
+
+      context "when no security fix version is found" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "uv",
+              vulnerable_versions: ["< 999.0.0"]
+            )
+          ]
+        end
+
+        it "falls back to latest_resolvable_version" do
+          # When all versions are vulnerable, it should fall back to latest
+          expect(checker.preferred_resolvable_version).not_to be_nil
+        end
+      end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject { checker.lowest_resolvable_security_fix_version }
+
+    context "with a uv.lock file and security advisory" do
+      let(:dependency_files) { [uv_lock_file, pyproject_file] }
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("uv_locks", "simple.lock")
+        )
+      end
+      let(:pyproject_file) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_simple.toml")
+        )
+      end
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.0.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "uv.lock",
+          requirement: ">=2.0.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_requests.html")
+      end
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "uv",
+            vulnerable_versions: ["<= 2.1.0"]
+          )
+        ]
+      end
+
+      it "returns the lowest non-vulnerable version" do
+        expect(checker.lowest_resolvable_security_fix_version).to eq(Gem::Version.new("2.2.0"))
+      end
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do

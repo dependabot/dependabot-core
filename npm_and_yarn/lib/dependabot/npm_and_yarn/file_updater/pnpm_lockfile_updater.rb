@@ -143,6 +143,10 @@ module Dependabot
             .returns(String)
         end
         def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
 

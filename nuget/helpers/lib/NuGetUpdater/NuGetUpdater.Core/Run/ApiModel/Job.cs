@@ -121,7 +121,7 @@ public sealed record Job
         }
 
         var version = NuGetVersion.Parse(dependency.Version);
-        var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency, allowCooldown: false);
+        var dependencyInfo = RunWorker.GetDependencyInfo(this, dependency, groupMatchers: [], allowCooldown: false);
         var isVulnerable = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
 
         bool IsAllowed(AllowedUpdate allowedUpdate)
