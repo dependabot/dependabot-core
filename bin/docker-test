@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+#set -euo pipefail
+
+set -euo pipefail
+
+print_usage() {
+  cat <<'USAGE'
+usage: bin/docker-test [--workdir DIR] ECOSYSTEM [COMMAND...]
+
+Run a command inside the Dependabot Docker development image for ECOSYSTEM.
+Defaults to executing "bundle exec rspec spec" from the ecosystem directory.
+
+Examples:
+  bin/docker-test uv                     # run full UV rspec suite
+  bin/docker-test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
+  bin/docker-test uv --workdir dependabot-updater bundle exec rspec spec/functional
+USAGE
+}
+
+WORKDIR=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      print_usage
+      exit 0
+      ;;
+    -w|--workdir)
+      if [[ $# -lt 2 ]]; then
+        echo "error: --workdir requires a directory" >&2
+        print_usage
+        exit 1
+      fi
+      WORKDIR="$2"
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "error: unknown option '$1'" >&2
+      print_usage
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -lt 1 ]]; then
+  print_usage
+  exit 1
+fi
+
+ECOSYSTEM="$1"
+shift
+
+if [[ -z "$WORKDIR" ]]; then
+  WORKDIR="$ECOSYSTEM"
+fi
+
+if [[ $# -eq 0 ]]; then
+  set -- bundle exec rspec spec
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [[ ! -d "$REPO_ROOT/$ECOSYSTEM" ]]; then
+  echo "error: ecosystem directory '$ECOSYSTEM' not found" >&2
+  exit 1
+fi
+
+if [[ ! -d "$REPO_ROOT/$WORKDIR" ]]; then
+  echo "error: workdir '$WORKDIR' not found" >&2
+  exit 1
+fi
+
+printf -v CMD_STR '%q ' "$@"
+CMD_STR="${CMD_STR% }"
+
+if [[ -z "$CMD_STR" ]]; then
+  echo "error: empty command" >&2
+  exit 1
+fi
+
+WORKDIR_CMD="cd $(printf '%q' "$WORKDIR") && $CMD_STR"
+
+exec "$SCRIPT_DIR/docker-dev-shell" "$ECOSYSTEM" -- bash -lc "$WORKDIR_CMD"
