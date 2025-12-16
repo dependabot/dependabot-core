@@ -101,20 +101,20 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
         # Extracts release dates from repository metadata to support the cooldown feature.
-        # Attempts to parse all repositories: Gradle Plugin Portal (maven-metadata.xml) and
-        # Maven-compatible repositories including Maven Central, Artifactory, Nexus, and custom mirrors.
+        # Attempts both parsing strategies for all repositories:
+        # 1. Gradle Plugin Portal style: maven-metadata.xml with lastUpdated timestamp (latest version only)
+        # 2. Maven repository style: HTML directory listings with per-version dates
+        # This supports mirrors/proxies of both Maven Central and Gradle Plugin Portal.
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
           release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
           begin
             repositories.each do |repository_details|
-              url = repository_details.fetch("url")
+              # Try Gradle Plugin Portal style first (structured metadata)
+              parse_gradle_plugin_portal_release(repository_details, release_date_info)
 
-              if url == Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO
-                parse_gradle_plugin_portal_release(repository_details, release_date_info)
-              else
-                parse_maven_central_releases(repository_details, release_date_info)
-              end
+              # Try Maven repository style (HTML directory listing)
+              parse_maven_central_releases(repository_details, release_date_info)
             end
 
             release_date_info
@@ -138,12 +138,13 @@ module Dependabot
 
             version = title.gsub(%r{/$}, "")
             next unless version_class.correct?(version)
+            next if release_date_info.key?(version) # Skip if already found
 
             release_date = begin
               raw_date_text = link.next.text.strip.split("\n").last.strip
               Time.parse(raw_date_text)
             rescue StandardError => e
-              Dependabot.logger.warn(
+              Dependabot.logger.debug(
                 "Failed to parse release date for #{dependency.name} version #{version}: #{e.message}"
               )
               nil
@@ -152,7 +153,7 @@ module Dependabot
             release_date_info[version] = { release_date: release_date }
           end
         rescue StandardError => e
-          Dependabot.logger.warn(
+          Dependabot.logger.debug(
             "Could not parse Maven-style release dates from #{repository_details.fetch('url')} " \
             "for #{dependency.name}: #{e.message}"
           )
@@ -167,20 +168,21 @@ module Dependabot
         def parse_gradle_plugin_portal_release(repository_details, release_date_info)
           metadata_xml = dependency_metadata(repository_details)
           last_updated = metadata_xml.at_xpath("//metadata/versioning/lastUpdated")&.text&.strip
-          release_date = parse_gradle_timestamp(last_updated)
           latest_version = metadata_xml.at_xpath("//metadata/versioning/latest")&.text&.strip
 
-          unless latest_version && version_class.correct?(latest_version)
-            Dependabot.logger.warn(
-              "No valid latest version found in Gradle Plugin Portal metadata for #{dependency.name}"
-            )
-            return
-          end
+          return unless latest_version && version_class.correct?(latest_version)
+          return if release_date_info.key?(latest_version) # Skip if already found from Maven-style parsing
 
+          release_date = parse_gradle_timestamp(last_updated)
           Dependabot.logger.info(
             "Parsed Gradle Plugin Portal release for #{dependency.name}: #{latest_version} at #{release_date}"
           )
           release_date_info[latest_version] = { release_date: release_date }
+        rescue StandardError => e
+          Dependabot.logger.debug(
+            "Could not parse Gradle Plugin Portal metadata from #{repository_details.fetch('url')} " \
+            "for #{dependency.name}: #{e.message}"
+          )
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
