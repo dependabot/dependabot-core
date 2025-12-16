@@ -3,6 +3,7 @@
 
 require "rspec"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "vcr"
 
 require "dependabot/julia"
