@@ -35,8 +35,8 @@ bin/docker-dev-shell {ecosystem}  # e.g., go_modules, bundler
 # This opens an interactive shell inside the container
 
 # Quick command execution (non-CI):
-bin/docker-test {ecosystem} [command]
-# e.g. bin/docker-test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
+bin/test {ecosystem} [command]
+# e.g. bin/test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
 ```
 
 **Note**: The first run of `bin/docker-dev-shell` can take some minutes as it builds the Docker development image from scratch. Wait for it to complete before proceeding. Check for completion every 5 seconds. Subsequent runs will be much faster as they reuse the built image.
@@ -74,7 +74,7 @@ docker run --rm ghcr.io/dependabot/dependabot-updater-bundler bash -c \
 
 **IMPORTANT**: All testing must be done within Docker containers. The development environment, dependencies, and native helpers are containerized and will not work on the host system.
 
-For quick one-off runs during local development (outside CI), prefer `bin/docker-test {ecosystem} …` which wraps `bin/docker-dev-shell` and executes the provided command inside the correct container.
+For quick one-off runs during local development (outside CI), prefer `bin/test {ecosystem} …` which wraps `bin/docker-dev-shell` and executes the provided command inside the correct container.
 
 **Workflow**: First start the container with `bin/docker-dev-shell {ecosystem}`, then run commands within the interactive container shell:
 
@@ -89,7 +89,7 @@ rubocop -A                    # Auto-fix code style issues (if any found)
 bundle exec srb tc            # Run Sorbet type checking
 
 # Shortcut: run commands directly without attaching to the shell
-bin/docker-test {ecosystem} bundle exec rspec spec/dependabot/{ecosystem}/file_updater_spec.rb
+bin/test {ecosystem} bundle exec rspec spec/dependabot/{ecosystem}/file_updater_spec.rb
 
 # For updater tests, note the folder name change in containers
 cd dependabot-updater && rspec spec  # Run updater tests (not cd updater)
