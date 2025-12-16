@@ -1056,9 +1056,9 @@ module Dependabot
           escaped_path = Regexp.escape(package_path)
 
           # Find the package object and insert the license field after the opening brace
-          # Pattern matches: "package_path": {\n and captures what comes after
+          # Pattern matches: "package_path": {\n and captures the indentation and first field
           # We want to insert the license field as the first field in the object
-          pattern = /("#{escaped_path}":\s*\{\n)(\s+)("(?:name|version)":)/m
+          pattern = /("#{escaped_path}":\s*\{\n)(\s+)("[^"]+":)/m
 
           content.gsub(pattern) do
             opening = Regexp.last_match(1)
