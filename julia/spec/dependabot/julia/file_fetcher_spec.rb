@@ -57,11 +57,8 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     before do
-      # Enable beta ecosystems for all tests and mock the registry client
-      allow(file_fetcher_instance).to receive_messages(
-        allow_beta_ecosystems?: true,
-        registry_client: registry_client
-      )
+      # Mock the registry client
+      allow(file_fetcher_instance).to receive(:registry_client).and_return(registry_client)
 
       # Mock SharedHelpers to avoid actual repo cloning
       allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield("/tmp/test")
@@ -143,16 +140,6 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         expect do
           fetched_files
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
-      end
-    end
-
-    context "when beta ecosystems are disabled" do
-      before do
-        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-      end
-
-      it "returns empty array without fetching files" do
-        expect(fetched_files).to eq([])
       end
     end
   end
