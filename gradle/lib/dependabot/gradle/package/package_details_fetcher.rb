@@ -138,7 +138,7 @@ module Dependabot
 
             version = title.gsub(%r{/$}, "")
             next unless version_class.correct?(version)
-            next if release_date_info.key?(version) # Skip if already found
+            next if release_date_info.key?(version)
 
             release_date = begin
               raw_date_text = link.next.text.strip.split("\n").last.strip
