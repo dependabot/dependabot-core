@@ -414,6 +414,11 @@ public class MSBuildHelperTests : TestBase
                 // normalize default message for the test
                 actualError = new DependencyFileNotFound(notFound.Details["file-path"].ToString()!, "test message");
             }
+            if (actualError is DependencyFileNotParseable notParseable)
+            {
+                // normalize the path for the test
+                actualError = new DependencyFileNotParseable("/" + notParseable.Details["file-path"].ToString()!.TrimStart('.', '/'), notParseable.Details["message"]?.ToString());
+            }
 
             var actualErrorJson = JsonSerializer.Serialize(actualError, RunWorker.SerializerOptions);
             var expectedErrorJson = JsonSerializer.Serialize(expectedError, RunWorker.SerializerOptions);
