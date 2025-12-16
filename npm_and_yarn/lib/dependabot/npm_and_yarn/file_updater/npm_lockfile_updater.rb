@@ -1027,9 +1027,6 @@ module Dependabot
           original_packages = parsed_lockfile.fetch("packages", {})
           updated_packages = parsed_updated_lockfile_content.fetch("packages", {})
 
-          # Track if any licenses were restored
-          licenses_restored = T.let(false, T::Boolean)
-
           # Restore license field for each package that had it in the original lockfile
           original_packages.each do |package_path, original_details|
             next unless original_details.is_a?(Hash)
@@ -1042,17 +1039,34 @@ module Dependabot
             # If npm generated a license field, we should trust npm's value over the old lockfile's value
             next if updated_details["license"]
 
-            # Add the license to the parsed JSON structure
-            updated_details["license"] = original_details["license"]
-            licenses_restored = true
+            # Use string manipulation to insert the license field to preserve exact formatting
+            updated_lockfile_content = add_license_to_package(
+              updated_lockfile_content,
+              package_path,
+              original_details["license"]
+            )
           end
 
-          # If we restored any licenses, regenerate the JSON with proper formatting
-          if licenses_restored
-            indent = detect_indentation(updated_lockfile_content)
-            JSON.pretty_generate(parsed_updated_lockfile_content, indent: indent)
-          else
-            updated_lockfile_content
+          updated_lockfile_content
+        end
+
+        sig { params(content: String, package_path: String, license: String).returns(String) }
+        def add_license_to_package(content, package_path, license)
+          # Escape special regex characters in package path
+          escaped_path = Regexp.escape(package_path)
+
+          # Find the package object and insert the license field after the opening brace
+          # Pattern matches: "package_path": {\n and captures what comes after
+          # We want to insert the license field as the first field in the object
+          pattern = /("#{escaped_path}":\s*\{\n)(\s+)("(?:name|version)":)/m
+
+          content.gsub(pattern) do
+            opening = Regexp.last_match(1)
+            indent = Regexp.last_match(2)
+            next_field = Regexp.last_match(3)
+
+            # Insert license field before the first field
+            "#{opening}#{indent}\"license\": \"#{license}\",\n#{indent}#{next_field}"
           end
         end
 
