@@ -269,7 +269,7 @@ internal static class PathHelper
             // special case recursive wildcard
             if (searchPattern[i..] == "/**/*")
             {
-                pb.Append("($|.*$)"); // capture just this directory and every subdirectory
+                pb.Append("($|/.*$)"); // capture just this directory and every subdirectory
                 appendAnchor = false;
                 break;
             }

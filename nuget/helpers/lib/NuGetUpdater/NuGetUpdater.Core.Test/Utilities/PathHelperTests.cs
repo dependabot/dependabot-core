@@ -269,7 +269,8 @@ public class PathHelperTests
             new[]
             {
                 "src/client/android/ui",
-                "src/client/ios/ui"
+                "src/client/ios/ui",
+                "src-dont-include-this/ui"
             },
             // expectedDirectories
             new[]
