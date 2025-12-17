@@ -482,6 +482,74 @@ RSpec.describe Dependabot::Julia::FileUpdater do
     end
   end
 
+  describe "#updated_dependency_files with explicit root directory" do
+    # This test verifies that dependencies with file: "Project.toml" correctly
+    # match project files in the root directory "/" - simulating MetaGraphsNext.jl scenario
+    subject(:root_updater) do
+      described_class.new(
+        dependencies: [root_dependency],
+        dependency_files: [root_project_file],
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+
+    let(:root_project_file) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        content: <<~TOML,
+          name = "RootProject"
+          uuid = "12345678-1234-1234-1234-123456789012"
+          version = "1.0.0"
+
+          [deps]
+          Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+
+          [compat]
+          Graphs = "1.7"
+          julia = "1.6"
+        TOML
+        directory: "/"
+      )
+    end
+
+    let(:root_dependency) do
+      Dependabot::Dependency.new(
+        name: "Graphs",
+        version: "2.0.0",
+        previous_version: "1.7.0",
+        package_manager: "julia",
+        requirements: [{
+          requirement: "1.7, 2",
+          file: "Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        previous_requirements: [{
+          requirement: "1.7",
+          file: "Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        metadata: { julia_uuid: "86223c79-3864-5bf0-83f7-82e725a168b6" }
+      )
+    end
+
+    it "correctly matches file: 'Project.toml' with root directory project file" do
+      updated_files = root_updater.updated_dependency_files
+      expect(updated_files.length).to eq(1)
+
+      project_toml = updated_files.first
+      expect(project_toml.name).to eq("Project.toml")
+      expect(project_toml.directory).to eq("/")
+      expect(project_toml.content).to include('Graphs = "1.7, 2"')
+    end
+  end
+
   private
 
   def fixture(*path)
