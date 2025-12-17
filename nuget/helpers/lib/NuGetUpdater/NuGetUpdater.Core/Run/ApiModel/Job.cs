@@ -42,7 +42,7 @@ public sealed record Job
     public int MaxUpdaterRunTime { get; init; } = 0;
     public Cooldown? Cooldown { get; init; } = null;
 
-    public ImmutableArray<string> GetAllDirectories()
+    public ImmutableArray<string> GetRawDirectories()
     {
         var builder = ImmutableArray.CreateBuilder<string>();
         if (Source.Directory is not null)
@@ -57,6 +57,27 @@ public sealed record Job
         }
 
         return builder.ToImmutable();
+    }
+
+    public ImmutableArray<string> GetAllDirectories(string repoRoot)
+    {
+        // where possible we want to maintain the order of the specified directories, so we have to manually handle each one
+        var seenDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var rawDirectories = GetRawDirectories();
+        var result = new List<string>();
+        foreach (var directory in rawDirectories)
+        {
+            var expandedDirectories = PathHelper.GetMatchingDirectoriesUnder(repoRoot, directory, caseSensitive: false);
+            foreach (var expanded in expandedDirectories)
+            {
+                if (seenDirectories.Add(expanded))
+                {
+                    result.Add(expanded);
+                }
+            }
+        }
+
+        return [.. result];
     }
 
     public ImmutableArray<DependencyGroup> GetRelevantDependencyGroups()
