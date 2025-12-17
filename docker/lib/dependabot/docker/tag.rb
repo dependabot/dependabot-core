@@ -60,7 +60,9 @@ module Dependabot
           /canary/i,      # matches: canary, CANARY
           /unstable/i,    # matches: unstable, UNSTABLE
           /\d+[a-z]\d*/,  # matches: 3.15.0a2, 1.0b1 (version followed by letter and optional number)
-          /[a-z]+\d+$/    # matches: alpha1, beta2, rc3 at the end
+          /[a-z]+\d+$/,   # matches: alpha1, beta2, rc3 at the end
+          /\.post\d+/i,   # matches: .post1, .POST2 (Python PEP 440 post-release)
+          /\.dev\d+/i     # matches: .dev0, .DEV1 (Python PEP 440 development release)
         ]
 
         # Check both the version part and the suffix part

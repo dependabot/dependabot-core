@@ -69,6 +69,25 @@ RSpec.describe Dependabot::Docker::Tag do
         expect(described_class.new("1.0-unstable").looks_like_prerelease?).to be true
         expect(described_class.new("1.0.0-UNSTABLE").looks_like_prerelease?).to be true
       end
+
+      it "detects Python PEP 440 pre-release formats" do
+        # Pre-release segment: {a|b|rc}N
+        expect(described_class.new("1.0.0a1").looks_like_prerelease?).to be true
+        expect(described_class.new("2.1.0b2").looks_like_prerelease?).to be true
+        expect(described_class.new("3.2.0rc3").looks_like_prerelease?).to be true
+      end
+
+      it "detects Python PEP 440 post-release formats" do
+        # Post-release segment: .postN
+        expect(described_class.new("1.0.0.post1").looks_like_prerelease?).to be true
+        expect(described_class.new("2.1.0.POST2").looks_like_prerelease?).to be true
+      end
+
+      it "detects Python PEP 440 development release formats" do
+        # Development release segment: .devN
+        expect(described_class.new("1.0.0.dev0").looks_like_prerelease?).to be true
+        expect(described_class.new("2.1.0.DEV1").looks_like_prerelease?).to be true
+      end
     end
 
     context "with stable tags" do
