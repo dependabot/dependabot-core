@@ -320,7 +320,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(requirements_file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def uv_pip_compile_options_from_compiled_file(requirements_file)
           options = []
@@ -346,14 +345,18 @@ module Dependabot
 
           options << "--universal" if T.must(requirements_file.content).include?("--universal")
 
-          if (python_version_match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
-            options << "--python-version=#{python_version_match[:version]}"
-          end
+          options << extract_python_version_option(requirements_file)
 
-          options
+          options.compact
         end
-        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
+
+        sig { params(requirements_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def extract_python_version_option(requirements_file)
+          return unless (match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
+
+          "--python-version=#{match[:version]}"
+        end
 
         sig { returns(T::Hash[String, String]) }
         def python_env

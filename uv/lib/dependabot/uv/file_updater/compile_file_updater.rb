@@ -493,30 +493,30 @@ module Dependabot
           options.join(" ")
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(requirements_file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def uv_compile_options_from_compiled_file(requirements_file)
+          content = T.must(requirements_file.content)
           options = ["--output-file=#{requirements_file.name}"]
-          options << "--emit-index-url" if T.must(requirements_file.content).include?("index-url http")
-          options << "--generate-hashes" if T.must(requirements_file.content).include?("--hash=sha")
-          options << "--no-annotate" unless T.must(requirements_file.content).include?("# via ")
-          options << "--pre" if T.must(requirements_file.content).include?("--pre")
-          options << "--no-strip-extras" if T.must(requirements_file.content).include?("--no-strip-extras")
+          options << "--emit-index-url" if content.include?("index-url http")
+          options << "--generate-hashes" if content.include?("--hash=sha")
+          options << "--no-annotate" unless content.include?("# via ")
+          options << "--pre" if content.include?("--pre")
+          options << "--no-strip-extras" if content.include?("--no-strip-extras")
+          options << "--emit-build-options" if content.include?("--no-binary") || content.include?("--only-binary")
+          options << "--universal" if content.include?("--universal")
 
-          if T.must(requirements_file.content).include?("--no-binary") ||
-             T.must(requirements_file.content).include?("--only-binary")
-            options << "--emit-build-options"
-          end
+          python_version_option = extract_python_version_option(content)
+          options << python_version_option if python_version_option
 
-          options << "--universal" if T.must(requirements_file.content).include?("--universal")
-
-          if (python_version_match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
-            options << "--python-version=#{python_version_match[:version]}"
-          end
-
-          options
+          options.compact
         end
-        # rubocop:enable Metrics/AbcSize
+
+        sig { params(content: String).returns(T.nilable(String)) }
+        def extract_python_version_option(content)
+          return unless (match = PYTHON_VERSION_REGEX.match(content))
+
+          "--python-version=#{match[:version]}"
+        end
 
         sig { returns(T::Array[String]) }
         def compile_index_options
