@@ -297,11 +297,9 @@ module Dependabot
 
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
-        # Ensure content ends with newline for consistent regex matching
-        content = "#{content}\n" unless content.end_with?("\n")
-
         # Extract the [compat] section to update it specifically
-        compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
+        # The regex handles files with or without trailing newlines
+        compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*(?:\n|\z))*?)(?=^\[|\z)/m)
 
         if compat_section_match
           compat_section = T.must(compat_section_match[1])
@@ -325,7 +323,7 @@ module Dependabot
       sig { params(content: String, dependency_name: String, requirement: String).returns(String) }
       def add_compat_entry_to_content(content, dependency_name, requirement)
         if content.match?(/^\s*\[compat\]\s*$/m)
-          compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
+          compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*(?:\n|\z))*?)(?=^\[|\z)/m)
           return content unless compat_section_match
 
           compat_section = T.must(compat_section_match[1])
