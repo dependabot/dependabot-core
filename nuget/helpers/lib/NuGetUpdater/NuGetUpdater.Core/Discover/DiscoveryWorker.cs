@@ -222,7 +222,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    private async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager)
+    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager)
     {
         HashSet<string> expandedProjects = new(PathComparer.Instance);
         HashSet<string> seenProjects = new(PathComparer.Instance);
@@ -252,52 +252,26 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                         filesToExpand.Push(projectPath);
                     }
                 }
-
-                if (experimentsManager.UseSingleRestore)
+                else if (extension == ".proj")
                 {
-                    // projects get shunted directly to the result because regular discovery handles it from there
-                    switch (extension)
+                    var foundProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectFile", "ProjectReference");
+                    foreach (var foundProject in foundProjects)
                     {
-                        case ".proj":
-                        case ".csproj":
-                        case ".fbproj":
-                        case ".fsproj":
-                            expandedProjects.Add(candidateEntryPoint);
-                            break;
-                        default:
-                            // unsupported project
-                            break;
+                        filesToExpand.Push(foundProject);
                     }
                 }
-                else
+
+                // projects get shunted directly to the result because regular discovery handles it from there
+                switch (extension)
                 {
-                    if (extension == ".proj")
-                    {
-                        IEnumerable<string> foundProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectFile", "ProjectReference");
-                        foreach (string foundProject in foundProjects)
-                        {
-                            filesToExpand.Push(foundProject);
-                        }
-                    }
-                    else
-                    {
-                        switch (extension)
-                        {
-                            case ".csproj":
-                            case ".fsproj":
-                            case ".vbproj":
-                                // keep this project and check for references
-                                expandedProjects.Add(candidateEntryPoint);
-                                IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectReference");
-                                foreach (string referencedProject in referencedProjects)
-                                {
-                                    filesToExpand.Push(referencedProject);
-                                }
-                                break;
-                            default:
-                                continue;
-                        }
-                    }
+                    case ".csproj":
+                    case ".vbproj":
+                    case ".fsproj":
+                        expandedProjects.Add(candidateEntryPoint);
+                        break;
+                    default:
+                        // unsupported project
+                        break;
                 }
             }
         }
@@ -330,7 +304,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             // referenced projects commonly use the Windows-style directory separator which can cause problems on Unix
             // but Windows is able to handle a Unix-style path, so we normalize everything to that then normalize again
             // with regards to relative paths, e.g., "some/path/" + "..\other\file" => "some/other/file"
-            string referencedProjectPath = Path.Join(projectDir, projectItem.EvaluatedInclude.NormalizePathToUnix());
+            string referencedProjectPath = Path.Combine(projectDir, projectItem.EvaluatedInclude.NormalizePathToUnix());
             string normalizedReferenceProjectPath = new FileInfo(referencedProjectPath).FullName;
             if (seenItems.Add(normalizedReferenceProjectPath))
             {

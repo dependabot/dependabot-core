@@ -9,6 +9,9 @@ require "dependabot/file_parsers/base"
 require "dependabot/julia/version"
 require "dependabot/julia/requirement"
 require "dependabot/julia/registry_client"
+require "dependabot/julia/package_manager"
+require "dependabot/julia/language"
+require "dependabot/ecosystem"
 
 module Dependabot
   module Julia
@@ -47,7 +50,35 @@ module Dependabot
         dependency_set.uniq
       end
 
+      sig { override.returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: PackageManager::ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new,
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def language
+        @language ||= T.let(
+          Language.new(PackageManager::CURRENT_VERSION),
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
 
       # Helper methods for DependabotHelper.jl integration
 

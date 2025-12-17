@@ -34,6 +34,9 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :errored_fetching_subdependencies
 
+      sig { returns(T.nilable(StandardError)) }
+      attr_reader :subdependency_error
+
       sig do
         params(file_parser: Dependabot::FileParsers::Base).void
       end
@@ -104,6 +107,7 @@ module Dependabot
         end
       rescue StandardError => e
         @errored_fetching_subdependencies = true
+        @subdependency_error = T.let(e, T.nilable(StandardError))
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
         []
       end

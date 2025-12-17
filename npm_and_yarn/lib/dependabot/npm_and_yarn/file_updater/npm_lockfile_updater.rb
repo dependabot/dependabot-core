@@ -343,8 +343,6 @@ module Dependabot
         #
         # Other npm flags:
         # - `--force` ignores checks for platform (os, cpu) and engines
-        # - `--dry-run=false` the updater sets a global .npmrc with `dry-run: true`
-        #   to work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are
         #   run when installing git dependencies
         # - `--save-optional` when updating optional dependencies to ensure they
@@ -355,8 +353,6 @@ module Dependabot
             "install",
             *install_args,
             "--force",
-            "--dry-run",
-            "false",
             "--ignore-scripts",
             "--package-lock-only"
           ]
@@ -369,8 +365,6 @@ module Dependabot
             "install",
             install_args.empty? ? "" : "<install_args>",
             "--force",
-            "--dry-run",
-            "false",
             "--ignore-scripts",
             "--package-lock-only"
           ]
