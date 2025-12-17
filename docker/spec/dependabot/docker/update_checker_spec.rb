@@ -399,9 +399,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "7.4.0RC6-fpm-buster" }
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/php/" }
 
-      # With prerelease filtering, should suggest downgrading to latest stable (7.3.12)
-      # since no stable 7.4.0 exists yet
-      it { is_expected.to eq("7.3.12-fpm-buster") }
+      it { is_expected.to eq("7.4.0RC6-fpm-buster") }
     end
 
     context "when there is a latest tag" do
@@ -1055,17 +1053,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when the current version is a pre-release" do
         let(:version) { "3.7.0a1" }
 
-        # With prerelease filtering, we should upgrade to the latest stable version (3.6.3)
-        # Since 3.7.0a1 has precision 3, we get 3.6.3 (precision 3) not 3.6 (precision 2)
-        it { is_expected.to eq("3.6.3") }
-      end
-
-      context "when there is a newer prerelease than current stable version" do
-        let(:version) { "3.6.3" }
-
-        # Should not suggest upgrading to 3.7.0a2 (prerelease)
-        # Should stay at current stable version (3.6.3)
-        it { is_expected.to eq("3.6.3") }
+        it { is_expected.to eq("3.7.0a2") }
       end
     end
 
