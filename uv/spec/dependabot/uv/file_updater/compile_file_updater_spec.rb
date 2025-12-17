@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
       it "preserves the --universal and --python-version flags when regenerating" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--universal")
-        expect(updated_files.first.content).to include("--python-version")
+        expect(updated_files.first.content).to include("--python-version=3.8")
       end
     end
 

@@ -39,7 +39,7 @@ module Dependabot
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
         UV_UNRESOLVABLE_REGEX = T.let(/ × No solution found when resolving dependencies:[\s\S]*$/, Regexp)
-        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+)/, Regexp)
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency

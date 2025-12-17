@@ -115,6 +115,14 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipCompileVersionResolver do
       end
     end
 
+    context "with python-version including patch version" do
+      let(:compiled_fixture_name) { "uv_pip_compile_universal_patch.txt" }
+
+      it "extracts the full python-version including patch" do
+        expect(options).to include("--python-version=3.11.2")
+      end
+    end
+
     context "with generate-hashes flag" do
       let(:compiled_fixture_name) { "uv_pip_compile_hashes.txt" }
 

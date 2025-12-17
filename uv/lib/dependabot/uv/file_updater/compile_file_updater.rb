@@ -37,7 +37,7 @@ module Dependabot
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
           String
         )
-        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+)/, Regexp)
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
