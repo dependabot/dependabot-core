@@ -141,6 +141,17 @@ public class MessageReportTests
         yield return
         [
             // message
+            new OutOfDisk(),
+            // expected
+            """
+            Error type: out_of_disk
+            """
+
+        ];
+
+        yield return
+        [
+            // message
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             // expected
             """
