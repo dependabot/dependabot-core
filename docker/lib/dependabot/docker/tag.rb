@@ -38,7 +38,7 @@ module Dependabot
         name.match?(FileParser::DIGEST)
       end
 
-      sig { returns(T.nilable(T::Boolean)) }
+      sig { returns(T::Boolean) }
       def looks_like_prerelease?
         return false unless comparable?
 
