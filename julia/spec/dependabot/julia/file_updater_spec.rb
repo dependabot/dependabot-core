@@ -437,6 +437,54 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(entry_names).to eq(%w(Aqua CUDA Statistics julia))
       end
     end
+
+    context "when file has no trailing newline" do
+      let(:project_file_content) do
+        # Intentionally no trailing newline - this matches real-world files like
+        # MetaGraphsNext.jl's docs/Project.toml
+        "[deps]\nGraphs = \"86223c79-3864-5bf0-83f7-82e725a168b6\"\n\n[compat]\nDocumenter = \"1\""
+      end
+
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: project_file_content,
+          directory: "/docs"
+        )
+      end
+
+      let(:dependency_files) { [project_file] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Graphs",
+          version: "1.13.2",
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{
+            requirement: "1.13.2",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          metadata: { julia_uuid: "86223c79-3864-5bf0-83f7-82e725a168b6" }
+        )
+      end
+
+      it "adds the new compat entry even without trailing newline" do
+        updated_files = updater.updated_dependency_files
+        project_toml = updated_files.first
+
+        expect(project_toml.content).to include('Graphs = "1.13.2"')
+        expect(project_toml.content).to include("[compat]")
+      end
+    end
   end
 
   describe "#manifest_file_for_path" do

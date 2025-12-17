@@ -297,6 +297,9 @@ module Dependabot
 
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
+        # Ensure content ends with newline for consistent regex matching
+        content = "#{content}\n" unless content.end_with?("\n")
+
         # Extract the [compat] section to update it specifically
         compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
 
