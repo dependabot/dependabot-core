@@ -399,7 +399,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "7.4.0RC6-fpm-buster" }
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/php/" }
 
-      it { is_expected.to eq("7.4.0RC6-fpm-buster") }
+      # With prerelease filtering, should suggest downgrading to latest stable (7.3.12)
+      # since no stable 7.4.0 exists yet
+      it { is_expected.to eq("7.3.12-fpm-buster") }
     end
 
     context "when there is a latest tag" do

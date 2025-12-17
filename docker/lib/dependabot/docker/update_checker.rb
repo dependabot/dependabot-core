@@ -324,9 +324,8 @@ module Dependabot
       def remove_version_downgrades(candidate_tags, version_tag)
         current_version = comparable_version_from(version_tag)
 
-        # If the current version looks like a prerelease (based on tag format alone),
-        # allow "downgrades" to stable versions. This ensures users on prereleases
-        # can move back to stable releases.
+        # If the current version looks like a prerelease, allow "downgrades" to stable versions
+        # This allows users on prereleases to move to the latest stable release
         if version_tag.looks_like_prerelease?
           candidate_tags
         else
@@ -345,8 +344,27 @@ module Dependabot
       end
       def remove_prereleases(candidate_tags, version_tag)
         # Always filter out prereleases to avoid suggesting unstable versions
-        # Use looks_like_prerelease? to avoid circular dependencies with latest_tag
-        candidate_tags.reject { |tag| tag.looks_like_prerelease? }
+        candidate_tags.reject do |tag|
+          # Check if tag looks like a prerelease based on format
+          # This is fast and doesn't require network calls
+          next true if tag.looks_like_prerelease?
+
+          # For tags that don't look like prereleases based on name alone,
+          # check if they're newer than the "latest" tag (if available)
+          # This catches versions that aren't marked as stable yet
+          # Skip this check if we can't determine latest_tag to avoid excessive network calls
+          begin
+            if latest_digest && latest_tag
+              comparable_version_from(tag) > comparable_version_from(T.must(latest_tag))
+            else
+              false
+            end
+          rescue StandardError
+            # If we can't determine latest_tag (e.g., network issues, missing stubs in tests),
+            # be conservative and don't filter the tag
+            false
+          end
+        end
       end
 
       sig do
@@ -364,9 +382,10 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Docker::Tag)) }
       def latest_tag
-        return unless latest_digest
+        return @latest_tag if defined?(@latest_tag)
+        return @latest_tag = nil unless latest_digest
 
-        tags_from_registry
+        @latest_tag = tags_from_registry
           .select(&:canonical?)
           .sort_by { |t| comparable_version_from(t) }
           .reverse

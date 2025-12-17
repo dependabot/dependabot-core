@@ -42,13 +42,16 @@ module Dependabot
       def looks_like_prerelease?
         return false unless comparable?
 
+        # Don't treat SHA-suffixed tags as prereleases (e.g., v3.10.0-169-gfe040d3)
+        return false if format == :sha_suffixed
+
         # Check for common prerelease patterns in the tag name
         # The version regex splits things like "1.0.0-alpha" into version="1.0.0" and suffix="-alpha"
         # So we need to check the full name or the combination of version and suffix
         prerelease_patterns = [
           /alpha/i,       # matches: alpha, ALPHA
           /beta/i,        # matches: beta, BETA
-          /\brc\b/i,      # matches: rc, RC as a whole word
+          /rc\d*/i,       # matches: rc, RC, RC1, rc2, etc.
           /dev/i,         # matches: dev, DEV
           /preview/i,     # matches: preview, PREVIEW
           /\bpre\b/i,     # matches: pre, PRE as a whole word
