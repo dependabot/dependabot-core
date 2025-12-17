@@ -39,6 +39,7 @@ module Dependabot
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
         UV_UNRESOLVABLE_REGEX = T.let(/ × No solution found when resolving dependencies:[\s\S]*$/, Regexp)
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+)/, Regexp)
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -272,6 +273,8 @@ module Dependabot
             /--index-url=\S+/, "--index-url=<index_url>"
           ).sub(
             /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          ).sub(
+            /--python-version=\S+/, "--python-version=<python_version>"
           )
         end
 
@@ -317,6 +320,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(requirements_file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def uv_pip_compile_options_from_compiled_file(requirements_file)
           options = []
@@ -342,8 +346,13 @@ module Dependabot
 
           options << "--universal" if T.must(requirements_file.content).include?("--universal")
 
+          if (python_version_match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
+            options << "--python-version=#{python_version_match[:version]}"
+          end
+
           options
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
 
         sig { returns(T::Hash[String, String]) }

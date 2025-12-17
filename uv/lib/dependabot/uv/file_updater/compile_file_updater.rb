@@ -37,6 +37,7 @@ module Dependabot
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
           String
         )
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+)/, Regexp)
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -475,6 +476,8 @@ module Dependabot
             /--index-url=\S+/, "--index-url=<index_url>"
           ).sub(
             /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          ).sub(
+            /--python-version=\S+/, "--python-version=<python_version>"
           )
         end
 
@@ -490,6 +493,7 @@ module Dependabot
           options.join(" ")
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { params(requirements_file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def uv_compile_options_from_compiled_file(requirements_file)
           options = ["--output-file=#{requirements_file.name}"]
@@ -506,8 +510,13 @@ module Dependabot
 
           options << "--universal" if T.must(requirements_file.content).include?("--universal")
 
+          if (python_version_match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
+            options << "--python-version=#{python_version_match[:version]}"
+          end
+
           options
         end
+        # rubocop:enable Metrics/AbcSize
 
         sig { returns(T::Array[String]) }
         def compile_index_options
