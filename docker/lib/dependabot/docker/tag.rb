@@ -40,7 +40,31 @@ module Dependabot
 
       sig { returns(T.nilable(T::Boolean)) }
       def looks_like_prerelease?
-        numeric_version&.match?(/[a-zA-Z]/)
+        return false unless comparable?
+
+        # Check for common prerelease patterns in the tag name
+        # The version regex splits things like "1.0.0-alpha" into version="1.0.0" and suffix="-alpha"
+        # So we need to check the full name or the combination of version and suffix
+        prerelease_patterns = [
+          /alpha/i,       # matches: alpha, ALPHA
+          /beta/i,        # matches: beta, BETA
+          /\brc\b/i,      # matches: rc, RC as a whole word
+          /dev/i,         # matches: dev, DEV
+          /preview/i,     # matches: preview, PREVIEW
+          /\bpre\b/i,     # matches: pre, PRE as a whole word
+          /nightly/i,     # matches: nightly, NIGHTLY
+          /snapshot/i,    # matches: snapshot, SNAPSHOT
+          /canary/i,      # matches: canary, CANARY
+          /unstable/i,    # matches: unstable, UNSTABLE
+          /\d+[a-z]\d*/,  # matches: 3.15.0a2, 1.0b1 (version followed by letter and optional number)
+          /[a-z]+\d+$/    # matches: alpha1, beta2, rc3 at the end
+        ]
+
+        # Check both the version part and the suffix part
+        version_matches = version && prerelease_patterns.any? { |pattern| version.match?(pattern) }
+        suffix_matches = suffix && prerelease_patterns.any? { |pattern| suffix.match?(pattern) }
+
+        !!(version_matches || suffix_matches)
       end
 
       sig do

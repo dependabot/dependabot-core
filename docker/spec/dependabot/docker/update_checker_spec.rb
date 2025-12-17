@@ -1053,7 +1053,17 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when the current version is a pre-release" do
         let(:version) { "3.7.0a1" }
 
-        it { is_expected.to eq("3.7.0a2") }
+        # With prerelease filtering, we should upgrade to the latest stable version (3.6.3)
+        # Since 3.7.0a1 has precision 3, we get 3.6.3 (precision 3) not 3.6 (precision 2)
+        it { is_expected.to eq("3.6.3") }
+      end
+
+      context "when there is a newer prerelease than current stable version" do
+        let(:version) { "3.6.3" }
+
+        # Should not suggest upgrading to 3.7.0a2 (prerelease)
+        # Should stay at current stable version (3.6.3)
+        it { is_expected.to eq("3.6.3") }
       end
     end
 

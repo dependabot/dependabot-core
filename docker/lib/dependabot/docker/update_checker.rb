@@ -324,8 +324,15 @@ module Dependabot
       def remove_version_downgrades(candidate_tags, version_tag)
         current_version = comparable_version_from(version_tag)
 
-        candidate_tags.select do |tag|
-          comparable_version_from(tag) >= current_version
+        # If the current version looks like a prerelease (based on tag format alone),
+        # allow "downgrades" to stable versions. This ensures users on prereleases
+        # can move back to stable releases.
+        if version_tag.looks_like_prerelease?
+          candidate_tags
+        else
+          candidate_tags.select do |tag|
+            comparable_version_from(tag) >= current_version
+          end
         end
       end
 
@@ -337,9 +344,9 @@ module Dependabot
           .returns(T::Array[Dependabot::Docker::Tag])
       end
       def remove_prereleases(candidate_tags, version_tag)
-        return candidate_tags if prerelease?(version_tag)
-
-        candidate_tags.reject { |tag| prerelease?(tag) }
+        # Always filter out prereleases to avoid suggesting unstable versions
+        # Use looks_like_prerelease? to avoid circular dependencies with latest_tag
+        candidate_tags.reject { |tag| tag.looks_like_prerelease? }
       end
 
       sig do
