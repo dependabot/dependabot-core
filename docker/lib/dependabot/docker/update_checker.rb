@@ -219,25 +219,7 @@ module Dependabot
           client.digest(docker_repo_name, tag.name)
         end
 
-        # digest_info can be either a String or an Array depending on the registry response
-        first_digest = case digest_info
-                       when Array
-                         if digest_info.empty?
-                           Dependabot.logger.warn(
-                             "Empty digest_info array for #{docker_repo_name}:#{tag.name}"
-                           )
-                           return nil
-                         end
-                         digest_info.first&.fetch("digest")
-                       when String
-                         digest_info
-                       else
-                         Dependabot.logger.warn(
-                           "Unexpected digest_info type for #{docker_repo_name}:#{tag.name}: " \
-                           "#{digest_info.class} (expected String or Array)"
-                         )
-                         return nil
-                       end
+        first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
         blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
@@ -256,6 +238,34 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
+      end
+
+      sig do
+        params(
+          digest_info: T.untyped,
+          tag: Dependabot::Docker::Tag
+        ).returns(T.nilable(String))
+      end
+      def extract_digest_from_response(digest_info, tag)
+        # digest_info can be either a String or an Array depending on the registry response
+        case digest_info
+        when Array
+          if digest_info.empty?
+            Dependabot.logger.warn(
+              "Empty digest_info array for #{docker_repo_name}:#{tag.name}"
+            )
+            return nil
+          end
+          digest_info.first&.fetch("digest")
+        when String
+          digest_info
+        else
+          Dependabot.logger.warn(
+            "Unexpected digest_info type for #{docker_repo_name}:#{tag.name}: " \
+            "#{digest_info.class} (expected String or Array)"
+          )
+          nil
+        end
       end
 
       sig do
