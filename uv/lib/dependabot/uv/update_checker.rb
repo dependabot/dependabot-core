@@ -105,7 +105,7 @@ module Dependabot
         reqs.any? { |r| Uv::Requirement.new(r).exact? }
       end
 
-      sig { returns(PipCompileVersionResolver) }
+      sig { override.returns(PipCompileVersionResolver) }
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||= T.let(
           PipCompileVersionResolver.new(
