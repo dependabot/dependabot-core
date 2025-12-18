@@ -66,8 +66,8 @@ module Dependabot
         ]
 
         # Check both the version part and the suffix part
-        version_matches = version && prerelease_patterns.any? { |pattern| version.match?(pattern) }
-        suffix_matches = suffix && prerelease_patterns.any? { |pattern| suffix.match?(pattern) }
+        version_matches = version && prerelease_patterns.any? { |pattern| T.must(version).match?(pattern) }
+        suffix_matches = suffix && prerelease_patterns.any? { |pattern| T.must(suffix).match?(pattern) }
 
         !!(version_matches || suffix_matches)
       end
