@@ -5,7 +5,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
-require "dependabot/shared/shared_file_fetcher"
+require "dependabot/python/file_fetcher"
 require "dependabot/uv"
 require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/file_fetcher/workspace_fetcher"
@@ -34,7 +34,8 @@ module Dependabot
 
       sig { override.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files
-        ECOSYSTEM_SPECIFIC_FILES
+        # uv.lock is not a standalone required file - it requires pyproject.toml
+        []
       end
 
       sig { override.returns(String) }

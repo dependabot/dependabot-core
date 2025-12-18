@@ -5,7 +5,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
-require "dependabot/shared/shared_file_fetcher"
+require "dependabot/python/shared_file_fetcher"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/file_parser/pyproject_files_parser"
 require "dependabot/errors"
