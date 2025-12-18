@@ -219,7 +219,15 @@ module Dependabot
           client.digest(docker_repo_name, tag.name)
         end
 
-        first_digest = digest_info.first&.fetch("digest")
+        # digest_info can be either a String or an Array depending on the registry response
+        first_digest = case digest_info
+                       when Array
+                         digest_info.first&.fetch("digest")
+                       when String
+                         digest_info
+                       else
+                         return nil
+                       end
         return nil unless first_digest
 
         blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
