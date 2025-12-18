@@ -60,7 +60,7 @@ module Dependabot
 
         sig { params(member_path: String).returns(Dependabot::DependencyFile) }
         def fetch_workspace_member_pyproject(member_path)
-          pyproject_path = cleanpath(File.join(member_path, "pyproject.toml"))
+          pyproject_path = clean_path(File.join(member_path, "pyproject.toml"))
           pyproject_file = fetch_file_from_host(pyproject_path, fetch_submodules: true)
           pyproject_file.support_file = true
           pyproject_file
@@ -114,7 +114,7 @@ module Dependabot
           if is_root_project
             fetch_file_if_present(filename)
           else
-            file_path = cleanpath(File.join(path, filename))
+            file_path = clean_path(File.join(path, filename))
             fetch_file_from_host(file_path, fetch_submodules: true)
           end
         end
@@ -171,7 +171,7 @@ module Dependabot
 
         # Delegate methods to file_fetcher
         sig { params(path: T.nilable(T.any(Pathname, String))).returns(String) }
-        def cleanpath(path)
+        def clean_path(path)
           @file_fetcher.send(:cleanpath, path)
         end
 
