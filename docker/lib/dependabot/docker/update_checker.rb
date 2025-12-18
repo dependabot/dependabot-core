@@ -222,6 +222,12 @@ module Dependabot
         # digest_info can be either a String or an Array depending on the registry response
         first_digest = case digest_info
                        when Array
+                         if digest_info.empty?
+                           Dependabot.logger.warn(
+                             "Empty digest_info array for #{docker_repo_name}:#{tag.name}"
+                           )
+                           return nil
+                         end
                          digest_info.first&.fetch("digest")
                        when String
                          digest_info

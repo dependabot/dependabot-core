@@ -1719,10 +1719,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         allow(mock_client).to receive(:digest).and_return(empty_array)
+        allow(Dependabot.logger).to receive(:warn)
       end
 
-      it "returns nil when array is empty" do
+      it "returns nil and logs a warning" do
         expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Empty digest_info array/
+        )
       end
     end
 
