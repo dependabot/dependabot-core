@@ -700,7 +700,19 @@ module Dependabot
         sig { params(version: String).void }
         def update_uv_to_version(version)
           Dependabot.logger.info("Updating uv to version #{version}")
-          SharedHelpers.run_shell_command("pyenv exec uv self update #{version}")
+
+          # Use pip to install the required uv version since the bundled uv
+          # in Docker was not installed via standalone installer
+          SharedHelpers.run_shell_command(
+            "pyenv exec pip install --force-reinstall --no-deps uv==#{version}"
+          )
+
+          # Verify the installation
+          installed_version = current_uv_version
+          unless installed_version == version
+            raise "Failed to update uv: expected version #{version}, but got #{installed_version}"
+          end
+
           Dependabot.logger.info("Successfully updated uv to version #{version}")
         rescue StandardError => e
           Dependabot.logger.error("Failed to update uv to version #{version}: #{e.message}")

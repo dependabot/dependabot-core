@@ -1070,9 +1070,16 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     context "when current version does not match required version" do
+      before do
+        # Override the default mock to return different versions on successive calls
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("pyenv exec uv --version")
+          .and_return("uv 0.9.11", "uv 0.8.22")
+      end
+
       it "updates uv to the required version" do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("pyenv exec uv self update 0.8.22")
+          .with("pyenv exec pip install --force-reinstall --no-deps uv==0.8.22")
         allow(Dependabot.logger).to receive(:info) # Allow intermediate log calls
         expect(Dependabot.logger).to receive(:info)
           .with(/Current uv version \(0.9.11\) does not match required version \(0.8.22\)/)
@@ -1117,7 +1124,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     context "when update fails" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("pyenv exec uv self update 0.8.22")
+          .with("pyenv exec pip install --force-reinstall --no-deps uv==0.8.22")
           .and_raise(StandardError.new("Update failed"))
       end
 
@@ -1126,6 +1133,24 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           .with(/Failed to update uv to version 0.8.22/)
 
         expect { ensure_uv_version }.to raise_error(StandardError, "Update failed")
+      end
+    end
+
+    context "when version verification fails after update" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("pyenv exec pip install --force-reinstall --no-deps uv==0.8.22")
+        # Mock verification returning wrong version
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("pyenv exec uv --version")
+          .and_return("uv 0.9.11", "uv 0.9.11")
+      end
+
+      it "raises an error about version mismatch" do
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Failed to update uv to version 0.8.22/)
+
+        expect { ensure_uv_version }.to raise_error(/expected version 0.8.22, but got 0.9.11/)
       end
     end
   end
