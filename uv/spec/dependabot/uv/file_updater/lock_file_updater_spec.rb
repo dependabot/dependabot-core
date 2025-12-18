@@ -1061,6 +1061,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       it "updates uv to the required version" do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with("pyenv exec uv self update 0.8.22")
+        allow(Dependabot.logger).to receive(:info) # Allow intermediate log calls
         expect(Dependabot.logger).to receive(:info)
           .with(/Current uv version \(0.9.11\) does not match required version \(0.8.22\)/)
         expect(Dependabot.logger).to receive(:info)
@@ -1080,6 +1081,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       it "does not update uv" do
         expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
           .with(/uv self update/)
+        allow(Dependabot.logger).to receive(:info) # Allow intermediate log calls
         expect(Dependabot.logger).to receive(:info)
           .with("Using uv version 0.8.22")
 
