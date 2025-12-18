@@ -73,13 +73,15 @@ public abstract record JobErrorBase : MessageBase
             case InvalidDataException invalidData when invalidData.Message == "Central Directory corrupt.":
                 return new PrivateSourceBadResponse(NuGetContext.GetPackageSourceUrls(currentDirectory), invalidData.Message);
             case InvalidProjectFileException invalidProjectFile:
-                return new DependencyFileNotParseable(invalidProjectFile.ProjectFile);
+                return new DependencyFileNotParseable(Path.GetRelativePath(currentDirectory, invalidProjectFile.ProjectFile).NormalizePathToUnix());
+            case IOException ioException when ioException.Message.Contains("No space left on device", StringComparison.OrdinalIgnoreCase):
+                return new OutOfDisk();
             case MissingFileException missingFile:
                 return new DependencyFileNotFound(missingFile.FilePath, missingFile.Message);
             case PrivateSourceTimedOutException timeout:
                 return new PrivateSourceTimedOut(timeout.Url);
             case UnparseableFileException unparseableFile:
-                return new DependencyFileNotParseable(unparseableFile.FilePath, unparseableFile.Message);
+                return new DependencyFileNotParseable(Path.GetRelativePath(currentDirectory, unparseableFile.FilePath).NormalizePathToUnix(), unparseableFile.Message);
             case UpdateNotPossibleException updateNotPossible:
                 return new UpdateNotPossible(updateNotPossible.Dependencies);
             default:

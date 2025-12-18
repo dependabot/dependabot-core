@@ -29,7 +29,7 @@ module Dependabot
       DEFAULT_CHANNEL = T.let("anaconda", String)
       API_BASE_URL = T.let("https://api.anaconda.org", String)
       CONNECTION_TIMEOUT = T.let(5, Integer)
-      READ_TIMEOUT = T.let(10, Integer)
+      READ_TIMEOUT = T.let(30, Integer)
       MAX_RETRIES = T.let(1, Integer)
 
       sig { void }

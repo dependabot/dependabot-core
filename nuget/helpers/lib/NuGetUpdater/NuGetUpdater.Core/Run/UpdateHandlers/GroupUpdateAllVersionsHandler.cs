@@ -56,7 +56,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             var updateOperationsPerformed = new List<UpdateOperationBase>();
             var updatedDependencies = new List<ReportedDependency>();
             var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
-            foreach (var directory in job.GetAllDirectories())
+            foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
                 var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
                 logger.ReportDiscovery(discoveryResult);
@@ -169,7 +169,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     private async Task RunUngroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
-        foreach (var directory in job.GetAllDirectories())
+        foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);

@@ -5,7 +5,9 @@ using System.Xml.XPath;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
+using NuGet;
 using NuGet.Frameworks;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -58,7 +60,7 @@ internal static class SdkProjectDiscovery
     [
         "Restore",
         "ResolveProjectReferences",
-        "ResolvePackageAssets"
+        "GenerateBuildDependencyFile"
     ];
 
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
@@ -88,6 +90,9 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject = new(PathComparer.Instance);
         //    projectPath,               tfm,       packageName, packageVersion
 
+        Dictionary<string, int> packageReferenceElementCounts = new(PathComparer.Instance);
+        //    projectPath, count of `<PackageReference>` elements
+
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject = new(PathComparer.Instance);
         //    projectPath                tfm        packageName  packageVersion
 
@@ -106,47 +111,49 @@ internal static class SdkProjectDiscovery
         Dictionary<string, HashSet<string>> additionalFiles = new(PathComparer.Instance);
         //    projectPath  additionalFiles
 
-        var requiresManualPackageResolution = false;
-        var discoveredTfms = experimentsManager.UseSingleRestore
-            ? ["unused-for-single-restore"] // we need to ensure we do the following just once because it'll restore all relevant projects
-            : await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, logger);
-        foreach (var discoveredTfm in discoveredTfms)
+        // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
+        // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
+        var projectTfms = await MSBuildHelper.GetProjectTargetFrameworksAsync(startingProjectPath, logger);
+        var requiresIndividualRestores = projectTfms.Any(tfm => tfm.Contains('-'));
+        if (!requiresIndividualRestores)
         {
+            projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+        }
+
+        foreach (var tfm in projectTfms)
+        {
+            var isSingleTfmRestore = !string.IsNullOrEmpty(tfm);
+
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // the built-in target `GenerateBuildDependencyFile` forces resolution of all NuGet packages, but doesn't invoke a full build
+                // when using single restore, we can directly invoke the relevant targets
+                var args = new List<string>() { "msbuild", startingProjectPath };
+                var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
+                var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
+                if (useDirectRestore || isSingleTfmRestore)
+                {
+                    // directly call the required targets
+                    args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
+                }
+                else
+                {
+                    // delegate to the inner build and call those targets
+                    args.Add("/t:Build");
+                    args.Add($"/p:InnerTargets=\"{string.Join(";", SingleRestoreTargetNames)}\"");
+                }
+
+                // inject various props and targets to help with discovery
                 var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
                 var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
-                var args = new List<string>()
-                {
-                    "build",
-                    startingProjectPath,
-                    "/t:_DiscoverDependencies",
-                    $"/p:TargetFramework={discoveredTfm}",
-                    $"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}",
-                    $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
-                    $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
-                };
+                args.Add($"/p:CustomBeforeMicrosoftCommonProps={dependencyDiscoveryTargetingPacksPropsPath}");
+                args.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
+                args.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
 
-                if (experimentsManager.UseSingleRestore)
+                if (isSingleTfmRestore)
                 {
-                    // when using single restore, we can directly invoke the relevant targets
-                    args = ["msbuild", startingProjectPath];
-                    var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-                    var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
-                    if (useDirectRestore)
-                    {
-                        // directly call the required targets
-                        args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
-                    }
-                    else
-                    {
-                        // delegate to the inner build and call those targets
-                        args.Add("/t:Build");
-                        args.Add($"/p:InnerTargets=\"{string.Join(";", SingleRestoreTargetNames)}\"");
-                    }
+                    args.Add($"/p:TargetFramework={tfm}");
                 }
 
                 // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
@@ -166,11 +173,6 @@ internal static class SdkProjectDiscovery
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
-                if (stdOut.Contains("_DependencyDiscovery_LegacyProjects::UseTemporaryProject"))
-                {
-                    // special case - legacy project with <PackageReference> elements; this requires extra handling below
-                    requiresManualPackageResolution = true;
-                }
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
@@ -200,8 +202,8 @@ internal static class SdkProjectDiscovery
                                     // props and targets files might have been imported from these, but they're not to be considered as dependency files
                                     var forbiddenDirectories = new[]
                                         {
-                                            GetPropertyValueFromProjectEvaluation(projectEvaluation, "BaseIntermediateOutputPath"), // e.g., "obj/"
-                                            GetPropertyValueFromProjectEvaluation(projectEvaluation, "BaseOutputPath"), // e.g., "bin/"
+                                        GetPropertyValueFromProjectEvaluation(projectEvaluation, "BaseIntermediateOutputPath"), // e.g., "obj/"
+                                        GetPropertyValueFromProjectEvaluation(projectEvaluation, "BaseOutputPath"), // e.g., "bin/"
                                         }
                                         .Where(p => !string.IsNullOrEmpty(p))
                                         .Select(p => Path.Combine(Path.GetDirectoryName(projectEvaluation.ProjectFile)!, p!))
@@ -220,7 +222,7 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, explicitPackageVersionsPerProject);
+                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, explicitPackageVersionsPerProject, packageReferenceElementCounts);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -369,6 +371,23 @@ internal static class SdkProjectDiscovery
             }
         }
 
+        var requiresManualPackageResolution = false;
+        foreach (var projectPath in resolvedProperties.Keys)
+        {
+            var projectProperties = resolvedProperties[projectPath];
+            var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
+            if (isProjectLegacy)
+            {
+                // if any TFM had any explicit packages defined, we need to do manual package resolution
+                if (explicitPackageVersionsPerProject.TryGetValue(projectPath, out var projectTfmRefs) &&
+                    projectTfmRefs.Values.Any(v => v.Count > 0))
+                {
+                    requiresManualPackageResolution = true;
+                    break;
+                }
+            }
+        }
+
         if (requiresManualPackageResolution)
         {
             // we were able to collect all <PackageReference> elements, but no transitive dependencies were resolved
@@ -376,7 +395,6 @@ internal static class SdkProjectDiscovery
             packagesPerProject = await RebuildPackagesPerProject(
                 repoRootPath,
                 startingProjectPath,
-                discoveredTfms,
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
                 experimentsManager,
@@ -601,13 +619,18 @@ internal static class SdkProjectDiscovery
     private static async Task<Dictionary<string, Dictionary<string, Dictionary<string, string>>>> RebuildPackagesPerProject(
         string repoRootPath,
         string projectPath,
-        ImmutableArray<string> targetFrameworks,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
         ExperimentsManager experimentsManager,
         ILogger logger
     )
     {
+        // the secondary keys of these are TFMs
+        var targetFrameworks = packagesPerProject.Values.SelectMany(p => p.Keys)
+            .Concat(explicitPackageVersionsPerProject.Values.SelectMany(p => p.Keys))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tfm => tfm)
+            .ToImmutableArray();
         var tempDirectory = Directory.CreateTempSubdirectory("legacy-package-reference-resolution_");
         try
         {
@@ -651,7 +674,8 @@ internal static class SdkProjectDiscovery
         NamedNode node,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
         Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject, // projectPath -> tfm -> packageName
-        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject // projectPath -> tfm -> (packageName, packageVersion)
+        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject, // projectPath -> tfm -> (packageName, packageVersion)
+        Dictionary<string, int> packageReferenceElementCounts // projectPath -> count of `<PackageReference>` elements
     )
     {
         var doRemoveOperation = node is RemoveItem;
@@ -670,7 +694,11 @@ internal static class SdkProjectDiscovery
                         continue;
                     }
 
-                    var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                    // count instances of `<PackageReference>`
+                    //var packageReferenceElements = packageReferenceElementCounts.GetOrAdd(projectEvaluation.ProjectFile, () => 0);
+                    //packageReferenceElementCounts[projectEvaluation.ProjectFile] = packageReferenceElements + 1;
+
+                    var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                     if (tfm is not null)
                     {
                         var topLevelPackages = topLevelPackagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
@@ -837,5 +865,33 @@ internal static class SdkProjectDiscovery
         }
 
         return property.Value;
+    }
+
+    private static string? GetTargetFrameworkFromProjectEvaluation(ProjectEvaluation projectEvaluation)
+    {
+        // try direct access of SDK-style property
+        var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+        if (tfm is null)
+        {
+            // fall back to legacy properties
+            var frameworkMoniker = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFrameworkMoniker");
+            if (frameworkMoniker is not null)
+            {
+                var platformMoniker = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetPlatformMoniker");
+                try
+                {
+                    var framework = string.IsNullOrEmpty(platformMoniker)
+                        ? NuGetFramework.Parse(frameworkMoniker)
+                        : NuGetFramework.ParseComponents(frameworkMoniker, platformMoniker);
+                    tfm = framework.GetShortFolderName();
+                }
+                catch
+                {
+                    // if unable to parse, retain null
+                }
+            }
+        }
+
+        return tfm;
     }
 }
