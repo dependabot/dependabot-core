@@ -1021,5 +1021,84 @@ RSpec.describe Dependabot::Uv::FileFetcher do
         end
       end
     end
+
+    context "with UV workspace dependencies" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_with_workspace.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_content_workspace.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "packages?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_packages_dir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "packages/my-package?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_package_dir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "packages/my-package/pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_content_package.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub README file requests to return 404 (optional files)
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.rst?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "fetches workspace member pyproject.toml files" do
+        expect(file_fetcher_instance.files.map(&:name)).to include(
+          "pyproject.toml",
+          "packages/my-package/pyproject.toml"
+        )
+      end
+
+      it "marks workspace member files as support files" do
+        workspace_file = file_fetcher_instance.files.find { |f| f.name == "packages/my-package/pyproject.toml" }
+        expect(workspace_file&.support_file?).to be(true)
+      end
+    end
   end
 end
