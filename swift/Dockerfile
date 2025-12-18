@@ -27,7 +27,7 @@ USER dependabot
 
 # https://www.swift.org/download/
 # https://github.com/apple/swift-org-website/blob/main/_data/builds/swift_releases.yml
-ARG SWIFT_VERSION=6.2.1
+ARG SWIFT_VERSION=6.2.3
 ARG SWIFT_UBUNTU_VERSION=ubuntu24.04
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VERSION}-aarch64"; fi \
