@@ -393,6 +393,18 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
 
     context "with a private repo dependency" do
       let(:mixfile_fixture_name) { "private_repo" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jason",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
       let(:lockfile_fixture_name) { "private_repo" }
       let(:private_registry_url) { "https://dependabot-private.fly.dev" }
 
@@ -412,7 +424,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         # If unavailable, mock the subprocess to simulate expected behavior
         response = Net::HTTP.get_response(URI.parse("#{private_registry_url}/public_key"))
         raise "Registry unavailable: #{response.code}" if response.code.to_i >= 500
-      rescue StandardError => e
+      rescue StandardError
         # Registry not reachable (503 Service Unavailable or network error), mock the subprocess
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .and_call_original
@@ -428,19 +440,6 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .with(hash_including(function: "get_updated_lockfile"))
           .and_return(updated_lockfile)
-      end
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "jason",
-          version: "1.1.0",
-          requirements:
-            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
-          previous_version: "1.0.0",
-          previous_requirements:
-            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
-          package_manager: "hex"
-        )
       end
 
       it "updates the dependency version in the lockfile" do
