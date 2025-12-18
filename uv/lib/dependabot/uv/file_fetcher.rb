@@ -121,12 +121,55 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def workspace_member_files
-        workspace_member_paths.filter_map do |member_path|
+        workspace_member_paths.flat_map do |member_path|
+          files = []
+
           pyproject_path = cleanpath(File.join(member_path, "pyproject.toml"))
-          fetch_file_from_host(pyproject_path, fetch_submodules: true).tap { |f| f.support_file = true }
+          pyproject_file = fetch_file_from_host(pyproject_path, fetch_submodules: true)
+          pyproject_file.support_file = true
+          files << pyproject_file
+
+          files += fetch_workspace_member_readme_files(member_path, pyproject_file)
+
+          files
+        rescue Dependabot::DependencyFileNotFound
+          []
+        end
+      end
+
+      sig do
+        params(
+          member_path: String,
+          pyproject_file: Dependabot::DependencyFile
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def fetch_workspace_member_readme_files(member_path, pyproject_file)
+        parsed = TomlRB.parse(pyproject_file.content)
+        readme_decl = parsed.dig("project", "readme")
+
+        candidate_names =
+          case readme_decl
+          when String then [readme_decl]
+          when Hash
+            if readme_decl["file"].is_a?(String)
+              [T.cast(readme_decl["file"], String)]
+            else
+              README_FILENAMES
+            end
+          else
+            README_FILENAMES
+          end
+
+        candidate_names.filter_map do |filename|
+          readme_path = cleanpath(File.join(member_path, filename))
+          file = fetch_file_from_host(readme_path, fetch_submodules: true)
+          file.support_file = true
+          file
         rescue Dependabot::DependencyFileNotFound
           nil
         end
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+        []
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

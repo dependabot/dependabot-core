@@ -1065,6 +1065,27 @@ RSpec.describe Dependabot::Uv::FileFetcher do
             body: fixture("github", "pyproject_content_package.json"),
             headers: { "content-type" => "application/json" }
           )
+
+        # Stub README file requests to return 404 (optional files)
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.rst?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
       end
 
       it "fetches workspace member pyproject.toml files" do
