@@ -1032,6 +1032,18 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
 
+    context "when uv version includes pre-release info" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("pyenv exec uv --version")
+          .and_return("uv 0.9.11-alpha.1")
+      end
+
+      it "returns the full version including pre-release" do
+        expect(current_uv_version).to eq("0.9.11-alpha.1")
+      end
+    end
+
     context "when uv is not installed" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)

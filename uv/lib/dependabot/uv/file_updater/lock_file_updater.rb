@@ -401,7 +401,8 @@ module Dependabot
         def current_uv_version
           version_output = SharedHelpers.run_shell_command("pyenv exec uv --version").strip
           # Parse version from output like "uv 0.9.11" or "uv 0.9.11 (abc123)"
-          version_match = version_output.match(/uv\s+(\d+\.\d+\.\d+)/)
+          # Support semantic versions with optional pre-release/build metadata
+          version_match = version_output.match(/uv\s+(\d+\.\d+\.\d+(?:[-+]\S+)?)/)
           version_match[1] if version_match
         rescue StandardError => e
           Dependabot.logger.warn("Failed to get current uv version: #{e.message}")
