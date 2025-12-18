@@ -4,10 +4,11 @@
 require "toml-rb"
 require "sorbet-runtime"
 require "dependabot/dependency_file"
+require "dependabot/uv/file_fetcher"
 
 module Dependabot
   module Uv
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::Python::SharedFileFetcher
       class WorkspaceFetcher
         extend T::Sig
 
