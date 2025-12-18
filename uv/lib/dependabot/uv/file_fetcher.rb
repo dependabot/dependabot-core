@@ -94,6 +94,7 @@ module Dependabot
 
         fetched_files += uv_lock_files
         fetched_files += project_files
+        fetched_files += workspace_member_files
         fetched_files << python_version_file if python_version_file
 
         uniques = uniq_files(fetched_files)
@@ -116,6 +117,16 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pyproject_files
         [pyproject].compact
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def workspace_member_files
+        workspace_member_paths.filter_map do |member_path|
+          pyproject_path = cleanpath(File.join(member_path, "pyproject.toml"))
+          fetch_file_from_host(pyproject_path, fetch_submodules: true).tap { |f| f.support_file = true }
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -470,6 +481,50 @@ module Dependabot
             }
           end
         end
+      end
+
+      sig { returns(T::Array[{ name: String, file: String }]) }
+      def uv_sources_workspace_dependencies
+        return [] unless pyproject
+
+        uv_sources = parsed_pyproject.dig("tool", "uv", "sources")
+        return [] unless uv_sources
+
+        uv_sources.filter_map do |name, source_config|
+          if source_config.is_a?(Hash) && source_config["workspace"] == true
+            {
+              name: T.cast(name, String),
+              file: T.must(pyproject).name
+            }
+          end
+        end
+      end
+
+      sig { returns(T::Array[String]) }
+      def workspace_member_paths
+        return [] unless pyproject
+
+        members = parsed_pyproject.dig("tool", "uv", "workspace", "members")
+        return [] unless members.is_a?(Array)
+
+        members.grep(String).flat_map { |pattern| expand_workspace_pattern(pattern) }
+      end
+
+      sig { params(pattern: String).returns(T::Array[String]) }
+      def expand_workspace_pattern(pattern)
+        return [pattern] unless pattern.include?("*")
+
+        unglobbed_path = pattern.gsub(%r{^\./}, "").split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
+        unglobbed_path = unglobbed_path.empty? ? "." : unglobbed_path.chomp("/")
+
+        dir = directory.gsub(%r{(^/|/$)}, "")
+
+        paths = repo_contents(dir: unglobbed_path, raise_errors: false)
+                .select { |file| file.type == "dir" }
+                .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+
+        normalized_pattern = pattern.gsub(%r{^\./}, "")
+        paths.select { |path| File.fnmatch?(normalized_pattern, path, File::FNM_PATHNAME) }
       end
 
       sig { params(path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }
