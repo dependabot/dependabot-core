@@ -3,6 +3,7 @@
 
 require "open3"
 require "sorbet-runtime"
+require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/uv/requirement_parser"
@@ -100,6 +101,9 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
             language_version_manager.install_required_python
+
+            # Check and update uv version if required
+            ensure_uv_version
 
             filenames_to_compile.each do |filename|
               compile_file(filename)
@@ -638,6 +642,68 @@ module Dependabot
             ),
             T.nilable(FileParser::PythonRequirementParser)
           )
+        end
+
+        sig { void }
+        def ensure_uv_version
+          required_version = required_uv_version
+          if required_version
+            current_version = current_uv_version
+            if current_version && current_version != required_version
+              Dependabot.logger.info(
+                "Current uv version (#{current_version}) does not match required version (#{required_version}). " \
+                "Updating uv..."
+              )
+              update_uv_to_version(required_version)
+            elsif current_version
+              Dependabot.logger.info("Using uv version #{current_version}")
+            else
+              Dependabot.logger.info("Using pre-installed uv package")
+            end
+          else
+            Dependabot.logger.info("Using pre-installed uv package")
+          end
+        end
+
+        sig { returns(T.nilable(String)) }
+        def required_uv_version
+          pyproject_file = dependency_files.find { |f| f.name == "pyproject.toml" }
+          return nil unless pyproject_file
+
+          parsed_pyproject = TomlRB.parse(pyproject_file.content)
+          required_version = parsed_pyproject.dig("tool", "uv", "required-version")
+
+          if required_version
+            # Remove any leading/trailing whitespace and version prefix (e.g., "==")
+            required_version = required_version.strip.sub(/^==\s*/, "")
+            Dependabot.logger.info("Found required uv version in pyproject.toml: #{required_version}")
+          end
+
+          required_version
+        rescue TomlRB::ParseError => e
+          Dependabot.logger.warn("Failed to parse pyproject.toml for required uv version: #{e.message}")
+          nil
+        end
+
+        sig { returns(T.nilable(String)) }
+        def current_uv_version
+          version_output = SharedHelpers.run_shell_command("pyenv exec uv --version").strip
+          # Parse version from output like "uv 0.9.11" or "uv 0.9.11 (abc123)"
+          version_match = version_output.match(/uv\s+(\d+\.\d+\.\d+)/)
+          version_match[1] if version_match
+        rescue StandardError => e
+          Dependabot.logger.warn("Failed to get current uv version: #{e.message}")
+          nil
+        end
+
+        sig { params(version: String).void }
+        def update_uv_to_version(version)
+          Dependabot.logger.info("Updating uv to version #{version}")
+          SharedHelpers.run_shell_command("pyenv exec uv self update #{version}")
+          Dependabot.logger.info("Successfully updated uv to version #{version}")
+        rescue StandardError => e
+          Dependabot.logger.error("Failed to update uv to version #{version}: #{e.message}")
+          raise
         end
 
         sig { returns(Dependabot::Uv::LanguageVersionManager) }
