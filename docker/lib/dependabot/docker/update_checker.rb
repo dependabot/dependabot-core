@@ -226,6 +226,10 @@ module Dependabot
                        when String
                          digest_info
                        else
+                         Dependabot.logger.warn(
+                           "Unexpected digest_info type for #{docker_repo_name}:#{tag.name}: " \
+                           "#{digest_info.class} (expected String or Array)"
+                         )
                          return nil
                        end
         return nil unless first_digest
