@@ -173,7 +173,7 @@ module Dependabot
         # Delegate methods to file_fetcher
         sig { params(path: T.nilable(T.any(Pathname, String))).returns(String) }
         def clean_path(path)
-          @file_fetcher.send(:cleanpath, path)
+          @file_fetcher.send(:clean_path, path)
         end
 
         sig do

@@ -82,7 +82,7 @@ module Dependabot
       def fetch_project_file(path)
         project_files = []
 
-        path = cleanpath(File.join(path, "pyproject.toml")) unless sdist_or_wheel?(path)
+        path = clean_path(File.join(path, "pyproject.toml")) unless sdist_or_wheel?(path)
 
         return [] if path == "pyproject.toml" && pyproject
 
