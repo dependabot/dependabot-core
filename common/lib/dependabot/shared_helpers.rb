@@ -175,7 +175,9 @@ module Dependabot
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
-        puts env_cmd
+        # Sanitize env for logging only - actual command still uses real values
+        sanitized_env_cmd = [sanitize_env_for_logging(env), cmd].compact
+        puts sanitized_env_cmd
         puts function
         puts stdout
         puts stderr
@@ -542,5 +544,27 @@ module Dependabot
       "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
     end
     private_class_method :helper_subprocess_bash_command
+
+    # Sanitize environment variables for logging by redacting sensitive tokens
+    sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+    def self.sanitize_env_for_logging(env)
+      return nil if env.nil?
+
+      env.transform_keys(&:to_s).transform_values do |value|
+        # Don't redact URLs (starting with http:// or https://)
+        next value if value.start_with?("http://", "https://")
+
+        # Redact values that look like tokens:
+        # - At least 20 characters long
+        # - Contain only alphanumeric, underscore, colon, plus, equals, slash, or hyphen
+        # This pattern matches base64 strings, JWT tokens, and other common token formats
+        if value.match?(%r{^[a-zA-Z0-9_:+=/-]{20,}$})
+          "<redacted>"
+        else
+          value
+        end
+      end
+    end
+    private_class_method :sanitize_env_for_logging
   end
 end

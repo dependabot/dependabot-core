@@ -523,7 +523,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         expect(env).not_to be_nil
         expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-        expect(env["COREPACK_NPM_TOKEN"]).to be_nil
+        expect(env["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
       end
 
       context "when experiment flag is disabled" do
@@ -597,7 +597,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
           expect(env).not_to be_nil
           expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://custom.registry.com")
-          expect(env["COREPACK_NPM_TOKEN"]).to be_nil
+          expect(env["COREPACK_NPM_TOKEN"]).to eq("custom-token")
         end
       end
     end
@@ -673,7 +673,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
           expect(options[:env]).not_to be_nil
           expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to be_nil
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
           ""
         end
 
@@ -741,6 +741,72 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(results[:thread1]).to eq(thread1_creds)
         expect(results[:thread2]).to eq(thread2_creds)
       end
+    end
+  end
+
+  describe "::sanitize_env_for_logging" do
+    it "returns nil when env is nil" do
+      expect(described_class.send(:sanitize_env_for_logging, nil)).to be_nil
+    end
+
+    it "redacts values that look like tokens (long alphanumeric strings)" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org",
+        "COREPACK_NPM_TOKEN" => "npm_1234567890abcdefghijklmnopqrstuvwxyz",
+        "registry" => "https://custom-registry.com"
+      }
+
+      sanitized = described_class.send(:sanitize_env_for_logging, env)
+
+      expect(sanitized["COREPACK_NPM_REGISTRY"]).to eq("https://registry.npmjs.org")
+      expect(sanitized["COREPACK_NPM_TOKEN"]).to eq("<redacted>")
+      expect(sanitized["registry"]).to eq("https://custom-registry.com")
+    end
+
+    it "redacts base64-encoded tokens with colons" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/",
+        "COREPACK_NPM_TOKEN" => "dGVzdFRva2VuOjAxOjEyMzQ1Njc4OTA6YUJjRGVGZ0hpSmtMbU5vUHFSc1R1VndYeVo=",
+        "registry" => "https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/"
+      }
+
+      sanitized = described_class.send(:sanitize_env_for_logging, env)
+
+      expect(sanitized["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/")
+      expect(sanitized["COREPACK_NPM_TOKEN"]).to eq("<redacted>")
+      expect(sanitized["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/")
+    end
+
+    it "does not redact short values" do
+      env = {
+        "SHORT_KEY" => "short",
+        "LONG_TOKEN" => "a" * 50
+      }
+
+      sanitized = described_class.send(:sanitize_env_for_logging, env)
+
+      expect(sanitized["SHORT_KEY"]).to eq("short")
+      expect(sanitized["LONG_TOKEN"]).to eq("<redacted>")
+    end
+
+    it "does not redact URLs even if they are long" do
+      env = {
+        "REGISTRY_URL" => "https://very-long-registry-url.example.com/path/to/registry",
+        "TOKEN" => "abcdefghijklmnopqrstuvwxyz1234567890"
+      }
+
+      sanitized = described_class.send(:sanitize_env_for_logging, env)
+
+      expect(sanitized["REGISTRY_URL"]).to eq("https://very-long-registry-url.example.com/path/to/registry")
+      expect(sanitized["TOKEN"]).to eq("<redacted>")
+    end
+
+    it "handles empty hash" do
+      env = {}
+
+      sanitized = described_class.send(:sanitize_env_for_logging, env)
+
+      expect(sanitized).to eq({})
     end
   end
 end

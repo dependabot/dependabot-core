@@ -403,6 +403,7 @@ module Dependabot
       end
       def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+        Dependabot.logger.debug("Environment variables: #{sanitize_env_for_logging(env).inspect}") if env && !env.empty?
 
         begin
           # Try to activate the specified version
@@ -590,6 +591,29 @@ module Dependabot
       def self.corepack_supported_package_manager?(name)
         SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
       end
+
+      # Sanitize environment variables for logging by redacting sensitive tokens
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+      def self.sanitize_env_for_logging(env)
+        return nil if env.nil?
+
+        env.transform_keys(&:to_s).transform_values do |value|
+          # Don't redact URLs (starting with http:// or https://)
+          next value if value.start_with?("http://", "https://")
+
+          # Redact values that look like tokens:
+          # - At least 20 characters long
+          # - Contain only alphanumeric, underscore, colon, plus, equals, slash, or hyphen
+          # This pattern matches base64 strings, JWT tokens, and other common token formats
+          if value.match?(%r{^[a-zA-Z0-9_:+=/-]{20,}$})
+            "<redacted>"
+          else
+            value
+          end
+        end
+      end
+
+      private_class_method :sanitize_env_for_logging
     end
   end
 end
