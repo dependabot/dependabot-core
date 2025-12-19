@@ -175,7 +175,8 @@ module Dependabot
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
-        puts env_cmd
+        sanitized_env_cmd = [sanitize_env_for_logging(env), cmd].compact
+        puts sanitized_env_cmd
         puts function
         puts stdout
         puts stderr
@@ -542,5 +543,19 @@ module Dependabot
       "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
     end
     private_class_method :helper_subprocess_bash_command
+
+    sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+    def self.sanitize_env_for_logging(env)
+      return nil if env.nil?
+
+      env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
+        # Only redact if the key contains "TOKEN" (case-insensitive)
+        result[key] = if key.match?(/TOKEN/i)
+                        "<redacted>"
+                      else
+                        value
+                      end
+      end
+    end
   end
 end
