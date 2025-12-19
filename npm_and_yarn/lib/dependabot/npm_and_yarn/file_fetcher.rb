@@ -384,8 +384,7 @@ module Dependabot
 
           if dependency_ignored?(name)
             Dependabot.logger.info(
-              "Skipping ignored path dependency '#{cleaned_name}' for package '#{name}'. " \
-              "This dependency is in the ignore list."
+              "Ignored local path dependency '#{cleaned_name}' for package '#{name}' as it matches the ignore list."
             )
             next
           end
@@ -697,8 +696,7 @@ module Dependabot
           # Skip ignored dependencies
           if dependency_ignored?(name)
             Dependabot.logger.info(
-              "Skipping ignored unfetchable path dependency '#{name}'. " \
-              "This dependency is in the ignore list."
+              "Ignored unfetchable path dependency '#{name}' as it matches the ignore list."
             )
             true
           else
