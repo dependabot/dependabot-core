@@ -597,19 +597,13 @@ module Dependabot
       def self.sanitize_env_for_logging(env)
         return nil if env.nil?
 
-        env.transform_keys(&:to_s).transform_values do |value|
-          # Don't redact URLs (starting with http:// or https://)
-          next value if value.start_with?("http://", "https://")
-
-          # Redact values that look like tokens:
-          # - At least 20 characters long
-          # - Contain only alphanumeric, underscore, colon, plus, equals, slash, or hyphen
-          # This pattern matches base64 strings, JWT tokens, and other common token formats
-          if value.match?(%r{^[a-zA-Z0-9_:+=/-]{20,}$})
-            "<redacted>"
-          else
-            value
-          end
+        env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
+          # Only redact if the key contains "TOKEN" (case-insensitive)
+          result[key] = if key.match?(/TOKEN/i)
+                          "<redacted>"
+                        else
+                          value
+                        end
         end
       end
 

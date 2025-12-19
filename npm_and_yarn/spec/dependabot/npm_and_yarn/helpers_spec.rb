@@ -777,28 +777,34 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(sanitized["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/")
     end
 
-    it "does not redact short values" do
+    it "does not redact non-token keys" do
       env = {
         "SHORT_KEY" => "short",
-        "LONG_TOKEN" => "a" * 50
+        "LONG_VALUE" => "a" * 50,
+        "SOME_TOKEN" => "should-be-redacted"
       }
 
       sanitized = described_class.send(:sanitize_env_for_logging, env)
 
       expect(sanitized["SHORT_KEY"]).to eq("short")
-      expect(sanitized["LONG_TOKEN"]).to eq("<redacted>")
+      expect(sanitized["LONG_VALUE"]).to eq("a" * 50)
+      expect(sanitized["SOME_TOKEN"]).to eq("<redacted>")
     end
 
-    it "does not redact URLs even if they are long" do
+    it "redacts any key containing TOKEN regardless of value" do
       env = {
         "REGISTRY_URL" => "https://very-long-registry-url.example.com/path/to/registry",
-        "TOKEN" => "abcdefghijklmnopqrstuvwxyz1234567890"
+        "TOKEN" => "short",
+        "auth_token" => "another-token",
+        "NPM_TOKEN" => "npm-token-value"
       }
 
       sanitized = described_class.send(:sanitize_env_for_logging, env)
 
       expect(sanitized["REGISTRY_URL"]).to eq("https://very-long-registry-url.example.com/path/to/registry")
       expect(sanitized["TOKEN"]).to eq("<redacted>")
+      expect(sanitized["auth_token"]).to eq("<redacted>")
+      expect(sanitized["NPM_TOKEN"]).to eq("<redacted>")
     end
 
     it "handles empty hash" do
