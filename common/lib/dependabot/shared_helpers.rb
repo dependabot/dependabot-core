@@ -559,6 +559,5 @@ module Dependabot
                       end
       end
     end
-    private_class_method :sanitize_env_for_logging
   end
 end

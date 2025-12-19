@@ -403,7 +403,7 @@ module Dependabot
       end
       def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-        Dependabot.logger.debug("Environment variables: #{sanitize_env_for_logging(env).inspect}") if env && !env.empty?
+        Dependabot.logger.debug("Environment variables: #{SharedHelpers.sanitize_env_for_logging(env).inspect}") if env && !env.empty?
 
         begin
           # Try to activate the specified version
@@ -592,22 +592,7 @@ module Dependabot
         SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
       end
 
-      # Sanitize environment variables for logging by redacting sensitive tokens
-      sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
-      def self.sanitize_env_for_logging(env)
-        return nil if env.nil?
 
-        env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
-          # Only redact if the key contains "TOKEN" (case-insensitive)
-          result[key] = if key.match?(/TOKEN/i)
-                          "<redacted>"
-                        else
-                          value
-                        end
-        end
-      end
-
-      private_class_method :sanitize_env_for_logging
     end
   end
 end
