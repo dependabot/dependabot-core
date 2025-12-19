@@ -16,11 +16,12 @@ module Dependabot
       MARKER_OP = /\s*(#{COMPARISON}|(\s*in)|(\s*not\s*in))/
       PYTHON_STR_C = %r{[a-zA-Z0-9\s\(\)\.\{\}\-_\*#:;/\?\[\]!~`@\$%\^&=\+\|<>]}
       PYTHON_STR = /('(#{PYTHON_STR_C}|")*'|"(#{PYTHON_STR_C}|')*")/
-      ENV_VAR =
-        /python_version|python_full_version|os_name|sys_platform|
+      ENV_VAR = /
+         python_version|python_full_version|os_name|sys_platform|
          platform_release|platform_system|platform_version|platform_machine|
          platform_python_implementation|implementation_name|
-         implementation_version/
+         implementation_version
+      /w
       MARKER_VAR = /\s*(#{ENV_VAR}|#{PYTHON_STR})/
       MARKER_EXPR_ONE = /#{MARKER_VAR}#{MARKER_OP}#{MARKER_VAR}/
       MARKER_EXPR = /(#{MARKER_EXPR_ONE}|\(\s*|\s*\)|\s+and\s+|\s+or\s+)+/
