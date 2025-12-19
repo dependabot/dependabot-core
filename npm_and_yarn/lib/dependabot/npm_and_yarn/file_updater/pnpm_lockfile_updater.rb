@@ -15,6 +15,7 @@ module Dependabot
 
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
+        require_relative "package_json_preparer"
 
         sig do
           params(
@@ -406,8 +407,17 @@ module Dependabot
           package_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, updated_package_json_content(file))
+            content = updated_package_json_content(file)
+            # Remove devEngines to avoid corepack errors
+            content = sanitize_package_json_for_corepack(content)
+            File.write(path, content)
           end
+        end
+
+        sig { params(content: String).returns(String) }
+        def sanitize_package_json_for_corepack(content)
+          preparer = PackageJsonPreparer.new(package_json_content: content)
+          preparer.remove_dev_engines(content)
         end
 
         sig do
