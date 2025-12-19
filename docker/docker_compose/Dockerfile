@@ -21,5 +21,5 @@ RUN cd /tmp \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot --parents docker docker_compose common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents docker common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

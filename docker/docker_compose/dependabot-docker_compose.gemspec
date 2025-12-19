@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   common_gemspec =
-    Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
+    Bundler.load_gemspec_uncached("../../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-docker_compose"
   spec.summary      = "Provides Dependabot support for Docker Compose"
