@@ -243,7 +243,7 @@ module Dependabot
 
         paths.flat_map do |path|
           path = File.join(current_dir, path) unless current_dir == "."
-          path = cleanpath(path)
+          path = clear_path(path)
 
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
@@ -279,7 +279,7 @@ module Dependabot
 
           paths.map do |path|
             path = File.join(current_dir, path) unless current_dir == "."
-            cleanpath(path)
+            clear_path(path)
           end
         end.flatten.uniq
 
@@ -299,7 +299,7 @@ module Dependabot
         rescue Dependabot::DependencyFileNotFound
           next if sdist_or_wheel?(T.must(path))
 
-          unfetchable_deps << "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
+          unfetchable_deps << "\"#{dep[:name]}\" at #{clear_path(File.join(directory, dep[:file]))}"
         end
 
         additional_path_dependencies.each do |path|
@@ -375,7 +375,7 @@ module Dependabot
       end
 
       sig { params(path: String).returns(String) }
-      def cleanpath(path)
+      def clear_path(path)
         Pathname.new(path).cleanpath.to_path
       end
     end

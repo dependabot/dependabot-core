@@ -66,7 +66,7 @@ module Dependabot
       def fetch_project_file(path)
         project_files = []
 
-        path = cleanpath(File.join(path, "setup.py")) unless sdist_or_wheel?(path)
+        path = clear_path(File.join(path, "setup.py")) unless sdist_or_wheel?(path)
 
         return [] if path == "setup.py" && setup_file
 
