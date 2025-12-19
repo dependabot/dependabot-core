@@ -949,5 +949,4 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
   end
-
 end
