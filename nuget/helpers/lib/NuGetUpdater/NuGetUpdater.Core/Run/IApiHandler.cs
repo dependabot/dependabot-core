@@ -30,7 +30,17 @@ public static class IApiHandlerExtensions
         }
     }
 
-    public static Task UpdateDependencyList(this IApiHandler handler, UpdatedDependencyList updatedDependencyList) => handler.PostAsJson("update_dependency_list", updatedDependencyList);
+    public static async Task UpdateDependencyList(this IApiHandler handler, UpdatedDependencyList updatedDependencyList)
+    {
+        if (updatedDependencyList.Dependencies.Length == 0 && updatedDependencyList.DependencyFiles.Length == 0)
+        {
+            // directory wildcard expansion can lead to empty directories; don't report those
+            return;
+        }
+
+        await handler.PostAsJson("update_dependency_list", updatedDependencyList);
+    }
+
     public static Task IncrementMetric(this IApiHandler handler, IncrementMetric incrementMetric) => handler.PostAsJson("increment_metric", incrementMetric);
     public static Task CreatePullRequest(this IApiHandler handler, CreatePullRequest createPullRequest) => handler.PostAsJson("create_pull_request", createPullRequest);
     public static Task ClosePullRequest(this IApiHandler handler, ClosePullRequest closePullRequest) => handler.PostAsJson("close_pull_request", closePullRequest);

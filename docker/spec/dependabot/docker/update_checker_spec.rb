@@ -1668,6 +1668,137 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
+  describe "#get_tag_publication_details" do
+    subject(:get_tag_publication_details) do
+      checker.send(:get_tag_publication_details, tag)
+    end
+
+    let(:tag) { Dependabot::Docker::Tag.new("1.0.0") }
+    let(:registry_url) { "https://registry.hub.docker.com" }
+    let(:dependency_name) { "ubuntu" }
+    let(:version) { "17.10" }
+    let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+    let(:blob_headers) { { last_modified: "Mon, 15 Jan 2024 10:00:00 GMT" } }
+    let(:mock_blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
+
+    before do
+      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+      allow(mock_client).to receive(:dohead).and_return(mock_blob_response)
+    end
+
+    context "when client.digest returns a String" do
+      let(:digest_string) { "sha256:abc123" }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+      end
+
+      it "handles the String case and returns publication details" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+    end
+
+    context "when client.digest returns an Array" do
+      let(:digest_array) { [{ "digest" => "sha256:def456" }] }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_array)
+      end
+
+      it "handles the Array case and returns publication details" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+    end
+
+    context "when client.digest returns an empty Array" do
+      let(:empty_array) { [] }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(empty_array)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Empty digest_info array/
+        )
+      end
+    end
+
+    context "when client.digest returns nil" do
+      before do
+        allow(mock_client).to receive(:digest).and_return(nil)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Unexpected digest_info type.*NilClass/
+        )
+      end
+    end
+  end
+
+  describe "#digest_up_to_date?" do
+    subject(:digest_up_to_date) { checker.send(:digest_up_to_date?) }
+
+    let(:image_name) { "gcr.io/distroless/base-nossl-debian11" }
+    let(:tag_nonroot) { "debug-nonroot" }
+    let(:tag_debug) { "debug" }
+
+    let(:digest_nonroot) { "934b713496a9ed100550aaa58636270c4d69c27040e44f2aed1fa39594c45eba" }
+    let(:digest_debug) { "d66c60eff6c55972af9e661a57c1afe96ef4ddfa4fff37b625a448df41a15820" }
+
+    before do
+      allow(checker).to receive(:updated_digest).and_return(updated_digest)
+      allow(checker).to receive(:digest_of).with(tag_nonroot).and_return(digest_nonroot)
+      allow(checker).to receive(:digest_of).with(tag_debug).and_return(digest_debug)
+    end
+
+    context "when a digest requirement includes a tag" do
+      let(:updated_digest) { "some_other_updated_digest" }
+      let(:dependency_name) { image_name }
+      let(:version) { tag_nonroot }
+      let(:source) { { tag: tag_nonroot, digest: digest_nonroot } }
+
+      it "considers the tag and compares against digest_of(tag)" do
+        expect(digest_up_to_date).to be(true)
+      end
+
+      context "when the digest does not match the tag digest" do
+        let(:source) { { tag: tag_nonroot, digest: digest_debug } }
+
+        it "returns false" do
+          expect(digest_up_to_date).to be(false)
+        end
+      end
+    end
+
+    context "when a digest requirement does not have a tag" do
+      let(:dependency_name) { image_name }
+      let(:version) { digest_debug }
+      let(:source) { { digest: digest_debug } }
+
+      context "when the digest matches updated_digest" do
+        let(:updated_digest) { digest_debug }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when the digest does not match updated_digest" do
+        let(:updated_digest) { digest_nonroot }
+
+        it { is_expected.to be(false) }
+      end
+    end
+  end
+
   private
 
   def stub_same_sha_for(*tags)

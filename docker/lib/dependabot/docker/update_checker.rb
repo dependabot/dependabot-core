@@ -101,12 +101,33 @@ module Dependabot
         comparable_version_from(latest_tag) <= comparable_version_from(version_tag)
       end
 
+      # Digest requirements come in two forms:
+      #
+      # - Tag + digest (e.g. `image:debug@sha256:<digest>`):
+      #   the tag is the source of truth, so the expected digest is the digest of the tag.
+      #
+      # - Digest-only (e.g. `image@sha256:<digest>`):
+      #   there is no tag to resolve, so the expected digest is `updated_digest`.
+      #
+      # A dependency may have multiple digest requirements (across multiple files), so
+      # we compute the expected digest per requirement rather than using a single
+      # global value.
       sig { returns(T::Boolean) }
       def digest_up_to_date?
-        digest_requirements.all? do |req|
-          next true unless updated_digest
+        return true unless updated_digest
 
-          req.fetch(:source).fetch(:digest) == updated_digest
+        digest_requirements.all? do |req|
+          source = req.fetch(:source)
+          source_digest = source.fetch(:digest)
+          source_tag = source[:tag]
+
+          expected_digest =
+            if source_tag
+              digest_of(source_tag)
+            else
+              updated_digest
+            end
+          source_digest == expected_digest
         end
       end
 
@@ -219,7 +240,7 @@ module Dependabot
           client.digest(docker_repo_name, tag.name)
         end
 
-        first_digest = digest_info.first&.fetch("digest")
+        first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
         blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
@@ -238,6 +259,34 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
+      end
+
+      sig do
+        params(
+          digest_info: T.untyped,
+          tag: Dependabot::Docker::Tag
+        ).returns(T.nilable(String))
+      end
+      def extract_digest_from_response(digest_info, tag)
+        # digest_info can be either a String or an Array depending on the registry response
+        case digest_info
+        when Array
+          if digest_info.empty?
+            Dependabot.logger.warn(
+              "Empty digest_info array for #{docker_repo_name}:#{tag.name}"
+            )
+            return nil
+          end
+          digest_info.first&.fetch("digest")
+        when String
+          digest_info
+        else
+          Dependabot.logger.warn(
+            "Unexpected digest_info type for #{docker_repo_name}:#{tag.name}: " \
+            "#{digest_info.class} (expected String or Array)"
+          )
+          nil
+        end
       end
 
       sig do

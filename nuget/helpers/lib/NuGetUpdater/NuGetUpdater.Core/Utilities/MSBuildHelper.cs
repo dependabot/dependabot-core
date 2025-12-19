@@ -602,6 +602,7 @@ internal static partial class MSBuildHelper
         ThrowOnTimeout(output);
         ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
+        ThrowOnMultipleProjectsForPackagesConfig(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -732,6 +733,14 @@ internal static partial class MSBuildHelper
         if (match is not null)
         {
             throw new UnparseableFileException(match.Groups["Message"].Value, match.Groups["FilePath"].Value);
+        }
+    }
+
+    private static void ThrowOnMultipleProjectsForPackagesConfig(string output)
+    {
+        if (output.Contains("Found multiple project files for "))
+        {
+            throw new Exception("Multiple project files found for single packages.config");
         }
     }
 
