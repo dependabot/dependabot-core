@@ -355,7 +355,7 @@ module Dependabot
 
         uneditable_reqs =
           content
-          .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
+          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n]*))/)
           .filter_map do |match_array|
             n, p = match_array
             { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name } unless p.to_s.include?("://")
@@ -363,7 +363,7 @@ module Dependabot
 
         editable_reqs =
           content
-          .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
+          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n]*))/)
           .filter_map do |match_array|
             n, p = match_array
             unless p.to_s.include?("://") || p.to_s.include?("git@")
