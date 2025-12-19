@@ -426,6 +426,9 @@ module Dependabot
           {}
         end
 
+        # For hosted Dependabot, token will be nil since the credentials aren't present
+        # (the proxy handles authentication). This is for those running Dependabot
+        # themselves and for dry-run.
         sig { returns(T::Hash[String, String]) }
         def explicit_index_env_vars
           env_vars = {}
