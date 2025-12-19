@@ -382,7 +382,6 @@ module Dependabot
             next
           end
 
-          # Skip ignored path dependencies
           if dependency_ignored?(name)
             Dependabot.logger.info(
               "Skipping ignored path dependency '#{cleaned_name}' for package '#{name}'. " \

@@ -993,7 +993,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
       before do
         # Stub the path dependency endpoint to return 404
-        # (simulating that it's not accessible, like in the original issue)
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
