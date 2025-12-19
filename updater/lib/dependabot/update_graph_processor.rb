@@ -81,7 +81,12 @@ module Dependabot
       directory_dependency_files = dependency_files_for(directory)
 
       submission = if directory_dependency_files.empty?
-                     empty_submission(branch, directory_source)
+                     empty_submission(
+                       branch,
+                       directory_source,
+                       GithubApi::DependencySubmission::SNAPSHOT_STATUS_SKIPPED,
+                       GithubApi::DependencySubmission::SNAPSHOT_REASON_NO_MANIFESTS
+                     )
                    else
                      create_submission(branch, directory_source, directory_dependency_files)
                    end
@@ -102,7 +107,13 @@ module Dependabot
       return unless Dependabot::Environment.github_actions?
 
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
-      empty_submission = empty_submission(branch, T.must(directory_source))
+      error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
+      empty_submission = empty_submission(
+        branch,
+        T.must(directory_source),
+        GithubApi::DependencySubmission::SNAPSHOT_STATUS_FAILED,
+        error_details.fetch(:"error-type")
+      )
       service.create_dependency_submission(dependency_submission: empty_submission)
     end
 
@@ -118,15 +129,17 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
-    sig { params(branch: String, source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
-    def empty_submission(branch, source)
+    sig { params(branch: String, source: Dependabot::Source, status: String, reason: T.nilable(String)).returns(GithubApi::DependencySubmission) }
+    def empty_submission(branch, source, status, reason)
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
-        resolved_dependencies: {}
+        resolved_dependencies: {},
+        status: status,
+        reason: reason
       )
     end
 
