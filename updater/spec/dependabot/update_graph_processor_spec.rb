@@ -383,6 +383,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
           # It should be empty
           expect(payload[:manifests].length).to be_zero
+
+          # It should contain the expected metadata
+          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SNAPSHOT_STATUS_FAILED)
+          expect(payload[:metadata][:reason]).to eql("dependency_file_not_evaluatable")
         end
 
         it "correctly snapshots the second directory" do
@@ -409,6 +413,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
           dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
           expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+
+          # We should have metadata indicating a successful snapshot
+          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SNAPSHOT_STATUS_SUCCESS)
+          expect(payload[:metadata][:reason]).to be_nil
         end
       end
     end
@@ -522,6 +530,32 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         expect(payload[:job][:correlator]).to eq("dependabot-bundler")
         expect(payload[:manifests]).to be_empty
+      end
+
+      update_graph_processor.run
+    end
+  end
+
+  # This is expected for graph updates corresponding to deleted files
+  context "with non-existent dependency files" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      []
+    end
+
+    it "generates an empty snapshot with metadata" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+
+        expect(payload[:job][:correlator]).to eq("dependabot-bundler")
+        expect(payload[:manifests]).to be_empty
+
+        # It should contain the expected metadata
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SNAPSHOT_STATUS_SKIPPED)
+        expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::SNAPSHOT_REASON_NO_MANIFESTS)
       end
 
       update_graph_processor.run
