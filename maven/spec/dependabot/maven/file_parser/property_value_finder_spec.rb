@@ -91,6 +91,58 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       end
     end
 
+    context "when the property is declared in maven.config" do
+      let(:dependency_files) { [base_pom, maven_config] }
+      let(:base_pom_fixture_name) { "maven_config_property_pom.xml" }
+      let(:maven_config) do
+        Dependabot::DependencyFile.new(
+          name: ".mvn/maven.config",
+          content: fixture("maven_configs", "simple_properties")
+        )
+      end
+      let(:property_name) { "revision" }
+      let(:callsite_pom) { base_pom }
+
+      its([:value]) { is_expected.to eq("1.2.3") }
+      its([:file]) { is_expected.to eq(".mvn/maven.config") }
+
+      context "when the property is changelist" do
+        let(:property_name) { "changelist" }
+
+        its([:value]) { is_expected.to eq("-SNAPSHOT") }
+      end
+
+      context "when maven.config has comments and multiple properties" do
+        let(:maven_config) do
+          Dependabot::DependencyFile.new(
+            name: ".mvn/maven.config",
+            content: fixture("maven_configs", "with_comments")
+          )
+        end
+        let(:property_name) { "spring.version" }
+
+        its([:value]) { is_expected.to eq("5.3.10") }
+      end
+
+      context "when maven.config has mixed options" do
+        let(:maven_config) do
+          Dependabot::DependencyFile.new(
+            name: ".mvn/maven.config",
+            content: fixture("maven_configs", "mixed_options")
+          )
+        end
+        let(:property_name) { "springframework.version" }
+
+        its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
+      end
+
+      context "when property is not in maven.config" do
+        let(:property_name) { "nonexistent.property" }
+
+        it { is_expected.to be_nil }
+      end
+    end
+
     context "when the property is declared in a parent pom" do
       let(:dependency_files) { [base_pom, child_pom, grandchild_pom] }
       let(:child_pom) do
