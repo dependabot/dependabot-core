@@ -104,9 +104,23 @@ module Dependabot
       sig { returns(T::Boolean) }
       def digest_up_to_date?
         digest_requirements.all? do |req|
-          next true unless updated_digest
+          source = req.fetch(:source)
+          source_digest = source.fetch(:digest)
+          source_tag = source[:tag]
 
-          req.fetch(:source).fetch(:digest) == updated_digest
+          expected_digest =
+            if source_tag
+              latest_tag = latest_tag_from(source_tag)
+              digest_of(latest_tag.name)
+            else
+              updated_digest
+            end
+
+          # If we can't determine an expected digest (for example if the registry does not return digests)
+          # assume it's up to date
+          next true if expected_digest.nil?
+
+          source_digest == expected_digest
         end
       end
 
