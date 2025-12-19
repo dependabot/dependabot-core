@@ -253,8 +253,13 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           unless release.released_at
-            Dependabot.logger.info("Release date not available for version #{release.version}")
-            return false
+            if cooldown_options
+              Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
+              return true
+            else
+              Dependabot.logger.info("Release date not available for version #{release.version}")
+              return false
+            end
           end
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil

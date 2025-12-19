@@ -85,6 +85,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/",
+          "COREPACK_NPM_TOKEN" => "custom-token",
           "registry" => "https://custom-registry.com/"
         )
       end
@@ -108,6 +109,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
+          "COREPACK_NPM_TOKEN" => "my-token",
           "registry" => "https://artifactory.example.com/npm"
         )
       end
@@ -134,6 +136,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
+          "COREPACK_NPM_TOKEN" => "your-auth-token-here",
           "registry" => "https://yarn-registry.com/"
         )
       end
@@ -160,6 +163,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
+          "COREPACK_NPM_TOKEN" => "yarnrc-yml-token",
           "registry" => "https://yarnrc-yml-registry.com/"
         )
       end
