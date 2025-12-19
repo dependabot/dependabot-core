@@ -76,6 +76,8 @@ module Dependabot
         return nil unless response.status == 200
 
         @packagist_listing = JSON.parse(response.body)
+      rescue JSON::ParserError, Excon::Error::Timeout
+        @packagist_listing = nil
       end
     end
   end

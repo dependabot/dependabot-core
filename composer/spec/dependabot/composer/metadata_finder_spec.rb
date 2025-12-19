@@ -160,5 +160,17 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
       it { is_expected.to be_nil }
     end
+
+    context "when the packagist link returns invalid JSON" do
+      before { stub_request(:get, packagist_url).to_return(status: 200, body: "invalid json") }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the packagist link times out" do
+      before { stub_request(:get, packagist_url).to_timeout }
+
+      it { is_expected.to be_nil }
+    end
   end
 end
