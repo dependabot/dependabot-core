@@ -416,8 +416,7 @@ module Dependabot
 
         sig { params(content: String).returns(String) }
         def sanitize_package_json_for_corepack(content)
-          preparer = PackageJsonPreparer.new(package_json_content: content)
-          preparer.remove_dev_engines(content)
+          PackageJsonPreparer.new(package_json_content: content).remove_dev_engines(content)
         end
 
         sig do
