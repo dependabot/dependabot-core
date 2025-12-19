@@ -12,6 +12,7 @@ require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/requirement_parser"
 require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
+require "dependabot/uv/file_fetcher/workspace_fetcher"
 require "dependabot/errors"
 require "dependabot/file_filtering"
 
@@ -121,47 +122,19 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def workspace_member_files
-        workspace_member_paths.filter_map do |member_path|
-          pyproject_path = cleanpath(File.join(member_path, "pyproject.toml"))
-          fetch_file_from_host(pyproject_path, fetch_submodules: true).tap { |f| f.support_file = true }
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
+        workspace_fetcher.workspace_member_files
+      end
+
+      sig { returns(WorkspaceFetcher) }
+      def workspace_fetcher
+        @workspace_fetcher ||= T.let(WorkspaceFetcher.new(self, pyproject), T.nilable(WorkspaceFetcher))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def readme_files
         return [] unless pyproject
 
-        # Attempt to read the readme declaration from the pyproject. Accept both simplified
-        # string form and table form ( { file = "..." } ).
-        readme_decl = nil
-        begin
-          readme_decl = parsed_pyproject.dig("project", "readme")
-        rescue TomlRB::ParseError
-          # If the pyproject is unparseable fail later in parsed_pyproject.
-        end
-
-        candidate_names =
-          case readme_decl
-          when String then [readme_decl]
-          when Hash
-            if readme_decl["file"].is_a?(String)
-              [T.cast(readme_decl["file"], String)]
-            else
-              README_FILENAMES
-            end
-          else
-            README_FILENAMES
-          end
-
-        candidate_names.filter_map do |filename|
-          file = fetch_file_if_present(filename)
-          file.support_file = true if file
-          file
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
+        workspace_fetcher.send(:fetch_readme_files_for, directory, T.must(pyproject))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -485,46 +458,7 @@ module Dependabot
 
       sig { returns(T::Array[{ name: String, file: String }]) }
       def uv_sources_workspace_dependencies
-        return [] unless pyproject
-
-        uv_sources = parsed_pyproject.dig("tool", "uv", "sources")
-        return [] unless uv_sources
-
-        uv_sources.filter_map do |name, source_config|
-          if source_config.is_a?(Hash) && source_config["workspace"] == true
-            {
-              name: T.cast(name, String),
-              file: T.must(pyproject).name
-            }
-          end
-        end
-      end
-
-      sig { returns(T::Array[String]) }
-      def workspace_member_paths
-        return [] unless pyproject
-
-        members = parsed_pyproject.dig("tool", "uv", "workspace", "members")
-        return [] unless members.is_a?(Array)
-
-        members.grep(String).flat_map { |pattern| expand_workspace_pattern(pattern) }
-      end
-
-      sig { params(pattern: String).returns(T::Array[String]) }
-      def expand_workspace_pattern(pattern)
-        return [pattern] unless pattern.include?("*")
-
-        unglobbed_path = pattern.gsub(%r{^\./}, "").split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
-        unglobbed_path = unglobbed_path.empty? ? "." : unglobbed_path.chomp("/")
-
-        dir = directory.gsub(%r{(^/|/$)}, "")
-
-        paths = repo_contents(dir: unglobbed_path, raise_errors: false)
-                .select { |file| file.type == "dir" }
-                .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
-
-        normalized_pattern = pattern.gsub(%r{^\./}, "")
-        paths.select { |path| File.fnmatch?(normalized_pattern, path, File::FNM_PATHNAME) }
+        workspace_fetcher.uv_sources_workspace_dependencies
       end
 
       sig { params(path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }
