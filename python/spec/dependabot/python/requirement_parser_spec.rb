@@ -144,8 +144,6 @@ RSpec.describe Dependabot::Python::RequirementParser do
                             '(sys_platform == "darwin" or sys_platform == "win32")'
         end
 
-        # Test all environment variables to ensure /x modifier works correctly
-        # Previously, variables on continuation lines failed due to whitespace
         context "with python_version marker" do
           let(:line) { 'luigi==0.1.0;python_version>="3.8"' }
 
