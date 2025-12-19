@@ -152,7 +152,7 @@ module Dependabot
         reqs = requirements
 
         # If there are no requirements then this is a sub-dependency.
-        # It must come from one of Pipenv, Poetry or pip-tools,
+        # It must come from one of Pipenv or pip-tools,
         # and can't come from the first two unless they have a lockfile.
         return subdependency_resolver if reqs.none?
 
