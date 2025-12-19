@@ -175,7 +175,6 @@ module Dependabot
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
-        # Sanitize env for logging only - actual command still uses real values
         sanitized_env_cmd = [sanitize_env_for_logging(env), cmd].compact
         puts sanitized_env_cmd
         puts function
@@ -545,7 +544,6 @@ module Dependabot
     end
     private_class_method :helper_subprocess_bash_command
 
-    # Sanitize environment variables for logging by redacting sensitive tokens
     sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
     def self.sanitize_env_for_logging(env)
       return nil if env.nil?
