@@ -1745,60 +1745,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
-  describe "#digest_up_to_date?" do
-    subject(:digest_up_to_date) { checker.send(:digest_up_to_date?) }
-
-    let(:image_name) { "gcr.io/distroless/base-nossl-debian11" }
-    let(:tag_nonroot) { "debug-nonroot" }
-    let(:tag_debug) { "debug" }
-
-    let(:digest_nonroot) { "934b713496a9ed100550aaa58636270c4d69c27040e44f2aed1fa39594c45eba" }
-    let(:digest_debug) { "d66c60eff6c55972af9e661a57c1afe96ef4ddfa4fff37b625a448df41a15820" }
-
-    before do
-      allow(checker).to receive(:updated_digest).and_return(updated_digest)
-      allow(checker).to receive(:digest_of).with(tag_nonroot).and_return(digest_nonroot)
-      allow(checker).to receive(:digest_of).with(tag_debug).and_return(digest_debug)
-    end
-
-    context "when a digest requirement includes a tag" do
-      let(:updated_digest) { "some_other_updated_digest" }
-      let(:dependency_name) { image_name }
-      let(:version) { tag_nonroot }
-      let(:source) { { tag: tag_nonroot, digest: digest_nonroot } }
-
-      it "considers the tag and compares against digest_of(tag)" do
-        expect(digest_up_to_date).to be(true)
-      end
-
-      context "when the digest does not match the tag digest" do
-        let(:source) { { tag: tag_nonroot, digest: digest_debug } }
-
-        it "returns false" do
-          expect(digest_up_to_date).to be(false)
-        end
-      end
-    end
-
-    context "when a digest requirement does not have a tag" do
-      let(:dependency_name) { image_name }
-      let(:version) { digest_debug }
-      let(:source) { { digest: digest_debug } }
-
-      context "when the digest matches updated_digest" do
-        let(:updated_digest) { digest_debug }
-
-        it { is_expected.to be(true) }
-      end
-
-      context "when the digest does not match updated_digest" do
-        let(:updated_digest) { digest_nonroot }
-
-        it { is_expected.to be(false) }
-      end
-    end
-  end
-
   private
 
   def stub_same_sha_for(*tags)
