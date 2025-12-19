@@ -209,6 +209,12 @@ RSpec.describe Dependabot::Python::RequirementParser do
 
           its([:markers]) { is_expected.to eq 'implementation_version>="3.8"' }
         end
+
+        context "with whitespace in marker expression" do
+          let(:line) { 'luigi==0.1.0;implementation_version  >=  "3.8" and python_version >= "3.8"' }
+
+          its([:markers]) { is_expected.to eq 'implementation_version  >=  "3.8" and python_version >= "3.8"' }
+        end
       end
 
       context "with a local version" do
