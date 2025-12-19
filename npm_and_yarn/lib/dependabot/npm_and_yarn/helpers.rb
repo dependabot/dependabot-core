@@ -403,7 +403,6 @@ module Dependabot
       end
       def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-        Dependabot.logger.debug("Environment variables: #{SharedHelpers.sanitize_env_for_logging(env).inspect}") if env && !env.empty?
 
         begin
           # Try to activate the specified version
@@ -591,8 +590,6 @@ module Dependabot
       def self.corepack_supported_package_manager?(name)
         SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
       end
-
-
     end
   end
 end
