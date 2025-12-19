@@ -36,7 +36,7 @@ bin/docker-dev-shell {ecosystem}  # e.g., go_modules, bundler
 
 # Quick command execution (non-CI):
 bin/test {ecosystem} [command]
-# e.g. bin/test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
+# e.g. bin/test uv spec/dependabot/uv/file_updater_spec.rb
 ```
 
 **Note**: The first run of `bin/docker-dev-shell` can take some minutes as it builds the Docker development image from scratch. Wait for it to complete before proceeding. Check for completion every 5 seconds. Subsequent runs will be much faster as they reuse the built image.
@@ -89,7 +89,7 @@ rubocop -A                    # Auto-fix code style issues (if any found)
 bundle exec srb tc            # Run Sorbet type checking
 
 # Shortcut: run commands directly without attaching to the shell
-bin/test {ecosystem} bundle exec rspec spec/dependabot/{ecosystem}/file_updater_spec.rb
+bin/test {ecosystem} spec/dependabot/{ecosystem}/file_updater_spec.rb
 
 # For updater tests, note the folder name change in containers
 cd dependabot-updater && rspec spec  # Run updater tests (not cd updater)

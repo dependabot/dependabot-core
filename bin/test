@@ -12,8 +12,9 @@ Defaults to executing "bundle exec rspec spec" from the ecosystem directory.
 
 Examples:
   bin/test uv                     # run full UV rspec suite
+  bin/test uv spec/dependabot/uv/file_updater_spec.rb
   bin/test uv bundle exec rspec spec/dependabot/uv/file_updater_spec.rb
-  bin/test uv --workdir dependabot-updater bundle exec rspec spec/functional
+  bin/test --workdir dependabot-updater uv bundle exec rspec spec/functional
 USAGE
 }
 
@@ -62,6 +63,9 @@ fi
 
 if [[ $# -eq 0 ]]; then
   set -- bundle exec rspec spec
+elif [[ "$1" == spec/* ]] || [[ "$1" == *_spec.rb ]]; then
+  # If first arg looks like a test file, prepend bundle exec rspec
+  set -- bundle exec rspec "$@"
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -85,6 +89,12 @@ if [[ -z "$CMD_STR" ]]; then
   exit 1
 fi
 
-WORKDIR_CMD="cd $(printf '%q' "$WORKDIR") && $CMD_STR"
+# Inside the container, 'updater' is renamed to 'dependabot-updater'
+CONTAINER_WORKDIR="$WORKDIR"
+if [[ "$WORKDIR" == "updater" ]]; then
+  CONTAINER_WORKDIR="dependabot-updater"
+fi
+
+WORKDIR_CMD="cd $(printf '%q' "/home/dependabot/$CONTAINER_WORKDIR") && $CMD_STR"
 
 exec "$SCRIPT_DIR/docker-dev-shell" "$ECOSYSTEM" -- bash -lc "$WORKDIR_CMD"
