@@ -20,7 +20,7 @@
 
 "L: docker:compose":
 - changed-files:
-  - any-glob-to-any-file: docker_compose/**
+  - any-glob-to-any-file: docker/docker_compose/**
 
 "L: dotnet:dotnet-sdk":
 - changed-files:

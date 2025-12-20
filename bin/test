@@ -71,13 +71,25 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [[ ! -d "$REPO_ROOT/$ECOSYSTEM" ]]; then
-  echo "error: ecosystem directory '$ECOSYSTEM' not found" >&2
+# Handle docker_compose which is now in docker/docker_compose on the host
+HOST_ECOSYSTEM_DIR="$ECOSYSTEM"
+if [[ "$ECOSYSTEM" == "docker_compose" ]]; then
+  HOST_ECOSYSTEM_DIR="docker/docker_compose"
+fi
+
+if [[ ! -d "$REPO_ROOT/$HOST_ECOSYSTEM_DIR" ]]; then
+  echo "error: ecosystem directory '$HOST_ECOSYSTEM_DIR' not found" >&2
   exit 1
 fi
 
-if [[ ! -d "$REPO_ROOT/$WORKDIR" ]]; then
-  echo "error: workdir '$WORKDIR' not found" >&2
+# Handle workdir for docker_compose which is now in docker/docker_compose on the host
+HOST_WORKDIR="$WORKDIR"
+if [[ "$WORKDIR" == "docker_compose" ]]; then
+  HOST_WORKDIR="docker/docker_compose"
+fi
+
+if [[ ! -d "$REPO_ROOT/$HOST_WORKDIR" ]]; then
+  echo "error: workdir '$HOST_WORKDIR' not found" >&2
   exit 1
 fi
 
