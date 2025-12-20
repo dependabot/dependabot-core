@@ -117,5 +117,38 @@ RSpec.describe Dependabot::Docker::MetadataFinder do
         expect(finder.source_url).to be_nil
       end
     end
+
+    context "with an OCI registry URL (oci:// prefix)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "app-base",
+          version: "1.7.4",
+          requirements: [{
+            file: "Chart.yaml",
+            requirement: nil,
+            groups: [],
+            source: { registry: "oci://europe-west1-docker.pkg.dev/project-name/registry-name", tag: "1.7.4" }
+          }],
+          package_manager: "helm"
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .with("regctl image inspect europe-west1-docker.pkg.dev/project-name/registry-name/app-base:1.7.4")
+          .and_return({
+            config: {
+              Labels: {
+                "org.opencontainers.image.source" => "https://github.com/example/helm-charts"
+              }
+            }
+          }.to_json)
+      end
+
+      it "strips oci:// prefix and finds the repository" do
+        expect(finder.source_url).to eq "https://github.com/example/helm-charts"
+      end
+    end
   end
 end
