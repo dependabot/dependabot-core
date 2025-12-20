@@ -1,0 +1,25 @@
+# Gradle build system
+/.gradle/
+build/
+!build/libs/gradle-helper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Kotlin/Java
+*.class
+*.log
+*.kotlin_module
+/out/
+/bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test fixture local state (keep project code but not cache)
+spec/fixtures/settings_files/.gradle/
