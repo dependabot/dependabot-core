@@ -6,11 +6,12 @@
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell dotnet-sdk
-  ```
+   ```
+   $ bin/docker-dev-shell dotnet-sdk
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd dotnet-sdk && rspec
    ```
