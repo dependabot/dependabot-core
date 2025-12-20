@@ -105,6 +105,20 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
+      context "with a .whl path dependency" do
+        subject(:dependency_names) { dependencies.map(&:name) }
+
+        let(:pyproject_fixture_name) { "whl_path_dependency.toml" }
+
+        it "excludes .whl path dependency" do
+          expect(dependency_names).not_to include("ts-launchpad")
+        end
+
+        it "includes non-path dependencies" do
+          expect(dependency_names).to include("requests")
+        end
+      end
+
       context "with non-package mode" do
         let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
 
