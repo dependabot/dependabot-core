@@ -7,6 +7,7 @@ require "support/dependency_file_helpers"
 
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
+require "dependabot/fetched_files"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/update_all_versions"
@@ -39,6 +40,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       increment_metric: nil,
       record_update_job_error: nil,
       create_pull_request: nil,
+      close_pull_request: nil,
       record_update_job_warning: nil,
       record_ecosystem_meta: nil,
       record_cooldown_meta: nil
@@ -260,6 +262,41 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       it "logs that no update is needed" do
         expect(update_all_versions).to receive(:log_up_to_date).with(dependency)
         update_all_versions.send(:check_and_create_pull_request, dependency)
+      end
+
+      context "when an existing pull request is present for the dependency" do
+        before do
+          allow(job).to receive(
+            :existing_pull_requests
+          ).and_return([
+            Dependabot::PullRequest.new(
+              [
+                Dependabot::PullRequest::Dependency.new(
+                  name: "dummy-pkg-a",
+                  version: "2.0.0",
+                  directory: "/"
+                )
+              ],
+              pr_number: 123
+            )
+          ])
+        end
+
+        it "closes the pull request with reason :up_to_date" do
+          expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-a"], :up_to_date)
+          update_all_versions.send(:check_and_create_pull_request, dependency)
+        end
+      end
+
+      context "when no existing pull request is present for the dependency" do
+        before do
+          allow(job).to receive(:existing_pull_requests).and_return([])
+        end
+
+        it "does not attempt to close a pull request" do
+          expect(mock_service).not_to receive(:close_pull_request)
+          update_all_versions.send(:check_and_create_pull_request, dependency)
+        end
       end
     end
 

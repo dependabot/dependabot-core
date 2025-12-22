@@ -126,7 +126,11 @@ module Dependabot
           log_checking_for_update(dependency)
 
           return if all_versions_ignored?(dependency, checker)
-          return log_up_to_date(dependency) if checker.up_to_date?
+
+          if checker.up_to_date?
+            close_existing_pull_request_if_present(dependency)
+            return log_up_to_date(dependency)
+          end
 
           if pr_exists_for_latest_version?(checker)
             latest_version = checker.latest_version&.to_s
@@ -356,6 +360,24 @@ module Dependabot
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
           created_pull_requests << PullRequest.create_from_updated_dependencies(dependency_change.updated_dependencies)
+        end
+
+        sig { params(dependency: Dependabot::Dependency).void }
+        def close_existing_pull_request_if_present(dependency)
+          existing_pr = find_existing_pull_request_for_dependency(dependency)
+          return unless existing_pr
+
+          Dependabot.logger.info(
+            "Closing pull request for #{dependency.name} as it is no longer needed"
+          )
+          service.close_pull_request([dependency.name], :up_to_date)
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::PullRequest)) }
+        def find_existing_pull_request_for_dependency(dependency)
+          job.existing_pull_requests.find do |pr|
+            pr.dependencies.any? { |dep| dep.name == dependency.name }
+          end
         end
       end
     end
