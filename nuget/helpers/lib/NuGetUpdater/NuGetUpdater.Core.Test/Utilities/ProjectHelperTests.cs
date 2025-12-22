@@ -13,7 +13,7 @@ public class ProjectHelperTests : TestBase
         using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
         var fullProjectPath = Path.Join(tempDirectory.DirectoryPath, projectPath);
 
-        var actualAdditionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(fullProjectPath, ProjectHelper.PathFormat.Relative);
+        var actualAdditionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(tempDirectory.DirectoryPath, fullProjectPath, ProjectHelper.PathFormat.Relative);
         AssertEx.Equal(expectedAdditionalFiles, actualAdditionalFiles);
     }
 
@@ -59,6 +59,33 @@ public class ProjectHelperTests : TestBase
             new[]
             {
                 "../unexpected-path/packages.config"
+            }
+        ];
+
+        // files with different casing
+        yield return
+        [
+            // project path
+            "src/project.csproj",
+            // files
+            new[]
+            {
+                ("src/project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <None Include="PACKAGES.CONFIG" />
+                        <None Include="APP.CONFIG" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/app.config", "contents irrelevant"),
+                ("src/packages.config", "contents irrelevant"),
+            },
+            // expected additional files
+            new[]
+            {
+                "app.config",
+                "packages.config"
             }
         ];
     }
