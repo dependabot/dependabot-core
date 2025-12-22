@@ -173,4 +173,66 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "integration with PR description generation" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "monolog/monolog",
+        version: "1.22.0",
+        previous_version: "1.0.2",
+        package_manager: "composer",
+        requirements: [{ file: "composer.json", requirement: "~1.22", groups: [], source: nil }],
+        previous_requirements: [{ file: "composer.json", requirement: "~1.0", groups: [], source: nil }]
+      )
+    end
+
+    context "when packagist is available" do
+      it "successfully retrieves source_url for PR descriptions without errors" do
+        # The main issue was that errors would crash and cause empty PR descriptions
+        # This test verifies the fix allows PR descriptions to be generated
+        expect { finder.source_url }.not_to raise_error
+        expect(finder.source_url).to eq("https://github.com/Seldaek/monolog")
+      end
+    end
+
+    context "when packagist returns invalid JSON" do
+      before do
+        stub_request(:get, "https://repo.packagist.org/p2/monolog/monolog.json")
+          .to_return(status: 200, body: "not valid json{")
+      end
+
+      it "handles JSON parse errors gracefully without crashing" do
+        # Before the fix: JSON::ParserError would crash → empty PR description
+        # After the fix: Returns nil gracefully → PR description can still be generated
+        expect { finder.source_url }.not_to raise_error
+        expect(finder.source_url).to be_nil
+      end
+    end
+
+    context "when packagist request times out" do
+      before do
+        stub_request(:get, "https://repo.packagist.org/p2/monolog/monolog.json")
+          .to_timeout
+      end
+
+      it "handles timeout errors gracefully without crashing" do
+        # Before the fix: Excon::Error::Timeout would crash → empty PR description
+        # After the fix: Returns nil gracefully → PR description can still be generated
+        expect { finder.source_url }.not_to raise_error
+        expect(finder.source_url).to be_nil
+      end
+    end
+
+    context "when packagist returns server error" do
+      before do
+        stub_request(:get, "https://repo.packagist.org/p2/monolog/monolog.json")
+          .to_return(status: 500)
+      end
+
+      it "handles server errors gracefully" do
+        expect { finder.source_url }.not_to raise_error
+        expect(finder.source_url).to be_nil
+      end
+    end
+  end
 end
