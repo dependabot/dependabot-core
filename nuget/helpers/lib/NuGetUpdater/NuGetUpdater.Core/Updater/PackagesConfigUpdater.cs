@@ -96,7 +96,7 @@ internal static partial class PackagesConfigUpdater
         projectBuildFile.NormalizeDirectorySeparatorsInProject();
 
         // Update binding redirects
-        var updatedConfigFiles = await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
+        var updatedConfigFiles = await BindingRedirectManager.UpdateBindingRedirectsAsync(repoRootPath, projectBuildFile, dependencyName, newDependencyVersion);
 
         logger.Info("    Writing project file back to disk");
         await projectBuildFile.SaveAsync();
