@@ -1,0 +1,32 @@
+{
+  "version": "1.1.0",
+  "packagesDir": ".lake/packages",
+  "packages": [
+    {
+      "url": "https://github.com/leanprover-community/batteries",
+      "type": "git",
+      "subDir": null,
+      "scope": "leanprover-community",
+      "rev": "dff865b7ee7011518d59abfc101c368293173150",
+      "name": "batteries",
+      "manifestFile": "lake-manifest.json",
+      "inputRev": "main",
+      "inherited": false,
+      "configFile": "lakefile.toml"
+    },
+    {
+      "url": "https://github.com/leanprover-community/aesop",
+      "type": "git",
+      "subDir": null,
+      "scope": "leanprover-community",
+      "rev": "fa78cf032194308a950a264ed87b422a2a7c1c6c",
+      "name": "aesop",
+      "manifestFile": "lake-manifest.json",
+      "inputRev": "master",
+      "inherited": false,
+      "configFile": "lakefile.toml"
+    }
+  ],
+  "name": "test-project",
+  "lakeDir": ".lake"
+}

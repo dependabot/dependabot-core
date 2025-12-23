@@ -68,6 +68,9 @@ hex:
 julia:
   - *shared
   - 'julia/**'
+lean:
+  - *shared
+  - 'lean/**'
 maven:
   - *shared
   - 'maven/**'
