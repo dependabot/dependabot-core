@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Build script for Lean native helpers
+# Installs elan (Lean version manager) if not present
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/lean"
+
+mkdir -p "$install_dir"
+
+# Install elan if not already installed
+if ! command -v elan &> /dev/null; then
+  echo "Installing elan..."
+  curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+  export PATH="$HOME/.elan/bin:$PATH"
+fi
+
+# Verify elan is installed
+if command -v elan &> /dev/null; then
+  echo "elan version: $(elan --version)"
+else
+  echo "Warning: elan not found after installation"
+fi
+
+# Copy helper files to install directory
+cp -r "$helpers_dir"/* "$install_dir/"
+chmod +x "$install_dir/run.sh"
+
+echo "Lean helpers installed to $install_dir"

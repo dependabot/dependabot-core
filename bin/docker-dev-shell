@@ -235,6 +235,11 @@ docker run --rm -ti \
   -v "$(pwd)/julia/lib:$CODE_DIR/julia/lib" \
   -v "$(pwd)/julia/script:$CODE_DIR/julia/script" \
   -v "$(pwd)/julia/spec:$CODE_DIR/julia/spec" \
+  -v "$(pwd)/lean/.rubocop.yml:$CODE_DIR/lean/.rubocop.yml" \
+  -v "$(pwd)/lean/dependabot-lean.gemspec:$CODE_DIR/lean/dependabot-lean.gemspec" \
+  -v "$(pwd)/lean/lib:$CODE_DIR/lean/lib" \
+  -v "$(pwd)/lean/script:$CODE_DIR/lean/script" \
+  -v "$(pwd)/lean/spec:$CODE_DIR/lean/spec" \
   -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \

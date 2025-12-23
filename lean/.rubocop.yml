@@ -1,0 +1,5 @@
+inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/lean/package/package_details_fetcher.rb

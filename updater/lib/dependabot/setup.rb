@@ -44,6 +44,7 @@ Sentry.init do |config|
     helm|
     hex|
     julia|
+    lean|
     maven|
     npm_and_yarn|
     nuget|
@@ -86,6 +87,7 @@ require "dependabot/gradle"
 require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
+require "dependabot/lean"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
