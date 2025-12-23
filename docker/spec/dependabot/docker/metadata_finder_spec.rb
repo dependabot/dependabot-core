@@ -73,7 +73,53 @@ RSpec.describe Dependabot::Docker::MetadataFinder do
             requirement: nil,
             groups: [],
             source: { registry: "ghcr.io",
-                      digest: "sha256:389a5a9a5457ed237b05d623ddc31a42fa97811051dcd02d7ca4ad46bd3edd3e" }
+                      digest: "389a5a9a5457ed237b05d623ddc31a42fa97811051dcd02d7ca4ad46bd3edd3e" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      it "doesn't find the repository" do
+        expect(finder.source_url).to be_nil
+      end
+    end
+
+    context "with a docker image without a tag but with org.opencontainers.image.version populated" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "regclient/regctl",
+          version: "",
+          requirements: [{
+            file: "Dockerfile",
+            requirement: nil,
+            groups: [],
+            source: { registry: "ghcr.io",
+                      digest: "a734f285c0962e46557bff24489fa0b0521455733f72d9eb30c4f7a5027aeed6" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      it "finds the repository" do
+        expect(finder.source_url).to eq "https://github.com/regclient/regclient"
+        expect(finder.send(:source).branch).to eq "v0.11.1"
+        expect(finder.send(:source).commit).to eq "bf3bcfc47173b49ee8000d1d3a1ac15036e83cf0"
+      end
+    end
+
+    context "with a docker image without a tag but without a proper tag format or revision" do
+      # The image used here has org.opencontainers.image.version set to "24.04"
+      # which refers to the Ubuntu version rather than a tag
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "maven",
+          version: "",
+          requirements: [{
+            file: "Dockerfile",
+            requirement: nil,
+            groups: [],
+            source: { registry: "docker.io",
+                      digest: "800a33a4cb190082c47abcd57944c852e1dece834f92c0aef65bea6336c52a72" }
           }],
           package_manager: "docker"
         )
