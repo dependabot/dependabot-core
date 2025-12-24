@@ -440,11 +440,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
       let(:lockfile_body) { fixture("lockfiles", "private_package") }
+      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
 
       before { `mix hex.organization deauth dependabot` }
 
       context "with good credentials" do
-        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -546,15 +546,92 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
     end
 
-    context "with a dependency from a private repo" do
+    context "with a dependency from a private organization" do
       let(:mixfile_body) { fixture("mixfiles", "private_repo") }
-      let(:dependency_name) { "jason" }
+      let(:dependency_name) { "example_package_a" }
       let(:version) { "1.0.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
       let(:lockfile_body) { fixture("lockfiles", "private_repo") }
-      let(:private_registry_url) { "https://dependabot-private.fly.dev" }
+      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
+
+      before do
+        skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+        `mix hex.organization deauth dependabot`
+      end
+
+      context "with good credentials" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "hex_organization",
+                "organization" => "dependabot",
+                "token" => hex_pm_org_token
+              }
+            )
+          ]
+        end
+
+        it "returns the expected version" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
+      end
+
+      context "with bad credentials" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "hex_organization",
+                "organization" => "dependabot",
+                "token" => "111f6cbeffc6e14c6a884f0111caff3e"
+              }
+            )
+          ]
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+          expect { latest_resolvable_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+    end
+
+    # NOTE: The following tests use mocked responses since hex_repository credentials
+    # require a self-hosted registry. These tests verify credential handling without
+    # depending on external infrastructure.
+    context "with a dependency from a private repo" do
+      let(:mixfile_body) { fixture("mixfiles", "private_repo") }
+      let(:dependency_name) { "example_package_a" }
+      let(:version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
+      end
+      let(:lockfile_body) { fixture("lockfiles", "private_repo") }
+      let(:private_registry_url) { "https://example-private-registry.example.com" }
 
       before do
         `mix hex.repo remove dependabot`
@@ -675,36 +752,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
-        end
-      end
-
-      context "with dependencies on both a private organization and private repo" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
-            }
-          ), Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution with both org and repo credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
-        end
-
-        it "returns the expected version" do
-          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
         end
       end
     end

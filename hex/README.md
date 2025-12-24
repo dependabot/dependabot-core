@@ -15,4 +15,6 @@ Elixir support for [`dependabot-core`][core-repo].
    [dependabot-core-dev] ~ $ cd hex && rspec
    ```
 
+**Note**: Some integration tests require `HEX_PM_ORGANIZATION_TOKEN` environment variable to access private packages on Hex.pm. Tests skip gracefully if not set. See [PRIVATE_REGISTRY_SETUP.md](PRIVATE_REGISTRY_SETUP.md) for details.
+
 [core-repo]: https://github.com/dependabot/dependabot-core
