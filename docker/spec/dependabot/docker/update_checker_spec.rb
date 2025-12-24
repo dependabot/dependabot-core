@@ -88,6 +88,46 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
+  describe "#tags_from_registry" do
+    let(:tags_fixture_name) { "regctl.json" }
+    let(:dependency_name) { "regclient/regctl" }
+    let(:repo_url) { "https://ghcr.io/v2/#{dependency_name}/" }
+    let(:version) { "v0.10.1" }
+    let(:source) { { tag: version, registry: "ghcr.io" } }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: version,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile",
+          source: source
+        }],
+        package_manager: "docker"
+      )
+    end
+
+    before do
+      stub_request(:get, "#{repo_url}/tags/list")
+        .to_return(
+          status: 200,
+          body: registry_tags.to_json
+        )
+    end
+
+    it "filters out digest-based tags" do
+      tags = checker.send(:tags_from_registry)
+      tag_names = tags.map(&:name)
+      expect(tag_names).to contain_exactly(
+        "v0",
+        "latest",
+        "v0.10.0",
+        "v0.10.1"
+      )
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 

@@ -1,0 +1,15 @@
+{
+  "$comment": "This is a fixture representing a response with both tags and digests for the regclient/regctl repository.",
+  "name": "regclient/regctl",
+  "tags": [
+    "sha256-000c6080b831b91619e3ab89292b16ecfe3cbbfe7e024a599cc1067f79cc25bb",
+    "sha256-000c6080b831b91619e3ab89292b16ecfe3cbbfe7e024a599cc1067f79cc25bb.sig",
+    "sha256-000d3562e60a68c5ab3d36dc45105986fad1dcd27ce4040001578ac109238eaf",
+    "sha256-000d3562e60a68c5ab3d36dc45105986fad1dcd27ce4040001578ac109238eaf.sig",
+    "sha256-000f5480cf286549d586461c52859f2607e224ee74e5d6bdc72adf0e2db6e330",
+    "v0",
+    "latest",
+    "v0.10.0",
+    "v0.10.1"
+  ]
+}

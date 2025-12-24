@@ -406,13 +406,38 @@ module Dependabot
         )
       end
 
+      # Removes digest-based tags from a list of candidate tags
+      #
+      # Some OCI registries sometimes return digest-based entries (e.g.,"sha256-<digest>")
+      # in the `/v2/<name>/tags/list` API endpoint. These are internal, immutable identifiers
+      # of image manifests and are not human-friendly version tags. They may appear in
+      # the list due to registry implementation details, even though the official Docker/OCI
+      # registry spec only requires an array of tag strings.
+      #
+      # We should drop these as early as possible because:
+      # - They do not represent a version or release
+      # - Treating them as versions would produce meaningless updates
+      # - They add unnecessary network calls to fetch their digests
+      # @see `regctl tag ls ghcr.io/regclient/regctl` for an example
+      sig do
+        params(
+          candidate_tags: T::Array[Dependabot::Docker::Tag]
+        ).returns(
+          T::Array[Dependabot::Docker::Tag]
+        )
+      end
+      def remove_digest_tags(candidate_tags)
+        candidate_tags
+          .reject { |tag| tag.to_s.start_with?("sha256-") }
+      end
+
       sig { returns(T::Array[Dependabot::Docker::Tag]) }
       def tags_from_registry
         @tags_from_registry ||= T.let(
           begin
             client = docker_registry_client
-
-            client.tags(docker_repo_name, auto_paginate: true).fetch("tags").map { |name| Tag.new(name) }
+            tags = client.tags(docker_repo_name, auto_paginate: true).fetch("tags").map { |name| Tag.new(name) }
+            remove_digest_tags(tags)
           rescue *transient_docker_errors
             attempt ||= 1
             attempt += 1
