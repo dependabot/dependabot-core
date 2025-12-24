@@ -391,11 +391,11 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a private repo dependency" do
+    context "with a private organization dependency" do
       let(:mixfile_fixture_name) { "private_repo" }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "jason",
+          name: "example_package_a",
           version: "1.1.0",
           requirements:
             [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
@@ -406,46 +406,39 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         )
       end
       let(:lockfile_fixture_name) { "private_repo" }
-      let(:private_registry_url) { "https://dependabot-private.fly.dev" }
+      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
 
-      let(:credentials) do
-        Dependabot::Credential.new(
-          {
-            "type" => "hex_repository",
-            "repo" => "dependabot",
-            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => private_registry_url
-          }
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: [dependency],
+          credentials: [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "hex_organization",
+                "organization" => "dependabot",
+                "token" => hex_pm_org_token
+              }
+            )
+          ]
         )
       end
 
-      before do
-        # Check if private registry is reachable (may be down with 503)
-        # If unavailable, mock the subprocess to simulate expected behavior
-        response = Net::HTTP.get_response(URI.parse("#{private_registry_url}/public_key"))
-        raise "Registry unavailable: #{response.code}" if response.code.to_i >= 500
-      rescue StandardError
-        # Registry not reachable (503 Service Unavailable or network error), mock the subprocess
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-          .and_call_original
-
-        # Mock as if registry is reachable for lockfile update
-        # Return updated lockfile with new version and checksum
-        updated_lockfile = <<~LOCKFILE
-          %{
-            "jason": {:hex, :jason, "1.1.0", "99aa691404239cf4f6dbd4f44a2b208e45c98ed4df55ecca2bee58a6e3e2a1c4", [:mix], [], "dependabot", "b96c400e04b7b765c0854c05a4966323e90c0d11fee0483b1567cda079abb205"},
-          }
-        LOCKFILE
-
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-          .with(hash_including(function: "get_updated_lockfile"))
-          .and_return(updated_lockfile)
-      end
+      before { `mix hex.organization deauth dependabot` }
 
       it "updates the dependency version in the lockfile" do
-        expect(updated_lockfile_content).to include %({:hex, :jason, "1.1.0")
+        skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+        expect(updated_lockfile_content).to include %({:hex, :example_package_a, "1.1.0")
         expect(updated_lockfile_content).not_to include(
-          "0f7cfa9bdb23fed721ec05419bcee2b2c21a77e926bce0deda029b5adc716fe2"
+          "d9b070a0c9b6764573e22517e7e7c0e0e805123c99f43b445af9cf1a9ca9fb59"
         )
       end
     end

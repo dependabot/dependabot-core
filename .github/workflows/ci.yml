@@ -73,6 +73,7 @@ jobs:
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
+            --env "HEX_PM_ORGANIZATION_TOKEN=${{ secrets.HEX_PM_ORGANIZATION_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"

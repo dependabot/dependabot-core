@@ -440,11 +440,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
       let(:lockfile_body) { fixture("lockfiles", "private_package") }
+      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
 
       before { `mix hex.organization deauth dependabot` }
 
       context "with good credentials" do
-        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -546,66 +546,67 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
     end
 
-    context "with a dependency from a private repo" do
+    context "with a dependency from a private organization" do
       let(:mixfile_body) { fixture("mixfiles", "private_repo") }
-      let(:dependency_name) { "jason" }
+      let(:dependency_name) { "example_package_a" }
       let(:version) { "1.0.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
       let(:lockfile_body) { fixture("lockfiles", "private_repo") }
-      let(:private_registry_url) { "https://dependabot-private.fly.dev" }
+      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
 
       before do
-        `mix hex.repo remove dependabot`
+        skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+        `mix hex.organization deauth dependabot`
       end
 
       context "with good credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution from private registry
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "hex_organization",
+                "organization" => "dependabot",
+                "token" => hex_pm_org_token
+              }
+            )
+          ]
         end
 
         it "returns the expected version" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
           expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
         end
       end
 
       context "with bad credentials" do
         let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "111f6cbeffc6e14c6a884f0111caff3e",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock subprocess to raise authentication failure with bad credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_raise(
-              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: "Downloading public key for repo \"dependabot\" failed: {:error, :econnrefused}",
-                error_context: {}
-              )
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "hex_organization",
+                "organization" => "dependabot",
+                "token" => "111f6cbeffc6e14c6a884f0111caff3e"
+              }
             )
+          ]
         end
 
         it "raises a helpful error" do
@@ -618,96 +619,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
-      context "with correct public key fingerprint verification" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url,
-              "public_key_fingerprint" => "SHA256:z6VBddQXuo/nbwel0AMqHDAxvYuja4wt4qoQTTl3Ew4="
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution with correct fingerprint
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
-        end
-
-        it "returns the expected version" do
-          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
-        end
-      end
-
-      context "with incorrect public key fingerprint verification" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url,
-              "public_key_fingerprint" => "SHA256:incorrectFingerprintValue="
-            }
-          )]
-        end
-
-        before do
-          # Mock subprocess to raise fingerprint mismatch error
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_raise(
-              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: "Public key fingerprint mismatch for repo \"dependabot\"",
-                error_context: {}
-              )
-            )
-        end
-
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-
-          expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with dependencies on both a private organization and private repo" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
-            }
-          ), Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution with both org and repo credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
-        end
-
-        it "returns the expected version" do
-          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
-        end
-      end
+      # NOTE: Test for mixed hex_organization + hex_repository credentials was removed
+      # as we're standardizing on hex_organization only. The dependabot organization
+      # on Hex.pm provides all necessary test packages.
     end
+
+    # NOTE: This context tests the same private organization functionality as the
+    # "with a dependency with a private organization" context above (line ~437),
+    # using a different fixture setup (private_repo vs private_package).
+    # Both test hex_organization credential handling for the dependabot org on Hex.pm.
 
     context "with a dependency with a git source" do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
