@@ -442,5 +442,58 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         )
       end
     end
+
+    # NOTE: The following test uses mocked responses since hex_repository credentials
+    # require a self-hosted registry. This test verifies credential handling without
+    # depending on external infrastructure.
+    context "with a private repo dependency" do
+      let(:mixfile_fixture_name) { "private_repo" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example_package_a",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+      let(:lockfile_fixture_name) { "private_repo" }
+      let(:private_registry_url) { "https://example-private-registry.example.com" }
+
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_repository",
+            "repo" => "dependabot",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => private_registry_url
+          }
+        )
+      end
+
+      before do
+        # Mock as if registry is reachable for lockfile update
+        # Return updated lockfile with new version and checksum
+        updated_lockfile = <<~LOCKFILE
+          %{
+            "example_package_a": {:hex, :example_package_a, "1.1.0", "99aa691404239cf4f6dbd4f44a2b208e45c98ed4df55ecca2bee58a6e3e2a1c4", [:mix], [], "dependabot", "b96c400e04b7b765c0854c05a4966323e90c0d11fee0483b1567cda079abb205"},
+          }
+        LOCKFILE
+
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "get_updated_lockfile"))
+          .and_return(updated_lockfile)
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :example_package_a, "1.1.0")
+        expect(updated_lockfile_content).not_to include(
+          "d9b070a0c9b6764573e22517e7e7c0e0e805123c99f43b445af9cf1a9ca9fb59"
+        )
+      end
+    end
   end
 end
