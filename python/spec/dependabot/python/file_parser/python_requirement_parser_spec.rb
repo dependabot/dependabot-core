@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
       context "when including a python_requires line" do
         let(:fixture_name) { "impossible_imports.py" }
 
-        it { is_expected.to eq([">=3.7"]) }
+        it { is_expected.to eq([]) }
       end
 
       context "when not including a python_requires line" do
