@@ -391,6 +391,58 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with a private organization dependency" do
+      let(:mixfile_fixture_name) { "private_package" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example_package_a",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+      let(:lockfile_fixture_name) { "private_package" }
+      let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
+
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: [dependency],
+          credentials: [
+            Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "hex_organization",
+                "organization" => "dependabot",
+                "token" => hex_pm_org_token
+              }
+            )
+          ]
+        )
+      end
+
+      before { `mix hex.organization deauth dependabot` }
+
+      it "updates the dependency version in the lockfile" do
+        skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
+        expect(updated_lockfile_content).to include %({:hex, :example_package_a, "1.1.0")
+        expect(updated_lockfile_content).not_to include(
+          "d9b070a0c9b6764573e22517e7e7c0e0e805123c99f43b445af9cf1a9ca9fb59"
+        )
+      end
+    end
+
     context "with a private repo dependency" do
       let(:mixfile_fixture_name) { "private_repo" }
       let(:dependency) do
