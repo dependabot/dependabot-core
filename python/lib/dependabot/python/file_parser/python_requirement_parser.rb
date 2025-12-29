@@ -30,8 +30,7 @@ module Dependabot
             pyproject_python_requirement,
             pip_compile_python_requirement,
             python_version_file_version,
-            runtime_file_python_version,
-            setup_file_requirement
+            runtime_file_python_version
           ].compact
         end
 
@@ -125,20 +124,6 @@ module Dependabot
           return unless T.must(pyenv_versions).include?("#{file_version}\n")
 
           file_version
-        end
-
-        sig { returns(T.nilable(String)) }
-        def setup_file_requirement
-          return unless setup_file
-
-          req = T.must(T.must(setup_file).content)
-                 .match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)
-                 &.named_captures&.fetch("req")&.strip
-
-          requirement_class.new(req)
-          req
-        rescue Gem::Requirement::BadRequirementError
-          nil
         end
 
         sig { returns(T.nilable(String)) }
