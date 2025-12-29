@@ -17,7 +17,6 @@ RUN ln -s ${MAVEN_HOME}/bin/mvn /usr/bin/mvn
 
 USER dependabot
 
-ENV PATH=$JAVA_HOME/bin:$PATH
 ENV MAVEN_ARGS="-Dmaven.repo.local=$DEPENDABOT_HOME/.m2"
 
 COPY --chown=dependabot:dependabot --parents maven common $DEPENDABOT_HOME/

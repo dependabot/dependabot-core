@@ -12,6 +12,7 @@ require "dependabot/uv/requirements_file_matcher"
 require "dependabot/uv/requirement_parser"
 require "dependabot/uv/file_parser/pyproject_files_parser"
 require "dependabot/uv/file_parser/python_requirement_parser"
+require "dependabot/uv/file_fetcher/workspace_fetcher"
 require "dependabot/errors"
 require "dependabot/file_filtering"
 
@@ -94,6 +95,7 @@ module Dependabot
 
         fetched_files += uv_lock_files
         fetched_files += project_files
+        fetched_files += workspace_member_files
         fetched_files << python_version_file if python_version_file
 
         uniques = uniq_files(fetched_files)
@@ -119,38 +121,20 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def workspace_member_files
+        workspace_fetcher.workspace_member_files
+      end
+
+      sig { returns(WorkspaceFetcher) }
+      def workspace_fetcher
+        @workspace_fetcher ||= T.let(WorkspaceFetcher.new(self, pyproject), T.nilable(WorkspaceFetcher))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def readme_files
         return [] unless pyproject
 
-        # Attempt to read the readme declaration from the pyproject. Accept both simplified
-        # string form and table form ( { file = "..." } ).
-        readme_decl = nil
-        begin
-          readme_decl = parsed_pyproject.dig("project", "readme")
-        rescue TomlRB::ParseError
-          # If the pyproject is unparseable fail later in parsed_pyproject.
-        end
-
-        candidate_names =
-          case readme_decl
-          when String then [readme_decl]
-          when Hash
-            if readme_decl["file"].is_a?(String)
-              [T.cast(readme_decl["file"], String)]
-            else
-              README_FILENAMES
-            end
-          else
-            README_FILENAMES
-          end
-
-        candidate_names.filter_map do |filename|
-          file = fetch_file_if_present(filename)
-          file.support_file = true if file
-          file
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
+        workspace_fetcher.send(:fetch_readme_files_for, directory, T.must(pyproject))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -470,6 +454,11 @@ module Dependabot
             }
           end
         end
+      end
+
+      sig { returns(T::Array[{ name: String, file: String }]) }
+      def uv_sources_workspace_dependencies
+        workspace_fetcher.uv_sources_workspace_dependencies
       end
 
       sig { params(path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }

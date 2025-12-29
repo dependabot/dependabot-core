@@ -106,6 +106,16 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(json_dep.requirements.first[:requirement]).to eq("0.21")
       end
     end
+
+    describe "#ecosystem" do
+      it "returns the Julia ecosystem with package manager and language" do
+        ecosystem = parser.ecosystem
+
+        expect(ecosystem.name).to eq("julia")
+        expect(ecosystem.package_manager.name).to eq("julia")
+        expect(ecosystem.language.name).to eq("julia")
+      end
+    end
   end
 
   private

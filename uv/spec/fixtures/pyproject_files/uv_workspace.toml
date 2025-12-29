@@ -1,0 +1,21 @@
+[project]
+name = "workspace-root"
+version = "0.1.0"
+description = "Test UV workspace configuration"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "my-package",
+]
+
+[tool.uv.sources]
+my-package = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "packages/my-package",
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"

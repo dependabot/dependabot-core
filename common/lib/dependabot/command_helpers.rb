@@ -95,7 +95,12 @@ module Dependabot
       begin
         T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr| # rubocop:disable Metrics/BlockLength
           pid = wait_thr.pid
-          Dependabot.logger.info("Started process PID: #{pid} with command: #{env_cmd.join(' ')}")
+          sanitized_env_cmd = if env_cmd.first.is_a?(Hash)
+                                [SharedHelpers.send(:sanitize_env_for_logging, env_cmd.first), *env_cmd[1..]]
+                              else
+                                env_cmd
+                              end
+          Dependabot.logger.info("Started process PID: #{pid} with command: #{sanitized_env_cmd.join(' ')}")
 
           # Write to stdin if input data is provided
           stdin&.write(stdin_data) if stdin_data
