@@ -102,7 +102,7 @@ module Dependabot
         # Try to match one of our pre-installed Python versions
         requirement = T.must(Python::Requirement.requirements_array(requirement_string).first)
 
-        version = Language::PRE_INSTALLED_PYTHON_VERSIONS.reverse.find { |v| requirement.satisfied_by?(v) }
+        version = Language::PRE_INSTALLED_PYTHON_VERSIONS.find { |v| requirement.satisfied_by?(v) }
         return version.to_s if version
 
         # Otherwise we have to raise an error
@@ -128,7 +128,7 @@ module Dependabot
 
       sig { params(requirements: T.untyped).returns(T.nilable(String)) }
       def python_version_matching(requirements)
-        Language::PRE_INSTALLED_PYTHON_VERSIONS.reverse.find do |version|
+        Language::PRE_INSTALLED_PYTHON_VERSIONS.find do |version|
           requirements.all? do |req|
             next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
 
