@@ -1,0 +1,13 @@
+[
+  {
+    "name": "lean-toolchain",
+    "path": "lean-toolchain",
+    "sha": "abc123",
+    "size": 27,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/lean-toolchain?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/main/lean-toolchain",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/main/lean-toolchain",
+    "type": "file"
+  }
+]
