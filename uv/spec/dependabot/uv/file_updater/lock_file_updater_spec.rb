@@ -105,6 +105,59 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(lockfile.content).to include('version = "2.23.0"')
     end
 
+    context "with platform specific environment markers" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "example"
+          version = "1.0.0"
+          dependencies = [
+            "pyad>=0.6.0 ; sys_platform == 'win32'",
+            "pywin32>=310; sys_platform == 'win32'",
+            "colorama>=0.4.6"
+          ]
+        TOML
+      end
+
+      let(:lockfile_content) { "original lock content" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pywin32",
+          version: "311",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=311",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=310",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:updated_lockfile_content) { "updated lock content" }
+
+      before do
+        allow(updater).to receive(:updated_pyproject_content).and_call_original
+        allow(updater).to receive(:updated_lockfile_content_for).and_return("updated lock content")
+      end
+
+      it "preserves environment markers for all dependencies" do
+        pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+
+        expect(pyproject.content)
+          .to include("pyad>=0.6.0 ; sys_platform == 'win32'")
+        expect(pyproject.content)
+          .to include("pywin32>=311; sys_platform == 'win32'")
+      end
+    end
+
     context "when the lockfile doesn't change" do
       before do
         allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
@@ -268,6 +321,96 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(updated_lock.content).not_to include("requests-2.31.0-py3-none-any.whl")
       end
     end
+
+    context "when updating a build-system-only dependency" do
+      let(:pyproject_content) { fixture("pyproject_files", "build_system_pinned.toml") }
+      let(:lockfile_content) { fixture("uv_locks", "build_system_pinned.lock") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hatchling",
+          version: "1.28.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "==1.28.0",
+            groups: ["build-system"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "==1.27",
+            groups: ["build-system"],
+            source: nil
+          }],
+          previous_version: "1.27",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates only pyproject.toml, not the lockfile" do
+        allow(updater).to receive(:updated_pyproject_content).and_return(
+          pyproject_content.sub('"hatchling==1.27"', '"hatchling==1.28.0"')
+        )
+
+        updated_dependency_files = updater.updated_dependency_files
+
+        # Should update pyproject.toml
+        pyproj = updated_dependency_files.find { |f| f.name == "pyproject.toml" }
+        expect(pyproj).not_to be_nil
+        expect(pyproj.content).to include('"hatchling==1.28.0"')
+
+        # Should NOT include lockfile in updated files
+        expect(updated_dependency_files.map(&:name)).not_to include("uv.lock")
+      end
+    end
+
+    context "when updating a regular dependency" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.33.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.33.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates both pyproject.toml and lockfile" do
+        updated_lockfile = lockfile_content.sub('version = "2.32.3"', 'version = "2.33.0"')
+        updated_pyproject = pyproject_content.sub("requests>=2.31.0", "requests>=2.33.0")
+
+        allow(updater).to receive_messages(
+          updated_pyproject_content: updated_pyproject,
+          updated_lockfile_content_for: updated_lockfile
+        )
+
+        updated_dependency_files = updater.updated_dependency_files
+
+        # Should update both files
+        expect(updated_dependency_files.map(&:name)).to include("pyproject.toml")
+        expect(updated_dependency_files.map(&:name)).to include("uv.lock")
+
+        pyproj = updated_dependency_files.find { |f| f.name == "pyproject.toml" }
+        expect(pyproj.content).to include("requests>=2.33.0")
+
+        lockfile = updated_dependency_files.find { |f| f.name == "uv.lock" }
+        expect(lockfile.content).to include('version = "2.33.0"')
+      end
+    end
   end
 
   describe "with a requirements.txt or requirements.in file only" do
@@ -308,51 +451,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
     it "ignores the requirements file" do
       expect(updater.updated_dependency_files).to be_empty
-    end
-  end
-
-  describe "#declaration_regex" do
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "redis",
-        version: "4.6.0",
-        requirements: [{
-          file: "pyproject.toml",
-          requirement: "~=4.6.0",
-          groups: [],
-          source: nil
-        }],
-        previous_requirements: [{
-          file: "pyproject.toml",
-          requirement: "~=4.5.4",
-          groups: [],
-          source: nil
-        }],
-        previous_version: "4.5.4",
-        package_manager: "uv"
-      )
-    end
-
-    let(:old_req) { dependency.previous_requirements.first }
-
-    it "correctly handles tilde requirements" do
-      regex = updater.send(:declaration_regex, dependency, old_req)
-      expect { "some text" =~ regex }.not_to raise_error
-    end
-
-    it "matches tilde requirements in pyproject.toml" do
-      content = <<~TOML
-        [project]
-        name = "myproject"
-        dependencies = [
-            "redis~=4.5.4",
-        ]
-      TOML
-
-      regex = updater.send(:declaration_regex, dependency, old_req)
-      match = content.match(regex)
-      expect(match).to be_a(MatchData)
-      expect(match[:declaration]).to eq("redis~=4.5.4")
     end
   end
 
@@ -427,7 +525,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     it "includes the expected options in the command and fingerprint" do
-      expected_command = "pyenv exec uv lock --upgrade-package requests " \
+      expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
                          "--index https://token@example.com/simple " \
                          "--default-index https://another_token@another.com/simple"
       expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
@@ -441,9 +539,342 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         fingerprint: expected_fingerprint
       )
     end
+
+    context "when dependency version is nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: nil,
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: nil,
+          package_manager: "uv"
+        )
+      end
+
+      it "uses only the package name without version constraint" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint
+        )
+      end
+    end
   end
 
-  # ADD DEDICATED ERROR HANDLING TESTS
+  describe "#replace_dep" do
+    subject(:replace_dep) { updater.send(:replace_dep, dependency, content, new_req, old_req) }
+
+    let(:content) do
+      <<~TOML
+        [project]
+        name = "myproject"
+        dependencies = [
+            "fastapi>=0.115.12,<0.116",
+            "uvicorn>=0.34.0,<0.35",
+        ]
+      TOML
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: "0.115.12",
+        requirements: [{
+          file: "pyproject.toml",
+          requirement: ">=0.115.12,<0.122",
+          groups: [],
+          source: nil
+        }],
+        previous_requirements: [{
+          file: "pyproject.toml",
+          requirement: ">=0.115.12,<0.116",
+          groups: [],
+          source: nil
+        }],
+        previous_version: "0.115.12",
+        package_manager: "uv"
+      )
+    end
+
+    let(:new_req) { { requirement: ">=0.115.12,<0.122" } }
+    let(:old_req) { { requirement: ">=0.115.12,<0.116" } }
+
+    it "replaces the requirement with the new version" do
+      result = replace_dep
+      expect(result).to include('"fastapi>=0.115.12,<0.122"')
+      expect(result).not_to include('"fastapi>=0.115.12,<0.116"')
+    end
+
+    it "preserves other dependencies" do
+      result = replace_dep
+      expect(result).to include('"uvicorn>=0.34.0,<0.35"')
+    end
+
+    context "when operators are in different order" do
+      let(:old_req) { { requirement: "<0.116,>=0.115.12" } }
+
+      it "still matches and replaces correctly" do
+        result = replace_dep
+        expect(result).to include('"fastapi>=0.115.12,<0.122"')
+        expect(result).not_to include('"fastapi>=0.115.12,<0.116"')
+      end
+    end
+
+    context "when there are multiple dependencies with the same name" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "fastapi>=0.100.0,<0.101",
+          ]
+
+          [dependency-groups]
+          dev = [
+              "fastapi>=0.115.12,<0.116",
+          ]
+        TOML
+      end
+
+      it "only replaces the matching version" do
+        result = replace_dep
+        expect(result).to include('"fastapi>=0.100.0,<0.101"')
+        expect(result).to include('"fastapi>=0.115.12,<0.122"')
+        expect(result).not_to include('"fastapi>=0.115.12,<0.116"')
+      end
+    end
+
+    context "with exact version (==)" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "fastapi==0.115.12",
+          ]
+        TOML
+      end
+
+      let(:new_req) { { requirement: "==0.122.0" } }
+      let(:old_req) { { requirement: "==0.115.12" } }
+
+      it "replaces the exact version" do
+        result = replace_dep
+        expect(result).to include('"fastapi==0.122.0"')
+        expect(result).not_to include('"fastapi==0.115.12"')
+      end
+    end
+
+    context "with tilde requirement (~=)" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "fastapi~=0.115.0",
+          ]
+        TOML
+      end
+
+      let(:new_req) { { requirement: "~=0.122.0" } }
+      let(:old_req) { { requirement: "~=0.115.0" } }
+
+      it "replaces the tilde requirement" do
+        result = replace_dep
+        expect(result).to include('"fastapi~=0.122.0"')
+        expect(result).not_to include('"fastapi~=0.115.0"')
+      end
+    end
+
+    context "with single quotes" do
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              'fastapi>=0.115.12,<0.116',
+          ]
+        TOML
+      end
+
+      it "preserves single quotes" do
+        result = replace_dep
+        expect(result).to include("'fastapi>=0.115.12,<0.122'")
+        expect(result).not_to include("'fastapi>=0.115.12,<0.116'")
+      end
+    end
+
+    context "with package names containing dots, underscores, or hyphens (PyPI name normalization)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ruamel-yaml",
+          version: "0.18.6",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.18.6,<0.20",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=0.18.6,<0.19",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "0.18.6",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: ">=0.18.6,<0.20" } }
+      let(:old_req) { { requirement: ">=0.18.6,<0.19" } }
+
+      context "when package name uses dots" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel.yaml>=0.18.6,<0.19",
+            ]
+          TOML
+        end
+
+        it "replaces the requirement correctly" do
+          result = replace_dep
+          expect(result).to include('"ruamel.yaml>=0.18.6,<0.20"')
+          expect(result).not_to include('"ruamel.yaml>=0.18.6,<0.19"')
+        end
+      end
+
+      context "when dependency name uses hyphens and file uses hyphens" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel-yaml>=0.18.6,<0.19",
+            ]
+          TOML
+        end
+
+        it "still matches and replaces the requirement correctly" do
+          result = replace_dep
+          expect(result).to include('"ruamel-yaml>=0.18.6,<0.20"')
+          expect(result).not_to include('"ruamel-yaml>=0.18.6,<0.19"')
+        end
+      end
+
+      context "when dependency name uses hyphens but file uses underscores" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel_yaml>=0.18.6,<0.19",
+            ]
+          TOML
+        end
+
+        it "still matches and replaces the requirement correctly" do
+          result = replace_dep
+          expect(result).to include('"ruamel_yaml>=0.18.6,<0.20"')
+          expect(result).not_to include('"ruamel_yaml>=0.18.6,<0.19"')
+        end
+      end
+
+      context "with exact version (==)" do
+        let(:content) do
+          <<~TOML
+            [project]
+            dependencies = [
+                "ruamel.yaml==0.18.6",
+            ]
+          TOML
+        end
+
+        let(:new_req) { { requirement: "==0.20.0" } }
+        let(:old_req) { { requirement: "==0.18.6" } }
+
+        it "replaces the exact version" do
+          result = replace_dep
+          expect(result).to include('"ruamel.yaml==0.20.0"')
+          expect(result).not_to include('"ruamel.yaml==0.18.6"')
+        end
+      end
+    end
+  end
+
+  describe "#requirements_match?" do
+    subject(:requirements_match) { updater.send(:requirements_match?, req1, req2) }
+
+    context "when requirements are identical" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { ">=0.115.12,<0.116" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have operators in different order" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { "<0.116,>=0.115.12" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have different whitespace" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { ">=0.115.12, <0.116" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements have three constraints in different order" do
+      let(:req1) { ">=1.0.0,<2.0.0,!=1.5.0" }
+      let(:req2) { "!=1.5.0,>=1.0.0,<2.0.0" }
+
+      it "returns true" do
+        expect(requirements_match).to be true
+      end
+    end
+
+    context "when requirements are different" do
+      let(:req1) { ">=0.115.12,<0.116" }
+      let(:req2) { ">=0.115.12,<0.122" }
+
+      it "returns false" do
+        expect(requirements_match).to be false
+      end
+    end
+
+    context "when one requirement is a subset of another" do
+      let(:req1) { ">=0.115.12" }
+      let(:req2) { ">=0.115.12,<0.116" }
+
+      it "returns false" do
+        expect(requirements_match).to be false
+      end
+    end
+  end
+
   describe "#handle_uv_error" do
     subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
 

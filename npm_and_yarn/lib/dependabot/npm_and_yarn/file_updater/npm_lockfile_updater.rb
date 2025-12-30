@@ -139,6 +139,10 @@ module Dependabot
           return lockfile.content if npmrc_disables_lockfile?
           return lockfile.content unless updatable_dependencies.any?
 
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           @updated_lockfile_content ||= T.let(
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
@@ -284,14 +288,18 @@ module Dependabot
           # TODO: Update the npm 6 updater to use these args as we currently
           # do the same in the js updater helper, we've kept it separate for
           # the npm 7 rollout
-          install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
-          run_npm_install_lockfile_only(install_args)
+          top_level_dependencies.each do |dependency|
+            install_args = [npm_install_args(dependency)]
+            is_optional = optional_dependency?(dependency)
+            run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
+          end
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
-            run_npm_install_lockfile_only
+            # Run final install without specific dependencies
+            run_npm_install_lockfile_only([], has_optional_dependencies: false)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -335,31 +343,35 @@ module Dependabot
         #
         # Other npm flags:
         # - `--force` ignores checks for platform (os, cpu) and engines
-        # - `--dry-run=false` the updater sets a global .npmrc with `dry-run: true`
-        #   to work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are
         #   run when installing git dependencies
-        sig { params(install_args: T::Array[String]).returns(String) }
-        def run_npm_install_lockfile_only(install_args = [])
-          command = [
+        # - `--save-optional` when updating optional dependencies to ensure they
+        #   stay in optionalDependencies section and allow version upgrades
+        sig { params(install_args: T::Array[String], has_optional_dependencies: T::Boolean).returns(String) }
+        def run_npm_install_lockfile_only(install_args = [], has_optional_dependencies: false)
+          command_args = [
             "install",
             *install_args,
             "--force",
-            "--dry-run",
-            "false",
             "--ignore-scripts",
             "--package-lock-only"
-          ].join(" ")
+          ]
 
-          fingerprint = [
+          command_args << "--save-optional" if has_optional_dependencies
+
+          command = command_args.join(" ")
+
+          fingerprint_args = [
             "install",
             install_args.empty? ? "" : "<install_args>",
             "--force",
-            "--dry-run",
-            "false",
             "--ignore-scripts",
             "--package-lock-only"
-          ].join(" ")
+          ]
+
+          fingerprint_args << "--save-optional" if has_optional_dependencies
+
+          fingerprint = fingerprint_args.join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
         end
@@ -405,6 +417,13 @@ module Dependabot
         def dependency_in_lockfile?(dependency)
           lockfile_dependencies.any? do |dep|
             dep.name == dependency.name
+          end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def optional_dependency?(dependency)
+          dependency.requirements.any? do |req|
+            req[:groups]&.include?("optionalDependencies")
           end
         end
 

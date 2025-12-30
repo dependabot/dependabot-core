@@ -18,7 +18,7 @@ module Dependabot
       #   rsc.io/sampler@v1.3.0 golang.org/x/text@v0.0.0-20170915032832-14c0d48ead0c
       #   <---parent--->        <----child------>
       #
-      GO_MOD_GRAPH_LINE_REGEX = /^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/
+      GO_MOD_GRAPH_LINE_REGEX = T.let(/^(?<parent>[^@\s]+)@?[^\s]*\s(?<child>[^@\s]+)/, Regexp)
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -89,6 +89,13 @@ module Dependabot
           rels[match[:parent]] ||= []
           rels[match[:parent]] << match[:child]
         end
+      rescue Dependabot::DependencyFileNotParseable => e
+        # Attempt to recategorise the error as related to repo resolvability
+        repo_error_regex = FileUpdater::GoModUpdater::REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| e.message =~ r }
+        ResolvabilityErrors.handle(e.message) if repo_error_regex
+
+        # Re-raise the original error if it isn't a resolvability problem.
+        raise e
       end
     end
   end

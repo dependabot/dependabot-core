@@ -1,0 +1,18 @@
+[
+  {
+    "name": ".terraform.lock.hcl",
+    "path": "prod/us-east-1/prod/webserver-cluster/.terraform.lock.hcl",
+    "sha": "e3cf573ae962cbfa23be5543e51b1bf3cd14c69c",
+    "size": 1464,
+    "url": "https://api.github.com/repos/seqsense/terraform-lock-fix-action/contents/test/.terraform.lock.hcl?ref=main",
+    "html_url": "https://github.com/seqsense/terraform-lock-fix-action/blob/main/.terraform.lock.hcl",
+    "git_url": "https://api.github.com/repos/seqsense/terraform-lock-fix-action/git/blobs/e3cf573ae962cbfa23be5543e51b1bf3cd14c69c",
+    "download_url": "https://raw.githubusercontent.com/seqsense/terraform-lock-fix-action/main/test/.terraform.lock.hcl",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/seqsense/terraform-lock-fix-action/contents/test/.terraform.lock.hcl?ref=main",
+      "git": "https://api.github.com/repos/seqsense/terraform-lock-fix-action/git/blobs/e3cf573ae962cbfa23be5543e51b1bf3cd14c69c",
+      "html": "https://github.com/seqsense/terraform-lock-fix-action/blob/main/test/.terraform.lock.hcl"
+    }
+  }
+]

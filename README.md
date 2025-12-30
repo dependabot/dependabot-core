@@ -32,7 +32,7 @@ Welcome to the public home of Dependabot :dependabot:.
 Dependabot-Core is the library at the heart of [Dependabot](https://docs.github.com/en/code-security/dependabot) security / version updates.
 
 Use it to generate automated pull requests updating dependencies for projects written in Ruby, JavaScript, Python,
-PHP, Dart, Elixir, Elm, Go, Rust, Java, Julia, and .NET. It can also update git submodules, Docker files, and Terraform files.
+PHP, Dart, Elixir, Elm, Go, Rust, Java, Julia, and .NET. It can also update git submodules, Docker files, Opentofu, and Terraform files.
 Features include:
 
 - Check for the latest version of a dependency *that's resolvable given a project's other dependencies*
@@ -52,18 +52,18 @@ started.
 
 >**Note:** If you're looking to run Dependabot locally for development/debugging purposes, see the [Development Guide](#development-guide).
 
-## Dependabot-Script
-
-The [dependabot-script](https://github.com/dependabot/dependabot-script) repo provides a collection of example scripts for configuring the Dependabot-Core library.
-It is intended as a starting point for advanced users to run a self-hosted version of Dependabot within their own projects.
-
->**Note:** We recently refactored the monolithic docker image used within the Dependabot Core library into one-image-per-ecosystem. Unfortunately, that broke dependabot-scripts, and we haven't had time to update them yet. We are aware of the problem and hope to provide a solution soon.
-
 ## Dependabot CLI
 
-The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
-While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PRs. Nevertheless, it
-may be useful for advanced users looking for examples of how to hack on Dependabot.
+The open-source [Dependabot CLI](https://github.com/dependabot/cli) is our recommended entrypoint for standalone use cases.
+
+We use it in production here at GitHub, and advanced users can also leverage it to run a self-hosted version of Dependabot within their own projects / CI systems.
+
+It creates dependency diffs but does not create PRs. So you will need to wire that up yourself.
+To aid with that, we created the [example-cli-usage](https://github.com/dependabot/example-cli-usage) repo which demonstrates how to turn those diffs into actual PR's.
+
+## Write your own Ruby-based tool
+
+Alternatively, because Dependabot-Core is a Ruby library, you can write your own ruby-based wrapper that leverages the Dependabot-core code. The tricky bit is Dependabot assumes it's running in an isolated, throw-away environment so you'll need to handle all that yourself. For example protecting against security risks of arbitrary code execution exfiltrating credentials, ensuring the appropriate version of Go or Python or whatever language you need is available, and handling when Dependabot makes changes to its runtime environment.
 
 ## Dependabot on CI
 
@@ -112,7 +112,7 @@ Contribution workflow:
 Please refer to the [CONTRIBUTING](CONTRIBUTING.md) guidelines for more information.
 
 ## New Ecosystems
-	
+
 If you're interested in contributing support for a new ecosystem, please refer to the [contributing guidelines](CONTRIBUTING.md#contributing-new-ecosystems) for more information.
 
 # Development Guide

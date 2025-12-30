@@ -112,10 +112,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         # Resolved dependencies are correct
         expect(lockfile[:resolved].length).to eq(2)
 
-        dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+        dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
         expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
 
-        dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+        dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
 
@@ -159,8 +159,14 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
 
         # the following top-level packages should be defined in the right groups
-        %w(sinatra pry rspec capybara).each do |pkg_name|
-          resolved_dep = lockfile[:resolved][pkg_name]
+        {
+          "sinatra" => "4.1.1",
+          "pry" => "0.15.2",
+          "rspec" => "3.13.1",
+          "capybara" => "3.40.0"
+        }.each do |pkg_name, version|
+          key = "pkg:gem/#{pkg_name}@#{version}"
+          resolved_dep = lockfile[:resolved][key]
 
           expect(resolved_dep).not_to be_empty
           expect(resolved_dep[:relationship]).to eq("direct")
@@ -183,12 +189,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         # the direct ones were verified above.
         # let's pull out a few indirect dependencies to check
-        rack = lockfile[:resolved]["rack"]
+        rack = lockfile[:resolved]["pkg:gem/rack@3.1.16"]
         expect(rack[:package_url]).to eql("pkg:gem/rack@3.1.16")
         expect(rack[:relationship]).to eq("indirect")
         expect(rack[:scope]).to eq("runtime")
 
-        addressable = lockfile[:resolved]["addressable"]
+        addressable = lockfile[:resolved]["pkg:gem/addressable@2.8.7"]
         expect(addressable[:package_url]).to eql("pkg:gem/addressable@2.8.7")
         expect(addressable[:relationship]).to eq("indirect")
         expect(addressable[:scope]).to eq("development")
@@ -237,43 +243,53 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
 
     it "correctly snapshots the first directory" do
+      payload = nil
+
+      # Capture the first call
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
-
-        next unless payload[:job][:correlator] == "dependabot-bundler-Gemfile.lock"
-
-        # Check we have a Sinatra app with 28 dependencies
-        expect(payload[:manifests].length).to eq(1)
-        lockfile = payload[:manifests].fetch("/Gemfile.lock")
-
-        expect(lockfile[:resolved].length).to eq(28)
-
-        expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
-        expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
       end
+      expect(service).to receive(:create_dependency_submission).once
 
       update_graph_processor.run
+
+      expect(payload).not_to be_nil
+      expect(payload[:job][:correlator]).to eql("dependabot-bundler")
+
+      # Check we have a Sinatra app with 28 dependencies
+      expect(payload[:manifests].length).to eq(1)
+      lockfile = payload[:manifests].fetch("/Gemfile.lock")
+
+      expect(lockfile[:resolved].length).to eq(28)
+
+      expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "direct" }).to eq(4)
+      expect(lockfile[:resolved].values.count { |dep| dep[:relationship] == "indirect" }).to eq(24)
     end
 
     it "correctly snapshots the second directory" do
+      payload = nil
+
+      expect(service).to receive(:create_dependency_submission).once
+      # Capture the second call
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
-
-        next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
-
-        # Check we have the simple app with 2 dependencies
-        expect(payload[:manifests].length).to eq(1)
-        lockfile = payload[:manifests].fetch("/Gemfile.lock")
-
-        expect(lockfile[:resolved].length).to eq(2)
-
-        dependency1 = lockfile[:resolved]["dummy-pkg-a"]
-        expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-        dependency2 = lockfile[:resolved]["dummy-pkg-b"]
-        expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
 
       update_graph_processor.run
+
+      expect(payload).not_to be_nil
+      expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+
+      # Check we have the simple app with 2 dependencies
+      expect(payload[:manifests].length).to eq(1)
+      lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+
+      expect(lockfile[:resolved].length).to eq(2)
+
+      dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
+      expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+      dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
+      expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
     end
 
     context "when the first directory fails to process" do
@@ -302,32 +318,98 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         ]
       end
 
-      it "emits a snapshot and an error" do
-        expect(service).to receive(:create_dependency_submission).once
-        expect(service).to receive(:record_update_job_error).once
+      context "when executing standalone" do
+        before do
+          allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
+        end
 
-        update_graph_processor.run
-      end
+        it "emits a snapshot and an error" do
+          expect(service).to receive(:create_dependency_submission).once
+          expect(service).to receive(:record_update_job_error).once
 
-      it "correctly snapshots the second directory" do
-        expect(service).to receive(:create_dependency_submission) do |args|
-          payload = args[:dependency_submission].payload
+          update_graph_processor.run
+        end
 
-          next unless payload[:job][:correlator] == "dependabot-bundler-subproj-Gemfile.lock"
+        it "correctly snapshots the second directory" do
+          payload = nil
+
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+          end
+
+          update_graph_processor.run
+
+          expect(payload).not_to be_nil
+          expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
 
           # Check we have the simple app with 2 dependencies
           expect(payload[:manifests].length).to eq(1)
-          lockfile = payload[:manifests].fetch("/Gemfile.lock")
+          lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
 
           expect(lockfile[:resolved].length).to eq(2)
 
-          dependency1 = lockfile[:resolved]["dummy-pkg-a"]
+          dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
           expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
-          dependency2 = lockfile[:resolved]["dummy-pkg-b"]
+          dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
           expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
         end
+      end
 
-        update_graph_processor.run
+      context "when executing in GitHub Actions" do
+        before do
+          allow(Dependabot::Environment).to receive(:github_actions?).and_return(true)
+        end
+
+        it "emits a blank snapshot, a normal snapshot and an error" do
+          expect(service).to receive(:create_dependency_submission).twice
+          expect(service).to receive(:record_update_job_error).once
+
+          update_graph_processor.run
+        end
+
+        it "emits a blank snapshot for the first directory" do
+          payload = nil
+
+          # Capture the first call
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+          end
+          expect(service).to receive(:create_dependency_submission).once
+
+          update_graph_processor.run
+
+          expect(payload).not_to be_nil
+          expect(payload[:job][:correlator]).to eql("dependabot-bundler")
+
+          # It should be empty
+          expect(payload[:manifests].length).to be_zero
+        end
+
+        it "correctly snapshots the second directory" do
+          payload = nil
+
+          # Capture the second call
+          expect(service).to receive(:create_dependency_submission).once
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+          end
+
+          update_graph_processor.run
+
+          expect(payload).not_to be_nil
+          expect(payload[:job][:correlator]).to eql("dependabot-bundler-subproject")
+
+          # Check we have the simple app with 2 dependencies
+          expect(payload[:manifests].length).to eq(1)
+          lockfile = payload[:manifests].fetch("/subproject/Gemfile.lock")
+
+          expect(lockfile[:resolved].length).to eq(2)
+
+          dependency1 = lockfile[:resolved]["pkg:gem/dummy-pkg-a@2.0.0"]
+          expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a@2.0.0")
+          dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
+          expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
+        end
       end
     end
   end
@@ -402,10 +484,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         # Resolved dependencies are correct
         expect(gemfile[:resolved].length).to eq(2)
 
-        dependency1 = gemfile[:resolved]["dummy-pkg-a"]
+        dependency1 = gemfile[:resolved]["pkg:gem/dummy-pkg-a"]
         expect(dependency1[:package_url]).to eql("pkg:gem/dummy-pkg-a")
 
-        dependency2 = gemfile[:resolved]["dummy-pkg-b"]
+        dependency2 = gemfile[:resolved]["pkg:gem/dummy-pkg-b"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b")
       end
 
@@ -517,38 +599,127 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    before do
-      original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+    context "when the error is a known type" do
+      before do
+        original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
 
-      failing_grapher_class = Class.new(original_grapher_class) do
-        def initialize(file_parser:)
-          super
-          @raise_once = true
-        end
-
-        def fetch_subdependencies(_dependency)
-          if @raise_once
-            @raise_once = false
-            raise StandardError, "boom"
+        failing_grapher_class = Class.new(original_grapher_class) do
+          def initialize(file_parser:)
+            super
+            @raise_once = true
           end
-          []
+
+          def fetch_subdependencies(_dependency)
+            if @raise_once
+              @raise_once = false
+              raise Dependabot::GitDependenciesNotReachable, "github.com/dependabot/cli", "boom"
+            end
+            []
+          end
         end
+
+        allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+          .with(job.package_manager).and_return(failing_grapher_class)
       end
 
-      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
-        .with(job.package_manager).and_return(failing_grapher_class)
+      it "records the specific error type and still submits a dependency submission" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+          expect(payload[:manifests]).to be_a(Hash)
+        end
+
+        expect(service).to receive(:record_update_job_error) do |args|
+          expect(args[:error_type]).to eq("git_dependencies_not_reachable")
+          expect(args[:error_details]).to eq(
+            {
+              "dependency-urls": ["github.com/dependabot/cli"]
+            }
+          )
+        end
+
+        update_graph_processor.run
+      end
     end
 
-    it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
-      expect(service).to receive(:create_dependency_submission) do |args|
-        payload = args[:dependency_submission].payload
-        expect(payload[:manifests]).to be_a(Hash)
+    context "when the error is an unknown type" do
+      before do
+        original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+
+        failing_grapher_class = Class.new(original_grapher_class) do
+          def initialize(file_parser:)
+            super
+            @raise_once = true
+          end
+
+          def fetch_subdependencies(_dependency)
+            if @raise_once
+              @raise_once = false
+              raise StandardError, "boom"
+            end
+            []
+          end
+        end
+
+        allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+          .with(job.package_manager).and_return(failing_grapher_class)
       end
 
-      expect(service).to receive(:record_update_job_error) do |args|
-        expect(args[:error_type]).to eq("dependency_file_not_resolvable")
-        expect(args[:error_details]).to include(:message)
+      it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+          expect(payload[:manifests]).to be_a(Hash)
+        end
+
+        expect(service).to receive(:record_update_job_error) do |args|
+          expect(args[:error_type]).to eq("dependency_file_not_resolvable")
+          expect(args[:error_details]).to include(:message)
+        end
+
+        update_graph_processor.run
       end
+    end
+  end
+
+  context "when the dependency submission API is unavailable" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      allow(service).to receive(:create_dependency_submission)
+        .and_raise(Dependabot::ApiError, "Service unavailable")
+      allow(service).to receive(:capture_exception)
+    end
+
+    it "records a snapshots_unavailable_graph_error and does not retry submission" do
+      expect(service).to receive(:record_update_job_error) do |args|
+        expect(args[:error_type]).to eq("snapshots_unavailable_graph_error")
+        expect(args[:error_details]).to include(
+          message: "Unable to submit data to the Dependency Snapshot API"
+        )
+      end
+
+      update_graph_processor.run
+    end
+
+    it "does not try to send an empty submission on this error" do
+      expect(service).to receive(:create_dependency_submission).once.and_raise(Dependabot::ApiError)
+      expect(service).to receive(:record_update_job_error)
 
       update_graph_processor.run
     end

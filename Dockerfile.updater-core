@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM docker.io/library/ubuntu:24.04
 
 ARG TARGETARCH
@@ -141,8 +142,6 @@ USER dependabot
 ENV DEPENDABOT_HOME="/home/dependabot"
 WORKDIR $DEPENDABOT_HOME
 
-COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
-
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v2/monkey_patches/definition_ruby_version_patch.rb`
 COPY --from=docker.io/library/ruby:3.4.7-bookworm --chown=dependabot:dependabot /usr/local /usr/local
@@ -158,44 +157,12 @@ ENV GIT_LFS_SKIP_SMUDGE=1
 ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-${TARGETARCH}.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
-COPY --chown=dependabot:dependabot omnibus omnibus
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
 
-COPY --chown=dependabot:dependabot common/.bundle common/dependabot-common.gemspec common/
-COPY --chown=dependabot:dependabot common/lib/dependabot.rb common/lib/dependabot.rb
-COPY --chown=dependabot:dependabot bazel/.bundle bazel/dependabot-bazel.gemspec bazel/
-COPY --chown=dependabot:dependabot bun/.bundle bun/dependabot-bun.gemspec bun/
-COPY --chown=dependabot:dependabot bundler/.bundle bundler/dependabot-bundler.gemspec bundler/
-COPY --chown=dependabot:dependabot cargo/.bundle cargo/dependabot-cargo.gemspec cargo/
-COPY --chown=dependabot:dependabot composer/.bundle composer/dependabot-composer.gemspec composer/
-COPY --chown=dependabot:dependabot devcontainers/.bundle devcontainers/dependabot-devcontainers.gemspec devcontainers/
-COPY --chown=dependabot:dependabot docker/.bundle docker/dependabot-docker.gemspec docker/
-COPY --chown=dependabot:dependabot docker_compose/.bundle docker_compose/dependabot-docker_compose.gemspec docker_compose/
-COPY --chown=dependabot:dependabot dotnet_sdk/.bundle dotnet_sdk/dependabot-dotnet_sdk.gemspec dotnet_sdk/
-COPY --chown=dependabot:dependabot elm/.bundle elm/dependabot-elm.gemspec elm/
-COPY --chown=dependabot:dependabot git_submodules/.bundle git_submodules/dependabot-git_submodules.gemspec git_submodules/
-COPY --chown=dependabot:dependabot github_actions/.bundle github_actions/dependabot-github_actions.gemspec github_actions/
-COPY --chown=dependabot:dependabot go_modules/.bundle go_modules/dependabot-go_modules.gemspec go_modules/
-COPY --chown=dependabot:dependabot gradle/.bundle gradle/dependabot-gradle.gemspec gradle/
-COPY --chown=dependabot:dependabot helm/.bundle helm/dependabot-helm.gemspec helm/
-COPY --chown=dependabot:dependabot hex/.bundle hex/dependabot-hex.gemspec hex/
-COPY --chown=dependabot:dependabot julia/.bundle julia/dependabot-julia.gemspec julia/
-COPY --chown=dependabot:dependabot maven/.bundle maven/dependabot-maven.gemspec maven/
-COPY --chown=dependabot:dependabot npm_and_yarn/.bundle npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
-COPY --chown=dependabot:dependabot nuget/.bundle nuget/dependabot-nuget.gemspec nuget/
-COPY --chown=dependabot:dependabot pub/.bundle pub/dependabot-pub.gemspec pub/
-COPY --chown=dependabot:dependabot python/.bundle python/dependabot-python.gemspec python/
-COPY --chown=dependabot:dependabot rust_toolchain/.bundle rust_toolchain/dependabot-rust_toolchain.gemspec rust_toolchain/
-COPY --chown=dependabot:dependabot silent/.bundle silent/dependabot-silent.gemspec silent/
-COPY --chown=dependabot:dependabot swift/.bundle swift/dependabot-swift.gemspec swift/
-COPY --chown=dependabot:dependabot terraform/.bundle terraform/dependabot-terraform.gemspec terraform/
-COPY --chown=dependabot:dependabot uv/.bundle uv/dependabot-uv.gemspec uv/
-COPY --chown=dependabot:dependabot vcpkg/.bundle vcpkg/dependabot-vcpkg.gemspec vcpkg/
-COPY --chown=dependabot:dependabot conda/.bundle conda/dependabot-conda.gemspec conda/
+COPY --chown=dependabot:dependabot --parents */.bundle */*.gemspec common/lib/dependabot.rb LICENSE omnibus $DEPENDABOT_HOME
 
 # prevent having all the source in every ecosystem image
-
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun uv helm julia vcpkg rust_toolchain conda bazel; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun uv helm julia vcpkg rust_toolchain conda bazel opentofu; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done

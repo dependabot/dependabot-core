@@ -106,11 +106,24 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
+      end
+
+      it "populates release_details for the latest version" do
+        release_info = packagedetailsfetcher.send(:release_details)
+        expect(release_info).to be_a(Hash)
+        expect(release_info).to have_key("2.1.4.RELEASE")
+        expect(release_info["2.1.4.RELEASE"][:release_date]).to eq(Time.utc(2019, 4, 4, 5, 30, 33))
       end
 
       describe "the first version" do
@@ -134,6 +147,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
+          is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
         end
       end
     end
@@ -161,11 +179,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
           "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
+          "org.jetbrains.kotlin.jvm.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
       end
 
       describe "the first version" do
@@ -189,6 +213,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
+          is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
         end
       end
     end

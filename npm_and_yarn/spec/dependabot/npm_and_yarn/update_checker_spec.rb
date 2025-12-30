@@ -70,6 +70,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
   after do
@@ -1842,7 +1844,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ),
               Dependabot::Dependency.new(
                 name: "@msgpack/msgpack",
-                version: "3.1.2",
+                version: "3.1.3",
                 package_manager: "npm_and_yarn",
                 previous_version: "3.0.0",
                 requirements: [],

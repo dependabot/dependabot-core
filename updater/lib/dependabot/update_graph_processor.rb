@@ -88,8 +88,22 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
+    rescue Dependabot::ApiError, HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      # If the submission API is down, we should raise this as a specific error type for visibility.
+      error_handler.handle_job_error(
+        error: Dependabot::SnapshotsUnavailableGraphError.new(
+          "Unable to submit data to the Dependency Snapshot API"
+        )
+      )
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
+
+      # If we are not running in Actions, there's nothing more to do.
+      return unless Dependabot::Environment.github_actions?
+
+      # Send an empty submission so the snapshot service has a record that the job id has been completed.
+      empty_submission = empty_submission(branch, T.must(directory_source))
+      service.create_dependency_submission(dependency_submission: empty_submission)
     end
 
     sig { params(directory: String).returns(Dependabot::Source) }
@@ -138,13 +152,7 @@ module Dependabot
       # Build resolved dependencies first so subdependency fetching can set the error flag if it fails.
       resolved = grapher.resolved_dependencies
 
-      if grapher.errored_fetching_subdependencies
-        error_handler.handle_job_error(
-          error: Dependabot::DependencyFileNotResolvable.new(
-            "Failed to fetch subdependencies in directory #{source.directory}"
-          )
-        )
-      end
+      handle_subdependency_error(grapher.subdependency_error, source) if grapher.errored_fetching_subdependencies
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
@@ -154,6 +162,22 @@ module Dependabot
         manifest_file: grapher.relevant_dependency_file,
         resolved_dependencies: resolved
       )
+    end
+
+    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
+    def handle_subdependency_error(error, source)
+      if error.is_a?(Dependabot::DependabotError)
+        # If we've been provided with a DependabotError, relay it to the handler
+        error_handler.handle_job_error(error: error)
+      else
+        # If the error is unexpected, or nil then we should treat it as a generic
+        # parsing problem.
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyFileNotResolvable.new(
+            "Failed to fetch subdependencies in directory #{source.directory}"
+          )
+        )
+      end
     end
 
     sig { returns(String) }

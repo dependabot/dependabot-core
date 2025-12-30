@@ -33,6 +33,7 @@ dependabot \
   -v "$(pwd)"/rust_toolchain:/home/dependabot/rust_toolchain \
   -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
+  -v "$(pwd)"/opentofu:/home/dependabot/opentofu \
   -v "$(pwd)"/uv:/home/dependabot/uv \
   -v "$(pwd)"/vcpkg:/home/dependabot/vcpkg \
   "$@"

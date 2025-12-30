@@ -71,6 +71,9 @@ swift:
 terraform:
   - *common
   - 'terraform/**'
+opentofu:
+  - *common
+  - 'opentofu/**'
 uv:
   - *common
   - 'uv/**'

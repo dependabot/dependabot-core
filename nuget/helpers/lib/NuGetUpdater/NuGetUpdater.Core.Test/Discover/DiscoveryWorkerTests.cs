@@ -1,8 +1,11 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 
+using Microsoft.Build.Evaluation;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -365,10 +368,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestPackageConfig(bool useDirectDiscovery)
+    [Fact]
+    public async Task TestPackageConfig()
     {
         await TestDiscoveryAsync(
             packages:
@@ -618,7 +619,100 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
-    public async Task TestRepo_DirectDiscovery_Slnx()
+    public async Task TestRepo_Sln()
+    {
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/solution.sln", """
+                    Microsoft Visual Studio Solution File, Format Version 12.00
+                    # Visual Studio 14
+                    VisualStudioVersion = 14.0.22705.0
+                    MinimumVisualStudioVersion = 10.0.40219.1
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project.A", "client\client.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+                    EndProject
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project.B", "server\server.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20D}"
+                    EndProject
+                    Global
+                      GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        Debug|Any CPU = Debug|Any CPU
+                        Release|Any CPU = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.Build.0 = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(SolutionProperties) = preSolution
+                        HideSolutionNode = FALSE
+                      EndGlobalSection
+                    EndGlobal
+                    """),
+                ("src/client/client.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/server/server.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.B" Version="4.5.6" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "client/client.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [new("Package.A", "1.2.3", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net8.0"])],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "src/client/client.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "server/server.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [new("Package.B", "4.5.6", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net8.0"])],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "src/server/server.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestRepo_Slnx()
     {
         var solutionPath = "solution.slnx";
         await TestDiscoveryAsync(
@@ -730,77 +824,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       EndGlobalSection
                     EndGlobal
                     """),
-            },
-            expectedResult: new()
-            {
-                Path = "",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "src/project.csproj",
-                        TargetFrameworks = ["net7.0", "net8.0"],
-                        Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [
-                            "../Directory.Build.props",
-                            "../Directory.Packages.props",
-                        ],
-                        AdditionalFiles = [],
-                    }
-                ],
-            }
-        );
-    }
-
-    [Fact]
-    public async Task TestDirsProj_CasingMismatchIsResolved()
-    {
-        var dirsProjPath = "dirs.proj";
-        await TestDiscoveryAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
-            ],
-            workspacePath: "",
-            files: new[]
-            {
-            ("src/project.csproj", """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Some.Package" />
-                  </ItemGroup>
-                </Project>
-                """),
-            ("Directory.Build.props", "<Project />"),
-            ("Directory.Packages.props", """
-                <Project>
-                  <PropertyGroup>
-                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                    <SomePackageVersion>9.0.1</SomePackageVersion>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """),
-            // Introduce a casing difference in the project reference
-            (dirsProjPath, """
-                <Project>
-                  <ItemGroup>
-                    <ProjectReference Include="SRC/PROJECT.CSPROJ" />
-                  </ItemGroup>
-                </Project>
-                """)
             },
             expectedResult: new()
             {
@@ -1510,5 +1533,43 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 ]
             }
         );
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" /><!-- relative -->
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)project2\project2.csproj" /><!-- absolute -->
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project1/project1.csproj", $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("src/project2/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager()))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
+            Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
     }
 }

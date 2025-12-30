@@ -381,20 +381,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: nil,
             headers: json_header
           )
-        stub_request(:get, File.join(url, "bun.lock?ref=sha"))
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(
-            status: 404,
-            body: nil,
-            headers: json_header
-          )
-        stub_request(:get, File.join(url, "packages/bun.lock?ref=sha"))
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(
-            status: 404,
-            body: nil,
-            headers: json_header
-          )
         # FileFetcher will iterate trying to find `pnpm-lock.yaml` upwards in the folder tree
         stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -541,58 +527,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "with a bun.lock but no package-lock.json file" do
-    before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: fixture("github", "contents_js_bun.json"),
-          headers: json_header
-        )
-      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 404)
-      stub_request(:get, File.join(url, "bun.lock?ref=sha"))
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(
-          status: 200,
-          body: fixture("github", "bun_lock_content.json"),
-          headers: json_header
-        )
-    end
-
-    describe "fetching and parsing the bun.lock" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_beta_ecosystems).and_return(enable_beta_ecosystems)
-      end
-
-      context "when the experiment :enable_beta_ecosystems is inactive" do
-        let(:enable_beta_ecosystems) { false }
-
-        it "does not fetch or parse the the bun.lock" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(package.json))
-          expect(file_fetcher_instance.ecosystem_versions)
-            .to match({ package_managers: { "unknown" => an_instance_of(Integer) } })
-        end
-      end
-
-      context "when the experiment :enable_beta_ecosystems is active" do
-        let(:enable_beta_ecosystems) { true }
-
-        it "fetches and parses the bun.lock" do
-          expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(package.json bun.lock))
-          expect(file_fetcher_instance.ecosystem_versions)
-            .to match({ package_managers: { "bun" => an_instance_of(Integer) } })
-        end
-      end
-    end
-  end
-
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -641,7 +575,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the npm lockfile" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 10 } }
+        { package_managers: { "npm" => 11 } }
       )
     end
   end
@@ -678,7 +612,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
     it "parses the package manager version" do
       expect(file_fetcher_instance.ecosystem_versions).to eq(
-        { package_managers: { "npm" => 10, "yarn" => 1 } }
+        { package_managers: { "npm" => 11, "yarn" => 1 } }
       )
     end
   end
@@ -1034,6 +968,69 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "deps/etag/package.json" }
           expect(path_file.support_file?).to be(true)
+        end
+      end
+    end
+
+    context "when path dependency is in the ignore list" do
+      let(:update_config) do
+        Dependabot::Config::UpdateConfig.new(
+          ignore_conditions: [
+            Dependabot::Config::IgnoreCondition.new(
+              dependency_name: "etag",
+              versions: [">= 0"]
+            )
+          ]
+        )
+      end
+      let(:file_fetcher_instance) do
+        described_class.new(
+          source: source,
+          credentials: credentials,
+          update_config: update_config
+        )
+      end
+
+      before do
+        # Stub the path dependency endpoint to return 404
+        stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url, "deps/etag?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url, "deps?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "skips the ignored path dependency without raising an error" do
+        # Should succeed without trying to fetch the ignored path dependency
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to contain_exactly("package.json", "package-lock.json")
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("deps/etag/package.json")
+      end
+
+      context "when there is also a lockfile with the path dep" do
+        before do
+          stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "package_lock_with_path_content.json"),
+              headers: json_header
+            )
+        end
+
+        it "skips building imitation path dependency for ignored dep" do
+          # Should succeed and not include the ignored path dependency
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to contain_exactly("package.json", "package-lock.json")
+          expect(file_fetcher_instance.files.map(&:name))
+            .not_to include("deps/etag/package.json")
         end
       end
     end
@@ -1421,12 +1418,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
             "pnpm-lock.yaml?ref=sha"
-          ).with(headers: { "Authorization" => "token token" })
-            .to_return(status: 404)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/bump/contents/" \
-            "bun.lock?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
           stub_request(
@@ -2002,12 +1993,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
             "pnpm-lock.yaml?ref=sha"
-          ).with(headers: { "Authorization" => "token token" })
-            .to_return(status: 404)
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/bump/contents/" \
-            "bun.lock?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
           stub_request(

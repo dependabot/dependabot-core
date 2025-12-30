@@ -12,10 +12,12 @@ require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
+require "dependabot/uv/requirement_suffix_helper"
 
 module Dependabot
   module Uv
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class LockFileUpdater
         extend T::Sig
 
@@ -73,6 +75,16 @@ module Dependabot
           T.must(dependencies.first)
         end
 
+        sig { returns(T::Boolean) }
+        def build_system_only_dependency?
+          return false unless dependency
+
+          groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
+          return false if groups.empty?
+
+          groups.all?("build-system")
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
           return [] unless create_or_update_lock_file?
@@ -87,9 +99,10 @@ module Dependabot
               )
           end
 
-          if lockfile
+          if lockfile && !build_system_only_dependency?
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
+
             raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
@@ -127,16 +140,46 @@ module Dependabot
         def replace_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
+          escaped_name = escape_package_name(dep.name)
 
-          declaration_regex = declaration_regex(dep, old_r)
-          declaration_match = content.match(declaration_regex)
-          if declaration_match
-            declaration = declaration_match[:declaration]
-            new_declaration = T.must(declaration).sub(old_req, new_req)
-            content.sub(T.must(declaration), new_declaration)
-          else
-            content
+          regex = /(["']#{escaped_name})([^"']+)(["'])/x
+
+          replaced = T.let(false, T::Boolean)
+
+          updated_content = content.gsub(regex) do
+            captured_requirement = Regexp.last_match(2)
+
+            requirement_body, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+            next Regexp.last_match(0) unless old_req
+
+            if requirements_match?(T.must(requirement_body), old_req)
+              replaced = true
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
+            else
+              Regexp.last_match(0)
+            end
           end
+          unless replaced
+            updated_content = content.sub(regex) do
+              captured_requirement = Regexp.last_match(2)
+              _, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
+            end
+          end
+
+          updated_content
+        end
+
+        sig { params(req1: String, req2: String).returns(T::Boolean) }
+        def requirements_match?(req1, req2)
+          normalized_requirement(req1) == normalized_requirement(req2)
+        end
+
+        sig { params(req: String).returns(String) }
+        def normalized_requirement(req)
+          req.split(",").map(&:strip).sort.join(",")
         end
 
         sig { returns(String) }
@@ -262,7 +305,13 @@ module Dependabot
           options_fingerprint = lock_options_fingerprint(options)
 
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec uv lock --upgrade-package #{T.must(dependency).name} #{options}"
+          # Include the target version to respect ignore conditions and avoid upgrading
+          # to the absolute latest version (which may be blocked by ignore rules)
+          dep_name = T.must(dependency).name
+          dep_version = T.must(dependency).version
+          package_spec = dep_version ? "#{dep_name}==#{dep_version}" : dep_name
+
+          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
           run_command(command, fingerprint:)
@@ -313,24 +362,6 @@ module Dependabot
           url.gsub(%r{^https?://}, "").gsub(/[^a-zA-Z0-9]/, "_").upcase
         end
 
-        sig { params(dep: T.untyped, old_req: T.untyped).returns(Regexp) }
-        def declaration_regex(dep, old_req)
-          escaped_name = Regexp.escape(dep.name)
-          # Extract the requirement operator and version
-          operator = old_req.fetch(:requirement).match(/^(.+?)[0-9]/)&.captures&.first
-          # Escape special regex characters in the operator
-          escaped_operator = Regexp.escape(operator) if operator
-
-          # Match various formats of dependency declarations:
-          # 1. "dependency==1.0.0" (with quotes around the entire string)
-          # 2. dependency==1.0.0 (without quotes)
-          # The declaration should only include the package name, operator, and version
-          # without the enclosing quotes
-          /
-            ["']?(?<declaration>#{escaped_name}\s*#{escaped_operator}[\d\.\*]+)["']?
-          /x
-        end
-
         sig { returns(String) }
         def lock_options
           options = lock_index_options
@@ -363,8 +394,9 @@ module Dependabot
         end
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
-        def escape(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]")
+        def escape_package_name(name)
+          # Per PEP 503, Python package names normalize -, _, and . to the same character
+          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }
@@ -445,9 +477,12 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
+          return true if lockfile && T.must(dependency).requirements.empty?
+
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

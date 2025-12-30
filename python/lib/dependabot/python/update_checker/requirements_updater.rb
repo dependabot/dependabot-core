@@ -309,8 +309,12 @@ module Dependabot
           count = old_version.split(".").count
           precision = old_version.split(".").index("*") || count
 
-          new_version
-            .split(".")
+          new_segments = new_version.split(".")
+
+          # Pad with zeros if new version has fewer segments than old version
+          new_segments += ["0"] * (count - new_segments.length) if new_segments.length < count
+
+          new_segments
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
             .join(".")

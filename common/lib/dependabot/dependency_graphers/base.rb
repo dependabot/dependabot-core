@@ -34,6 +34,9 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :errored_fetching_subdependencies
 
+      sig { returns(T.nilable(StandardError)) }
+      attr_reader :subdependency_error
+
       sig do
         params(file_parser: Dependabot::FileParsers::Base).void
       end
@@ -65,11 +68,12 @@ module Dependabot
         prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
-          resolved[dep.name] = ResolvedDependency.new(
-            package_url: build_purl(dep),
+          purl = build_purl(dep)
+          resolved[purl] = ResolvedDependency.new(
+            package_url: purl,
             direct: dep.top_level?,
             runtime: dep.production?,
-            dependencies: safe_fetch_subdependencies(dep)
+            dependencies: safe_fetch_subdependencies(dep).map { |d| build_purl(d) }
           )
         end
       end
@@ -84,13 +88,26 @@ module Dependabot
         file_parser.dependency_files
       end
 
-      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      sig { returns(T::Hash[String, Dependabot::Dependency]) }
+      def dependencies_by_name
+        @dependencies_by_name ||= T.let(
+          @dependencies.each_with_object({}) do |dep, hash|
+            hash[dep.name] = dep
+          end,
+          T.nilable(T::Hash[String, Dependabot::Dependency])
+        )
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
       def safe_fetch_subdependencies(dependency)
         return [] if @errored_fetching_subdependencies
 
-        fetch_subdependencies(dependency)
+        fetch_subdependencies(dependency).filter_map do |dependency_name|
+          dependencies_by_name[dependency_name]
+        end
       rescue StandardError => e
         @errored_fetching_subdependencies = true
+        @subdependency_error = T.let(e, T.nilable(StandardError))
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
         []
       end

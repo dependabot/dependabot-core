@@ -71,7 +71,6 @@ module Dependabot
         package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
-        package_managers["bun"] = bun_version if bun_version
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
@@ -87,7 +86,6 @@ module Dependabot
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
         fetched_files += pnpm_files if pnpm_version
-        fetched_files += bun_files if bun_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -129,13 +127,6 @@ module Dependabot
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
-      end
-
-      sig { returns(T::Array[DependencyFile]) }
-      def bun_files
-        fetched_bun_files = []
-        fetched_bun_files << bun_lock if bun_lock
-        fetched_bun_files
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -222,16 +213,6 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(T.any(Integer, String))) }
-      def bun_version
-        return @bun_version = nil unless allow_beta_ecosystems?
-
-        @bun_version ||= T.let(
-          package_manager_helper.setup(BunPackageManager::NAME),
-          T.nilable(T.any(Integer, String))
-        )
-      end
-
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
         @package_manager_helper ||= T.let(
@@ -250,8 +231,7 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock,
-          bun: bun_lock
+          pnpm: pnpm_lock
         }
       end
 
@@ -294,17 +274,6 @@ module Dependabot
         return @pnpm_lock if @pnpm_lock || directory == "/"
 
         @pnpm_lock = fetch_file_from_parent_directories(PNPMPackageManager::LOCKFILE_NAME)
-      end
-
-      sig { returns(T.nilable(DependencyFile)) }
-      def bun_lock
-        return @bun_lock if defined?(@bun_lock)
-
-        @bun_lock ||= T.let(fetch_file_if_present(BunPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
-
-        return @bun_lock if @bun_lock || directory == "/"
-
-        @bun_lock = fetch_file_from_parent_directories(BunPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -382,6 +351,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
       def path_dependencies(fetched_files) # rubocop:disable Metrics/AbcSize
         package_json_files = T.let([], T::Array[DependencyFile])
@@ -412,6 +382,13 @@ module Dependabot
             next
           end
 
+          if dependency_ignored?(name)
+            Dependabot.logger.info(
+              "Ignored local path dependency '#{cleaned_name}' for package '#{name}' as it matches the ignore list."
+            )
+            next
+          end
+
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
@@ -431,6 +408,7 @@ module Dependabot
         package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/MethodLength
 
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[[String, String]]) }
       def path_dependency_details(fetched_files)
@@ -714,7 +692,19 @@ module Dependabot
       def build_unfetchable_deps(unfetchable_deps)
         return [] unless package_lock || yarn_lock
 
-        unfetchable_deps.map do |name, path|
+        filtered_deps = unfetchable_deps.reject do |name, _path|
+          # Skip ignored dependencies
+          if dependency_ignored?(name)
+            Dependabot.logger.info(
+              "Ignored unfetchable path dependency '#{name}' as it matches the ignore list."
+            )
+            true
+          else
+            false
+          end
+        end
+
+        filtered_deps.map do |name, path|
           PathDependencyBuilder.new(
             dependency_name: name,
             path: path,

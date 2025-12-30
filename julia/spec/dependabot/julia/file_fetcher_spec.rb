@@ -57,11 +57,8 @@ RSpec.describe Dependabot::Julia::FileFetcher do
     end
 
     before do
-      # Enable beta ecosystems for all tests and mock the registry client
-      allow(file_fetcher_instance).to receive_messages(
-        allow_beta_ecosystems?: true,
-        registry_client: registry_client
-      )
+      # Mock the registry client
+      allow(file_fetcher_instance).to receive(:registry_client).and_return(registry_client)
 
       # Mock SharedHelpers to avoid actual repo cloning
       allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield("/tmp/test")
@@ -132,6 +129,36 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       end
     end
 
+    context "when Julia helper finds versioned manifest" do
+      let(:versioned_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.12.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+        )
+      end
+
+      before do
+        allow(registry_client).to receive(:find_environment_files)
+          .with("/tmp/test")
+          .and_return({
+            "project_file" => "/tmp/test/Project.toml",
+            "manifest_file" => "/tmp/test/Manifest-v1.12.toml"
+          })
+
+        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest-v1.12.toml")
+          .and_return(versioned_manifest_file)
+      end
+
+      it "fetches both files including versioned manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest-v1.12.toml")
+      end
+    end
+
     context "when no Project.toml found" do
       before do
         allow(registry_client).to receive(:find_environment_files)
@@ -143,16 +170,6 @@ RSpec.describe Dependabot::Julia::FileFetcher do
         expect do
           fetched_files
         end.to raise_error(Dependabot::DependencyFileNotFound, /No Project\.toml or JuliaProject\.toml found/)
-      end
-    end
-
-    context "when beta ecosystems are disabled" do
-      before do
-        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-      end
-
-      it "returns empty array without fetching files" do
-        expect(fetched_files).to eq([])
       end
     end
   end

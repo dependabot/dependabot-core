@@ -69,7 +69,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
   after do
@@ -3434,7 +3438,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.1" }
+        let(:version) { "3.14.2" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3444,7 +3448,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content)
             .to include(
               "js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-              '  version "3.14.1"'
+              '  version "3.14.2"'
             )
         end
       end
@@ -3761,7 +3765,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:project_name) { "pnpm/multiple_sub_dependencies" }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.1" }
+        let(:version) { "3.14.2" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3769,7 +3773,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.1:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.2:\n    resolution").once
         end
       end
 

@@ -1,17 +1,18 @@
+# syntax=docker.io/docker/dockerfile:1.20
 # This list must match the versions specified in
 # uv/lib/dependabot/uv/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # Python versions are pinned to the release of each minor/patch version.
-ARG PY_3_14=3.14.0
-ARG PY_3_13=3.13.9
+ARG PY_3_14=3.14.2
+ARG PY_3_13=3.13.11
 ARG PY_3_12=3.12.12
 ARG PY_3_11=3.11.14
 ARG PY_3_10=3.10.19
 ARG PY_3_9=3.9.24
 # https://github.com/pyenv/pyenv/releases
-ARG PYENV_VERSION=v2.6.11
+ARG PYENV_VERSION=v2.6.16
 
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.9.8 AS uv
+FROM ghcr.io/astral-sh/uv:0.9.11 AS uv
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_14
@@ -163,12 +164,14 @@ RUN apt-get update \
     tzdata \
     # Needed to build `gssapi`/`krb5`
     libkrb5-dev \
+    # Used by pycairo and pygobject
+    libcairo2-dev \
+    libgirepository-2.0-dev \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot uv $DEPENDABOT_HOME/uv
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents uv python common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
@@ -204,6 +207,5 @@ RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo
 # Install uv by copying from the official image
 COPY --from=uv /uv /uvx /usr/local/bin/
 
-COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents cargo common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

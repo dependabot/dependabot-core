@@ -1,0 +1,13 @@
+{
+  "name": "MODULE.bazel",
+  "path": "third_party/remoteapis/MODULE.bazel",
+  "sha": "remote123",
+  "size": 50,
+  "url": "https://api.github.com/repos/example/repo/contents/third_party/remoteapis/MODULE.bazel?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/third_party/remoteapis/MODULE.bazel",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/remote123",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/third_party/remoteapis/MODULE.bazel",
+  "type": "file",
+  "content": "bW9kdWxlKG5hbWUgPSAicmVtb3RlYXBpcyIsIHZlcnNpb24gPSAiMS4wLjAiKQo=\n",
+  "encoding": "base64"
+}

@@ -184,21 +184,6 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
     end
 
-    context "when beta ecosystems are not allowed" do
-      before do
-        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-      end
-
-      it "raises a DependencyFileNotFound error with beta message" do
-        expect { fetched_files }.to raise_error(
-          Dependabot::DependencyFileNotFound,
-          "Bazel support is currently in beta. To enable it, add `enable_beta_ecosystems: true` to the top-level of " \
-          "your `dependabot.yml`. See https://docs.github.com/en/code-security/dependabot/working-with-dependabot/" \
-          "dependabot-options-reference#enable-beta-ecosystems for details."
-        )
-      end
-    end
-
     context "without any required files" do
       before do
         stub_request(:get, url + "?ref=sha")
@@ -670,91 +655,661 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
     end
   end
 
-  describe "#extract_referenced_paths" do
-    let(:module_content) do
-      <<~BAZEL
-        bazel_dep(name = "rules_python", version = "1.6.3")
+  describe "fetching local_path_override directories" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
-        pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-        pip.parse(
-            hub_name = "pip",
-            requirements_lock = "//python:requirements.txt",
-        )
+    context "with MODULE.bazel containing local_path_override" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
 
-        maven = use_extension("@rules_jvm_external//extension:maven.bzl", "maven")
-        maven.install(
-            lock_file = "@batfish//:maven_install.json",
-            name = "maven",
-        )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
 
-        maven.install(
-            lock_file = "//tools/jol:jol_maven_install.json",
-            name = "jmh_maven",
-        )
-      BAZEL
-    end
+        # Mock the local_path_override directory listing
+        stub_request(:get, url + "third_party/remoteapis?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "MODULE.bazel", "path": "third_party/remoteapis/MODULE.bazel", "type": "file"}, ' \
+                  '{"name": "BUILD.bazel", "path": "third_party/remoteapis/BUILD.bazel", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
 
-    let(:module_file) do
-      Dependabot::DependencyFile.new(
-        name: "MODULE.bazel",
-        content: module_content
-      )
-    end
+        # Mock the local_path_override directory files
+        stub_request(:get, url + "third_party/remoteapis/MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
 
-    it "extracts paths from lock_file attributes with @repo prefix" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("maven_install.json")
-    end
+        stub_request(:get, url + "third_party/remoteapis/BUILD?ref=sha")
+          .to_return(status: 404)
 
-    it "extracts paths from lock_file attributes without @repo prefix" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("tools/jol/jol_maven_install.json")
-    end
+        stub_request(:get, url + "third_party/remoteapis/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
 
-    it "extracts paths from requirements_lock attributes" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("python/requirements.txt")
-    end
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_root_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
 
-    it "converts Bazel label colons to forward slashes" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      expect(paths).to include("tools/jol/jol_maven_install.json")
-      expect(paths).not_to include("tools/jol:jol_maven_install.json")
-    end
+      it "fetches MODULE.bazel from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/MODULE.bazel")
+      end
 
-    it "removes leading slashes from extracted paths" do
-      paths = file_fetcher_instance.send(:extract_referenced_paths, module_file)
-      paths.each do |path|
-        expect(path).not_to start_with("/")
+      it "fetches BUILD.bazel from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/BUILD.bazel")
+      end
+
+      it "includes the main MODULE.bazel file" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
       end
     end
 
-    it "returns unique paths when same file is referenced multiple times" do
-      duplicate_content = module_content + "\nmaven.install(lock_file = \"//tools/jol:jol_maven_install.json\")\n"
-      duplicate_file = Dependabot::DependencyFile.new(
-        name: "MODULE.bazel",
-        content: duplicate_content
-      )
-      paths = file_fetcher_instance.send(:extract_referenced_paths, duplicate_file)
-      expect(paths.count("tools/jol/jol_maven_install.json")).to eq(1)
+    context "when local_path_override directory uses WORKSPACE instead of MODULE.bazel" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the local_path_override directory listing
+        stub_request(:get, url + "third_party/remoteapis?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "WORKSPACE", "path": "third_party/remoteapis/WORKSPACE", "type": "file"}, ' \
+                  '{"name": "BUILD", "path": "third_party/remoteapis/BUILD", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        # This local override directory has WORKSPACE instead of MODULE.bazel
+        stub_request(:get, url + "third_party/remoteapis/MODULE.bazel?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "third_party/remoteapis/WORKSPACE.bazel?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "third_party/remoteapis/WORKSPACE?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_workspace.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "third_party/remoteapis/BUILD?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_remoteapis_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "third_party/remoteapis/BUILD.bazel?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_root_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches WORKSPACE from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/WORKSPACE")
+      end
+
+      it "fetches BUILD from the local_path_override directory" do
+        expect(fetched_files.map(&:name)).to include("third_party/remoteapis/BUILD")
+      end
     end
 
-    it "handles empty content gracefully" do
-      empty_file = Dependabot::DependencyFile.new(
-        name: "MODULE.bazel",
-        content: ""
-      )
-      paths = file_fetcher_instance.send(:extract_referenced_paths, empty_file)
-      expect(paths).to eq([])
+    context "when local_path_override directory is inaccessible" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_local_override.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the local_path_override directory as not found
+        stub_request(:get, url + "third_party/remoteapis?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_root_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "logs a warning about the inaccessible directory" do
+        fetched_files
+        expect(Dependabot.logger).to have_received(:warn).with(
+          %r{Skipping inaccessible directory 'third_party/remoteapis'}
+        )
+      end
+
+      it "continues fetching other files" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+    end
+  end
+
+  describe "fetching downloader_config files" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with a .bazelrc file containing downloader_config" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_downloader_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_downloader.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "downloader.cfg?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_downloader_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches the downloader config file" do
+        expect(fetched_files.map(&:name)).to include("downloader.cfg")
+      end
+
+      it "includes MODULE.bazel and .bazelrc" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", ".bazelrc")
+      end
     end
 
-    it "handles content with no references gracefully" do
-      simple_file = Dependabot::DependencyFile.new(
-        name: "MODULE.bazel",
-        content: 'bazel_dep(name = "rules_python", version = "1.6.3")'
-      )
-      paths = file_fetcher_instance.send(:extract_referenced_paths, simple_file)
-      expect(paths).to eq([])
+    context "when downloader_config file is missing" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_downloader_config.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_downloader.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "downloader.cfg?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "logs a warning when downloader config file is not found" do
+        allow(Dependabot.logger).to receive(:warn)
+        fetched_files
+        expect(Dependabot.logger).to have_received(:warn).with(
+          "Downloader config file 'downloader.cfg' referenced in .bazelrc but not found in repository"
+        )
+      end
+
+      it "continues fetching other files successfully" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", ".bazelrc")
+        expect(fetched_files.map(&:name)).not_to include("downloader.cfg")
+      end
+    end
+
+    context "when .bazelrc is not present" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+      end
+
+      it "does not attempt to fetch downloader config files" do
+        expect(fetched_files.map(&:name)).not_to include("downloader.cfg")
+      end
+    end
+  end
+
+  describe "fetching include() statements" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with MODULE.bazel containing include() statements" do
+      let(:deps_dir_listing) do
+        [{ "name" => "dependencies.MODULE.bazel", "path" => "deps/dependencies.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/BUILD.bazel", "type" => "file" }].to_json
+      end
+      let(:tools_dir_listing) do
+        [{ "name" => "build.MODULE.bazel", "path" => "tools/build.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "tools/BUILD.bazel", "type" => "file" }].to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock directory listings for fetch_file_if_present
+        stub_request(:get, url + "deps?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: tools_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the included files
+        stub_request(:get, url + "deps/dependencies.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_dependencies_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/build.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock BUILD files for directories containing included files
+        stub_request(:get, url + "deps/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "deps/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/BUILD?ref=sha")
+          .to_return(status: 404)
+
+        stub_request(:get, url + "tools/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches the included MODULE.bazel files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/dependencies.MODULE.bazel",
+          "tools/build.MODULE.bazel"
+        )
+      end
+
+      it "fetches BUILD files for directories containing included files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/BUILD.bazel",
+          "tools/BUILD.bazel"
+        )
+      end
+
+      it "includes the main MODULE.bazel file" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+      end
+
+      it "fetches all files needed for bazel mod tidy to succeed" do
+        expected_files = [
+          "MODULE.bazel",
+          "deps/dependencies.MODULE.bazel",
+          "tools/build.MODULE.bazel",
+          "deps/BUILD.bazel",
+          "tools/BUILD.bazel"
+        ]
+        expect(fetched_files.map(&:name)).to include(*expected_files)
+      end
+    end
+
+    context "with nested include() statements" do
+      let(:deps_dir_listing) do
+        [{ "name" => "dependencies.MODULE.bazel", "path" => "deps/dependencies.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/BUILD.bazel", "type" => "file" },
+         { "name" => "java", "path" => "deps/java", "type" => "dir" }].to_json
+      end
+      let(:tools_dir_listing) do
+        [{ "name" => "build.MODULE.bazel", "path" => "tools/build.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "tools/BUILD.bazel", "type" => "file" }].to_json
+      end
+      let(:deps_java_dir_listing) do
+        [{ "name" => "java_deps.MODULE.bazel", "path" => "deps/java/java_deps.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/java/BUILD.bazel", "type" => "file" }].to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock directory listings for fetch_file_if_present
+        stub_request(:get, url + "deps?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: tools_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "deps/java?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_java_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the first included file which has a nested include
+        stub_request(:get, url + "deps/dependencies.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_dependencies_module_nested.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/build.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the nested included file
+        stub_request(:get, url + "deps/java/java_deps.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_java_deps_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock BUILD files for directories containing included files
+        stub_request(:get, url + "deps/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "deps/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "tools/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_tools_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "deps/java/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "deps/java/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_java_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches recursively included MODULE.bazel files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/dependencies.MODULE.bazel",
+          "deps/java/java_deps.MODULE.bazel"
+        )
+      end
+
+      it "fetches BUILD files for all directories containing included files" do
+        expect(fetched_files.map(&:name)).to include(
+          "deps/BUILD.bazel",
+          "deps/java/BUILD.bazel"
+        )
+      end
+    end
+
+    context "when included file is missing" do
+      let(:deps_dir_listing) do
+        [{ "name" => "dependencies.MODULE.bazel", "path" => "deps/dependencies.MODULE.bazel", "type" => "file" },
+         { "name" => "BUILD.bazel", "path" => "deps/BUILD.bazel", "type" => "file" }].to_json
+      end
+      let(:tools_dir_listing) do
+        [{ "name" => "BUILD.bazel", "path" => "tools/BUILD.bazel", "type" => "file" }].to_json
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_with_includes.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock directory listings for fetch_file_if_present
+        stub_request(:get, url + "deps?ref=sha")
+          .to_return(
+            status: 200,
+            body: deps_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: tools_dir_listing,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # First included file exists
+        stub_request(:get, url + "deps/dependencies.MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_dependencies_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Second included file is missing (not in directory listing)
+
+        # Mock BUILD files
+        stub_request(:get, url + "deps/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "deps/BUILD.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_deps_build.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "tools/BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "tools/BUILD.bazel?ref=sha").to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches available included files" do
+        expect(fetched_files.map(&:name)).to include("deps/dependencies.MODULE.bazel")
+      end
+
+      it "continues fetching other files when some includes are missing" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel")
+        expect(fetched_files.map(&:name)).not_to include("tools/build.MODULE.bazel")
+      end
+    end
+
+    context "when MODULE.bazel has no include() statements" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + ".bazelrc?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "does not attempt to fetch additional included files" do
+        expect(fetched_files.map(&:name)).to eq(["MODULE.bazel"])
+      end
     end
   end
 end
