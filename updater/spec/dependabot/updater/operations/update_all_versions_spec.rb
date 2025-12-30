@@ -106,6 +106,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         source: nil
       }],
       package_manager: "bundler",
+      directory: "/",
       metadata: { all_versions: ["4.0.0"] }
     )
   end
@@ -284,6 +285,30 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
 
         it "closes the pull request with reason :up_to_date" do
           expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-a"], :up_to_date)
+          update_all_versions.send(:check_and_create_pull_request, dependency)
+        end
+      end
+
+      context "when dependency exists in a different directory" do
+        before do
+          allow(job).to receive(
+            :existing_pull_requests
+          ).and_return([
+            Dependabot::PullRequest.new(
+              [
+                Dependabot::PullRequest::Dependency.new(
+                  name: "dummy-pkg-a",
+                  version: "2.0.0",
+                  directory: "/docker"
+                )
+              ],
+              pr_number: 13_147
+            )
+          ])
+        end
+
+        it "does not close the pull request for a different directory" do
+          expect(mock_service).not_to receive(:close_pull_request)
           update_all_versions.send(:check_and_create_pull_request, dependency)
         end
       end

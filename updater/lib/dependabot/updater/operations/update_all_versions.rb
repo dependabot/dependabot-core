@@ -383,8 +383,21 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::PullRequest)) }
         def find_existing_pull_request_for_dependency(dependency)
           job.existing_pull_requests.find do |pr|
-            pr.dependencies.any? { |dep| dep.name == dependency.name }
+            pr.dependencies.any? do |dep|
+              (dep.name == dependency.name) &&
+                (normalize_directory(dep.directory) == normalize_directory(dependency.directory))
+            end
           end
+        end
+
+        sig { params(directory: T.nilable(String)).returns(T.nilable(String)) }
+        def normalize_directory(directory)
+          return nil if directory.nil?
+
+          directory.to_s
+                   .sub(%r{/*\Z}, "")    # remove trailing slashes
+                   .sub(%r{\A/*}, "/")   # prefix with a single slash
+                   .sub(%r{\A/\Z}, "/.") # use `/.` as root
         end
       end
     end
