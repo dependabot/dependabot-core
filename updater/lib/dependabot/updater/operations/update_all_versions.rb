@@ -367,8 +367,15 @@ module Dependabot
           existing_pr = find_existing_pull_request_for_dependency(dependency)
           return unless existing_pr
 
+          pr_number = existing_pr.pr_number
+          pr_dependency = existing_pr.dependencies.find { |dep| dep.name == dependency.name }
+          directory = pr_dependency&.directory
+
+          pr_info = pr_number ? "##{pr_number} " : ""
+          dir_info = directory ? "in #{directory} " : ""
+
           Dependabot.logger.info(
-            "Closing pull request for #{dependency.name} as it is no longer needed"
+            "Closing pull request #{pr_info}#{dir_info}for #{dependency.name} as it is no longer needed"
           )
           service.close_pull_request([dependency.name], :up_to_date)
         end
