@@ -1,5 +1,0 @@
-version: '2'
-services:
-  hello_world:
-    image: "elastic/elasticsearch:8.16.4"
-    command: [/bin/echo, 'Hello world']
