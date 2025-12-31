@@ -41,7 +41,7 @@ function set_tag() {
 function get_dockerfile_path() {
     case $ECOSYSTEM in
       docker_compose)
-        echo "docker/docker_compose/Dockerfile"
+        echo "docker/Dockerfile"
         ;;
       *)
         echo "$ECOSYSTEM/Dockerfile"
