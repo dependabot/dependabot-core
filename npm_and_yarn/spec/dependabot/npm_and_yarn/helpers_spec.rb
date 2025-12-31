@@ -523,7 +523,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         expect(env).not_to be_nil
         expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-        expect(env["COREPACK_NPM_TOKEN"]).to be_nil
+        expect(env["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
       end
 
       context "when experiment flag is disabled" do
@@ -597,7 +597,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
           expect(env).not_to be_nil
           expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://custom.registry.com")
-          expect(env["COREPACK_NPM_TOKEN"]).to be_nil
+          expect(env["COREPACK_NPM_TOKEN"]).to eq("custom-token")
         end
       end
     end
@@ -673,7 +673,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
           expect(options[:env]).not_to be_nil
           expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to be_nil
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
           ""
         end
 

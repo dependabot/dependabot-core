@@ -101,33 +101,12 @@ module Dependabot
         comparable_version_from(latest_tag) <= comparable_version_from(version_tag)
       end
 
-      # Digest requirements come in two forms:
-      #
-      # - Tag + digest (e.g. `image:debug@sha256:<digest>`):
-      #   the tag is the source of truth, so the expected digest is the digest of the tag.
-      #
-      # - Digest-only (e.g. `image@sha256:<digest>`):
-      #   there is no tag to resolve, so the expected digest is `updated_digest`.
-      #
-      # A dependency may have multiple digest requirements (across multiple files), so
-      # we compute the expected digest per requirement rather than using a single
-      # global value.
       sig { returns(T::Boolean) }
       def digest_up_to_date?
-        return true unless updated_digest
-
         digest_requirements.all? do |req|
-          source = req.fetch(:source)
-          source_digest = source.fetch(:digest)
-          source_tag = source[:tag]
+          next true unless updated_digest
 
-          expected_digest =
-            if source_tag
-              digest_of(source_tag)
-            else
-              updated_digest
-            end
-          source_digest == expected_digest
+          req.fetch(:source).fetch(:digest) == updated_digest
         end
       end
 
