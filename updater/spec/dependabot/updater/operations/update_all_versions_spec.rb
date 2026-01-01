@@ -313,6 +313,46 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         end
       end
 
+      context "when dependency and pull request are both in /docker directory" do
+        let(:docker_dependency) do
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-a",
+            version: "4.0.0",
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 4.0.0",
+              groups: ["default"],
+              source: nil
+            }],
+            package_manager: "bundler",
+            directory: "/docker",
+            metadata: { all_versions: ["4.0.0"] }
+          )
+        end
+
+        before do
+          allow(job).to receive(
+            :existing_pull_requests
+          ).and_return([
+            Dependabot::PullRequest.new(
+              [
+                Dependabot::PullRequest::Dependency.new(
+                  name: "dummy-pkg-a",
+                  version: "2.0.0",
+                  directory: "/docker"
+                )
+              ],
+              pr_number: 13_148
+            )
+          ])
+        end
+
+        it "closes the pull request matching the same directory" do
+          expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-a"], :up_to_date)
+          update_all_versions.send(:check_and_create_pull_request, docker_dependency)
+        end
+      end
+
       context "when no existing pull request is present for the dependency" do
         before do
           allow(job).to receive(:existing_pull_requests).and_return([])
