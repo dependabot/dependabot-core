@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 
@@ -59,9 +61,13 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         }
 
         logger.Info($"Starting update for group {group.Name}");
+        await this.ReportUpdaterStarted(apiHandler);
 
         var groupMatcher = group.GetGroupMatcher();
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var updateOperationsPerformed = new List<UpdateOperationBase>();
+        var updatedDependencies = new List<ReportedDependency>();
+        var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -74,10 +80,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
 
             var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
-            await this.ReportUpdaterStarted(apiHandler);
 
-            var updateOperationsPerformed = new List<UpdateOperationBase>();
-            var updatedDependencies = new List<ReportedDependency>();
             var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
             var groupedUpdateOperationsToPerform = updateOperationsToPerform
                 .GroupBy(o => o.Dependency.Name, StringComparer.OrdinalIgnoreCase)
@@ -143,53 +146,53 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             }
 
             var updatedDependencyFiles = await tracker.StopTrackingAsync();
-            var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
-            if (rawDependencies.Length == 0)
+            allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
+        }
+
+        var rawDependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)).ToArray();
+        if (rawDependencies.Length == 0)
+        {
+            var close = ClosePullRequest.WithUpdateNoLongerPossible(job);
+            logger.Info(close.GetReport());
+            await apiHandler.ClosePullRequest(close);
+            return;
+        }
+
+        var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
+        var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
+        var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
+        var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
+        if (existingPullRequest is not null)
+        {
+            await apiHandler.UpdatePullRequest(new UpdatePullRequest()
             {
-                var close = ClosePullRequest.WithUpdateNoLongerPossible(job);
-                logger.Info(close.GetReport());
-                await apiHandler.ClosePullRequest(close);
-                continue;
+                DependencyNames = [.. jobDependencies.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)],
+                DependencyGroup = group.Name,
+                UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
+                BaseCommitSha = baseCommitSha,
+                CommitMessage = commitMessage,
+                PrTitle = prTitle,
+                PrBody = prBody,
+            });
+        }
+        else
+        {
+            var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
+            if (existingPrButDifferent is not null)
+            {
+                await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
             }
 
-            var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
-            var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-            var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-            var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
-            if (existingPullRequest is not null)
+            await apiHandler.CreatePullRequest(new CreatePullRequest()
             {
-                await apiHandler.UpdatePullRequest(new UpdatePullRequest()
-                {
-                    DependencyNames = [.. jobDependencies.OrderBy(n => n, StringComparer.OrdinalIgnoreCase)],
-                    DependencyGroup = group.Name,
-                    UpdatedDependencyFiles = [.. updatedDependencyFiles],
-                    BaseCommitSha = baseCommitSha,
-                    CommitMessage = commitMessage,
-                    PrTitle = prTitle,
-                    PrBody = prBody,
-                });
-                continue;
-            }
-            else
-            {
-                var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
-                if (existingPrButDifferent is not null)
-                {
-                    await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
-                }
-
-                await apiHandler.CreatePullRequest(new CreatePullRequest()
-                {
-                    Dependencies = [.. updatedDependencies],
-                    UpdatedDependencyFiles = [.. updatedDependencyFiles],
-                    BaseCommitSha = baseCommitSha,
-                    CommitMessage = commitMessage,
-                    PrTitle = prTitle,
-                    PrBody = prBody,
-                    DependencyGroup = group.Name,
-                });
-                continue;
-            }
+                Dependencies = [.. updatedDependencies],
+                UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
+                BaseCommitSha = baseCommitSha,
+                CommitMessage = commitMessage,
+                PrTitle = prTitle,
+                PrBody = prBody,
+                DependencyGroup = group.Name,
+            });
         }
     }
 }
