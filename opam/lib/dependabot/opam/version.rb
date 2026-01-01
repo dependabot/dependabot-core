@@ -108,43 +108,64 @@ module Dependabot
       def compare_parts(part1, part2)
         return 0 if part1 == part2
 
-        # Debian rule: ~ sorts before everything, even empty string
-        # So "1.0~beta" < "1.0" because the third part "~beta" < ""
-        if part1.start_with?("~") && !part2.start_with?("~")
-          return -1
-        elsif !part1.start_with?("~") && part2.start_with?("~")
-          return 1
-        end
+        tilde_result = compare_tilde_prefix(part1, part2)
+        return tilde_result unless tilde_result.nil?
 
-        # If both start with ~, compare the rest
-        if part1.start_with?("~") && part2.start_with?("~")
-          part1 = part1[1..]
-          part2 = part2[1..]
-        end
+        part1, part2 = strip_tilde_prefix(part1, part2)
 
         # Check if parts are numeric
-        return part1.to_i <=> part2.to_i if part1.match?(/^\d+$/) && part2.match?(/^\d+$/)
+        return part1.to_i <=> part2.to_i if numeric?(part1) && numeric?(part2)
 
+        compare_non_numeric_parts(part1, part2)
+      end
+
+      sig { params(part1: String, part2: String).returns(T.nilable(Integer)) }
+      def compare_tilde_prefix(part1, part2)
+        # Debian rule: ~ sorts before everything, even empty string
+        return -1 if part1.start_with?("~") && !part2.start_with?("~")
+        return 1 if !part1.start_with?("~") && part2.start_with?("~")
+
+        nil
+      end
+
+      sig { params(part1: String, part2: String).returns([String, String]) }
+      def strip_tilde_prefix(part1, part2)
+        # If both start with ~, compare the rest
+        if part1.start_with?("~") && part2.start_with?("~")
+          [part1[1..], part2[1..]]
+        else
+          [part1, part2]
+        end
+      end
+
+      sig { params(part: String).returns(T::Boolean) }
+      def numeric?(part)
+        part.match?(/^\d+$/)
+      end
+
+      sig { params(part1: String, part2: String).returns(Integer) }
+      def compare_non_numeric_parts(part1, part2)
         # Non-digit comparison: letters < non-letters
-        # For non-letters, use ASCII order
         part1.each_char.with_index do |char1, i|
           char2 = part2[i]
           return 1 if char2.nil? # part1 is longer
 
-          char1_letter = char1.match?(/[a-zA-Z]/)
-          char2_letter = char2.match?(/[a-zA-Z]/)
-
-          if char1_letter && !char2_letter
-            return -1
-          elsif !char1_letter && char2_letter
-            return 1
-          else
-            cmp = char1 <=> char2
-            return cmp unless cmp.zero?
-          end
+          result = compare_characters(char1, char2)
+          return result unless result.zero?
         end
 
         part2.length > part1.length ? -1 : 0
+      end
+
+      sig { params(char1: String, char2: String).returns(Integer) }
+      def compare_characters(char1, char2)
+        char1_letter = char1.match?(/[a-zA-Z]/)
+        char2_letter = char2.match?(/[a-zA-Z]/)
+
+        return -1 if char1_letter && !char2_letter
+        return 1 if !char1_letter && char2_letter
+
+        char1 <=> char2
       end
     end
   end
