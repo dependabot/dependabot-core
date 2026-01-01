@@ -39,15 +39,15 @@ module Dependabot
         T::Hash[String, String]
       )
 
-      sig { override.params(obj: T.untyped).returns(T::Boolean) }
+      sig { override.params(obj: T.untyped).returns(T::Array[Dependabot::Opam::Requirement]) }
       def self.requirements_array(obj)
         case obj
         when Gem::Requirement
-          obj.requirements
+          obj.requirements.map { |r| new(r.join(" ")) }
         when String
-          parse_requirements_string(obj)
+          [new(obj)]
         else
-          [["=", Dependabot::Opam::Version.new(obj.to_s)]]
+          [new("= #{obj}")]
         end
       end
 
@@ -80,8 +80,21 @@ module Dependabot
       sig { override.params(requirements: T.nilable(T.any(String, T::Array[T.untyped]))).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",").map(&:strip)
+          # Split on both comma and ampersand (opam uses & for AND)
+          req_string.split(/[,&]/).map(&:strip)
         end
+
+        # Filter out platform/os constraints (e.g., "!= win32", "os != macos")
+        # Only keep version constraints that match pattern: operator + optional quotes + version number
+        requirements = requirements.select do |req|
+          req.match?(/^[><=!]+\s*"?\d+/)
+        end
+
+        # Remove quotes from version constraints (opam uses quotes, Gem::Requirement doesn't)
+        requirements = requirements.map { |req| req.delete('"') }
+
+        # If no valid version requirements, default to ">= 0"
+        requirements = [">= 0"] if requirements.empty?
 
         super(requirements)
       end
