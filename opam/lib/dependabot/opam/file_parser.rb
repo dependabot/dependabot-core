@@ -70,17 +70,19 @@ module Dependabot
                          []
                        end
 
+        metadata = optional ? { "optional" => "true" } : {}
+
         Dependabot::Dependency.new(
           name: name,
           version: nil,
           requirements: requirements,
           package_manager: "opam",
-          optional: optional
+          metadata: metadata
         )
       end
 
       sig { override.returns(T::Boolean) }
-      def check_required_files
+      def check_required_files # rubocop:disable Naming/PredicateMethod
         opam_files.any?
       end
     end
