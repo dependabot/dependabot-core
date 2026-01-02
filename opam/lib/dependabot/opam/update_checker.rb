@@ -40,9 +40,8 @@ module Dependabot
           begin
             requirement = Requirement.requirements_array(requirement_string)
             all_versions = all_versions.select do |version|
-              # Convert to Gem::Version for compatibility with Gem::Requirement
-              gem_version = Gem::Version.new(version.to_s)
-              requirement.all? { |r| r.satisfied_by?(gem_version) }
+              # Use Opam::Version which supports Debian versioning (~ prefix)
+              requirement.all? { |r| r.satisfied_by?(version) }
             end
           rescue Gem::Requirement::BadRequirementError
             # If we can't parse the requirement, skip filtering
@@ -96,16 +95,44 @@ module Dependabot
         versions = []
         package_name = dependency.name
 
-        html.scan(/#{Regexp.escape(package_name)}\.([0-9][^"<\s]*)/) do |match|
+        # Extract versions from href links: href="../package-name/package-name.version/"
+        # This pattern matches version directory links, including versions with 'v' prefix
+        escaped_name = Regexp.escape(package_name)
+        pattern = %r{(?:href|src)="[^"]*#{escaped_name}/#{escaped_name}\.([v]?[0-9][^"/]*)/?"}i
+        html.scan(pattern) do |match|
           version_string = match[0]
-          next unless Version.correct?(version_string)
+          next unless valid_version?(version_string)
 
           versions << Version.new(version_string)
+        end
+
+        # Also extract current/latest version from title-group (not in dropdown or dependencies)
+        # Pattern: <h2>PACKAGENAME<span class="title-group">version...<span class="package-version">X.Y.Z</span>
+        # More specific to avoid matching versions from Dependencies section
+        title_pattern = %r{
+          <h2>#{escaped_name}<span[^>]*class="title-group"[^>]*>.*?
+          <span\sclass="package-version">([v]?[0-9][^<]+)</span>
+        }mix
+        title_match = html.match(title_pattern)
+        if title_match
+          version_string = title_match[1]
+          versions << Version.new(version_string) if valid_version?(version_string)
         end
 
         versions.uniq.sort
       rescue StandardError
         []
+      end
+
+      sig { params(version_string: String).returns(T::Boolean) }
+      def valid_version?(version_string)
+        # Skip date-like versions (8 digits like 20230213, or YYYY.MM.DD format like 2025.02.17)
+        return false if version_string.match?(/^\d{8}$/) # e.g. 20230213
+        return false if version_string.match?(/^[12]\d{3}\.\d{1,2}\.\d{1,2}$/) # e.g. 2025.02.17
+        return false unless version_string.include?(".")
+        return false unless Version.correct?(version_string)
+
+        true
       end
 
       sig { returns(VersionResolver) }
@@ -134,34 +161,56 @@ module Dependabot
         # Parse current requirement
         requirements = current_requirement.split("&").map(&:strip)
 
-        # Update requirements with new version
-        updated_reqs = requirements.map do |requirement|
-          update_version_in_requirement(requirement, latest.to_s)
+        # Separate version constraints from other constraints (filters, platform checks)
+        # Only update version constraints, preserve everything else as-is
+        updated_reqs = requirements.filter_map do |requirement|
+          # Check if this is a version constraint (starts with operator, no prefix word)
+          if requirement.match?(/^[><=!]+\s*"?\d+/)
+            # This is a version constraint - update it
+            update_version_in_requirement(requirement, latest.to_s)
+          else
+            # This is a filter/platform check - keep as-is
+            requirement
+          end
         end
 
         updated_reqs.join(" & ")
       end
 
-      sig { params(requirement: String, new_version: String).returns(String) }
+      sig { params(requirement: String, new_version: String).returns(T.nilable(String)) }
       def update_version_in_requirement(requirement, new_version)
-        match = requirement.match(/^([><=!]+)\s*(.+)$/)
+        match = requirement.match(/^([><=!]+)\s*"?([^"]+)"?$/)
         return requirement unless match
 
         operator = match[1]
-        match[2]
+        current_version_str = match[2].strip
 
-        # Keep the same operator, update the version
+        # Keep the same operator, update the version (with quotes per opam format)
         case operator
         when "=", "=="
-          "= #{new_version}"
+          "= \"#{new_version}\""
         when ">="
           # For >= constraints, update to new minimum
-          ">= #{new_version}"
+          ">= \"#{new_version}\""
         when ">"
-          "> #{new_version}"
+          "> \"#{new_version}\""
         when "<", "<="
-          # Don't update upper bounds automatically
-          requirement
+          # For upper bounds, if new version exceeds current upper bound, REMOVE the constraint
+          # to avoid contradictory constraints like: >= "0.37.0" & < "0.37.0"
+          begin
+            current_version = Version.new(current_version_str)
+            new_ver = Version.new(new_version)
+            if new_ver >= current_version
+              # New version exceeds upper bound - remove this constraint by returning nil
+              nil
+            else
+              # New version is below upper bound - keep original
+              requirement
+            end
+          rescue ArgumentError
+            # If version parsing fails, keep original requirement
+            requirement
+          end
         when "!="
           # Keep != constraints as-is
           requirement

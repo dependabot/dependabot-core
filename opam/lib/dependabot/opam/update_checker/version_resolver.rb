@@ -120,21 +120,46 @@ module Dependabot
         def parse_versions_from_response(body)
           versions = []
 
-          # Try to parse HTML response and extract versions
-          # The opam website lists versions in package directories
-          # Format: package-name.version
+          # Extract versions from href links: href="../package-name/package-name.version/"
+          # This pattern matches version directory links, including versions with 'v' prefix
           package_name = dependency.name
+          escaped_name = Regexp.escape(package_name)
+          pattern = %r{(?:href|src)="[^"]*#{escaped_name}/#{escaped_name}\.([v]?[0-9][^"/]*)/?"}i
 
-          body.scan(/#{Regexp.escape(package_name)}\.([0-9][^"<\s]*)/) do |match|
+          body.scan(pattern) do |match|
             version_string = match[0]
-            next unless Dependabot::Opam::Version.correct?(version_string)
+            next unless valid_version?(version_string)
 
             versions << Dependabot::Opam::Version.new(version_string)
+          end
+
+          # Also extract current/latest version from title-group (not in dropdown or dependencies)
+          # Pattern: <h2>PACKAGENAME<span class="title-group">version...<span class="package-version">X.Y.Z</span>
+          # More specific to avoid matching versions from Dependencies section
+          title_pattern = %r{
+            <h2>#{escaped_name}<span[^>]*class="title-group"[^>]*>.*?
+            <span\sclass="package-version">([v]?[0-9][^<]+)</span>
+          }mix
+          title_match = body.match(title_pattern)
+          if title_match
+            version_string = title_match[1]
+            versions << Dependabot::Opam::Version.new(version_string) if valid_version?(version_string)
           end
 
           versions.uniq.sort
         rescue StandardError
           []
+        end
+
+        sig { params(version_string: String).returns(T::Boolean) }
+        def valid_version?(version_string)
+          # Skip date-like versions (8 digits like 20230213, or YYYY.MM.DD format like 2025.02.17)
+          return false if version_string.match?(/^\d{8}$/) # e.g. 20230213
+          return false if version_string.match?(/^[12]\d{3}\.\d{1,2}\.\d{1,2}$/) # e.g. 2025.02.17
+          return false unless version_string.include?(".")
+          return false unless Dependabot::Opam::Version.correct?(version_string)
+
+          true
         end
 
         sig { params(version: Dependabot::Opam::Version).returns(T::Boolean) }
