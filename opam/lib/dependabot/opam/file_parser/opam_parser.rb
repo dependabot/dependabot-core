@@ -65,8 +65,8 @@ module Dependabot
         def self.extract_version_constraint(constraints)
           return nil if constraints.nil? || constraints.empty?
 
-          # Remove common filters
-          constraints = constraints.gsub(/\s*\{[^}]*\}/, "")
+          # Remove common filters - prevent nested bracket backtracking
+          constraints = constraints.gsub(/\{[^{}]*\}/, "").gsub(/\s+/, " ")
           constraints = constraints.strip
 
           # Remove boolean operators that are not part of version constraints
@@ -74,8 +74,8 @@ module Dependabot
           # Parse constraints like: >= "4.08" & < "5.0"
           version_parts = []
 
-          # Match version constraints
-          constraint_regex = /([><=!]+)\s*"([^"]+)"/
+          # Match version constraints - use explicit operators to avoid ReDoS
+          constraint_regex = /(>=|<=|!=|>|<|=)\s*"([^"]+)"/
           constraints.scan(constraint_regex) do |operator, version|
             version_parts << "#{operator} #{version}"
           end
