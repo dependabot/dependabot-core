@@ -158,6 +158,12 @@ PATH
       dependabot-common (= 0.355.0)
 
 PATH
+  remote: ../opam
+  specs:
+    dependabot-opam (0.355.0)
+      dependabot-common (= 0.355.0)
+
+PATH
   remote: ../opentofu
   specs:
     dependabot-opentofu (0.355.0)
@@ -579,6 +585,7 @@ DEPENDENCIES
   dependabot-maven!
   dependabot-npm_and_yarn!
   dependabot-nuget!
+  dependabot-opam!
   dependabot-opentofu!
   dependabot-pub!
   dependabot-python!
@@ -665,6 +672,7 @@ CHECKSUMS
   dependabot-maven (0.355.0)
   dependabot-npm_and_yarn (0.355.0)
   dependabot-nuget (0.355.0)
+  dependabot-opam (0.355.0)
   dependabot-opentofu (0.355.0)
   dependabot-pub (0.355.0)
   dependabot-python (0.355.0)

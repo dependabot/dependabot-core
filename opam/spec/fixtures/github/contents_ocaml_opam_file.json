@@ -1,0 +1,13 @@
+{
+  "name": "example.opam",
+  "path": "example.opam",
+  "sha": "abc123",
+  "size": 500,
+  "url": "https://api.github.com/repos/ocaml/example/contents/example.opam?ref=sha",
+  "html_url": "https://github.com/ocaml/example/blob/sha/example.opam",
+  "git_url": "https://api.github.com/repos/ocaml/example/git/blobs/abc123",
+  "download_url": "https://raw.githubusercontent.com/ocaml/example/sha/example.opam",
+  "type": "file",
+  "content": "b3BhbS12ZXJzaW9uOiAiMi4wIgpuYW1lOiAiZXhhbXBsZSIKdmVyc2lvbjog\nIjEuMC4wIgpzeW5vcHNpczogIkFuIGV4YW1wbGUgT0NhbWwgcGFja2FnZSIK\nZGVzY3JpcHRpb246ICIiIgpUaGlzIGlzIGFuIGV4YW1wbGUgcGFja2FnZSBm\nb3IgdGVzdGluZyBEZXBlbmRhYm90IG9wYW0gc3VwcG9ydC4KIiIiCm1haW50\nYWluZXI6IFsibWFpbnRhaW5lckBleGFtcGxlLmNvbSJdCmF1dGhvcnM6IFsi\nQXV0aG9yIE5hbWUiXQpsaWNlbnNlOiAiTUlUIgpob21lcGFnZTogImh0dHBz\nOi8vZ2l0aHViLmNvbS9vY2FtbC9leGFtcGxlIgpidWctcmVwb3J0czogImh0\ndHBzOi8vZ2l0aHViLmNvbS9vY2FtbC9leGFtcGxlL2lzc3VlcyIKZGV2LXJl\ncG86ICJnaXQraHR0cHM6Ly9naXRodWIuY29tL29jYW1sL2V4YW1wbGUuZ2l0\nIgoKZGVwZW5kczogWwogICJvY2FtbCIgez49ICI0LjA4LjAifQogICJkdW5l\nIiB7Pj0gIjIuMCJ9CiAgImx3dCIgez49ICI1LjAuMCIgJiA8ICI2LjAuMCJ9\nCiAgImFsY290ZXN0IiB7d2l0aC10ZXN0ICYgPj0gIjEuMC4wIn0KXQoKZGVw\nb3B0czogWwogICJhc3luYyIgez49ICJ2MC4xNCJ9Cl0KCmJ1aWxkOiBbCiAg\nWyJkdW5lIiAiYnVpbGQiICItcCIgbmFtZSAiLWoiIGpvYnNdCiAgWyJkdW5l\nIiAicnVudGVzdCIgIi1wIiBuYW1lICItaiIgam9ic10ge3dpdGgtdGVzdH0K\nXQo=\n",
+  "encoding": "base64"
+}

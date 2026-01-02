@@ -37,6 +37,7 @@
 # - maven
 # - npm_and_yarn
 # - nuget
+# - opam
 # - pip (includes pipenv)
 # - pub
 # - rust_toolchain
@@ -80,6 +81,7 @@ $LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./opam/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
@@ -136,6 +138,7 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/opam"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
@@ -372,6 +375,7 @@ valid_package_managers = %w(
   maven
   npm_and_yarn
   nuget
+  opam
   pip
   pub
   python
@@ -915,6 +919,7 @@ begin
   # rubocop:enable Style/GlobalVars
 rescue StandardError => e
   puts "An error occurred: #{e.class}, #{e.message}"
+  puts e.backtrace
   exit 1
 end
 

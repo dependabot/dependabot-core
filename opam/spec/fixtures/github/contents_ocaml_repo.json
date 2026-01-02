@@ -1,0 +1,18 @@
+[
+  {
+    "name": "example.opam",
+    "path": "example.opam",
+    "sha": "abc123",
+    "size": 500,
+    "url": "https://api.github.com/repos/ocaml/example/contents/example.opam?ref=sha",
+    "html_url": "https://github.com/ocaml/example/blob/sha/example.opam",
+    "git_url": "https://api.github.com/repos/ocaml/example/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/ocaml/example/sha/example.opam",
+    "type": "file"
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "type": "file"
+  }
+]

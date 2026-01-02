@@ -1,0 +1,29 @@
+opam-version: "2.0"
+name: "example"
+version: "1.0.0"
+synopsis: "An example OCaml package"
+description: """
+This is an example package for testing Dependabot opam support.
+"""
+maintainer: ["maintainer@example.com"]
+authors: ["Author Name"]
+license: "MIT"
+homepage: "https://github.com/ocaml/example"
+bug-reports: "https://github.com/ocaml/example/issues"
+dev-repo: "git+https://github.com/ocaml/example.git"
+
+depends: [
+  "ocaml" {>= "4.08.0"}
+  "dune" {>= "2.0"}
+  "lwt" {>= "5.0.0" & < "6.0.0"}
+  "alcotest" {with-test & >= "1.0.0"}
+]
+
+depopts: [
+  "async" {>= "v0.14"}
+]
+
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]

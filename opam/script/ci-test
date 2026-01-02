@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Running RSpec tests for opam..."
+bundle exec rspec spec
+
+echo ""
+echo "Running RuboCop..."
+bundle exec rubocop
+
+echo ""
+echo "All tests passed!"
