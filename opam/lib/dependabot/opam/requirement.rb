@@ -98,6 +98,30 @@ module Dependabot
 
         super(requirements)
       end
+
+      # Override satisfied_by? to use Opam::Version comparison
+      sig { params(version: Dependabot::Version).returns(T::Boolean) }
+      def satisfied_by?(version)
+        # Ensure we're comparing Opam::Version instances
+        opam_version = case version
+                       when Dependabot::Opam::Version
+                         version
+                       else
+                         Dependabot::Opam::Version.new(version.to_s)
+                       end
+
+        requirements.all? do |op, req_version|
+          # Convert req_version to Opam::Version if needed
+          opam_req_version = case req_version
+                             when Dependabot::Opam::Version
+                               req_version
+                             else
+                               Dependabot::Opam::Version.new(req_version.to_s)
+                             end
+
+          OPS[op].call(opam_version, opam_req_version)
+        end
+      end
     end
   end
 end

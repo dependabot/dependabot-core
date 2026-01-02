@@ -9,53 +9,30 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
-      OPAM_REPO = "https://opam.ocaml.org"
+      sig { override.returns(T.nilable(String)) }
+      def homepage_url
+        # Return opam package page URL
+        "https://opam.ocaml.org/packages/#{dependency.name}/"
+      end
+
+      sig { override.returns(T.nilable(String)) }
+      def releases_text
+        # ReleaseFinder requires dependency.version to be present, but some dependencies
+        # (like platform constraints) don't have a version. Return nil in those cases.
+        return nil if dependency.version.nil?
+
+        super
+      end
 
       private
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        # Try to find source from opam repository
-        dependency.name
-
-        # Check if we can get the source URL from opam file
-        source_from_opam_file
-      end
-
-      sig { returns(T.nilable(Dependabot::Source)) }
-      def source_from_opam_file
-        # Look for homepage, dev-repo, or bug-reports fields in opam files
-        opam_files = dependency_files.select do |f|
-          f.name.end_with?(".opam") || f.name == "opam"
-        end
-
-        opam_files.each do |file|
-          content = file.content
-
-          # Look for dev-repo field
-          if (match = content.match(/dev-repo:\s*"([^"]+)"/))
-            url = match[1]
-            return source_from_url(url)
-          end
-
-          # Look for homepage field
-          if (match = content.match(/homepage:\s*"([^"]+)"/))
-            url = match[1]
-            return source_from_url(url)
-          end
-        end
-
+        # For opam packages, we don't have a reliable way to get source URLs
+        # without dependency files. The opam registry doesn't provide source URLs
+        # in a queryable API format.
+        # Return nil to use default source discovery from dependency requirements
         nil
-      end
-
-      sig { params(url: String).returns(T.nilable(Dependabot::Source)) }
-      def source_from_url(url)
-        # Parse Git URLs
-        if url.include?("github.com")
-          Source.from_url(url)
-        elsif url.include?("gitlab.com")
-          Source.from_url(url)
-        end
       end
     end
   end
