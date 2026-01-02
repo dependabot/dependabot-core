@@ -131,8 +131,8 @@ RSpec.describe Dependabot::Opam::FileUpdater do
 
       it "updates simple constraint" do
         updated_file = updated_files.first
-        expect(updated_file.content).to include("\"dune\" { >= \"3.0\" }")
-        expect(updated_file.content).not_to include("\"dune\" { >= \"2.0\" }")
+        expect(updated_file.content).to include("\"dune\" {>= \"3.0\"}")
+        expect(updated_file.content).not_to include("\"dune\" {>= \"2.0\"}")
       end
     end
 
@@ -190,7 +190,7 @@ RSpec.describe Dependabot::Opam::FileUpdater do
 
       it "updates only the specified file" do
         updated_lib = updated_files.find { |f| f.name == "lib.opam" }
-        expect(updated_lib.content).to include("\"lwt\" { >= \"5.8.0\" }")
+        expect(updated_lib.content).to include("\"lwt\" {>= \"5.8.0\"}")
 
         updated_test = updated_files.find { |f| f.name == "test.opam" }
         expect(updated_test).to be_nil # test.opam not changed
@@ -230,8 +230,104 @@ RSpec.describe Dependabot::Opam::FileUpdater do
 
       it "updates exact version" do
         updated_file = updated_files.first
-        expect(updated_file.content).to include("\"base\" { = \"v0.15.0\" }")
-        expect(updated_file.content).not_to include("\"base\" { = \"v0.14.0\" }")
+        expect(updated_file.content).to include("\"base\" {= \"v0.15.0\"}")
+        expect(updated_file.content).not_to include("\"base\" {= \"v0.14.0\"}")
+      end
+    end
+
+    context "with platform constraint" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "dream.opam",
+            content: <<~OPAM
+              opam-version: "2.0"
+              name: "dream"
+              version: "1.0.0"
+              depends: [
+                "ocaml" {>= "4.14.0"}
+                "js_of_ocaml" { with-dev-setup & >= "6.1.0" & os != "win32" }
+              ]
+            OPAM
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "js_of_ocaml",
+            version: "6.1.1",
+            requirements: [{
+              file: "dream.opam",
+              requirement: "with-dev-setup & >= \"6.1.1\" & os != \"win32\"",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "dream.opam",
+              requirement: "with-dev-setup & >= \"6.1.0\" & os != \"win32\"",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "opam"
+          )
+        ]
+      end
+
+      it "updates version while preserving platform constraint" do
+        updated_file = updated_files.first
+        expect(updated_file.content).to include("\"js_of_ocaml\" { with-dev-setup & >= \"6.1.1\" & os != \"win32\" }")
+        expect(updated_file.content).not_to include("& != win32 }")
+        expect(updated_file.content).not_to match(/!=\s+win32/)
+      end
+    end
+
+    context "with upper bound that new version exceeds" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "ppxlib.opam",
+            content: <<~OPAM
+              opam-version: "2.0"
+              name: "ppxlib-test"
+              version: "1.0.0"
+              depends: [
+                "ocaml" {>= "4.14.0"}
+                "ppxlib" {>= "0.32.1" & < "0.36.0"}
+              ]
+            OPAM
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "ppxlib",
+            version: "0.37.0",
+            requirements: [{
+              file: "ppxlib.opam",
+              requirement: ">= \"0.37.0\"",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "ppxlib.opam",
+              requirement: ">= \"0.32.1\" & < \"0.36.0\"",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "opam"
+          )
+        ]
+      end
+
+      it "removes upper bound when new version exceeds it" do
+        updated_file = updated_files.first
+        expect(updated_file.content).to include("\"ppxlib\" {>= \"0.37.0\"}")
+        expect(updated_file.content).not_to include("< \"0.36.0\"")
+        expect(updated_file.content).not_to include("< \"0.37.0\"")
       end
     end
   end

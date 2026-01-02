@@ -50,47 +50,75 @@ module Dependabot
           # We need to update the version constraints
 
           # Build regex to find the dependency
-          dep_regex = /("#{Regexp.escape(dependency_name)}"\s*\{)([^}]+)(\})/
+          # Use non-greedy matching to properly capture leading/trailing whitespace
+          dep_regex = /("#{Regexp.escape(dependency_name)}"\s*\{)(\s*)(.*?)(\s*)(\})/
 
           content.gsub(dep_regex) do |_match|
             prefix = T.must(Regexp.last_match(1))
-            old_constraints = T.must(Regexp.last_match(2))
-            suffix = T.must(Regexp.last_match(3))
+            leading_space = T.must(Regexp.last_match(2))
+            constraints_content = T.must(Regexp.last_match(3))
+            trailing_space = T.must(Regexp.last_match(4))
+            suffix = T.must(Regexp.last_match(5))
 
             # Update the constraints while preserving formatting and filters
-            new_constraints = update_constraints(old_constraints, new_requirement)
+            new_constraints = update_constraints(constraints_content, new_requirement)
 
-            "#{prefix}#{new_constraints}#{suffix}"
+            # Preserve leading/trailing whitespace from original
+            "#{prefix}#{leading_space}#{new_constraints}#{trailing_space}#{suffix}"
           end
         end
 
         sig { params(old_constraints: String, new_requirement: String).returns(String) }
         def self.update_constraints(old_constraints, new_requirement)
-          # Parse old constraints to preserve filters (with-test, etc.)
           parts = old_constraints.split("&").map(&:strip)
+          new_by_operator = build_operator_map(new_requirement)
+          updated_parts = replace_version_constraints(parts, new_by_operator)
 
-          # Separate version constraints from filters
-          version_parts = []
-          filter_parts = []
+          # Append any remaining new constraints that weren't matched
+          updated_parts += new_by_operator.values unless new_by_operator.empty?
 
-          parts.each do |part|
-            if part.match?(/[><=!]+\s*"[^"]*"/)
-              # This is a version constraint
-              version_parts << part
+          updated_parts.join(" & ")
+        end
+
+        sig { params(requirement: String).returns(T::Hash[String, String]) }
+        def self.build_operator_map(requirement)
+          new_parts = requirement.split("&").map(&:strip).select { |part| version_constraint?(part) }
+
+          new_parts.each_with_object({}) do |part, hash|
+            operator = extract_operator(part)
+            hash[operator] = part if operator
+          end
+        end
+
+        sig { params(parts: T::Array[String], operator_map: T::Hash[String, String]).returns(T::Array[String]) }
+        def self.replace_version_constraints(parts, operator_map)
+          parts.filter_map do |part|
+            if version_constraint?(part)
+              replace_or_remove_constraint(part, operator_map)
             else
-              # This is a filter or other constraint
-              filter_parts << part
+              part # Keep filters/platform checks as-is
             end
           end
+        end
 
-          # Replace version constraints with new requirement
-          new_parts = new_requirement.split("&").map(&:strip)
+        sig { params(part: String).returns(T::Boolean) }
+        def self.version_constraint?(part)
+          part.match?(/^[><=!]+\s*"/)
+        end
 
-          # Combine with preserved filters
-          all_parts = new_parts + filter_parts
+        sig { params(part: String).returns(T.nilable(String)) }
+        def self.extract_operator(part)
+          match = part.match(/^([><=!]+)\s*/)
+          match ? match[1] : nil
+        end
 
-          # Format with proper spacing
-          " " + all_parts.join(" & ") + " "
+        sig { params(part: String, operator_map: T::Hash[String, String]).returns(T.nilable(String)) }
+        def self.replace_or_remove_constraint(part, operator_map)
+          operator = extract_operator(part)
+          return nil unless operator
+
+          # If there's a matching new constraint, use it; otherwise remove this constraint
+          operator_map.delete(operator)
         end
       end
     end
