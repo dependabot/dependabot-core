@@ -17,6 +17,13 @@ module GithubApi
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
+    SNAPSHOT_STATUS_SUCCESS = "ok"
+    SNAPSHOT_STATUS_FAILED = "failed"
+    SNAPSHOT_STATUS_SKIPPED = "skipped"
+
+    # Expected when the graph change corresponds to a deleted manifest file
+    SNAPSHOT_REASON_NO_MANIFESTS = "missing-manifest-files"
+
     sig { returns(String) }
     attr_reader :job_id
 
@@ -35,6 +42,12 @@ module GithubApi
     sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
     attr_reader :resolved_dependencies
 
+    sig { returns(String) }
+    attr_reader :status
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason
+
     sig do
       params(
         job_id: String,
@@ -42,10 +55,21 @@ module GithubApi
         sha: String,
         package_manager: String,
         manifest_file: Dependabot::DependencyFile,
-        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]
+        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency],
+        status: String,
+        reason: T.nilable(String)
       ).void
     end
-    def initialize(job_id:, branch:, sha:, package_manager:, manifest_file:, resolved_dependencies:)
+    def initialize(
+      job_id:,
+      branch:,
+      sha:,
+      package_manager:,
+      manifest_file:,
+      resolved_dependencies:,
+      status: SNAPSHOT_STATUS_SUCCESS,
+      reason: nil
+    )
       @job_id = job_id
       @branch = branch
       @sha = sha
@@ -53,6 +77,9 @@ module GithubApi
 
       @manifest_file = manifest_file
       @resolved_dependencies = resolved_dependencies
+
+      @status = status
+      @reason = reason
     end
 
     # TODO: Change to a typed structure?
@@ -73,7 +100,11 @@ module GithubApi
           version: detector_version,
           url: SNAPSHOT_DETECTOR_URL
         },
-        manifests: manifests
+        manifests: manifests,
+        metadata: {
+          status: status,
+          reason: reason
+        }.compact
       }
     end
 
