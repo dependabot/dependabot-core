@@ -148,6 +148,84 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a config file at repository root and Cargo.toml in subdirectory" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "my_dir"
+      )
+    end
+
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
+    end
+
+    before do
+      # Mock the subdirectory listing (includes Cargo.toml and Cargo.lock)
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/my_dir?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_lockfile.json"),
+          headers: json_header
+        )
+
+      # Mock Cargo.toml in subdirectory
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_manifest.json"),
+          headers: json_header
+        )
+
+      # Mock Cargo.lock in subdirectory
+      stub_request(:get, url + "Cargo.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_lockfile.json"),
+          headers: json_header
+        )
+
+      # No config in subdirectory's .cargo directory
+      stub_request(:get, url + ".cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      stub_request(:get, url + ".cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      stub_request(:get, url + ".cargo/config?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # Config at repository root
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_dir.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_config.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the Cargo.toml, Cargo.lock, and config.toml from root" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(Cargo.lock Cargo.toml .cargo/config.toml))
+    end
+  end
+
   context "without a lockfile" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -823,6 +901,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       # Ignoring any .cargo requests
       stub_request(:get, %r{#{Regexp.escape(url)}\w+/\.cargo\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+      stub_request(:get, %r{#{Regexp.escape(url)}.*\.cargo/config\.toml\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+      stub_request(:get, %r{#{Regexp.escape(url)}.*\.cargo/config\?ref=sha})
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404, headers: json_header)
 
