@@ -15,7 +15,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependencies = []
+        dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         opam_files.each do |file|
           dependencies += parse_opam_file(file)
@@ -33,7 +33,7 @@ module Dependabot
 
       sig { params(file: DependencyFile).returns(T::Array[Dependabot::Dependency]) }
       def parse_opam_file(file)
-        content = file.content
+        content = T.must(file.content)
 
         # Parse depends field
         depends = OpamParser.extract_depends(content)
@@ -42,7 +42,7 @@ module Dependabot
         end
 
         # Parse depopts field (optional dependencies)
-        depopts = OpamParser.extract_depopts(content)
+        depopts = OpamParser.extract_depopts(T.must(file.content))
         depopts.each do |dep_name, constraint|
           dependencies << build_dependency(dep_name, constraint, file.name, optional: true)
         end

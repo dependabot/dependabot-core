@@ -35,7 +35,7 @@ module Dependabot
 
           return dependencies unless match
 
-          deps_content = match[1]
+          deps_content = T.must(match[1])
 
           # Parse each dependency entry
           # Format: "package-name" { version-constraints }

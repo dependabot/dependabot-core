@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/opam/update_checker"
@@ -142,7 +142,7 @@ module Dependabot
           }mix
           title_match = body.match(title_pattern)
           if title_match
-            version_string = title_match[1]
+            version_string = T.must(title_match[1])
             versions << Dependabot::Opam::Version.new(version_string) if valid_version?(version_string)
           end
 

@@ -64,8 +64,8 @@ module Dependabot
           match = req.match(/^([><=!]+)\s*(.+)$/)
 
           if match
-            operator = match[1]
-            version = match[2].strip
+            operator = T.must(match[1])
+            version = T.must(match[2]).strip
 
             # Map opam operator to Gem::Requirement operator
             gem_operator = OPERATOR_MAPPING[operator] || operator
@@ -119,7 +119,7 @@ module Dependabot
                                Dependabot::Opam::Version.new(req_version.to_s)
                              end
 
-          OPS[op].call(opam_version, opam_req_version)
+          T.must(OPS[op]).call(opam_version, opam_req_version)
         end
       end
     end

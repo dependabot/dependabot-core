@@ -16,8 +16,8 @@ module Dependabot
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
-          PACKAGE_MANAGER,
-          Version.new(raw_version)
+          name: PACKAGE_MANAGER,
+          version: Version.new(raw_version)
         )
       end
 

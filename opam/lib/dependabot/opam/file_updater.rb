@@ -11,7 +11,7 @@ module Dependabot
 
       require_relative "file_updater/opam_file_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
+      sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/\.opam$/, /^opam$/]
       end
@@ -41,7 +41,7 @@ module Dependabot
 
       sig { params(file: DependencyFile).returns(String) }
       def updated_opam_file_content(file)
-        content = file.content.dup
+        content = T.must(file.content).dup
 
         dependencies.each do |dependency|
           content = OpamFileUpdater.update_dependency_version(

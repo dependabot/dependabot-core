@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -34,7 +34,7 @@ module Dependabot
         return latest_version if all_versions.empty?
 
         dependency.requirements.each do |req|
-          requirement_string = req[:requirement]
+          requirement_string = T.cast(req[:requirement], T.nilable(String))
           next if requirement_string.nil? || requirement_string.strip.empty?
 
           begin
@@ -115,7 +115,7 @@ module Dependabot
         }mix
         title_match = html.match(title_pattern)
         if title_match
-          version_string = title_match[1]
+          version_string = T.must(title_match[1])
           versions << Version.new(version_string) if valid_version?(version_string)
         end
 
@@ -152,8 +152,8 @@ module Dependabot
 
       sig { params(req: T::Hash[Symbol, T.untyped]).returns(String) }
       def updated_version_requirement_string(req)
-        current_requirement = req[:requirement]
-        return current_requirement if current_requirement.nil? || current_requirement.empty?
+        current_requirement = T.cast(req[:requirement], T.nilable(String))
+        return T.must(current_requirement) if current_requirement.nil? || current_requirement.empty?
 
         latest = latest_version
         return current_requirement unless latest
@@ -182,8 +182,8 @@ module Dependabot
         match = requirement.match(/^([><=!]+)\s*"?([^"]+)"?$/)
         return requirement unless match
 
-        operator = match[1]
-        current_version_str = match[2].strip
+        operator = T.must(match[1])
+        current_version_str = T.must(match[2]).strip
 
         # Keep the same operator, update the version (with quotes per opam format)
         case operator

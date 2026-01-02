@@ -83,7 +83,7 @@ module Dependabot
       def split_version(version)
         parts = []
         current = ""
-        is_digit = nil
+        is_digit = T.let(nil, T.nilable(T::Boolean))
 
         version.each_char do |char|
           char_is_digit = char.match?(/\d/)
@@ -132,7 +132,7 @@ module Dependabot
       def strip_tilde_prefix(part1, part2)
         # If both start with ~, compare the rest
         if part1.start_with?("~") && part2.start_with?("~")
-          [part1[1..], part2[1..]]
+          [T.must(part1[1..]), T.must(part2[1..])]
         else
           [part1, part2]
         end
@@ -165,7 +165,7 @@ module Dependabot
         return -1 if char1_letter && !char2_letter
         return 1 if !char1_letter && char2_letter
 
-        char1 <=> char2
+        T.must(char1 <=> char2)
       end
     end
   end

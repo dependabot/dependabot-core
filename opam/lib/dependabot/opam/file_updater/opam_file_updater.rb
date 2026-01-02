@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -24,7 +24,7 @@ module Dependabot
           new_requirements = dependency.requirements
 
           new_requirements.each do |req|
-            new_requirement = req[:requirement]
+            new_requirement = T.cast(req[:requirement], T.nilable(String))
             next unless new_requirement
 
             # Find and update the dependency in the opam file
