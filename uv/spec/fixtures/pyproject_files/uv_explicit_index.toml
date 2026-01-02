@@ -1,0 +1,21 @@
+[project]
+name = "explicit-index-project"
+version = "0.1.0"
+description = "Test UV explicit index configuration"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "private-package>=1.0.0",
+]
+
+[[tool.uv.index]]
+name = "company_pypi"
+url = "https://private-pypi.example.com/simple"
+explicit = true
+
+[tool.uv.sources]
+private-package = { index = "company_pypi" }
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
