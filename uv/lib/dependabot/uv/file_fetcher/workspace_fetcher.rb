@@ -4,10 +4,11 @@
 require "toml-rb"
 require "sorbet-runtime"
 require "dependabot/dependency_file"
+require "dependabot/uv/file_fetcher"
 
 module Dependabot
   module Uv
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::Python::SharedFileFetcher
       class WorkspaceFetcher
         extend T::Sig
 
@@ -172,7 +173,7 @@ module Dependabot
         # Delegate methods to file_fetcher
         sig { params(path: T.nilable(T.any(Pathname, String))).returns(String) }
         def clean_path(path)
-          @file_fetcher.send(:cleanpath, path)
+          @file_fetcher.send(:clean_path, path)
         end
 
         sig do
