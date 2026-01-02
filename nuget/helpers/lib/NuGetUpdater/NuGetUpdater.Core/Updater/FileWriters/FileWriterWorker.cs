@@ -112,7 +112,7 @@ public class FileWriterWorker
         NuGetVersion newDependencyVersion
     )
     {
-        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath.FullName, ProjectHelper.PathFormat.Full);
+        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(repoContentsPath.FullName, projectPath.FullName, ProjectHelper.PathFormat.Full);
         var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         if (packagesConfigFullPath is null)
         {
