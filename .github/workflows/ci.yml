@@ -63,7 +63,7 @@ jobs:
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
-        run: script/build ${{ matrix.suite.path }}
+        run: script/build ${{ matrix.suite.name }}
 
       - name: Run ${{ matrix.suite.name }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
