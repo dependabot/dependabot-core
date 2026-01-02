@@ -15,38 +15,40 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bazel, name: bazel, ecosystem: bazel }
+          # Simple entries: path only (name, ecosystem, build all default to path)
+          - { path: bazel }
+          - { path: bun }
+          - { path: bundler }
+          - { path: cargo }
+          - { path: common }
+          - { path: composer }
+          - { path: conda }
+          - { path: devcontainers }
+          - { path: docker }
+          - { path: elm }
+          - { path: gradle }
+          - { path: helm }
+          - { path: julia }
+          - { path: maven }
+          - { path: nuget }
+          - { path: opentofu }
+          - { path: pub }
+          - { path: swift }
+          - { path: terraform }
+          - { path: uv }
+          - { path: vcpkg }
+          # Complex entries: specify fields that differ from path
           - { path: bin, name: dry_run, ecosystem: common }
-          - { path: bun, name: bun, ecosystem: bun }
-          - { path: bundler, name: bundler, ecosystem: bundler }
-          - { path: cargo, name: cargo, ecosystem: cargo }
-          - { path: common, name: common, ecosystem: common}
-          - { path: composer, name: composer, ecosystem: composer }
-          - { path: conda, name: conda, ecosystem: conda }
-          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
-          - { path: docker, name: docker_compose, ecosystem: docker-compose }
-          - { path: docker, name: docker, ecosystem: docker }
-          - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
-          - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
-          - { path: github_actions, name: github_actions, ecosystem: github-actions }
-          - { path: go_modules, name: go_module, ecosystem: gomod }
-          - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: helm, name: helm, ecosystem: helm }
-          - { path: hex, name: hex, ecosystem: mix }
-          - { path: julia, name: julia, ecosystem: julia }
-          - { path: maven, name: maven, ecosystem: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
-          - { path: nuget, name: nuget, ecosystem: nuget }
-          - { path: pub, name: pub, ecosystem: pub }
+          - { path: docker, name: docker_compose, ecosystem: docker-compose, build: docker_compose }
+          - { path: dotnet_sdk, ecosystem: dotnet-sdk }
+          - { path: git_submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, ecosystem: github-actions }
+          - { path: go_modules, ecosystem: gomod }
+          - { path: hex, ecosystem: mix }
+          - { path: npm_and_yarn, ecosystem: npm }
+          - { path: python, ecosystem: pip }
           - { path: python, name: python_slow, ecosystem: pip }
-          - { path: python, name: python, ecosystem: pip }
-          - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
-          - { path: swift, name: swift, ecosystem: swift }
-          - { path: terraform, name: terraform, ecosystem: terraform }
-          - { path: opentofu, name: opentofu, ecosystem: opentofu }
-          - { path: uv, name: uv, ecosystem: uv }
-          - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
+          - { path: rust_toolchain, ecosystem: rust-toolchain }
 
     steps:
       - name: Checkout code
@@ -63,9 +65,9 @@ jobs:
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
-        run: script/build ${{ matrix.suite.name }}
+        run: script/build ${{ matrix.suite.build || matrix.suite.path }}
 
-      - name: Run ${{ matrix.suite.name }} tests
+      - name: Run ${{ matrix.suite.name || matrix.suite.path }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
@@ -73,8 +75,8 @@ jobs:
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
-            --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
+            --env "SUITE_NAME=${{ matrix.suite.name || matrix.suite.path }}" \
+            --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem || matrix.suite.path }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
