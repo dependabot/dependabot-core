@@ -351,6 +351,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
       def path_dependencies(fetched_files) # rubocop:disable Metrics/AbcSize
         package_json_files = T.let([], T::Array[DependencyFile])
@@ -381,6 +382,13 @@ module Dependabot
             next
           end
 
+          if dependency_ignored?(name)
+            Dependabot.logger.info(
+              "Ignored local path dependency '#{cleaned_name}' for package '#{name}' as it matches the ignore list."
+            )
+            next
+          end
+
           begin
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
@@ -400,6 +408,7 @@ module Dependabot
         package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/MethodLength
 
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[[String, String]]) }
       def path_dependency_details(fetched_files)
@@ -683,7 +692,19 @@ module Dependabot
       def build_unfetchable_deps(unfetchable_deps)
         return [] unless package_lock || yarn_lock
 
-        unfetchable_deps.map do |name, path|
+        filtered_deps = unfetchable_deps.reject do |name, _path|
+          # Skip ignored dependencies
+          if dependency_ignored?(name)
+            Dependabot.logger.info(
+              "Ignored unfetchable path dependency '#{name}' as it matches the ignore list."
+            )
+            true
+          else
+            false
+          end
+        end
+
+        filtered_deps.map do |name, path|
           PathDependencyBuilder.new(
             dependency_name: name,
             path: path,
