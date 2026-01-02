@@ -13,6 +13,7 @@ require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirement_suffix_helper"
+require "dependabot/uv/uv_version_manager"
 
 module Dependabot
   module Uv
@@ -349,12 +350,20 @@ module Dependabot
             Dependabot.logger.info("Setting Python version to #{python_version}")
             SharedHelpers.run_shell_command("pyenv local #{python_version}")
 
-            # We don't need to install uv as it should be available in the Docker environment
-            Dependabot.logger.info("Using pre-installed uv package")
+            # Check and update uv version if required
+            uv_version_manager.ensure_correct_version
           rescue StandardError => e
             Dependabot.logger.warn("Error setting up Python environment: #{e.message}")
             Dependabot.logger.info("Falling back to system Python")
           end
+        end
+
+        sig { returns(UvVersionManager) }
+        def uv_version_manager
+          @uv_version_manager ||= T.let(
+            UvVersionManager.new(dependency_files: dependency_files),
+            T.nilable(UvVersionManager)
+          )
         end
 
         sig { params(url: String).returns(String) }
