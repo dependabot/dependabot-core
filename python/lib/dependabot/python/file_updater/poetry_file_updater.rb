@@ -45,6 +45,7 @@ module Dependabot
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @cleaned_lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
@@ -177,6 +178,7 @@ module Dependabot
             begin
               content = updated_pyproject_content
               content = sanitize(T.must(content))
+              content = remove_path_dependencies(content)
               content = freeze_other_dependencies(content)
               content = freeze_dependencies_being_updated(content)
               content = update_python_requirement(content)
@@ -185,9 +187,16 @@ module Dependabot
         end
 
         sig { params(pyproject_content: String).returns(String) }
+        def remove_path_dependencies(pyproject_content)
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content, lockfile: lockfile_for_prep)
+            .remove_path_dependencies
+        end
+
+        sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
           PyprojectPreparer
-            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .new(pyproject_content: pyproject_content, lockfile: lockfile_for_prep)
             .freeze_top_level_dependencies_except(dependencies)
         end
 
@@ -215,6 +224,32 @@ module Dependabot
           PyprojectPreparer
             .new(pyproject_content: pyproject_content)
             .update_python_requirement(language_version_manager.python_version)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def cleaned_poetry_lockfile_content
+          PyprojectPreparer
+            .new(pyproject_content: T.must(pyproject&.content), lockfile: lockfile)
+            .remove_path_dependencies_from_lockfile
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def cleaned_lockfile
+          @cleaned_lockfile ||=
+            begin
+              return nil unless lockfile
+              return nil unless (cleaned_content = cleaned_poetry_lockfile_content)
+
+              Dependabot::DependencyFile.new(
+                name: T.must(lockfile).name,
+                content: cleaned_content
+              )
+            end
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def lockfile_for_prep
+          cleaned_lockfile || lockfile
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
@@ -292,7 +327,12 @@ module Dependabot
           # Overwrite the .python-version with updated content
           File.write(".python-version", language_version_manager.python_major_minor)
 
-          # Overwrite the pyproject with updated content
+          # Overwrite the poetry.lock with cleaned content (path dependencies removed)
+          if lockfile && (cleaned_content = cleaned_poetry_lockfile_content)
+            File.write("poetry.lock", cleaned_content)
+          end
+
+          # Overwrite the pyproject with updated content (must be last to return its result)
           File.write("pyproject.toml", pyproject_content)
         end
 
