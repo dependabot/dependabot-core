@@ -94,8 +94,7 @@ module Dependabot
 
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
-            # Skip scope check for plugins since they don't have scope elements
-            next false unless declaring_requirement.fetch(:groups) == ["plugin"] || scope_matches?(node)
+            next false unless scope_or_plugin_matches?(node)
 
             declaring_requirement_matches?(node)
           end
@@ -139,6 +138,11 @@ module Dependabot
         def packaging_type_matches?(node)
           type = declaring_requirement.dig(:metadata, :packaging_type)
           type == packaging_type(node)
+        end
+
+        sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
+        def scope_or_plugin_matches?(node)
+          declaring_requirement.fetch(:groups) == ["plugin"] || scope_matches?(node)
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
