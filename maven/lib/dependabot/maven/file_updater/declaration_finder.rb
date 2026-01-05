@@ -143,6 +143,11 @@ module Dependabot
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def scope_matches?(node)
           dependency_type = declaring_requirement.fetch(:groups)
+
+          # Plugin dependencies have groups: ["plugin"]
+          # For plugins, we don't check scope since they don't have <scope> elements
+          return true if dependency_type == ["plugin"]
+
           node_type = dependency_scope(node) == "test" ? ["test"] : []
 
           dependency_type == node_type

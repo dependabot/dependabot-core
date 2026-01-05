@@ -191,7 +191,7 @@ module Dependabot
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
 
-        build_dependency(pom, dependency_node, name)
+        build_dependency(pom, dependency_node, name, is_plugin: false)
       end
 
       sig do
@@ -204,17 +204,18 @@ module Dependabot
         return unless (name = plugin_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
 
-        build_dependency(pom, dependency_node, name)
+        build_dependency(pom, dependency_node, name, is_plugin: true)
       end
 
       sig do
         params(
           pom: Dependabot::DependencyFile,
           dependency_node: Nokogiri::XML::Element,
-          name: String
+          name: String,
+          is_plugin: T::Boolean
         ).returns(T.nilable(Dependabot::Dependency))
       end
-      def build_dependency(pom, dependency_node, name)
+      def build_dependency(pom, dependency_node, name, is_plugin:)
         property_details =
           {
             property_name: version_property_name(dependency_node),
@@ -228,7 +229,7 @@ module Dependabot
           requirements: [{
             requirement: dependency_requirement(pom, dependency_node),
             file: pom.name,
-            groups: dependency_groups(pom, dependency_node),
+            groups: dependency_groups(pom, dependency_node, is_plugin: is_plugin),
             source: nil,
             metadata: {
               packaging_type: packaging_type(pom, dependency_node),
@@ -324,8 +325,16 @@ module Dependabot
         version_content.empty? ? nil : version_content
       end
 
-      sig { params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element).returns(T::Array[String]) }
-      def dependency_groups(pom, dependency_node)
+      sig do
+        params(
+          pom: Dependabot::DependencyFile,
+          dependency_node: Nokogiri::XML::Element,
+          is_plugin: T::Boolean
+        ).returns(T::Array[String])
+      end
+      def dependency_groups(pom, dependency_node, is_plugin:)
+        return ["plugin"] if is_plugin
+
         dependency_scope(pom, dependency_node) == "test" ? ["test"] : []
       end
 
