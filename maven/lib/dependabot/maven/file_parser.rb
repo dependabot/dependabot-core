@@ -191,7 +191,8 @@ module Dependabot
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
 
-        build_dependency(pom, dependency_node, name, is_plugin: false)
+        is_plugin = plugin_dependency?(name)
+        build_dependency(pom, dependency_node, name, is_plugin: is_plugin)
       end
 
       sig do
@@ -297,6 +298,18 @@ module Dependabot
           node.at_xpath("./groupId").content.strip,
           pom
         )
+      end
+
+      sig { params(name: String).returns(T::Boolean) }
+      def plugin_dependency?(name)
+        group_id, artifact_id = name.split(":")
+        return false unless group_id && artifact_id
+
+        # Only treat dependencies as plugins if they are explicitly in the
+        # org.apache.maven.plugins group (the standard Maven plugin group).
+        # Other dependencies should only be treated as plugins when they appear
+        # in the <build><plugins> section (handled by dependency_from_plugin_node).
+        group_id == "org.apache.maven.plugins"
       end
 
       sig do

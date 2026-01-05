@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "another.version",
@@ -314,7 +314,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "another.version",
