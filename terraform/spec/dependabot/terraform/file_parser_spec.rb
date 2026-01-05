@@ -912,6 +912,33 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with nested local modules" do
+      let(:files) { project_dependency_files("provider_with_nested_local_modules") }
+
+      it "discovers provider requirements in all local modules" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.version).to eq("5.75.1")
+        expect(dependency.requirements.length).to eq(3)
+
+        # Check that we found providers in main file and both nested modules
+        file_names = dependency.requirements.map { |r| r[:file] }.sort
+        expect(file_names).to eq([
+          "modules/foo/providers.tf",
+          "modules/global/providers.tf",
+          "providers.tf"
+        ])
+
+        # All should have the same version requirement
+        dependency.requirements.each do |req|
+          expect(req[:requirement]).to eq("5.75.1")
+          expect(req[:source][:type]).to eq("provider")
+          expect(req[:source][:module_identifier]).to eq("hashicorp/aws")
+        end
+      end
+    end
+
     context "with a required provider block with multiple versions" do
       let(:files) { project_dependency_files("registry_provider_compound_local_name") }
 
