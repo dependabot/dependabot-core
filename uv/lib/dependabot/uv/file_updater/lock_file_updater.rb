@@ -12,10 +12,12 @@ require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
+require "dependabot/uv/requirement_suffix_helper"
 
 module Dependabot
   module Uv
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class LockFileUpdater
         extend T::Sig
 
@@ -73,6 +75,16 @@ module Dependabot
           T.must(dependencies.first)
         end
 
+        sig { returns(T::Boolean) }
+        def build_system_only_dependency?
+          return false unless dependency
+
+          groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
+          return false if groups.empty?
+
+          groups.all?("build-system")
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
           return [] unless create_or_update_lock_file?
@@ -87,9 +99,10 @@ module Dependabot
               )
           end
 
-          if lockfile
+          if lockfile && !build_system_only_dependency?
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
+
             raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
@@ -127,7 +140,7 @@ module Dependabot
         def replace_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
-          escaped_name = Regexp.escape(dep.name)
+          escaped_name = escape_package_name(dep.name)
 
           regex = /(["']#{escaped_name})([^"']+)(["'])/x
 
@@ -136,17 +149,23 @@ module Dependabot
           updated_content = content.gsub(regex) do
             captured_requirement = Regexp.last_match(2)
 
-            if requirements_match?(T.must(captured_requirement), old_req)
+            requirement_body, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+            next Regexp.last_match(0) unless old_req
+
+            if requirements_match?(T.must(requirement_body), old_req)
               replaced = true
-              "#{Regexp.last_match(1)}#{new_req}#{Regexp.last_match(3)}"
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
             else
               Regexp.last_match(0)
             end
           end
-
           unless replaced
             updated_content = content.sub(regex) do
-              "#{Regexp.last_match(1)}#{new_req}#{Regexp.last_match(3)}"
+              captured_requirement = Regexp.last_match(2)
+              _, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
             end
           end
 
@@ -155,11 +174,12 @@ module Dependabot
 
         sig { params(req1: String, req2: String).returns(T::Boolean) }
         def requirements_match?(req1, req2)
-          normalize = lambda do |req|
-            req.split(",").map(&:strip).sort.join(",")
-          end
+          normalized_requirement(req1) == normalized_requirement(req2)
+        end
 
-          normalize.call(req1) == normalize.call(req2)
+        sig { params(req: String).returns(String) }
+        def normalized_requirement(req)
+          req.split(",").map(&:strip).sort.join(",")
         end
 
         sig { returns(String) }
@@ -374,8 +394,9 @@ module Dependabot
         end
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
-        def escape(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]")
+        def escape_package_name(name)
+          # Per PEP 503, Python package names normalize -, _, and . to the same character
+          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }
@@ -456,9 +477,12 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
+          return true if lockfile && T.must(dependency).requirements.empty?
+
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

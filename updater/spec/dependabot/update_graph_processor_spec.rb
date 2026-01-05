@@ -599,38 +599,127 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    before do
-      original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+    context "when the error is a known type" do
+      before do
+        original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
 
-      failing_grapher_class = Class.new(original_grapher_class) do
-        def initialize(file_parser:)
-          super
-          @raise_once = true
-        end
-
-        def fetch_subdependencies(_dependency)
-          if @raise_once
-            @raise_once = false
-            raise StandardError, "boom"
+        failing_grapher_class = Class.new(original_grapher_class) do
+          def initialize(file_parser:)
+            super
+            @raise_once = true
           end
-          []
+
+          def fetch_subdependencies(_dependency)
+            if @raise_once
+              @raise_once = false
+              raise Dependabot::GitDependenciesNotReachable, "github.com/dependabot/cli", "boom"
+            end
+            []
+          end
         end
+
+        allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+          .with(job.package_manager).and_return(failing_grapher_class)
       end
 
-      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
-        .with(job.package_manager).and_return(failing_grapher_class)
+      it "records the specific error type and still submits a dependency submission" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+          expect(payload[:manifests]).to be_a(Hash)
+        end
+
+        expect(service).to receive(:record_update_job_error) do |args|
+          expect(args[:error_type]).to eq("git_dependencies_not_reachable")
+          expect(args[:error_details]).to eq(
+            {
+              "dependency-urls": ["github.com/dependabot/cli"]
+            }
+          )
+        end
+
+        update_graph_processor.run
+      end
     end
 
-    it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
-      expect(service).to receive(:create_dependency_submission) do |args|
-        payload = args[:dependency_submission].payload
-        expect(payload[:manifests]).to be_a(Hash)
+    context "when the error is an unknown type" do
+      before do
+        original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+
+        failing_grapher_class = Class.new(original_grapher_class) do
+          def initialize(file_parser:)
+            super
+            @raise_once = true
+          end
+
+          def fetch_subdependencies(_dependency)
+            if @raise_once
+              @raise_once = false
+              raise StandardError, "boom"
+            end
+            []
+          end
+        end
+
+        allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+          .with(job.package_manager).and_return(failing_grapher_class)
       end
 
-      expect(service).to receive(:record_update_job_error) do |args|
-        expect(args[:error_type]).to eq("dependency_file_not_resolvable")
-        expect(args[:error_details]).to include(:message)
+      it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
+        expect(service).to receive(:create_dependency_submission) do |args|
+          payload = args[:dependency_submission].payload
+          expect(payload[:manifests]).to be_a(Hash)
+        end
+
+        expect(service).to receive(:record_update_job_error) do |args|
+          expect(args[:error_type]).to eq("dependency_file_not_resolvable")
+          expect(args[:error_details]).to include(:message)
+        end
+
+        update_graph_processor.run
       end
+    end
+  end
+
+  context "when the dependency submission API is unavailable" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: directory
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      allow(service).to receive(:create_dependency_submission)
+        .and_raise(Dependabot::ApiError, "Service unavailable")
+      allow(service).to receive(:capture_exception)
+    end
+
+    it "records a snapshots_unavailable_graph_error and does not retry submission" do
+      expect(service).to receive(:record_update_job_error) do |args|
+        expect(args[:error_type]).to eq("snapshots_unavailable_graph_error")
+        expect(args[:error_details]).to include(
+          message: "Unable to submit data to the Dependency Snapshot API"
+        )
+      end
+
+      update_graph_processor.run
+    end
+
+    it "does not try to send an empty submission on this error" do
+      expect(service).to receive(:create_dependency_submission).once.and_raise(Dependabot::ApiError)
+      expect(service).to receive(:record_update_job_error)
 
       update_graph_processor.run
     end

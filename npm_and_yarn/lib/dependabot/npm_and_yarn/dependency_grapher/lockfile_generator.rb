@@ -113,11 +113,14 @@ module Dependabot
 
         sig { void }
         def run_npm_lockfile_generation
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           # Use --package-lock-only to generate lockfile without installing node_modules
           # Use --ignore-scripts to prevent running any scripts
           # Use --force to ignore platform checks
-          # Use --dry-run false because global .npmrc may have dry-run: true set
-          command = "install --package-lock-only --ignore-scripts --force --dry-run false"
+          command = "install --package-lock-only --ignore-scripts --force"
           Helpers.run_npm_command(command, fingerprint: command)
         end
 

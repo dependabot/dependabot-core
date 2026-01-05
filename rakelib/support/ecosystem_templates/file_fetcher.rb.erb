@@ -27,7 +27,7 @@ module Dependabot
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             nil,
-            "<%= ecosystem_module %> is currently in beta. Please contact Dependabot support to enable it."
+            "<%= ecosystem_module %> support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it."
           )
         end
 

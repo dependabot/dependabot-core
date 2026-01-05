@@ -437,6 +437,54 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(entry_names).to eq(%w(Aqua CUDA Statistics julia))
       end
     end
+
+    context "when file has no trailing newline" do
+      let(:project_file_content) do
+        # Intentionally no trailing newline - this matches real-world files like
+        # MetaGraphsNext.jl's docs/Project.toml
+        "[deps]\nGraphs = \"86223c79-3864-5bf0-83f7-82e725a168b6\"\n\n[compat]\nDocumenter = \"1\""
+      end
+
+      let(:project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: project_file_content,
+          directory: "/docs"
+        )
+      end
+
+      let(:dependency_files) { [project_file] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Graphs",
+          version: "1.13.2",
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{
+            requirement: "1.13.2",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          metadata: { julia_uuid: "86223c79-3864-5bf0-83f7-82e725a168b6" }
+        )
+      end
+
+      it "adds the new compat entry even without trailing newline" do
+        updated_files = updater.updated_dependency_files
+        project_toml = updated_files.first
+
+        expect(project_toml.content).to include('Graphs = "1.13.2"')
+        expect(project_toml.content).to include("[compat]")
+      end
+    end
   end
 
   describe "#manifest_file_for_path" do
@@ -479,6 +527,74 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         expect(result.name).to eq("Manifest.toml")
         expect(result.directory).to eq(project_file.directory)
       end
+    end
+  end
+
+  describe "#updated_dependency_files with explicit root directory" do
+    # This test verifies that dependencies with file: "Project.toml" correctly
+    # match project files in the root directory "/" - simulating MetaGraphsNext.jl scenario
+    subject(:root_updater) do
+      described_class.new(
+        dependencies: [root_dependency],
+        dependency_files: [root_project_file],
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+
+    let(:root_project_file) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        content: <<~TOML,
+          name = "RootProject"
+          uuid = "12345678-1234-1234-1234-123456789012"
+          version = "1.0.0"
+
+          [deps]
+          Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+
+          [compat]
+          Graphs = "1.7"
+          julia = "1.6"
+        TOML
+        directory: "/"
+      )
+    end
+
+    let(:root_dependency) do
+      Dependabot::Dependency.new(
+        name: "Graphs",
+        version: "2.0.0",
+        previous_version: "1.7.0",
+        package_manager: "julia",
+        requirements: [{
+          requirement: "1.7, 2",
+          file: "Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        previous_requirements: [{
+          requirement: "1.7",
+          file: "Project.toml",
+          groups: ["deps"],
+          source: nil
+        }],
+        metadata: { julia_uuid: "86223c79-3864-5bf0-83f7-82e725a168b6" }
+      )
+    end
+
+    it "correctly matches file: 'Project.toml' with root directory project file" do
+      updated_files = root_updater.updated_dependency_files
+      expect(updated_files.length).to eq(1)
+
+      project_toml = updated_files.first
+      expect(project_toml.name).to eq("Project.toml")
+      expect(project_toml.directory).to eq("/")
+      expect(project_toml.content).to include('Graphs = "1.7, 2"')
     end
   end
 

@@ -141,6 +141,16 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with engines field for package manager with '^' constraint and missing minor/patch version" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "npm" => "^10" } } }
+
+      it "returns a NpmPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("10")
+      end
+    end
+
     context "with engines field for npm >=11.0.0" do
       let(:lockfiles) { {} }
       let(:package_json) { { "engines" => { "npm" => ">=11.0.0" } } }
