@@ -305,10 +305,6 @@ module Dependabot
         group_id, artifact_id = name.split(":")
         return false unless group_id && artifact_id
 
-        # Only treat dependencies as plugins if they are explicitly in the
-        # org.apache.maven.plugins group (the standard Maven plugin group).
-        # Other dependencies should only be treated as plugins when they appear
-        # in the <build><plugins> section (handled by dependency_from_plugin_node).
         group_id == "org.apache.maven.plugins"
       end
 
