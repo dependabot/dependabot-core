@@ -924,11 +924,13 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         # Check that we found providers in main file and both nested modules
         file_names = dependency.requirements.map { |r| r[:file] }.sort
-        expect(file_names).to eq([
-          "modules/foo/providers.tf",
-          "modules/global/providers.tf",
-          "providers.tf"
-        ])
+        expect(file_names).to eq(
+          [
+            "modules/foo/providers.tf",
+            "modules/global/providers.tf",
+            "providers.tf"
+          ]
+        )
 
         # All should have the same version requirement
         dependency.requirements.each do |req|
