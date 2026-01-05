@@ -278,5 +278,53 @@ RSpec.describe Dependabot::PullRequest do
 
       expect(pr1).not_to eq(pr2)
     end
+
+    it "is false when one has directory and the other doesn't" do
+      pr1 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0",
+            directory: "/foo"
+          )
+        ],
+        pr_number: 123
+      )
+      pr2 = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "foo",
+            version: "1.0.0"
+          )
+        ],
+        pr_number: 456
+      )
+
+      expect(pr1).not_to eq(pr2)
+    end
+
+    it "is false when directories are different" do
+      existing_pr = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "rollup",
+            version: "2.79.2",
+            directory: "/packages/corelib"
+          )
+        ],
+        pr_number: 123
+      )
+      new_pr = described_class.new(
+        [
+          Dependabot::PullRequest::Dependency.new(
+            name: "rollup",
+            version: "2.79.2",
+            directory: "/"
+          )
+        ]
+      )
+
+      expect(existing_pr).not_to eq(new_pr)
+    end
   end
 end
