@@ -8,6 +8,7 @@ require "dependabot/source"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/maven_dependency_parser"
+require "dependabot/maven"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Maven::FileParser do
@@ -217,11 +218,15 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
           )
+        end
+
+        it "is not a production dependency" do
+          expect(dependency.production?).to be(false)
         end
       end
 
@@ -244,7 +249,7 @@ RSpec.describe Dependabot::Maven::FileParser do
               [{
                 requirement: "1.5.8.RELEASE",
                 file: "pom.xml",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }]
@@ -281,7 +286,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "0.9.4",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -301,7 +306,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "9.1",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -384,7 +389,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -750,7 +755,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             }, {
               requirement: "2.10.4",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]

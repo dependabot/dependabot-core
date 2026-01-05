@@ -17,7 +17,10 @@ Dependabot::PullRequestCreator::Labeler
 
 require "dependabot/dependency"
 Dependabot::Dependency
-  .register_production_check("maven", ->(groups) { groups != ["test"] })
+  .register_production_check("maven", lambda { |groups|
+    # Plugins and test-scoped dependencies are development dependencies
+    !groups.include?("plugin") && groups != ["test"]
+  })
 
 Dependabot::Dependency
   .register_display_name_builder(
