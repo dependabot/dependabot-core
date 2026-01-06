@@ -385,7 +385,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           expect(payload[:manifests].length).to be_zero
 
           # It should contain the expected metadata
-          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SNAPSHOT_STATUS_FAILED)
+          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::FAILED.serialize)
           expect(payload[:metadata][:reason]).to eql("dependency_file_not_evaluatable")
         end
 
@@ -415,7 +415,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
 
           # We should have metadata indicating a successful snapshot
-          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SNAPSHOT_STATUS_SUCCESS)
+          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
           expect(payload[:metadata][:reason]).to be_nil
         end
       end
@@ -554,7 +554,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         expect(payload[:manifests]).to be_empty
 
         # It should contain the expected metadata
-        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SNAPSHOT_STATUS_SKIPPED)
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
         expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::SNAPSHOT_REASON_NO_MANIFESTS)
       end
 

@@ -84,7 +84,7 @@ module Dependabot
                      empty_submission(
                        branch,
                        directory_source,
-                       GithubApi::DependencySubmission::SNAPSHOT_STATUS_SKIPPED,
+                       GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
                        GithubApi::DependencySubmission::SNAPSHOT_REASON_NO_MANIFESTS
                      )
                    else
@@ -111,7 +111,7 @@ module Dependabot
       empty_submission = empty_submission(
         branch,
         T.must(directory_source),
-        GithubApi::DependencySubmission::SNAPSHOT_STATUS_FAILED,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
         error_details.fetch(:"error-type")
       )
       service.create_dependency_submission(dependency_submission: empty_submission)
@@ -129,7 +129,14 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
-    sig { params(branch: String, source: Dependabot::Source, status: String, reason: T.nilable(String)).returns(GithubApi::DependencySubmission) }
+    sig do
+      params(
+        branch: String,
+        source: Dependabot::Source,
+        status: GithubApi::DependencySubmission::SnapshotStatus,
+        reason: T.nilable(String)
+      ).returns(GithubApi::DependencySubmission)
+    end
     def empty_submission(branch, source, status, reason)
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,

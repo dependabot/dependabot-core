@@ -17,9 +17,13 @@ module GithubApi
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
-    SNAPSHOT_STATUS_SUCCESS = "ok"
-    SNAPSHOT_STATUS_FAILED = "failed"
-    SNAPSHOT_STATUS_SKIPPED = "skipped"
+    class SnapshotStatus < T::Enum
+      enums do
+        SUCCESS = new("ok")
+        FAILED = new("failed")
+        SKIPPED = new("skipped")
+      end
+    end
 
     # Expected when the graph change corresponds to a deleted manifest file
     SNAPSHOT_REASON_NO_MANIFESTS = "missing-manifest-files"
@@ -42,7 +46,7 @@ module GithubApi
     sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
     attr_reader :resolved_dependencies
 
-    sig { returns(String) }
+    sig { returns(SnapshotStatus) }
     attr_reader :status
 
     sig { returns(T.nilable(String)) }
@@ -56,7 +60,7 @@ module GithubApi
         package_manager: String,
         manifest_file: Dependabot::DependencyFile,
         resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency],
-        status: String,
+        status: SnapshotStatus,
         reason: T.nilable(String)
       ).void
     end
@@ -67,7 +71,7 @@ module GithubApi
       package_manager:,
       manifest_file:,
       resolved_dependencies:,
-      status: SNAPSHOT_STATUS_SUCCESS,
+      status: SnapshotStatus::SUCCESS,
       reason: nil
     )
       @job_id = job_id
@@ -102,7 +106,7 @@ module GithubApi
         },
         manifests: manifests,
         metadata: {
-          status: status,
+          status: status.serialize,
           reason: reason
         }.compact
       }
