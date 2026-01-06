@@ -14,9 +14,7 @@ require "dependabot/cargo/file_parser"
 # https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-section
 module Dependabot
   module Cargo
-    class FileFetcher < Dependabot::FileFetchers::Base
-      require_relative "file_fetcher/config_fetcher"
-
+    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 
@@ -440,7 +438,7 @@ module Dependabot
           T.nilable(Dependabot::DependencyFile)
         )
         @cargo_config ||= T.let(
-          ConfigFetcher.new(fetcher: self).fetch_from_parent_dirs,
+          fetch_cargo_config_from_parent_dirs,
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -470,6 +468,44 @@ module Dependabot
       end
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
         super.tap { |f| f.name = Pathname.new(f.name).cleanpath.to_s.gsub(%r{^/+}, "") }
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def fetch_cargo_config_from_parent_dirs
+        return nil if directory.empty?
+
+        # Count directory depth to determine how many levels to search up
+        depth = directory.split("/").count { |s| !s.empty? }
+        return nil if depth.zero?
+
+        # Try each parent directory level
+        depth.times do |i|
+          parent_path = ([".."] * (i + 1)).join("/")
+          config = try_fetch_config_at_path(parent_path)
+          return config if config
+        end
+
+        nil
+      end
+
+      sig { params(parent_path: String).returns(T.nilable(Dependabot::DependencyFile)) }
+      def try_fetch_config_at_path(parent_path)
+        [".cargo/config.toml", ".cargo/config"].each do |config_name|
+          full_path = File.join(parent_path, config_name)
+          Dependabot.logger.debug("Attempting to fetch config from: #{full_path}")
+          config = fetch_file_from_host(
+            full_path,
+            fetch_submodules: false
+          )
+          Dependabot.logger.debug("Successfully fetched config from: #{full_path}")
+          config.support_file = true
+          config.name = ".cargo/config.toml"
+          return config
+        rescue Dependabot::DependencyFileNotFound
+          Dependabot.logger.debug("No config found at: #{full_path}")
+          next
+        end
+        nil
       end
     end
   end
