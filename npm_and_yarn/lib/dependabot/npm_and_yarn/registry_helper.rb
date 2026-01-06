@@ -44,10 +44,10 @@ module Dependabot
           registry = registry_info[:registry]
           registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
           env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
+          env_variables[REGISTRY_KEY] = registry
         end
 
-        # NOTE: We only set the registry, not the token
-        # The token should be configured in .npmrc for security
+        env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
 
         env_variables
       end

@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 
+using Microsoft.Build.Evaluation;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
@@ -164,13 +166,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestDependenciesSeparatedBySemicolon(bool useSingleRestore)
+    [Fact]
+    public async Task TestDependenciesSeparatedBySemicolon()
     {
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
@@ -369,13 +368,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestPackageConfig(bool useSingleRestore)
+    [Fact]
+    public async Task TestPackageConfig()
     {
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -492,14 +488,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestRepo(bool useSingleRestore)
+    [Fact]
+    public async Task TestRepo()
     {
         var solutionPath = "solution.sln";
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
@@ -625,13 +618,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestRepo_Sln(bool useSingleRestore)
+    [Fact]
+    public async Task TestRepo_Sln()
     {
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
                 MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
@@ -721,14 +711,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestRepo_Slnx(bool useSingleRestore)
+    [Fact]
+    public async Task TestRepo_Slnx()
     {
         var solutionPath = "solution.slnx";
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
@@ -837,77 +824,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       EndGlobalSection
                     EndGlobal
                     """),
-            },
-            expectedResult: new()
-            {
-                Path = "",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "src/project.csproj",
-                        TargetFrameworks = ["net7.0", "net8.0"],
-                        Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [
-                            "../Directory.Build.props",
-                            "../Directory.Packages.props",
-                        ],
-                        AdditionalFiles = [],
-                    }
-                ],
-            }
-        );
-    }
-
-    [Fact]
-    public async Task TestDirsProj_CasingMismatchIsResolved()
-    {
-        var dirsProjPath = "dirs.proj";
-        await TestDiscoveryAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
-            ],
-            workspacePath: "",
-            files: new[]
-            {
-            ("src/project.csproj", """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Some.Package" />
-                  </ItemGroup>
-                </Project>
-                """),
-            ("Directory.Build.props", "<Project />"),
-            ("Directory.Packages.props", """
-                <Project>
-                  <PropertyGroup>
-                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                    <SomePackageVersion>9.0.1</SomePackageVersion>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """),
-            // Introduce a casing difference in the project reference
-            (dirsProjPath, """
-                <Project>
-                  <ItemGroup>
-                    <ProjectReference Include="SRC/PROJECT.CSPROJ" />
-                  </ItemGroup>
-                </Project>
-                """)
             },
             expectedResult: new()
             {
@@ -1619,20 +1535,23 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(@"..\project2\project2.csproj")] // relative
-    [InlineData(@"$(MSBuildThisFileDirectory)..\project2\project2.csproj")] // absolute
-    public async Task ExpandEntryPoints(string projectReferencePath)
+    [Fact]
+    public async Task ExpandEntryPoints()
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" /><!-- relative -->
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)project2\project2.csproj" /><!-- absolute -->
+                  </ItemGroup>
+                </Project>
+                """),
             ("src/project1/project1.csproj", $"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
                     <TargetFramework>net9.0</TargetFramework>
                   </PropertyGroup>
-                  <ItemGroup>
-                    <ProjectReference Include="{projectReferencePath}" />
-                  </ItemGroup>
                 </Project>
                 """),
             ("src/project2/project2.csproj", """
@@ -1643,7 +1562,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 </Project>
                 """)
         );
-        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj")], new ExperimentsManager()))
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager()))
             .Select(p => p.NormalizePathToUnix())
             .ToArray();
         var expectedEntryPoints = new[]

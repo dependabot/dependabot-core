@@ -12,6 +12,7 @@ require "dependabot/gradle/distributions"
 require "dependabot/maven/utils/auth_headers_finder"
 require "sorbet-runtime"
 require "dependabot/gradle/metadata_finder"
+require "dependabot/gradle/package/release_date_extractor"
 
 module Dependabot
   module Gradle
@@ -101,37 +102,16 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
-          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+          extractor = ReleaseDateExtractor.new(
+            dependency_name: dependency.name,
+            version_class: version_class
+          )
 
-          begin
-            repositories.map do |repository_details|
-              url = repository_details.fetch("url")
-              next unless url == Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
-
-              release_info_metadata(repository_details).css("a[title]").each do |link|
-                version_string = link["title"]
-                version = version_string.gsub(%r{/$}, "")
-                raw_date_text = link.next.text.strip.split("\n").last.strip
-
-                release_date = begin
-                  Time.parse(raw_date_text)
-                rescue StandardError
-                  nil
-                end
-
-                next unless version && version_class.correct?(version)
-
-                release_date_info[version] = {
-                  release_date: release_date
-                }
-              end
-            end
-
-            release_date_info
-          rescue StandardError
-            Dependabot.logger.error("Failed to get release date")
-            {}
-          end
+          extractor.extract(
+            repositories: repositories,
+            dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
+            release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
+          )
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -226,6 +206,8 @@ module Dependabot
             end
         end
 
+        # Fetches HTML directory listing from Maven-compatible repositories.
+        # Uses CSS selector "a[title]" to extract versions and dates. Caches results per repository.
         sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
         def release_info_metadata(repository_details)
           @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
@@ -237,14 +219,14 @@ module Dependabot
               )
 
               check_response(response, repository_details.fetch("url"))
-              Nokogiri::XML(response.body)
+              Nokogiri::HTML(response.body)
             rescue URI::InvalidURIError
-              Nokogiri::XML("")
+              Nokogiri::HTML("")
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               raise if central_repo_urls.include?(repository_details["url"])
 
-              Nokogiri::XML("")
+              Nokogiri::HTML("")
             end
         end
 

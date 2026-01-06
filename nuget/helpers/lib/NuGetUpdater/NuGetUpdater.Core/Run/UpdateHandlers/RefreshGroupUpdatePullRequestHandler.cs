@@ -21,7 +21,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             return false;
         }
 
-        if (job.GetAllDirectories().Length > 1)
+        if (job.GetRawDirectories().Length > 1)
         {
             return true;
         }
@@ -62,7 +62,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
 
         var groupMatcher = group.GetGroupMatcher();
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var directory in job.GetAllDirectories())
+        foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);

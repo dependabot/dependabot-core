@@ -97,6 +97,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       .to_return(status: 200)
   end
 
+  describe "class extension behavior" do
+    it "inherits from SharedVersionFinder" do
+      expect(described_class < Dependabot::Maven::Shared::SharedVersionFinder).to be true
+    end
+
+    it "matches_dependency_version_type? is reused from the shared class" do
+      method_owner = described_class.instance_method(:matches_dependency_version_type?).owner
+      expect(method_owner).to eq(Dependabot::Maven::Shared::SharedVersionFinder)
+    end
+  end
+
   describe "#latest_version_details when the dependency has a classifier" do
     subject { finder.latest_version_details }
 

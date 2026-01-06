@@ -140,7 +140,7 @@ module Dependabot
         def replace_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
-          escaped_name = Regexp.escape(dep.name)
+          escaped_name = escape_package_name(dep.name)
 
           regex = /(["']#{escaped_name})([^"']+)(["'])/x
 
@@ -314,13 +314,13 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          run_command(command, fingerprint:)
+          run_command(command, fingerprint: fingerprint, env: explicit_index_env_vars)
         end
 
-        sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-        def run_command(command, fingerprint: nil)
+        sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
+        def run_command(command, fingerprint: nil, env: {})
           Dependabot.logger.info("Running command: #{command}")
-          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint, env: env)
         end
 
         sig { params(pyproject_content: String).returns(Integer) }
@@ -373,6 +373,7 @@ module Dependabot
         def lock_index_options
           credentials
             .select { |cred| cred["type"] == "python_index" }
+            .reject { |cred| explicit_index?(cred) }
             .map do |cred|
             authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
@@ -382,6 +383,86 @@ module Dependabot
               "--index #{authed_url}"
             end
           end
+        end
+
+        sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
+        def explicit_index?(credential)
+          return false if credential.replaces_base?
+
+          cred_url = normalize_index_url(credential["index-url"].to_s)
+          uv_indices.any? do |_name, config|
+            config["explicit"] == true && normalize_index_url(config["url"].to_s) == cred_url
+          end
+        end
+
+        sig { params(url: String).returns(String) }
+        def normalize_index_url(url)
+          url.chomp("/")
+        end
+
+        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
+        def uv_indices
+          @uv_indices ||= T.let(parse_uv_indices, T.nilable(T::Hash[String, T::Hash[String, T.untyped]]))
+        end
+
+        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
+        def parse_uv_indices
+          return {} unless pyproject&.content
+
+          parsed = TomlRB.parse(T.must(pyproject).content)
+          indices = parsed.dig("tool", "uv", "index")
+          return {} unless indices.is_a?(Array)
+
+          indices.each_with_object({}) do |index, result|
+            name = index["name"]
+            next unless name
+
+            result[name] = {
+              "url" => index["url"],
+              "explicit" => index["explicit"] == true
+            }
+          end
+        rescue TomlRB::ParseError
+          {}
+        end
+
+        # For hosted Dependabot, token will be nil since the credentials aren't present
+        # (the proxy handles authentication). This is for those running Dependabot
+        # themselves and for dry-run.
+        sig { returns(T::Hash[String, String]) }
+        def explicit_index_env_vars
+          env_vars = {}
+
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .select { |cred| explicit_index?(cred) }
+            .each do |cred|
+            index_name = find_index_name_for_credential(cred)
+            next unless index_name
+
+            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+
+            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+
+            if cred["password"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
+            elsif cred["token"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
+            end
+          end
+
+          env_vars
+        end
+
+        sig { params(credential: Dependabot::Credential).returns(T.nilable(String)) }
+        def find_index_name_for_credential(credential)
+          cred_url = normalize_index_url(credential["index-url"].to_s)
+
+          uv_indices.each do |name, config|
+            return name if normalize_index_url(config["url"].to_s) == cred_url
+          end
+
+          nil
         end
 
         sig { params(options: String).returns(String) }
@@ -394,8 +475,9 @@ module Dependabot
         end
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
-        def escape(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]")
+        def escape_package_name(name)
+          # Per PEP 503, Python package names normalize -, _, and . to the same character
+          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }
@@ -476,6 +558,8 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
+          return true if lockfile && T.must(dependency).requirements.empty?
+
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
       end
