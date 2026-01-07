@@ -69,4 +69,5 @@ job:
     - name: minor-and-patch
       rules:
         update-types:
+          - minor
           - patch
