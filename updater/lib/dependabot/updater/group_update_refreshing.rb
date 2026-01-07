@@ -137,6 +137,9 @@ module Dependabot
 
         # If current version equals PR target, dependencies were updated externally
         # The PR is no longer needed and should be closed
+        # Note: String comparison is used here to match the PR data format
+        # which stores versions as strings. This is consistent with how versions
+        # are compared elsewhere in the codebase (e.g., dependency_change_builder.rb:84)
         return false if current_dep.version.to_s == pr_target_version
 
         # The dependency is still at an older version, so the PR is still needed
