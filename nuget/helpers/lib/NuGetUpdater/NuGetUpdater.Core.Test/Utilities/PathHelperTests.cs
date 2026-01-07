@@ -283,6 +283,24 @@ public class PathHelperTests
                 "/src/client/ios/ui"
             }
         ];
+
+        // leading and trailing slashes
+        yield return
+        [
+            // searchPattern
+            "/src/",
+            // directoriesOnDisk
+            new[]
+            {
+                "src",
+                "tests"
+            },
+            // expectedDirectories
+            new[]
+            {
+                "/src"
+            }
+        ];
     }
 
     [LinuxOnlyFact]
