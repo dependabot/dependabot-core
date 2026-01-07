@@ -256,6 +256,7 @@ internal static class PathHelper
         // translate pattern to regex
         searchPattern = searchPattern.Replace("\\", "/"); // unix-style paths make things easier
         searchPattern = searchPattern.TrimStart('/'); // pattern shouldn't be rooted
+        searchPattern = searchPattern.TrimEnd('/'); // trailing slash is meaningless for directory matching
         if (searchPattern == string.Empty)
         {
             searchPattern = "/"; // special case repo root
