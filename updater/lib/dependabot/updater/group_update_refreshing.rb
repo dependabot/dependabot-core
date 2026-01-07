@@ -36,8 +36,9 @@ module Dependabot
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
         elsif pr_exists_and_is_up_to_date?(dependency_change, group)
-          Dependabot.logger.info("Pull request already up-to-date for '#{group.name}'")
-          # The PR is already up-to-date, so we update it with a no-op to refresh metadata
+          Dependabot.logger.info("Pull request still needed for '#{group.name}' but no new updates available")
+          # The PR is still valid and represents needed updates, even though no new versions are available yet
+          # Update the PR to refresh metadata and keep it active
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         else
           Dependabot.logger.info("No updated dependencies, closing existing Pull Request")
