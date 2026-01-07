@@ -545,8 +545,8 @@ module Dependabot
           # Check if the PR is for the same directory as the current job
           pr_directory = pr["dependencies"]&.first&.dig("directory")
 
-          # If the existing PR has no directory info, it doesn't match
-          next false if pr_directory.nil?
+          # If the existing PR has no directory info, consider it a match
+          next true if pr_directory.nil?
 
           # Normalize directories for comparison (handle "/" vs "/." differences)
           current_directory = Pathname.new(job.source.directory || "/").cleanpath.to_s
