@@ -163,8 +163,94 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
       end
 
-      it "raises an error" do
-        expect { updated_files }.to raise_error("Expected lockfile to change!")
+      context "when dependency has a version" do
+        it "raises UpdateNotPossible" do
+          expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+            expect(error.dependencies).to eq(["requests"])
+          end
+        end
+      end
+
+      context "when dependency has no version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: nil,
+            requirements: [{
+              file: "pyproject.toml",
+              requirement: ">=2.31.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "pyproject.toml",
+              requirement: ">=2.31.0",
+              groups: [],
+              source: nil
+            }],
+            previous_version: nil,
+            package_manager: "uv"
+          )
+        end
+
+        it "raises an error" do
+          expect { updated_files }.to raise_error("Expected lockfile to change!")
+        end
+      end
+    end
+
+    context "when explicit version fails but fallback succeeds with no change" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "botocore",
+          version: "1.42.22",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=1.41.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=1.41.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.42.19",
+          package_manager: "uv"
+        )
+      end
+
+      before do
+        allow(updater).to receive(:updated_lockfile_content_for).and_call_original
+        allow(updater).to receive(:write_temporary_dependency_files)
+        allow(updater).to receive(:setup_python_environment)
+
+        # Mock the command execution to simulate:
+        # 1. First call with explicit version fails
+        # 2. Second call without version succeeds but returns same lockfile
+        call_count = 0
+        allow(updater).to receive(:run_command) do |cmd, **_opts|
+          call_count += 1
+          if call_count == 1 && cmd.include?("==1.42.22")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "× No solution found when resolving dependencies",
+              error_context: {}
+            )
+          end
+          # Return success for fallback command
+          ""
+        end
+
+        # Mock File.read to return the original lockfile content (no change)
+        allow(File).to receive(:read).with("uv.lock").and_return(lockfile_content)
+      end
+
+      it "raises UpdateNotPossible" do
+        expect { updated_files }.to raise_error(Dependabot::UpdateNotPossible) do |error|
+          expect(error.dependencies).to eq(["botocore"])
+          expect(error.message).to include("The following dependencies could not be updated: botocore")
+        end
       end
     end
 

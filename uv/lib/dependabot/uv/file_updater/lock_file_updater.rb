@@ -103,7 +103,13 @@ module Dependabot
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
 
-            raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
+            if T.must(lockfile).content == new_content
+              # If the lockfile didn't change and we tried to update to a specific version,
+              # it means the update is not possible (likely due to conflicting dependencies)
+              raise Dependabot::UpdateNotPossible, [T.must(dependency).name] if T.must(dependency).version
+
+              raise "Expected lockfile to change!"
+            end
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
           end
