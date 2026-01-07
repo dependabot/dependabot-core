@@ -279,7 +279,7 @@ RSpec.describe Dependabot::PullRequest do
       expect(pr1).not_to eq(pr2)
     end
 
-    it "is false when one has directory and the other doesn't" do
+    it "is true when one has directory and the other doesn't" do
       pr1 = described_class.new(
         [
           Dependabot::PullRequest::Dependency.new(
@@ -300,7 +300,7 @@ RSpec.describe Dependabot::PullRequest do
         pr_number: 456
       )
 
-      expect(pr1).not_to eq(pr2)
+      expect(pr1).to eq(pr2)
     end
 
     it "is false when directories are different" do
@@ -346,7 +346,7 @@ RSpec.describe Dependabot::PullRequest do
       expect(existing_prs.find { |pr| pr == new_pr }).to be_nil
     end
 
-    it "is false when existing PR has no directory but new PR does" do
+    it "is true when existing PR has no directory but new PR does" do
       existing_prs = described_class.create_from_job_definition(
         existing_pull_requests: [
           [{ "dependency-name" => "rollup", "dependency-version" => "2.79.2" }]
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::PullRequest do
 
       expect(existing_prs.first.using_directory?).to be false
       expect(new_pr.using_directory?).to be true
-      expect(existing_prs.find { |pr| pr == new_pr }).to be_nil
+      expect(existing_prs.find { |pr| pr == new_pr }).not_to be_nil
     end
   end
 end

@@ -354,8 +354,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           allow(job).to receive(:source).and_return(mock_source)
         end
 
-        it "does not treat the existing PR as a match and proceeds with update" do
-          expect(mock_create_group_update).to receive(:perform)
+        it "treats the existing PR as a match" do
+          expect(mock_create_group_update).not_to receive(:perform)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
           perform
         end
       end
