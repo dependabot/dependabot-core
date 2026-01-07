@@ -131,6 +131,8 @@ docker run --rm -ti \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
   -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
+  -v "$(pwd)/Gemfile:$CODE_DIR/Gemfile" \
+  -v "$(pwd)/Gemfile.lock:$CODE_DIR/Gemfile.lock" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
   -v "$(pwd)/bazel/.rubocop.yml:$CODE_DIR/bazel/.rubocop.yml" \
   -v "$(pwd)/bazel/dependabot-bazel.gemspec:$CODE_DIR/bazel/dependabot-bazel.gemspec" \
@@ -256,6 +258,11 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
+  -v "$(pwd)/opam/.rubocop.yml:$CODE_DIR/opam/.rubocop.yml" \
+  -v "$(pwd)/opam/dependabot-opam.gemspec:$CODE_DIR/opam/dependabot-opam.gemspec" \
+  -v "$(pwd)/opam/lib:$CODE_DIR/opam/lib" \
+  -v "$(pwd)/opam/script:$CODE_DIR/opam/script" \
+  -v "$(pwd)/opam/spec:$CODE_DIR/opam/spec" \
   -v "$(pwd)/opentofu/.rubocop.yml:$CODE_DIR/opentofu/.rubocop.yml" \
   -v "$(pwd)/opentofu/dependabot-opentofu.gemspec:$CODE_DIR/opentofu/dependabot-opentofu.gemspec" \
   -v "$(pwd)/opentofu/helpers:$CODE_DIR/opentofu/helpers" \

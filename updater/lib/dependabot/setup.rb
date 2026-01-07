@@ -47,6 +47,7 @@ Sentry.init do |config|
     maven|
     npm_and_yarn|
     nuget|
+    opam|
     pub|
     python|
     rust_toolchain|
@@ -89,6 +90,7 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/opam"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"
