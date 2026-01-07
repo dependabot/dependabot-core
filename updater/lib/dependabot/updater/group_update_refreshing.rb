@@ -35,6 +35,10 @@ module Dependabot
       def upsert_pull_request_with_error_handling(dependency_change, group)
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
+        elsif pr_exists_and_is_up_to_date?(dependency_change, group)
+          Dependabot.logger.info("Pull request already up-to-date for '#{group.name}'")
+          # The PR is already up-to-date, so we update it with a no-op to refresh metadata
+          service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         else
           Dependabot.logger.info("No updated dependencies, closing existing Pull Request")
           close_pull_request(reason: :update_no_longer_possible, group: group)
@@ -79,6 +83,52 @@ module Dependabot
         )
 
         service.close_pull_request(T.must(job.dependencies), reason)
+      end
+
+      # Checks if an existing PR for the group still represents needed updates
+      # Returns true if:
+      # - A PR exists for the group
+      # - All dependencies in the PR are still present in the project and in the group
+      # - The main branch is NOT yet at the PR's target versions (updates are still needed)
+      # 
+      # Returns false if dependencies have been updated externally to match the PR
+      sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def pr_exists_and_is_up_to_date?(dependency_change, group)
+        # Check if there's an existing PR for this group
+        existing_pr = job.existing_group_pull_requests.find do |pr|
+          T.cast(pr["dependency-group-name"], T.nilable(String)) == group.name
+        end
+
+        return false unless existing_pr
+
+        # Get dependencies from the existing PR
+        pr_dependencies = T.cast(existing_pr["dependencies"], T.nilable(T::Array[T::Hash[String, T.untyped]])) || []
+        return false if pr_dependencies.empty?
+
+        # Check if the PR is still needed by verifying dependencies haven't been updated externally
+        pr_dependencies.all? do |pr_dep|
+          dep_name = T.cast(pr_dep["dependency-name"], T.nilable(String))
+          pr_target_version = T.cast(pr_dep["dependency-version"], T.nilable(String))
+
+          next false unless dep_name && pr_target_version
+
+          # Find the dependency in the current snapshot
+          current_dep = dependency_snapshot.dependencies.find { |d| d.name == dep_name }
+
+          # If dependency is not found, the PR is no longer valid
+          next false unless current_dep
+
+          # Check if the dependency is still in the group
+          next false unless group.dependencies.any? { |d| d.name == dep_name }
+
+          # If current version equals PR target, dependencies were updated externally
+          # The PR is no longer needed and should be closed
+          next false if current_dep.version.to_s == pr_target_version
+
+          # The dependency is still at an older version, so the PR is still needed
+          # Keep the PR open even if no new updates are available
+          true
+        end
       end
     end
   end
