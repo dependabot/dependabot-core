@@ -33,6 +33,9 @@ module Dependabot
       end
     end
 
+    # Placeholder value used in vulnerabilities_fixed hash to indicate a security fix
+    SECURITY_FIX_PLACEHOLDER = "security-fix"
+
     sig { returns(Dependabot::Job) }
     attr_reader :job
 
@@ -206,7 +209,7 @@ module Dependabot
         # Store the dependency name with an array containing a placeholder
         # The actual vulnerability details aren't used by the message builder,
         # it just checks if the array has any entries
-        result[dep.name] = ["security-fix"]
+        result[dep.name] = [SECURITY_FIX_PLACEHOLDER]
       end
       result
     end
