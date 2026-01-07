@@ -33,7 +33,9 @@ module Dependabot
       end
     end
 
-    # Placeholder value used in vulnerabilities_fixed hash to indicate a security fix
+    # Placeholder value used in vulnerabilities_fixed hash to indicate a security fix.
+    # The MessageBuilder only checks for the presence of entries in the array,
+    # not the actual vulnerability details, so this placeholder is sufficient.
     SECURITY_FIX_PLACEHOLDER = "security-fix"
 
     sig { returns(Dependabot::Job) }
@@ -202,16 +204,9 @@ module Dependabot
     # include security fixes
     sig { returns(T::Hash[String, T::Array[String]]) }
     def vulnerabilities_fixed
-      result = {}
-      updated_dependencies.each do |dep|
-        next unless job.security_fix?(dep)
-
-        # Store the dependency name with an array containing a placeholder
-        # The actual vulnerability details aren't used by the message builder,
-        # it just checks if the array has any entries
-        result[dep.name] = [SECURITY_FIX_PLACEHOLDER]
+      updated_dependencies.each_with_object({}) do |dep, result|
+        result[dep.name] = [SECURITY_FIX_PLACEHOLDER] if job.security_fix?(dep)
       end
-      result
     end
 
     # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
