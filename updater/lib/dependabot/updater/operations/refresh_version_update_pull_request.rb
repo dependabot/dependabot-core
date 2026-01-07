@@ -134,7 +134,9 @@ module Dependabot
           checker = update_checker_for(lead_dependency, raise_on_ignored: raise_on_ignored?(lead_dependency))
           log_checking_for_update(lead_dependency)
 
-          return if all_versions_ignored?(lead_dependency, checker)
+          if all_versions_ignored?(lead_dependency, checker)
+            return close_pull_request(reason: :up_to_date)
+          end
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
