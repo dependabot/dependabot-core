@@ -20,10 +20,10 @@
 
 "L: docker:compose":
 - changed-files:
-    - any-glob-to-any-file: docker/lib/dependabot/docker_compose/**
-    - any-glob-to-any-file: docker/lib/dependabot/shared/**
-    - any-glob-to-any-file: docker/spec/dependabot/docker_compose/**
-    - any-glob-to-any-file: docker/spec/dependabot/shared/**
+  - any-glob-to-any-file: docker/lib/dependabot/docker_compose/**
+  - any-glob-to-any-file: docker/lib/dependabot/shared/**
+  - any-glob-to-any-file: docker/spec/dependabot/docker_compose/**
+  - any-glob-to-any-file: docker/spec/dependabot/shared/**
     
 "L: dotnet:dotnet-sdk":
 - changed-files:
