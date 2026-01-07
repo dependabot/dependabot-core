@@ -231,7 +231,7 @@ module Dependabot
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(
-          version: Dependabot::Version.new(tag.name),
+          version: Docker::Version.new(tag.name),
           released_at: published_date,
           latest: false,
           yanked: false,
