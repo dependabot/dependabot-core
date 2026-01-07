@@ -172,7 +172,7 @@ RSpec.describe Dependabot::DependencyChange do
             dependencies: updated_dependencies,
             credentials: job_credentials,
             commit_message_options: commit_message_options,
-            vulnerabilities_fixed: { "business" => ["security-fix"] },
+            vulnerabilities_fixed: { "business" => [Dependabot::DependencyChange::SECURITY_FIX_PLACEHOLDER] },
             dependency_group: nil,
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
