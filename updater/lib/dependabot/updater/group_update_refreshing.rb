@@ -90,10 +90,10 @@ module Dependabot
       # - A PR exists for the group
       # - All dependencies in the PR are still present in the project and in the group
       # - The main branch is NOT yet at the PR's target versions (updates are still needed)
-      # 
+      #
       # Returns false if dependencies have been updated externally to match the PR
-      sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).returns(T::Boolean) }
-      def pr_exists_and_is_up_to_date?(dependency_change, group)
+      sig { params(_dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def pr_exists_and_is_up_to_date?(_dependency_change, group)
         # Check if there's an existing PR for this group
         existing_pr = job.existing_group_pull_requests.find do |pr|
           T.cast(pr["dependency-group-name"], T.nilable(String)) == group.name
@@ -106,29 +106,41 @@ module Dependabot
         return false if pr_dependencies.empty?
 
         # Check if the PR is still needed by verifying dependencies haven't been updated externally
+        all_dependencies_still_need_update?(pr_dependencies, group)
+      end
+
+      # Helper to check if all PR dependencies still need the proposed update
+      sig { params(pr_dependencies: T::Array[T::Hash[String, T.untyped]], group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def all_dependencies_still_need_update?(pr_dependencies, group)
         pr_dependencies.all? do |pr_dep|
-          dep_name = T.cast(pr_dep["dependency-name"], T.nilable(String))
-          pr_target_version = T.cast(pr_dep["dependency-version"], T.nilable(String))
-
-          next false unless dep_name && pr_target_version
-
-          # Find the dependency in the current snapshot
-          current_dep = dependency_snapshot.dependencies.find { |d| d.name == dep_name }
-
-          # If dependency is not found, the PR is no longer valid
-          next false unless current_dep
-
-          # Check if the dependency is still in the group
-          next false unless group.dependencies.any? { |d| d.name == dep_name }
-
-          # If current version equals PR target, dependencies were updated externally
-          # The PR is no longer needed and should be closed
-          next false if current_dep.version.to_s == pr_target_version
-
-          # The dependency is still at an older version, so the PR is still needed
-          # Keep the PR open even if no new updates are available
-          true
+          dependency_still_needs_update?(pr_dep, group)
         end
+      end
+
+      # Helper to check if a single PR dependency still needs the proposed update
+      sig { params(pr_dep: T::Hash[String, T.untyped], group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def dependency_still_needs_update?(pr_dep, group)
+        dep_name = T.cast(pr_dep["dependency-name"], T.nilable(String))
+        pr_target_version = T.cast(pr_dep["dependency-version"], T.nilable(String))
+
+        return false unless dep_name && pr_target_version
+
+        # Find the dependency in the current snapshot
+        current_dep = dependency_snapshot.dependencies.find { |d| d.name == dep_name }
+
+        # If dependency is not found, the PR is no longer valid
+        return false unless current_dep
+
+        # Check if the dependency is still in the group
+        return false unless group.dependencies.any? { |d| d.name == dep_name }
+
+        # If current version equals PR target, dependencies were updated externally
+        # The PR is no longer needed and should be closed
+        return false if current_dep.version.to_s == pr_target_version
+
+        # The dependency is still at an older version, so the PR is still needed
+        # Keep the PR open even if no new updates are available
+        true
       end
     end
   end

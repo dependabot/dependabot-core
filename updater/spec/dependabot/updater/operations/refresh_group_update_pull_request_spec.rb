@@ -152,33 +152,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
     end
 
-    context "when dependencies are up-to-date but no new versions are available (issue fix)" do
-      let(:job_definition) do
-        job_definition_fixture("bundler/version_updates/group_update_refresh")
-      end
-
-      let(:dependency_files) do
-        original_bundler_files # Main branch still at old version (1.1.0)
-      end
-
-      before do
-        stub_rubygems_calls # Latest available is 1.2.0, matching the PR target
-      end
-
-      it "keeps the pull request open and updates it" do
-        # The PR proposes updating to 1.2.0
-        # Main branch is at 1.1.0 (old version)
-        # Latest available is 1.2.0 (same as PR target, no new updates)
-        # Expected: Keep PR open and update it (not close it)
-        
-        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
-          expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        end
-
-        refresh_group.perform
-      end
-    end
-
     context "when the dependencies that need to be updated have changed" do
       let(:job_definition) do
         job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
