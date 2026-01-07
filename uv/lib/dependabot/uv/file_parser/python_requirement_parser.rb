@@ -57,14 +57,7 @@ module Dependabot
           pyproject_object = TomlRB.parse(T.must(pyproject).content)
 
           # Check for PEP621 requires-python
-          pep621_python = pyproject_object.dig("project", "requires-python")
-          return pep621_python if pep621_python
-
-          # Fallback to Poetry configuration
-          poetry_object = pyproject_object.dig("tool", "poetry")
-
-          poetry_object&.dig("dependencies", "python") ||
-            poetry_object&.dig("dev-dependencies", "python")
+          pyproject_object.dig("project", "requires-python")
         end
 
         sig { returns(T.nilable(String)) }
