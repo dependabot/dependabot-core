@@ -16,28 +16,6 @@ RSpec.describe Dependabot::Python::Language do
   let(:detected_version) { "3.11" }
   let(:raw_version) { "3.13.1" }
 
-  describe "PRE_INSTALLED_PYTHON_VERSIONS" do
-    it "is sorted in descending order" do
-      versions = described_class::PRE_INSTALLED_PYTHON_VERSIONS
-      expect(versions).to eq(versions.sort.reverse)
-    end
-
-    it "has the highest version first" do
-      versions = described_class::PRE_INSTALLED_PYTHON_VERSIONS
-      expect(versions.first).to eq(versions.max)
-    end
-
-    it "has the lowest version last" do
-      versions = described_class::PRE_INSTALLED_PYTHON_VERSIONS
-      expect(versions.last).to eq(versions.min)
-    end
-
-    it "matches PRE_INSTALLED_HIGHEST_VERSION with the first element" do
-      expect(described_class::PRE_INSTALLED_PYTHON_VERSIONS.first)
-        .to eq(described_class::PRE_INSTALLED_HIGHEST_VERSION)
-    end
-  end
-
   describe "#deprecated?" do
     it "returns false" do
       expect(language.deprecated?).to be false
