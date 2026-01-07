@@ -92,6 +92,7 @@ module Dependabot
         files: updated_dependency_files,
         credentials: job.credentials,
         commit_message_options: job.commit_message_options,
+        vulnerabilities_fixed: vulnerabilities_fixed,
         dependency_group: dependency_group,
         pr_message_max_length: pr_message_max_length,
         pr_message_encoding: pr_message_encoding,
@@ -192,6 +193,23 @@ module Dependabot
     end
 
     private
+
+    # Returns a hash of dependency names to arrays of fixed vulnerabilities
+    # This is used by the PR message builder to indicate which dependencies
+    # include security fixes
+    sig { returns(T::Hash[String, T::Array[String]]) }
+    def vulnerabilities_fixed
+      result = {}
+      updated_dependencies.each do |dep|
+        next unless job.security_fix?(dep)
+
+        # Store the dependency name with an array containing a placeholder
+        # The actual vulnerability details aren't used by the message builder,
+        # it just checks if the array has any entries
+        result[dep.name] = ["security-fix"]
+      end
+      result
+    end
 
     # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
     # allow rebases to continue working for those, but for multi-directory configs we do compare with the directory.
