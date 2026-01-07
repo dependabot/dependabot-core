@@ -534,7 +534,26 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def pr_exists_for_dependency_group?(group)
-        job.existing_group_pull_requests.any? { |pr| pr["dependency-group-name"] == group.name }
+        !find_existing_group_pr(group).nil?
+      end
+
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def find_existing_group_pr(group)
+        job.existing_group_pull_requests.find do |pr|
+          next false unless pr["dependency-group-name"] == group.name
+
+          # Check if the PR is for the same directory as the current job
+          pr_directory = pr["dependencies"]&.first&.dig("directory")
+
+          # If the existing PR has no directory info, it doesn't match
+          next false if pr_directory.nil?
+
+          # Normalize directories for comparison (handle "/" vs "/." differences)
+          current_directory = Pathname.new(job.source.directory || "/").cleanpath.to_s
+          pr_directory_normalized = Pathname.new(pr_directory).cleanpath.to_s
+
+          current_directory == pr_directory_normalized
+        end
       end
 
       sig do

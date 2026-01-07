@@ -326,5 +326,45 @@ RSpec.describe Dependabot::PullRequest do
 
       expect(existing_pr).not_to eq(new_pr)
     end
+
+    it "is false when comparing PRs from job definition with different directories" do
+      existing_prs = described_class.create_from_job_definition(
+        existing_pull_requests: [
+          [{ "dependency-name" => "rollup", "dependency-version" => "2.79.2", "directory" => "/packages/corelib" }]
+        ]
+      )
+
+      updated_dependency = instance_double(
+        Dependabot::Dependency,
+        name: "rollup",
+        version: "2.79.2",
+        removed?: false,
+        directory: "/."
+      )
+      new_pr = described_class.create_from_updated_dependencies([updated_dependency])
+
+      expect(existing_prs.find { |pr| pr == new_pr }).to be_nil
+    end
+
+    it "is false when existing PR has no directory but new PR does" do
+      existing_prs = described_class.create_from_job_definition(
+        existing_pull_requests: [
+          [{ "dependency-name" => "rollup", "dependency-version" => "2.79.2" }]
+        ]
+      )
+
+      updated_dependency = instance_double(
+        Dependabot::Dependency,
+        name: "rollup",
+        version: "2.79.2",
+        removed?: false,
+        directory: "/."
+      )
+      new_pr = described_class.create_from_updated_dependencies([updated_dependency])
+
+      expect(existing_prs.first.using_directory?).to be false
+      expect(new_pr.using_directory?).to be true
+      expect(existing_prs.find { |pr| pr == new_pr }).to be_nil
+    end
   end
 end

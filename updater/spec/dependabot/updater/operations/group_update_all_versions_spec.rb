@@ -284,6 +284,82 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         end
       end
 
+      context "when PR exists for same group but different directory" do
+        before do
+          # Existing PR is for /packages/corelib directory
+          allow(job).to receive(:existing_group_pull_requests).and_return(
+            [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  { "dependency-name" => "rollup", "dependency-version" => "2.79.2", "directory" => "/packages/corelib" }
+                ]
+              }
+            ]
+          )
+          # Current job is targeting root directory "/"
+          allow(mock_source).to receive(:directory).and_return("/")
+          allow(job).to receive(:source).and_return(mock_source)
+        end
+
+        it "creates a new PR for the different directory" do
+          allow(mock_create_group_update).to receive(:perform).and_return(mock_dependency_change)
+          expect(mock_create_group_update).to receive(:perform)
+          expect(dependency_snapshot).not_to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+      end
+
+      context "when PR exists for same group and same directory" do
+        before do
+          # Existing PR is for root directory
+          allow(job).to receive(:existing_group_pull_requests).and_return(
+            [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  { "dependency-name" => "rollup", "dependency-version" => "2.79.2", "directory" => "/" }
+                ]
+              }
+            ]
+          )
+          # Current job is also targeting root directory
+          allow(mock_source).to receive(:directory).and_return("/")
+          allow(job).to receive(:source).and_return(mock_source)
+        end
+
+        it "skips creating a new PR" do
+          expect(mock_create_group_update).not_to receive(:perform)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+      end
+
+      context "when existing PR has no directory info" do
+        before do
+          allow(job).to receive(:existing_group_pull_requests).and_return(
+            [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  { "dependency-name" => "rollup", "dependency-version" => "2.79.2" }
+                ]
+              }
+            ]
+          )
+          allow(mock_source).to receive(:directory).and_return("/")
+          allow(job).to receive(:source).and_return(mock_source)
+        end
+
+        it "does not treat the existing PR as a match and proceeds with update" do
+          expect(mock_create_group_update).to receive(:perform)
+          perform
+        end
+      end
+
       context "when group update fails" do
         before do
           allow(mock_create_group_update).to receive(:perform).and_return(nil)
