@@ -51,4 +51,5 @@ job:
         patterns:
           - "framework-*"
         update-types:
+          - minor
           - patch
