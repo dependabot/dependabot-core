@@ -23,6 +23,9 @@ module Dependabot
       COREPACK_NPM_REGISTRY_ENV = "npm_config_registry"
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
 
+      # Default npm registry - no need to set env vars for this
+      DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
+
       sig do
         params(
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
@@ -43,8 +46,12 @@ module Dependabot
         if registry_info[:registry] # Prevent the https from being stripped in the process
           registry = registry_info[:registry]
           registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
-          env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
-          env_variables[REGISTRY_KEY] = registry
+
+          # Only set registry env vars if it's not the default npm registry
+          unless registry == DEFAULT_NPM_REGISTRY
+            env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
+            env_variables[REGISTRY_KEY] = registry
+          end
         end
 
         env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
