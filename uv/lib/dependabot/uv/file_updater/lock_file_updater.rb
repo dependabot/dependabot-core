@@ -90,13 +90,17 @@ module Dependabot
           return false unless dependency
           return false unless pyproject
 
-          dep_name = T.must(dependency).name
+          dep_name = normalise(T.must(dependency).name)
           sources = uv_sources
 
-          return false unless sources.key?(dep_name)
+          # Check if any source keys match the normalized dependency name
+          sources.keys.any? do |source_key|
+            normalised_source_key = normalise(source_key)
+            next unless normalised_source_key == dep_name
 
-          source_config = sources[dep_name]
-          source_config.is_a?(Hash) && source_config.key?("path")
+            source_config = sources[source_key]
+            source_config.is_a?(Hash) && source_config.key?("path")
+          end
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
