@@ -20,8 +20,8 @@ module Dependabot
       NPM_REGISTER_KEY_FOR_YARN = "npmRegistryServer"
 
       # Environment variable keys
-      COREPACK_NPM_REGISTRY_ENV = "COREPACK_NPM_REGISTRY"
-      COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
+      COREPACK_NPM_REGISTRY_ENV = "npm_config_registry"
+      COREPACK_NPM_TOKEN_ENV = "NPM_CONFIG__AUTH"
 
       sig do
         params(

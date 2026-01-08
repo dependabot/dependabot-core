@@ -84,7 +84,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/"
+          "npm_config_registry" => "https://custom-registry.com/"
         )
       end
     end
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, credentials)
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm"
+          "npm_config_registry" => "https://artifactory.example.com/npm"
         )
       end
     end
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/"
+          "npm_config_registry" => "https://custom-registry.com/"
         )
       end
     end
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/"
+          "npm_config_registry" => "https://yarn-registry.com/"
         )
       end
     end
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/"
+          "npm_config_registry" => "https://yarn-registry.com/"
         )
       end
     end
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/"
+          "npm_config_registry" => "https://yarnrc-yml-registry.com/"
         )
       end
     end
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/"
+          "npm_config_registry" => "https://yarnrc-yml-registry.com/"
         )
       end
     end
