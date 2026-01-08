@@ -20,7 +20,8 @@ module Dependabot
       NPM_REGISTER_KEY_FOR_YARN = "npmRegistryServer"
 
       # Environment variable keys
-      COREPACK_NPM_REGISTRY_ENV = "npm_config_registry"
+      COREPACK_NPM_REGISTRY_ENV = "npm_config_registry" # For Corepack
+      NPM_CONFIG_REGISTRY_ENV = "NPM_CONFIG_REGISTRY" # For npm
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
 
       # Default npm registry - no need to set env vars for this
@@ -47,9 +48,10 @@ module Dependabot
           registry = registry_info[:registry]
           registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
 
-          # Only set registry env vars if it's not the default npm registry
+          # Set both in the env_variables hash
           unless registry == DEFAULT_NPM_REGISTRY
-            env_variables[COREPACK_NPM_REGISTRY_ENV] = registry
+            env_variables[COREPACK_NPM_REGISTRY_ENV] = registry # For Corepack
+            env_variables[NPM_CONFIG_REGISTRY_ENV] = registry # For npm
             env_variables[REGISTRY_KEY] = registry
           end
         end
