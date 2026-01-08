@@ -6,7 +6,25 @@ require "dependabot/python/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Python::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
+  describe "the class inheritance" do
+    it "inherits from Python::SharedFileFetcher which inherits from FileFetchers::Base" do
+      expect(described_class.superclass).to eq(Dependabot::Python::SharedFileFetcher)
+      expect(described_class.ancestors).to include(Dependabot::FileFetchers::Base)
+    end
+
+    it "implements required_files_in?" do
+      expect(described_class.public_methods(false)).to include(:required_files_in?)
+    end
+
+    it "implements required_files_message" do
+      expect(described_class.public_methods(false)).to include(:required_files_message)
+    end
+
+    it "doesn't define any additional public instance methods" do
+      expect(described_class.public_instance_methods)
+        .to match_array(Dependabot::FileFetchers::Base.public_instance_methods)
+    end
+  end
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }

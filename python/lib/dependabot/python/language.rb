@@ -27,8 +27,7 @@ module Dependabot
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(
         PRE_INSTALLED_PYTHON_VERSIONS_RAW.map do |v|
           Version.new(v)
-        end.sort.reverse, # installed versions is sorted in descending order as highest available version is preferred
-        # over the lower ones
+        end.sort,
         T::Array[Dependabot::Python::Version]
       )
 
