@@ -522,6 +522,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env = described_class.send(:build_corepack_env_variables)
 
         expect(env).not_to be_nil
+        expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
@@ -546,6 +547,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           env = described_class.send(:build_corepack_env_variables)
           # Registry helper can still find registry from credentials even without files
           expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(env["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(env["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         end
@@ -558,6 +560,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           env = described_class.send(:build_corepack_env_variables)
           # Can still extract registry from .npmrc even without credentials
           expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(env["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(env["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         end
@@ -579,6 +582,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
           # Returns env based on .npmrc content since credential doesn't replace base
           expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(env["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(env["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         end
@@ -600,6 +604,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           env = described_class.send(:build_corepack_env_variables)
 
           expect(env).not_to be_nil
+          expect(env["COREPACK_NPM_REGISTRY"]).to eq("https://custom.registry.com")
           expect(env["npm_config_registry"]).to eq("https://custom.registry.com")
           expect(env["registry"]).to eq("https://custom.registry.com")
           expect(env["COREPACK_NPM_TOKEN"]).to eq("custom-token")
@@ -614,6 +619,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Stub build_corepack_env_variables to return known values
         allow(described_class).to receive(:build_corepack_env_variables).and_return(
           {
+            "COREPACK_NPM_REGISTRY" => "https://test.registry.com",
             "npm_config_registry" => "https://test.registry.com",
             "registry" => "https://test.registry.com",
             "COREPACK_NPM_TOKEN" => "test-token"
@@ -624,6 +630,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         expect(merged["PATH"]).to eq("/usr/bin")
         expect(merged["NODE_ENV"]).to eq("test")
+        expect(merged["COREPACK_NPM_REGISTRY"]).to eq("https://test.registry.com")
         expect(merged["npm_config_registry"]).to eq("https://test.registry.com")
         expect(merged["registry"]).to eq("https://test.registry.com")
         expect(merged["COREPACK_NPM_TOKEN"]).to eq("test-token")
@@ -651,6 +658,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       it "returns corepack env when original env is nil" do
         corepack_env = {
+          "COREPACK_NPM_REGISTRY" => "https://test.registry.com",
           "npm_config_registry" => "https://test.registry.com",
           "registry" => "https://test.registry.com",
           "COREPACK_NPM_TOKEN" => "test-token"
@@ -680,6 +688,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "automatically injects corepack env variables with only registry" do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
           expect(options[:env]).not_to be_nil
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
@@ -692,6 +701,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "preserves manually provided env variables" do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
           expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
           ""
