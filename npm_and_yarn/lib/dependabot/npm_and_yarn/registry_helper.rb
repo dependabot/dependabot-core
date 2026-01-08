@@ -20,8 +20,8 @@ module Dependabot
       NPM_REGISTER_KEY_FOR_YARN = "npmRegistryServer"
 
       # Environment variable keys
-      COREPACK_NPM_REGISTRY_ENV = "npm_config_registry" # For Corepack
-      NPM_CONFIG_REGISTRY_ENV = "NPM_CONFIG_REGISTRY" # For npm
+      COREPACK_NPM_REGISTRY_ENV = "COREPACK_NPM_REGISTRY" # For Corepack
+      NPM_CONFIG_REGISTRY_ENV = "npm_config_registry" # For npm
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
 
       # Default npm registry - no need to set env vars for this
