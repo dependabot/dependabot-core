@@ -1234,4 +1234,79 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
   end
+
+  describe "local path dependencies" do
+    let(:pyproject_content) { fixture("pyproject_files", "uv_path_dependencies.toml") }
+    let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
+
+    context "when updating a local path dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "protos",
+          version: "0.2.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_version: "0.1.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "skips lockfile update for local path dependencies" do
+        # Should only update pyproject.toml if it changed, not the lockfile
+        updated_files = updater.updated_dependency_files
+
+        # No files should be updated since local path dependencies cannot be updated
+        expect(updated_files).to be_empty
+      end
+    end
+
+    context "when updating a non-path dependency in a project with path dependencies" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.33.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.33.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.31.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_version: "2.32.3",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates both pyproject.toml and lockfile for non-path dependencies" do
+        updated_lockfile = lockfile_content.sub('version = "2.32.3"', 'version = "2.33.0"')
+        updated_pyproject = pyproject_content.sub("requests>=2.31.0", "requests>=2.33.0")
+
+        allow(updater).to receive_messages(
+          updated_pyproject_content: updated_pyproject,
+          updated_lockfile_content_for: updated_lockfile
+        )
+
+        updated_files = updater.updated_dependency_files
+
+        # Should update both files for non-path dependencies
+        expect(updated_files.map(&:name)).to include("pyproject.toml")
+        expect(updated_files.map(&:name)).to include("uv.lock")
+      end
+    end
+  end
 end
