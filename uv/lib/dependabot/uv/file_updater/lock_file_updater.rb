@@ -101,8 +101,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def uv_sources
-          @uv_sources ||= T.let(parse_uv_sources, T.nilable(T::Hash[String, T.untyped]))
-          T.must(@uv_sources)
+          @uv_sources ||= parse_uv_sources
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
