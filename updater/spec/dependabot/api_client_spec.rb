@@ -32,7 +32,8 @@ RSpec.describe Dependabot::ApiClient do
         commit_message_options: [],
         updating_a_pull_request?: false,
         ignore_conditions: [],
-        cooldown: cooldown
+        cooldown: cooldown,
+        security_fix?: false
       )
     end
     let(:cooldown) do
@@ -265,7 +266,8 @@ RSpec.describe Dependabot::ApiClient do
         source: source,
         credentials: [],
         commit_message_options: [],
-        updating_a_pull_request?: true
+        updating_a_pull_request?: true,
+        security_fix?: false
       )
     end
     let(:dependency) do
@@ -728,7 +730,8 @@ RSpec.describe Dependabot::ApiClient do
         commit_message_options: [],
         updating_a_pull_request?: false,
         ignore_conditions: [],
-        cooldown: cooldown
+        cooldown: cooldown,
+        security_fix?: false
       )
     end
 
