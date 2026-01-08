@@ -1262,11 +1262,15 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "skips lockfile update for local path dependencies" do
-        # Should only update pyproject.toml if it changed, not the lockfile
+        # Since the local path dependency doesn't have file changes,
+        # no files should be updated
         updated_files = updater.updated_dependency_files
 
-        # No files should be updated since local path dependencies cannot be updated
         expect(updated_files).to be_empty
+      end
+
+      it "identifies the dependency as a local path dependency" do
+        expect(updater.send(:local_path_dependency?)).to be true
       end
     end
 
@@ -1292,20 +1296,23 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
 
-      it "updates both pyproject.toml and lockfile for non-path dependencies" do
-        updated_lockfile = lockfile_content.sub('version = "2.32.3"', 'version = "2.33.0"')
-        updated_pyproject = pyproject_content.sub("requests>=2.31.0", "requests>=2.33.0")
-
+      before do
         allow(updater).to receive_messages(
-          updated_pyproject_content: updated_pyproject,
-          updated_lockfile_content_for: updated_lockfile
+          updated_pyproject_content: pyproject_content.sub("requests>=2.31.0", "requests>=2.33.0"),
+          updated_lockfile_content_for: lockfile_content.sub('version = "2.32.3"', 'version = "2.33.0"')
         )
+      end
 
+      it "updates both pyproject.toml and lockfile for non-path dependencies" do
         updated_files = updater.updated_dependency_files
 
         # Should update both files for non-path dependencies
         expect(updated_files.map(&:name)).to include("pyproject.toml")
         expect(updated_files.map(&:name)).to include("uv.lock")
+      end
+
+      it "does not identify the dependency as a local path dependency" do
+        expect(updater.send(:local_path_dependency?)).to be false
       end
     end
   end
