@@ -219,6 +219,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
         allow(job).to receive(:dependencies).and_return(["dummy-pkg-a"])
       end
 
+      it "closes the pull request with reason :up_to_date" do
+        expect(refresh_version_update_pull_request).to receive(
+          :close_pull_request
+        ).with(reason: :up_to_date)
+        refresh_version_update_pull_request.send(
+          :check_and_update_pull_request, [dependency]
+        )
+      end
+
       it "does not create or update a pull request" do
         expect(refresh_version_update_pull_request).not_to receive(
           :create_pull_request

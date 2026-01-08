@@ -210,7 +210,7 @@ module Dependabot
         )
       end
 
-      sig { returns(PipCompileVersionResolver) }
+      sig { overridable.returns(Object) }
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||= T.let(
           PipCompileVersionResolver.new(
