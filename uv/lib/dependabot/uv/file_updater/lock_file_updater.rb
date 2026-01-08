@@ -85,38 +85,6 @@ module Dependabot
           groups.all?("build-system")
         end
 
-        sig { returns(T::Boolean) }
-        def local_path_dependency?
-          return false unless dependency
-          return false unless pyproject
-
-          dep_name = normalise(T.must(dependency).name)
-          sources = uv_sources
-
-          # Find if any source with a matching normalized name has a path configuration
-          sources.any? do |source_key, source_config|
-            normalise(source_key) == dep_name && source_config.is_a?(Hash) && source_config.key?("path")
-          end
-        end
-
-        sig { returns(T::Hash[String, T.untyped]) }
-        def uv_sources
-          @uv_sources ||= parse_uv_sources
-        end
-
-        sig { returns(T::Hash[String, T.untyped]) }
-        def parse_uv_sources
-          return {} unless pyproject&.content
-
-          parsed = TomlRB.parse(T.must(pyproject).content)
-          sources = parsed.dig("tool", "uv", "sources")
-          return {} unless sources.is_a?(Hash)
-
-          sources
-        rescue TomlRB::ParseError
-          {}
-        end
-
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
           return [] unless create_or_update_lock_file?
@@ -131,7 +99,7 @@ module Dependabot
               )
           end
 
-          if lockfile && !build_system_only_dependency? && !local_path_dependency?
+          if lockfile && !build_system_only_dependency?
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
 

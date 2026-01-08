@@ -86,6 +86,9 @@ module Dependabot
             # probably blocked. Ignore it.
             next if dep["markers"]&.include?("<")
 
+            # Skip local path dependencies - they can't be updated by Dependabot
+            next if local_path_dependency?(dep["name"])
+
             # In uv no constraint means any version is acceptable
             requirement_value = dep["requirement"] && dep["requirement"].empty? ? "*" : dep["requirement"]
 
@@ -264,6 +267,39 @@ module Dependabot
           Uv::Requirement.requirements_array(requirement)
         rescue Gem::Requirement::BadRequirementError => e
           raise Dependabot::DependencyFileNotEvaluatable, e.message
+        end
+
+        sig { params(dep_name: String).returns(T::Boolean) }
+        def local_path_dependency?(dep_name)
+          return false unless pyproject
+
+          normalised_dep_name = normalise(dep_name)
+          sources = uv_sources
+
+          # Check if any source with a matching normalized name has a path configuration
+          sources.any? do |source_key, source_config|
+            normalise(source_key) == normalised_dep_name &&
+              source_config.is_a?(Hash) &&
+              source_config.key?("path")
+          end
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def uv_sources
+          @uv_sources ||= parse_uv_sources
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def parse_uv_sources
+          return {} unless pyproject&.content
+
+          parsed = TomlRB.parse(T.must(pyproject).content)
+          sources = parsed.dig("tool", "uv", "sources")
+          return {} unless sources.is_a?(Hash)
+
+          sources
+        rescue TomlRB::ParseError
+          {}
         end
 
         sig { params(name: String).returns(String) }
