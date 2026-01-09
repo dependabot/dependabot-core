@@ -278,7 +278,7 @@ module Dependabot
         source: job.source,
         credentials: job.credentials,
         reject_external_code: job.reject_external_code?,
-        options: job.experiments
+        options: job.options
       )
       # Add 'ecosystem' to the dependency_snapshot to use it in operations
       ecosystem = parser.ecosystem

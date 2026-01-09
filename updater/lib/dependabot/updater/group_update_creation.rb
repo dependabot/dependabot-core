@@ -223,7 +223,7 @@ module Dependabot
           source: job.source,
           credentials: job.credentials,
           reject_external_code: job.reject_external_code?,
-          options: job.experiments
+          options: job.options
         )
       end
 
@@ -377,7 +377,7 @@ module Dependabot
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
           update_cooldown: job.cooldown,
-          options: job.experiments
+          options: job.options
         )
       end
 
