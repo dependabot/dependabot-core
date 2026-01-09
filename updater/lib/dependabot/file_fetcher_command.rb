@@ -99,7 +99,7 @@ module Dependabot
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
-        options: T.unsafe(job.experiments)
+        options: T.unsafe(job.options)
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       args[:update_config] = job.update_config

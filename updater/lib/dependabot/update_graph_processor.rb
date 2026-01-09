@@ -144,7 +144,7 @@ module Dependabot
         source: source,
         credentials: job.credentials,
         reject_external_code: job.reject_external_code?,
-        options: job.experiments
+        options: job.options
       )
 
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)

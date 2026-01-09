@@ -251,7 +251,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true,
             requirements_update_strategy: job.requirements_update_strategy,
-            options: job.experiments
+            options: job.options
           )
         end
 

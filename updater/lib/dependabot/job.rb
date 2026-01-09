@@ -56,6 +56,7 @@ module Dependabot
         cooldown
         repo_private
         multi_ecosystem_update
+        registries
       ).freeze,
       T::Array[Symbol]
     )
@@ -219,6 +220,10 @@ module Dependabot
       @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
+      @registries = T.let(
+        attributes.fetch(:registries, {}),
+        T.nilable(T::Hash[T.untyped, T.untyped])
+      )
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -399,6 +404,20 @@ module Dependabot
       return {} unless @experiments
 
       self.class.standardise_keys(@experiments)
+    end
+
+    sig { returns(T::Hash[Symbol, T.untyped]) }
+    def registries
+      return {} unless @registries
+
+      self.class.standardise_keys(@registries)
+    end
+
+    # Returns the combined options hash for ecosystem classes (FileParser, UpdateChecker, etc.)
+    # This includes experiments and registries configuration
+    sig { returns(T::Hash[Symbol, T.untyped]) }
+    def options
+      experiments.merge(registries: registries)
     end
 
     sig { returns(T::Hash[Symbol, T.untyped]) }
