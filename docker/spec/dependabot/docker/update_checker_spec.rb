@@ -1743,6 +1743,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         )
       end
     end
+
+    context "when tag has a 'v' prefix" do
+      let(:tag) { Dependabot::Docker::Tag.new("v2.7.2") }
+      let(:digest_string) { "sha256:abc123" }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+      end
+
+      it "handles the version prefix correctly and returns publication details" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.version).to be_a(Dependabot::Docker::Version)
+        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+
+      it "creates a Docker::Version instead of base Dependabot::Version" do
+        result = get_tag_publication_details
+        expect(result.version).to be_a(Dependabot::Docker::Version)
+        expect(result.version.class).to eq(Dependabot::Docker::Version)
+      end
+    end
   end
 
   private
