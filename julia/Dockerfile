@@ -18,7 +18,7 @@ ENV PATH="/home/dependabot/.juliaup/bin:$PATH"
 
 # Use the eager registry flavor for more up-to-date package information
 # See: https://pkgdocs.julialang.org/v1/registries/#Registry-flavors
-ENV JULIA_PKG_SERVER="https://pkg.julialang.org/eager"
+ENV JULIA_PKG_SERVER_REGISTRY_PREFERENCE="eager"
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot julia/helpers /opt/julia/helpers
