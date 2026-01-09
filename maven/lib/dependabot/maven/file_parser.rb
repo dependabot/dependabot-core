@@ -122,8 +122,10 @@ module Dependabot
         doc = Nokogiri::XML(pom.content)
         doc.remove_namespaces!
 
+        plugin_names = collect_plugin_names(pom, doc)
+
         doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-          dep = dependency_from_dependency_node(pom, dependency_node)
+          dep = dependency_from_dependency_node(pom, dependency_node, plugin_names)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
           errors << e
@@ -141,6 +143,18 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(pom: Dependabot::DependencyFile, doc: Nokogiri::XML::Document).returns(T::Set[String]) }
+      def collect_plugin_names(pom, doc)
+        plugin_names = Set.new
+
+        doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR).each do |plugin_node|
+          name = plugin_name(plugin_node, pom)
+          plugin_names << name if name
+        end
+
+        plugin_names
+      end
+
       sig { params(extension: Dependabot::DependencyFile).returns(DependencySet) }
       def extensionfile_dependencies(extension)
         dependency_set = DependencySet.new
@@ -149,8 +163,10 @@ module Dependabot
         doc = Nokogiri::XML(extension.content)
         doc.remove_namespaces!
 
+        plugin_names = collect_plugin_names(extension, doc)
+
         doc.css(EXTENSION_SELECTOR).each do |dependency_node|
-          dep = dependency_from_dependency_node(extension, dependency_node)
+          dep = dependency_from_dependency_node(extension, dependency_node, plugin_names)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
           errors << e
@@ -169,8 +185,10 @@ module Dependabot
         doc = Nokogiri::XML(target.content)
         doc.remove_namespaces!
 
+        plugin_names = collect_plugin_names(target, doc)
+
         doc.css(TARGET_SELECTOR).each do |dependency_node|
-          dep = dependency_from_dependency_node(target, dependency_node)
+          dep = dependency_from_dependency_node(target, dependency_node, plugin_names)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
           errors << e
@@ -184,14 +202,15 @@ module Dependabot
       sig do
         params(
           pom: Dependabot::DependencyFile,
-          dependency_node: Nokogiri::XML::Element
+          dependency_node: Nokogiri::XML::Element,
+          plugin_names: T::Set[String]
         ).returns(T.nilable(Dependabot::Dependency))
       end
-      def dependency_from_dependency_node(pom, dependency_node)
+      def dependency_from_dependency_node(pom, dependency_node, plugin_names)
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
 
-        is_plugin = plugin_dependency?(name)
+        is_plugin = plugin_names.include?(name)
         build_dependency(pom, dependency_node, name, is_plugin: is_plugin)
       end
 
@@ -298,14 +317,6 @@ module Dependabot
           node.at_xpath("./groupId").content.strip,
           pom
         )
-      end
-
-      sig { params(name: String).returns(T::Boolean) }
-      def plugin_dependency?(name)
-        group_id, artifact_id = name.split(":")
-        return false unless group_id && artifact_id
-
-        group_id == "org.apache.maven.plugins"
       end
 
       sig do
