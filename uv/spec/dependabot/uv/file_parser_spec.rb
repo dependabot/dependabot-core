@@ -946,5 +946,29 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
+
+    context "with local path dependencies" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_path_dependencies.toml")
+        )
+      end
+
+      it "raises PathDependenciesNotReachable error" do
+        expect { parser.parse }.to raise_error(Dependabot::PathDependenciesNotReachable) do |error|
+          # protos is defined in dependencies with a path source
+          expect(error.dependencies).to include("protos")
+        end
+      end
+
+      it "includes the path dependency names in the error" do
+        expect { parser.parse }.to raise_error(Dependabot::PathDependenciesNotReachable) do |error|
+          expect(error.dependencies).to eq(["protos"])
+          expect(error.message).to include("protos")
+        end
+      end
+    end
   end
 end

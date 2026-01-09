@@ -81,10 +81,18 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
+          path_dependencies = []
+
           parse_pep621_pep735_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
             next if dep["markers"]&.include?("<")
+
+            # Check if this is a local path dependency
+            if local_path_dependency?(dep["name"])
+              path_dependencies << dep["name"]
+              next
+            end
 
             # In uv no constraint means any version is acceptable
             requirement_value = dep["requirement"] && dep["requirement"].empty? ? "*" : dep["requirement"]
@@ -102,6 +110,9 @@ module Dependabot
                 package_manager: "uv"
               )
           end
+
+          # Raise error if path dependencies were found
+          raise Dependabot::PathDependenciesNotReachable, path_dependencies if path_dependencies.any?
 
           dependencies
         end
@@ -264,6 +275,39 @@ module Dependabot
           Uv::Requirement.requirements_array(requirement)
         rescue Gem::Requirement::BadRequirementError => e
           raise Dependabot::DependencyFileNotEvaluatable, e.message
+        end
+
+        sig { params(dep_name: String).returns(T::Boolean) }
+        def local_path_dependency?(dep_name)
+          return false unless pyproject
+
+          normalised_dep_name = normalise(dep_name)
+          sources = uv_sources
+
+          # Check if any source with a matching normalized name has a path configuration
+          sources.any? do |source_key, source_config|
+            normalise(source_key) == normalised_dep_name &&
+              source_config.is_a?(Hash) &&
+              source_config.key?("path")
+          end
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def uv_sources
+          @uv_sources ||= parse_uv_sources
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def parse_uv_sources
+          return {} unless pyproject&.content
+
+          parsed = TomlRB.parse(T.must(pyproject).content)
+          sources = parsed.dig("tool", "uv", "sources")
+          return {} unless sources.is_a?(Hash)
+
+          sources
+        rescue TomlRB::ParseError
+          {}
         end
 
         sig { params(name: String).returns(String) }
