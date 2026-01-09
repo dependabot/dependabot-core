@@ -598,6 +598,165 @@ RSpec.describe Dependabot::Julia::FileUpdater do
     end
   end
 
+  describe "#updated_dependency_files with workspace having different compat specifiers" do
+    # This test verifies that when multiple Project.toml files in a workspace have
+    # different compat specifiers for the same dependency, all are updated correctly.
+    # This addresses issue #13865: Julia: dependabot only updates top-level Project.toml
+    # if workspaces have different compat specifiers
+    subject(:workspace_updater) do
+      described_class.new(
+        dependencies: [json_dependency],
+        dependency_files: workspace_files,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+
+    let(:main_project_file) do
+      Dependabot::DependencyFile.new(
+        name: "Project.toml",
+        content: fixture("projects", "workspace_different_compat", "Project.toml"),
+        directory: "/"
+      )
+    end
+
+    let(:docs_project_file) do
+      Dependabot::DependencyFile.new(
+        name: "docs/Project.toml",
+        content: fixture("projects", "workspace_different_compat", "docs", "Project.toml"),
+        directory: "/"
+      )
+    end
+
+    let(:test_project_file) do
+      Dependabot::DependencyFile.new(
+        name: "test/Project.toml",
+        content: fixture("projects", "workspace_different_compat", "test", "Project.toml"),
+        directory: "/"
+      )
+    end
+
+    let(:workspace_manifest_file) do
+      Dependabot::DependencyFile.new(
+        name: "Manifest.toml",
+        content: fixture("projects", "workspace_different_compat", "Manifest.toml"),
+        directory: "/"
+      )
+    end
+
+    let(:workspace_files) { [main_project_file, docs_project_file, test_project_file, workspace_manifest_file] }
+
+    let(:json_dependency) do
+      Dependabot::Dependency.new(
+        name: "JSON",
+        version: "1.0.0",
+        previous_version: "0.21.4",
+        package_manager: "julia",
+        requirements: [
+          {
+            requirement: "0.21.4, 1",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          },
+          {
+            requirement: "0.21, 1",
+            file: "docs/Project.toml",
+            groups: ["deps"],
+            source: nil
+          },
+          {
+            requirement: "0.21, 1",
+            file: "test/Project.toml",
+            groups: ["deps"],
+            source: nil
+          }
+        ],
+        previous_requirements: [
+          {
+            requirement: "0.21.4",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          },
+          {
+            requirement: "0.21",
+            file: "docs/Project.toml",
+            groups: ["deps"],
+            source: nil
+          },
+          {
+            requirement: "0.21",
+            file: "test/Project.toml",
+            groups: ["deps"],
+            source: nil
+          }
+        ],
+        metadata: { julia_uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
+      )
+    end
+
+    it "updates all Project.toml files in the workspace" do
+      updated_files = workspace_updater.updated_dependency_files
+
+      # Should have at least the project files updated (manifest update may or may not succeed)
+      project_files = updated_files.select { |f| f.name.end_with?("Project.toml") }
+      expect(project_files.length).to eq(3)
+
+      # Verify each Project.toml is updated with its specific new requirement
+      main_project = project_files.find { |f| f.name == "Project.toml" }
+      expect(main_project).not_to be_nil
+      expect(main_project.content).to include('JSON = "0.21.4, 1"')
+
+      docs_project = project_files.find { |f| f.name == "docs/Project.toml" }
+      expect(docs_project).not_to be_nil
+      expect(docs_project.content).to include('JSON = "0.21, 1"')
+
+      test_project = project_files.find { |f| f.name == "test/Project.toml" }
+      expect(test_project).not_to be_nil
+      expect(test_project.content).to include('JSON = "0.21, 1"')
+    end
+
+    context "when only the main Project.toml has a compat entry for the dependency" do
+      let(:json_dependency) do
+        Dependabot::Dependency.new(
+          name: "JSON",
+          version: "1.0.0",
+          previous_version: "0.21.4",
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.21.4, 1",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.21.4",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          metadata: { julia_uuid: "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
+        )
+      end
+
+      it "only updates the main Project.toml" do
+        updated_files = workspace_updater.updated_dependency_files
+
+        project_files = updated_files.select { |f| f.name.end_with?("Project.toml") }
+        expect(project_files.length).to eq(1)
+
+        main_project = project_files.first
+        expect(main_project.name).to eq("Project.toml")
+        expect(main_project.content).to include('JSON = "0.21.4, 1"')
+      end
+    end
+  end
+
   private
 
   def fixture(*path)
