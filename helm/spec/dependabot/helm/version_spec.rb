@@ -67,6 +67,13 @@ RSpec.describe Dependabot::Helm::Version do
     it "classifies <prefix>_<year><month><day>.<version> versions as correct" do
       expect(check_version_for_correctness?("img_20230915.3")).to be true
     end
+
+    it "classifies git describe versions as correct" do
+      expect(check_version_for_correctness?("3.26.3-5-g87159cd")).to be true
+      expect(check_version_for_correctness?("3.26.3.8.g8d771eb")).to be true  
+      expect(check_version_for_correctness?("3.26.3-5.g87159cd")).to be true
+      expect(check_version_for_correctness?("1.0.0-10-gabcdef1")).to be true
+    end
   end
 
   describe "#to_semver" do
@@ -83,6 +90,13 @@ RSpec.describe Dependabot::Helm::Version do
       expect(described_class.new("img_20230915.3").to_semver).to eq("20230915.3")
       expect(described_class.new("artful-20170826").to_semver).to eq("20170826")
       expect(described_class.new("artful.20170826").to_semver).to eq("20170826")
+    end
+
+    it "normalizes git describe versions to semver" do
+      expect(described_class.new("3.26.3-5-g87159cd").to_semver).to eq("3.26.3")
+      expect(described_class.new("3.26.3.8.g8d771eb").to_semver).to eq("3.26.3")
+      expect(described_class.new("3.26.3-5.g87159cd").to_semver).to eq("3.26.3")
+      expect(described_class.new("1.0.0-10-gabcdef1").to_semver).to eq("1.0.0")
     end
   end
 
@@ -112,6 +126,12 @@ RSpec.describe Dependabot::Helm::Version do
 
     it "returns the version string without prefix" do
       expect(described_class.new("img_20230915.3").to_s).to eq("20230915.3")
+    end
+
+    it "returns normalized version string for git describe versions" do
+      expect(described_class.new("3.26.3-5-g87159cd").to_s).to eq("3.26.3")
+      expect(described_class.new("3.26.3.8.g8d771eb").to_s).to eq("3.26.3")
+      expect(described_class.new("3.26.3-5.g87159cd").to_s).to eq("3.26.3")
     end
   end
 end
