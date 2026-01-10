@@ -6,11 +6,12 @@ Docker support for [`dependabot-core`][core-repo].
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell docker
-  ```
+   ```
+   $ bin/docker-dev-shell docker
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd docker && rspec
    ```
@@ -25,7 +26,7 @@ https://github.com/dependabot/dependabot-core/blob/main/docker/lib/dependabot/do
 
 #### Semver
 
-Dependabot will attempt to parse a semver version from a tag and will only update it to a tag with a matching prefix and suffix. 
+Dependabot will attempt to parse a semver version from a tag and will only update it to a tag with a matching prefix and suffix.
 
 As an example, `base-12.5.1` and `base-12.5.1-golden` would be parsed as `<prefix>-<version>` and `<prefix>-<version>-<suffix>` respectively.
 
@@ -33,7 +34,7 @@ That means for `base-12.5.1` only another `<prefix>-<version>` tag would be a vi
 
 #### Dates
 
-Dependabot will parse dates in the `yyyy-mm`, `yyyy-mm-dd` formats (or with `.` instead of `-`) and update tags to the latest date. 
+Dependabot will parse dates in the `yyyy-mm`, `yyyy-mm-dd` formats (or with `.` instead of `-`) and update tags to the latest date.
 
 As an example, `2024-01` will get updated to `2024-02` and `2024.01.29` will get updated to `2024.03.15`.
 
