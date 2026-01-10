@@ -1137,6 +1137,116 @@ public class EndToEndTests
         );
     }
 
+    [Fact]
+    public async Task LockFilesAreRegeneratedThroughProjectReferences()
+    {
+        // this test needs to do some dynamic checks so we have to set it up manually
+        // job is started in `src/client` directory but ultimately the updater navigates through a `<ProjectReference>` element to make
+        // the update in `src/library` and both lock files are updated along the way _and_ included in the final PR
+
+        // arrange
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("src/client/client.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <ProjectReference Include="..\library\library.csproj" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/client/packages.lock.json", "{}"),
+            ("src/library/library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/library/packages.lock.json", "{}")
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.1.0", "net9.0"),
+        ], repoContentsPath);
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new TestLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+        var updaterWorker = new UpdaterWorker(jobId, experimentsManager, logger);
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var job = new Job()
+        {
+            Dependencies = ["Transitive.Package"],
+            SecurityAdvisories = [
+                new()
+                {
+                    DependencyName = "Transitive.Package",
+                    AffectedVersions = [Requirement.Parse("= 2.0.0")],
+                    PatchedVersions = [Requirement.Parse(">= 2.1.0")],
+                }
+            ],
+            SecurityUpdatesOnly = true,
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "src/client",
+            }
+        };
+
+        // act
+        await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        // assert
+        var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
+        var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content.Replace("\r", ""));
+
+        // original project is unchanged
+        Assert.False(updatedFiles.ContainsKey("/src/client/client.csproj"));
+
+        // transitive project was updated
+        Assert.Equal("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" Version="1.0.0" />
+                <PackageReference Include="Transitive.Package" Version="2.1.0" />
+              </ItemGroup>
+            </Project>
+            """.Replace("\r", ""), updatedFiles["/src/library/library.csproj"]);
+
+        // client lock file reflects updated transitive dependency
+        var clientLockFileJson = JsonDocument.Parse(updatedFiles["/src/client/packages.lock.json"]);
+        var resolvedInClient = clientLockFileJson.RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0")
+            .GetProperty("Transitive.Package")
+            .GetProperty("resolved")
+            .GetString();
+        Assert.Equal("2.1.0", resolvedInClient);
+
+        // library lock file reflects updated transitive dependency
+        var libraryLockFileJson = JsonDocument.Parse(updatedFiles["/src/library/packages.lock.json"]);
+        var resolvedInLibrary = libraryLockFileJson.RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0")
+            .GetProperty("Transitive.Package")
+            .GetProperty("resolved")
+            .GetString();
+        Assert.Equal("2.1.0", resolvedInLibrary);
+    }
+
     public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
     public const string TestPullRequestTitle = "test-pull-request-title";
     public const string TestPullRequestBody = "test-pull-request-body";
