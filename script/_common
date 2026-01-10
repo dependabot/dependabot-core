@@ -38,6 +38,17 @@ function set_tag() {
     esac
 }
 
+function get_dockerfile_path() {
+    case $ECOSYSTEM in
+      docker_compose)
+        echo "docker/Dockerfile"
+        ;;
+      *)
+        echo "$ECOSYSTEM/Dockerfile"
+        ;;
+    esac
+}
+
 function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
   ECOSYSTEM="$1"
@@ -71,13 +82,15 @@ function docker_build() {
 
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 
+  DOCKERFILE_PATH=$(get_dockerfile_path)
+
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "$UPDATER_IMAGE_NAME" \
     -t "$UPDATER_IMAGE_NAME" \
-    -f $ECOSYSTEM/Dockerfile \
+    -f "$DOCKERFILE_PATH" \
     .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
