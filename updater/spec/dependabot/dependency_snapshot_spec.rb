@@ -285,6 +285,34 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
         expect(snapshot.allowed_dependencies.map(&:name)).to eql(%w(dummy-pkg-a))
       end
+
+      context "when dependency names have different casing" do
+        let(:job) do
+          instance_double(
+            Dependabot::Job,
+            package_manager: "bundler",
+            security_updates_only?: true,
+            repo_contents_path: nil,
+            credentials: [],
+            reject_external_code?: false,
+            source: source,
+            dependency_groups: dependency_groups,
+            dependencies: ["Dummy-Pkg-A"], # Capital letters, different from actual dependency name
+            allowed_update?: false,
+            dependency_group_to_refresh: nil,
+            experiments: { large_hadron_collider: true }
+          )
+        end
+
+        it "matches dependencies case-insensitively" do
+          snapshot = create_dependency_snapshot
+
+          expect(snapshot).to be_a(described_class)
+          expect(snapshot.dependencies.count).to be(2)
+          # Should match "dummy-pkg-a" even though job specifies "Dummy-Pkg-A"
+          expect(snapshot.allowed_dependencies.map(&:name)).to eql(%w(dummy-pkg-a))
+        end
+      end
     end
 
     context "when there is a parser error" do
