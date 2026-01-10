@@ -269,6 +269,39 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with a dev-prefixed path source" do
+      let(:project_name) { "path_source_with_dev_prefix" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/monolog",
+          version: "1.22.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.22.*",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "successfully updates the item without a version mismatch" do
+        updated_dep = JSON.parse(updated_lockfile_content)
+                          .fetch("packages")
+                          .find { |p| p["name"] == "monolog/monolog" }
+
+        expect(updated_dep.fetch("version")).to eq("1.22.1")
+      end
+    end
+
     context "when the new version is covered by the old requirements" do
       let(:project_name) { "covered_version" }
 
