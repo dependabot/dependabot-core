@@ -1,37 +1,26 @@
 # syntax=docker.io/docker/dockerfile:1.20
+# Dependabot should generally handle keeping the Gradle version up to date, though there may be situations where a manual update is required.
+# When updating digests, always use the Multiplatform digest rather than one specific to a single architecture.
+# Tools like `docker buildx imagetools` can help you locate the Multiplatform digest
+# If you perform a manual update, make sure to update the tag as well.
+# Including the tag with the digest is for documentation purposes, as Docker ignores the tag when a digest is provided
+# It is useful because mapping tags to digests is challenging without OCI metadata, and many images do not provide this metadata.
+FROM docker.io/gradle:8.14.3-jdk21-ubi-minimal@sha256:185ba366252215afd8717603017c7c69741d80adab138f382eb2c2d17227a6b3 AS gradle
+
 FROM ghcr.io/dependabot/dependabot-updater-core
 
-# Install Java
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk-headless \
     ca-certificates-java \
-    wget \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Gradle
-ENV GRADLE_HOME=/opt/gradle
-ENV GRADLE_VERSION=8.14.2
-ARG GRADLE_DOWNLOAD_SHA256=7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999
-RUN set -o errexit -o nounset \
-    && echo "Downloading Gradle" \
-    && wget --no-verbose --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
-    \
-    && echo "Checking Gradle download hash" \
-    && echo "${GRADLE_DOWNLOAD_SHA256} *gradle.zip" | sha256sum -c - \
-    \
-    && echo "Installing Gradle" \
-    && unzip gradle.zip \
-    && rm gradle.zip \
-    && mv "gradle-${GRADLE_VERSION}" "${GRADLE_HOME}/" \
-    && ln -s "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
 
 USER dependabot
 
-ENV PATH=/usr/bin/gradle:$PATH
+# We do not need to persist GRADLE_HOME because Gradle does not use it
+# See https://discuss.gradle.org/t/do-we-really-need-gradle-home-docs-site-inconsistency/21671/2
+ARG GRADLE_HOME=/opt/gradle
+ENV PATH=$GRADLE_HOME/bin:$PATH
 
-RUN set -o errexit -o nounset \
-    && echo "Testing Gradle installation" \
-    && gradle --version
-
+COPY --from=gradle $GRADLE_HOME $GRADLE_HOME
 COPY --chown=dependabot:dependabot --parents gradle maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
