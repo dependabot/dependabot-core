@@ -19,6 +19,8 @@ module Dependabot
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
+        # Dependabot cannot update dependencies specified via git, path, or url.
+        # Path dependencies include local directories and files (.whl, .tar.gz, .zip).
         UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
@@ -128,7 +130,7 @@ module Dependabot
           deps_hash.each do |name, req|
             next if normalise(name) == "python"
 
-            requirements = parse_requirements_from(req, type)
+            requirements = parse_requirements_from(req, type, name)
             next if requirements.empty?
 
             dependencies << Dependency.new(
@@ -147,10 +149,23 @@ module Dependabot
         end
 
         # @param req can be an Array, Hash or String that represents the constraints for a dependency
-        sig { params(req: T.untyped, type: String).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
-        def parse_requirements_from(req, type)
+        sig do
+          params(
+            req: T.untyped,
+            type: String,
+            name: String
+          ).returns(T::Array[T::Hash[Symbol, T.nilable(String)]])
+        end
+        def parse_requirements_from(req, type, name)
           [req].flatten.compact.filter_map do |requirement|
-            next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
+            if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
+              unsupported_type = (UNSUPPORTED_DEPENDENCY_TYPES & requirement.keys).first
+              Dependabot.logger.info(
+                "Skipping dependency '#{name}' with unsupported type '#{unsupported_type}' " \
+                "in group '#{type}'"
+              )
+              next
+            end
 
             check_requirements(requirement)
 
