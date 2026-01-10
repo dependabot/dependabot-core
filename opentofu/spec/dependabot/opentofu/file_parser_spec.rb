@@ -968,6 +968,29 @@ RSpec.describe Dependabot::Opentofu::FileParser do
       end
     end
 
+    context "with a terraform.io/builtin/terraform provider" do
+      let(:files) { project_dependency_files("provider_with_builtin_terraform") }
+
+      it "skips the builtin/terraform provider" do
+        expect(dependencies.length).to eq(2)
+        # Should not include builtin/terraform provider
+        expect(dependencies.find { |d| d.name == "builtin/terraform" }).to be_nil
+        # Should include other providers
+        expect(dependencies.find { |d| d.name == "hashicorp/http" }).not_to be_nil
+        expect(dependencies.find { |d| d.name == "hashicorp/aws" }).not_to be_nil
+      end
+
+      it "parses other providers correctly" do
+        http_provider = dependencies.find { |d| d.name == "hashicorp/http" }
+        expect(http_provider.version).to eq("2.1.0")
+        expect(http_provider.requirements.first[:requirement]).to eq("~> 2.0")
+
+        aws_provider = dependencies.find { |d| d.name == "hashicorp/aws" }
+        expect(aws_provider.version).to eq("3.37.0")
+        expect(aws_provider.requirements.first[:requirement]).to eq("3.37.0")
+      end
+    end
+
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
 
