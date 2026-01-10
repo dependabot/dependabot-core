@@ -38,9 +38,38 @@ module Dependabot
         name.match?(FileParser::DIGEST)
       end
 
-      sig { returns(T.nilable(T::Boolean)) }
+      sig { returns(T::Boolean) }
       def looks_like_prerelease?
-        numeric_version&.match?(/[a-zA-Z]/)
+        return false unless comparable?
+
+        # Don't treat SHA-suffixed tags as prereleases (e.g., v3.10.0-169-gfe040d3)
+        return false if format == :sha_suffixed
+
+        # Check for common prerelease patterns in the tag name
+        # The version regex splits things like "1.0.0-alpha" into version="1.0.0" and suffix="-alpha"
+        # So we need to check the full name or the combination of version and suffix
+        prerelease_patterns = [
+          /alpha/i,       # matches: alpha, ALPHA
+          /beta/i,        # matches: beta, BETA
+          /rc\d*/i,       # matches: rc, RC, RC1, rc2, etc.
+          /dev/i,         # matches: dev, DEV
+          /preview/i,     # matches: preview, PREVIEW
+          /\bpre\b/i,     # matches: pre, PRE as a whole word
+          /nightly/i,     # matches: nightly, NIGHTLY
+          /snapshot/i,    # matches: snapshot, SNAPSHOT
+          /canary/i,      # matches: canary, CANARY
+          /unstable/i,    # matches: unstable, UNSTABLE
+          /\d+[a-z]\d*/,  # matches: 3.15.0a2, 1.0b1 (version followed by letter and optional number)
+          /[a-z]+\d+$/,   # matches: alpha1, beta2, rc3 at the end
+          /\.post\d+/i,   # matches: .post1, .POST2 (Python PEP 440 post-release)
+          /\.dev\d+/i     # matches: .dev0, .DEV1 (Python PEP 440 development release)
+        ]
+
+        # Check both the version part and the suffix part
+        version_matches = version && prerelease_patterns.any? { |pattern| T.must(version).match?(pattern) }
+        suffix_matches = suffix && prerelease_patterns.any? { |pattern| T.must(suffix).match?(pattern) }
+
+        !!(version_matches || suffix_matches)
       end
 
       sig do
