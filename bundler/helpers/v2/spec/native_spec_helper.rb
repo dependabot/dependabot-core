@@ -3,6 +3,7 @@
 
 require "rspec/its"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "debug"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
