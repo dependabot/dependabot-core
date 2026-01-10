@@ -20,7 +20,8 @@ module Dependabot
         new_source = dependency.requirements.first&.fetch(:source)
         return unless new_source && new_source[:registry] && new_source[:tag]
 
-        image_ref = "#{new_source[:registry]}/#{dependency.name}:#{new_source[:tag]}"
+        registry = new_source[:registry].to_s.sub(%r{^oci://}, "")
+        image_ref = "#{registry}/#{dependency.name}:#{new_source[:tag]}"
         image_details_output = SharedHelpers.run_shell_command("regctl image inspect #{image_ref}")
         image_details = JSON.parse(image_details_output)
         image_source = image_details.dig("config", "Labels", "org.opencontainers.image.source")
