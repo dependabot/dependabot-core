@@ -101,9 +101,10 @@ module Dependabot
         match = url.match(pattern)
         return nil unless match
 
-        repo = match[2].sub(/\.git$/, "")
-        repo_url = "https://github.com/#{match[1]}/#{repo}"
+        owner = T.must(match[1])
+        repo  = T.must(match[2]).sub(/\.git$/, "")
 
+        repo_url = "https://github.com/#{owner}/#{repo}"
         Dependabot::Source.from_url(repo_url)
       end
 
