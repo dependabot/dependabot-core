@@ -85,7 +85,7 @@ module Dependabot
                        branch,
                        directory_source,
                        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
-                       GithubApi::DependencySubmission::SNAPSHOT_REASON_NO_MANIFESTS
+                       GithubApi::DependencySubmission::SnapshotReason::NO_MANIFESTS.serialize
                      )
                    else
                      create_submission(branch, directory_source, directory_dependency_files)
@@ -172,7 +172,11 @@ module Dependabot
       # Build resolved dependencies first so subdependency fetching can set the error flag if it fails.
       resolved = grapher.resolved_dependencies
 
-      handle_subdependency_error(grapher.subdependency_error, source) if grapher.errored_fetching_subdependencies
+      if grapher.errored_fetching_subdependencies
+        handle_subdependency_error(grapher.subdependency_error, source)
+        status = GithubApi::DependencySubmission::SnapshotStatus::INCOMPLETE
+        reason = GithubApi::DependencySubmission::SnapshotReason::SUBDEPENDENCY_ERR.serialize
+      end
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
@@ -180,21 +184,14 @@ module Dependabot
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
-        resolved_dependencies: resolved
+        resolved_dependencies: resolved,
+        status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
+        reason: reason || nil
       )
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
     def handle_subdependency_error(error, source)
-      if Dependabot::Experiments.enabled?(:record_subdependency_error_as_warning)
-        record_subdependency_warning(error, source)
-      else
-        record_subdependency_error(error, source)
-      end
-    end
-
-    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
-    def record_subdependency_warning(error, source)
       # We record a warning instead of an error because the graph submission can still proceed
       # with partial data - only the subdependency relationships will be missing.
       error_message = if error.is_a?(Dependabot::DependabotError)

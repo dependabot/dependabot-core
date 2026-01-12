@@ -20,13 +20,19 @@ module GithubApi
     class SnapshotStatus < T::Enum
       enums do
         SUCCESS = new("ok")
+        INCOMPLETE = new("incomplete")
         FAILED = new("failed")
         SKIPPED = new("skipped")
       end
     end
 
-    # Expected when the graph change corresponds to a deleted manifest file
-    SNAPSHOT_REASON_NO_MANIFESTS = "missing-manifest-files"
+    class SnapshotReason < T::Enum
+      enums do
+        SUBDEPENDENCY_ERR = new("error fetching sub-dependencies")
+        # Expected when the graph change corresponds to a deleted manifest file
+        NO_MANIFESTS = new("missing manifest files")
+      end
+    end
 
     sig { returns(String) }
     attr_reader :job_id
