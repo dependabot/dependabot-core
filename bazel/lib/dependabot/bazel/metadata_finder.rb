@@ -41,7 +41,10 @@ module Dependabot
         return :bazel_dep if dependency.requirements.empty?
         return :bazel_dep if dependency.requirements.any? { |r| r[:source].nil? }
 
-        source_details = dependency.requirements.first&.dig(:source)
+        req = dependency.requirements.first
+        return :bazel_dep unless req
+
+        source_details = req[:source]
         return :bazel_dep unless source_details
 
         case source_details[:type]
@@ -65,7 +68,10 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_http_archive
-        url = dependency.requirements.first&.dig(:source, :url)
+        req = dependency.requirements.first
+        return nil unless req
+
+        url = req.dig(:source, :url)
         return nil unless url
 
         source_from_url(url)
@@ -73,7 +79,10 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_repository
-        remote_url = dependency.requirements.first&.dig(:source, :remote)
+        req = dependency.requirements.first
+        return nil unless req
+
+        remote_url = req.dig(:source, :remote)
         return nil unless remote_url
 
         Dependabot::Source.from_url(remote_url)
@@ -86,16 +95,16 @@ module Dependabot
 
       sig { params(url: String).returns(T.nilable(Dependabot::Source)) }
       def extract_github_source_from_url(url)
-        GITHUB_URL_PATTERNS.each do |pattern|
-          match = url.match(pattern)
-          next unless match
+        pattern = GITHUB_URL_PATTERNS.find { |p| url.match?(p) }
+        return nil unless pattern
 
-          repo_url = "https://github.com/#{match[1]}/#{match[2]}"
-          source = Dependabot::Source.from_url(repo_url)
-          return source if source
-        end
+        match = url.match(pattern)
+        return nil unless match
 
-        nil
+        repo = match[2].sub(/\.git$/, "")
+        repo_url = "https://github.com/#{match[1]}/#{repo}"
+
+        Dependabot::Source.from_url(repo_url)
       end
 
       sig { returns(Dependabot::Bazel::UpdateChecker::RegistryClient) }
