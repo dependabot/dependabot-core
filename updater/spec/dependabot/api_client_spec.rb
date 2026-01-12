@@ -257,15 +257,22 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
     let(:source) do
-      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+      instance_double(
+        Dependabot::Source,
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "/",
+        api_endpoint: "https://api.github.com/"
+      )
     end
     let(:job) do
       instance_double(
         Dependabot::Job,
         source: source,
         credentials: [],
-        commit_message_options: [],
-        updating_a_pull_request?: true
+        commit_message_options: {},
+        updating_a_pull_request?: true,
+        ignore_conditions: []
       )
     end
     let(:dependency) do
@@ -328,7 +335,7 @@ RSpec.describe Dependabot::ApiClient do
                 "previous-version" => "1.7.0",
                 "version" => "1.8.0"
               )
-              
+
               # Verify updated files are sent
               expect(data["updated-dependency-files"]).to eql(
                 [
@@ -352,7 +359,7 @@ RSpec.describe Dependabot::ApiClient do
                     "type" => "file" }
                 ]
               )
-              
+
               # Verify PR metadata is sent
               expect(data["base-commit-sha"]).to eql("sha")
               expect(data).to have_key("commit-message")
