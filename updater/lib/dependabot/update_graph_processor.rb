@@ -186,12 +186,37 @@ module Dependabot
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
     def handle_subdependency_error(error, source)
+      if Dependabot::Experiments.enabled?(:record_subdependency_error_as_warning)
+        record_subdependency_warning(error, source)
+      else
+        record_subdependency_error(error, source)
+      end
+    end
+
+    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
+    def record_subdependency_warning(error, source)
+      # We record a warning instead of an error because the graph submission can still proceed
+      # with partial data - only the subdependency relationships will be missing.
+      error_message = if error.is_a?(Dependabot::DependabotError)
+                        error.message
+                      else
+                        "Failed to fetch subdependencies in directory #{source.directory}"
+                      end
+
+      Dependabot.logger.warn("Dependency graph incomplete: #{error_message}")
+
+      service.record_update_job_warning(
+        warn_type: "dependency_graph_incomplete",
+        warn_title: "dependency graph incomplete",
+        warn_description: "The dependency graph may be incomplete. #{error_message}"
+      )
+    end
+
+    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
+    def record_subdependency_error(error, source)
       if error.is_a?(Dependabot::DependabotError)
-        # If we've been provided with a DependabotError, relay it to the handler
         error_handler.handle_job_error(error: error)
       else
-        # If the error is unexpected, or nil then we should treat it as a generic
-        # parsing problem.
         error_handler.handle_job_error(
           error: Dependabot::DependencyFileNotResolvable.new(
             "Failed to fetch subdependencies in directory #{source.directory}"

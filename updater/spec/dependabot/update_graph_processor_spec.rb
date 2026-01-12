@@ -23,7 +23,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     instance_double(
       Dependabot::Service,
       create_dependency_submission: nil,
-      record_update_job_error: nil
+      record_update_job_error: nil,
+      record_update_job_warning: nil
     )
   end
 
@@ -656,22 +657,49 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           .with(job.package_manager).and_return(failing_grapher_class)
       end
 
-      it "records the specific error type and still submits a dependency submission" do
-        expect(service).to receive(:create_dependency_submission) do |args|
-          payload = args[:dependency_submission].payload
-          expect(payload[:manifests]).to be_a(Hash)
+      context "when record_subdependency_error_as_warning experiment is enabled" do
+        before do
+          Dependabot::Experiments.register(:record_subdependency_error_as_warning, true)
         end
 
-        expect(service).to receive(:record_update_job_error) do |args|
-          expect(args[:error_type]).to eq("git_dependencies_not_reachable")
-          expect(args[:error_details]).to eq(
-            {
-              "dependency-urls": ["github.com/dependabot/cli"]
-            }
-          )
+        after do
+          Dependabot::Experiments.reset!
         end
 
-        update_graph_processor.run
+        it "records a warning and still submits a dependency submission" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+            expect(payload[:manifests]).to be_a(Hash)
+          end
+
+          expect(service).to receive(:record_update_job_warning) do |args|
+            expect(args[:warn_type]).to eq("dependency_graph_incomplete")
+            expect(args[:warn_title]).to eq("dependency graph incomplete")
+            expect(args[:warn_description]).to include("github.com/dependabot/cli")
+          end
+
+          update_graph_processor.run
+        end
+      end
+
+      context "when record_subdependency_error_as_warning experiment is disabled" do
+        it "records the specific error type and still submits a dependency submission" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+            expect(payload[:manifests]).to be_a(Hash)
+          end
+
+          expect(service).to receive(:record_update_job_error) do |args|
+            expect(args[:error_type]).to eq("git_dependencies_not_reachable")
+            expect(args[:error_details]).to eq(
+              {
+                "dependency-urls": ["github.com/dependabot/cli"]
+              }
+            )
+          end
+
+          update_graph_processor.run
+        end
       end
     end
 
@@ -698,18 +726,45 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           .with(job.package_manager).and_return(failing_grapher_class)
       end
 
-      it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
-        expect(service).to receive(:create_dependency_submission) do |args|
-          payload = args[:dependency_submission].payload
-          expect(payload[:manifests]).to be_a(Hash)
+      context "when record_subdependency_error_as_warning experiment is enabled" do
+        before do
+          Dependabot::Experiments.register(:record_subdependency_error_as_warning, true)
         end
 
-        expect(service).to receive(:record_update_job_error) do |args|
-          expect(args[:error_type]).to eq("dependency_file_not_resolvable")
-          expect(args[:error_details]).to include(:message)
+        after do
+          Dependabot::Experiments.reset!
         end
 
-        update_graph_processor.run
+        it "records a warning and still submits a dependency submission" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+            expect(payload[:manifests]).to be_a(Hash)
+          end
+
+          expect(service).to receive(:record_update_job_warning) do |args|
+            expect(args[:warn_type]).to eq("dependency_graph_incomplete")
+            expect(args[:warn_title]).to eq("dependency graph incomplete")
+            expect(args[:warn_description]).to include("Failed to fetch subdependencies")
+          end
+
+          update_graph_processor.run
+        end
+      end
+
+      context "when record_subdependency_error_as_warning experiment is disabled" do
+        it "records a dependency_file_not_resolvable error and still submits a dependency submission" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+            expect(payload[:manifests]).to be_a(Hash)
+          end
+
+          expect(service).to receive(:record_update_job_error) do |args|
+            expect(args[:error_type]).to eq("dependency_file_not_resolvable")
+            expect(args[:error_details]).to include(:message)
+          end
+
+          update_graph_processor.run
+        end
       end
     end
   end
