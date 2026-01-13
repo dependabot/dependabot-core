@@ -3458,6 +3458,35 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
   end
 
+  describe "#commit_message substitutions" do
+    subject(:commit_message) { builder.commit_message }
+
+    let(:commit_message_options) do
+      super().merge(
+        substitutions: [
+          { from: "@", to: "_at_" },
+          { from: "#", to: "hash_" }
+        ]
+      )
+    end
+
+    before do
+      allow(builder).to receive_messages(
+        commit_subject: "Bump @angular/core from 1.4.0 to 1.5.0 (#123)",
+        commit_message_intro: "Bumps @angular/core to 1.5.0.",
+        metadata_links: "\n- Ref: #123"
+      )
+    end
+
+    it "applies configured substitutions to the generated commit message" do
+      expect(commit_message).to start_with("Bump _at_angular/core from 1.4.0 to 1.5.0 (hash_123)\n\n")
+      expect(commit_message).to include("Bumps _at_angular/core to 1.5.0.")
+      expect(commit_message).to include("Ref: hash_123")
+      expect(commit_message).not_to include("@")
+      expect(commit_message).not_to include("#123")
+    end
+  end
+
   describe "#commit_message", :vcr do
     subject(:commit_message) { builder.commit_message }
 
