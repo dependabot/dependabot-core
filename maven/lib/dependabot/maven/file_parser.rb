@@ -131,7 +131,7 @@ module Dependabot
           errors << e
         end
 
-        doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR).each do |dependency_node|
+        plugin_nodes(doc).each do |dependency_node|
           dep = dependency_from_plugin_node(pom, dependency_node)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
@@ -147,7 +147,7 @@ module Dependabot
       def collect_plugin_names(pom, doc)
         plugin_names = Set.new
 
-        doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR).each do |plugin_node|
+        plugin_nodes(doc).each do |plugin_node|
           name = plugin_name(plugin_node, pom)
           plugin_names << name if name
         end
@@ -559,6 +559,11 @@ module Dependabot
             [*old_value, *new_value].uniq
           end
         end
+      end
+
+      sig { params(doc: Nokogiri::XML::Document).returns(Nokogiri::XML::NodeSet) }
+      def plugin_nodes(doc)
+        doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR)
       end
     end
     # rubocop:enable Metrics/ClassLength
