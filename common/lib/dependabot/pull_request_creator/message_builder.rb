@@ -189,12 +189,12 @@ module Dependabot
         message += commit_message_intro
         message += metadata_links
         message += "\n\n" + T.must(message_trailers) if message_trailers
-        message
+        apply_commit_message_substitutions(message)
       rescue StandardError => e
         suppress_error("commit message", e)
         message = commit_subject
         message += "\n\n" + T.must(message_trailers) if message_trailers
-        message
+        apply_commit_message_substitutions(message)
       end
 
       sig { returns(Dependabot::PullRequestCreator::Message) }
@@ -920,6 +920,48 @@ module Dependabot
       def suppress_error(method, err)
         Dependabot.logger.error("Error while generating #{method}: #{err.message}")
         Dependabot.logger.error(err.backtrace&.join("\n"))
+      end
+
+      sig { params(text: String).returns(String) }
+      def apply_commit_message_substitutions(text)
+        substitutions = commit_message_options&.dig(:substitutions)
+        return text if substitutions.nil?
+
+        validated_substitutions = validate_commit_message_substitutions!(substitutions)
+        validated_substitutions.reduce(text) do |memo, sub|
+          apply_commit_message_substitution(memo, sub)
+        end
+      end
+
+      sig { params(substitutions: T.untyped).returns(T::Array[T::Hash[T.untyped, T.untyped]]) }
+      def validate_commit_message_substitutions!(substitutions)
+        raise("Commit substitutions must be an Array object") unless substitutions.is_a?(Array)
+
+        substitutions.each do |sub|
+          raise("Commit substitution must be a Hash object") unless sub.is_a?(Hash)
+        end
+
+        substitutions
+      end
+
+      sig { params(text: String, substitution: T::Hash[T.untyped, T.untyped]).returns(String) }
+      def apply_commit_message_substitution(text, substitution)
+        from, to = extract_commit_message_substitution_from_to!(substitution)
+        text.gsub(from, to)
+      end
+
+      sig do
+        params(substitution: T::Hash[T.untyped, T.untyped])
+          .returns([String, String])
+      end
+      def extract_commit_message_substitution_from_to!(substitution)
+        from = substitution[:from] || substitution["from"]
+        to = substitution[:to] || substitution["to"]
+
+        raise("Commit substitution must include 'from' and 'to' strings") unless from.is_a?(String) && to.is_a?(String)
+        raise("Commit substitution 'from' must not be empty") if from.empty?
+
+        [from, to]
       end
     end
   end
