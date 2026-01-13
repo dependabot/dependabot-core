@@ -824,6 +824,46 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       )
     end
 
+    context "when dependency has extras" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "yt-dlp[default,curl-cffi]",
+          version: "2025.6.9",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2025.6.9",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2024.7.25",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2024.7.25",
+          package_manager: "uv"
+        )
+      end
+
+      it "strips extras from the package name in the command" do
+        expected_command = "pyenv exec uv lock --upgrade-package yt-dlp==2025.6.9 " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+    end
+
     context "when dependency version is nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
