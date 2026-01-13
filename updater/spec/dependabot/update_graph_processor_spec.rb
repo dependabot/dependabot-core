@@ -556,7 +556,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
         # It should contain the expected metadata
         expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
-        expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::SnapshotReason::NO_MANIFESTS.serialize)
+        expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
       end
 
       update_graph_processor.run
@@ -663,8 +663,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           expect(payload[:manifests]).to be_a(Hash)
 
           # We should have metadata indicating a successful snapshot
-          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::INCOMPLETE.serialize)
-          expect(payload[:metadata][:reason]).to eql(GithubApi::DependencySubmission::SnapshotReason::SUBDEPENDENCY_ERR.serialize)
+          expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize)
+          expect(payload[:metadata][:reason]).to eql(GithubApi::DependencySubmission::DEGRADED_REASON_SUBDEPENDENCY_ERR)
         end
 
         expect(service).to receive(:record_update_job_warning) do |args|

@@ -85,7 +85,7 @@ module Dependabot
                        branch,
                        directory_source,
                        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
-                       GithubApi::DependencySubmission::SnapshotReason::NO_MANIFESTS.serialize
+                       GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS
                      )
                    else
                      create_submission(branch, directory_source, directory_dependency_files)
@@ -174,8 +174,8 @@ module Dependabot
 
       if grapher.errored_fetching_subdependencies
         handle_subdependency_error(grapher.subdependency_error, source)
-        status = GithubApi::DependencySubmission::SnapshotStatus::INCOMPLETE
-        reason = GithubApi::DependencySubmission::SnapshotReason::SUBDEPENDENCY_ERR.serialize
+        status = GithubApi::DependencySubmission::SnapshotStatus::DEGRADED
+        reason = GithubApi::DependencySubmission::DEGRADED_REASON_SUBDEPENDENCY_ERR
       end
 
       GithubApi::DependencySubmission.new(

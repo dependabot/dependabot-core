@@ -17,20 +17,16 @@ module GithubApi
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
+    # Expected reasons for empty or degraded snapshots
+    DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
+    EMPTY_REASON_NO_MANIFESTS = "missing manifest files"
+
     class SnapshotStatus < T::Enum
       enums do
         SUCCESS = new("ok")
-        INCOMPLETE = new("incomplete")
-        FAILED = new("failed")
+        DEGRADED = new("degraded")
         SKIPPED = new("skipped")
-      end
-    end
-
-    class SnapshotReason < T::Enum
-      enums do
-        SUBDEPENDENCY_ERR = new("error fetching sub-dependencies")
-        # Expected when the graph change corresponds to a deleted manifest file
-        NO_MANIFESTS = new("missing manifest files")
+        FAILED = new("failed")
       end
     end
 
