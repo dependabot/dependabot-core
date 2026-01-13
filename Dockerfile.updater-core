@@ -174,10 +174,9 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`.
 # * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
 #
-# Note that RubyGems & Bundler versions are currently released in sync, but
-# RubyGems version is one major ahead. So when bumping to RubyGems 3.y.z, Bundler
-# version will jump to 2.y.z
-ARG RUBYGEMS_VERSION=3.7.2
+# Note that RubyGems & Bundler versions are now unified and share the same
+# version number. RubyGems 4.y.z comes with Bundler 4.y.z.
+ARG RUBYGEMS_VERSION=4.0.3
 ARG GEM_ENABLED=true
 RUN if [[ "$GEM_ENABLED" == "true" ]]; then \
     gem update --system $RUBYGEMS_VERSION; \

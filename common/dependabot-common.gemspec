@@ -21,14 +21,14 @@ Gem::Specification.new do |spec|
 
   spec.version = Dependabot::VERSION
   spec.required_ruby_version = ">= 3.3.0"
-  spec.required_rubygems_version = ">= 3.3.7"
+  spec.required_rubygems_version = ">= 4.0.0"
 
   spec.require_path = "lib"
   spec.files        = []
 
   spec.add_dependency "aws-sdk-codecommit", "~> 1.28"
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
-  spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
+  spec.add_dependency "bundler", "~> 4.0"
   spec.add_dependency "commonmarker", "~> 2.3"
   spec.add_dependency "docker_registry2", "~> 1.18"
   spec.add_dependency "excon", "~> 1.2"
