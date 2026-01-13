@@ -144,7 +144,7 @@ WORKDIR $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v2/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=docker.io/library/ruby:3.4.7-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.4.8-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # For users to determine if dependabot is running
 ENV DEPENDABOT=true
