@@ -309,7 +309,7 @@ module Dependabot
           # to the absolute latest version (which may be blocked by ignore rules)
           dep_name = T.must(dependency).name
           dep_version = T.must(dependency).version
-          # Strip extras from the dependency name for the uv lock command
+          # Strip extras from the package name for the uv lock command
           # uv lock --upgrade-package expects the base package name without extras
           base_dep_name = normalise(dep_name)
           package_spec = dep_version ? "#{base_dep_name}==#{dep_version}" : base_dep_name
