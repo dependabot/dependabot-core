@@ -21,7 +21,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
@@ -31,6 +31,6 @@ jobs:
           results_format: sarif
           publish_results: true
 
-      - uses: github/codeql-action/upload-sarif@0499de31b99561a6d14a36a5f662c2a54f91beee # v3.29.5
+      - uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v3.29.5
         with:
           sarif_file: results.sarif

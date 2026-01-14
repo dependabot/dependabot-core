@@ -129,6 +129,25 @@ module Dependabot
         {}
       end
 
+      sig { params(directory: String).returns(T::Hash[String, T.untyped]) }
+      def find_workspace_project_files(directory)
+        result = call_julia_helper(
+          function: "find_workspace_project_files",
+          args: { directory: directory }
+        )
+
+        return { "error" => result["error"] } if result["error"]
+
+        {
+          "project_files" => result["project_files"] || [],
+          "manifest_file" => result["manifest_file"] || "",
+          "workspace_root" => result["workspace_root"] || ""
+        }
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to find workspace project files in #{directory}: #{e.message}")
+        { "error" => e.message }
+      end
+
       sig do
         params(
           manifest_path: String,
