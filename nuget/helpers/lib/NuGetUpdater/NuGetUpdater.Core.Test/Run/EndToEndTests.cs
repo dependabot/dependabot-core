@@ -995,6 +995,148 @@ public class EndToEndTests
         );
     }
 
+    [Fact]
+    public async Task WildcardDirectory_OneOfWhichIsEmpty()
+    {
+        // job is run with a wildcard which will expand to
+        //   /src
+        //   /src/other
+        //   /src/project
+        // but only `/src/project` contains a project file that can be operated on
+        await RunAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0"),
+            ],
+            job: new()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "src/**/*",
+                }
+            },
+            files: [
+                ("src/Directory.Build.props", "<Project />"),
+                ("src/Directory.Build.targets", "<Project />"),
+                ("src/Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("src/other/not-a-nuget-file.txt", "contents irrelevant"),
+                ("src/project/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            discoveryWorker: null, // use real worker
+            analyzeWorker: null, // use real worker
+            updaterWorker: null, // use real worker
+            expectedApiMessages: [
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                // no dependencies reported for `/src`
+                // no dependencies reported for `/src/other`
+                // but dependencies _are_ reported for `/src/project`
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src/project/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = [
+                        "/src/Directory.Build.props",
+                        "/src/Directory.Build.targets",
+                        "/src/Directory.Packages.props",
+                        "/src/project/project.csproj",
+                    ],
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Package",
+                            Version = "2.0.0",
+                            Requirements = [
+                                new()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/src/project/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = null,
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements = [
+                                new()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/src/project/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles = [
+                        new()
+                        {
+                            Directory = "/src/project",
+                            Name = "project.csproj",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net9.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="2.0.0" />
+                                  </ItemGroup>
+                                </Project>
+                                """
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = TestPullRequestCommitMessage,
+                    PrTitle = TestPullRequestTitle,
+                    PrBody = TestPullRequestBody,
+                    DependencyGroup = null,
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
     public const string TestPullRequestCommitMessage = "test-pull-request-commit-message";
     public const string TestPullRequestTitle = "test-pull-request-title";
     public const string TestPullRequestBody = "test-pull-request-body";

@@ -5,25 +5,19 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
-require "dependabot/file_fetchers/base"
+require "dependabot/python/file_fetcher"
 require "dependabot/uv"
-require "dependabot/uv/language_version_manager"
 require "dependabot/uv/requirements_file_matcher"
-require "dependabot/uv/requirement_parser"
-require "dependabot/uv/file_parser/pyproject_files_parser"
-require "dependabot/uv/file_parser/python_requirement_parser"
+require "dependabot/uv/file_fetcher/workspace_fetcher"
 require "dependabot/errors"
-require "dependabot/file_filtering"
 
 module Dependabot
   module Uv
-    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
+    class FileFetcher < Dependabot::Python::SharedFileFetcher
       extend T::Sig
-      extend T::Helpers
 
-      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
-      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
-      DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+      ECOSYSTEM_SPECIFIC_FILES = T.let(%w(uv.lock).freeze, T::Array[String])
+
       REQUIREMENT_FILE_PATTERNS = T.let(
         {
           extensions: [".txt", ".in"],
@@ -35,165 +29,86 @@ module Dependabot
       # Projects that use README files for metadata may use any of these common names
       README_FILENAMES = T.let(%w(README.md README.rst README.txt README).freeze, T::Array[String])
 
-      MAX_FILE_SIZE = 500_000
+      # Type alias for path dependency hashes
+      PathDependency = T.type_alias { T::Hash[Symbol, String] }
 
-      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames)
-        return true if filenames.any? do |name|
-          T.must(REQUIREMENT_FILE_PATTERNS[:extensions]).any? do |ext|
-            name.end_with?(ext)
-          end
-        end
-
-        # If there is a directory of requirements return true
-        return true if filenames.include?("requirements")
-
-        # If this repo is using pyproject.toml return true (uv.lock files require a pyproject.toml)
-        filenames.include?("pyproject.toml")
+      sig { override.returns(T::Array[String]) }
+      def self.ecosystem_specific_required_files
+        # uv.lock is not a standalone required file - it requires pyproject.toml
+        []
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a requirements.txt, uv.lock, requirements.in, or pyproject.toml" \
-      end
-
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def ecosystem_versions
-        # Hmm... it's weird that this calls file parser methods, but here we are in the file fetcher... for all
-        # ecosystems our goal is to extract the user specified versions, so we'll need to do file parsing... so should
-        # we move this `ecosystem_versions` metrics method to run in the file parser for all ecosystems? Downside is if
-        # file parsing blows up, this metric isn't emitted, but reality is we have to parse anyway... as we want to know
-        # the user-specified range of versions, not the version Dependabot chose to run.
-        python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
-        language_version_manager = LanguageVersionManager.new(python_requirement_parser: python_requirement_parser)
-        Dependabot.logger.info("Dependabot is using Python version '#{language_version_manager.python_version}'.")
-        {
-          languages: {
-            python: {
-              # TODO: alternatively this could use `python_requirement_parser.user_specified_requirements` which
-              # returns an array... which we could flip to return a hash of manifest name => version
-              # string and then check for min/max versions... today it simply defaults to
-              # array.first which seems rather arbitrary.
-              "raw" => language_version_manager.user_specified_python_version || "unknown",
-              "max" => language_version_manager.python_major_minor || "unknown"
-            }
-          }
-        }
-      end
-
-      sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
-        fetched_files = []
-
-        fetched_files += pyproject_files
-        # Fetch README support files if referenced in pyproject metadata
-        fetched_files += readme_files
-
-        fetched_files += requirements_in_files
-        fetched_files += requirement_files if requirements_txt_files.any?
-
-        fetched_files += uv_lock_files
-        fetched_files += project_files
-        fetched_files << python_version_file if python_version_file
-
-        uniques = uniq_files(fetched_files)
-        filtered_files = uniques.reject do |file|
-          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
-        end
-
-        filtered_files
+        "Repo must contain a requirements.txt, uv.lock, requirements.in, or pyproject.toml"
       end
 
       private
 
-      sig { params(fetched_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
-      def uniq_files(fetched_files)
-        uniq_files = fetched_files.reject(&:support_file?).uniq
-        uniq_files += fetched_files
-                      .reject { |f| uniq_files.map(&:name).include?(f.name) }
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      def ecosystem_specific_files
+        files = []
+        files += readme_files
+        files += uv_lock_files
+        files += workspace_member_files
+        files
+      end
+
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      def pyproject_files
+        [pyproject].compact
+      end
+
+      sig { override.returns(T::Array[T::Hash[Symbol, String]]) }
+      def path_dependencies
+        [
+          *requirement_txt_path_dependencies,
+          *requirement_in_path_dependencies,
+          *uv_sources_path_dependencies
+        ]
+      end
+
+      sig { override.returns(T::Array[String]) }
+      def additional_path_dependencies
+        []
+      end
+
+      sig { override.params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def lockfile_for_compile_file?(file)
+        requirements_in_file_matcher.compiled_file?(file)
+      end
+
+      sig { override.params(path: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def fetch_project_file(path)
+        project_files = []
+
+        path = clean_path(File.join(path, "pyproject.toml")) unless sdist_or_wheel?(path)
+
+        return [] if path == "pyproject.toml" && pyproject
+
+        project_files << fetch_file_from_host(
+          path,
+          fetch_submodules: true
+        ).tap { |f| f.support_file = true }
+
+        project_files
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def pyproject_files
-        [pyproject].compact
+      def workspace_member_files
+        workspace_fetcher.workspace_member_files
+      end
+
+      sig { returns(WorkspaceFetcher) }
+      def workspace_fetcher
+        @workspace_fetcher ||= T.let(WorkspaceFetcher.new(self, pyproject), T.nilable(WorkspaceFetcher))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def readme_files
         return [] unless pyproject
 
-        # Attempt to read the readme declaration from the pyproject. Accept both simplified
-        # string form and table form ( { file = "..." } ).
-        readme_decl = nil
-        begin
-          readme_decl = parsed_pyproject.dig("project", "readme")
-        rescue TomlRB::ParseError
-          # If the pyproject is unparseable fail later in parsed_pyproject.
-        end
-
-        candidate_names =
-          case readme_decl
-          when String then [readme_decl]
-          when Hash
-            if readme_decl["file"].is_a?(String)
-              [T.cast(readme_decl["file"], String)]
-            else
-              README_FILENAMES
-            end
-          else
-            README_FILENAMES
-          end
-
-        candidate_names.filter_map do |filename|
-          file = fetch_file_if_present(filename)
-          file.support_file = true if file
-          file
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def requirement_files
-        [
-          *requirements_txt_files,
-          *child_requirement_txt_files,
-          *constraints_files
-        ]
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def python_version_file
-        return @python_version_file if defined?(@python_version_file)
-
-        @python_version_file = T.let(fetch_support_file(".python-version"), T.nilable(Dependabot::DependencyFile))
-
-        return @python_version_file if @python_version_file
-        return if [".", "/"].include?(directory)
-
-        # Check the top-level for a .python-version file, too
-        reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
-        @python_version_file =
-          fetch_support_file(File.join(reverse_path, ".python-version"))
-          &.tap { |f| f.name = ".python-version" }
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pyproject
-        return @pyproject if defined?(@pyproject)
-
-        @pyproject = T.let(fetch_file_if_present("pyproject.toml"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def requirements_txt_files
-        req_txt_and_in_files.select { |f| f.name.end_with?(".txt") }
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def requirements_in_files
-        req_txt_and_in_files.select { |f| f.name.end_with?(".in") } +
-          child_requirement_in_files
+        workspace_fetcher.send(:fetch_readme_files_for, directory, T.must(pyproject))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -202,16 +117,12 @@ module Dependabot
           child_uv_lock_files
       end
 
-      sig { returns(TomlContent) }
-      def parsed_pyproject
-        raise "No pyproject.toml" unless pyproject
-
-        @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.nilable(TomlContent))
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def child_uv_lock_files
+        child_requirement_files.select { |f| f.name.end_with?("uv.lock") }
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def req_txt_and_in_files
         return @req_txt_and_in_files if @req_txt_and_in_files
 
@@ -231,229 +142,6 @@ module Dependabot
         fetch_requirement_files_from_path(relative_reqs_dir)
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def child_requirement_txt_files
-        child_requirement_files.select { |f| f.name.end_with?(".txt") }
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def child_requirement_in_files
-        child_requirement_files.select { |f| f.name.end_with?(".in") }
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def child_uv_lock_files
-        child_requirement_files.select { |f| f.name.end_with?("uv.lock") }
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def child_requirement_files
-        @child_requirement_files ||= T.let(
-          begin
-            fetched_files = req_txt_and_in_files.dup
-            req_txt_and_in_files.flat_map do |requirement_file|
-              child_files = fetch_child_requirement_files(
-                file: requirement_file,
-                previously_fetched_files: fetched_files
-              )
-
-              fetched_files += child_files
-              child_files
-            end
-          end,
-          T.nilable(T::Array[Dependabot::DependencyFile])
-        )
-      end
-
-      sig do
-        params(
-          file: Dependabot::DependencyFile,
-          previously_fetched_files: T::Array[Dependabot::DependencyFile]
-        ).returns(T::Array[Dependabot::DependencyFile])
-      end
-      def fetch_child_requirement_files(file:, previously_fetched_files:)
-        content = file.content
-        return [] if content.nil?
-
-        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten
-        current_dir = File.dirname(file.name)
-
-        paths.flat_map do |path|
-          path = File.join(current_dir, path) unless current_dir == "."
-          path = cleanpath(path)
-
-          next if previously_fetched_files.map(&:name).include?(path)
-          next if file.name == path
-
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
-            raise Dependabot::DependencyFileNotEvaluatable,
-                  "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
-                  "Please either remove the reference from '#{file.name}' " \
-                  "or update your exclude_paths configuration."
-          end
-
-          fetched_file = fetch_file_from_host(path)
-          grandchild_requirement_files = fetch_child_requirement_files(
-            file: fetched_file,
-            previously_fetched_files: previously_fetched_files + [file]
-          )
-          [fetched_file, *grandchild_requirement_files]
-        end.compact
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def constraints_files
-        all_requirement_files = requirements_txt_files +
-                                child_requirement_txt_files
-
-        constraints_paths = all_requirement_files.map do |req_file|
-          current_dir = File.dirname(req_file.name)
-          content = req_file.content
-          next [] if content.nil?
-
-          paths = content.scan(CONSTRAINT_REGEX).flatten
-
-          paths.map do |path|
-            path = File.join(current_dir, path) unless current_dir == "."
-            cleanpath(path)
-          end
-        end.flatten.uniq
-
-        constraints_paths.map { |path| fetch_file_from_host(path) }
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def project_files
-        project_files = T.let([], T::Array[Dependabot::DependencyFile])
-        unfetchable_deps = []
-
-        path_dependencies.each do |dep|
-          path = dep[:path]
-          next if path.nil?
-
-          project_files += fetch_project_file(path)
-        rescue Dependabot::DependencyFileNotFound
-          unfetchable_deps << "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
-        end
-
-        raise Dependabot::PathDependenciesNotReachable, unfetchable_deps if unfetchable_deps.any?
-
-        project_files
-      end
-
-      sig { params(path: String).returns(T::Array[Dependabot::DependencyFile]) }
-      def fetch_project_file(path)
-        project_files = []
-
-        path = cleanpath(File.join(path, "pyproject.toml")) unless sdist_or_wheel?(path)
-
-        return [] if path == "pyproject.toml" && pyproject
-
-        project_files << fetch_file_from_host(
-          path,
-          fetch_submodules: true
-        ).tap { |f| f.support_file = true }
-
-        project_files
-      end
-
-      sig { params(path: String).returns(T::Boolean) }
-      def sdist_or_wheel?(path)
-        path.end_with?(".tar.gz", ".whl", ".zip")
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-      def requirements_file?(file)
-        return false unless file.content&.valid_encoding?
-        return true if file.name.match?(/requirements/x)
-
-        T.must(file.content).lines.all? do |line|
-          next true if line.strip.empty?
-          next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
-
-          line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
-        end
-      end
-
-      sig { returns(T::Array[PathDependency]) }
-      def path_dependencies
-        [
-          *requirement_txt_path_dependencies,
-          *requirement_in_path_dependencies,
-          *uv_sources_path_dependencies
-        ]
-      end
-
-      sig { returns(T::Array[PathDependency]) }
-      def requirement_txt_path_dependencies
-        (requirements_txt_files + child_requirement_txt_files)
-          .map { |req_file| parse_requirement_path_dependencies(req_file) }
-          .flatten.uniq { |dep| dep[:path] }
-      end
-
-      sig { returns(T::Array[PathDependency]) }
-      def requirement_in_path_dependencies
-        requirements_in_files
-          .map { |req_file| parse_requirement_path_dependencies(req_file) }
-          .flatten.uniq { |dep| dep[:path] }
-      end
-
-      sig { params(req_file: Dependabot::DependencyFile).returns(T::Array[PathDependency]) }
-      def parse_requirement_path_dependencies(req_file)
-        # If this is a pip-compile lockfile, rely on whatever path dependencies we found in the main manifest
-        return [] if requirements_in_file_matcher.compiled_file?(req_file)
-
-        content = T.must(req_file.content)
-        uneditable_reqs = parse_uneditable_requirements(content, req_file.name)
-        editable_reqs = parse_editable_requirements(content, req_file.name)
-
-        uneditable_reqs + editable_reqs
-      end
-
-      sig { params(content: String, file_name: String).returns(T::Array[PathDependency]) }
-      def parse_uneditable_requirements(content, file_name)
-        content
-          .scan(/(?<name>^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$))/)
-          .filter_map { |match_data| process_requirement_match(T.cast(match_data, T::Array[String]), file_name, false) }
-      end
-
-      sig { params(content: String, file_name: String).returns(T::Array[PathDependency]) }
-      def parse_editable_requirements(content, file_name)
-        content
-          .scan(/(?<name>^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$))/)
-          .filter_map { |match_data| process_requirement_match(T.cast(match_data, T::Array[String]), file_name, true) }
-      end
-
-      sig do
-        params(
-          match_data: T::Array[String],
-          file_name: String,
-          editable: T::Boolean
-        ).returns(T.nilable(PathDependency))
-      end
-      def process_requirement_match(match_data, file_name, editable)
-        name, path = match_data
-        return nil if name.nil? || path.nil?
-        return nil if path.include?("://")
-        return nil if editable && path.include?("git@")
-
-        { name: name.strip, path: path.strip, file: file_name }
-      end
-
-      sig { params(path: String).returns(String) }
-      def cleanpath(path)
-        Pathname.new(path).cleanpath.to_path
-      end
-
-      sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
-      def requirements_in_file_matcher
-        @requirements_in_file_matcher ||= T.let(
-          RequiremenstFileMatcher.new(requirements_in_files),
-          T.nilable(Dependabot::Uv::RequiremenstFileMatcher)
-        )
-      end
-
       sig { returns(T::Array[PathDependency]) }
       def uv_sources_path_dependencies
         return [] unless pyproject
@@ -470,6 +158,19 @@ module Dependabot
             }
           end
         end
+      end
+
+      sig { returns(T::Array[{ name: String, file: String }]) }
+      def uv_sources_workspace_dependencies
+        workspace_fetcher.uv_sources_workspace_dependencies
+      end
+
+      sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
+      def requirements_in_file_matcher
+        @requirements_in_file_matcher ||= T.let(
+          RequiremenstFileMatcher.new(requirements_in_files),
+          T.nilable(Dependabot::Uv::RequiremenstFileMatcher)
+        )
       end
 
       sig { params(path: T.nilable(T.any(Pathname, String))).returns(T::Array[Dependabot::DependencyFile]) }

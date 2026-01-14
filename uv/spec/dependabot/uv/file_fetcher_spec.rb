@@ -6,7 +6,25 @@ require "dependabot/uv/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Uv::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
+  describe "the class inheritance" do
+    it "inherits from Python::SharedFileFetcher which inherits from FileFetchers::Base" do
+      expect(described_class.superclass).to eq(Dependabot::Python::SharedFileFetcher)
+      expect(described_class.ancestors).to include(Dependabot::FileFetchers::Base)
+    end
+
+    it "implements required_files_in?" do
+      expect(described_class.public_methods(false)).to include(:required_files_in?)
+    end
+
+    it "implements required_files_message" do
+      expect(described_class.public_methods(false)).to include(:required_files_message)
+    end
+
+    it "doesn't define any additional public instance methods" do
+      expect(described_class.public_instance_methods)
+        .to match_array(Dependabot::FileFetchers::Base.public_instance_methods)
+    end
+  end
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
@@ -1019,6 +1037,85 @@ RSpec.describe Dependabot::Uv::FileFetcher do
             expect(path_deps).to be_empty
           end
         end
+      end
+    end
+
+    context "with UV workspace dependencies" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_with_workspace.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_content_workspace.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "packages?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_packages_dir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "packages/my-package?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_package_dir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "packages/my-package/pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_content_package.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub README file requests to return 404 (optional files)
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.rst?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        stub_request(:get, url + "packages/my-package/README?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "fetches workspace member pyproject.toml files" do
+        expect(file_fetcher_instance.files.map(&:name)).to include(
+          "pyproject.toml",
+          "packages/my-package/pyproject.toml"
+        )
+      end
+
+      it "marks workspace member files as support files" do
+        workspace_file = file_fetcher_instance.files.find { |f| f.name == "packages/my-package/pyproject.toml" }
+        expect(workspace_file&.support_file?).to be(true)
       end
     end
   end

@@ -31,7 +31,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var directory in job.GetAllDirectories())
+        foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);
@@ -67,7 +67,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var vulnerableCandidateDependenciesToUpdate = dependencyGroupToUpdate.Value
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: false)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, groupMatchers: [], allowCooldown: false)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
                 var vulnerableDependenciesToUpdate = vulnerableCandidateDependenciesToUpdate

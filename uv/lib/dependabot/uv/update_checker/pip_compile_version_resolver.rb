@@ -39,6 +39,7 @@ module Dependabot
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
         UV_UNRESOLVABLE_REGEX = T.let(/ × No solution found when resolving dependencies:[\s\S]*$/, Regexp)
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -272,6 +273,8 @@ module Dependabot
             /--index-url=\S+/, "--index-url=<index_url>"
           ).sub(
             /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          ).sub(
+            /--python-version=\S+/, "--python-version=<python_version>"
           )
         end
 
@@ -342,9 +345,18 @@ module Dependabot
 
           options << "--universal" if T.must(requirements_file.content).include?("--universal")
 
-          options
+          options << extract_python_version_option(requirements_file)
+
+          options.compact
         end
         # rubocop:enable Metrics/AbcSize
+
+        sig { params(requirements_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def extract_python_version_option(requirements_file)
+          return unless (match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
+
+          "--python-version=#{match[:version]}"
+        end
 
         sig { returns(T::Hash[String, String]) }
         def python_env
@@ -485,7 +497,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Uv::FileFetcher::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||= T.let(
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = T.must(file.content).scan(child_req_regex).flatten

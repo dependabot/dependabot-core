@@ -160,14 +160,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             requirements: [{
               file: "pom.xml",
               requirement: "1.6.0.RELEASE",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "1.5.8.RELEASE",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
@@ -444,26 +444,26 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             requirements: [{
               file: "pom.xml",
               requirement: "3.0.0-M2",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { property_name: "maven-javadoc-plugin.version" }
             }, {
               file: "pom.xml",
               requirement: "3.0.0-M2",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "3.0.0-M1",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { property_name: "maven-javadoc-plugin.version" }
             }, {
               file: "pom.xml",
               requirement: "2.10.4",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
