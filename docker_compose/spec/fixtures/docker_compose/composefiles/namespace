@@ -1,5 +1,0 @@
-version: '2'
-services:
-  hello_world:
-    image: my-fork/ubuntu:17.04
-    command: [/bin/echo, 'Hello world']

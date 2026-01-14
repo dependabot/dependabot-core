@@ -2,6 +2,8 @@
 
 Docker support for [`dependabot-core`][core-repo].
 
+**Note:** The `docker_compose` ecosystem is also located in this directory at `docker/docker_compose/` to share common code while maintaining separate package management.
+
 ### Running locally
 
 1. Start a development shell

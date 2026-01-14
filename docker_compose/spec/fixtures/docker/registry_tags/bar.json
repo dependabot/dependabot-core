@@ -1,7 +1,0 @@
-{
-    "name": "foo/bar",
-    "tags": [
-        "3.10-master-777",
-        "3.10-master-999"
-    ]
-}
