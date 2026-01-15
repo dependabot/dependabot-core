@@ -154,6 +154,8 @@ module Dependabot
           [req].flatten.compact.filter_map do |requirement|
             # Skip unsupported dependency types (path, url), but allow git
             next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
+            # Skip git dependencies without tags (e.g., with branch, rev)
+            next if requirement.is_a?(Hash) && requirement["git"] && !requirement["tag"]
 
             # Handle git dependencies with tags
             if requirement.is_a?(Hash) && requirement["git"] && requirement["tag"]
@@ -177,9 +179,6 @@ module Dependabot
                 groups: [type]
               }
             else
-              # Skip git dependencies without tags (e.g., with branch, rev)
-              next if requirement.is_a?(Hash) && requirement["git"] && !requirement["tag"]
-
               check_requirements(requirement)
               {
                 requirement: requirement["version"],
