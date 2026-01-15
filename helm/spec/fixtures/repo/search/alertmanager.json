@@ -1,0 +1,38 @@
+[
+  {
+    "name": "prometheus-community-github-io-helm-charts/alertmanager",
+    "version": "1.29.1",
+    "app_version": "v0.27.0",
+    "description": "The Alertmanager handles alerts sent by client applications such as the Prometheus server."
+  },
+  {
+    "name": "prometheus-community-github-io-helm-charts/alertmanager",
+    "version": "1.28.1",
+    "app_version": "v0.27.0",
+    "description": "The Alertmanager handles alerts sent by client applications such as the Prometheus server."
+  },
+  {
+    "name": "prometheus-community-github-io-helm-charts/alertmanager",
+    "version": "1.28.0",
+    "app_version": "v0.27.0",
+    "description": "The Alertmanager handles alerts sent by client applications such as the Prometheus server."
+  },
+  {
+    "name": "prometheus-community-github-io-helm-charts/alertmanager-snmp-notifier",
+    "version": "2.1.0",
+    "app_version": "v1.5.0",
+    "description": "Alertmanager SNMP notifier"
+  },
+  {
+    "name": "prometheus-community-github-io-helm-charts/alertmanager-snmp-notifier",
+    "version": "2.0.0",
+    "app_version": "v1.5.0",
+    "description": "Alertmanager SNMP notifier"
+  },
+  {
+    "name": "prometheus-community-github-io-helm-charts/alertmanager-snmp-notifier",
+    "version": "1.0.0",
+    "app_version": "v1.4.0",
+    "description": "Alertmanager SNMP notifier"
+  }
+]

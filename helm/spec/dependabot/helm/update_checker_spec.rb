@@ -145,6 +145,34 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     end
   end
 
+  describe "#latest_version with chart name filtering" do
+    subject(:latest_version) { checker.latest_version }
+
+    let(:repo_fixture_name) { "alertmanager.json" }
+    let(:repo_tags) { fixture("repo", "search", repo_fixture_name) }
+    let(:repo_url) { "https://prometheus-community.github.io/helm-charts" }
+    let(:repo_name) { "prometheus-community-github-io-helm-charts" }
+    let(:version) { "1.28.1" }
+    let(:dependency_name) { "alertmanager" }
+    let(:source) { { tag: version, registry: repo_url } }
+
+    before do
+      allow(Dependabot::Helm::Helpers).to receive(:add_repo).and_return("")
+      allow(Dependabot::Helm::Helpers).to receive(:update_repo).and_return("")
+      allow(Dependabot::Helm::Helpers).to receive(:search_releases)
+        .with("#{repo_name}/#{dependency_name}")
+        .and_return(repo_tags)
+    end
+
+    it "filters out releases from similarly named charts" do
+      expect(latest_version).to eq(Dependabot::Helm::Version.new("1.29.1"))
+    end
+
+    it "does not select version from alertmanager-snmp-notifier" do
+      expect(latest_version).not_to eq(Dependabot::Helm::Version.new("2.1.0"))
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
