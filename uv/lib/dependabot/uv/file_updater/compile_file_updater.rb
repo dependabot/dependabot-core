@@ -3,7 +3,6 @@
 
 require "open3"
 require "sorbet-runtime"
-require "toml-rb"
 
 require "dependabot/dependency"
 require "dependabot/uv/requirement_parser"
