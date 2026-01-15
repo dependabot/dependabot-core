@@ -116,9 +116,7 @@ module Dependabot
         end
         def replace_dep(dep, content, new_r, old_r)
           # Handle Git dependencies with tags
-          if git_dependency?(new_r) && git_dependency?(old_r)
-            return update_git_tag(dep, content, new_r, old_r)
-          end
+          return update_git_tag(dep, content, new_r, old_r) if git_dependency?(new_r) && git_dependency?(old_r)
 
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
@@ -175,7 +173,10 @@ module Dependabot
 
           # Match git dependency declaration with tag
           # Example: fastapi = { git = "...", extras = ["all"], tag = "0.110.0" }
-          git_dep_regex = /^(\s*)#{Regexp.escape(dep.name)}(\s*=\s*\{[^}]*tag\s*=\s*)["']#{Regexp.escape(old_tag)}["']([^}]*\})/m
+          git_dep_regex = /
+            ^(\s*)#{Regexp.escape(dep.name)}(\s*=\s*\{[^}]*tag\s*=\s*)
+            ["']#{Regexp.escape(old_tag)}["']([^}]*\})
+          /mx
 
           content.gsub(git_dep_regex) do
             match_data = T.must(Regexp.last_match)

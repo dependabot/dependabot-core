@@ -149,6 +149,7 @@ module Dependabot
 
         # @param req can be an Array, Hash or String that represents the constraints for a dependency
         sig { params(req: T.untyped, type: String).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        # rubocop:disable Metrics/PerceivedComplexity
         def parse_requirements_from(req, type)
           [req].flatten.compact.filter_map do |requirement|
             # Skip unsupported dependency types (path, url), but allow git
@@ -189,6 +190,7 @@ module Dependabot
             end
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(T::Boolean)) }
         def using_poetry?
