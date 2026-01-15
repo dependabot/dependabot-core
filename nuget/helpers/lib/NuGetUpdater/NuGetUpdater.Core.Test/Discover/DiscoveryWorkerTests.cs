@@ -27,7 +27,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         {
             // this package ships with the SDK and is automatically added for F# projects but should be manually added here to make the test consistent
             // only direct package discovery finds this, though
-            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true));
+            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsDirect: false, IsTransitive: true));
         }
 
         await TestDiscoveryAsync(
@@ -614,6 +614,179 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         new("dotnetsay", "2.1.3", DependencyType.DotNetTool),
                     ]
                 }
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SdkPackagesAreReportedAppropriately()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="2.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SdkPackagesThatAreUpdatedAreReportedAsTopLevel()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        // HOWEVER a later statement in the files updates the package version, so it's now considered top level
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="1.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Transitive.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
             }
         );
     }
