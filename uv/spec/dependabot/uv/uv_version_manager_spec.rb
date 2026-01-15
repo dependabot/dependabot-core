@@ -110,5 +110,26 @@ RSpec.describe Dependabot::Uv::UvVersionManager do
         expect { ensure_correct_version }.to raise_error(/expected version 0.8.22, but got 0.9.11/)
       end
     end
+
+    context "when required version has invalid format" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "test"
+          version = "0.1.0"
+          dependencies = []
+
+          [tool.uv]
+          required-version = "0.8.22; echo malicious"
+        TOML
+      end
+
+      it "raises an error about invalid version format" do
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Failed to update uv to version/)
+
+        expect { ensure_correct_version }.to raise_error(/Invalid version format/)
+      end
+    end
   end
 end

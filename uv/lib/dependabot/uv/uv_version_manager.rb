@@ -74,6 +74,9 @@ module Dependabot
 
       sig { params(version: String).void }
       def update_uv_to_version(version)
+        # Validate version string to prevent command injection
+        raise "Invalid version format: #{version}" unless version.match?(/\A\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?\z/)
+
         Dependabot.logger.info("Updating uv to version #{version}")
 
         # Use pip to install the required uv version since the bundled uv

@@ -349,13 +349,13 @@ module Dependabot
             python_version = language_version_manager.python_version
             Dependabot.logger.info("Setting Python version to #{python_version}")
             SharedHelpers.run_shell_command("pyenv local #{python_version}")
-
-            # Check and update uv version if required
-            uv_version_manager.ensure_correct_version
           rescue StandardError => e
             Dependabot.logger.warn("Error setting up Python environment: #{e.message}")
             Dependabot.logger.info("Falling back to system Python")
           end
+
+          # Check and update uv version if required (outside rescue block to ensure failures are not ignored)
+          uv_version_manager.ensure_correct_version
         end
 
         sig { returns(UvVersionManager) }
