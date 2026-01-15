@@ -6,7 +6,7 @@ namespace DotNetPackageCorrelation;
 public record Release
 {
     [JsonPropertyName("sdk")]
-    public required Sdk Sdk { get; init; }
+    public Sdk Sdk { get; init; } = new();
 
     [JsonPropertyName("sdks")]
     public ImmutableArray<Sdk>? Sdks { get; init; } = [];
