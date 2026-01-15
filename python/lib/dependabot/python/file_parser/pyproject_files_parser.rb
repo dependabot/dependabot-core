@@ -19,7 +19,8 @@ module Dependabot
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
-        UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
+        # Git dependencies with tags are now supported for version tracking
+        UNSUPPORTED_DEPENDENCY_TYPES = %w(path url).freeze
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
@@ -150,11 +151,24 @@ module Dependabot
         sig { params(req: T.untyped, type: String).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
         def parse_requirements_from(req, type)
           [req].flatten.compact.filter_map do |requirement|
+            # Skip unsupported dependency types (path, url), but allow git
             next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
 
-            check_requirements(requirement)
-
-            if requirement.is_a?(String)
+            # Handle git dependencies with tags
+            if requirement.is_a?(Hash) && requirement["git"] && requirement["tag"]
+              {
+                requirement: nil,
+                file: T.must(pyproject).name,
+                source: {
+                  type: "git",
+                  url: requirement["git"],
+                  ref: requirement["tag"],
+                  branch: nil
+                },
+                groups: [type]
+              }
+            elsif requirement.is_a?(String)
+              check_requirements(requirement)
               {
                 requirement: requirement,
                 file: T.must(pyproject).name,
@@ -162,6 +176,10 @@ module Dependabot
                 groups: [type]
               }
             else
+              # Skip git dependencies without tags (e.g., with branch, rev)
+              next if requirement.is_a?(Hash) && requirement["git"] && !requirement["tag"]
+
+              check_requirements(requirement)
               {
                 requirement: requirement["version"],
                 file: T.must(pyproject).name,

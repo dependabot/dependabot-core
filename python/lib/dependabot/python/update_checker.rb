@@ -35,6 +35,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_version
+        return latest_version_for_git_dependency if git_dependency?
+
         @latest_version ||= T.let(
           fetch_latest_version,
           T.nilable(Gem::Version)
@@ -43,6 +45,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version
+        return latest_resolvable_version_for_git_dependency if git_dependency?
+
         @latest_resolvable_version ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version
@@ -59,6 +63,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version_with_no_unlock
+        return T.cast(dependency.version, T.nilable(Gem::Version)) if git_dependency? && git_commit_checker.pinned?
+
         @latest_resolvable_version_with_no_unlock ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version_with_no_unlock
@@ -88,6 +94,8 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        return updated_git_requirements if git_dependency?
+
         RequirementsUpdater.new(
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
@@ -111,6 +119,64 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Boolean) }
+      def git_dependency?
+        git_commit_checker.git_dependency?
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def latest_version_for_git_dependency
+        latest_git_version_details&.fetch(:version)
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def latest_resolvable_version_for_git_dependency
+        # For git dependencies, we assume the latest version is resolvable
+        latest_version_for_git_dependency
+      end
+
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def updated_git_requirements
+        updated_source = updated_git_source
+        return requirements unless updated_source
+
+        requirements.map do |req|
+          req.merge(source: updated_source)
+        end
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def updated_git_source
+        # Update the git tag if a new version is available
+        if git_commit_checker.pinned_ref_looks_like_version? && latest_git_version_details
+          new_tag = T.must(latest_git_version_details).fetch(:tag)
+          source_details = dependency.source_details
+          return source_details.transform_keys(&:to_sym).merge(ref: new_tag) if source_details
+        end
+
+        # Otherwise return the original source
+        dependency.source_details&.transform_keys(&:to_sym)
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def latest_git_version_details
+        @latest_git_version_details ||= T.let(
+          git_commit_checker.local_tag_for_latest_version,
+          T.nilable(T::Hash[Symbol, T.untyped])
+        )
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_commit_checker
+        @git_commit_checker ||= T.let(
+          Dependabot::GitCommitChecker.new(
+            dependency: dependency,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
+      end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
