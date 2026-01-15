@@ -330,7 +330,7 @@ module Dependabot
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint, env: env)
         end
 
-        sig { params(pyproject_content: String).returns(Integer) }
+        sig { params(pyproject_content: String).void }
         def write_temporary_dependency_files(pyproject_content)
           dependency_files.each do |file|
             path = file.name

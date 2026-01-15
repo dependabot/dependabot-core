@@ -728,6 +728,45 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "#uv_indices" do
+    subject(:uv_indices) { updater.send(:uv_indices) }
+
+    context "with explicit index in pyproject.toml" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      it "parses index configuration correctly" do
+        expect(uv_indices).to include(
+          "company_pypi" => { "url" => "https://private-pypi.example.com/simple", "explicit" => true }
+        )
+      end
+    end
+
+    context "with mixed indices in pyproject.toml" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_mixed_explicit_indices.toml") }
+
+      it "parses both explicit and non-explicit indices" do
+        expect(uv_indices["company_pypi"]["explicit"]).to be true
+        expect(uv_indices["fallback_pypi"]["explicit"]).to be_falsey
+      end
+    end
+
+    context "with non-explicit index in pyproject.toml" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
+
+      it "parses index without explicit flag as non-explicit" do
+        expect(uv_indices["company_pypi"]["explicit"]).to be_falsey
+      end
+    end
+
+    context "with no uv indices in pyproject.toml" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+
+      it "returns empty hash" do
+        expect(uv_indices).to eq({})
+      end
+    end
+  end
+
   describe "#lock_options_fingerprint" do
     subject(:lock_options_fingerprint) { updater.send(:lock_options_fingerprint, options) }
 
