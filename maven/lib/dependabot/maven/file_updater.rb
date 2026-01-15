@@ -30,7 +30,7 @@ module Dependabot
           )
         end
 
-        updated_files.select! { |f| f.name.end_with?(".xml") }
+        updated_files.select! { |f| f.name.end_with?(".xml", "maven.config") }
         updated_files.reject! { |f| dependency_files.include?(f) }
 
         raise "No files changed!" if updated_files.none?
