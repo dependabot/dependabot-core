@@ -40,6 +40,18 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def version_source_files
+          return [] unless @pyproject
+
+          workspace_member_paths.flat_map do |member_path|
+            member_pyproject = fetch_workspace_member_pyproject(member_path)
+            @file_fetcher.fetch_version_source_files_for(member_path, member_pyproject)
+          rescue Dependabot::DependencyFileNotFound
+            []
+          end
+        end
+
         sig { returns(T::Array[{ name: String, file: String }]) }
         def uv_sources_workspace_dependencies
           return [] unless @pyproject

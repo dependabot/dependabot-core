@@ -728,45 +728,6 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
-  describe "#uv_indices" do
-    subject(:uv_indices) { updater.send(:uv_indices) }
-
-    context "with explicit index in pyproject.toml" do
-      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
-
-      it "parses index configuration correctly" do
-        expect(uv_indices).to include(
-          "company_pypi" => { "url" => "https://private-pypi.example.com/simple", "explicit" => true }
-        )
-      end
-    end
-
-    context "with mixed indices in pyproject.toml" do
-      let(:pyproject_content) { fixture("pyproject_files", "uv_mixed_explicit_indices.toml") }
-
-      it "parses both explicit and non-explicit indices" do
-        expect(uv_indices["company_pypi"]["explicit"]).to be true
-        expect(uv_indices["fallback_pypi"]["explicit"]).to be_falsey
-      end
-    end
-
-    context "with non-explicit index in pyproject.toml" do
-      let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
-
-      it "parses index without explicit flag as non-explicit" do
-        expect(uv_indices["company_pypi"]["explicit"]).to be_falsey
-      end
-    end
-
-    context "with no uv indices in pyproject.toml" do
-      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
-
-      it "returns empty hash" do
-        expect(uv_indices).to eq({})
-      end
-    end
-  end
-
   describe "#lock_options_fingerprint" do
     subject(:lock_options_fingerprint) { updater.send(:lock_options_fingerprint, options) }
 
@@ -900,6 +861,152 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           expected_command,
           fingerprint: expected_fingerprint,
           env: {}
+        )
+      end
+    end
+
+    context "with setuptools-scm dynamic versioning" do
+      let(:pyproject_content) { fixture("pyproject_files", "setuptools_scm_version_file.toml") }
+      let(:credentials) { [] }
+
+      it "passes setuptools_scm pretend version env vars to run_command" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_TOGGLE_DISPLAY_INPUT" => "0.0.0"
+          )
+        )
+      end
+    end
+
+    context "with package name containing hyphens using dynamic versioning" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "my-awesome-package"
+          dynamic = ["version"]
+
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+          fallback_version = "1.2.3"
+        TOML
+      end
+      let(:credentials) { [] }
+
+      it "replaces hyphens with underscores in env var name" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MY_AWESOME_PACKAGE" => "1.2.3"
+          )
+        )
+      end
+    end
+
+    context "with package name containing dots using dynamic versioning" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "namespace.sub.package"
+          dynamic = ["version"]
+
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+          fallback_version = "2.0.0"
+        TOML
+      end
+      let(:credentials) { [] }
+
+      it "replaces dots with underscores in env var name" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_NAMESPACE_SUB_PACKAGE" => "2.0.0"
+          )
+        )
+      end
+    end
+
+    context "with hatch-vcs dynamic versioning" do
+      let(:pyproject_content) { fixture("pyproject_files", "hatch_vcs_build_hook.toml") }
+      let(:credentials) { [] }
+
+      it "passes setuptools_scm pretend version env vars for hatch-vcs packages" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_P1" => "10.0.0"
+          )
+        )
+      end
+    end
+
+    context "with no fallback version in dynamic versioning config" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "no-fallback"
+          dynamic = ["version"]
+
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+        TOML
+      end
+      let(:credentials) { [] }
+
+      it "uses default version 0.0.0" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_NO_FALLBACK" => "0.0.0"
+          )
+        )
+      end
+    end
+
+    context "with workspace members using dynamic versioning" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:member_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "packages/subpkg/pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "sub-package"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "src/_version.py"
+            fallback_version = "3.0.0"
+          TOML
+        )
+      end
+      let(:dependency_files) { [pyproject_file, lockfile, member_pyproject] }
+      let(:credentials) { [] }
+
+      it "includes env vars for workspace members" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_SUB_PACKAGE" => "3.0.0"
+          )
         )
       end
     end

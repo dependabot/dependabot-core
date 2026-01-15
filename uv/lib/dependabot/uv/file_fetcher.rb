@@ -51,6 +51,7 @@ module Dependabot
         files += readme_files
         files += uv_lock_files
         files += workspace_member_files
+        files += version_source_files
         files
       end
 
@@ -109,6 +110,78 @@ module Dependabot
         return [] unless pyproject
 
         workspace_fetcher.send(:fetch_readme_files_for, directory, T.must(pyproject))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def version_source_files
+        return [] unless pyproject
+        files = []
+        files += fetch_version_source_files_for(directory, T.must(pyproject))
+        files += workspace_fetcher.version_source_files
+
+        files
+      end
+
+      sig do
+        params(
+          base_path: String,
+          pyproject_file: Dependabot::DependencyFile
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def fetch_version_source_files_for(base_path, pyproject_file)
+        version_paths = extract_version_source_paths(pyproject_file)
+        is_root = base_path == directory
+
+        version_paths.filter_map do |version_path|
+          resolved_path = resolve_version_source_path(version_path, base_path)
+          next unless resolved_path
+          next unless path_within_repo?(resolved_path)
+
+          file = if is_root
+                   fetch_file_if_present(resolved_path)
+                 else
+                   fetch_file_from_host(resolved_path, fetch_submodules: true)
+                 end
+
+          next unless file
+
+          file.support_file = true
+          file
+        rescue Dependabot::DependencyFileNotFound
+          Dependabot.logger.info("Version source file not found: #{resolved_path}")
+          nil
+        end
+      end
+
+      sig { params(pyproject_file: Dependabot::DependencyFile).returns(T::Array[String]) }
+      def extract_version_source_paths(pyproject_file)
+        parsed = TomlRB.parse(pyproject_file.content)
+        paths = []
+
+        hatch_version_path = parsed.dig("tool", "hatch", "version", "path")
+        paths << hatch_version_path if hatch_version_path.is_a?(String)
+
+        paths
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+        []
+      end
+
+      sig { params(version_path: String, base_path: String).returns(T.nilable(String)) }
+      def resolve_version_source_path(version_path, base_path)
+        return nil if version_path.empty?
+        return nil if Pathname.new(version_path).absolute?
+
+        if base_path == directory || base_path == "."
+          clean_path(version_path)
+        else
+          clean_path(File.join(base_path, version_path))
+        end
+      end
+
+      sig { params(path: String).returns(T::Boolean) }
+      def path_within_repo?(path)
+        cleaned = clean_path(path)
+        !cleaned.start_with?("../", "/")
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
