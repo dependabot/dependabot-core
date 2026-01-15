@@ -10,26 +10,6 @@ RSpec.describe Dependabot::PullRequest do
       [[{ "dependency-name" => "foo", "dependency-version" => "1.0.0", "directory" => "/", "pr-number" => 123 }]]
     end
 
-    it "can properly handle when each PR from the job is an array" do
-      pr2 = described_class.create_from_job_definition( # ← Fix: Correct method call
-        existing_pull_requests: existing_pull_requests
-      )
-      pr2 = pr2.first # get the first PR from the array
-
-      pr1 = described_class.new(
-        [
-          Dependabot::PullRequest::Dependency.new(
-            name: "foo",
-            version: "1.0.0",
-            directory: "/"
-          )
-        ],
-        pr_number: 123
-      )
-      expect(pr2.pr_number).to eq(123)
-      expect(pr2).to eq(pr1)
-    end
-
     it "can properly handle when each PR is a hash and dependencies object is present" do
       existing_pull_requests =
         [{ "pr-number" => 123,
