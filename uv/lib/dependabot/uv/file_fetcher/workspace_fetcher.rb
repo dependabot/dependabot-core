@@ -52,6 +52,18 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def license_files
+          return [] unless @pyproject
+
+          workspace_member_paths.flat_map do |member_path|
+            member_pyproject = fetch_workspace_member_pyproject(member_path)
+            fetch_license_files_for(member_path, member_pyproject)
+          rescue Dependabot::DependencyFileNotFound
+            []
+          end
+        end
+
         sig { returns(T::Array[{ name: String, file: String }]) }
         def uv_sources_workspace_dependencies
           return [] unless @pyproject
@@ -142,7 +154,7 @@ module Dependabot
           version_paths = extract_version_source_paths(pyproject_file)
 
           version_paths.filter_map do |version_path|
-            resolved_path = resolve_version_source_path(version_path, path)
+            resolved_path = resolve_support_file_path(version_path, path)
             next unless resolved_path
             next unless path_within_repo?(resolved_path)
 
@@ -152,6 +164,30 @@ module Dependabot
             file
           rescue Dependabot::DependencyFileNotFound
             Dependabot.logger.info("Version source file not found: #{resolved_path}")
+            nil
+          end
+        end
+
+        sig do
+          params(
+            path: String,
+            pyproject_file: Dependabot::DependencyFile
+          ).returns(T::Array[Dependabot::DependencyFile])
+        end
+        def fetch_license_files_for(path, pyproject_file)
+          license_paths = extract_license_paths(pyproject_file)
+
+          license_paths.filter_map do |license_path|
+            resolved_path = resolve_support_file_path(license_path, path)
+            next unless resolved_path
+            next unless path_within_repo?(resolved_path)
+
+            file = fetch_file_from_host(resolved_path, fetch_submodules: true)
+
+            file.support_file = true
+            file
+          rescue Dependabot::DependencyFileNotFound
+            Dependabot.logger.info("License file not found: #{resolved_path}")
             nil
           end
         end
@@ -171,12 +207,37 @@ module Dependabot
           []
         end
 
-        sig { params(version_path: String, base_path: String).returns(T.nilable(String)) }
-        def resolve_version_source_path(version_path, base_path)
-          return nil if version_path.empty?
-          return nil if Pathname.new(version_path).absolute?
+        sig { params(pyproject_file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def extract_license_paths(pyproject_file)
+          return [] unless pyproject_file.content
 
-          clean_path(File.join(base_path, version_path))
+          parsed = TomlRB.parse(T.must(pyproject_file.content))
+          paths = []
+
+          # Handle legacy license = {file = "LICENSE"} format
+          license_decl = parsed.dig("project", "license")
+          paths << license_decl["file"] if license_decl.is_a?(Hash) && license_decl["file"].is_a?(String)
+
+          # Handle license-files = ["LICENSE", "LICENSES/*"] format (without glob expansion)
+          license_files_decl = parsed.dig("project", "license-files")
+          if license_files_decl.is_a?(Array)
+            license_files_decl.each do |pattern|
+              # Only include simple file paths, not glob patterns
+              paths << pattern if pattern.is_a?(String) && !pattern.include?("*")
+            end
+          end
+
+          paths
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          []
+        end
+
+        sig { params(file_path: String, base_path: String).returns(T.nilable(String)) }
+        def resolve_support_file_path(file_path, base_path)
+          return nil if file_path.empty?
+          return nil if Pathname.new(file_path).absolute?
+
+          clean_path(File.join(base_path, file_path))
         end
 
         sig { params(path: String).returns(T::Boolean) }
