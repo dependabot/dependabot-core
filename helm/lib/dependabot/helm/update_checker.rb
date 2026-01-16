@@ -69,6 +69,10 @@ module Dependabot
 
         return nil unless releases && !releases.empty?
 
+        # Filter to only include releases for the exact chart name
+        releases = filter_releases_by_chart_name(releases, chart_name, repo_name)
+        return nil if releases.empty?
+
         valid_releases = filter_valid_releases(releases)
         return nil if valid_releases.empty?
 
@@ -122,6 +126,27 @@ module Dependabot
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
             end
         end
+      end
+
+      sig do
+        params(
+          releases: T::Array[T::Hash[String, T.untyped]],
+          chart_name: String,
+          repo_name: T.nilable(String)
+        ).returns(T::Array[T::Hash[String, T.untyped]])
+      end
+      def filter_releases_by_chart_name(releases, chart_name, repo_name)
+        expected_name = repo_name ? "#{repo_name}/#{chart_name}" : chart_name
+        Dependabot.logger.info("Filtering releases to only include chart name: #{expected_name}")
+
+        filtered_releases = releases.select do |release|
+          release["name"] == expected_name
+        end
+
+        Dependabot.logger.info(
+          "Filtered from #{releases.length} to #{filtered_releases.length} releases for #{expected_name}"
+        )
+        filtered_releases
       end
 
       sig { params(repo_url: String).returns(String) }
