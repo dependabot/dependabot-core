@@ -46,7 +46,7 @@ module Dependabot
 
           workspace_member_paths.flat_map do |member_path|
             member_pyproject = fetch_workspace_member_pyproject(member_path)
-            @file_fetcher.fetch_version_source_files_for(member_path, member_pyproject)
+            fetch_version_source_files_for(member_path, member_pyproject)
           rescue Dependabot::DependencyFileNotFound
             []
           end
@@ -130,6 +130,59 @@ module Dependabot
             file_path = clean_path(File.join(path, filename))
             fetch_file_from_host(file_path, fetch_submodules: true)
           end
+        end
+
+        sig do
+          params(
+            path: String,
+            pyproject_file: Dependabot::DependencyFile
+          ).returns(T::Array[Dependabot::DependencyFile])
+        end
+        def fetch_version_source_files_for(path, pyproject_file)
+          version_paths = extract_version_source_paths(pyproject_file)
+
+          version_paths.filter_map do |version_path|
+            resolved_path = resolve_version_source_path(version_path, path)
+            next unless resolved_path
+            next unless path_within_repo?(resolved_path)
+
+            file = fetch_file_from_host(resolved_path, fetch_submodules: true)
+
+            file.support_file = true
+            file
+          rescue Dependabot::DependencyFileNotFound
+            Dependabot.logger.info("Version source file not found: #{resolved_path}")
+            nil
+          end
+        end
+
+        sig { params(pyproject_file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def extract_version_source_paths(pyproject_file)
+          return [] unless pyproject_file.content
+
+          parsed = TomlRB.parse(T.must(pyproject_file.content))
+          paths = []
+
+          hatch_version_path = parsed.dig("tool", "hatch", "version", "path")
+          paths << hatch_version_path if hatch_version_path.is_a?(String)
+
+          paths
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          []
+        end
+
+        sig { params(version_path: String, base_path: String).returns(T.nilable(String)) }
+        def resolve_version_source_path(version_path, base_path)
+          return nil if version_path.empty?
+          return nil if Pathname.new(version_path).absolute?
+
+          clean_path(File.join(base_path, version_path))
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def path_within_repo?(path)
+          cleaned = clean_path(path)
+          !cleaned.start_with?("../", "/")
         end
 
         sig { returns(T::Array[String]) }
