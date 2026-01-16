@@ -1,5 +1,5 @@
 # syntax=docker.io/docker/dockerfile:1.20
-FROM docker.io/library/rust:1.89.0-bookworm AS rust
+FROM docker.io/library/rust:1.92.0-bookworm AS rust
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 
