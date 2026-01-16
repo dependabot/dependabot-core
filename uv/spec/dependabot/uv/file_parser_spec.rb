@@ -956,18 +956,23 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      it "raises PathDependenciesNotReachable error" do
-        expect { parser.parse }.to raise_error(Dependabot::PathDependenciesNotReachable) do |error|
-          # protos is defined in dependencies with a path source
-          expect(error.dependencies).to include("protos")
-        end
+      it "excludes dependencies with local path sources" do
+        dependencies = parser.parse
+        dependency_names = dependencies.map(&:name)
+
+        # protos has a path source and should be excluded
+        expect(dependency_names).not_to include("protos")
+
+        # requests is a normal dependency and should be included
+        expect(dependency_names).to include("requests")
       end
 
-      it "includes the path dependency names in the error" do
-        expect { parser.parse }.to raise_error(Dependabot::PathDependenciesNotReachable) do |error|
-          expect(error.dependencies).to eq(["protos"])
-          expect(error.message).to include("protos")
-        end
+      it "only includes non-path dependencies" do
+        dependencies = parser.parse.select(&:top_level?)
+
+        # Should only have requests, not the local path dependency
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.name).to eq("requests")
       end
     end
   end

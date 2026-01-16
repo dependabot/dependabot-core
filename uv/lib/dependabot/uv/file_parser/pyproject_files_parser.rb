@@ -81,18 +81,13 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
-          path_dependencies = []
-
           parse_pep621_pep735_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
             next if dep["markers"]&.include?("<")
 
-            # Check if this is a local path dependency
-            if local_path_dependency?(dep["name"])
-              path_dependencies << dep["name"]
-              next
-            end
+            # Skip local path dependencies - they can't be updated by Dependabot
+            next if local_path_dependency?(dep["name"])
 
             # In uv no constraint means any version is acceptable
             requirement_value = dep["requirement"] && dep["requirement"].empty? ? "*" : dep["requirement"]
@@ -110,9 +105,6 @@ module Dependabot
                 package_manager: "uv"
               )
           end
-
-          # Raise error if path dependencies were found
-          raise Dependabot::PathDependenciesNotReachable, path_dependencies if path_dependencies.any?
 
           dependencies
         end
