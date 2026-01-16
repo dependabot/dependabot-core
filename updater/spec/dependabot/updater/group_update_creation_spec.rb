@@ -101,9 +101,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     # Stub all experiment flags to avoid unexpected argument errors
     allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with("dependency_change_validation")
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:allow_refresh_group_with_all_dependencies)
       .and_return(false)
 
@@ -135,9 +132,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enhanced_grouped_security_error_reporting)
           .and_return(true)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with("dependency_change_validation")
-          .and_return(false)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:allow_refresh_group_with_all_dependencies)
           .and_return(false)
