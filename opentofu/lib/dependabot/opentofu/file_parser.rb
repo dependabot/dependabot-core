@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "nokogiri"
 require "open3"
@@ -314,7 +313,7 @@ module Dependabot
           type: "git",
           url: git_url,
           branch: nil,
-          ref: CGI.parse(querystr.to_s)["ref"].first&.split(%r{(?<!:)//})&.first
+          ref: URI.decode_www_form(querystr.to_s).to_h["ref"]&.split(%r{(?<!:)//})&.first
         }
       end
 
