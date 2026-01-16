@@ -14,6 +14,7 @@ require "dependabot/uv/language_version_manager"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/authed_url_builder"
+require "dependabot/uv/uv_version_manager"
 
 module Dependabot
   module Uv
@@ -100,6 +101,9 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
             language_version_manager.install_required_python
+
+            # Check and update uv version if required
+            uv_version_manager.ensure_correct_version
 
             filenames_to_compile.each do |filename|
               compile_file(filename)
@@ -637,6 +641,14 @@ module Dependabot
               dependency_files: dependency_files
             ),
             T.nilable(FileParser::PythonRequirementParser)
+          )
+        end
+
+        sig { returns(UvVersionManager) }
+        def uv_version_manager
+          @uv_version_manager ||= T.let(
+            UvVersionManager.new(dependency_files: dependency_files),
+            T.nilable(UvVersionManager)
           )
         end
 
