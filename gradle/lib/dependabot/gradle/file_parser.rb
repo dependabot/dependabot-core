@@ -239,13 +239,14 @@ module Dependabot
       def details_for_plugin_dependency(declaration)
         if declaration.is_a?(String)
           parts = declaration.split(":")
-          ["plugins", T.must(parts[0]), T.must(parts[1])]
+          ["plugins", T.must(parts[0]).strip, T.must(parts[1]).strip]
         else
           decl_hash = declaration
           version = decl_hash["version"]
           return nil if version.nil?
 
-          ["plugins", T.must(decl_hash["id"]), version]
+          # Ensure plugin ID is trimmed to avoid whitespace issues with ignore matching
+          ["plugins", T.must(decl_hash["id"]).strip, version]
         end
       end
 

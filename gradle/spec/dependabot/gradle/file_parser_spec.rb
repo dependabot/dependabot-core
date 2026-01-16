@@ -1149,6 +1149,51 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
 
       its(:length) { is_expected.to eq(2) }
+
+      describe "plugin dependency names and ignore matching" do
+        subject(:plugin_dep) { dependencies.first }
+
+        it "has the correct dependency name without 'plugins:' prefix" do
+          expect(plugin_dep.name).to eq("org.jlleitschuh.gradle.ktlint")
+          expect(plugin_dep.name).not_to include("plugins:")
+        end
+
+        it "can be matched by wildcard ignore patterns" do
+          require "dependabot/config/update_config"
+          require "dependabot/config/ignore_condition"
+
+          # Test wildcard pattern
+          ignore_condition = Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*org.jlleitschuh.gradle.ktlint*",
+            update_types: ["version-update:semver-minor"]
+          )
+
+          update_config = Dependabot::Config::UpdateConfig.new(
+            ignore_conditions: [ignore_condition]
+          )
+
+          ignored_versions = update_config.ignored_versions_for(plugin_dep, security_updates_only: false)
+          expect(ignored_versions).not_to be_empty
+        end
+
+        it "can be matched by exact ignore patterns" do
+          require "dependabot/config/update_config"
+          require "dependabot/config/ignore_condition"
+
+          # Test exact match
+          ignore_condition = Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "org.jlleitschuh.gradle.ktlint",
+            update_types: ["version-update:semver-minor"]
+          )
+
+          update_config = Dependabot::Config::UpdateConfig.new(
+            ignore_conditions: [ignore_condition]
+          )
+
+          ignored_versions = update_config.ignored_versions_for(plugin_dep, security_updates_only: false)
+          expect(ignored_versions).not_to be_empty
+        end
+      end
     end
   end
 
