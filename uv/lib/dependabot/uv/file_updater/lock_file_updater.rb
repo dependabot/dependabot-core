@@ -103,7 +103,13 @@ module Dependabot
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
 
-            raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
+            if T.must(lockfile).content == new_content
+              # If the lockfile didn't change and we tried to update to a specific version,
+              # it means the update is not possible (likely due to conflicting dependencies)
+              raise Dependabot::UpdateNotPossible, [T.must(dependency).name] if T.must(dependency).version
+
+              raise "Expected lockfile to change!"
+            end
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
           end
@@ -317,7 +323,27 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          run_command(command, fingerprint: fingerprint, env: explicit_index_env_vars)
+          begin
+            run_command(command, fingerprint: fingerprint, env: explicit_index_env_vars)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            # If the explicit version fails with a resolution error, try without the version constraint
+            # This handles cases where the target version is incompatible with other dependencies
+            raise unless dep_version && resolution_error?(e)
+
+            Dependabot.logger.info(
+              "Failed to upgrade to #{dep_name}==#{dep_version}, retrying without version constraint"
+            )
+            fallback_package_spec = dep_name
+            fallback_command = "pyenv exec uv lock --upgrade-package #{fallback_package_spec} #{options}"
+            run_command(fallback_command, fingerprint: fingerprint, env: explicit_index_env_vars)
+          end
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def resolution_error?(error)
+          error_message = error.message
+          error_message.include?("No solution found when resolving dependencies") ||
+            error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
         end
 
         sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
