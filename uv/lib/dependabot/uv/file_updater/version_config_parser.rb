@@ -23,7 +23,7 @@ module Dependabot
 
           sig { returns(T::Boolean) }
           def dynamic_version?
-            write_paths.any? || source_paths.any? || !fallback_version.nil?
+            write_paths.any? || source_paths.any?
           end
         end
 

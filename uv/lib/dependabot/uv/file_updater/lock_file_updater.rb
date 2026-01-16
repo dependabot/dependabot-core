@@ -318,7 +318,6 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          # Merge explicit index env vars with setuptools-scm pretend version env vars
           env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
 
           run_command(command, fingerprint: fingerprint, env: env_vars)
@@ -586,10 +585,11 @@ module Dependabot
           env_vars = T.let({}, T::Hash[String, String])
 
           all_version_configs.each do |config|
-            next if config.package_name.nil? || T.must(config.package_name).empty?
+            package_name = config.package_name
+            next if package_name.nil? || package_name.empty?
             next unless config.dynamic_version?
 
-            package_env_name = T.must(config.package_name).upcase.gsub(/[-.]/, "_")
+            package_env_name = package_name.upcase.gsub(/[-.]/, "_")
             version = config.fallback_version || "0.0.0"
 
             env_vars["SETUPTOOLS_SCM_PRETEND_VERSION_FOR_#{package_env_name}"] = version
