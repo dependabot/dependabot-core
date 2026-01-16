@@ -115,6 +115,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def version_source_files
         return [] unless pyproject
+
         files = []
         files += fetch_version_source_files_for(directory, T.must(pyproject))
         files += workspace_fetcher.version_source_files

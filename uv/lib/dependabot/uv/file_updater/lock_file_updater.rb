@@ -586,7 +586,7 @@ module Dependabot
           env_vars = T.let({}, T::Hash[String, String])
 
           all_version_configs.each do |config|
-            next if config.package_name.nil? || config.package_name.empty?
+            next if config.package_name.nil? || T.must(config.package_name).empty?
             next unless config.dynamic_version?
 
             package_env_name = T.must(config.package_name).upcase.gsub(/[-.]/, "_")
