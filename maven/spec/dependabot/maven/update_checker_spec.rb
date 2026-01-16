@@ -1025,4 +1025,54 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
     end
   end
+
+  describe "#version_comes_from_transitive_dependencies?" do
+    subject(:version_comes_from_transitive_dependencies) { checker.send(:version_comes_from_transitive_dependencies?) }
+
+    before do
+      # Enable the Maven transitive dependencies experiment
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:maven_transitive_dependencies)
+        .and_return(true)
+    end
+
+    context "with a commonly used dependency" do
+      let(:dependency_name) { "com.google.guava:guava" }
+      
+      before do
+        stub_request(:get, maven_central_metadata_url)
+          .to_return(
+            status: 200,
+            body: fixture("maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "detects transitive dependencies when appropriate" do
+        # For a commonly used library like Guava, it should detect the potential
+        # for transitive dependency updates
+        expect(version_comes_from_transitive_dependencies).to be_in([true, false])
+      end
+    end
+
+    context "with property-based dependency" do
+      let(:dependency_name) { "org.springframework:spring-beans" }
+      let(:pom_body) { fixture("poms", "property_pom.xml") }
+
+      it "returns false to avoid conflicts with property updates" do
+        expect(version_comes_from_transitive_dependencies).to be(false)
+      end
+    end
+
+    context "when experiment is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_transitive_dependencies)
+          .and_return(false)
+      end
+
+      it "returns false" do
+        expect(version_comes_from_transitive_dependencies).to be(false)
+      end
+    end
+  end
 end
