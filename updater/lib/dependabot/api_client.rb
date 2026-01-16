@@ -60,7 +60,6 @@ module Dependabot
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
-    # TODO: Determine if we should regenerate the PR message within core for updates
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("update_pull_request", kind: :internal) do |span|
@@ -69,13 +68,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
         api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
-        body = {
-          data: {
-            "dependency-names": dependency_change.updated_dependencies.map(&:name),
-            "updated-dependency-files": dependency_change.updated_dependency_files_hash,
-            "base-commit-sha": base_commit_sha
-          }
-        }
+        body = { data: update_pull_request_data(dependency_change, base_commit_sha) }
         response = http_client.post(api_url, json: body)
         raise ApiError, response.body if response.code >= 400
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
@@ -478,6 +471,38 @@ module Dependabot
       ).returns(T::Hash[String, T.untyped])
     end
     def create_pull_request_data(dependency_change, base_commit_sha)
+      data = {
+        dependencies: dependency_change.updated_dependencies.map do |dep|
+          {
+            name: dep.name,
+            "previous-version": dep.previous_version,
+            requirements: dep.requirements,
+            "previous-requirements": dep.previous_requirements,
+            directory: dep.directory
+          }.merge({
+            version: dep.version,
+            removed: dep.removed? || nil
+          }.compact)
+        end,
+        "updated-dependency-files": dependency_change.updated_dependency_files_hash,
+        "base-commit-sha": base_commit_sha
+      }.merge(dependency_group_hash(dependency_change))
+
+      data["commit-message"] = dependency_change.pr_message.commit_message
+      data["pr-title"] = dependency_change.pr_message.pr_name
+      data["pr-body"] = dependency_change.pr_message.pr_message
+      data
+    end
+
+    sig do
+      params(
+        dependency_change: Dependabot::DependencyChange,
+        base_commit_sha: String
+      ).returns(T::Hash[String, T.untyped])
+    end
+    def update_pull_request_data(dependency_change, base_commit_sha)
+      # When updating a PR, send the same comprehensive data as when creating,
+      # so the API can regenerate the PR title and message based on current state
       data = {
         dependencies: dependency_change.updated_dependencies.map do |dep|
           {
