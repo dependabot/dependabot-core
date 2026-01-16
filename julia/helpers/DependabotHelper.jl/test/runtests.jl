@@ -267,6 +267,67 @@ using DependabotHelper
             @test endswith(result["result"]["project_file"], "SubPackage/Project.toml")
             @test endswith(result["result"]["manifest_file"], "WorkspaceOne/Manifest.toml")
         end
+
+        # Test find_workspace_project_files function
+        @testset "find_workspace_project_files with WorkspaceOne" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
+
+            # Call from the workspace root
+            result = DependabotHelper.find_workspace_project_files(workspace_root)
+
+            @test !haskey(result, "error")
+            @test haskey(result, "project_files")
+            @test haskey(result, "manifest_file")
+            @test haskey(result, "workspace_root")
+
+            project_files = result["project_files"]
+            @test length(project_files) >= 2  # Root Project.toml + SubPackage/Project.toml
+
+            # Verify that both the root and subpackage project files are found
+            root_project_found = any(pf -> endswith(pf, "WorkspaceOne/Project.toml"), project_files)
+            subpackage_project_found = any(pf -> endswith(pf, "SubPackage/Project.toml"), project_files)
+            @test root_project_found
+            @test subpackage_project_found
+
+            # Verify manifest is found
+            @test endswith(result["manifest_file"], "WorkspaceOne/Manifest.toml")
+        end
+
+        @testset "find_workspace_project_files with WorkspaceTwo" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            result = DependabotHelper.find_workspace_project_files(workspace_root)
+
+            @test !haskey(result, "error")
+            @test haskey(result, "project_files")
+
+            project_files = result["project_files"]
+            @test length(project_files) >= 3  # Root + SubPackageA + SubPackageB
+
+            # Verify all project files are found
+            root_found = any(pf -> endswith(pf, "WorkspaceTwo/Project.toml"), project_files)
+            pkg_a_found = any(pf -> endswith(pf, "SubPackageA/Project.toml"), project_files)
+            pkg_b_found = any(pf -> endswith(pf, "SubPackageB/Project.toml"), project_files)
+            @test root_found
+            @test pkg_a_found
+            @test pkg_b_found
+        end
+
+        @testset "find_workspace_project_files via JSON interface" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
+
+            input = Dict("function" => "find_workspace_project_files", "args" => Dict("directory" => workspace_root))
+            result_json = DependabotHelper.run(JSON.json(input))
+            result = JSON.parse(result_json)
+
+            @test haskey(result, "result")
+            @test haskey(result["result"], "project_files")
+            @test haskey(result["result"], "manifest_file")
+            @test haskey(result["result"], "workspace_root")
+
+            project_files = result["result"]["project_files"]
+            @test length(project_files) >= 2
+        end
     end
 
     @testset "Workspace Conflict Detection Tests" begin

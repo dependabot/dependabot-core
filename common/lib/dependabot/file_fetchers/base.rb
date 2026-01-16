@@ -109,6 +109,7 @@ module Dependabot
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
+        @update_config = T.let(update_config, T.nilable(Dependabot::Config::UpdateConfig))
         @exclude_paths = T.let(update_config&.exclude_paths || [], T::Array[String])
         @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
         @submodules = T.let([], T::Array[T.untyped])
@@ -232,7 +233,7 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, path)
         raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
 
-        content = File.read(repo_path)
+        content = decode_binary_string(Base64.encode64(File.read(repo_path)))
         type = if File.symlink?(repo_path)
                  symlink_target = File.readlink(repo_path)
                  "symlink"
@@ -926,6 +927,18 @@ module Dependabot
           path = T.must(info.last)
 
           next path if type == DependencyFile::Mode::SUBMODULE
+        end
+      end
+
+      # Check if a dependency name matches any ignore condition patterns
+      # This is a simplified check that matches by name pattern (with wildcards)
+      # without checking version requirements
+      sig { params(dependency_name: String).returns(T::Boolean) }
+      def dependency_ignored?(dependency_name)
+        return false unless @update_config
+
+        @update_config.ignore_conditions.any? do |ic|
+          Dependabot::Config::UpdateConfig.wildcard_match?(ic.dependency_name, dependency_name)
         end
       end
     end
