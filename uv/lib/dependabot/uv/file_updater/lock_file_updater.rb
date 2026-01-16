@@ -22,6 +22,7 @@ module Dependabot
         extend T::Sig
 
         require_relative "pyproject_preparer"
+        require_relative "version_config_parser"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
 
@@ -317,7 +318,9 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          run_command(command, fingerprint: fingerprint, env: explicit_index_env_vars)
+          env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
+
+          run_command(command, fingerprint: fingerprint, env: env_vars)
         end
 
         sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
@@ -326,7 +329,7 @@ module Dependabot
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint, env: env)
         end
 
-        sig { params(pyproject_content: String).returns(Integer) }
+        sig { params(pyproject_content: String).void }
         def write_temporary_dependency_files(pyproject_content)
           dependency_files.each do |file|
             path = file.name
@@ -336,23 +339,34 @@ module Dependabot
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)
+
+          ensure_version_file_directories
+        end
+
+        sig { void }
+        def ensure_version_file_directories
+          all_version_configs.each do |config|
+            config.write_paths.each do |write_path|
+              dir = Pathname.new(write_path).dirname
+              next if dir.to_s == "." || dir.to_s.empty?
+
+              Dependabot.logger.info("Creating directory for version file: #{dir}")
+              FileUtils.mkdir_p(dir)
+            end
+          end
         end
 
         sig { void }
         def setup_python_environment
-          # Use LanguageVersionManager to determine and install the appropriate Python version
           Dependabot.logger.info("Setting up Python environment using LanguageVersionManager")
 
           begin
-            # Install the required Python version
             language_version_manager.install_required_python
 
-            # Set the local Python version
             python_version = language_version_manager.python_version
             Dependabot.logger.info("Setting Python version to #{python_version}")
             SharedHelpers.run_shell_command("pyenv local #{python_version}")
 
-            # We don't need to install uv as it should be available in the Docker environment
             Dependabot.logger.info("Using pre-installed uv package")
           rescue StandardError => e
             Dependabot.logger.warn("Error setting up Python environment: #{e.message}")
@@ -564,6 +578,61 @@ module Dependabot
           return true if lockfile && T.must(dependency).requirements.empty?
 
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def setuptools_scm_pretend_version_env_vars
+          env_vars = T.let({}, T::Hash[String, String])
+
+          all_version_configs.each do |config|
+            package_name = config.package_name
+            next if package_name.nil? || package_name.empty?
+            next unless config.dynamic_version?
+
+            package_env_name = package_name.upcase.gsub(/[-.]/, "_")
+            version = config.fallback_version || "0.0.0"
+
+            env_vars["SETUPTOOLS_SCM_PRETEND_VERSION_FOR_#{package_env_name}"] = version
+          end
+
+          env_vars
+        end
+
+        sig { returns(T::Array[VersionConfigParser::VersionConfig]) }
+        def all_version_configs
+          @all_version_configs ||= T.let(
+            begin
+              configs = []
+
+              root_content = pyproject&.content
+              if root_content
+                parser = VersionConfigParser.new(
+                  pyproject_content: root_content,
+                  base_path: ".",
+                  repo_root: "."
+                )
+                configs << parser.parse
+              end
+
+              dependency_files
+                .select { |f| f.name.end_with?("pyproject.toml") && f.name != "pyproject.toml" }
+                .each do |member_pyproject|
+                  member_content = member_pyproject.content
+                  next unless member_content
+
+                  base_path = Pathname.new(member_pyproject.name).dirname.to_s
+                  parser = VersionConfigParser.new(
+                    pyproject_content: member_content,
+                    base_path: base_path,
+                    repo_root: "."
+                  )
+                  configs << parser.parse
+                end
+
+              configs
+            end,
+            T.nilable(T::Array[VersionConfigParser::VersionConfig])
+          )
         end
       end
       # rubocop:enable Metrics/ClassLength
