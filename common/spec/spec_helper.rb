@@ -4,6 +4,7 @@
 require "rspec/its"
 require "rspec/sorbet"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "vcr"
 require "debug"
 require "simplecov"
