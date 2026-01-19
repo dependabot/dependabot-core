@@ -596,7 +596,47 @@ module Dependabot
 
     sig { params(tag: Dependabot::GitRef).returns(T::Boolean) }
     def tag_is_prerelease?(tag)
-      version_from_tag(tag).prerelease?
+      return true if version_from_tag(tag).prerelease?
+
+      # Check if the tag is marked as a pre-release on GitHub
+      github_release_prerelease?(tag.name)
+    end
+
+    sig { params(tag_name: String).returns(T::Boolean) }
+    def github_release_prerelease?(tag_name)
+      return false unless listing_source_url
+
+      source = Source.from_url(listing_source_url)
+      return false unless source&.provider == "github"
+
+      release = github_releases.find { |r| r.tag_name == tag_name }
+      return false unless release
+
+      release.prerelease
+    rescue StandardError => e
+      Dependabot.logger.debug("Error checking GitHub release prerelease status: #{e.message}")
+      false
+    end
+
+    sig { returns(T::Array[T.untyped]) }
+    def github_releases
+      @github_releases ||= T.let(
+        begin
+          return [] unless listing_source_url
+
+          source = Source.from_url(listing_source_url)
+          return [] unless source&.provider == "github"
+
+          client = Dependabot::Clients::GithubWithRetries.for_source(
+            source: T.must(source),
+            credentials: credentials
+          )
+          T.unsafe(client).releases(T.must(source).repo, per_page: 100)
+        rescue Octokit::Error
+          []
+        end,
+        T.nilable(T::Array[T.untyped])
+      )
     end
 
     sig { params(tag: Dependabot::GitRef).returns(Gem::Version) }

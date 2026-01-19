@@ -1,8 +1,11 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 
+using Microsoft.Build.Evaluation;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -24,7 +27,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         {
             // this package ships with the SDK and is automatically added for F# projects but should be manually added here to make the test consistent
             // only direct package discovery finds this, though
-            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true));
+            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsDirect: false, IsTransitive: true));
         }
 
         await TestDiscoveryAsync(
@@ -163,13 +166,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestDependenciesSeparatedBySemicolon(bool useSingleRestore)
+    [Fact]
+    public async Task TestDependenciesSeparatedBySemicolon()
     {
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
@@ -368,13 +368,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestPackageConfig(bool useSingleRestore)
+    [Fact]
+    public async Task TestPackageConfig()
     {
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -491,14 +488,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestRepo(bool useSingleRestore)
+    [Fact]
+    public async Task TestRepo()
     {
         var solutionPath = "solution.sln";
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
@@ -624,13 +618,183 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestRepo_Sln(bool useSingleRestore)
+    [Fact]
+    public async Task SdkPackagesAreReportedAppropriately()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="2.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SdkPackagesThatAreUpdatedAreReportedAsTopLevel()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        // HOWEVER a later statement in the files updates the package version, so it's now considered top level
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="1.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Transitive.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestRepo_Sln()
     {
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
                 MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
@@ -720,14 +884,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task TestRepo_Slnx(bool useSingleRestore)
+    [Fact]
+    public async Task TestRepo_Slnx()
     {
         var solutionPath = "solution.slnx";
         await TestDiscoveryAsync(
-            experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
@@ -836,77 +997,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       EndGlobalSection
                     EndGlobal
                     """),
-            },
-            expectedResult: new()
-            {
-                Path = "",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "src/project.csproj",
-                        TargetFrameworks = ["net7.0", "net8.0"],
-                        Dependencies = [
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
-                        ],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [
-                            "../Directory.Build.props",
-                            "../Directory.Packages.props",
-                        ],
-                        AdditionalFiles = [],
-                    }
-                ],
-            }
-        );
-    }
-
-    [Fact]
-    public async Task TestDirsProj_CasingMismatchIsResolved()
-    {
-        var dirsProjPath = "dirs.proj";
-        await TestDiscoveryAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net7.0"),
-            ],
-            workspacePath: "",
-            files: new[]
-            {
-            ("src/project.csproj", """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Some.Package" />
-                  </ItemGroup>
-                </Project>
-                """),
-            ("Directory.Build.props", "<Project />"),
-            ("Directory.Packages.props", """
-                <Project>
-                  <PropertyGroup>
-                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                    <SomePackageVersion>9.0.1</SomePackageVersion>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """),
-            // Introduce a casing difference in the project reference
-            (dirsProjPath, """
-                <Project>
-                  <ItemGroup>
-                    <ProjectReference Include="SRC/PROJECT.CSPROJ" />
-                  </ItemGroup>
-                </Project>
-                """)
             },
             expectedResult: new()
             {
@@ -1616,5 +1706,43 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 ]
             }
         );
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" /><!-- relative -->
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)project2\project2.csproj" /><!-- absolute -->
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project1/project1.csproj", $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("src/project2/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager()))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
+            Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
     }
 }

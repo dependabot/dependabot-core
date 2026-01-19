@@ -37,6 +37,7 @@ module Dependabot
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
           String
         )
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -475,6 +476,8 @@ module Dependabot
             /--index-url=\S+/, "--index-url=<index_url>"
           ).sub(
             /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          ).sub(
+            /--python-version=\S+/, "--python-version=<python_version>"
           )
         end
 
@@ -492,21 +495,27 @@ module Dependabot
 
         sig { params(requirements_file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def uv_compile_options_from_compiled_file(requirements_file)
+          content = T.must(requirements_file.content)
           options = ["--output-file=#{requirements_file.name}"]
-          options << "--emit-index-url" if T.must(requirements_file.content).include?("index-url http")
-          options << "--generate-hashes" if T.must(requirements_file.content).include?("--hash=sha")
-          options << "--no-annotate" unless T.must(requirements_file.content).include?("# via ")
-          options << "--pre" if T.must(requirements_file.content).include?("--pre")
-          options << "--no-strip-extras" if T.must(requirements_file.content).include?("--no-strip-extras")
+          options << "--emit-index-url" if content.include?("index-url http")
+          options << "--generate-hashes" if content.include?("--hash=sha")
+          options << "--no-annotate" unless content.include?("# via ")
+          options << "--pre" if content.include?("--pre")
+          options << "--no-strip-extras" if content.include?("--no-strip-extras")
+          options << "--emit-build-options" if content.include?("--no-binary") || content.include?("--only-binary")
+          options << "--universal" if content.include?("--universal")
 
-          if T.must(requirements_file.content).include?("--no-binary") ||
-             T.must(requirements_file.content).include?("--only-binary")
-            options << "--emit-build-options"
-          end
+          python_version_option = extract_python_version_option(content)
+          options << python_version_option if python_version_option
 
-          options << "--universal" if T.must(requirements_file.content).include?("--universal")
+          options.compact
+        end
 
-          options
+        sig { params(content: String).returns(T.nilable(String)) }
+        def extract_python_version_option(content)
+          return unless (match = PYTHON_VERSION_REGEX.match(content))
+
+          "--python-version=#{match[:version]}"
         end
 
         sig { returns(T::Array[String]) }
@@ -601,7 +610,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Uv::FileFetcher::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||= T.let(
             compile_files.each_with_object({}) do |file, req_map|
               paths = T.must(file.content).scan(child_req_regex).flatten

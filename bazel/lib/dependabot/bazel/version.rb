@@ -4,6 +4,10 @@
 require "dependabot/version"
 require "dependabot/utils"
 
+# Bazel pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
+# converts into 1.0.1.pre.rc1. We override the `to_s` method to stop that
+# alteration.
+
 module Dependabot
   module Bazel
     class Version < Dependabot::Version
@@ -11,18 +15,18 @@ module Dependabot
 
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
-        @original_version = T.let(version.to_s, String)
-        @bcr_suffix = T.let(parse_bcr_suffix(@original_version), T.nilable(Integer))
+        @version_string = T.let(version.to_s, String)
+        @bcr_suffix = T.let(parse_bcr_suffix(@version_string), T.nilable(Integer))
 
-        base_version = remove_bcr_suffix(@original_version)
+        # Remove the .bcr.X suffix for comparison, and strip leading 'v' if present
+        base_version = remove_bcr_suffix(@version_string)
+        base_version = base_version.sub(/^v/i, "")
         super(base_version)
-
-        @original_version = version.to_s
       end
 
       sig { override.returns(String) }
       def to_s
-        @original_version
+        @version_string
       end
 
       sig { returns(T.nilable(Integer)) }

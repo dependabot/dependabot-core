@@ -1668,6 +1668,105 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
+  describe "#get_tag_publication_details" do
+    subject(:get_tag_publication_details) do
+      checker.send(:get_tag_publication_details, tag)
+    end
+
+    let(:tag) { Dependabot::Docker::Tag.new("1.0.0") }
+    let(:registry_url) { "https://registry.hub.docker.com" }
+    let(:dependency_name) { "ubuntu" }
+    let(:version) { "17.10" }
+    let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+    let(:blob_headers) { { last_modified: "Mon, 15 Jan 2024 10:00:00 GMT" } }
+    let(:mock_blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
+
+    before do
+      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+      allow(mock_client).to receive(:dohead).and_return(mock_blob_response)
+    end
+
+    context "when client.digest returns a String" do
+      let(:digest_string) { "sha256:abc123" }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+      end
+
+      it "handles the String case and returns publication details" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+    end
+
+    context "when client.digest returns an Array" do
+      let(:digest_array) { [{ "digest" => "sha256:def456" }] }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_array)
+      end
+
+      it "handles the Array case and returns publication details" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+    end
+
+    context "when client.digest returns an empty Array" do
+      let(:empty_array) { [] }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(empty_array)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Empty digest_info array/
+        )
+      end
+    end
+
+    context "when client.digest returns nil" do
+      before do
+        allow(mock_client).to receive(:digest).and_return(nil)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Unexpected digest_info type.*NilClass/
+        )
+      end
+    end
+
+    context "when tag has a 'v' prefix" do
+      let(:tag) { Dependabot::Docker::Tag.new("v2.7.2") }
+      let(:digest_string) { "sha256:abc123" }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+      end
+
+      it "handles the version prefix correctly and returns publication details" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.version).to be_a(Dependabot::Docker::Version)
+        expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+
+      it "creates a Docker::Version instead of base Dependabot::Version" do
+        result = get_tag_publication_details
+        expect(result.version).to be_a(Dependabot::Docker::Version)
+        expect(result.version.class).to eq(Dependabot::Docker::Version)
+      end
+    end
+  end
+
   private
 
   def stub_same_sha_for(*tags)

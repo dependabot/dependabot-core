@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/security_advisory"
 require "dependabot/uv/update_checker/lock_file_resolver"
 
 RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
@@ -12,7 +13,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      repo_contents_path: nil
+      repo_contents_path: nil,
+      security_advisories: security_advisories,
+      ignored_versions: ignored_versions
     )
   end
 
@@ -24,6 +27,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
       "password" => "token"
     }]
   end
+
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
 
   let(:dependency_files) do
     [
@@ -82,8 +88,129 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
   end
 
   describe "#lowest_resolvable_security_fix_version" do
-    it "returns nil" do
-      expect(resolver.lowest_resolvable_security_fix_version).to be_nil
+    let(:pypi_url) { "https://pypi.org/simple/requests/" }
+    let(:pypi_response) do
+      fixture("pypi", "pypi_simple_response_requests.html")
+    end
+
+    before do
+      stub_request(:get, pypi_url)
+        .to_return(status: 200, body: pypi_response)
+    end
+
+    context "with no security advisories" do
+      let(:security_advisories) { [] }
+
+      it "returns nil when there are no advisories" do
+        expect(resolver.lowest_resolvable_security_fix_version).to be_nil
+      end
+    end
+
+    context "with a security advisory" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.0.0",
+          requirements: [{
+            file: "uv.lock",
+            requirement: ">=2.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "requests",
+            package_manager: "uv",
+            vulnerable_versions: ["<= 2.1.0"]
+          )
+        ]
+      end
+
+      it "returns the lowest non-vulnerable version" do
+        result = resolver.lowest_resolvable_security_fix_version
+        expect(result).not_to be_nil
+        expect(result).to be_a(Dependabot::Uv::Version)
+        # Should return a version > 2.1.0
+        expect(result).to be > Dependabot::Uv::Version.new("2.1.0")
+      end
+    end
+
+    context "with multiple security advisories" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "1.0.0",
+          requirements: [{
+            file: "uv.lock",
+            requirement: ">=1.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "requests",
+            package_manager: "uv",
+            vulnerable_versions: ["< 2.0.0"]
+          ),
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "requests",
+            package_manager: "uv",
+            vulnerable_versions: ["< 2.5.0"]
+          )
+        ]
+      end
+
+      it "returns the lowest version that fixes all advisories" do
+        result = resolver.lowest_resolvable_security_fix_version
+        expect(result).not_to be_nil
+        expect(result).to be_a(Dependabot::Uv::Version)
+        # Should return a version >= 2.5.0
+        expect(result).to be >= Dependabot::Uv::Version.new("2.5.0")
+      end
+    end
+
+    context "with ignored versions" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "1.0.0",
+          requirements: [{
+            file: "uv.lock",
+            requirement: ">=1.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "requests",
+            package_manager: "uv",
+            vulnerable_versions: ["< 2.0.0"]
+          )
+        ]
+      end
+      let(:ignored_versions) { [">= 2.30.0"] }
+
+      it "respects ignored versions when finding security fix" do
+        result = resolver.lowest_resolvable_security_fix_version
+        expect(result).not_to be_nil
+        # Should return a version < 2.30.0
+        expect(result).to be < Dependabot::Uv::Version.new("2.30.0")
+      end
     end
   end
 end

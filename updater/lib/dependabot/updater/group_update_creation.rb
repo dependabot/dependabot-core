@@ -161,7 +161,7 @@ module Dependabot
           notices: notices
         )
 
-        if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?
+        unless dependency_change.all_have_previous_version?
           log_missing_previous_version(dependency_change)
           return nil
         end

@@ -626,7 +626,7 @@ public partial class DiscoveryWorkerTests
                     ("src/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows</TargetFrameworks>
+                            <TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-macos;net8.0-windows</TargetFrameworks>
                           </PropertyGroup>
                           <ItemGroup>
                             <PackageReference Include="Some.Package" Version="1.2.3" />
@@ -645,7 +645,7 @@ public partial class DiscoveryWorkerTests
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"], IsDirect: true),
                             ],
                             Properties = [
-                                new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows", @"src/project.csproj"),
+                                new("TargetFrameworks", "net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-macos;net8.0-windows", @"src/project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"],
                             ReferencedProjectPaths = [],
@@ -737,7 +737,7 @@ public partial class DiscoveryWorkerTests
 
             // The SDK package handling is detected in a very specific circumstance; an assembly being removed from the
             // `@(References)` item group in the `_HandlePackageFileConflicts` target.  Since we don't want to involve
-            // the real SDK, we fake some required targets.
+            // the real SDK, we fake some required targets in the same shape as the real SDK.
             await TestDiscoveryAsync(
                 packages: [],
                 workspacePath: "",
@@ -764,6 +764,14 @@ public partial class DiscoveryWorkerTests
                             <Reference Include="@(RuntimeCopyLocalItems)" />
                           </ItemGroup>
 
+                          <Target Name="ResolveProjectReferences">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="Restore">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
                           <Target Name="_HandlePackageFileConflicts">
                             <!-- this target needs to exist for discovery to work -->
                             <ItemGroup>
@@ -775,20 +783,24 @@ public partial class DiscoveryWorkerTests
                             </ItemGroup>
                           </Target>
 
-                          <Target Name="ResolveAssemblyReferences" DependsOnTargets="_HandlePackageFileConflicts">
+                          <Target Name="ResolvePackageAssets">
                             <!-- this target needs to exist for discovery to work -->
                           </Target>
 
-                          <Target Name="GenerateBuildDependencyFile">
+                          <Target Name="ResolveFrameworkReferences" DependsOnTargets="ResolvePackageAssets">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="ResolveRuntimePackAssets" DependsOnTargets="ResolveFrameworkReferences">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="GenerateBuildDependencyFile" DependsOnTargets="_HandlePackageFileConflicts;ResolveRuntimePackAssets">
                             <!-- this target needs to exist for discovery to work -->
                             <ItemGroup>
                               <!-- this removal is what removes the regular package reference from the project -->
                               <RuntimeCopyLocalItems Remove="TestOnlyAssembly.dll" />
                             </ItemGroup>
-                          </Target>
-
-                          <Target Name="ResolvePackageAssets">
-                            <!-- this target needs to exist for discovery to work -->
                           </Target>
                         </Project>
                         """)

@@ -51,7 +51,7 @@ module Dependabot
 
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
-      dependency_change.check_dependencies_have_previous_version if Experiments.enabled?("dependency_change_validation")
+      dependency_change.check_dependencies_have_previous_version
 
       if Experiments.enabled?("threaded_metadata")
         @threads << Thread.new { client.create_pull_request(dependency_change, base_commit_sha) }

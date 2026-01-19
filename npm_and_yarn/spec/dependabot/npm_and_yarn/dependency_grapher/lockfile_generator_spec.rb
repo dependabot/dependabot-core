@@ -52,8 +52,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
 
         expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_npm_command)
           .with(
-            "install --package-lock-only --ignore-scripts --force --dry-run false",
-            fingerprint: "install --package-lock-only --ignore-scripts --force --dry-run false"
+            "install --package-lock-only --ignore-scripts --force",
+            fingerprint: "install --package-lock-only --ignore-scripts --force"
           )
       end
 
