@@ -9,21 +9,21 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
+      CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
+
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a TODO manifest file."
+        "Repo must contain a .pre-commit-config.yaml, .pre-commit-config.yml, " \
+          ".pre-commit.yaml, or .pre-commit.yml file."
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        # TODO: Implement logic to check if required files are present
-        # Example: filenames.any? { |name| name == "manifest.json" }
-        false
+        filenames.any? { |f| f.match?(CONFIG_FILE_PATTERN) }
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        # Implement beta feature flag check
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             nil,
@@ -32,21 +32,33 @@ module Dependabot
         end
 
         fetched_files = []
+        fetched_files << pre_commit_config
 
-        # TODO: Implement file fetching logic
-        # Example:
-        # fetched_files << fetch_file_from_host("manifest.json")
-
-        return fetched_files if fetched_files.any?
-
-        raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
+        fetched_files
       end
 
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
-        # TODO: Return supported ecosystem versions
-        # Example: { package_managers: { "pre_commit" => "1.0.0" } }
         nil
+      end
+
+      private
+
+      sig { returns(Dependabot::DependencyFile) }
+      def pre_commit_config
+        @pre_commit_config ||= T.let(
+          fetch_file_from_host(config_file_name),
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(String) }
+      def config_file_name
+        @config_file_name ||= T.let(
+          repo_contents.find { |f| f.name.match?(CONFIG_FILE_PATTERN) }&.name ||
+            ".pre-commit-config.yaml",
+          T.nilable(String)
+        )
       end
     end
   end
