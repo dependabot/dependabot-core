@@ -389,7 +389,7 @@ module Dependabot
           version = version.release if version.prerelease?
 
           lb_segments = version.segments
-          lb_segments.pop while lb_segments.length > 1 && lb_segments.last&.zero?
+          lb_segments.pop while lb_segments.last&.zero?
 
           lb_segments
         end
