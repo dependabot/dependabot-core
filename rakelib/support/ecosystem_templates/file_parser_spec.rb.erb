@@ -36,9 +36,11 @@ RSpec.describe Dependabot::<%= ecosystem_module %>::FileParser do
     <%= ecosystem_module %> 
   end
 
+  it_behaves_like "a dependency file parser"
+
   # TODO: Add test cases
   # Example:
-  # it "fetches parses files" do
+  # it "Parses Dependencies in files" do
   #   # Test implementation
   # end
 end
