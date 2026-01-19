@@ -74,7 +74,7 @@ module Dependabot
           parsed_results
         end
 
-        TARGET_COMMITS_TO_FETCH = 250
+        TARGET_COMMITS_TO_FETCH = 500
         private_constant :TARGET_COMMITS_TO_FETCH
 
         sig { returns(T::Array[GitTagWithDetail]) }
