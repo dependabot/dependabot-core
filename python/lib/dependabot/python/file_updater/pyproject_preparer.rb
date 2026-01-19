@@ -64,6 +64,43 @@ module Dependabot
             .gsub('#{', "{")
         end
 
+        sig { returns(String) }
+        def remove_path_dependencies
+          pyproject_object = TomlRB.parse(pyproject_content)
+          poetry_object = pyproject_object.dig("tool", "poetry")
+
+          return pyproject_content unless poetry_object
+
+          remove_path_deps_from_dependency_types(poetry_object)
+          remove_path_deps_from_groups(poetry_object)
+
+          TomlRB.dump(pyproject_object)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def remove_path_dependencies_from_lockfile
+          return nil unless lockfile
+
+          lockfile_object = TomlRB.parse(T.must(lockfile).content)
+          packages = lockfile_object["package"] || []
+
+          # Remove packages with local sources that won't exist in Dependabot environment:
+          # - directory: local directory paths
+          # - file: local file paths (.whl, .tar.gz, etc.)
+          # - url: direct file URLs (not package registry URLs)
+          path_source_types = %w(directory file url)
+          packages.reject! do |package|
+            source_type = package.dig("source", "type")
+            path_source_types.include?(source_type)
+          end
+
+          lockfile_object["package"] = packages
+          TomlRB.dump(lockfile_object)
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          # If lockfile is malformed, return nil and let Poetry regenerate it
+          nil
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
@@ -121,6 +158,30 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { params(poetry_object: T::Hash[String, T.untyped]).void }
+        def remove_path_deps_from_dependency_types(poetry_object)
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
+            next unless poetry_object[key]
+
+            poetry_object[key].reject! { |_dep_name, dep_spec| path_dependency?(dep_spec) }
+          end
+        end
+
+        sig { params(poetry_object: T::Hash[String, T.untyped]).void }
+        def remove_path_deps_from_groups(poetry_object)
+          groups = poetry_object["group"] || {}
+          groups.each do |_group_name, group_spec|
+            next unless group_spec.is_a?(Hash) && group_spec["dependencies"]
+
+            group_spec["dependencies"].reject! { |_dep_name, dep_spec| path_dependency?(dep_spec) }
+          end
+        end
+
+        sig { params(dep_spec: T.untyped).returns(T::Boolean) }
+        def path_dependency?(dep_spec)
+          dep_spec.is_a?(Hash) && !dep_spec["path"].nil?
+        end
 
         sig { params(dep_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
         def locked_details(dep_name)
