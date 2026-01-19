@@ -47,6 +47,7 @@ Sentry.init do |config|
     maven|
     npm_and_yarn|
     nuget|
+    pre_commit|
     pub|
     python|
     rust_toolchain|
