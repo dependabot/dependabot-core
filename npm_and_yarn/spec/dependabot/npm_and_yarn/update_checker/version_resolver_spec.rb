@@ -1556,7 +1556,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "when updating a dependency that is a peer requirement with npm 6" do
-      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:project_name) { "npm6/peer_dependency" }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do

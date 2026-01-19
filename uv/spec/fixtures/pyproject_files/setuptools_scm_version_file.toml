@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools >= 77.0.3", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toggle-display-input"
+dynamic = ["version"]
+description = "A package with setuptools-scm version_file"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "monitorcontrol>=3.1.0",
+    "platformdirs>=4.3.6",
+]
+
+[tool.setuptools_scm]
+version_file = "src/display/_version.py"
+fallback_version = "0.0.0"

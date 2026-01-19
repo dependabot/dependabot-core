@@ -6,7 +6,25 @@ require "dependabot/uv/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Uv::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
+  describe "the class inheritance" do
+    it "inherits from Python::SharedFileFetcher which inherits from FileFetchers::Base" do
+      expect(described_class.superclass).to eq(Dependabot::Python::SharedFileFetcher)
+      expect(described_class.ancestors).to include(Dependabot::FileFetchers::Base)
+    end
+
+    it "implements required_files_in?" do
+      expect(described_class.public_methods(false)).to include(:required_files_in?)
+    end
+
+    it "implements required_files_message" do
+      expect(described_class.public_methods(false)).to include(:required_files_message)
+    end
+
+    it "doesn't define any additional public instance methods" do
+      expect(described_class.public_instance_methods)
+        .to match_array(Dependabot::FileFetchers::Base.public_instance_methods)
+    end
+  end
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
@@ -1098,6 +1116,354 @@ RSpec.describe Dependabot::Uv::FileFetcher do
       it "marks workspace member files as support files" do
         workspace_file = file_fetcher_instance.files.find { |f| f.name == "packages/my-package/pyproject.toml" }
         expect(workspace_file&.support_file?).to be(true)
+      end
+    end
+
+    context "with hatch version source path" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_hatch_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_content_hatch_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "src?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: "[]",
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "src/mypackage?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [{ name: "__about__.py", path: "src/mypackage/__about__.py", type: "file", size: 50 }].to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "src/mypackage/__about__.py?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "about_py_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "fetches the version source file" do
+        expect(file_fetcher_instance.files.map(&:name)).to include(
+          "pyproject.toml",
+          "src/mypackage/__about__.py"
+        )
+      end
+
+      it "marks version source file as support file" do
+        version_file = file_fetcher_instance.files.find { |f| f.name == "src/mypackage/__about__.py" }
+        expect(version_file&.support_file?).to be(true)
+      end
+    end
+
+    context "with hatch version path outside repo root" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_hatch_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "pyproject.toml",
+              path: "pyproject.toml",
+              content: Base64.encode64(<<~TOML),
+                [project]
+                name = "escape-attempt"
+
+                [tool.hatch.version]
+                path = "../../../etc/passwd"
+              TOML
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "src?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: "[]",
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "does not fetch files outside repo root" do
+        file_names = file_fetcher_instance.files.map(&:name)
+        expect(file_names).to include("pyproject.toml")
+        expect(file_names).not_to include("../../../etc/passwd")
+        expect(file_names.none? { |n| n.include?("passwd") }).to be(true)
+      end
+    end
+
+    context "with hatch version path that does not exist" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_hatch_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pyproject_content_hatch_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "src?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: "[]",
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "src/mypackage?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: "[]",
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "README.md?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "handles missing version source file gracefully" do
+        expect { file_fetcher_instance.files }.not_to raise_error
+        expect(file_fetcher_instance.files.map(&:name)).to include("pyproject.toml")
+      end
+    end
+
+    context "with license file declared in pyproject.toml" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_only_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "pyproject.toml",
+              path: "pyproject.toml",
+              content: Base64.encode64(<<~TOML),
+                [project]
+                name = "my-package"
+                license = {file = "LICENSE"}
+              TOML
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "LICENSE?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "LICENSE",
+              path: "LICENSE",
+              content: Base64.encode64("MIT License"),
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub all README variants
+        Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
+          stub_request(:get, url + "#{readme}?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
+      end
+
+      it "fetches the license file" do
+        expect(file_fetcher_instance.files.map(&:name)).to include(
+          "pyproject.toml",
+          "LICENSE"
+        )
+      end
+
+      it "marks license file as support file" do
+        license_file = file_fetcher_instance.files.find { |f| f.name == "LICENSE" }
+        expect(license_file&.support_file?).to be(true)
+      end
+    end
+
+    context "with license-files array in pyproject.toml" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        # Create a directory listing that includes all the files we need
+        dir_contents = [
+          { name: "pyproject.toml", path: "pyproject.toml", type: "file", size: 100 },
+          { name: "LICENSE", path: "LICENSE", type: "file", size: 50 },
+          { name: "NOTICE", path: "NOTICE", type: "file", size: 60 }
+        ]
+
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: dir_contents.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "pyproject.toml",
+              path: "pyproject.toml",
+              content: Base64.encode64(<<~TOML),
+                [project]
+                name = "my-package"
+                license-files = ["LICENSE", "NOTICE"]
+              TOML
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "LICENSE?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "LICENSE",
+              path: "LICENSE",
+              content: Base64.encode64("MIT License"),
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "NOTICE?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "NOTICE",
+              path: "NOTICE",
+              content: Base64.encode64("Third party notices"),
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Stub all README variants
+        Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
+          stub_request(:get, url + "#{readme}?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
+      end
+
+      it "fetches all license files" do
+        file_names = file_fetcher_instance.files.map(&:name)
+        expect(file_names).to include("LICENSE", "NOTICE")
+      end
+    end
+
+    context "with missing license file" do
+      let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_only_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              name: "pyproject.toml",
+              path: "pyproject.toml",
+              content: Base64.encode64(<<~TOML),
+                [project]
+                name = "my-package"
+                license = {file = "LICENSE"}
+              TOML
+              encoding: "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "LICENSE?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+
+        # Stub all README variants
+        Dependabot::Uv::FileFetcher::README_FILENAMES.each do |readme|
+          stub_request(:get, url + "#{readme}?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
+      end
+
+      it "handles missing license file gracefully" do
+        expect { file_fetcher_instance.files }.not_to raise_error
+        expect(file_fetcher_instance.files.map(&:name)).to include("pyproject.toml")
+        expect(file_fetcher_instance.files.map(&:name)).not_to include("LICENSE")
       end
     end
   end

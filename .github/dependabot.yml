@@ -208,3 +208,9 @@ updates:
         patterns:
           - "regclient/regctl*"
           - "sigstore/cosign/cosign*"
+  - package-ecosystem: "docker"
+    directory: "/gradle"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
