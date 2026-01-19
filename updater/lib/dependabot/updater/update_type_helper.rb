@@ -83,11 +83,31 @@ module Dependabot
         segments = version.segments
         return nil unless segments.is_a?(Array)
 
-        major = segments[0] || 0
-        minor = segments[1] || 0
-        patch = segments[2] || 0
+        # Skip leading non-numeric segments (e.g., "v" prefix in "v1.0.0")
+        numeric_segments = segments.drop_while { |s| !numeric_segment?(s) }
+        return nil if numeric_segments.empty?
+
+        major = to_integer(numeric_segments[0]) || 0
+        minor = to_integer(numeric_segments[1]) || 0
+        patch = to_integer(numeric_segments[2]) || 0
 
         SemverParts.new(major: major, minor: minor, patch: patch)
+      end
+
+      sig { params(segment: T.untyped).returns(T::Boolean) }
+      def numeric_segment?(segment)
+        return true if segment.is_a?(Integer)
+        return false unless segment.is_a?(String)
+
+        segment.match?(/^\d+$/)
+      end
+
+      sig { params(segment: T.untyped).returns(T.nilable(Integer)) }
+      def to_integer(segment)
+        return segment if segment.is_a?(Integer)
+        return segment.to_i if segment.is_a?(String) && segment.match?(/^\d+$/)
+
+        nil
       end
     end
   end
