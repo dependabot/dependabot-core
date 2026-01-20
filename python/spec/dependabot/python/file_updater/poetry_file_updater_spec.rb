@@ -895,4 +895,65 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
   end
+
+  describe "Git dependencies" do
+    let(:pyproject_fixture_name) { "git_dependency_with_tag.toml" }
+    let(:dependency_files) { [pyproject] }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: nil,
+        previous_version: nil,
+        package_manager: "pip",
+        requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          source: {
+            type: "git",
+            url: "https://github.com/tiangolo/fastapi",
+            ref: "0.128.0",
+            branch: nil
+          },
+          groups: ["dependencies"]
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          source: {
+            type: "git",
+            url: "https://github.com/tiangolo/fastapi",
+            ref: "0.110.0",
+            branch: nil
+          },
+          groups: ["dependencies"]
+        }]
+      )
+    end
+
+    describe "#updated_dependency_files" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      it "updates only the pyproject.toml file" do
+        expect(updated_files.map(&:name)).to eq(["pyproject.toml"])
+      end
+
+      it "updates the git tag in the pyproject file" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('tag = "0.128.0"')
+        expect(updated_pyproject.content).not_to include('tag = "0.110.0"')
+      end
+
+      it "preserves the git URL and extras" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('git = "https://github.com/tiangolo/fastapi"')
+        expect(updated_pyproject.content).to include('extras = ["all"]')
+      end
+
+      it "does not add a version field to the git dependency" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        fastapi_line = updated_pyproject.content.lines.find { |l| l.include?("fastapi") }
+        expect(fastapi_line).not_to include("version")
+      end
+    end
+  end
 end
