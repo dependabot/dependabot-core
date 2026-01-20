@@ -51,7 +51,7 @@ module Dependabot
       end
 
       sig do
-        params(prev: Gem::Version, curr: Gem::Version).returns(T.nilable(String))
+        params(prev: Dependabot::Version, curr: Dependabot::Version).returns(T.nilable(String))
       end
       def classify_semver_update(prev, curr)
         prev_parts = semver_parts(prev)

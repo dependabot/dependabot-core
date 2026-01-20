@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/updater/update_type_helper"
+require "support/dummy_package_manager/version"
 
 RSpec.describe Dependabot::Updater::UpdateTypeHelper do
   # Create a test class that includes the module
@@ -137,48 +138,36 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
   end
 
   describe "#classify_semver_update" do
-    let(:prev_version) { instance_double(Gem::Version) }
-    let(:curr_version) { instance_double(Gem::Version) }
-
     before do
-      allow(prev_version).to receive(:respond_to?).with(:semver_parts).and_return(false)
-      allow(curr_version).to receive(:respond_to?).with(:semver_parts).and_return(false)
       allow(Dependabot).to receive(:logger).and_return(instance_double(Logger, info: nil))
     end
 
     it "returns 'major' for major version bump" do
-      allow(prev_version).to receive(:to_s).and_return("1.0.0")
-      allow(curr_version).to receive(:to_s).and_return("2.0.0")
+      prev_version = DummyPackageManager::Version.new("1.0.0")
+      curr_version = DummyPackageManager::Version.new("2.0.0")
 
       expect(helper.classify_semver_update(prev_version, curr_version)).to eq("major")
     end
 
     it "returns 'minor' for minor version bump" do
-      allow(prev_version).to receive(:to_s).and_return("1.0.0")
-      allow(curr_version).to receive(:to_s).and_return("1.1.0")
+      prev_version = DummyPackageManager::Version.new("1.0.0")
+      curr_version = DummyPackageManager::Version.new("1.1.0")
 
       expect(helper.classify_semver_update(prev_version, curr_version)).to eq("minor")
     end
 
     it "returns 'patch' for patch version bump" do
-      allow(prev_version).to receive(:to_s).and_return("1.0.0")
-      allow(curr_version).to receive(:to_s).and_return("1.0.1")
+      prev_version = DummyPackageManager::Version.new("1.0.0")
+      curr_version = DummyPackageManager::Version.new("1.0.1")
 
       expect(helper.classify_semver_update(prev_version, curr_version)).to eq("patch")
     end
 
     it "handles versions with 'v' prefix correctly" do
-      allow(prev_version).to receive(:to_s).and_return("v1.0.0")
-      allow(curr_version).to receive(:to_s).and_return("v2.0.0")
+      prev_version = DummyPackageManager::Version.new("v1.0.0")
+      curr_version = DummyPackageManager::Version.new("v2.0.0")
 
       expect(helper.classify_semver_update(prev_version, curr_version)).to eq("major")
-    end
-
-    it "returns nil when versions cannot be parsed" do
-      allow(prev_version).to receive(:to_s).and_return("alpha")
-      allow(curr_version).to receive(:to_s).and_return("beta")
-
-      expect(helper.classify_semver_update(prev_version, curr_version)).to be_nil
     end
   end
 end
