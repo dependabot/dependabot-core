@@ -74,12 +74,7 @@ module Dependabot
       sig { params(version: T.untyped).returns(T.nilable(SemverParts)) }
       def semver_parts(version)
         # Normalize the version string by stripping any 'v' prefix
-        version_string = version.to_s
-        normalized_version = version_string.delete_prefix("v")
-
-        if normalized_version != version_string
-          Dependabot.logger.info("Stripped 'v' prefix from version: #{version_string}")
-        end
+        normalized_version = version.to_s.delete_prefix("v")
 
         if version.respond_to?(:semver_parts)
           parts = version.semver_parts
@@ -96,6 +91,10 @@ module Dependabot
         major = segments[0] || 0
         minor = segments[1] || 0
         patch = segments[2] || 0
+
+        Dependabot.logger.info(
+          "Extracted semver parts from version #{version}: major=#{major}, minor=#{minor}, patch=#{patch}"
+        )
 
         SemverParts.new(major: major, minor: minor, patch: patch)
       end
