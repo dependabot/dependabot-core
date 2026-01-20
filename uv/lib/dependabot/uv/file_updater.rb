@@ -64,7 +64,8 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          index_urls: pip_compile_index_urls
+          index_urls: pip_compile_index_urls,
+          repo_contents_path: repo_contents_path
         ).updated_dependency_files
       end
 
