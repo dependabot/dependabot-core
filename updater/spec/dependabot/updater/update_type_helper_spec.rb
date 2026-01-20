@@ -14,10 +14,15 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
 
   let(:helper) { helper_class.new }
 
+  # Simple test version class that supports semver_parts
+  let(:version_with_semver_parts) do
+    Struct.new(:semver_parts, :to_s)
+  end
+
   describe "#semver_parts" do
     context "when version responds to semver_parts" do
       it "returns SemverParts from the version's semver_parts method" do
-        version = instance_double(Version, semver_parts: [1, 2, 3])
+        version = version_with_semver_parts.new([1, 2, 3], "1.2.3")
 
         result = helper.semver_parts(version)
 
@@ -28,8 +33,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
       end
 
       it "returns nil when semver_parts returns nil" do
-        version = instance_double(Version, semver_parts: nil, to_s: "invalid")
-        allow(version).to receive(:respond_to?).with(:semver_parts).and_return(true)
+        version = version_with_semver_parts.new(nil, "invalid")
 
         result = helper.semver_parts(version)
 
@@ -40,7 +44,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
     context "when version is parsed from string" do
       context "with standard semver format" do
         it "returns SemverParts for '1.2.3'" do
-          version = instance_double(Version, to_s: "1.2.3")
+          version = instance_double(Gem::Version, to_s: "1.2.3")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -51,7 +55,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
         end
 
         it "returns SemverParts with zero defaults for partial versions" do
-          version = instance_double(Version, to_s: "1")
+          version = instance_double(Gem::Version, to_s: "1")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -62,7 +66,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
         end
 
         it "handles two-part versions" do
-          version = instance_double(Version, to_s: "1.2")
+          version = instance_double(Gem::Version, to_s: "1.2")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -75,7 +79,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
 
       context "with 'v' prefix" do
         it "strips 'v' prefix and extracts numeric parts for 'v1.0.0'" do
-          version = instance_double(Version, to_s: "v1.0.0")
+          version = instance_double(Gem::Version, to_s: "v1.0.0")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -86,7 +90,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
         end
 
         it "strips 'v' prefix and extracts numeric parts for 'v1.1.1'" do
-          version = instance_double(Version, to_s: "v1.1.1")
+          version = instance_double(Gem::Version, to_s: "v1.1.1")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -97,7 +101,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
         end
 
         it "handles v2.3.4 correctly" do
-          version = instance_double(Version, to_s: "v2.3.4")
+          version = instance_double(Gem::Version, to_s: "v2.3.4")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -110,7 +114,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
 
       context "with non-numeric segments" do
         it "returns nil when all segments are non-numeric" do
-          version = instance_double(Version, to_s: "alpha.beta.gamma")
+          version = instance_double(Gem::Version, to_s: "alpha.beta.gamma")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -121,7 +125,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
 
       context "with empty string" do
         it "returns nil for empty string" do
-          version = instance_double(Version, to_s: "")
+          version = instance_double(Gem::Version, to_s: "")
           allow(version).to receive(:respond_to?).with(:semver_parts).and_return(false)
 
           result = helper.semver_parts(version)
@@ -133,8 +137,8 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
   end
 
   describe "#classify_semver_update" do
-    let(:prev_version) { instance_double(Version) }
-    let(:curr_version) { instance_double(Version) }
+    let(:prev_version) { instance_double(Gem::Version) }
+    let(:curr_version) { instance_double(Gem::Version) }
 
     before do
       allow(prev_version).to receive(:respond_to?).with(:semver_parts).and_return(false)
