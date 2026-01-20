@@ -78,36 +78,21 @@ module Dependabot
           return SemverParts.new(major: parts[0], minor: parts[1], patch: parts[2]) if parts
         end
 
-        return nil unless version.respond_to?(:segments)
+        # Normalize the version string by stripping any 'v' prefix
+        normalized_version = version.to_s.delete_prefix("v")
 
-        segments = version.segments
-        return nil unless segments.is_a?(Array)
+        # Parse the normalized version string into numeric segments
+        segments = normalized_version.split(".").filter_map do |segment|
+          segment.to_i if segment.match?(/^\d+$/)
+        end
 
-        # Skip leading non-numeric segments (e.g., "v" prefix in "v1.0.0")
-        numeric_segments = segments.drop_while { |s| !numeric_segment?(s) }
-        return nil if numeric_segments.empty?
+        return nil if segments.empty?
 
-        major = to_integer(numeric_segments[0]) || 0
-        minor = to_integer(numeric_segments[1]) || 0
-        patch = to_integer(numeric_segments[2]) || 0
+        major = segments[0] || 0
+        minor = segments[1] || 0
+        patch = segments[2] || 0
 
         SemverParts.new(major: major, minor: minor, patch: patch)
-      end
-
-      sig { params(segment: T.untyped).returns(T::Boolean) }
-      def numeric_segment?(segment)
-        return true if segment.is_a?(Integer)
-        return false unless segment.is_a?(String)
-
-        segment.match?(/^\d+$/)
-      end
-
-      sig { params(segment: T.untyped).returns(T.nilable(Integer)) }
-      def to_integer(segment)
-        return segment if segment.is_a?(Integer)
-        return segment.to_i if segment.is_a?(String) && segment.match?(/^\d+$/)
-
-        nil
       end
     end
   end
