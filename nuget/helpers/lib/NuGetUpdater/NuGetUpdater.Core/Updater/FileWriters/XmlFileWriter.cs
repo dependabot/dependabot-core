@@ -257,8 +257,8 @@ public class XmlFileWriter : IFileWriter
                     var (matchingPackageVersionElement, filePath) = matchingPackageVersionElementsAndPaths.First();
                     var versionAttribute = matchingPackageVersionElement.GetAttributeCaseInsensitive(VersionMetadataName);
                     if (versionAttribute is not null &&
-                        NuGetVersion.TryParse(versionAttribute.Value, out var existingVersion) &&
-                        existingVersion == requiredVersion)
+                        VersionRange.TryParse(versionAttribute.Value, out var existingVersionRange) &&
+                        existingVersionRange.MinVersion == requiredVersion)
                     {
                         // version matches; no update needed
                         _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no override needed.");
