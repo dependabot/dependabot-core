@@ -36,6 +36,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
 
     its(:content) { is_expected.to include "prettier: ^3.3.3" }
 
+    context "with a registry source" do
+      let(:dependencies) do
+        [
+          create_dependency(
+            file: "pnpm-workspace.yaml",
+            name: "prettier",
+            version: "3.3.0",
+            required_version: "^3.3.3",
+            previous_required_version: "^3.3.0",
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          )
+        ]
+      end
+
+      its(:content) { is_expected.to include "prettier: ^3.3.3" }
+    end
+
     context("with multiple dependencies") do
       let(:project_name) { "pnpm/catalog_multiple" }
       let(:dependencies) do
