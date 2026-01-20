@@ -239,14 +239,13 @@ module Dependabot
       def details_for_plugin_dependency(declaration)
         if declaration.is_a?(String)
           parts = declaration.split(":")
-          ["plugins", T.must(parts[0]).strip, T.must(parts[1]).strip]
+          ["plugins", T.must(parts[0]), T.must(parts[1])]
         else
           decl_hash = declaration
           version = decl_hash["version"]
           return nil if version.nil?
 
-          # Ensure plugin ID is trimmed to avoid whitespace issues with ignore matching
-          ["plugins", T.must(decl_hash["id"]).strip, version]
+          ["plugins", T.must(decl_hash["id"]), version]
         end
       end
 
@@ -404,8 +403,8 @@ module Dependabot
         ).returns(T.nilable(Dependabot::Dependency))
       end
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false) # rubocop:disable Metrics/PerceivedComplexity
-        group   = evaluated_value(T.cast(details_hash[:group], T.nilable(String)), buildfile)
-        name    = evaluated_value(T.cast(details_hash[:name], T.nilable(String)), buildfile)
+        group   = evaluated_value(T.cast(details_hash[:group], T.nilable(String)), buildfile)&.strip
+        name    = evaluated_value(T.cast(details_hash[:name], T.nilable(String)), buildfile)&.strip
         version = evaluated_value(T.cast(details_hash[:version], T.nilable(String)), buildfile)
         extra_groups = T.cast(details_hash[:extra_groups], T.nilable(T::Array[String])) || []
 

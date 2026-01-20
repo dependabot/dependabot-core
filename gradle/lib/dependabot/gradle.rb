@@ -26,11 +26,3 @@ Dependabot::Dependency
       name.length <= 100 ? name : artifact_id
     }
   )
-
-# Register a name normaliser to ensure consistent matching for ignore rules
-# This trims whitespace and normalizes the dependency name
-Dependabot::Dependency
-  .register_name_normaliser(
-    "gradle",
-    ->(name) { name.strip }
-  )
