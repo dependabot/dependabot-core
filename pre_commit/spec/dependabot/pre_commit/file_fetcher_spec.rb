@@ -145,6 +145,26 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
           .to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
+
+    context "when exclude_paths is configured" do
+      let(:file_fetcher_instance) do
+        described_class.new(
+          source: source,
+          credentials: credentials,
+          repo_contents_path: nil,
+          options: { exclude_paths: [".pre-commit-config.yaml"] }
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_exclude_paths_subdirectory_manifest_files).and_return(true)
+      end
+
+      it "excludes the matching file" do
+        expect(file_fetcher_instance.files).to be_empty
+      end
+    end
   end
 
   describe "#ecosystem_versions" do

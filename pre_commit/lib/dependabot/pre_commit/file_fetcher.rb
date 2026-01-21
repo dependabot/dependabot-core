@@ -3,6 +3,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module PreCommit
@@ -34,7 +35,9 @@ module Dependabot
         fetched_files = []
         fetched_files << pre_commit_config
 
-        fetched_files
+        fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
       end
 
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
