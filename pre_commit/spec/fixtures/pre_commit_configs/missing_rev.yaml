@@ -1,0 +1,4 @@
+repos:
+  - repo: https://github.com/example/hook
+    hooks:
+      - id: example
