@@ -1,30 +1,97 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "yaml"
+require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/errors"
 
 module Dependabot
   module PreCommit
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      require "dependabot/file_parsers/base/dependency_set"
+
+      CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
+      ECOSYSTEM = "pre_commit"
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        # TODO: Implement parsing logic to extract dependencies from manifest files
-        # Return an array of Dependency objects
-        []
+        dependency_set = DependencySet.new
+
+        pre_commit_config_files.each do |file|
+          dependency_set += parse_config_file(file)
+        end
+
+        dependency_set.dependencies
       end
 
       private
 
+      sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
+      def parse_config_file(file)
+        dependency_set = DependencySet.new
+
+        yaml = YAML.safe_load(T.must(file.content), aliases: true)
+        return dependency_set unless yaml.is_a?(Hash)
+
+        repos = yaml.fetch("repos", [])
+        repos.each do |repo|
+          next unless repo.is_a?(Hash)
+
+          dependency = parse_repo(repo, file)
+          dependency_set << dependency if dependency
+        end
+
+        dependency_set
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      end
+
+      sig do
+        params(
+          repo: T::Hash[String, T.untyped],
+          file: Dependabot::DependencyFile
+        ).returns(T.nilable(Dependency))
+      end
+      def parse_repo(repo, file)
+        repo_url = repo["repo"]
+        rev = repo["rev"]
+
+        return nil if repo_url.nil? || rev.nil?
+        return nil if repo_url == "local"
+
+        Dependency.new(
+          name: repo_url,
+          version: rev,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: file.name,
+            source: {
+              type: "git",
+              url: repo_url,
+              ref: rev,
+              branch: nil
+            }
+          }],
+          package_manager: ECOSYSTEM
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pre_commit_config_files
+        dependency_files.select { |f| f.name.match?(CONFIG_FILE_PATTERN) }
+      end
+
       sig { override.void }
       def check_required_files
-        # TODO: Verify that all required files are present
-        # Example:
-        # return if get_original_file("manifest.json")
-        # raise "No manifest.json file found!"
+        return if pre_commit_config_files.any?
+
+        raise "No pre-commit configuration file found!"
       end
     end
   end
