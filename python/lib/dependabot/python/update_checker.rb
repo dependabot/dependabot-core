@@ -163,9 +163,90 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_git_version_details
         @latest_git_version_details ||= T.let(
-          git_commit_checker.local_tag_for_latest_version,
+          filter_git_tags_by_cooldown(git_commit_checker.local_tags_for_allowed_versions),
           T.nilable(T::Hash[Symbol, T.untyped])
         )
+      end
+
+      sig do
+        params(tags: T::Array[T::Hash[Symbol, T.untyped]])
+          .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+      end
+      def filter_git_tags_by_cooldown(tags)
+        return max_version_from_tags(tags) unless cooldown_enabled_for_git?
+
+        cooldown = T.must(@update_cooldown)
+        tag_dates = build_tag_dates_map
+
+        filtered_tags = tags.reject { |tag| tag_in_cooldown?(tag, tag_dates, cooldown) }
+
+        return log_all_filtered_and_return_nil if filtered_tags.empty?
+
+        log_filtered_count(tags.count - filtered_tags.count) if tags.count > filtered_tags.count
+
+        max_version_from_tags(filtered_tags)
+      end
+
+      sig { params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def max_version_from_tags(tags)
+        tags.max_by { |t| t[:version] }
+      end
+
+      sig { returns(T::Hash[String, T.nilable(String)]) }
+      def build_tag_dates_map
+        git_commit_checker.refs_for_tag_with_detail.to_h { |t| [t.tag, t.release_date] }
+      end
+
+      sig do
+        params(
+          tag: T::Hash[Symbol, T.untyped],
+          tag_dates: T::Hash[String, T.nilable(String)],
+          cooldown: Dependabot::Package::ReleaseCooldownOptions
+        ).returns(T::Boolean)
+      end
+      def tag_in_cooldown?(tag, tag_dates, cooldown)
+        tag_name = tag[:tag]&.to_s
+        return false unless tag_name
+
+        release_date_str = tag_dates[tag_name]
+        return false unless release_date_str
+
+        in_git_cooldown_period?(release_date_str, cooldown)
+      end
+
+      sig { returns(NilClass) }
+      def log_all_filtered_and_return_nil
+        Dependabot.logger.info("All git tags filtered by cooldown for #{dependency.name}, returning nil")
+        nil
+      end
+
+      sig { params(count: Integer).void }
+      def log_filtered_count(count)
+        Dependabot.logger.info("Filtered #{count} git tags due to cooldown for #{dependency.name}")
+      end
+
+      sig { params(release_date_str: String, cooldown: Dependabot::Package::ReleaseCooldownOptions).returns(T::Boolean) }
+      def in_git_cooldown_period?(release_date_str, cooldown)
+        return false unless cooldown.included?(dependency.name)
+
+        release_date = Time.parse(release_date_str)
+        days = cooldown.default_days
+        passed_seconds = Time.now.to_i - release_date.to_i
+        passed_seconds < days * 24 * 60 * 60
+      rescue ArgumentError
+        # Invalid date format, don't filter
+        false
+      end
+
+      sig { returns(T::Boolean) }
+      def cooldown_enabled_for_git?
+        return false if @update_cooldown.nil?
+
+        cooldown = T.must(@update_cooldown)
+        cooldown.default_days.positive? ||
+          cooldown.semver_major_days.positive? ||
+          cooldown.semver_minor_days.positive? ||
+          cooldown.semver_patch_days.positive?
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
