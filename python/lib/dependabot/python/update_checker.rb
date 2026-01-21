@@ -242,7 +242,7 @@ module Dependabot
       def cooldown_enabled_for_git?
         return false if @update_cooldown.nil?
 
-        cooldown = T.must(@update_cooldown)
+        cooldown = @update_cooldown
         cooldown.default_days.positive? ||
           cooldown.semver_major_days.positive? ||
           cooldown.semver_minor_days.positive? ||
