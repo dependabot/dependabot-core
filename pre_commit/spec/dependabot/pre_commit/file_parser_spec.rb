@@ -42,17 +42,19 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       expect(dep).not_to be_nil
       expect(dep.name).to eq("https://github.com/pre-commit/pre-commit-hooks")
       expect(dep.version).to eq("v4.4.0")
-      expect(dep.requirements).to eq([{
-        requirement: nil,
-        groups: [],
-        file: ".pre-commit-config.yaml",
-        source: {
-          type: "git",
-          url: "https://github.com/pre-commit/pre-commit-hooks",
-          ref: "v4.4.0",
-          branch: nil
-        }
-      }])
+      expect(dep.requirements).to eq(
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".pre-commit-config.yaml",
+          source: {
+            type: "git",
+            url: "https://github.com/pre-commit/pre-commit-hooks",
+            ref: "v4.4.0",
+            branch: nil
+          }
+        }]
+      )
     end
 
     it "parses the second dependency correctly" do
