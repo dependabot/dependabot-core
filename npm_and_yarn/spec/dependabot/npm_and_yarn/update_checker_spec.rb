@@ -1844,7 +1844,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ),
               Dependabot::Dependency.new(
                 name: "@msgpack/msgpack",
-                version: "3.1.2",
+                version: "3.1.3",
                 package_manager: "npm_and_yarn",
                 previous_version: "3.0.0",
                 requirements: [],

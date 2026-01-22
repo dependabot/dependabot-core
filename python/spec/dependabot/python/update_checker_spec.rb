@@ -83,9 +83,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_file_parser_python_local)
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
   end
@@ -1001,6 +998,95 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           it { is_expected.to eq(Gem::Version.new("3.5.2")) }
         end
+      end
+    end
+  end
+
+  describe "Git dependencies" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: nil,
+        requirements: dependency_requirements,
+        package_manager: "pip"
+      )
+    end
+    let(:dependency_requirements) do
+      [{
+        requirement: nil,
+        file: "pyproject.toml",
+        groups: ["dependencies"],
+        source: {
+          type: "git",
+          url: "https://github.com/tiangolo/fastapi",
+          ref: "0.110.0",
+          branch: nil
+        }
+      }]
+    end
+    let(:pyproject_fixture_name) { "git_dependency_with_tag.toml" }
+    let(:dependency_files) { [pyproject] }
+
+    before do
+      git_url = "https://github.com/tiangolo/fastapi.git"
+      git_header = {
+        "content-type" => "application/x-git-upload-pack-advertisement"
+      }
+      stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", "fastapi"),
+          headers: git_header
+        )
+    end
+
+    describe "#latest_version" do
+      subject(:latest_version) { checker.latest_version }
+
+      it "fetches the latest version tag from the git repository" do
+        expect(latest_version).to eq(Gem::Version.new("0.128.0"))
+      end
+    end
+
+    describe "#latest_resolvable_version" do
+      subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+      it "returns the latest version for git dependencies" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("0.128.0"))
+      end
+    end
+
+    describe "#latest_resolvable_version_with_no_unlock" do
+      subject(:latest_resolvable_version_with_no_unlock) { checker.latest_resolvable_version_with_no_unlock }
+
+      it "returns nil when pinned to a specific tag" do
+        expect(latest_resolvable_version_with_no_unlock).to be_nil
+      end
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      before do
+        allow(checker)
+          .to receive(:latest_version)
+          .and_return(Gem::Version.new("0.128.0"))
+      end
+
+      it "updates the git tag in the source" do
+        expect(updated_requirements).to eq(
+          [{
+            requirement: nil,
+            file: "pyproject.toml",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/tiangolo/fastapi",
+              ref: "0.128.0",
+              branch: nil
+            }
+          }]
+        )
       end
     end
   end

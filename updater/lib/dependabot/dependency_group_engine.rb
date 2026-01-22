@@ -39,13 +39,21 @@ module Dependabot
       end
 
       # Filter out version updates when doing security updates and visa versa
-      groups = if job.security_updates_only?
-                 groups.select { |group| group.applies_to == "security-updates" }
-               else
-                 groups.select { |group| group.applies_to == "version-updates" }
-               end
+      filtered_groups = if job.security_updates_only?
+                          groups.select { |group| group.applies_to == "security-updates" }
+                        else
+                          groups.select { |group| group.applies_to == "version-updates" }
+                        end
 
-      new(dependency_groups: groups)
+      if filtered_groups.count != groups.count
+        filtered_count = groups.count - filtered_groups.count
+        update_type = job.security_updates_only? ? "security" : "version"
+        Dependabot.logger.info(
+          "Filtered #{filtered_count} group(s) not applicable to #{update_type} updates"
+        )
+      end
+
+      new(dependency_groups: filtered_groups)
     end
 
     sig { params(job: Dependabot::Job).void }
@@ -143,9 +151,25 @@ module Dependabot
       return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
-      specificity_calculator.dependency_belongs_to_more_specific_group?(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory
+      applies_to = group.applies_to if group.respond_to?(:applies_to)
+
+      Dependabot.logger.info(
+        "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
+
+      more_specific_group_name = specificity_calculator.find_most_specific_group_name(
+        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
+      )
+
+      if more_specific_group_name
+        Dependabot.logger.info(
+          "Skipping #{dependency.name} for group '#{group.name}' - " \
+          "belongs to more specific group '#{more_specific_group_name}'"
+        )
+        return true
+      end
+
+      false
     end
   end
 end

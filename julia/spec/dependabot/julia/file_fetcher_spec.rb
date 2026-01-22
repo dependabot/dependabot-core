@@ -66,20 +66,23 @@ RSpec.describe Dependabot::Julia::FileFetcher do
 
     context "when Julia helper finds Project.toml and Manifest.toml" do
       before do
-        allow(registry_client).to receive(:find_environment_files)
+        allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
           .and_return({
-            "project_file" => "/tmp/test/Project.toml",
-            "manifest_file" => "/tmp/test/Manifest.toml"
+            "project_files" => ["/tmp/test/Project.toml"],
+            "manifest_file" => "/tmp/test/Manifest.toml",
+            "workspace_root" => "/tmp/test"
           })
 
-        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
           .and_return(project_file)
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Manifest.toml")
           .and_return(manifest_file)
+
+        allow(File).to receive(:exist?).and_return(true)
       end
 
       it "fetches both files" do
@@ -89,14 +92,15 @@ RSpec.describe Dependabot::Julia::FileFetcher do
 
     context "when Julia helper finds only Project.toml" do
       before do
-        allow(registry_client).to receive(:find_environment_files)
+        allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
           .and_return({
-            "project_file" => "/tmp/test/Project.toml",
-            "manifest_file" => ""
+            "project_files" => ["/tmp/test/Project.toml"],
+            "manifest_file" => "",
+            "workspace_root" => "/tmp/test"
           })
 
-        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
           .and_return(project_file)
       end
@@ -106,34 +110,101 @@ RSpec.describe Dependabot::Julia::FileFetcher do
       end
     end
 
-    context "when Julia helper finds workspace with parent manifest" do
+    context "when Julia helper finds workspace with multiple Project.toml files" do
+      let(:docs_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "docs/Project.toml",
+          content: "name = \"DocsProject\""
+        )
+      end
+
+      let(:test_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "test/Project.toml",
+          content: "name = \"TestProject\""
+        )
+      end
+
       before do
-        allow(registry_client).to receive(:find_environment_files)
+        allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
           .and_return({
-            "project_file" => "/tmp/test/SubPackage/Project.toml",
-            "manifest_file" => "/tmp/test/Manifest.toml"
+            "project_files" => [
+              "/tmp/test/Project.toml",
+              "/tmp/test/docs/Project.toml",
+              "/tmp/test/test/Project.toml"
+            ],
+            "manifest_file" => "/tmp/test/Manifest.toml",
+            "workspace_root" => "/tmp/test"
           })
 
-        allow(file_fetcher_instance).to receive(:fetch_file_from_host)
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
           .with("Project.toml")
           .and_return(project_file)
 
         allow(file_fetcher_instance).to receive(:fetch_file_if_present)
-          .with("../Manifest.toml")
+          .with("docs/Project.toml")
+          .and_return(docs_project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("test/Project.toml")
+          .and_return(test_project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest.toml")
           .and_return(manifest_file)
+
+        allow(File).to receive(:exist?).and_return(true)
       end
 
-      it "fetches project and parent manifest" do
-        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest.toml")
+      it "fetches all Project.toml files and the manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly(
+          "Project.toml",
+          "docs/Project.toml",
+          "test/Project.toml",
+          "Manifest.toml"
+        )
+      end
+    end
+
+    context "when Julia helper finds versioned manifest" do
+      let(:versioned_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest-v1.12.toml",
+          content: fixture("projects", "basic", "Manifest.toml")
+        )
+      end
+
+      before do
+        allow(registry_client).to receive(:find_workspace_project_files)
+          .with("/tmp/test")
+          .and_return({
+            "project_files" => ["/tmp/test/Project.toml"],
+            "manifest_file" => "/tmp/test/Manifest-v1.12.toml",
+            "workspace_root" => "/tmp/test"
+          })
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Project.toml")
+          .and_return(project_file)
+
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present)
+          .with("Manifest-v1.12.toml")
+          .and_return(versioned_manifest_file)
+
+        allow(File).to receive(:exist?).and_return(true)
+      end
+
+      it "fetches both files including versioned manifest" do
+        expect(fetched_files.map(&:name)).to contain_exactly("Project.toml", "Manifest-v1.12.toml")
       end
     end
 
     context "when no Project.toml found" do
       before do
-        allow(registry_client).to receive(:find_environment_files)
+        allow(registry_client).to receive(:find_workspace_project_files)
           .with("/tmp/test")
-          .and_return({})
+          .and_return({ "error" => "No project file found", "project_files" => [] })
       end
 
       it "raises an error" do
