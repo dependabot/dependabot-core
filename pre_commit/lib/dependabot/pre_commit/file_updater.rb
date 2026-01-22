@@ -50,40 +50,60 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_config_file_content(file)
-        updated_requirement_pairs =
-          dependency.requirements.zip(T.must(dependency.previous_requirements))
-                    .reject do |new_req, old_req|
-            file_name = T.cast(new_req[:file], T.nilable(String))
-            next true if file_name != file.name
-
-            new_source = T.cast(new_req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
-            old_source = T.cast(T.must(old_req)[:source], T.nilable(T::Hash[Symbol, T.untyped]))
-            new_source == old_source
-          end
-
+        updated_requirement_pairs = requirement_pairs_for_file(file)
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
-          new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, T.untyped])
-          next unless T.cast(new_source.fetch(:type), String) == "git"
-
-          old_source = T.cast(T.must(old_req).fetch(:source), T::Hash[Symbol, T.untyped])
-          old_ref = T.cast(old_source.fetch(:ref), String)
-          new_ref = T.cast(new_source.fetch(:ref), String)
-
-          # Replace the old rev value with the new rev value in the YAML
-          # The pattern matches: "rev: <old_ref>" where old_ref may be a tag, commit SHA, or version
-          updated_content =
-            updated_content
-            .gsub(
-              /^(\s*rev:\s+)#{Regexp.escape(old_ref)}(\s*(?:#.*)?)?$/
-            ) do |match|
-              # Preserve the indentation and any trailing comment
-              match.gsub(old_ref, new_ref)
-            end
+          updated_content = apply_requirement_update(updated_content, new_req, old_req)
         end
 
         updated_content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T::Array[[T::Hash[Symbol, T.untyped], T::Hash[Symbol, T.untyped]]])
+      end
+      def requirement_pairs_for_file(file)
+        pairs = dependency.requirements.zip(T.must(dependency.previous_requirements))
+        pairs.reject do |new_req, old_req|
+          next true unless old_req
+
+          file_name = T.cast(new_req[:file], T.nilable(String))
+          next true if file_name != file.name
+
+          new_source = T.cast(new_req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+          old_source = T.cast(old_req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+          new_source == old_source
+        end.map { |new_req, old_req| [new_req, T.must(old_req)] }
+      end
+
+      sig do
+        params(
+          content: String,
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T::Hash[Symbol, T.untyped]
+        ).returns(String)
+      end
+      def apply_requirement_update(content, new_req, old_req)
+        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, T.untyped])
+        return content unless T.cast(new_source.fetch(:type), String) == "git"
+
+        old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, T.untyped])
+        old_ref = T.cast(old_source.fetch(:ref), String)
+        new_ref = T.cast(new_source.fetch(:ref), String)
+
+        replace_ref_in_content(content, old_ref, new_ref)
+      end
+
+      sig { params(content: String, old_ref: String, new_ref: String).returns(String) }
+      def replace_ref_in_content(content, old_ref, new_ref)
+        content.gsub(
+          /^(\s*rev:\s+)#{Regexp.escape(old_ref)}(\s*(?:#.*)?)?$/
+        ) do |match|
+          # Preserve the indentation and any trailing comment
+          match.gsub(old_ref, new_ref)
+        end
       end
     end
   end
