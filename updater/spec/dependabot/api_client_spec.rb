@@ -469,6 +469,25 @@ RSpec.describe Dependabot::ApiClient do
         .to have_requested(:patch, url)
         .with(headers: { "Authorization" => "token" })
     end
+
+    it "sends telemetry data when provided" do
+      telemetry = {
+        ecosystem_versions: [{ ruby: { min: "3.0", max: "3.2" } }],
+        ecosystem_meta: [{ ecosystem: { name: "bundler" } }],
+        cooldown_meta: [{ cooldown: { ecosystem_name: "bundler" } }]
+      }
+
+      client.mark_job_as_processed(base_commit, telemetry: telemetry)
+
+      expect(WebMock)
+        .to have_requested(:patch, url)
+        .with(body: hash_including(
+          data: hash_including(
+            "base-commit-sha": base_commit,
+            telemetry: telemetry
+          )
+        ))
+    end
   end
 
   describe "update_dependency_list" do

@@ -199,14 +199,18 @@ module Dependabot
       end
     end
 
-    sig { params(base_commit_sha: String).void }
-    def mark_job_as_processed(base_commit_sha)
+    sig { params(base_commit_sha: String, telemetry: T.nilable(T::Hash[Symbol, T.untyped])).void }
+    def mark_job_as_processed(base_commit_sha, telemetry: nil)
       ::Dependabot::OpenTelemetry.tracer.in_span("mark_job_as_processed", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
         api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
+
+        # Add telemetry data if provided (batched from TelemetryAccumulator)
+        body[:data][:telemetry] = telemetry if telemetry
+
         response = http_client.patch(api_url, json: body)
         raise ApiError, response.body if response.code >= 400
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
@@ -264,8 +268,12 @@ module Dependabot
       end
     end
 
+    # DEPRECATED: Telemetry is now sent via mark_job_as_processed
+    # This method is kept for backward compatibility during transition
+    # TODO: Remove after all updaters are upgraded
     sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
     def record_ecosystem_versions(ecosystem_versions)
+      Dependabot.logger.warn("DEPRECATED: record_ecosystem_versions called - telemetry now sent via mark_job_as_processed")
       ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_versions", kind: :internal) do |_span|
         api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_versions"
         body = {
@@ -307,11 +315,16 @@ module Dependabot
       end
     end
 
+    # DEPRECATED: Telemetry is now sent via mark_job_as_processed
+    # This method is kept for backward compatibility during transition
+    # TODO: Remove after all updaters are upgraded
     sig { params(ecosystem: T.nilable(Ecosystem)).void }
     def record_ecosystem_meta(ecosystem)
       return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
 
       return if ecosystem.nil?
+
+      Dependabot.logger.warn("DEPRECATED: record_ecosystem_meta called - telemetry now sent via mark_job_as_processed")
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
@@ -351,10 +364,15 @@ module Dependabot
       end
     end
 
+    # DEPRECATED: Telemetry is now sent via mark_job_as_processed
+    # This method is kept for backward compatibility during transition
+    # TODO: Remove after all updaters are upgraded
     # rubocop:disable Metrics/MethodLength
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
       return if job&.cooldown.nil?
+
+      Dependabot.logger.warn("DEPRECATED: record_cooldown_meta called - telemetry now sent via mark_job_as_processed")
 
       cooldown = T.must(job).cooldown
 
