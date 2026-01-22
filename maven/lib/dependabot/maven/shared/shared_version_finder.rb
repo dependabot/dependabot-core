@@ -68,8 +68,39 @@ module Dependabot
           current_suffix = extract_version_suffix(current_version_string)
           candidate_suffix = extract_version_suffix(candidate_version_string)
 
+          return true if contains_git_sha?(current_suffix) && contains_git_sha?(candidate_suffix)
+
           # If both versions share the exact suffix or no suffix, they are compatible
           current_suffix == candidate_suffix
+        end
+
+        GIT_COMMIT = T.let(/\A[0-9a-f]{7,40}\z/i, Regexp)
+
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def git_sha?(version)
+          return false unless version
+
+          return true if version.match?(GIT_COMMIT)
+
+          # Strip leading v if any and try again (e.g., v018aa6b0d3)
+          version = version[1..-1] if version.start_with?("v")
+
+          T.must(version).match?(GIT_COMMIT)
+        end
+
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def contains_git_sha?(version)
+          return false unless version
+
+          # Split by common delimiters
+          split = version.split(/[-._]/)
+
+          # Return true if any part is a commit
+          return true if split.any? { |part| git_sha?(part) }
+
+          # Matches if the entire suffix is a commit
+          # Example: va_b_018a_a_6b_0d3
+          git_sha?(split.join)
         end
 
         private
@@ -100,8 +131,7 @@ module Dependabot
             # e.g., "1.0.0-1" or "1.0.0_2" are not considered to have a meaningful suffix
             return nil if suffix.match?(/^_?\d+$/)
 
-            # Must contain a hyphen to be considered a valid suffix
-            return suffix if suffix.include?("-") || suffix.include?("_")
+            return suffix if suffix.include?("-") || suffix.include?("_") || git_sha?(suffix)
           end
 
           nil
