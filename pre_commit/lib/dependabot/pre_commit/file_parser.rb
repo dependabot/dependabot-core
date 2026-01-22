@@ -7,6 +7,9 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
+require "dependabot/pre_commit/package_manager"
+require "dependabot/pre_commit/version"
+require "dependabot/pre_commit/requirement"
 
 module Dependabot
   module PreCommit
@@ -17,6 +20,17 @@ module Dependabot
 
       CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
       ECOSYSTEM = "pre_commit"
+
+      sig { override.returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -30,6 +44,14 @@ module Dependabot
       end
 
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          Dependabot::PreCommit::PackageManager.new("1.0.0"),
+          T.nilable(Dependabot::PreCommit::PackageManager)
+        )
+      end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
       def parse_config_file(file)

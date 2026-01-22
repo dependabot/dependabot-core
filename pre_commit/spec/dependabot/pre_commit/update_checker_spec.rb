@@ -51,13 +51,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
   end
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
   let(:checker) do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
       credentials: github_credentials,
-      security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       update_cooldown: update_cooldown
@@ -79,13 +77,13 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
   it_behaves_like "an update checker"
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     context "when the dependency has a pinned version" do
       let(:reference) { "v4.4.0" }
 
       it "returns the latest version" do
-        expect(subject).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
 
@@ -93,33 +91,33 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
 
       before do
-        allow(git_commit_checker).to receive(:head_commit_for_current_branch).and_return("abc123")
-        allow(git_commit_checker).to receive(:pinned?).and_return(true)
-        allow(git_commit_checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
-        allow(git_commit_checker).to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
-        allow(git_commit_checker).to receive(:local_tag_for_pinned_sha).and_return(
-          { tag: "v5.0.0", commit_sha: reference, tag_sha: reference }
+        allow(git_commit_checker).to receive_messages(
+          head_commit_for_current_branch: "abc123",
+          pinned?: true,
+          pinned_ref_looks_like_commit_sha?: true,
+          head_commit_for_pinned_ref: "abc123def456",
+          local_tag_for_pinned_sha: { tag: "v5.0.0", commit_sha: reference, tag_sha: reference }
         )
       end
 
       it "returns a version based on the latest tag" do
-        expect(subject).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements }
+    subject(:updated_requirements) { checker.updated_requirements }
 
     it "returns updated requirements" do
-      expect(subject).to be_an(Array)
+      expect(updated_requirements).to be_an(Array)
     end
 
     context "when updating a version" do
       let(:reference) { "v4.4.0" }
 
       it "updates the ref in the source" do
-        expect(subject.first[:source][:ref]).not_to eq(reference)
+        expect(updated_requirements.first[:source][:ref]).not_to eq(reference)
       end
     end
   end

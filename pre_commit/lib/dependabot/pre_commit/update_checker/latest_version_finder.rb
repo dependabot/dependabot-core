@@ -24,7 +24,6 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
-            security_advisories: T::Array[Dependabot::SecurityAdvisory],
             raise_on_ignored: T::Boolean,
             options: T::Hash[Symbol, T.untyped],
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
@@ -35,7 +34,6 @@ module Dependabot
           dependency_files:,
           credentials:,
           ignored_versions:,
-          security_advisories:,
           raise_on_ignored:,
           options: {},
           cooldown_options: nil
@@ -44,13 +42,22 @@ module Dependabot
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
-          @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
           @options             = options
           @cooldown_options = cooldown_options
 
           @git_helper = T.let(git_helper, Dependabot::PreCommit::Helpers::Githelper)
-          super
+          # Pre-commit does not support security advisories, so pass an empty array to parent
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: [],
+            cooldown_options: cooldown_options,
+            raise_on_ignored: raise_on_ignored,
+            options: options
+          )
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -64,9 +71,6 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
-
-        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
-        attr_reader :security_advisories
 
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
@@ -91,11 +95,6 @@ module Dependabot
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-        def lowest_security_fix_release
-          available_security_fix_releases
-        end
-
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           available_latest_version_tag
         end
@@ -110,8 +109,7 @@ module Dependabot
                           dependency: dependency,
                           credentials: credentials,
                           ignored_versions: ignored_versions,
-                          raise_on_ignored: raise_on_ignored,
-                          security_advisories: security_advisories
+                          raise_on_ignored: raise_on_ignored
                         ),
             T.nilable(Dependabot::PreCommit::Package::PackageDetailsFetcher)
           )
@@ -122,14 +120,6 @@ module Dependabot
           @available_release = T.let(
             T.must(package_details_fetcher).release_list_for_git_dependency,
             T.nilable(T.any(Dependabot::Version, String))
-          )
-        end
-
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-        def available_security_fix_releases
-          @available_security_fix_releases = T.let(
-            T.must(package_details_fetcher).lowest_security_fix_version_tag,
-            T.nilable(T::Hash[Symbol, T.untyped])
           )
         end
 
@@ -219,7 +209,7 @@ module Dependabot
 
         sig { returns(String) }
         def commit_ref
-          latest_version_tag&.fetch(:commit_sha)
+          T.cast(latest_version_tag&.fetch(:commit_sha), String)
         end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }

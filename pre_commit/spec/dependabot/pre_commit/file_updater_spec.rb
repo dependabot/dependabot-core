@@ -70,7 +70,7 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "returns DependencyFile objects" do
-      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      expect(updated_files).to all(be_a(Dependabot::DependencyFile))
     end
 
     its(:length) { is_expected.to eq(1) }

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -37,38 +37,24 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
-      def lowest_resolvable_security_fix_version
-        # Resolvability isn't an issue for pre-commit hooks.
-        lowest_security_fix_version
-      end
-
-      sig { override.returns(T.nilable(Dependabot::Version)) }
-      def lowest_security_fix_version
-        @lowest_security_fix_version ||= T.let(
-          T.must(latest_version_finder).lowest_security_fix_release&.fetch(:version),
-          T.nilable(Dependabot::Version)
-        )
-      end
-
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         dependency.requirements.map do |req|
-          source = req[:source]
+          source = T.cast(req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           updated = updated_ref(source)
           next req unless updated
 
-          current = source[:ref]
+          current = T.cast(source&.[](:ref), T.nilable(String))
 
           # Maintain a short git hash only if it matches the latest
-          if req[:type] == "git" &&
+          if T.cast(req[:type], T.nilable(String)) == "git" &&
              git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             git_commit_checker.ref_looks_like_commit_sha?(current) &&
+             current && git_commit_checker.ref_looks_like_commit_sha?(current) &&
              updated.start_with?(current)
             next req
           end
 
-          new_source = source.merge(ref: updated)
+          new_source = T.must(source).merge(ref: updated)
           req.merge(source: new_source)
         end
       end
@@ -83,7 +69,6 @@ module Dependabot
               dependency: dependency,
               credentials: credentials,
               dependency_files: dependency_files,
-              security_advisories: security_advisories,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
               cooldown_options: update_cooldown
@@ -92,12 +77,22 @@ module Dependabot
           )
       end
 
-      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
-      def active_advisories
-        security_advisories.select do |advisory|
-          version = git_commit_checker.most_specific_tag_equivalent_to_pinned_ref
-          version.nil? ? false : advisory.vulnerable?(version_class.new(version))
-        end
+      sig { override.returns(T.nilable(Dependabot::Version)) }
+      def current_version
+        return super if dependency.numeric_version
+
+        # For git dependencies, try to parse the version from the ref
+        source_details = dependency.source_details(allowed_types: ["git"])
+        return nil unless source_details
+
+        ref = T.cast(source_details.fetch(:ref, nil), T.nilable(String))
+        return nil unless ref
+
+        # Try to parse version-like tags (e.g., "v1.2.3" or "1.2.3")
+        version_string = ref.sub(/^v/, "")
+        return nil unless version_class.correct?(version_string)
+
+        version_class.new(version_string)
       end
 
       sig { override.returns(T::Boolean) }
@@ -119,8 +114,8 @@ module Dependabot
             if head_commit_for_ref_sha
               head_commit_for_ref_sha
             else
-              url = git_commit_checker.dependency_source_details&.fetch(:url)
-              source = T.must(Source.from_url(url))
+              url = T.cast(git_commit_checker.dependency_source_details&.fetch(:url), T.nilable(String))
+              source = T.must(Source.from_url(T.must(url)))
 
               SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
                 repo_contents_path = File.join(temp_dir, File.basename(source.repo))
@@ -128,7 +123,8 @@ module Dependabot
                 SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                 Dir.chdir(repo_contents_path) do
-                  ref_branch = find_container_branch(git_commit_checker.dependency_source_details&.fetch(:ref))
+                  ref = T.cast(git_commit_checker.dependency_source_details&.fetch(:ref), T.nilable(String))
+                  ref_branch = find_container_branch(T.must(ref))
                   git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                 end
               end
@@ -138,20 +134,16 @@ module Dependabot
         )
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(T.nilable(String)) }
+      sig { params(source: T.nilable(T::Hash[Symbol, T.untyped])).returns(T.nilable(String)) }
       def updated_ref(source)
         return unless git_commit_checker.git_dependency?
-
-        if vulnerable? && (new_tag = T.must(latest_version_finder).lowest_security_fix_release)
-          return new_tag.fetch(:tag)
-        end
 
         source_git_commit_checker = git_helper.git_commit_checker_for(source)
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = T.must(latest_version_finder).latest_version_tag)
-          return new_tag.fetch(:tag)
+          return T.cast(new_tag.fetch(:tag), String)
         end
 
         # Return the pinned git commit if one is available
@@ -170,7 +162,7 @@ module Dependabot
         return unless new_tag
 
         if git_commit_checker.local_tag_for_pinned_sha
-          new_tag.fetch(:commit_sha)
+          T.cast(new_tag.fetch(:commit_sha), String)
         else
           latest_commit_for_pinned_ref
         end

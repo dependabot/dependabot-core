@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -26,7 +26,7 @@ module Dependabot
             )
         end
 
-        updated_files.reject! { |f| dependency_files.include?(f) }
+        updated_files.reject! { |f| dependency_files.include?(T.cast(f, Dependabot::DependencyFile)) }
         raise "No files changed!" if updated_files.none?
 
         updated_files
@@ -53,18 +53,23 @@ module Dependabot
         updated_requirement_pairs =
           dependency.requirements.zip(T.must(dependency.previous_requirements))
                     .reject do |new_req, old_req|
-            next true if new_req[:file] != file.name
+            file_name = T.cast(new_req[:file], T.nilable(String))
+            next true if file_name != file.name
 
-            new_req[:source] == T.must(old_req)[:source]
+            new_source = T.cast(new_req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+            old_source = T.cast(T.must(old_req)[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+            new_source == old_source
           end
 
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
-          next unless new_req.fetch(:source).fetch(:type) == "git"
+          new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, T.untyped])
+          next unless T.cast(new_source.fetch(:type), String) == "git"
 
-          old_ref = T.must(old_req).fetch(:source).fetch(:ref)
-          new_ref = new_req.fetch(:source).fetch(:ref)
+          old_source = T.cast(T.must(old_req).fetch(:source), T::Hash[Symbol, T.untyped])
+          old_ref = T.cast(old_source.fetch(:ref), String)
+          new_ref = T.cast(new_source.fetch(:ref), String)
 
           # Replace the old rev value with the new rev value in the YAML
           # The pattern matches: "rev: <old_ref>" where old_ref may be a tag, commit SHA, or version

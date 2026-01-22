@@ -20,22 +20,19 @@ module Dependabot
             dependency: Dependabot::Dependency,
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
-            raise_on_ignored: T::Boolean,
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            raise_on_ignored: T::Boolean
           ).void
         end
         def initialize(
           dependency:,
           credentials:,
           ignored_versions: [],
-          raise_on_ignored: false,
-          security_advisories: []
+          raise_on_ignored: false
         )
           @dependency = dependency
           @credentials = credentials
           @raise_on_ignored = raise_on_ignored
           @ignored_versions = ignored_versions
-          @security_advisories = security_advisories
 
           @git_helper = T.let(git_helper, Dependabot::PreCommit::Helpers::Githelper)
         end
@@ -52,52 +49,32 @@ module Dependabot
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
-        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
-        attr_reader :security_advisories
-
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def release_list_for_git_dependency
           return unless git_dependency?
           return current_commit unless git_commit_checker.pinned?
 
-          # If the dependency is pinned to a tag that looks like a version then
-          # we want to update that tag.
-          if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
-            return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
-
-            return latest_version
-          end
-
-          if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
-            return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
-
-            return latest_version
-          end
-
-          # If the dependency is pinned to a tag that doesn't look like a
-          # version or a commit SHA then there's nothing we can do.
-          nil
+          version_tag_release || commit_sha_release
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-        def lowest_security_fix_version_tag
-          return unless git_dependency?
+        sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
+        def version_tag_release
+          return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
-          @lowest_security_fix_version_tag ||= T.let(
-            begin
-              tags_matching_precision = git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
-              lowest_fixed_version = find_lowest_secure_version(tags_matching_precision)
-              if lowest_fixed_version
-                lowest_fixed_version
-              else
-                tags = git_commit_checker.local_tags_for_allowed_versions
-                find_lowest_secure_version(tags)
-              end
-            end,
-            T.nilable(T::Hash[Symbol, T.untyped])
-          )
+          latest_version = latest_version_tag&.fetch(:version)
+          return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
+
+          latest_version
+        end
+
+        sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
+        def commit_sha_release
+          return unless git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
+
+          latest_version = latest_version_tag&.fetch(:version)
+          return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
+
+          latest_version
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
@@ -107,7 +84,7 @@ module Dependabot
               return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
 
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
-              return ref if ref && ref.fetch(:version) > current_version
+              return ref if ref && current_version && ref.fetch(:version) > current_version
 
               git_commit_checker.local_ref_for_latest_version_lower_precision
             end,
@@ -184,17 +161,6 @@ module Dependabot
           else
             branches_including_ref.first
           end
-        end
-
-        sig do
-          params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(T::Hash[Symbol, T.untyped]))
-        end
-        def find_lowest_secure_version(tags)
-          relevant_tags = Dependabot::UpdateCheckers::VersionFilters
-                          .filter_vulnerable_versions(tags, security_advisories)
-
-          relevant_tags = filter_lower_tags(relevant_tags)
-          relevant_tags.min_by { |tag| tag.fetch(:version) }
         end
 
         sig do
