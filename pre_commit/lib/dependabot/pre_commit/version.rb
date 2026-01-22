@@ -19,3 +19,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils
+  .register_version_class("pre_commit", Dependabot::PreCommit::Version)

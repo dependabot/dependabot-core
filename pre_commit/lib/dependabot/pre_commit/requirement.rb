@@ -31,3 +31,8 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.register_requirement_class(
+  "pre_commit",
+  Dependabot::PreCommit::Requirement
+)
