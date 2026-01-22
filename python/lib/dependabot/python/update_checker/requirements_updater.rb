@@ -389,7 +389,7 @@ module Dependabot
           version = version.release if version.prerelease?
 
           lb_segments = version.segments
-          lb_segments.pop while lb_segments.last.zero?
+          lb_segments.pop while lb_segments.last&.zero?
 
           lb_segments
         end
@@ -400,7 +400,7 @@ module Dependabot
           version = req.requirements.first.last.release
 
           if req_string.strip.start_with?("^")
-            version.segments.index { |i| i != 0 }
+            version.segments.index { |i| i != 0 } || (version.segments.count - 1)
           elsif req_string.include?("*")
             version.segments.count - 1
           elsif req_string.strip.start_with?("~=", "==")

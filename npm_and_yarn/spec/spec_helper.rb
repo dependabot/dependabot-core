@@ -11,7 +11,14 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
-def create_dependency(name:, version:, required_version:, previous_required_version:, file: "package.json")
+def create_dependency(
+  name:,
+  version:,
+  required_version:,
+  previous_required_version:,
+  file: "package.json",
+  source: nil
+)
   Dependabot::Dependency.new(
     name: name,
     version: version,
@@ -20,13 +27,13 @@ def create_dependency(name:, version:, required_version:, previous_required_vers
       file: file,
       requirement: required_version,
       groups: ["dependencies"],
-      source: nil
+      source: source
     }],
     previous_requirements: [{
       file: file,
       requirement: previous_required_version,
       groups: ["dependencies"],
-      source: nil
+      source: source
     }]
   )
 end
