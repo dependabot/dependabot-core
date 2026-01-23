@@ -38,6 +38,7 @@
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
+# - pre_commit
 # - pub
 # - rust_toolchain
 # - submodules
@@ -137,6 +138,7 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/swift"
@@ -380,6 +382,7 @@ valid_package_managers = %w(
   npm_and_yarn
   nuget
   pip
+  pre_commit
   pub
   python
   rust_toolchain
