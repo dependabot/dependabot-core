@@ -73,19 +73,28 @@ module Dependabot
 
       sig { params(version: T.untyped).returns(T.nilable(SemverParts)) }
       def semver_parts(version)
+        # Normalize the version string by stripping any 'v' prefix
+        normalized_version = version.to_s.delete_prefix("v")
+
         if version.respond_to?(:semver_parts)
           parts = version.semver_parts
           return SemverParts.new(major: parts[0], minor: parts[1], patch: parts[2]) if parts
         end
 
-        return nil unless version.respond_to?(:segments)
+        # Parse the normalized version string into numeric segments
+        segments = normalized_version.split(".").filter_map do |segment|
+          segment.to_i if segment.match?(/^\d+$/)
+        end
 
-        segments = version.segments
-        return nil unless segments.is_a?(Array)
+        return nil if segments.empty?
 
         major = segments[0] || 0
         minor = segments[1] || 0
         patch = segments[2] || 0
+
+        Dependabot.logger.info(
+          "Extracted semver parts from version #{version}: major=#{major}, minor=#{minor}, patch=#{patch}"
+        )
 
         SemverParts.new(major: major, minor: minor, patch: patch)
       end
