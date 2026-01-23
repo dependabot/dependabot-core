@@ -180,10 +180,15 @@ module Dependabot
               }
             else
               check_requirements(requirement)
+              # String sources are registry name references (e.g., "custom") that aren't
+              # actionable for Dependabot. Convert them to nil to match the expected
+              # type signature: T::Hash[Symbol, T.untyped] (not String).
+              source_value = requirement.fetch("source", nil)
+              source = source_value.is_a?(String) ? nil : source_value
               {
                 requirement: requirement["version"],
                 file: T.must(pyproject).name,
-                source: requirement.fetch("source", nil),
+                source: source,
                 groups: [type]
               }
             end

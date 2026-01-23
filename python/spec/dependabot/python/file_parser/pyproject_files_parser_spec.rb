@@ -281,8 +281,10 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       let(:pyproject_fixture_name) { "package_specify_source.toml" }
 
-      it "specifies a package source" do
-        expect(dependency.requirements[0][:source]).to eq("custom")
+      it "converts string registry sources to nil" do
+        # String sources (registry name references) are not actionable for Dependabot
+        # and violate the type signature, so they're converted to nil
+        expect(dependency.requirements[0][:source]).to be_nil
       end
     end
   end

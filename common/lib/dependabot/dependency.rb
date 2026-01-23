@@ -354,9 +354,6 @@ module Dependabot
     end
     def source_details(allowed_types: nil)
       sources = all_sources.uniq.compact
-      # Filter out non-hash sources (e.g., string references to registry names)
-      # since they don't have a :type field for type checking
-      sources.select! { |source| source.is_a?(Hash) }
       sources.select! { |source| allowed_types.include?(source[:type].to_s) } if allowed_types
 
       git = allowed_types == ["git"]
