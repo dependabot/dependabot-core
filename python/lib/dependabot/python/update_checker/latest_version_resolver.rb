@@ -90,7 +90,7 @@ module Dependabot
           version_tags_in_cooldown_period
         rescue StandardError => e
           Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
-          version_tags_in_cooldown_period
+          []
         end
 
         sig { params(tag_with_detail: Dependabot::GitTagWithDetail).returns(T::Boolean) }
