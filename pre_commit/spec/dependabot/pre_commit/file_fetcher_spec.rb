@@ -79,10 +79,10 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
   end
 
   describe ".required_files_message" do
-    subject(:required_files_message) { described_class.required_files_message }
+    subject { described_class.required_files_message }
 
     it do
-      expect(required_files_message).to eq(
+      is_expected.to eq(
         "Repo must contain a .pre-commit-config.yaml, .pre-commit-config.yml, " \
         ".pre-commit.yaml, or .pre-commit.yml file."
       )
