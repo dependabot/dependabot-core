@@ -44,13 +44,9 @@ module Dependabot
       end
 
       private
-
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        @package_manager ||= T.let(
-          PackageManager.new("1.0.0"),
-          T.nilable(Dependabot::PreCommit::PackageManager)
-        )
+        @package_manager ||= T.let(PackageManager.new, T.nilable(Dependabot::PreCommit::PackageManager))
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }

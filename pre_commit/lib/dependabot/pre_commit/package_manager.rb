@@ -2,38 +2,27 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/ecosystem"
 require "dependabot/pre_commit/version"
+require "dependabot/ecosystem"
+require "dependabot/pre_commit/requirement"
 
 module Dependabot
   module PreCommit
-    ECOSYSTEM = "pre_commit"
-    PACKAGE_MANAGER = "pre_commit"
-    SUPPORTED_PRE_COMMIT_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
-
-    DEPRECATED_PRE_COMMIT_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
-
     class PackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      # The package manager name for Pre-commit
+      NAME = T.let("pre_commit", String)
+
+      # The version of the package manager
+      VERSION = T.let("1.0.0", String)
+
+      sig { void }
+      def initialize
         super(
-          name: PACKAGE_MANAGER,
-          version: Version.new(raw_version),
-          deprecated_versions: DEPRECATED_PRE_COMMIT_VERSIONS,
-          supported_versions: SUPPORTED_PRE_COMMIT_VERSIONS
-        )
-      end
-
-      sig { returns(T::Boolean) }
-      def deprecated?
-        false
-      end
-
-      sig { returns(T::Boolean) }
-      def unsupported?
-        false
+          name: NAME,
+          version: Version.new(VERSION)
+      )
       end
     end
   end
