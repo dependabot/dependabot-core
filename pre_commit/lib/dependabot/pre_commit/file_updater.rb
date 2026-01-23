@@ -66,7 +66,7 @@ module Dependabot
       end
       def requirement_pairs_for_file(file)
         pairs = dependency.requirements.zip(T.must(dependency.previous_requirements))
-        pairs.reject do |new_req, old_req|
+        filtered_pairs = pairs.reject do |new_req, old_req|
           next true unless old_req
 
           file_name = T.cast(new_req[:file], T.nilable(String))
@@ -75,7 +75,9 @@ module Dependabot
           new_source = T.cast(new_req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           old_source = T.cast(old_req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           new_source == old_source
-        end.map { |new_req, old_req| [new_req, T.must(old_req)] }
+        end
+
+        filtered_pairs.map { |new_req, old_req| [new_req, T.must(old_req)] }
       end
 
       sig do
