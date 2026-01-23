@@ -83,6 +83,7 @@ module Dependabot
           "nuget" => "nuget",
           "opentofu" => "opentofu",
           "pip" => "pip",
+          "pre-commit" => "pre_commit",
           "pub" => "pub",
           "rust-toolchain" => "rust_toolchain",
           "swift" => "swift",
