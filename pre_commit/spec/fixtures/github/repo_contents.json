@@ -1,0 +1,34 @@
+[
+    {
+        "name": ".pre-commit-config.yaml",
+        "path": ".pre-commit-config.yaml",
+        "sha": "abc123def456789012345678901234567890abcd",
+        "size": 456,
+        "url": "https://api.github.com/repos/example/repo/contents/.pre-commit-config.yaml?ref=main",
+        "html_url": "https://github.com/example/repo/blob/main/.pre-commit-config.yaml",
+        "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123def456789012345678901234567890abcd",
+        "download_url": "https://raw.githubusercontent.com/example/repo/main/.pre-commit-config.yaml",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/example/repo/contents/.pre-commit-config.yaml?ref=main",
+            "git": "https://api.github.com/repos/example/repo/git/blobs/abc123def456789012345678901234567890abcd",
+            "html": "https://github.com/example/repo/blob/main/.pre-commit-config.yaml"
+        }
+    },
+    {
+        "name": "README.md",
+        "path": "README.md",
+        "sha": "def456abc789012345678901234567890abcdef12",
+        "size": 100,
+        "url": "https://api.github.com/repos/example/repo/contents/README.md?ref=main",
+        "html_url": "https://github.com/example/repo/blob/main/README.md",
+        "git_url": "https://api.github.com/repos/example/repo/git/blobs/def456abc789012345678901234567890abcdef12",
+        "download_url": "https://raw.githubusercontent.com/example/repo/main/README.md",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/example/repo/contents/README.md?ref=main",
+            "git": "https://api.github.com/repos/example/repo/git/blobs/def456abc789012345678901234567890abcdef12",
+            "html": "https://github.com/example/repo/blob/main/README.md"
+        }
+    }
+]
