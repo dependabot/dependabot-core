@@ -392,4 +392,149 @@ RSpec.describe Dependabot::Dependency do
       expect(dependency.all_versions).to eq(["1.0.0", "2.0.0"])
     end
   end
+
+  describe "#source_details" do
+    subject(:source_details) { dependency.source_details(allowed_types: allowed_types) }
+
+    let(:dependency) { described_class.new(**dependency_args) }
+    let(:dependency_args) do
+      {
+        name: "dep",
+        requirements: requirements,
+        package_manager: "dummy"
+      }
+    end
+    let(:allowed_types) { nil }
+
+    context "with a git source (hash)" do
+      let(:requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: { type: "git", url: "https://github.com/example/repo", ref: "v1.0.0" }
+        }]
+      end
+
+      it "returns the git source details" do
+        expect(source_details).to eq({ type: "git", url: "https://github.com/example/repo", ref: "v1.0.0" })
+      end
+
+      context "when filtering by git type" do
+        let(:allowed_types) { ["git"] }
+
+        it "returns the git source details" do
+          expect(source_details).to eq({ type: "git", url: "https://github.com/example/repo", ref: "v1.0.0" })
+        end
+      end
+
+      context "when filtering by non-git type" do
+        let(:allowed_types) { ["registry"] }
+
+        it "returns nil" do
+          expect(source_details).to be_nil
+        end
+      end
+    end
+
+    context "with a registry source (string)" do
+      let(:requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "^1.0.0",
+          groups: ["dependencies"],
+          source: "private-registry"
+        }]
+      end
+
+      it "returns nil (string sources are filtered out)" do
+        expect(source_details).to be_nil
+      end
+
+      context "when filtering by git type" do
+        let(:allowed_types) { ["git"] }
+
+        it "returns nil without error" do
+          expect(source_details).to be_nil
+        end
+      end
+    end
+
+    context "with a nil source" do
+      let(:requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "^1.0.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it "returns nil" do
+        expect(source_details).to be_nil
+      end
+    end
+
+    context "with mixed source types" do
+      let(:requirements) do
+        [
+          {
+            file: "pyproject.toml",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: "private-registry"
+          },
+          {
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: ["dependencies"],
+            source: { type: "git", url: "https://github.com/example/repo", ref: "v1.0.0" }
+          }
+        ]
+      end
+
+      it "returns only the hash source" do
+        expect(source_details).to eq({ type: "git", url: "https://github.com/example/repo", ref: "v1.0.0" })
+      end
+
+      context "when filtering by git type" do
+        let(:allowed_types) { ["git"] }
+
+        it "returns the git source" do
+          expect(source_details).to eq({ type: "git", url: "https://github.com/example/repo", ref: "v1.0.0" })
+        end
+      end
+    end
+
+    context "with a registry source hash" do
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "0.1.0",
+          groups: ["dependencies"],
+          source: { type: "registry", url: "https://registry.npmjs.org" }
+        }]
+      end
+
+      it "returns the registry source details" do
+        expect(source_details).to eq({ type: "registry", url: "https://registry.npmjs.org" })
+      end
+
+      context "when filtering by registry type" do
+        let(:allowed_types) { ["registry"] }
+
+        it "returns the registry source details" do
+          expect(source_details).to eq({ type: "registry", url: "https://registry.npmjs.org" })
+        end
+      end
+
+      context "when filtering by git type" do
+        let(:allowed_types) { ["git"] }
+
+        it "returns nil" do
+          expect(source_details).to be_nil
+        end
+      end
+    end
+  end
 end
