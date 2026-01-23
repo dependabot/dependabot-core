@@ -1,6 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
 # This cannot be inlined below (e.g., COPY --from=maven:...) because Dependabot does not support that syntax yet
-FROM maven:3.9.9 as maven
+FROM maven:3.9.12 as maven
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 
@@ -17,7 +17,6 @@ RUN ln -s ${MAVEN_HOME}/bin/mvn /usr/bin/mvn
 
 USER dependabot
 
-ENV PATH=$JAVA_HOME/bin:$PATH
 ENV MAVEN_ARGS="-Dmaven.repo.local=$DEPENDABOT_HOME/.m2"
 
 COPY --chown=dependabot:dependabot --parents maven common $DEPENDABOT_HOME/

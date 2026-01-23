@@ -143,6 +143,78 @@ RSpec.describe Dependabot::Python::RequirementParser do
           is_expected.to eq 'python_version>="2.7" and ' \
                             '(sys_platform == "darwin" or sys_platform == "win32")'
         end
+
+        context "with python_version marker" do
+          let(:line) { 'luigi==0.1.0;python_version>="3.8"' }
+
+          its([:markers]) { is_expected.to eq 'python_version>="3.8"' }
+        end
+
+        context "with python_full_version marker" do
+          let(:line) { 'luigi==0.1.0;python_full_version>="3.8.0"' }
+
+          its([:markers]) { is_expected.to eq 'python_full_version>="3.8.0"' }
+        end
+
+        context "with os_name marker" do
+          let(:line) { 'luigi==0.1.0;os_name=="posix"' }
+
+          its([:markers]) { is_expected.to eq 'os_name=="posix"' }
+        end
+
+        context "with sys_platform marker" do
+          let(:line) { 'luigi==0.1.0;sys_platform=="linux"' }
+
+          its([:markers]) { is_expected.to eq 'sys_platform=="linux"' }
+        end
+
+        context "with platform_release marker" do
+          let(:line) { 'luigi==0.1.0;platform_release=="5.10.0"' }
+
+          its([:markers]) { is_expected.to eq 'platform_release=="5.10.0"' }
+        end
+
+        context "with platform_system marker" do
+          let(:line) { 'luigi==0.1.0;platform_system=="Linux"' }
+
+          its([:markers]) { is_expected.to eq 'platform_system=="Linux"' }
+        end
+
+        context "with platform_version marker" do
+          let(:line) { 'luigi==0.1.0;platform_version=="#1"' }
+
+          its([:markers]) { is_expected.to eq 'platform_version=="#1"' }
+        end
+
+        context "with platform_machine marker" do
+          let(:line) { 'luigi==0.1.0;platform_machine=="x86_64"' }
+
+          its([:markers]) { is_expected.to eq 'platform_machine=="x86_64"' }
+        end
+
+        context "with platform_python_implementation marker" do
+          let(:line) { 'luigi==0.1.0;platform_python_implementation=="CPython"' }
+
+          its([:markers]) { is_expected.to eq 'platform_python_implementation=="CPython"' }
+        end
+
+        context "with implementation_name marker" do
+          let(:line) { 'luigi==0.1.0;implementation_name=="cpython"' }
+
+          its([:markers]) { is_expected.to eq 'implementation_name=="cpython"' }
+        end
+
+        context "with implementation_version marker" do
+          let(:line) { 'luigi==0.1.0;implementation_version>="3.8"' }
+
+          its([:markers]) { is_expected.to eq 'implementation_version>="3.8"' }
+        end
+
+        context "with whitespace in marker expression" do
+          let(:line) { 'luigi==0.1.0;implementation_version  >=  "3.8" and python_version >= "3.8"' }
+
+          its([:markers]) { is_expected.to eq 'implementation_version  >=  "3.8" and python_version >= "3.8"' }
+        end
       end
 
       context "with a local version" do

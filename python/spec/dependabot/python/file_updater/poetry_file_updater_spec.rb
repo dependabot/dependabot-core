@@ -195,6 +195,37 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
+      context "with CRLF line endings" do
+        let(:pyproject_fixture_name) { "caret_version_crlf.toml" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "2.19.1",
+            previous_version: nil,
+            package_manager: "pip",
+            requirements: [{
+              requirement: "^2.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }],
+            previous_requirements: [{
+              requirement: "^1.0.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }]
+          )
+        end
+
+        it "updates the pyproject.toml" do
+          expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+          updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+          expect(updated_lockfile.content).to include('requests = "^2.19.1"')
+        end
+      end
+
       context "when dealing with indented" do
         let(:pyproject_fixture_name) { "indented.toml" }
         let(:dependency) do
@@ -861,6 +892,67 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
         user_pass = "#{credentials[0]['user']}:#{credentials[0]['password']}@"
         expect(repo_obj[0][:url]).not_to include(user_pass)
+      end
+    end
+  end
+
+  describe "Git dependencies" do
+    let(:pyproject_fixture_name) { "git_dependency_with_tag.toml" }
+    let(:dependency_files) { [pyproject] }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: nil,
+        previous_version: nil,
+        package_manager: "pip",
+        requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          source: {
+            type: "git",
+            url: "https://github.com/tiangolo/fastapi",
+            ref: "0.128.0",
+            branch: nil
+          },
+          groups: ["dependencies"]
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          source: {
+            type: "git",
+            url: "https://github.com/tiangolo/fastapi",
+            ref: "0.110.0",
+            branch: nil
+          },
+          groups: ["dependencies"]
+        }]
+      )
+    end
+
+    describe "#updated_dependency_files" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      it "updates only the pyproject.toml file" do
+        expect(updated_files.map(&:name)).to eq(["pyproject.toml"])
+      end
+
+      it "updates the git tag in the pyproject file" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('tag = "0.128.0"')
+        expect(updated_pyproject.content).not_to include('tag = "0.110.0"')
+      end
+
+      it "preserves the git URL and extras" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('git = "https://github.com/tiangolo/fastapi"')
+        expect(updated_pyproject.content).to include('extras = ["all"]')
+      end
+
+      it "does not add a version field to the git dependency" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        fastapi_line = updated_pyproject.content.lines.find { |l| l.include?("fastapi") }
+        expect(fastapi_line).not_to include("version")
       end
     end
   end

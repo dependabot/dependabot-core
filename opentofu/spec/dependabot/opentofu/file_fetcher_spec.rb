@@ -20,10 +20,6 @@ RSpec.describe Dependabot::Opentofu::FileFetcher do
     )
   end
 
-  before do
-    allow(file_fetcher_instance).to receive_messages(allow_beta_ecosystems?: true)
-  end
-
   after do
     FileUtils.rm_rf(repo_contents_path)
   end

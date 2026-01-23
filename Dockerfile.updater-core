@@ -144,7 +144,7 @@ WORKDIR $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v2/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=docker.io/library/ruby:3.4.7-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.4.8-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # For users to determine if dependabot is running
 ENV DEPENDABOT=true
@@ -177,7 +177,7 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # Note that RubyGems & Bundler versions are currently released in sync, but
 # RubyGems version is one major ahead. So when bumping to RubyGems 3.y.z, Bundler
 # version will jump to 2.y.z
-ARG RUBYGEMS_VERSION=3.6.9
+ARG RUBYGEMS_VERSION=3.7.2
 ARG GEM_ENABLED=true
 RUN if [[ "$GEM_ENABLED" == "true" ]]; then \
     gem update --system $RUBYGEMS_VERSION; \

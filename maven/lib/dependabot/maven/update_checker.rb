@@ -63,6 +63,7 @@ module Dependabot
         # return that latest version unless dealing with a property dep.
         # https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Transitive_Dependencies
         return nil if version_comes_from_multi_dependency_property?
+        return nil if version_comes_from_project_parent_version?
 
         latest_version
       end
@@ -124,6 +125,7 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
+        return false if version_comes_from_project_parent_version?
         return false unless version_comes_from_multi_dependency_property?
 
         property_updater.update_possible?
@@ -234,6 +236,13 @@ module Dependabot
           ).parse.select do |dep|
             dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
           end
+      end
+
+      sig { returns(T::Boolean) }
+      def version_comes_from_project_parent_version?
+        declarations_using_a_property.any? do |requirement|
+          requirement.dig(:metadata, :property_name) == "project.parent.version"
+        end
       end
     end
   end

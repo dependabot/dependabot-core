@@ -327,5 +327,18 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         expect(result).to be(false)
       end
     end
+
+    context "when encountering a dist-only internal package" do
+      let(:project_name) { "path_source_with_dev_prefix" }
+      let(:dependency_name) { "path_dep/path_dep" }
+      let(:dependency_version) { "dev-main" }
+      let(:latest_allowable_version) { nil }
+      let(:requirements_to_unlock) { :none }
+      let(:string_req) { "dev-main" }
+
+      it "resolves the latest version without a version mismatch" do
+        expect(resolver.latest_resolvable_version).to be_nil
+      end
+    end
   end
 end

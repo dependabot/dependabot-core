@@ -80,11 +80,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when npmrc is provided" do
       let(:registry_config_files) { { npmrc: npmrc_file } }
 
-      it "returns registry and token from npmrc" do
+      it "returns registry from npmrc" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/",
+          "npm_config_registry" => "https://custom-registry.com/",
+          "COREPACK_NPM_TOKEN" => "custom-token",
+          "registry" => "https://custom-registry.com/"
         )
       end
     end
@@ -102,11 +105,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         ]
       end
 
-      it "returns registry with https scheme and token" do
+      it "returns registry with https scheme" do
         helper = described_class.new(registry_config_files, credentials)
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm"
+          "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
+          "npm_config_registry" => "https://artifactory.example.com/npm",
+          "COREPACK_NPM_TOKEN" => "my-token",
+          "registry" => "https://artifactory.example.com/npm"
         )
       end
     end
@@ -118,7 +124,9 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/",
+          "npm_config_registry" => "https://custom-registry.com/",
+          "registry" => "https://custom-registry.com/"
         )
       end
     end
@@ -126,11 +134,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when yarnrc is provided" do
       let(:registry_config_files) { { yarnrc: yarnrc_file } }
 
-      it "returns registry and token from yarnrc" do
+      it "returns registry from yarnrc" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
+          "npm_config_registry" => "https://yarn-registry.com/",
+          "COREPACK_NPM_TOKEN" => "your-auth-token-here",
+          "registry" => "https://yarn-registry.com/"
         )
       end
     end
@@ -142,7 +153,9 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
+          "npm_config_registry" => "https://yarn-registry.com/",
+          "registry" => "https://yarn-registry.com/"
         )
       end
     end
@@ -150,11 +163,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when yarnrc.yml is provided" do
       let(:registry_config_files) { { yarnrc_yml: yarnrc_yml_file } }
 
-      it "returns registry and token from yarnrc.yml" do
+      it "returns registry from yarnrc.yml" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
+          "npm_config_registry" => "https://yarnrc-yml-registry.com/",
+          "COREPACK_NPM_TOKEN" => "yarnrc-yml-token",
+          "registry" => "https://yarnrc-yml-registry.com/"
         )
       end
     end
@@ -166,7 +182,9 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
+          "npm_config_registry" => "https://yarnrc-yml-registry.com/",
+          "registry" => "https://yarnrc-yml-registry.com/"
         )
       end
     end

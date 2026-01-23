@@ -1,0 +1,18 @@
+{
+  "name": "__about__.py",
+  "path": "src/mypackage/__about__.py",
+  "sha": "xyz789",
+  "size": 50,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/src/mypackage/__about__.py?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/src/mypackage/__about__.py",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/xyz789",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/src/mypackage/__about__.py",
+  "type": "file",
+  "encoding": "base64",
+  "content": "X192ZXJzaW9uX18gPSAiMS4wLjAiCg==",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/src/mypackage/__about__.py?ref=sha",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/xyz789",
+    "html": "https://github.com/gocardless/bump/blob/sha/src/mypackage/__about__.py"
+  }
+}
