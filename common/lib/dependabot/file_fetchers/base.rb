@@ -20,9 +20,39 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     # Simple struct to represent repo content entries (replaces OpenStruct)
-    RepoContent = Data.define(:name, :path, :type, :size, :sha) do
-      def initialize(name:, path:, type:, size:, sha: nil)
-        super
+    class RepoContent
+      extend T::Sig
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :name
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :path
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :type
+
+      sig { returns(T.nilable(Integer)) }
+      attr_reader :size
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :sha
+
+      sig do
+        params(
+          name: T.nilable(String),
+          path: T.nilable(String),
+          type: T.nilable(String),
+          size: T.nilable(Integer),
+          sha: T.nilable(String)
+        ).void
+      end
+      def initialize(name: nil, path: nil, type: nil, size: nil, sha: nil)
+        @name = name
+        @path = path
+        @type = type
+        @size = size
+        @sha = sha
       end
     end
 

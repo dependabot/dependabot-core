@@ -15,7 +15,21 @@ module Dependabot
     extend T::Sig
 
     # Simple response struct to replace OpenStruct for HTTP-like responses
-    GitResponse = Data.define(:body, :status)
+    class GitResponse
+      extend T::Sig
+
+      sig { returns(String) }
+      attr_reader :body
+
+      sig { returns(Integer) }
+      attr_reader :status
+
+      sig { params(body: String, status: Integer).void }
+      def initialize(body:, status:)
+        @body = body
+        @status = status
+      end
+    end
 
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
 
