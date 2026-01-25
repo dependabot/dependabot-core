@@ -14,9 +14,44 @@ module Dependabot
   module MetadataFinders
     class Base
       # Simple struct to represent changelog file entries (replaces OpenStruct)
-      ChangelogFile = Data.define(:name, :type, :size, :html_url, :download_url, :path) do
+      class ChangelogFile
+        extend T::Sig
+
+        sig { returns(String) }
+        attr_reader :name
+
+        sig { returns(String) }
+        attr_reader :type
+
+        sig { returns(Integer) }
+        attr_reader :size
+
+        sig { returns(String) }
+        attr_reader :html_url
+
+        sig { returns(String) }
+        attr_reader :download_url
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :path
+
+        sig do
+          params(
+            name: String,
+            type: String,
+            size: Integer,
+            html_url: String,
+            download_url: String,
+            path: T.nilable(String)
+          ).void
+        end
         def initialize(name:, type:, size:, html_url:, download_url:, path: nil)
-          super
+          @name = name
+          @type = type
+          @size = size
+          @html_url = html_url
+          @download_url = download_url
+          @path = path
         end
       end
 
