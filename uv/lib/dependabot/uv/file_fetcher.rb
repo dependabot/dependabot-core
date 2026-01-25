@@ -272,7 +272,7 @@ module Dependabot
         @req_txt_and_in_files
       end
 
-      sig { params(requirements_dir: OpenStruct).returns(T::Array[Dependabot::DependencyFile]) }
+      sig { params(requirements_dir: Dependabot::FileFetchers::RepoContent).returns(T::Array[Dependabot::DependencyFile]) }
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
@@ -327,7 +327,7 @@ module Dependabot
 
       sig do
         params(
-          contents: T::Array[OpenStruct],
+          contents: T::Array[Dependabot::FileFetchers::RepoContent],
           base_path: T.nilable(T.any(Pathname, String))
         ).returns(T::Array[Dependabot::DependencyFile])
       end

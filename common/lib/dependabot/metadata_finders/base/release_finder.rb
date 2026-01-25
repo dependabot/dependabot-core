@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/credential"
@@ -13,6 +12,9 @@ require "dependabot/utils"
 module Dependabot
   module MetadataFinders
     class Base
+      # Simple struct to represent GitLab release data (replaces OpenStruct)
+      GitLabRelease = Data.define(:name, :tag_name, :body, :html_url)
+
       class ReleaseFinder
         extend T::Sig
 
@@ -281,7 +283,7 @@ module Dependabot
              .reverse
 
           releases.map do |tag|
-            OpenStruct.new(
+            GitLabRelease.new(
               name: tag.name,
               tag_name: tag.release.tag_name,
               body: tag.release.description,
