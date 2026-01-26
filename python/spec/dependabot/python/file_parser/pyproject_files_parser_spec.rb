@@ -281,8 +281,27 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       let(:pyproject_fixture_name) { "package_specify_source.toml" }
 
-      it "specifies a package source" do
-        expect(dependency.requirements[0][:source]).to eq("custom")
+      it "resolves string registry sources to hashes with type and url" do
+        # String sources (registry name references) are resolved to their definitions
+        # from [[tool.poetry.source]] to create proper hash sources
+        expect(dependency.requirements[0][:source]).to be_nil # No source def in this fixture
+      end
+    end
+
+    context "with private secondary source" do
+      subject(:dependency) { dependencies.find { |f| f.name == "luigi" } }
+
+      let(:pyproject_fixture_name) { "private_secondary_source.toml" }
+
+      it "resolves string registry sources to hashes with type and url" do
+        # String source "custom" should be resolved to the source definition
+        expect(dependency.requirements[0][:source]).to eq(
+          {
+            type: "registry",
+            url: "https://some.internal.registry.com/pypi/",
+            name: "custom"
+          }
+        )
       end
     end
   end
