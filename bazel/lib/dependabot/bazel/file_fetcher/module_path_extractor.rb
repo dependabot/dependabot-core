@@ -9,7 +9,7 @@ module Dependabot
   module Bazel
     class FileFetcher < Dependabot::FileFetchers::Base
       # Extracts file and directory paths referenced in MODULE.bazel files.
-      # Handles attributes like lock_file, requirements_lock, patches, and local_path_override.
+      # Handles attributes like lock_file, requirements_lock, patches, from_file, and local_path_override.
       class ModulePathExtractor
         extend T::Sig
 
