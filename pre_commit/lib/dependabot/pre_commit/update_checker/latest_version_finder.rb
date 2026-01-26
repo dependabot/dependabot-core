@@ -103,7 +103,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::PreCommit::Package::PackageDetailsFetcher)) }
         def package_details_fetcher
-          @package_details_fetcher = T.let(
+          @package_details_fetcher ||= T.let(
             Dependabot::PreCommit::Package::PackageDetailsFetcher
                         .new(
                           dependency: dependency,

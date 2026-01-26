@@ -86,6 +86,34 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         expect(latest_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
+
+    context "when the dependency is pinned to a commit SHA" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency_version) { nil }
+
+      it "returns the latest tagged version (prioritizing tags over commits)" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s).to eq("6.0.0")
+      end
+    end
+
+    context "with shortened version ref" do
+      let(:reference) { "v4.4" }
+
+      it "can handle shortened version refs" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+      end
+    end
+
+    context "with ignored versions" do
+      let(:ignored_versions) { [">= 7.0.0"] }
+
+      it "filters out ignored versions" do
+        # Should return a version less than 7.0.0
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s.split(".").first.to_i).to be < 7
+      end
+    end
   end
 
   describe "#updated_requirements" do

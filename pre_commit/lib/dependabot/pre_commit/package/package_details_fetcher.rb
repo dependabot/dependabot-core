@@ -69,12 +69,14 @@ module Dependabot
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def commit_sha_release
-          return unless git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
+          return unless git_commit_checker.pinned_ref_looks_like_commit_sha?
 
-          latest_version = latest_version_tag&.fetch(:version)
-          return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
+          # Prioritize tagged releases over latest commits
+          # If latest_version_tag exists, use it (even if current SHA doesn't have a tag)
+          return latest_version_tag&.fetch(:version) if latest_version_tag
 
-          latest_version
+          # Only fall back to latest commit if no tags exist
+          latest_commit_for_pinned_ref
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
