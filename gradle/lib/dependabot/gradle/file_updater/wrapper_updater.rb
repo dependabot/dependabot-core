@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "shellwords"
+require "set"
 
 require "dependabot/gradle/distributions"
 
@@ -71,7 +72,8 @@ module Dependabot
               FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
-              validate_option = get_validate_distribution_url_option(properties_file)
+              # Preserve all custom properties before running the wrapper command
+              original_properties = get_properties(properties_file)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
               begin
@@ -89,8 +91,8 @@ module Dependabot
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
               end
 
-              # Restore previous validateDistributionUrl option if it existed
-              override_validate_distribution_url_option(properties_file, validate_option)
+              # Restore custom properties that should be preserved
+              restore_properties(properties_file, original_properties)
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -174,30 +176,107 @@ module Dependabot
           end
         end
 
-        # This is a consequence of the lack of proper proxy support in Gradle Wrapper
-        # During the update process, Gradle Wrapper logic will try to validate the distribution URL
-        # by performing an HTTP request. If the environment requires a proxy, this validation will fail
-        # We need to add the `--no-validate-url` the commandline args to disable this validation
-        # However, this change is persistent in the `gradle-wrapper.properties` file
-        # To avoid side effects, we read the existing value before the update and restore it afterward
-        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
-        def get_validate_distribution_url_option(properties_file)
-          return nil unless File.exist?(properties_file)
+        # Reads all properties from the gradle-wrapper.properties file
+        # Returns a hash of property key-value pairs
+        sig { params(properties_file: T.any(Pathname, String)).returns(T::Hash[String, String]) }
+        def get_properties(properties_file)
+          return {} unless File.exist?(properties_file)
 
           properties_content = File.read(properties_file)
-          properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
+          properties = {}
+
+          properties_content.each_line do |line|
+            # Skip comments and empty lines
+            next if line.strip.start_with?("#") || line.strip.empty?
+
+            # Parse property lines in the format: key=value
+            if line =~ /^([^=]+)=(.*)$/
+              key = ::Regexp.last_match(1).strip
+              value = ::Regexp.last_match(2).strip
+              properties[key] = value
+            end
+          end
+
+          properties
         end
 
+        # Restores custom properties after running the gradle wrapper command
+        # The wrapper command regenerates gradle-wrapper.properties with default values
+        # This method restores user customizations while keeping the updated distribution settings
+        sig { params(properties_file: T.any(Pathname, String), original_properties: T::Hash[String, String]).void }
+        def restore_properties(properties_file, original_properties)
+          return unless File.exist?(properties_file)
+          return if original_properties.empty?
+
+          # Properties that are intentionally updated by the wrapper command and should NOT be restored
+          updated_properties = %w[
+            distributionUrl
+            distributionSha256Sum
+          ]
+
+          # Read the newly generated properties file
+          new_content = File.read(properties_file)
+          new_properties = {}
+
+          new_content.each_line do |line|
+            next if line.strip.start_with?("#") || line.strip.empty?
+
+            if line =~ /^([^=]+)=(.*)$/
+              key = ::Regexp.last_match(1).strip
+              new_properties[key] = line
+            end
+          end
+
+          # Restore original values for properties that weren't intentionally updated
+          result_lines = []
+          added_keys = Set.new
+
+          # First, add all properties from the new file, replacing with original values where appropriate
+          new_content.each_line do |line|
+            if line.strip.start_with?("#") || line.strip.empty?
+              result_lines << line
+              next
+            end
+
+            if line =~ /^([^=]+)=/
+              key = ::Regexp.last_match(1).strip
+              added_keys.add(key)
+
+              # Use original value if this property should be preserved
+              if !updated_properties.include?(key) && original_properties.key?(key)
+                result_lines << "#{key}=#{original_properties[key]}\n"
+              else
+                result_lines << line
+              end
+            else
+              result_lines << line
+            end
+          end
+
+          # Add any properties from the original file that weren't in the new file
+          original_properties.each do |key, value|
+            next if added_keys.include?(key)
+            next if updated_properties.include?(key)
+
+            result_lines << "#{key}=#{value}\n"
+          end
+
+          File.write(properties_file, result_lines.join)
+        end
+
+        # Legacy method for backward compatibility - now uses get_properties
+        # @deprecated Use get_properties instead
+        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
+        def get_validate_distribution_url_option(properties_file)
+          properties = get_properties(properties_file)
+          properties["validateDistributionUrl"]
+        end
+
+        # Legacy method for backward compatibility - now uses restore_properties
+        # @deprecated This method is no longer used, restore_properties handles this
         sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
         def override_validate_distribution_url_option(properties_file, value)
-          return unless File.exist?(properties_file)
-
-          properties_content = File.read(properties_file)
-          updated_content = properties_content.gsub(
-            /^validateDistributionUrl=(.*)\n/,
-            value ? "validateDistributionUrl=#{value}\n" : ""
-          )
-          File.write(properties_file, updated_content)
+          # This method is now a no-op, as restore_properties handles all property restoration
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
