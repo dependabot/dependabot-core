@@ -1009,6 +1009,68 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           end
         end
       end
+
+      context "with a replaces-base credential and no .npmrc" do
+        let(:dependency_files) { project_dependency_files("npm6/simple") }
+
+        context "when the credential has replaces-base flag" do
+          let(:credentials) do
+            [Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ), Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "artifactory.example.com/artifactory/api/npm/npm",
+                "token" => "my_token",
+                "replaces-base" => true
+              }
+            )]
+          end
+
+          it "adds a global registry line with always-auth even without .npmrc" do
+            expect(npmrc_content)
+              .to eq(
+                "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+                "//artifactory.example.com/artifactory/api/npm/npm/:_authToken=my_token\n" \
+                "always-auth = true"
+              )
+          end
+
+          context "with basic auth credentials" do
+            let(:credentials) do
+              [Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ), Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "artifactory.example.com/artifactory/api/npm/npm",
+                  "token" => "user:password",
+                  "replaces-base" => true
+                }
+              )]
+            end
+
+            it "adds a global registry line with always-auth and basic auth" do
+              expect(npmrc_content)
+                .to eq(
+                  "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+                  "//artifactory.example.com/artifactory/api/npm/npm/:_auth=dXNlcjpwYXNzd29yZA==\n" \
+                  "always-auth = true"
+                )
+            end
+          end
+        end
+      end
     end
 
     context "with a pnpm-lock.yaml" do
