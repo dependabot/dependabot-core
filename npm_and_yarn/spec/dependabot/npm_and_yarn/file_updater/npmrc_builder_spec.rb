@@ -1069,6 +1069,40 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 )
             end
           end
+
+          context "when lockfile URLs contain port numbers not in credential" do
+            let(:dependency_files) do
+              [
+                Dependabot::DependencyFile.new(
+                  name: "package.json",
+                  content: fixture("projects", "npm6", "simple", "package.json")
+                ),
+                Dependabot::DependencyFile.new(
+                  name: "package-lock.json",
+                  content: '{
+                    "name": "test",
+                    "lockfileVersion": 3,
+                    "packages": {
+                      "": {"dependencies": {"mongodb": "^6.19.0"}},
+                      "node_modules/mongodb": {
+                        "version": "6.19.0",
+                        "resolved": "https://artifactory.example.com:443/artifactory/api/npm/npm/mongodb/-/mongodb-6.19.0.tgz"
+                      }
+                    }
+                  }'
+                )
+              ]
+            end
+
+            it "still generates .npmrc with always-auth using replaces-base" do
+              expect(npmrc_content)
+                .to eq(
+                  "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+                  "//artifactory.example.com/artifactory/api/npm/npm/:_authToken=my_token\n" \
+                  "always-auth = true"
+                )
+            end
+          end
         end
       end
     end
