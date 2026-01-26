@@ -86,6 +86,84 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         expect(latest_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
+
+    context "when the dependency is pinned to a commit SHA" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency_version) { nil }
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned?).and_return(true)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned_ref_looks_like_version?).and_return(false)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:local_tag_for_latest_version)
+          .and_return({ tag: "v5.0.0", version: Dependabot::PreCommit::Version.new("5.0.0"), commit_sha: "abc123" })
+      end
+
+      it "returns the latest tagged version (prioritizing tags over commits)" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s).to eq("5.0.0")
+      end
+    end
+
+    context "when the dependency is pinned to a commit SHA with no tags in repo" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency_version) { nil }
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned?).and_return(true)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned_ref_looks_like_version?).and_return(false)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(true)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:local_tag_for_latest_version).and_return(nil)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
+      end
+
+      it "returns the latest commit SHA" do
+        expect(latest_version).to eq("abc123def456")
+      end
+    end
+
+    context "when no versions are available" do
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:local_tag_for_latest_version).and_return(nil)
+      end
+
+      it "returns nil" do
+        expect(latest_version).to be_nil
+      end
+    end
+
+    context "when the dependency is not pinned" do
+      let(:reference) { "main" }
+      let(:dependency_version) { nil }
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:pinned?).and_return(false)
+        allow_any_instance_of(Dependabot::GitCommitChecker).to receive(:head_commit_for_current_branch)
+          .and_return("abc123def456")
+      end
+
+      it "returns the latest commit from the branch" do
+        expect(latest_version).to eq("abc123def456")
+      end
+    end
+
+    context "with shortened version ref" do
+      let(:reference) { "v4.4" }
+
+      it "can handle shortened version refs" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+      end
+    end
+
+    context "with ignored versions" do
+      let(:ignored_versions) { [">= 7.0.0"] }
+
+      it "filters out ignored versions" do
+        # Should return a version less than 7.0.0
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s.split(".").first.to_i).to be < 7
+      end
+    end
   end
 
   describe "#updated_requirements" do
