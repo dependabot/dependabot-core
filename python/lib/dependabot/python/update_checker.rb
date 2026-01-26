@@ -27,7 +27,6 @@ module Dependabot
       require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
-      require_relative "update_checker/latest_version_resolver"
 
       MAIN_PYPI_INDEXES = %w(
         https://pypi.python.org/simple/
@@ -164,21 +163,8 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_git_version_details
         @latest_git_version_details ||= T.let(
-          latest_version_resolver.latest_version_tag,
+          latest_version_finder.latest_version_tag(git_commit_checker: git_commit_checker),
           T.nilable(T::Hash[Symbol, T.untyped])
-        )
-      end
-
-      sig { returns(LatestVersionResolver) }
-      def latest_version_resolver
-        @latest_version_resolver ||= T.let(
-          LatestVersionResolver.new(
-            dependency: dependency,
-            credentials: credentials,
-            cooldown_options: @update_cooldown,
-            git_commit_checker: git_commit_checker
-          ),
-          T.nilable(LatestVersionResolver)
         )
       end
 
