@@ -86,7 +86,6 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         expect(latest_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
-
   end
 
   describe "#updated_requirements" do
