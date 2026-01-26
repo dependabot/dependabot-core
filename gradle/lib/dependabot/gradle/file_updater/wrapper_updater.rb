@@ -123,9 +123,9 @@ module Dependabot
           # --no-validate-url is required to bypass HTTP proxy issues when running ./gradlew
           # This prevents validation failures during the wrapper update process
           # Note: This temporarily sets validateDistributionUrl=false in gradle-wrapper.properties
-          # The original value is restored after the wrapper task completes
-          # see method `get_validate_distribution_url_option` for more details
-          args = %W(wrapper --gradle-version #{version} --no-validate-url) # see
+          # The original value (along with all other custom properties) is restored after the wrapper task completes
+          # see methods `get_properties` and `restore_properties` for more details
+          args = %W(wrapper --gradle-version #{version} --no-validate-url)
           args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
