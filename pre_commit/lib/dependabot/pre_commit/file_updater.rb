@@ -92,20 +92,33 @@ module Dependabot
         return content unless T.cast(new_source.fetch(:type), String) == "git"
 
         old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, T.untyped])
+        repo_url = T.cast(old_source.fetch(:url), String)
         old_ref = T.cast(old_source.fetch(:ref), String)
         new_ref = T.cast(new_source.fetch(:ref), String)
 
-        replace_ref_in_content(content, old_ref, new_ref)
+        replace_ref_in_content(content, repo_url, old_ref, new_ref)
       end
 
-      sig { params(content: String, old_ref: String, new_ref: String).returns(String) }
-      def replace_ref_in_content(content, old_ref, new_ref)
-        content.gsub(
-          /^(\s*rev:\s+)#{Regexp.escape(old_ref)}(\s*(?:#.*)?)?$/
-        ) do |match|
-          # Preserve the indentation and any trailing comment
-          match.gsub(old_ref, new_ref)
+      sig do
+        params(content: String, repo_url: String, old_ref: String, new_ref: String).returns(String)
+      end
+      def replace_ref_in_content(content, repo_url, old_ref, new_ref)
+        current_repo = T.let(nil, T.nilable(String))
+
+        updated_lines = content.lines.map do |line|
+          # Track the current repo based on "- repo: <url>" lines
+          repo_match = line.match(/^\s*-\s*repo:\s*(\S+)/)
+          current_repo = repo_match[1] if repo_match
+
+          if current_repo == repo_url &&
+             line.match?(/^\s*rev:\s+#{Regexp.escape(old_ref)}(\s*(?:#.*)?)?$/)
+            line.gsub(old_ref, new_ref)
+          else
+            line
+          end
         end
+
+        updated_lines.join
       end
     end
   end

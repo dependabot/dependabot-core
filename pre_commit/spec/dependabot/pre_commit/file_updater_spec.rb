@@ -140,6 +140,110 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
           is_expected.not_to include "rev: v4.4.0"
         end
       end
+
+      context "with multiple repos using the same ref value" do
+        let(:config_file_body) do
+          <<~YAML
+            repos:
+              - repo: https://github.com/pre-commit/pre-commit-hooks
+                rev: v4.4.0
+                hooks:
+                  - id: trailing-whitespace
+              - repo: https://github.com/psf/black
+                rev: v4.4.0
+                hooks:
+                  - id: black
+          YAML
+        end
+
+        its(:content) do
+          is_expected.to include "- repo: https://github.com/pre-commit/pre-commit-hooks"
+          is_expected.to include "  rev: v4.5.0"
+          is_expected.to include "- repo: https://github.com/psf/black"
+          is_expected.to include "  rev: v4.4.0"
+        end
+
+        it "only updates the intended repo's rev field" do
+          content = updated_config_file.content
+          pre_commit_hooks_section = content[
+            /- repo: https:\/\/github\.com\/pre-commit\/pre-commit-hooks.*?(?=- repo:|\z)/m
+          ]
+          black_section = content[
+            /- repo: https:\/\/github\.com\/psf\/black.*?(?=- repo:|\z)/m
+          ]
+
+          expect(pre_commit_hooks_section).to include("rev: v4.5.0")
+          expect(pre_commit_hooks_section).not_to include("rev: v4.4.0")
+          expect(black_section).to include("rev: v4.4.0")
+          expect(black_section).not_to include("rev: v4.5.0")
+        end
+      end
+
+      context "with same repo used multiple times with different revs" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/pre-commit/pre-commit-hooks",
+            version: "v4.6.0",
+            previous_version: "v4.4.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/pre-commit/pre-commit-hooks",
+                ref: "v4.6.0",
+                branch: nil
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/pre-commit/pre-commit-hooks",
+                ref: "v4.4.0",
+                branch: nil
+              }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+        let(:config_file_body) do
+          <<~YAML
+            repos:
+              - repo: https://github.com/pre-commit/pre-commit-hooks
+                rev: v4.4.0
+                hooks:
+                  - id: trailing-whitespace
+              - repo: https://github.com/pre-commit/pre-commit-hooks
+                rev: v4.5.0
+                hooks:
+                  - id: check-yaml
+          YAML
+        end
+
+        it "only updates the first occurrence with matching rev" do
+          content = updated_config_file.content
+          lines = content.lines
+
+          # Find the first occurrence of the repo with v4.4.0
+          first_repo_idx = lines.index { |l| l.include?("repo: https://github.com/pre-commit/pre-commit-hooks") }
+          first_rev_idx = lines[first_repo_idx..].index { |l| l.match?(/^\s*rev:/) }
+          first_rev_line = lines[first_repo_idx + first_rev_idx]
+
+          # Find the second occurrence of the repo with v4.5.0
+          second_repo_idx = lines[(first_repo_idx + 1)..].index do |l|
+            l.include?("repo: https://github.com/pre-commit/pre-commit-hooks")
+          end
+          second_rev_idx = lines[(first_repo_idx + 1 + second_repo_idx)..].index { |l| l.match?(/^\s*rev:/) }
+          second_rev_line = lines[first_repo_idx + 1 + second_repo_idx + second_rev_idx]
+
+          expect(first_rev_line).to include("v4.6.0")
+          expect(second_rev_line).to include("v4.5.0")
+        end
+      end
     end
   end
 end
