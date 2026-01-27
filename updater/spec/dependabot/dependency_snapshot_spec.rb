@@ -6,6 +6,7 @@ require "support/dependency_file_helpers"
 
 require "dependabot/dependency_file"
 require "dependabot/errors"
+require "dependabot/fetched_files"
 
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
