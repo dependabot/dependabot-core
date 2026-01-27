@@ -123,7 +123,7 @@ module Dependabot
           # This prevents validation failures during the wrapper update process
           # Note: This temporarily sets validateDistributionUrl=false in gradle-wrapper.properties
           # The original value (along with all other custom properties) is restored after the wrapper task completes
-          # see methods `get_properties` and `restore_properties` for more details
+          # see method `update_distribution_properties` for more details
           args = %W(wrapper --gradle-version #{version} --no-validate-url)
           args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
@@ -209,52 +209,6 @@ module Dependabot
 
           # Write back the updated original content
           File.write(properties_file, result_content)
-        end
-
-        # Reads all properties from the gradle-wrapper.properties file
-        # Returns a hash of property key-value pairs
-        # @deprecated This method is kept for backward compatibility but is no longer used
-        sig { params(properties_file: T.any(Pathname, String)).returns(T::Hash[String, String]) }
-        def get_properties(properties_file)
-          return {} unless File.exist?(properties_file)
-
-          properties_content = File.read(properties_file)
-          properties = {}
-
-          properties_content.each_line do |line|
-            # Skip comments and empty lines
-            next if line.strip.start_with?("#") || line.strip.empty?
-
-            # Parse property lines in the format: key=value
-            if line =~ /^([^=]+)=(.*)$/
-              key = ::Regexp.last_match(1).strip
-              value = ::Regexp.last_match(2).strip
-              properties[key] = value
-            end
-          end
-
-          properties
-        end
-
-        # @deprecated This method is no longer used - update_distribution_properties handles this more elegantly
-        sig { params(properties_file: T.any(Pathname, String), original_properties: T::Hash[String, String]).void }
-        def restore_properties(properties_file, original_properties)
-          # This method is now a no-op, as update_distribution_properties handles property updates
-        end
-
-        # Legacy method for backward compatibility - now uses get_properties
-        # @deprecated Use get_properties instead
-        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
-        def get_validate_distribution_url_option(properties_file)
-          properties = get_properties(properties_file)
-          properties["validateDistributionUrl"]
-        end
-
-        # Legacy method for backward compatibility - now uses restore_properties
-        # @deprecated This method is no longer used, restore_properties handles this
-        sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
-        def override_validate_distribution_url_option(properties_file, value)
-          # This method is now a no-op, as restore_properties handles all property restoration
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
