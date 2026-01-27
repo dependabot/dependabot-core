@@ -166,10 +166,10 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
         it "only updates the intended repo's rev field" do
           content = updated_config_file.content
           pre_commit_hooks_section = content[
-            /- repo: https:\/\/github\.com\/pre-commit\/pre-commit-hooks.*?(?=- repo:|\z)/m
+            %r{- repo: https://github\.com/pre-commit/pre-commit-hooks.*?(?=- repo:|\z)}m
           ]
           black_section = content[
-            /- repo: https:\/\/github\.com\/psf\/black.*?(?=- repo:|\z)/m
+            %r{- repo: https://github\.com/psf/black.*?(?=- repo:|\z)}m
           ]
 
           expect(pre_commit_hooks_section).to include("rev: v4.5.0")
