@@ -838,6 +838,101 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             expect(updated_buildfile.content).to include("distributionUrl=#{distribution_url}")
           end
         end
+
+        context "with comments in properties file" do
+          subject(:updated_buildfile) do
+            updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.properties" }
+          end
+
+          let(:buildfile) do
+            wrapper_file
+          end
+
+          let(:wrapper_file) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.properties",
+              content: fixture(
+                "wrapper_files",
+                "gradle-wrapper-8.14.2-bin-with-comments.properties"
+              )
+            )
+          end
+
+          let(:distribution_url) do
+            "https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip"
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "gradle-wrapper",
+              version: "9.0.0",
+              previous_version: "8.14.2",
+              requirements: [{
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: "9.0.0",
+                groups: [],
+                source: { type: "gradle-distribution", url: distribution_url, property: "distributionUrl" }
+              }],
+              previous_requirements: [{
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                requirement: "8.14.2",
+                groups: [],
+                source: { type: "gradle-distribution", url: "https://services.gradle.org", property: "distributionUrl" }
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          before do
+            # Mock the file operations to simulate the wrapper command updating the properties
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, env:|
+              # Simulate the wrapper command generating a new file without comments
+              properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
+              if File.exist?(properties_file)
+                # Write a simulated updated properties file without comments (as gradle does)
+                File.write(properties_file, <<~PROPERTIES)
+                  distributionBase=GRADLE_USER_HOME
+                  distributionPath=wrapper/dists
+                  distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip
+                  networkTimeout=10000
+                  validateDistributionUrl=true
+                  zipStoreBase=GRADLE_USER_HOME
+                  zipStorePath=wrapper/dists
+                PROPERTIES
+              end
+            end
+            allow(File).to receive(:exist?).and_call_original
+            allow(FileUtils).to receive(:chmod)
+          end
+
+          it "preserves comments from the original file" do
+            expect(updated_buildfile.content).to include("# Configuration for Gradle wrapper")
+            expect(updated_buildfile.content).to include("# Custom network timeout for slow connections")
+          end
+
+          it "preserves the custom networkTimeout value" do
+            expect(updated_buildfile.content).to include("networkTimeout=30000")
+            expect(updated_buildfile.content).not_to include("networkTimeout=10000")
+          end
+
+          it "updates the distributionUrl" do
+            expect(updated_buildfile.content).to include("distributionUrl=#{distribution_url}")
+          end
+
+          it "maintains the original property order" do
+            lines = updated_buildfile.content.lines.reject { |l| l.strip.start_with?("#") || l.strip.empty? }
+            property_names = lines.map { |l| l.split("=").first }
+            expect(property_names).to eq(%w[
+              distributionBase
+              distributionPath
+              distributionUrl
+              networkTimeout
+              validateDistributionUrl
+              zipStoreBase
+              zipStorePath
+            ])
+          end
+        end
       end
 
       context "with a version catalog" do

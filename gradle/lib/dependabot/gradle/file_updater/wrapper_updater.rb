@@ -3,7 +3,6 @@
 
 require "sorbet-runtime"
 require "shellwords"
-require "set"
 
 require "dependabot/gradle/distributions"
 
@@ -72,8 +71,8 @@ module Dependabot
               FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
-              # Preserve all custom properties before running the wrapper command
-              original_properties = get_properties(properties_file)
+              # Save the original file content to preserve structure, comments, and property order
+              original_content = File.exist?(properties_file) ? File.read(properties_file) : nil
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
               begin
@@ -91,8 +90,8 @@ module Dependabot
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
               end
 
-              # Restore custom properties that should be preserved
-              restore_properties(properties_file, original_properties)
+              # Update only the properties that should change, preserving everything else
+              update_distribution_properties(properties_file, original_content)
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -176,8 +175,45 @@ module Dependabot
           end
         end
 
+        # Updates only the distribution properties in the original file content
+        # This preserves the original file structure, comments, property order, and all other properties
+        # Only distributionUrl and distributionSha256Sum are updated from the newly generated file
+        sig { params(properties_file: T.any(Pathname, String), original_content: T.nilable(String)).void }
+        def update_distribution_properties(properties_file, original_content)
+          return unless File.exist?(properties_file)
+          return unless original_content
+
+          # Read the newly generated file to extract updated distribution properties
+          new_content = File.read(properties_file)
+          updated_values = {}
+
+          # Extract the new values for distributionUrl and distributionSha256Sum
+          new_content.each_line do |line|
+            next if line.strip.start_with?("#") || line.strip.empty?
+
+            if line =~ /^(distributionUrl|distributionSha256Sum)=(.*)$/
+              key = ::Regexp.last_match(1)
+              value = ::Regexp.last_match(2)
+              updated_values[key] = value
+            end
+          end
+
+          # Update only those properties in the original content
+          result_content = original_content.dup
+
+          updated_values.each do |key, new_value|
+            # Replace the property value, preserving the line structure
+            # This regex matches the property line and replaces only the value part
+            result_content.gsub!(/^(#{Regexp.escape(key)}=).*$/, "\\1#{new_value}")
+          end
+
+          # Write back the updated original content
+          File.write(properties_file, result_content)
+        end
+
         # Reads all properties from the gradle-wrapper.properties file
         # Returns a hash of property key-value pairs
+        # @deprecated This method is kept for backward compatibility but is no longer used
         sig { params(properties_file: T.any(Pathname, String)).returns(T::Hash[String, String]) }
         def get_properties(properties_file)
           return {} unless File.exist?(properties_file)
@@ -200,68 +236,10 @@ module Dependabot
           properties
         end
 
-        # Restores custom properties after running the gradle wrapper command
-        # The wrapper command regenerates gradle-wrapper.properties with default values
-        # This method restores user customizations while keeping the updated distribution settings
+        # @deprecated This method is no longer used - update_distribution_properties handles this more elegantly
         sig { params(properties_file: T.any(Pathname, String), original_properties: T::Hash[String, String]).void }
         def restore_properties(properties_file, original_properties)
-          return unless File.exist?(properties_file)
-          return if original_properties.empty?
-
-          # Properties that are intentionally updated by the wrapper command and should NOT be restored
-          updated_properties = %w[
-            distributionUrl
-            distributionSha256Sum
-          ]
-
-          # Read the newly generated properties file
-          new_content = File.read(properties_file)
-          new_properties = {}
-
-          new_content.each_line do |line|
-            next if line.strip.start_with?("#") || line.strip.empty?
-
-            if line =~ /^([^=]+)=(.*)$/
-              key = ::Regexp.last_match(1).strip
-              new_properties[key] = line
-            end
-          end
-
-          # Restore original values for properties that weren't intentionally updated
-          result_lines = []
-          added_keys = Set.new
-
-          # First, add all properties from the new file, replacing with original values where appropriate
-          new_content.each_line do |line|
-            if line.strip.start_with?("#") || line.strip.empty?
-              result_lines << line
-              next
-            end
-
-            if line =~ /^([^=]+)=/
-              key = ::Regexp.last_match(1).strip
-              added_keys.add(key)
-
-              # Use original value if this property should be preserved
-              if !updated_properties.include?(key) && original_properties.key?(key)
-                result_lines << "#{key}=#{original_properties[key]}\n"
-              else
-                result_lines << line
-              end
-            else
-              result_lines << line
-            end
-          end
-
-          # Add any properties from the original file that weren't in the new file
-          original_properties.each do |key, value|
-            next if added_keys.include?(key)
-            next if updated_properties.include?(key)
-
-            result_lines << "#{key}=#{value}\n"
-          end
-
-          File.write(properties_file, result_lines.join)
+          # This method is now a no-op, as update_distribution_properties handles property updates
         end
 
         # Legacy method for backward compatibility - now uses get_properties
