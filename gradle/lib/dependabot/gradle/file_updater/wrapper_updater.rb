@@ -189,12 +189,11 @@ module Dependabot
           # Extract the new values for distributionUrl and distributionSha256Sum
           new_content.each_line do |line|
             next if line.strip.start_with?("#") || line.strip.empty?
+            next unless line =~ /^(distributionUrl|distributionSha256Sum)=(.*)$/
 
-            if line =~ /^(distributionUrl|distributionSha256Sum)=(.*)$/
-              key = ::Regexp.last_match(1)
-              value = ::Regexp.last_match(2)
-              updated_values[key] = value
-            end
+            key = T.must(::Regexp.last_match(1))
+            value = T.must(::Regexp.last_match(2))
+            updated_values[key] = value
           end
 
           # Duplicate to avoid mutating the parameter

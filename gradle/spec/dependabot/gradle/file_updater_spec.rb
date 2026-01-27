@@ -809,7 +809,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           before do
             # Mock the file operations to simulate the wrapper command updating the properties
-            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, env:|
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, _env:|
               # Simulate the wrapper command updating the properties file with defaults
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
               if File.exist?(properties_file)
@@ -885,7 +885,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           before do
             # Mock the file operations to simulate the wrapper command updating the properties
-            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, env:|
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, _env:|
               # Simulate the wrapper command generating a new file without comments
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
               if File.exist?(properties_file)
@@ -922,15 +922,17 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           it "maintains the original property order" do
             lines = updated_buildfile.content.lines.reject { |l| l.strip.start_with?("#") || l.strip.empty? }
             property_names = lines.map { |l| l.split("=").first }
-            expect(property_names).to eq(%w[
-              distributionBase
-              distributionPath
-              distributionUrl
-              networkTimeout
-              validateDistributionUrl
-              zipStoreBase
-              zipStorePath
-            ])
+            expect(property_names).to eq(
+              %w(
+                distributionBase
+                distributionPath
+                distributionUrl
+                networkTimeout
+                validateDistributionUrl
+                zipStoreBase
+                zipStorePath
+              )
+            )
           end
         end
       end
