@@ -72,7 +72,8 @@ module Dependabot
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
               # Save the original file content to preserve structure, comments, and property order
-              original_content = File.exist?(properties_file) ? File.read(properties_file) : nil
+              # The file should exist as it was populated from dependency_files in populate_temp_directory
+              original_content = File.read(properties_file)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
               begin
@@ -178,10 +179,9 @@ module Dependabot
         # Updates only the distribution properties in the original file content
         # This preserves the original file structure, comments, property order, and all other properties
         # Only distributionUrl and distributionSha256Sum are updated from the newly generated file
-        sig { params(properties_file: T.any(Pathname, String), original_content: T.nilable(String)).void }
+        sig { params(properties_file: T.any(Pathname, String), original_content: String).void }
         def update_distribution_properties(properties_file, original_content)
           return unless File.exist?(properties_file)
-          return unless original_content
 
           # Read the newly generated file to extract updated distribution properties
           new_content = File.read(properties_file)
@@ -198,7 +198,8 @@ module Dependabot
             end
           end
 
-          # Update only those properties in the original content
+          # Create a copy to avoid mutating the original_content parameter
+          # gsub! modifies the string in-place, so we need a duplicate to preserve the original
           result_content = original_content.dup
 
           updated_values.each do |key, new_value|
