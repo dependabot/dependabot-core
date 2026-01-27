@@ -93,9 +93,11 @@ RSpec.describe Dependabot::Cargo::Helpers do
       let(:credentials) do
         [
           Dependabot::Credential.new({ "type" => "cargo_registry", "registry" => "my-registry", "token" => "token1" }),
-          Dependabot::Credential.new({
-            "type" => "cargo_registry", "registry" => "another-registry", "token" => "token2"
-          })
+          Dependabot::Credential.new(
+            {
+              "type" => "cargo_registry", "registry" => "another-registry", "token" => "token2"
+            }
+          )
         ]
       end
 
@@ -109,9 +111,11 @@ RSpec.describe Dependabot::Cargo::Helpers do
 
     context "when environment variable is already set" do
       let(:credentials) do
-        [Dependabot::Credential.new({
-          "type" => "cargo_registry", "registry" => "my-registry", "token" => "new-token"
-        })]
+        [Dependabot::Credential.new(
+          {
+            "type" => "cargo_registry", "registry" => "my-registry", "token" => "new-token"
+          }
+        )]
       end
 
       before do
@@ -126,4 +130,3 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
   end
 end
-
