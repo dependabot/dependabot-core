@@ -71,8 +71,7 @@ module Dependabot
               FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
-              # Save the original file content to preserve structure, comments, and property order
-              # The file should exist as it was populated from dependency_files in populate_temp_directory
+              # Save original content to preserve comments, order, and custom properties
               original_content = File.read(properties_file)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
@@ -198,13 +197,11 @@ module Dependabot
             end
           end
 
-          # Create a copy to avoid mutating the original_content parameter
-          # gsub! modifies the string in-place, so we need a duplicate to preserve the original
+          # Duplicate to avoid mutating the parameter
           result_content = original_content.dup
 
+          # Update only the distribution properties in the original content
           updated_values.each do |key, new_value|
-            # Replace the property value, preserving the line structure
-            # This regex matches the property line and replaces only the value part
             result_content.gsub!(/^(#{Regexp.escape(key)}=).*$/, "\\1#{new_value}")
           end
 
