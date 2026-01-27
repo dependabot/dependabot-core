@@ -184,7 +184,7 @@ module Dependabot
 
           # Read the newly generated file to extract updated distribution properties
           new_content = File.read(properties_file)
-          updated_values = {}
+          updated_values = T.let({}, T::Hash[String, String])
 
           # Extract the new values for distributionUrl and distributionSha256Sum
           new_content.each_line do |line|
