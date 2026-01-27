@@ -4,6 +4,7 @@
 require "base64"
 require "sorbet-runtime"
 
+require "dependabot/fetched_files"
 require "dependabot/file_parsers"
 require "dependabot/notices_helpers"
 
