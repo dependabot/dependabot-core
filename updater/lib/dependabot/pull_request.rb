@@ -125,7 +125,10 @@ module Dependabot
 
     sig { params(other: PullRequest).returns(T::Boolean) }
     def ==(other)
-      if using_directory? && other.using_directory?
+      # If at least one side has directories set, they must be compared to avoid
+      # incorrectly matching PRs from different directories (e.g., security updates
+      # for the same dependency in different directories should create separate PRs).
+      if using_directory? || other.using_directory?
         dependencies.to_set(&:to_h) == other.dependencies.to_set(&:to_h)
       else
         dependencies.to_set { |dep| dep.to_h.except(:directory) } ==
