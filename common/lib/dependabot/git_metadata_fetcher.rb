@@ -14,7 +14,6 @@ module Dependabot
   class GitMetadataFetcher
     extend T::Sig
 
-    # Simple response struct to replace OpenStruct for HTTP-like responses
     class GitResponse
       extend T::Sig
 

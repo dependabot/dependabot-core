@@ -19,8 +19,7 @@ require "dependabot/shared_helpers"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileFetchers
-    # Simple struct to represent repo content entries (replaces OpenStruct)
-    class RepoContent
+    class RepositoryContent
       extend T::Sig
 
       sig { returns(T.nilable(String)) }
@@ -504,7 +503,7 @@ module Dependabot
 
       sig do
         params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
-          .returns(T::Array[RepoContent])
+          .returns(T::Array[RepositoryContent])
       end
       def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true) # rubocop:disable Metrics/PerceivedComplexity
         path = path.gsub(" ", "%20")
@@ -543,7 +542,7 @@ module Dependabot
 
       sig do
         params(provider: String, repo: String, path: String, commit: String)
-          .returns(T::Array[RepoContent])
+          .returns(T::Array[RepositoryContent])
       end
       def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
         case provider
@@ -561,7 +560,7 @@ module Dependabot
         end
       end
 
-      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepoContent]) }
+      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _github_repo_contents(repo, path, commit)
         path = path.gsub(" ", "%20")
         github_response = T.unsafe(github_client).contents(repo, path: path, ref: commit)
@@ -574,7 +573,7 @@ module Dependabot
         github_response.map { |f| _build_github_file_struct(f) }
       end
 
-      sig { params(relative_path: String).returns(T::Array[RepoContent]) }
+      sig { params(relative_path: String).returns(T::Array[RepositoryContent]) }
       def _cloned_repo_contents(relative_path)
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
@@ -591,7 +590,7 @@ module Dependabot
                    "file"
                  end
 
-          RepoContent.new(
+          RepositoryContent.new(
             name: name,
             path: Pathname.new(File.join(relative_path, name)).cleanpath.to_path,
             type: type,
@@ -626,9 +625,9 @@ module Dependabot
         entries
       end
 
-      sig { params(file: Sawyer::Resource).returns(RepoContent) }
+      sig { params(file: Sawyer::Resource).returns(RepositoryContent) }
       def _build_github_file_struct(file)
-        RepoContent.new(
+        RepositoryContent.new(
           name: T.unsafe(file).name,
           path: T.unsafe(file).path,
           type: T.unsafe(file).type,
@@ -637,7 +636,7 @@ module Dependabot
         )
       end
 
-      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepoContent]) }
+      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _gitlab_repo_contents(repo, path, commit)
         T.unsafe(gitlab_client)
          .repo_tree(repo, path: path, ref: commit, per_page: 100)
@@ -650,7 +649,7 @@ module Dependabot
                  else file.fetch("type")
                  end
 
-          RepoContent.new(
+          RepositoryContent.new(
             name: file.name,
             path: file.path,
             type: type,
@@ -659,7 +658,7 @@ module Dependabot
         end
       end
 
-      sig { params(path: String, commit: String).returns(T::Array[RepoContent]) }
+      sig { params(path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _azure_repo_contents(path, commit)
         response = azure_client.fetch_repo_contents(commit, path)
 
@@ -670,7 +669,7 @@ module Dependabot
                  else entry.fetch("gitObjectType")
                  end
 
-          RepoContent.new(
+          RepositoryContent.new(
             name: File.basename(entry.fetch("relativePath")),
             path: entry.fetch("relativePath"),
             type: type,
@@ -679,7 +678,7 @@ module Dependabot
         end
       end
 
-      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepoContent]) }
+      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _bitbucket_repo_contents(repo, path, commit)
         response = T.unsafe(bitbucket_client)
                     .fetch_repo_contents(
@@ -695,7 +694,7 @@ module Dependabot
                  else file.fetch("type")
                  end
 
-          RepoContent.new(
+          RepositoryContent.new(
             name: File.basename(file.fetch("path")),
             path: file.fetch("path"),
             type: type,
@@ -704,7 +703,7 @@ module Dependabot
         end
       end
 
-      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepoContent]) }
+      sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _codecommit_repo_contents(repo, path, commit)
         response = codecommit_client.fetch_repo_contents(
           repo,
@@ -713,7 +712,7 @@ module Dependabot
         )
 
         response.files.map do |file|
-          RepoContent.new(
+          RepositoryContent.new(
             name: File.basename(file.relative_path),
             path: file.relative_path,
             type: "file",
