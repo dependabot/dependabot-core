@@ -400,6 +400,64 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           end
         end
       end
+
+      context "when the dependency uses Jenkin's plugin release conventions" do
+        # See
+        # https://www.jenkins.io/doc/developer/publishing/releasing-cd/
+        # https://github.com/jenkinsci/jep/blob/master/jep/305/README.adoc
+
+        context "when the version contains embedded git commits" do
+          let(:dependency_version) { "5933.vcf06f7b_5d1a_2" }
+          let(:comparison_version) { "5857.vb_f3dd0731f44" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version has a single embedded git commit" do
+          let(:dependency_version) { "5622.c9c3051619f5" }
+          let(:comparison_version) { "5681.79d2ddf61465" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version has a single embedded git commit using different delimiters" do
+          let(:dependency_version) { "5622-c9c3051619f5" }
+          let(:comparison_version) { "5681.79d2ddf61465" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version has a single embedded git commit with the v suffix" do
+          # Example: https://github.com/jenkinsci/bom/releases/tag/5622.vc9c3051619f5
+          let(:dependency_version) { "5622.vc9c3051619f5" }
+          let(:comparison_version) { "5681.79d2ddf61465" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version contains embedded git commit with a delimiter" do
+          # Example: https://github.com/jenkinsci/bom/releases/tag/5701.va_b_018a_a_6b_0d3
+          let(:dependency_version) { "5701.va_b_018a_a_6b_0d3" }
+          let(:comparison_version) { "5622.c9c3051619f5" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version contains embedded git commit with a delimiter and leading character" do
+          # Example: https://github.com/jenkinsci/bom/releases/tag/5723.v6f9c6b_d1218a_
+          let(:dependency_version) { "5723.v6f9c6b_d1218a_" }
+          let(:comparison_version) { "5622.c9c3051619f5" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when only one of the version contains embedded git commits" do
+          let(:dependency_version) { "5933.vcf06f7b_5d1a_2" }
+          let(:comparison_version) { "5933" }
+
+          it { is_expected.to be false }
+        end
+      end
     end
   end
 end
