@@ -12,7 +12,6 @@ require "dependabot/utils"
 module Dependabot
   module MetadataFinders
     class Base
-      # Simple struct to represent GitLab release data (replaces OpenStruct)
       class GitLabRelease
         extend T::Sig
 

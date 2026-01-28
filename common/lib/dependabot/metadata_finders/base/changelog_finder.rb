@@ -13,7 +13,6 @@ require "dependabot/metadata_finders/base"
 module Dependabot
   module MetadataFinders
     class Base
-      # Simple struct to represent changelog file entries (replaces OpenStruct)
       class ChangelogFile
         extend T::Sig
 
