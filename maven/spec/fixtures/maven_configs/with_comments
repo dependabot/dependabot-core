@@ -1,0 +1,4 @@
+# Maven configuration properties
+-Drevision=2.0.0
+# Additional property
+-Dspring.version=5.3.10

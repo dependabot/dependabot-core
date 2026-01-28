@@ -865,6 +865,65 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
 
+      context "when property is defined in maven.config" do
+        subject(:updated_maven_config_file) do
+          updated_files.find { |f| f.name == ".mvn/maven.config" }
+        end
+
+        let(:pom_body) { fixture("poms", "maven_config_property_pom.xml") }
+        let(:maven_config) do
+          Dependabot::DependencyFile.new(
+            name: ".mvn/maven.config",
+            content: "-Drevision=1.2.3\n-Dchangelist=-SNAPSHOT\n-Dspringframework.version=4.3.12.RELEASE\n"
+          )
+        end
+        let(:dependency_files) { [pom, maven_config] }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-beans",
+              version: "5.0.0.RELEASE",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "5.0.0.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "springframework.version",
+                  property_source: ".mvn/maven.config",
+                  packaging_type: "jar"
+                }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "4.3.12.RELEASE",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "springframework.version",
+                  property_source: ".mvn/maven.config",
+                  packaging_type: "jar"
+                }
+              }],
+              package_manager: "maven"
+            )
+          ]
+        end
+
+        it "updates the property value in maven.config" do
+          expect(updated_maven_config_file).not_to be_nil
+          expect(updated_maven_config_file.content)
+            .to include("-Dspringframework.version=5.0.0.RELEASE")
+          expect(updated_maven_config_file.content)
+            .to include("-Drevision=1.2.3")
+        end
+
+        it "does not modify the pom.xml" do
+          updated_pom = updated_files.find { |f| f.name == "pom.xml" }
+          expect(updated_pom).to be_nil
+        end
+      end
+
       context "with double backslashes in plugin" do
         let(:pom_body) { fixture("poms", "plugin_with_double_backslashes.xml") }
         let(:dependencies) do
