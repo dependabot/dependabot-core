@@ -1,0 +1,21 @@
+{
+  "name": "test-devengines-array",
+  "version": "1.0.0",
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^18 || ^20 || ^22",
+      "onFail": "warn"
+    },
+    "packageManager": [
+      {
+        "name": "npm",
+        "version": "^10 || ^11",
+        "onFail": "warn"
+      }
+    ]
+  },
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}
