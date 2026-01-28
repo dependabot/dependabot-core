@@ -7,6 +7,14 @@ require "dependabot/pre_commit/package/package_details_fetcher"
 require "dependabot/pre_commit/helpers"
 
 RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
+  subject(:fetcher) do
+    described_class.new(
+      dependency: dependency,
+      credentials: credentials,
+      ignored_versions: ignored_versions
+    )
+  end
+
   let(:dependency_name) { "pre-commit/pre-commit-hooks" }
   let(:reference) { "v4.4.0" }
   let(:dependency_source) do
@@ -38,15 +46,6 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       "password" => "token"
     }]
   end
-
-  subject(:fetcher) do
-    described_class.new(
-      dependency: dependency,
-      credentials: credentials,
-      ignored_versions: ignored_versions
-    )
-  end
-
   let(:ignored_versions) { [] }
   let(:service_pack_url) do
     "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"

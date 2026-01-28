@@ -7,6 +7,17 @@ require "dependabot/pre_commit/update_checker/latest_version_finder"
 require "dependabot/pre_commit/helpers"
 
 RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
+  subject(:finder) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
+      cooldown_options: update_cooldown
+    )
+  end
+
   let(:dependency_name) { "pre-commit/pre-commit-hooks" }
   let(:reference) { "v4.4.0" }
   let(:dependency_source) do
@@ -38,18 +49,6 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       "password" => "token"
     }]
   end
-
-  subject(:finder) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: [],
-      credentials: credentials,
-      ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored,
-      cooldown_options: update_cooldown
-    )
-  end
-
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:update_cooldown) { nil }
