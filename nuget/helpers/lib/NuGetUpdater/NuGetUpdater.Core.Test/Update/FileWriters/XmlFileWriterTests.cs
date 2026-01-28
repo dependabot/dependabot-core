@@ -261,6 +261,48 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_CentralPackageManagement_RangeContainsNewVersion()
+    {
+        // in this scenario, a prior pass updated `[1.0.0]` to `[1.1.0]` for a direct dependency and now in a higher
+        // level project we need to ensure the version matches when pinning a transitive dependency
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_AttributeDirectUpdate_ExactMatchVersionRangeFromPropertyValue()
     {
         await TestAsync(
