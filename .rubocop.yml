@@ -152,7 +152,7 @@ Style/StringConcatenation:
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 Style/OpenStructUse:
-  Enabled: false
+  Enabled: true
 Style/SpecialGlobalVars:
   Enabled: false
 Style/SelectByRegexp:
