@@ -1,0 +1,166 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "dependabot/errors"
+require "dependabot/utils"
+
+module Dependabot
+  module Uv
+    class FileUpdater
+      class LockFileErrorHandler
+        extend T::Sig
+
+        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
+        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
+        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(%r{git clone.*(?<url>https?://[^\s]+)}, Regexp)
+        GIT_REFERENCE_NOT_FOUND_REGEX = T.let(
+          /Did not find branch or tag '(?<tag>[^\n"']+)'/m,
+          Regexp
+        )
+        PYTHON_VERSION_ERROR_REGEX = T.let(
+          /Requires-Python|requires-python|python_requires|Python version/i,
+          Regexp
+        )
+        AUTH_ERROR_REGEX = T.let(
+          /401|403|authentication|unauthorized|forbidden|HTTP status code: 40[13]/i,
+          Regexp
+        )
+        TIMEOUT_ERROR_REGEX = T.let(
+          /timed?\s*out|connection.*reset|read timeout|connect timeout/i,
+          Regexp
+        )
+        NETWORK_ERROR_REGEX = T.let(
+          /ConnectionError|NetworkError|SSLError|certificate verify failed/i,
+          Regexp
+        )
+        PACKAGE_NOT_FOUND_REGEX = T.let(
+          /No matching distribution found|package.*not found|No versions found/i,
+          Regexp
+        )
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
+        def handle_uv_error(error)
+          message = error.message
+
+          handle_resolution_errors(message)
+          handle_git_errors(message)
+          handle_authentication_errors(message)
+          handle_network_errors(message)
+          handle_python_version_errors(message)
+          handle_resource_errors(message)
+          handle_package_not_found_errors(message)
+
+          raise error
+        end
+
+        private
+
+        sig { params(message: String).void }
+        def handle_resolution_errors(message)
+          return unless message.include?("No solution found when resolving dependencies") ||
+                        message.include?("Failed to build") ||
+                        message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+
+          match_unresolvable = message.scan(UV_UNRESOLVABLE_REGEX).last
+          match_build_failed = message.scan(UV_BUILD_FAILED_REGEX).last
+
+          formatted_error = extract_match_string(match_unresolvable) ||
+                            extract_match_string(match_build_failed) ||
+                            message
+
+          raise Dependabot::DependencyFileNotResolvable, formatted_error
+        end
+
+        sig { params(message: String).void }
+        def handle_git_errors(message)
+          if message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+            tag = T.must(match).named_captures.fetch("tag")
+            raise Dependabot::GitDependencyReferenceNotFound, "(unknown package at #{tag})"
+          end
+
+          return unless message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+
+          match = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+          url = T.must(match).named_captures.fetch("url")
+          raise Dependabot::GitDependenciesNotReachable, T.must(url)
+        end
+
+        sig { params(message: String).void }
+        def handle_authentication_errors(message)
+          return unless message.match?(AUTH_ERROR_REGEX)
+
+          source = extract_source_from_message(message)
+          raise Dependabot::PrivateSourceAuthenticationFailure, source
+        end
+
+        sig { params(message: String).void }
+        def handle_network_errors(message)
+          if message.match?(TIMEOUT_ERROR_REGEX)
+            source = extract_source_from_message(message)
+            raise Dependabot::PrivateSourceTimedOut, source
+          end
+
+          return unless message.match?(NETWORK_ERROR_REGEX)
+
+          source = extract_source_from_message(message)
+          if message.include?("certificate verify failed") || message.include?("SSLError")
+            raise Dependabot::PrivateSourceCertificateFailure, source
+          end
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Network error while resolving dependencies: #{clean_error_message(message)}"
+        end
+
+        sig { params(message: String).void }
+        def handle_python_version_errors(message)
+          return unless message.match?(PYTHON_VERSION_ERROR_REGEX)
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Python version incompatibility: #{clean_error_message(message)}"
+        end
+
+        sig { params(message: String).void }
+        def handle_resource_errors(message)
+          raise Dependabot::OutOfDisk if message.include?("[Errno 28] No space left on device")
+          raise Dependabot::OutOfMemory if message.include?("MemoryError")
+        end
+
+        sig { params(message: String).void }
+        def handle_package_not_found_errors(message)
+          return unless message.match?(PACKAGE_NOT_FOUND_REGEX)
+
+          raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
+        end
+
+        sig { params(match: T.untyped).returns(T.nilable(String)) }
+        def extract_match_string(match)
+          return nil unless match
+
+          match.is_a?(Array) ? match.join : match.to_s
+        end
+
+        sig { params(message: String).returns(String) }
+        def extract_source_from_message(message)
+          urls = URI.extract(message, %w(http https))
+          return T.must(urls.first).gsub(%r{/$}, "") if urls.any?
+
+          "private source"
+        end
+
+        sig { params(message: String).returns(String) }
+        def clean_error_message(message)
+          message
+            .gsub(/#{Regexp.escape(Utils::BUMP_TMP_DIR_PATH)}[^\s]*/o, "")
+            .lines
+            .reject { |line| line.strip.empty? }
+            .first(10)
+            .join
+            .strip
+        end
+      end
+    end
+  end
+end
