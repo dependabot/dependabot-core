@@ -257,15 +257,22 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
     let(:source) do
-      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+      instance_double(
+        Dependabot::Source,
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "/",
+        api_endpoint: "https://api.github.com/"
+      )
     end
     let(:job) do
       instance_double(
         Dependabot::Job,
         source: source,
         credentials: [],
-        commit_message_options: [],
-        updating_a_pull_request?: true
+        commit_message_options: {},
+        updating_a_pull_request?: true,
+        ignore_conditions: []
       )
     end
     let(:dependency) do
@@ -314,16 +321,22 @@ RSpec.describe Dependabot::ApiClient do
         .with(headers: { "Authorization" => "token" })
     end
 
-    it "does not encode the pull request fields" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
-
+    it "sends comprehensive data including PR title and message" do
       client.update_pull_request(dependency_change, base_commit)
 
       expect(WebMock)
         .to(have_requested(:post, update_pull_request_url).with do |req|
               data = JSON.parse(req.body)["data"]
 
-              expect(data["dependency-names"]).to eq(["business"])
+              # Verify dependency information is sent
+              expect(data["dependencies"]).to be_an(Array)
+              expect(data["dependencies"].first).to include(
+                "name" => "business",
+                "previous-version" => "1.7.0",
+                "version" => "1.8.0"
+              )
+
+              # Verify updated files are sent
               expect(data["updated-dependency-files"]).to eql(
                 [
                   {
@@ -346,11 +359,12 @@ RSpec.describe Dependabot::ApiClient do
                     "type" => "file" }
                 ]
               )
+
+              # Verify PR metadata is sent
               expect(data["base-commit-sha"]).to eql("sha")
-              expect(data).not_to have_key("commit-message")
-              expect(data).not_to have_key("pr-title")
-              expect(data).not_to have_key("pr-body")
-              expect(data).not_to have_key("grouped-update")
+              expect(data).to have_key("commit-message")
+              expect(data).to have_key("pr-title")
+              expect(data).to have_key("pr-body")
             end)
     end
   end
