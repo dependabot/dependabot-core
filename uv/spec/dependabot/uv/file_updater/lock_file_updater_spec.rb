@@ -957,6 +957,23 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
 
+    context "without credentials" do
+      let(:credentials) { [] }
+
+      it "does not include trailing space in command and fingerprint" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+    end
+
     context "with setuptools-scm dynamic versioning" do
       let(:pyproject_content) { fixture("pyproject_files", "setuptools_scm_version_file.toml") }
       let(:credentials) { [] }

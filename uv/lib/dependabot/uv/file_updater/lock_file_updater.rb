@@ -336,8 +336,10 @@ module Dependabot
           base_dep_name = normalise(dep_name)
           package_spec = dep_version ? "#{base_dep_name}==#{dep_version}" : base_dep_name
 
-          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
-          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
+          command = "pyenv exec uv lock --upgrade-package #{package_spec}"
+          command += " #{options}" unless options.empty?
+          fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name>"
+          fingerprint += " #{options_fingerprint}" unless options_fingerprint.empty?
 
           env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
 
