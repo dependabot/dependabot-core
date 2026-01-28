@@ -9,6 +9,7 @@ require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
+require "dependabot/telemetry_accumulator"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -27,20 +28,69 @@ module Dependabot
     sig { returns(T::Array[T::Array[T.untyped]]) }
     attr_reader :errors
 
+    sig { returns(Dependabot::TelemetryAccumulator) }
+    attr_reader :telemetry_accumulator
+
     sig { params(client: Dependabot::ApiClient).void }
     def initialize(client:)
       @client = client
       @pull_requests = T.let([], T::Array[T.untyped])
-      @errors = T.let([], T::Array[T.untyped])
+      @errors = T.let([], T::Array[T::Array[T.untyped]])
       @threads = T.let([], T::Array[T.untyped])
+      @telemetry_accumulator = T.let(TelemetryAccumulator.new, Dependabot::TelemetryAccumulator)
     end
 
     def_delegators :client,
-                   :mark_job_as_processed,
-                   :record_ecosystem_versions,
-                   :increment_metric,
-                   :record_ecosystem_meta,
-                   :record_cooldown_meta
+                   :increment_metric
+
+    # Mark job as processed and send all accumulated telemetry in one call
+    sig { params(base_commit_sha: String).void }
+    def mark_job_as_processed(base_commit_sha)
+      telemetry_data = telemetry_accumulator.empty? ? nil : telemetry_accumulator.to_h
+      client.mark_job_as_processed(base_commit_sha, telemetry: telemetry_data)
+    end
+
+    # Accumulate ecosystem versions for batch sending
+    sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
+    def record_ecosystem_versions(ecosystem_versions)
+      telemetry_accumulator.add_ecosystem_versions(ecosystem_versions)
+    end
+
+    # Accumulate ecosystem metadata for batch sending
+    sig { params(ecosystem: T.nilable(Ecosystem)).void }
+    def record_ecosystem_meta(ecosystem)
+      return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
+      return if ecosystem.nil?
+
+      ecosystem_data = {
+        ecosystem: {
+          name: ecosystem.name,
+          package_manager: version_manager_hash(ecosystem.package_manager),
+          language: version_manager_hash(ecosystem.language)
+        }
+      }
+      telemetry_accumulator.add_ecosystem_meta(ecosystem_data)
+    end
+
+    # Accumulate cooldown metadata for batch sending
+    sig { params(job: T.nilable(Dependabot::Job)).void }
+    def record_cooldown_meta(job)
+      return if job&.cooldown.nil?
+
+      cooldown = T.must(job).cooldown
+      cooldown_data = {
+        cooldown: {
+          ecosystem_name: T.must(job).package_manager,
+          config: {
+            default_days: T.must(cooldown).default_days,
+            semver_major_days: T.must(cooldown).semver_major_days,
+            semver_minor_days: T.must(cooldown).semver_minor_days,
+            semver_patch_days: T.must(cooldown).semver_patch_days
+          }
+        }
+      }
+      telemetry_accumulator.add_cooldown_meta(cooldown_data)
+    end
 
     sig { void }
     def wait_for_calls_to_finish
@@ -292,6 +342,30 @@ module Dependabot
     def truncate(string, max: 120)
       snip = max - 3
       string.length > max ? "#{string[0...snip]}..." : string
+    end
+
+    sig { params(version_manager: T.nilable(VersionManager)).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    def version_manager_hash(version_manager)
+      return nil if version_manager.nil?
+
+      result = {
+        name: version_manager.name,
+        raw_version: version_manager.raw_version,
+        version: version_manager.version
+      }
+
+      if version_manager.requirement
+        requirement = version_manager.requirement
+        result[:requirement] = {
+          raw_constraint: requirement.raw_constraint,
+          min_raw_version: requirement.min_raw_version,
+          min_version: requirement.min_version,
+          max_raw_version: requirement.max_raw_version,
+          max_version: requirement.max_version
+        }
+      end
+
+      result
     end
   end
 end
