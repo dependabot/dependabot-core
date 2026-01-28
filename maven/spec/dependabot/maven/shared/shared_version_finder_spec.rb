@@ -399,6 +399,73 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
             it { is_expected.to be true }
           end
         end
+
+        describe "when JRE/JDK version qualifiers are used" do
+          context "when both versions are identical JREs" do
+            let(:dependency_version) { "13.2.1.jre8" }
+            let(:comparison_version) { "13.2.1.jre8" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when both versions are identical JREs(case insensitive)" do
+            let(:dependency_version) { "13.2.1.JRE8" }
+            let(:comparison_version) { "13.2.1.jre8" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when both versions are identical JDKs" do
+            let(:dependency_version) { "1.0.0-jdk11" }
+            let(:comparison_version) { "1.0.0-jdk11" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when upgrading from JRE to JDK (same major version)" do
+            let(:dependency_version) { "2.1.0.jre11" }
+            let(:comparison_version) { "2.1.0.jdk11" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when downgrading from JDK to JRE (forbidden capability loss)" do
+            # This would remove the compiler/tools from a library that might need them
+            let(:dependency_version) { "2.1.0.jdk11" }
+            let(:comparison_version) { "2.1.0.jre11" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when the Java major versions do not match" do
+            # Even if both are JREs, the java version mismatch is a failure
+            let(:dependency_version) { "13.2.1.jre8" }
+            let(:comparison_version) { "13.2.1.jre11" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when the comparison version is missing a suffix" do
+            let(:dependency_version) { "13.2.1.jre8" }
+            let(:comparison_version) { "13.2.1" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when the current version is missing the suffix" do
+            let(:dependency_version) { "13.2.1" }
+            let(:comparison_version) { "13.2.1-jre" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when using vendor-specific version strings (e.g., Guava style)" do
+            let(:dependency_version) { "33.0.0-jre" }
+            let(:comparison_version) { "33.0.0-jre" }
+
+            it { is_expected.to be true }
+          end
+        end
       end
     end
   end
