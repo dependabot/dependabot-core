@@ -71,7 +71,8 @@ module Dependabot
               FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
-              validate_option = get_validate_distribution_url_option(properties_file)
+              # Save original content to preserve comments, order, and custom properties
+              original_content = File.read(properties_file)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
               begin
@@ -89,8 +90,8 @@ module Dependabot
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
               end
 
-              # Restore previous validateDistributionUrl option if it existed
-              override_validate_distribution_url_option(properties_file, validate_option)
+              # Update only the properties that should change, preserving everything else
+              update_distribution_properties(properties_file, original_content)
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -121,9 +122,9 @@ module Dependabot
           # --no-validate-url is required to bypass HTTP proxy issues when running ./gradlew
           # This prevents validation failures during the wrapper update process
           # Note: This temporarily sets validateDistributionUrl=false in gradle-wrapper.properties
-          # The original value is restored after the wrapper task completes
-          # see method `get_validate_distribution_url_option` for more details
-          args = %W(wrapper --gradle-version #{version} --no-validate-url) # see
+          # The original value (along with all other custom properties) is restored after the wrapper task completes
+          # see method `update_distribution_properties` for more details
+          args = %W(wrapper --gradle-version #{version} --no-validate-url)
           args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
@@ -174,30 +175,37 @@ module Dependabot
           end
         end
 
-        # This is a consequence of the lack of proper proxy support in Gradle Wrapper
-        # During the update process, Gradle Wrapper logic will try to validate the distribution URL
-        # by performing an HTTP request. If the environment requires a proxy, this validation will fail
-        # We need to add the `--no-validate-url` the commandline args to disable this validation
-        # However, this change is persistent in the `gradle-wrapper.properties` file
-        # To avoid side effects, we read the existing value before the update and restore it afterward
-        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
-        def get_validate_distribution_url_option(properties_file)
-          return nil unless File.exist?(properties_file)
-
-          properties_content = File.read(properties_file)
-          properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
-        end
-
-        sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
-        def override_validate_distribution_url_option(properties_file, value)
+        # Updates only the distribution properties in the original file content
+        # This preserves the original file structure, comments, property order, and all other properties
+        # Only distributionUrl and distributionSha256Sum are updated from the newly generated file
+        sig { params(properties_file: T.any(Pathname, String), original_content: String).void }
+        def update_distribution_properties(properties_file, original_content)
           return unless File.exist?(properties_file)
 
-          properties_content = File.read(properties_file)
-          updated_content = properties_content.gsub(
-            /^validateDistributionUrl=(.*)\n/,
-            value ? "validateDistributionUrl=#{value}\n" : ""
-          )
-          File.write(properties_file, updated_content)
+          # Read the newly generated file to extract updated distribution properties
+          new_content = File.read(properties_file)
+          updated_values = T.let({}, T::Hash[String, String])
+
+          # Extract the new values for distributionUrl and distributionSha256Sum
+          new_content.each_line do |line|
+            next if line.strip.start_with?("#") || line.strip.empty?
+            next unless line =~ /^(distributionUrl|distributionSha256Sum)=(.*)$/
+
+            key = T.must(::Regexp.last_match(1))
+            value = T.must(::Regexp.last_match(2))
+            updated_values[key] = value
+          end
+
+          # Duplicate to avoid mutating the parameter
+          result_content = original_content.dup
+
+          # Update only the distribution properties in the original content
+          updated_values.each do |key, new_value|
+            result_content.gsub!(/^(#{Regexp.escape(key)}=).*$/, "\\1#{new_value}")
+          end
+
+          # Write back the updated original content
+          File.write(properties_file, result_content)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
