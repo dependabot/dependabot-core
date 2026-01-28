@@ -38,10 +38,6 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       "password" => "token"
     }]
   end
-  let(:ignored_versions) { [] }
-  let(:service_pack_url) do
-    "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"
-  end
 
   subject(:fetcher) do
     described_class.new(
@@ -49,6 +45,11 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       credentials: credentials,
       ignored_versions: ignored_versions
     )
+  end
+
+  let(:ignored_versions) { [] }
+  let(:service_pack_url) do
+    "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"
   end
 
   before do

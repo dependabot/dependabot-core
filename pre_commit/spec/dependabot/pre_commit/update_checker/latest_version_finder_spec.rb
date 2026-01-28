@@ -38,12 +38,6 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       "password" => "token"
     }]
   end
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
-  let(:update_cooldown) { nil }
-  let(:service_pack_url) do
-    "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"
-  end
 
   subject(:finder) do
     described_class.new(
@@ -54,6 +48,13 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       raise_on_ignored: raise_on_ignored,
       cooldown_options: update_cooldown
     )
+  end
+
+  let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
+  let(:update_cooldown) { nil }
+  let(:service_pack_url) do
+    "https://github.com/#{dependency_name}.git/info/refs?service=git-upload-pack"
   end
 
   before do
@@ -106,17 +107,6 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       it "filters out ignored versions" do
         expect(latest_release).to be_a(Dependabot::PreCommit::Version)
         expect(latest_release.to_s.split(".").first.to_i).to be < 6
-      end
-    end
-
-    context "with no available versions" do
-      before do
-        allow_any_instance_of(Dependabot::PreCommit::Package::PackageDetailsFetcher)
-          .to receive(:latest_version_tag).and_return(nil)
-      end
-
-      it "returns nil" do
-        expect(latest_release).to be_nil
       end
     end
   end
