@@ -3,10 +3,11 @@
 
 require "dependabot/errors"
 require "dependabot/utils"
+require "dependabot/uv/file_updater"
 
 module Dependabot
   module Uv
-    class FileUpdater
+    class FileUpdater < Dependabot::FileUpdaters::Base
       class LockFileErrorHandler
         extend T::Sig
 
