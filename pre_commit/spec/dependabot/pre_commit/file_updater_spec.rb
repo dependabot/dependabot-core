@@ -210,30 +210,18 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
             package_manager: "pre_commit"
           )
         end
-        let(:config_file_body) do
-          <<~YAML
-            repos:
-              - repo: https://github.com/pre-commit/pre-commit-hooks
-                rev: v4.4.0
-                hooks:
-                  - id: trailing-whitespace
-              - repo: https://github.com/pre-commit/pre-commit-hooks
-                rev: v4.5.0
-                hooks:
-                  - id: check-yaml
-          YAML
-        end
+        let(:config_file_body) { fixture("pre_commit_configs", "same_repo_different_revs.yaml") }
 
-        it "only updates the first occurrence with matching rev" do
+        it "only updates the occurrence that matches both repo URL and old ref" do
           content = updated_config_file.content
           lines = content.lines
 
-          # Find the first occurrence of the repo with v4.4.0
+          # Find the first occurrence of the repo with v4.4.0 (should be updated to v4.6.0)
           first_repo_idx = lines.index { |l| l.include?("repo: https://github.com/pre-commit/pre-commit-hooks") }
           first_rev_idx = lines[first_repo_idx..].index { |l| l.match?(/^\s*rev:/) }
           first_rev_line = lines[first_repo_idx + first_rev_idx]
 
-          # Find the second occurrence of the repo with v4.5.0
+          # Find the second occurrence of the repo with v4.5.0 (should remain unchanged)
           second_repo_idx = lines[(first_repo_idx + 1)..].index do |l|
             l.include?("repo: https://github.com/pre-commit/pre-commit-hooks")
           end
