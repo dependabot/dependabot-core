@@ -5,10 +5,10 @@ require "yaml"
 require "sorbet-runtime"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
-require "dependabot/conda/python_package_classifier"
 require "dependabot/conda/requirement"
 require "dependabot/conda/version"
 require "dependabot/conda/package_manager"
+require "dependabot/conda/conda_registry_client"
 
 module Dependabot
   module Conda
@@ -93,15 +93,12 @@ module Dependabot
 
         dependencies.each do |dep|
           next unless dep.is_a?(String)
-          next if dep.is_a?(Hash) # Skip pip section
-
-          # Skip conda dependencies if we have fully qualified packages (Tier 2 support)
+          next if dep.is_a?(Hash)
           next if has_fully_qualified
 
           parsed_dep = parse_conda_dependency_string(dep, file)
           next unless parsed_dep
-          next unless python_package?(parsed_dep[:name])
-          next if parsed_dep[:name] == "pip" # Skip pip itself as it's infrastructure
+          next if parsed_dep[:name] == "pip"
 
           parsed_dependencies << create_dependency(
             name: parsed_dep[:name],
@@ -114,7 +111,7 @@ module Dependabot
         parsed_dependencies
       end
 
-      sig { params(dependencies: T.nilable(T::Array[T.untyped])).returns(T.nilable(T::Array[String])) }
+      sig { params(dependencies: T.untyped).returns(T.nilable(T::Array[String])) }
       def find_pip_dependencies(dependencies)
         return nil unless dependencies.is_a?(Array)
 
@@ -141,7 +138,7 @@ module Dependabot
             name: parsed_dep[:name],
             version: parsed_dep[:version],
             requirements: parsed_dep[:requirements],
-            package_manager: "conda"
+            package_manager: "pip"
           )
         end
 
@@ -154,12 +151,18 @@ module Dependabot
       def parse_conda_dependency_string(dep_string, file)
         return nil if dep_string.nil?
 
+        # Extract channel prefix before normalizing (e.g., "conda-forge::numpy=1.26.0")
+        channel = extract_channel_from_dependency_string(dep_string)
+
         # Handle channel specifications: conda-forge::numpy=1.21.0
         normalized_dep_string = normalize_conda_dependency_string(dep_string)
         return nil if normalized_dep_string.nil?
 
-        # Parse conda-style version specifications
-        # Examples: numpy=1.21.0, scipy>=1.7.0, pandas, python=3.9, python>=3.8,<3.11
+        # Handle bracket syntax: package[version='>=1.0']
+        if normalized_dep_string.include?("[")
+          bracket_match = normalized_dep_string.match(/^([a-zA-Z0-9_.-]+)\[version=['"](.+)['"]\]$/)
+          normalized_dep_string = "#{bracket_match[1]}#{bracket_match[2]}" if bracket_match
+        end
         match = normalized_dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(.+))?$/)
         return nil unless match
 
@@ -167,13 +170,24 @@ module Dependabot
         constraint = match[2]&.strip
 
         version = extract_conda_version(constraint)
-        requirements = build_conda_requirements(constraint, file)
+        requirements = build_conda_requirements(constraint, file, channel)
 
         {
           name: name,
           version: version,
           requirements: requirements
         }
+      end
+
+      sig { params(dep_string: String).returns(T.nilable(String)) }
+      def extract_channel_from_dependency_string(dep_string)
+        return nil unless dep_string.include?("::")
+
+        channel = dep_string.split("::", 2).first
+        return nil unless channel
+        return nil unless CondaRegistryClient::SUPPORTED_CHANNELS.include?(channel)
+
+        channel
       end
 
       sig { params(dep_string: String).returns(T.nilable(String)) }
@@ -189,32 +203,31 @@ module Dependabot
         return nil unless constraint
 
         case constraint
+        when /^==([0-9][a-zA-Z0-9._+-]+)$/
+          constraint[2..-1]
         when /^=([0-9][a-zA-Z0-9._+-]+)$/
-          # Exact conda version: =1.26.0
-          constraint[1..-1] # Remove the = prefix
+          constraint[1..-1]
         when /^>=([0-9][a-zA-Z0-9._+-]+)$/
-          # Minimum version constraint: >=1.26.0
-          # For security purposes, treat this as the current version
-          constraint[2..-1] # Remove the >= prefix
+          constraint[2..-1]
         when /^~=([0-9][a-zA-Z0-9._+-]+)$/
-          # Compatible release: ~=1.26.0
-          constraint[2..-1] # Remove the ~= prefix
+          constraint[2..-1]
         end
       end
 
       sig do
         params(
           constraint: T.nilable(String),
-          file: Dependabot::DependencyFile
+          file: Dependabot::DependencyFile,
+          channel: T.nilable(String)
         ).returns(T::Array[T::Hash[Symbol, T.untyped]])
       end
-      def build_conda_requirements(constraint, file)
-        return [] unless constraint && !constraint.empty?
+      def build_conda_requirements(constraint, file, channel = nil)
+        source = channel ? { channel: channel } : nil
 
         [{
-          requirement: constraint,
+          requirement: constraint && !constraint.empty? ? constraint : nil,
           file: file.name,
-          source: nil,
+          source: source,
           groups: ["dependencies"]
         }]
       end
@@ -223,7 +236,6 @@ module Dependabot
         params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.untyped]))
       end
       def parse_pip_dependency_string(dep_string, file)
-        # Handle pip-style specifications: requests==2.25.1, flask>=1.0.0
         match = dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(==|>=|>|<=|<|!=|~=)\s*([0-9][a-zA-Z0-9._+-]*))?$/)
         return nil unless match
 
@@ -231,22 +243,16 @@ module Dependabot
         operator = match[2]
         version = match[3]
 
-        # Extract meaningful version information for security update purposes
         extracted_version = nil
         if version
           case operator
           when "==", "="
-            # Exact version: use as-is
             extracted_version = version
           when ">=", "~="
-            # Minimum version constraint: use the specified version as current
-            # This allows security updates to work by treating the constraint as current version
             extracted_version = version
           when ">"
-            # Greater than: we can't determine exact version, leave as nil
             extracted_version = nil
           when "<=", "<", "!="
-            # Upper bounds or exclusions: not useful for determining current version
             extracted_version = nil
           end
         end
@@ -286,16 +292,12 @@ module Dependabot
         )
       end
 
-      sig { params(package_name: String).returns(T::Boolean) }
-      def python_package?(package_name)
-        PythonPackageClassifier.python_package?(package_name)
-      end
-
       sig { params(dep_string: String).returns(T::Boolean) }
       def fully_qualified_package?(dep_string)
-        # Fully qualified packages have build strings after the version
-        # Format: package=version=build_string
-        # Example: python=3.9.7=h60c2a47_0_cpython
+        # Fully qualified: package=version=build_string (e.g., python=3.9.7=h60c2a47_0)
+        return false if dep_string.include?("==")
+        return false if dep_string.include?("[")
+
         dep_string.count("=") >= 2
       end
 

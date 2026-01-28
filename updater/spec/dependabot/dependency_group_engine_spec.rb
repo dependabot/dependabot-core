@@ -480,4 +480,145 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
   end
+
+  describe "::from_job_config validation" do
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "test-group",
+          "rules" => {
+            "dependency-type" => "production"
+          }
+        }
+      ]
+    end
+
+    context "when dependency-type is used with a supported package manager" do
+      %w(bundler composer hex maven npm_and_yarn pip uv).each do |package_manager|
+        context "with #{package_manager}" do
+          let(:job) do
+            instance_double(
+              Dependabot::Job,
+              dependency_groups: dependency_groups_config,
+              source: source,
+              dependencies: nil,
+              security_updates_only?: false,
+              package_manager: package_manager
+            )
+          end
+
+          it "does not log a warning" do
+            expect(Dependabot.logger).not_to receive(:warn)
+            dependency_group_engine
+          end
+        end
+      end
+    end
+
+    context "when dependency-type is used with an unsupported package manager" do
+      %w(gradle go_modules cargo docker terraform).each do |package_manager|
+        context "with #{package_manager}" do
+          let(:job) do
+            instance_double(
+              Dependabot::Job,
+              dependency_groups: dependency_groups_config,
+              source: source,
+              dependencies: nil,
+              security_updates_only?: false,
+              package_manager: package_manager
+            )
+          end
+
+          it "logs a warning about unsupported option" do
+            expect(Dependabot.logger).to receive(:warn).with(
+              a_string_matching(
+                /The 'dependency-type' option is not supported for the '#{package_manager}' package manager/
+              )
+            )
+            dependency_group_engine
+          end
+
+          it "includes the group name in the warning message" do
+            expect(Dependabot.logger).to receive(:warn).with(
+              a_string_matching(/Affected groups: test-group/)
+            )
+            dependency_group_engine
+          end
+
+          it "lists supported package managers in the warning message" do
+            expect(Dependabot.logger).to receive(:warn).with(
+              a_string_matching(/bundler, composer, hex, maven, npm_and_yarn, pip, uv/)
+            )
+            dependency_group_engine
+          end
+        end
+      end
+    end
+
+    context "when multiple groups use dependency-type with an unsupported package manager" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "group-one",
+            "rules" => {
+              "dependency-type" => "production"
+            }
+          },
+          {
+            "name" => "group-two",
+            "rules" => {
+              "dependency-type" => "development"
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          dependency_groups: dependency_groups_config,
+          source: source,
+          dependencies: nil,
+          security_updates_only?: false,
+          package_manager: "gradle"
+        )
+      end
+
+      it "logs a warning mentioning all affected groups" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          a_string_matching(/Affected groups: group-one, group-two/)
+        )
+        dependency_group_engine
+      end
+    end
+
+    context "when groups don't use dependency-type with an unsupported package manager" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "test-group",
+            "rules" => {
+              "patterns" => ["dummy-*"]
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          dependency_groups: dependency_groups_config,
+          source: source,
+          dependencies: nil,
+          security_updates_only?: false,
+          package_manager: "gradle"
+        )
+      end
+
+      it "does not log a warning" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        dependency_group_engine
+      end
+    end
+  end
 end

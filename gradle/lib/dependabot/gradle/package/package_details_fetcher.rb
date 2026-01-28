@@ -8,9 +8,11 @@ require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
+require "dependabot/gradle/distributions"
 require "dependabot/maven/utils/auth_headers_finder"
 require "sorbet-runtime"
 require "dependabot/gradle/metadata_finder"
+require "dependabot/gradle/package/release_date_extractor"
 
 module Dependabot
   module Gradle
@@ -65,6 +67,7 @@ module Dependabot
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
 
+              next distribution_version_details if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
               next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
 
               dependency_metadata(repository_details).css("versions > version")
@@ -83,7 +86,7 @@ module Dependabot
 
             package_releases << {
               version: Gradle::Version.new(version),
-              released_at: release_date_info.none? ? nil : (release_date_info[version]&.fetch(:release_date) || nil),
+              released_at: info[:released_at] || release_date_info[version]&.fetch(:release_date),
               source_url: info[:source_url]
             }
           end
@@ -99,44 +102,25 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
-          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+          extractor = ReleaseDateExtractor.new(
+            dependency_name: dependency.name,
+            version_class: version_class
+          )
 
-          begin
-            repositories.map do |repository_details|
-              url = repository_details.fetch("url")
-              next unless url == Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
-
-              release_info_metadata(repository_details).css("a[title]").each do |link|
-                version_string = link["title"]
-                version = version_string.gsub(%r{/$}, "")
-                raw_date_text = link.next.text.strip.split("\n").last.strip
-
-                release_date = begin
-                  Time.parse(raw_date_text)
-                rescue StandardError
-                  nil
-                end
-
-                next unless version && version_class.correct?(version)
-
-                release_date_info[version] = {
-                  release_date: release_date
-                }
-              end
-            end
-
-            release_date_info
-          rescue StandardError
-            Dependabot.logger.error("Failed to get release date")
-            {}
-          end
+          extractor.extract(
+            repositories: repositories,
+            dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
+            release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
+          )
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def repositories
           return @repositories if @repositories
 
-          details = if plugin?
+          details = if distribution?
+                      distribution_repository_details
+                    elsif plugin?
                       plugin_repository_details + credentials_repository_details
                     else
                       dependency_repository_details + credentials_repository_details
@@ -149,6 +133,27 @@ module Dependabot
               # Reject this entry if an identical one with non-empty auth_headers exists
               details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
             end
+        end
+
+        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        def distribution_version_details
+          return nil unless Experiments.enabled?(:gradle_wrapper_updater)
+
+          DistributionsFetcher.available_versions.map do |info|
+            release_date = begin
+              Time.parse(info[:build_time])
+            rescue StandardError
+              nil
+            end
+
+            {
+              version: info[:version],
+              released_at: release_date,
+              source_url: Distributions::DISTRIBUTION_REPOSITORY_URL
+            }
+          end
+        rescue StandardError
+          nil
         end
 
         sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
@@ -201,6 +206,8 @@ module Dependabot
             end
         end
 
+        # Fetches HTML directory listing from Maven-compatible repositories.
+        # Uses CSS selector "a[title]" to extract versions and dates. Caches results per repository.
         sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
         def release_info_metadata(repository_details)
           @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
@@ -212,14 +219,14 @@ module Dependabot
               )
 
               check_response(response, repository_details.fetch("url"))
-              Nokogiri::XML(response.body)
+              Nokogiri::HTML(response.body)
             rescue URI::InvalidURIError
-              Nokogiri::XML("")
+              Nokogiri::HTML("")
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               raise if central_repo_urls.include?(repository_details["url"])
 
-              Nokogiri::XML("")
+              Nokogiri::HTML("")
             end
         end
 
@@ -274,6 +281,14 @@ module Dependabot
             "url" => Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO,
             "auth_headers" => {}
           }] + dependency_repository_details
+        end
+
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        def distribution_repository_details
+          [{
+            "url" => Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL,
+            "auth_headers" => {}
+          }]
         end
 
         sig { params(comparison_version: T.untyped).returns(T::Boolean) }
@@ -334,6 +349,11 @@ module Dependabot
         sig { returns(T.nilable(T::Boolean)) }
         def kotlin_plugin?
           plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+        end
+
+        sig { returns(T::Boolean) }
+        def distribution?
+          Distributions.distribution_requirements?(dependency.requirements)
         end
 
         sig { returns(T::Array[String]) }

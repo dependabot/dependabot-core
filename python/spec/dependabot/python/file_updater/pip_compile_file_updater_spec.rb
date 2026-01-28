@@ -104,6 +104,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
+    context "with multiple output files from a single input file" do
+      let(:dependency_files) { [manifest_file, generated_file, generated_file2] }
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("requirements", "pip_compile_multi_output_first.txt")
+        )
+      end
+      let(:generated_file2) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test-alt.txt",
+          content: fixture("requirements", "pip_compile_multi_output_second.txt")
+        )
+      end
+
+      it "updates both requirements.txt files" do
+        expect(updated_files.count).to eq(2)
+        updated_filenames = updated_files.map(&:name)
+        expect(updated_filenames).to include("requirements/test.txt")
+        expect(updated_filenames).to include("requirements/test-alt.txt")
+        updated_files.each do |file|
+          expect(file.content).to include("attrs==18.1.0")
+          expect(file.content).to include("# This file is autogen")
+        end
+      end
+    end
+
     context "with a custom header" do
       let(:generated_fixture_name) { "pip_compile_custom_header.txt" }
 
@@ -634,6 +661,32 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "returns returns two hashes" do
         result = updater.send(:package_hashes_for, name: name, version: version, algorithm: algorithm)
         expect(result).to eq(["--hash=sha256:123abc"])
+      end
+    end
+
+    context "when index_url is a relative path" do
+      let(:updater) do
+        described_class.new(
+          dependencies: [],
+          dependency_files: [],
+          credentials: [],
+          index_urls: ["/pypi"]
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).with(
+          {
+            args: %w(package_name 1.0.0 sha256 https://pypi.org),
+            command: "pyenv exec python3 /opt/python/run.py",
+            function: "get_dependency_hash"
+          }
+        ).and_return([{ "hash" => "abc123" }])
+      end
+
+      it "replaces relative index_url with https://pypi.org and returns hash" do
+        result = updater.send(:package_hashes_for, name: "package_name", version: "1.0.0", algorithm: "sha256")
+        expect(result).to eq(["--hash=sha256:abc123"])
       end
     end
   end

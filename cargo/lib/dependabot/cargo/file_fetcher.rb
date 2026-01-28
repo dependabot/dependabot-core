@@ -14,7 +14,7 @@ require "dependabot/cargo/file_parser"
 # https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-section
 module Dependabot
   module Cargo
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 
@@ -35,12 +35,7 @@ module Dependabot
                   else
                     "default"
                   end
-
-        {
-          package_managers: {
-            "cargo" => channel
-          }
-        }
+        { package_managers: { "cargo" => channel } }
       rescue TomlRB::ParseError
         raise Dependabot::DependencyFileNotParseable.new(
           T.must(rust_toolchain).path,
@@ -50,19 +45,19 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = T.let([], T::Array[DependencyFile])
-        fetched_files << cargo_toml
+        fetched_files = T.let([cargo_toml], T::Array[DependencyFile])
         fetched_files << T.must(cargo_lock) if cargo_lock
         fetched_files << T.must(cargo_config) if cargo_config
         fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
-
-        # Filter excluded files from final collection
-        filtered_files = fetched_files.reject do |file|
-          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        parsed_manifest = parsed_file(cargo_toml)
+        if uses_workspace_dependencies?(parsed_manifest) || workspace_member?(parsed_manifest)
+          workspace_root = find_workspace_root(cargo_toml)
+          fetched_files << workspace_root if workspace_root && !fetched_files.include?(workspace_root)
         end
-
-        filtered_files.uniq
+        fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end.uniq
       end
 
       private
@@ -72,28 +67,16 @@ module Dependabot
       end
       def fetch_path_dependency_and_workspace_files(files = nil)
         fetched_files = files || [cargo_toml]
-
         fetched_files += path_dependency_files(fetched_files)
-        fetched_files += fetched_files.flat_map { |f| workspace_files(f) }
-
+        @workspace_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
+        fetched_files += fetched_files.flat_map do |f|
+          @workspace_files[f.name] ||= fetch_workspace_files(file: f, previously_fetched_files: [])
+        end
         updated_files = fetched_files.reject(&:support_file?).uniq
-        updated_files +=
-          fetched_files.uniq
-                       .reject { |f| updated_files.map(&:name).include?(f.name) }
-
+        updated_files += fetched_files.uniq.reject { |f| updated_files.map(&:name).include?(f.name) }
         return updated_files if updated_files == files
 
         fetch_path_dependency_and_workspace_files(updated_files)
-      end
-
-      sig { params(cargo_toml: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
-      def workspace_files(cargo_toml)
-        @workspace_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
-        @workspace_files[cargo_toml.name] ||=
-          fetch_workspace_files(
-            file: cargo_toml,
-            previously_fetched_files: []
-          )
       end
 
       sig { params(fetched_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
@@ -101,13 +84,10 @@ module Dependabot
         @path_dependency_files ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyFile]]))
         fetched_path_dependency_files = T.let([], T::Array[Dependabot::DependencyFile])
         fetched_files.each do |file|
-          @path_dependency_files[file.name] ||=
-            fetch_path_dependency_files(
-              file: file,
-              previously_fetched_files: fetched_files +
-                                        fetched_path_dependency_files
-            )
-
+          @path_dependency_files[file.name] ||= fetch_path_dependency_files(
+            file: file,
+            previously_fetched_files: fetched_files + fetched_path_dependency_files
+          )
           fetched_path_dependency_files += T.must(@path_dependency_files[file.name])
         end
 
@@ -131,17 +111,17 @@ module Dependabot
 
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
-
           next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
           fetched_file = fetch_file_from_host(path, fetch_submodules: true)
           previously_fetched_files << fetched_file
-          grandchild_requirement_files =
-            fetch_workspace_files(
-              file: fetched_file,
-              previously_fetched_files: previously_fetched_files
-            )
-          [fetched_file, *grandchild_requirement_files]
+          grandchild_requirement_files = fetch_workspace_files(
+            file: fetched_file,
+            previously_fetched_files: previously_fetched_files
+          )
+
+          workspace_root = workspace_root_for_file(fetched_file)
+          [fetched_file, *grandchild_requirement_files, workspace_root]
         end.compact
 
         files.each { |f| f.support_file = file != cargo_toml }
@@ -168,24 +148,18 @@ module Dependabot
 
             next if previously_fetched_files.map(&:name).include?(path)
             next if file.name == path
-
             next if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
 
             fetched_file = fetch_file_from_host(path, fetch_submodules: true)
                            .tap { |f| f.support_file = true }
             previously_fetched_files << fetched_file
-            grandchild_requirement_files =
-              fetch_path_dependency_files(
-                file: fetched_file,
-                previously_fetched_files: previously_fetched_files
-              )
+            grandchild_requirement_files = fetch_path_dependency_files(
+              file: fetched_file,
+              previously_fetched_files: previously_fetched_files
+            )
 
-            # If this path dependency file is a workspace member that inherits from
-            # its root workspace, we search for the root to include it so Cargo can
-            # resolve the path dependency file manifest properly.
-            root = find_workspace_root(fetched_file) if workspace_member?(parsed_file(fetched_file))
-
-            [fetched_file, *grandchild_requirement_files, root]
+            workspace_root = workspace_root_for_file(fetched_file)
+            [fetched_file, *grandchild_requirement_files, workspace_root]
           rescue Dependabot::DependencyFileNotFound
             next unless required_path?(file, path)
 
@@ -198,15 +172,21 @@ module Dependabot
               unfetchable_required_path_deps
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def workspace_root_for_file(file)
+        parsed_manifest = parsed_file(file)
+        return unless workspace_member?(parsed_manifest) || uses_workspace_dependencies?(parsed_manifest)
+
+        find_workspace_root(file)
+      end
+
       sig { params(dependencies: T::Hash[T.untyped, T.untyped]).returns(T::Array[String]) }
       def collect_path_dependencies_paths(dependencies)
-        paths = []
-        dependencies.each do |_, details|
+        dependencies.filter_map do |_, details|
           next unless details.is_a?(Hash) && details["path"]
 
-          paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
+          File.join(details["path"], "Cargo.toml").delete_prefix("/")
         end
-        paths
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
@@ -229,8 +209,7 @@ module Dependabot
           end
         end
 
-        paths += replacement_path_dependency_paths_from_file(file)
-        paths
+        paths + replacement_path_dependency_paths_from_file(file)
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -239,8 +218,7 @@ module Dependabot
 
         # Paths specified as replacements
         parsed_file(file).fetch("replace", {}).each do |_, details|
-          next unless details.is_a?(Hash)
-          next unless details["path"]
+          next unless details.is_a?(Hash) && details["path"]
 
           paths << File.join(details["path"], "Cargo.toml")
         end
@@ -250,14 +228,42 @@ module Dependabot
           next unless details.is_a?(Hash)
 
           details.each do |_, dep_details|
-            next unless dep_details.is_a?(Hash)
-            next unless dep_details["path"]
+            next unless dep_details.is_a?(Hash) && dep_details["path"]
 
             paths << File.join(dep_details["path"], "Cargo.toml")
           end
         end
 
         paths
+      end
+
+      # Check if this Cargo manifest uses workspace dependencies
+      # (e.g. dependency = { workspace = true }).
+      sig { params(parsed_manifest: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
+      def uses_workspace_dependencies?(parsed_manifest)
+        # Check regular dependencies
+        workspace_deps = Cargo::FileParser::DEPENDENCY_TYPES.any? do |type|
+          deps = parsed_manifest.fetch(type, {})
+          deps.any? do |_, details|
+            next false unless details.is_a?(Hash)
+
+            details["workspace"] == true
+          end
+        end
+
+        return true if workspace_deps
+
+        # Check target-specific dependencies
+        parsed_manifest.fetch("target", {}).any? do |_, target_details|
+          Cargo::FileParser::DEPENDENCY_TYPES.any? do |type|
+            deps = target_details.fetch(type, {})
+            deps.any? do |_, details|
+              next false unless details.is_a?(Hash)
+
+              details["workspace"] == true
+            end
+          end
+        end
       end
 
       # See if this Cargo manifest inherits any property from a workspace
@@ -316,8 +322,7 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def workspace_dependency_paths_from_file(file)
-        if parsed_file(file)["workspace"] &&
-           !parsed_file(file)["workspace"].key?("members")
+        if parsed_file(file)["workspace"] && !parsed_file(file)["workspace"].key?("members")
           return path_dependency_paths_from_file(file)
         end
 
@@ -399,8 +404,7 @@ module Dependabot
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path
         dir = directory.gsub(%r{(^/|/$)}, "")
-        unglobbed_path = T.must(path.split("*").first).gsub(%r{(?<=/)[^/]*$}, "")
-
+        unglobbed_path = (path.split("*").first || "").gsub(%r{(?<=/)[^/]*$}, "")
         repo_contents(dir: unglobbed_path, raise_errors: false)
           .select { |file| file.type == "dir" }
           .map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
@@ -421,10 +425,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def cargo_lock
-        @cargo_lock ||= T.let(
-          fetch_file_if_present("Cargo.lock"),
-          T.nilable(Dependabot::DependencyFile)
-        )
+        @cargo_lock ||= T.let(fetch_file_if_present("Cargo.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -432,9 +433,12 @@ module Dependabot
         return @cargo_config if defined?(@cargo_config)
 
         @cargo_config = fetch_support_file(".cargo/config.toml")
-
         @cargo_config ||= T.let(
           fetch_support_file(".cargo/config")&.tap { |f| f.name = ".cargo/config.toml" },
+          T.nilable(Dependabot::DependencyFile)
+        )
+        @cargo_config ||= T.let(
+          fetch_cargo_config_from_parent_dirs,
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -444,14 +448,64 @@ module Dependabot
         return @rust_toolchain if defined?(@rust_toolchain)
 
         @rust_toolchain = fetch_support_file("rust-toolchain")
-
-        # Per https://rust-lang.github.io/rustup/overrides.html the file can
-        # have a `.toml` extension, but the non-extension version is preferred.
-        # Renaming here to simplify finding it later in the code.
         @rust_toolchain ||= T.let(
           fetch_support_file("rust-toolchain.toml")&.tap { |f| f.name = "rust-toolchain" },
           T.nilable(Dependabot::DependencyFile)
         )
+      end
+
+      sig { override.params(filename: T.any(Pathname, String)).returns(Dependabot::DependencyFile) }
+      def load_cloned_file_if_present(filename)
+        super.tap { |f| f.name = Pathname.new(f.name).cleanpath.to_s.gsub(%r{^/+}, "") }
+      end
+
+      sig do
+        override.params(
+          filename: T.any(Pathname, String),
+          type: String,
+          fetch_submodules: T::Boolean
+        ).returns(Dependabot::DependencyFile)
+      end
+      def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        super.tap { |f| f.name = Pathname.new(f.name).cleanpath.to_s.gsub(%r{^/+}, "") }
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def fetch_cargo_config_from_parent_dirs
+        return nil if directory.empty?
+
+        # Count directory depth to determine how many levels to search up
+        depth = directory.split("/").count { |s| !s.empty? }
+        return nil if depth.zero?
+
+        # Try each parent directory level
+        depth.times do |i|
+          parent_path = ([".."] * (i + 1)).join("/")
+          config = try_fetch_config_at_path(parent_path)
+          return config if config
+        end
+
+        nil
+      end
+
+      sig { params(parent_path: String).returns(T.nilable(Dependabot::DependencyFile)) }
+      def try_fetch_config_at_path(parent_path)
+        [".cargo/config.toml", ".cargo/config"].each do |config_name|
+          full_path = File.join(parent_path, config_name)
+          Dependabot.logger.debug("Attempting to fetch config from: #{full_path}")
+          config = fetch_file_from_host(
+            full_path,
+            fetch_submodules: false
+          )
+          Dependabot.logger.debug("Successfully fetched config from: #{full_path}")
+          config.support_file = true
+          config.name = ".cargo/config.toml"
+          return config
+        rescue Dependabot::DependencyFileNotFound
+          Dependabot.logger.debug("No config found at: #{full_path}")
+          next
+        end
+        nil
       end
     end
   end

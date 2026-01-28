@@ -493,7 +493,8 @@ internal static partial class MSBuildHelper
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false);
 
-            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, logger);
+            var experimentsManager = new ExperimentsManager();
+            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, logger);
             var allDependencies = projectDiscovery
                 .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
                 .FirstOrDefault()
@@ -511,6 +512,68 @@ internal static partial class MSBuildHelper
             {
             }
         }
+    }
+
+    public static async Task<HashSet<string>> GetProjectTargetsAsync(string projectPath, ILogger logger)
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify targets, so we can skip the process invocation
+            return [];
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var args = new[]
+        {
+            "msbuild",
+            projectPath,
+            "-targets"
+        };
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        if (exitCode != 0)
+        {
+            logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return [];
+        }
+
+        var targets = stdOut.Split('\n')
+            .Skip(1) // first line is msbuild info
+            .Select(l => l.Trim())
+            .Where(l => !string.IsNullOrEmpty(l))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return targets;
+    }
+
+    internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
+    {
+        var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
+        if (extension == ".sln" || extension == ".slnx")
+        {
+            // solution files don't specify target frameworks, so we can skip the process invocation
+            return [];
+        }
+
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var args = new[]
+        {
+            "msbuild",
+            projectPath,
+            "-getProperty:TargetFrameworks"
+        };
+
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        if (exitCode != 0)
+        {
+            logger.Warn($"Unable to determine target frameworks for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return [];
+        }
+
+        var tfms = Regex.Replace(stdOut, "@[\r\n\t ]", "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .OrderBy(t => t)
+            .ToImmutableArray();
+        return tfms;
     }
 
     internal static string? GetMissingFile(string output)
@@ -539,6 +602,7 @@ internal static partial class MSBuildHelper
         ThrowOnTimeout(output);
         ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
+        ThrowOnMultipleProjectsForPackagesConfig(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -669,6 +733,14 @@ internal static partial class MSBuildHelper
         if (match is not null)
         {
             throw new UnparseableFileException(match.Groups["Message"].Value, match.Groups["FilePath"].Value);
+        }
+    }
+
+    private static void ThrowOnMultipleProjectsForPackagesConfig(string output)
+    {
+        if (output.Contains("Found multiple project files for "))
+        {
+            throw new Exception("Multiple project files found for single packages.config");
         }
     }
 

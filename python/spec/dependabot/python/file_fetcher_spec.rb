@@ -6,7 +6,25 @@ require "dependabot/python/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Python::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
+  describe "the class inheritance" do
+    it "inherits from Python::SharedFileFetcher which inherits from FileFetchers::Base" do
+      expect(described_class.superclass).to eq(Dependabot::Python::SharedFileFetcher)
+      expect(described_class.ancestors).to include(Dependabot::FileFetchers::Base)
+    end
+
+    it "implements required_files_in?" do
+      expect(described_class.public_methods(false)).to include(:required_files_in?)
+    end
+
+    it "implements required_files_message" do
+      expect(described_class.public_methods(false)).to include(:required_files_message)
+    end
+
+    it "doesn't define any additional public instance methods" do
+      expect(described_class.public_instance_methods)
+        .to match_array(Dependabot::FileFetchers::Base.public_instance_methods)
+    end
+  end
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
@@ -527,7 +545,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
       it "exposes the expected ecosystem_versions metric" do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
           {
-            languages: { python: { "max" => "3.9", "raw" => "unknown" } }
+            # When there is no version specified, we assume the max supported
+            languages: { python: { "max" => "3.14", "raw" => "unknown" } }
           }
         )
       end
@@ -860,6 +879,39 @@ RSpec.describe Dependabot::Python::FileFetcher do
             Dependabot::PathDependenciesNotReachable,
             "The following path based dependencies could not be retrieved: \"-e file:.\" at /requirements/base.in"
           )
+      end
+    end
+
+    context "with a path-based sdist/wheel dependency" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_local_model_archive.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".model/en_core_web_sm-3.4.1.tar.gz?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + ".model/en_core_web_sm-3.4.1.tar.gz/setup.py?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + ".model/en_core_web_sm-3.4.1.tar.gz/pyproject.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + ".model?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "does not raise an error when the sdist/wheel file is missing" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
       end
     end
 

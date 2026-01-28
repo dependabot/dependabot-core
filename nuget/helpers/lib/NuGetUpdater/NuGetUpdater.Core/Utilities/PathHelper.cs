@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace NuGetUpdater.Core;
@@ -247,5 +249,97 @@ internal static class PathHelper
         var candidateFilePath = candidateFile.FullName.NormalizePathToUnix();
 
         return candidateFilePath.StartsWith(directoryPath);
+    }
+
+    public static ImmutableArray<string> GetMatchingDirectoriesUnder(string rootDirectory, string searchPattern, bool caseSensitive)
+    {
+        // translate pattern to regex
+        searchPattern = searchPattern.Replace("\\", "/"); // unix-style paths make things easier
+        searchPattern = searchPattern.TrimStart('/'); // pattern shouldn't be rooted
+        searchPattern = searchPattern.TrimEnd('/'); // trailing slash is meaningless for directory matching
+        if (searchPattern == string.Empty)
+        {
+            searchPattern = "/"; // special case repo root
+        }
+
+        var pb = new StringBuilder();
+        pb.Append('^');
+        var appendAnchor = true;
+        for (int i = 0; i < searchPattern.Length; i++)
+        {
+            // special case recursive wildcard
+            if (searchPattern[i..] == "/**/*")
+            {
+                pb.Append("($|/.*$)"); // capture just this directory and every subdirectory
+                appendAnchor = false;
+                break;
+            }
+
+            var c = searchPattern[i];
+            switch (c)
+            {
+                case '*':
+                    // could be single level or multi-level
+                    var isRecursiveMatch = i < searchPattern.Length - 2
+                        && searchPattern[i + 1] == '*'
+                        && searchPattern[i + 2] == '/';
+                    if (isRecursiveMatch)
+                    {
+                        // match anything
+                        pb.Append(".*");
+                        i += 2; // consume the extra characters
+                    }
+                    else
+                    {
+                        // only match up to a directory separator
+                        pb.Append("[^/]*");
+                    }
+                    break;
+                case '?':
+                    pb.Append(".");
+                    break;
+                case '/':
+                    pb.Append("/");
+                    break;
+                default:
+                    if ("+()^$.{}[]|\\".Contains(c))
+                    {
+                        pb.Append('\\');
+                    }
+                    pb.Append(c);
+                    break;
+            }
+        }
+
+        if (appendAnchor)
+        {
+            pb.Append('$');
+        }
+
+        var pattern = new Regex(pb.ToString(), caseSensitive ? RegexOptions.IgnoreCase : RegexOptions.None);
+
+        // find all directories
+        var allDirectories = Directory.EnumerateDirectories(rootDirectory, "*", SearchOption.AllDirectories)
+            .Select(d => Path.GetRelativePath(rootDirectory, d).NormalizePathToUnix())
+            .ToImmutableArray();
+
+        // filter
+        var matchingDirectories = allDirectories.Where(pattern.IsMatch)
+            .OrderBy(d => d, caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase)
+            .Select(d => d.EnsurePrefix("/")) // paths must appear rooted from here on out
+            .ToImmutableArray();
+
+        // special case some well-known directories that are hard to generate patterns for
+        switch (searchPattern)
+        {
+            case "/":
+            case ".":
+            case "/.":
+            case "**/*":
+                matchingDirectories = [.. matchingDirectories.Prepend("/")];
+                break;
+        }
+
+        return matchingDirectories;
     }
 }

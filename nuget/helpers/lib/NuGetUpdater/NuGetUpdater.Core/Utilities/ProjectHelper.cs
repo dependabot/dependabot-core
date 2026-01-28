@@ -17,20 +17,22 @@ internal static class ProjectHelper
         Full,
     }
 
-    public static ImmutableArray<string> GetAllAdditionalFilesFromProject(string fullProjectPath, PathFormat pathFormat)
+    public static ImmutableArray<string> GetAllAdditionalFilesFromProject(string repoRootPath, string fullProjectPath, PathFormat pathFormat)
     {
-        return GetAdditionalFilesFromProjectContent(fullProjectPath, pathFormat)
-            .AddRange(GetAdditionalFilesFromProjectLocation(fullProjectPath, pathFormat));
+        return GetAdditionalFilesFromProjectContent(repoRootPath, fullProjectPath, pathFormat)
+            .Concat(GetAdditionalFilesFromProjectLocation(fullProjectPath, pathFormat))
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToImmutableArray();
     }
 
-    public static ImmutableArray<string> GetAdditionalFilesFromProjectContent(string fullProjectPath, PathFormat pathFormat)
+    public static ImmutableArray<string> GetAdditionalFilesFromProjectContent(string repoRootPath, string fullProjectPath, PathFormat pathFormat)
     {
         var projectRootElement = ProjectRootElement.Open(fullProjectPath);
         var additionalFilesWithFullPaths = new[]
         {
-            projectRootElement.GetItemPathWithFileName(PackagesConfigFileName),
-            projectRootElement.GetItemPathWithFileName(AppConfigFileName),
-            projectRootElement.GetItemPathWithFileName(WebConfigFileName),
+            projectRootElement.GetItemPathWithFileName(repoRootPath, PackagesConfigFileName),
+            projectRootElement.GetItemPathWithFileName(repoRootPath, AppConfigFileName),
+            projectRootElement.GetItemPathWithFileName(repoRootPath, WebConfigFileName),
         }.Where(p => p is not null).Cast<string>().ToImmutableArray();
 
         var additionalFiles = additionalFilesWithFullPaths
@@ -52,10 +54,10 @@ internal static class ProjectHelper
         return additionalFiles;
     }
 
-    public static string? GetPackagesConfigPathFromProject(string fullProjectPath, PathFormat pathFormat)
+    public static string? GetPackagesConfigPathFromProject(string repoRootPath, string fullProjectPath, PathFormat pathFormat)
     {
-        var additionalFiles = GetAdditionalFilesFromProjectContent(fullProjectPath, pathFormat);
-        var packagesConfigFile = additionalFiles.FirstOrDefault(p => Path.GetFileName(p).Equals(PackagesConfigFileName, StringComparison.Ordinal));
+        var additionalFiles = GetAdditionalFilesFromProjectContent(repoRootPath, fullProjectPath, pathFormat);
+        var packagesConfigFile = additionalFiles.FirstOrDefault(p => Path.GetFileName(p).Equals(PackagesConfigFileName, StringComparison.OrdinalIgnoreCase));
         return packagesConfigFile;
     }
 
@@ -71,7 +73,7 @@ internal static class ProjectHelper
         return updatedPath.NormalizePathToUnix();
     }
 
-    private static string? GetItemPathWithFileName(this ProjectRootElement projectRootElement, string itemFileName)
+    private static string? GetItemPathWithFileName(this ProjectRootElement projectRootElement, string repoRootPath, string itemFileName)
     {
         var projectDirectory = Path.GetDirectoryName(projectRootElement.FullPath)!;
         var itemPath = projectRootElement.Items
@@ -80,7 +82,17 @@ internal static class ProjectHelper
             .Where(i => !string.IsNullOrEmpty(i.Include))
             .Select(i => Path.GetFullPath(Path.Combine(projectDirectory, i.Include.NormalizePathToUnix())))
             .Where(p => Path.GetFileName(p).Equals(itemFileName, StringComparison.OrdinalIgnoreCase))
-            .Where(File.Exists)
+            .Select(p =>
+            {
+                var candidateFiles = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(p, repoRootPath) ?? []; // case correct
+                if (candidateFiles.Count == 1)
+                {
+                    return candidateFiles[0];
+                }
+
+                return null;
+            })
+            .Where(p => p is not null)
             .FirstOrDefault();
         return itemPath;
     }
@@ -89,7 +101,7 @@ internal static class ProjectHelper
     {
         var projectDirectory = Path.GetDirectoryName(fullProjectPath)!;
         var filePath = Directory.EnumerateFiles(projectDirectory)
-            .Where(p => Path.GetFileName(p).Equals(fileName, StringComparison.Ordinal))
+            .Where(p => Path.GetFileName(p).Equals(fileName, StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault();
         return filePath;
     }

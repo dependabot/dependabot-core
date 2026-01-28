@@ -12,16 +12,23 @@ require "dependabot/uv/file_parser/python_requirement_parser"
 require "dependabot/uv/file_updater"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
+require "dependabot/uv/requirement_suffix_helper"
 
 module Dependabot
   module Uv
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class LockFileUpdater
         extend T::Sig
 
         require_relative "pyproject_preparer"
+        require_relative "version_config_parser"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
+
+        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
+        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -35,19 +42,24 @@ module Dependabot
         sig { returns(T.nilable(T::Array[T.nilable(String)])) }
         attr_reader :index_urls
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
+
         sig do
           params(
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[T.nilable(String)])
+            index_urls: T.nilable(T::Array[T.nilable(String)]),
+            repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil, repo_contents_path: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
           @index_urls = index_urls
+          @repo_contents_path = repo_contents_path
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -69,6 +81,16 @@ module Dependabot
           T.must(dependencies.first)
         end
 
+        sig { returns(T::Boolean) }
+        def build_system_only_dependency?
+          return false unless dependency
+
+          groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
+          return false if groups.empty?
+
+          groups.all?("build-system")
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
           return [] unless create_or_update_lock_file?
@@ -83,9 +105,10 @@ module Dependabot
               )
           end
 
-          if lockfile
+          if lockfile && !build_system_only_dependency?
             # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
+
             raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
 
             updated_files << updated_file(file: T.must(lockfile), content: new_content)
@@ -123,16 +146,46 @@ module Dependabot
         def replace_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
+          escaped_name = escape_package_name(dep.name)
 
-          declaration_regex = declaration_regex(dep, old_r)
-          declaration_match = content.match(declaration_regex)
-          if declaration_match
-            declaration = declaration_match[:declaration]
-            new_declaration = T.must(declaration).sub(old_req, new_req)
-            content.sub(T.must(declaration), new_declaration)
-          else
-            content
+          regex = /(["']#{escaped_name})([^"']+)(["'])/x
+
+          replaced = T.let(false, T::Boolean)
+
+          updated_content = content.gsub(regex) do
+            captured_requirement = Regexp.last_match(2)
+
+            requirement_body, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+            next Regexp.last_match(0) unless old_req
+
+            if requirements_match?(T.must(requirement_body), old_req)
+              replaced = true
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
+            else
+              Regexp.last_match(0)
+            end
           end
+          unless replaced
+            updated_content = content.sub(regex) do
+              captured_requirement = Regexp.last_match(2)
+              _, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
+
+              "#{Regexp.last_match(1)}#{new_req}#{suffix}#{Regexp.last_match(3)}"
+            end
+          end
+
+          updated_content
+        end
+
+        sig { params(req1: String, req2: String).returns(T::Boolean) }
+        def requirements_match?(req1, req2)
+          normalized_requirement(req1) == normalized_requirement(req2)
+        end
+
+        sig { params(req: String).returns(String) }
+        def normalized_requirement(req)
+          req.split(",").map(&:strip).sort.join(",")
         end
 
         sig { returns(String) }
@@ -196,7 +249,7 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def updated_lockfile_content_for(pyproject_content)
-          SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(pyproject_content)
 
@@ -208,6 +261,64 @@ module Dependabot
               File.read("uv.lock")
             end
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_uv_error(e)
+        end
+
+        sig do
+          params(
+            error: SharedHelpers::HelperSubprocessFailed
+          )
+            .returns(T.noreturn)
+        end
+        def handle_uv_error(error)
+          error_message = error.message
+
+          if resolution_error?(error_message)
+            handle_resolution_error(error_message)
+          elsif error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+            raise Dependabot::DependencyFileNotResolvable, error_message
+          else
+            raise error
+          end
+        end
+
+        sig { params(error_message: String).returns(T::Boolean) }
+        def resolution_error?(error_message)
+          ["No solution found when resolving dependencies", "Failed to build"].any? do |pattern|
+            error_message.include?(pattern)
+          end
+        end
+
+        sig { params(error_message: String).returns(T.noreturn) }
+        def handle_resolution_error(error_message)
+          match_unresolvable = error_message.scan(UV_UNRESOLVABLE_REGEX).last
+          match_build_failed = error_message.scan(UV_BUILD_FAILED_REGEX).last
+
+          if match_unresolvable
+            formatted_error = Array(match_unresolvable).join
+            conflicting_deps = extract_conflicting_dependencies(formatted_error)
+            raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
+
+            raise Dependabot::DependencyFileNotResolvable, formatted_error
+          end
+
+          formatted_error = match_build_failed ? Array(match_build_failed).join : error_message
+          raise Dependabot::DependencyFileNotResolvable, formatted_error
+        end
+
+        sig { params(error_message: String).returns(T::Array[String]) }
+        def extract_conflicting_dependencies(error_message)
+          # Extract conflicting dependency names from the error message
+          # Pattern: "Because <pkg>==<ver> depends on <dep>>=<ver> and your project depends on <dep>==<ver>"
+          normalized_message = error_message.gsub(/\s+/, " ")
+          conflict_pattern = /Because (\S+)==\S+ depends on (\S+)[><=!]+\S+ and your project depends on \2==\S+/
+
+          match = normalized_message.match(conflict_pattern)
+          return [] unless match
+
+          # Return both the package being updated and the blocking dependency
+          [match[1], match[2]].compact
         end
 
         sig { returns(T.nilable(String)) }
@@ -216,19 +327,30 @@ module Dependabot
           options_fingerprint = lock_options_fingerprint(options)
 
           # Use pyenv exec to ensure we're using the correct Python environment
-          command = "pyenv exec uv lock --upgrade-package #{T.must(dependency).name} #{options}"
+          # Include the target version to respect ignore conditions and avoid upgrading
+          # to the absolute latest version (which may be blocked by ignore rules)
+          dep_name = T.must(dependency).name
+          dep_version = T.must(dependency).version
+          # Strip extras from the package name for the uv lock command
+          # uv lock --upgrade-package expects the base package name without extras
+          base_dep_name = normalise(dep_name)
+          package_spec = dep_version ? "#{base_dep_name}==#{dep_version}" : base_dep_name
+
+          command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          run_command(command, fingerprint:)
+          env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
+
+          run_command(command, fingerprint: fingerprint, env: env_vars)
         end
 
-        sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-        def run_command(command, fingerprint: nil)
+        sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
+        def run_command(command, fingerprint: nil, env: {})
           Dependabot.logger.info("Running command: #{command}")
-          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint, env: env)
         end
 
-        sig { params(pyproject_content: String).returns(Integer) }
+        sig { params(pyproject_content: String).void }
         def write_temporary_dependency_files(pyproject_content)
           dependency_files.each do |file|
             path = file.name
@@ -238,23 +360,34 @@ module Dependabot
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)
+
+          ensure_version_file_directories
+        end
+
+        sig { void }
+        def ensure_version_file_directories
+          all_version_configs.each do |config|
+            config.write_paths.each do |write_path|
+              dir = Pathname.new(write_path).dirname
+              next if dir.to_s == "." || dir.to_s.empty?
+
+              Dependabot.logger.info("Creating directory for version file: #{dir}")
+              FileUtils.mkdir_p(dir)
+            end
+          end
         end
 
         sig { void }
         def setup_python_environment
-          # Use LanguageVersionManager to determine and install the appropriate Python version
           Dependabot.logger.info("Setting up Python environment using LanguageVersionManager")
 
           begin
-            # Install the required Python version
             language_version_manager.install_required_python
 
-            # Set the local Python version
             python_version = language_version_manager.python_version
             Dependabot.logger.info("Setting Python version to #{python_version}")
             SharedHelpers.run_shell_command("pyenv local #{python_version}")
 
-            # We don't need to install uv as it should be available in the Docker environment
             Dependabot.logger.info("Using pre-installed uv package")
           rescue StandardError => e
             Dependabot.logger.warn("Error setting up Python environment: #{e.message}")
@@ -265,24 +398,6 @@ module Dependabot
         sig { params(url: String).returns(String) }
         def sanitize_env_name(url)
           url.gsub(%r{^https?://}, "").gsub(/[^a-zA-Z0-9]/, "_").upcase
-        end
-
-        sig { params(dep: T.untyped, old_req: T.untyped).returns(Regexp) }
-        def declaration_regex(dep, old_req)
-          escaped_name = Regexp.escape(dep.name)
-          # Extract the requirement operator and version
-          operator = old_req.fetch(:requirement).match(/^(.+?)[0-9]/)&.captures&.first
-          # Escape special regex characters in the operator
-          escaped_operator = Regexp.escape(operator) if operator
-
-          # Match various formats of dependency declarations:
-          # 1. "dependency==1.0.0" (with quotes around the entire string)
-          # 2. dependency==1.0.0 (without quotes)
-          # The declaration should only include the package name, operator, and version
-          # without the enclosing quotes
-          /
-            ["']?(?<declaration>#{escaped_name}\s*#{escaped_operator}[\d\.\*]+)["']?
-          /x
         end
 
         sig { returns(String) }
@@ -296,6 +411,7 @@ module Dependabot
         def lock_index_options
           credentials
             .select { |cred| cred["type"] == "python_index" }
+            .reject { |cred| explicit_index?(cred) }
             .map do |cred|
             authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
@@ -305,6 +421,86 @@ module Dependabot
               "--index #{authed_url}"
             end
           end
+        end
+
+        sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
+        def explicit_index?(credential)
+          return false if credential.replaces_base?
+
+          cred_url = normalize_index_url(credential["index-url"].to_s)
+          uv_indices.any? do |_name, config|
+            config["explicit"] == true && normalize_index_url(config["url"].to_s) == cred_url
+          end
+        end
+
+        sig { params(url: String).returns(String) }
+        def normalize_index_url(url)
+          url.chomp("/")
+        end
+
+        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
+        def uv_indices
+          @uv_indices ||= T.let(parse_uv_indices, T.nilable(T::Hash[String, T::Hash[String, T.untyped]]))
+        end
+
+        sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
+        def parse_uv_indices
+          return {} unless pyproject&.content
+
+          parsed = TomlRB.parse(T.must(pyproject).content)
+          indices = parsed.dig("tool", "uv", "index")
+          return {} unless indices.is_a?(Array)
+
+          indices.each_with_object({}) do |index, result|
+            name = index["name"]
+            next unless name
+
+            result[name] = {
+              "url" => index["url"],
+              "explicit" => index["explicit"] == true
+            }
+          end
+        rescue TomlRB::ParseError
+          {}
+        end
+
+        # For hosted Dependabot, token will be nil since the credentials aren't present
+        # (the proxy handles authentication). This is for those running Dependabot
+        # themselves and for dry-run.
+        sig { returns(T::Hash[String, String]) }
+        def explicit_index_env_vars
+          env_vars = {}
+
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .select { |cred| explicit_index?(cred) }
+            .each do |cred|
+            index_name = find_index_name_for_credential(cred)
+            next unless index_name
+
+            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+
+            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+
+            if cred["password"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
+            elsif cred["token"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
+            end
+          end
+
+          env_vars
+        end
+
+        sig { params(credential: Dependabot::Credential).returns(T.nilable(String)) }
+        def find_index_name_for_credential(credential)
+          cred_url = normalize_index_url(credential["index-url"].to_s)
+
+          uv_indices.each do |name, config|
+            return name if normalize_index_url(config["url"].to_s) == cred_url
+          end
+
+          nil
         end
 
         sig { params(options: String).returns(String) }
@@ -317,8 +513,9 @@ module Dependabot
         end
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
-        def escape(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]")
+        def escape_package_name(name)
+          # Per PEP 503, Python package names normalize -, _, and . to the same character
+          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }
@@ -382,6 +579,11 @@ module Dependabot
           )
         end
 
+        sig { returns(String) }
+        def directory
+          dependency_files.first&.directory || "/"
+        end
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           @lockfile ||= T.let(uv_lock, T.nilable(Dependabot::DependencyFile))
@@ -399,9 +601,67 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def create_or_update_lock_file?
+          return true if lockfile && T.must(dependency).requirements.empty?
+
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
         end
+
+        sig { returns(T::Hash[String, String]) }
+        def setuptools_scm_pretend_version_env_vars
+          env_vars = T.let({}, T::Hash[String, String])
+
+          all_version_configs.each do |config|
+            package_name = config.package_name
+            next if package_name.nil? || package_name.empty?
+            next unless config.dynamic_version?
+
+            package_env_name = package_name.upcase.gsub(/[-.]/, "_")
+            version = config.fallback_version || "0.0.0"
+
+            env_vars["SETUPTOOLS_SCM_PRETEND_VERSION_FOR_#{package_env_name}"] = version
+          end
+
+          env_vars
+        end
+
+        sig { returns(T::Array[VersionConfigParser::VersionConfig]) }
+        def all_version_configs
+          @all_version_configs ||= T.let(
+            begin
+              configs = []
+
+              root_content = pyproject&.content
+              if root_content
+                parser = VersionConfigParser.new(
+                  pyproject_content: root_content,
+                  base_path: ".",
+                  repo_root: "."
+                )
+                configs << parser.parse
+              end
+
+              dependency_files
+                .select { |f| f.name.end_with?("pyproject.toml") && f.name != "pyproject.toml" }
+                .each do |member_pyproject|
+                  member_content = member_pyproject.content
+                  next unless member_content
+
+                  base_path = Pathname.new(member_pyproject.name).dirname.to_s
+                  parser = VersionConfigParser.new(
+                    pyproject_content: member_content,
+                    base_path: base_path,
+                    repo_root: "."
+                  )
+                  configs << parser.parse
+                end
+
+              configs
+            end,
+            T.nilable(T::Array[VersionConfigParser::VersionConfig])
+          )
+        end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

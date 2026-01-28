@@ -91,6 +91,37 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
+      context "with a git requirement with tag" do
+        let(:pyproject_fixture_name) { "git_dependency_with_tag.toml" }
+
+        it "includes git dependency with tag" do
+          expect(dependencies.map(&:name)).to include("fastapi")
+        end
+
+        describe "the git dependency with tag" do
+          subject(:dependency) { dependencies.find { |d| d.name == "fastapi" } }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("fastapi")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/tiangolo/fastapi",
+                  ref: "0.110.0",
+                  branch: nil
+                }
+              }]
+            )
+          end
+        end
+      end
+
       context "with a url requirement" do
         subject(:dependency_names) { dependencies.map(&:name) }
 
@@ -250,8 +281,27 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       let(:pyproject_fixture_name) { "package_specify_source.toml" }
 
-      it "specifies a package source" do
-        expect(dependency.requirements[0][:source]).to eq("custom")
+      it "resolves string registry sources to hashes with type and url" do
+        # String sources (registry name references) are resolved to their definitions
+        # from [[tool.poetry.source]] to create proper hash sources
+        expect(dependency.requirements[0][:source]).to be_nil # No source def in this fixture
+      end
+    end
+
+    context "with private secondary source" do
+      subject(:dependency) { dependencies.find { |f| f.name == "luigi" } }
+
+      let(:pyproject_fixture_name) { "private_secondary_source.toml" }
+
+      it "resolves string registry sources to hashes with type and url" do
+        # String source "custom" should be resolved to the source definition
+        expect(dependency.requirements[0][:source]).to eq(
+          {
+            type: "registry",
+            url: "https://some.internal.registry.com/pypi/",
+            name: "custom"
+          }
+        )
       end
     end
   end
@@ -276,7 +326,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         )
@@ -393,6 +443,26 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
 
         its(:length) { is_expected.to be > 0 }
+      end
+
+      context "with PEP 621 and Poetry configuration" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pep621_with_poetry.toml" }
+
+        its(:length) { is_expected.to eq(2) }
+
+        it "has the correct dependencies with requirement types" do
+          expect(dependencies.map(&:name)).to contain_exactly("fastapi", "pydantic")
+
+          fastapi = dependencies.find { |d| d.name == "fastapi" }
+          expect(fastapi.version).to eq("0.115.5")
+          expect(fastapi.requirements.first[:groups]).to eq(["dependencies"])
+
+          pydantic = dependencies.find { |d| d.name == "pydantic" }
+          expect(pydantic.version).to eq("2.8.2")
+          expect(pydantic.requirements.first[:groups]).to eq(["dependencies"])
+        end
       end
     end
 

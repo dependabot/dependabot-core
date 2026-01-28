@@ -239,11 +239,6 @@ RSpec.describe Dependabot::Service do
 
   describe "#create_pull_request" do
     include_context "with a created pr"
-
-    before do
-      Dependabot::Experiments.register("dependency_change_validation", true)
-    end
-
     it "delegates to @client" do
       service.create_pull_request(dependency_change, base_sha)
 

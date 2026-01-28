@@ -6,4 +6,8 @@ pushd helpers
 go test ./...
 popd
 bundle install
-bundle exec turbo_tests --verbose
+if [ -z "$1" ]; then
+  bundle exec turbo_tests --verbose
+else
+  bundle exec turbo_tests --verbose "$1"
+fi

@@ -61,6 +61,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       .to_return(status: 200, body: maven_central_releases)
   end
 
+  describe "class extension behavior" do
+    it "inherits from SharedVersionFinder" do
+      expect(described_class < Dependabot::Maven::Shared::SharedVersionFinder).to be true
+    end
+
+    it "matches_dependency_version_type? is reused from the shared class" do
+      method_owner = described_class.instance_method(:matches_dependency_version_type?).owner
+      expect(method_owner).to eq(Dependabot::Maven::Shared::SharedVersionFinder)
+    end
+  end
+
   describe "#latest_version_details" do
     subject(:latest_version_details) { finder.latest_version_details }
 
@@ -569,6 +580,90 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
+    end
+  end
+
+  describe "#in_cooldown_period?" do
+    subject(:in_cooldown) { finder.send(:in_cooldown_period?, release) }
+
+    let(:release) do
+      Dependabot::Package::PackageRelease.new(
+        version: version_class.new("1.0.0"),
+        released_at: release_date,
+        url: "https://repo.maven.apache.org/maven2"
+      )
+    end
+    let(:release_date) { Time.parse("2018-10-25T17:30:00.000Z") }
+
+    before do
+      allow(Time).to receive(:now).and_return(Time.parse("2018-10-25T17:30:00.000Z"))
+    end
+
+    context "when cooldown_options is nil" do
+      let(:cooldown_options) { nil }
+
+      context "when release date is available" do
+        it { is_expected.to be false }
+      end
+
+      context "when release date is not available" do
+        let(:release_date) { nil }
+
+        it "allows the version through" do
+          expect(in_cooldown).to be false
+        end
+
+        it "logs that release date is not available" do
+          expect(Dependabot.logger).to receive(:info)
+            .with("Release date not available for version 1.0.0")
+          in_cooldown
+        end
+      end
+    end
+
+    context "when cooldown_options is configured" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 14,
+          semver_minor_days: 7,
+          semver_patch_days: 3,
+          include: [],
+          exclude: []
+        )
+      end
+
+      context "when release date is available" do
+        context "when release is outside cooldown period" do
+          before do
+            allow(Time).to receive(:now).and_return(Time.parse("2018-11-05T17:30:00.000Z"))
+          end
+
+          it { is_expected.to be false }
+        end
+
+        context "when release is inside cooldown period" do
+          before do
+            allow(Time).to receive(:now).and_return(Time.parse("2018-10-26T17:30:00.000Z"))
+          end
+
+          it { is_expected.to be true }
+        end
+      end
+
+      context "when release date is not available" do
+        let(:release_date) { nil }
+
+        it "filters out the version" do
+          expect(in_cooldown).to be true
+        end
+
+        it "logs that release date is not available and filtering out" do
+          expect(Dependabot.logger).to receive(:info)
+            .with("Release date not available for version 1.0.0 - filtering out")
+          in_cooldown
+        end
+      end
     end
   end
 

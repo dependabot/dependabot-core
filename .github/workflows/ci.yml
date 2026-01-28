@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }
@@ -33,6 +34,7 @@ jobs:
           - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: helm, name: helm, ecosystem: helm }
           - { path: hex, name: hex, ecosystem: mix }
+          - { path: julia, name: julia, ecosystem: julia }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
@@ -42,14 +44,16 @@ jobs:
           - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
+          - { path: opentofu, name: opentofu, ecosystem: opentofu }
           - { path: uv, name: uv, ecosystem: uv }
           - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: changes
@@ -80,9 +84,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           submodules: recursive
+          persist-credentials: false
       # using bundler as the test updater
       - name: Build ecosystem image
         run: script/build bundler
@@ -97,13 +102,42 @@ jobs:
     env:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@4fc31e1c823882afd7ef55985266a526c589de90 # v1.282.0
         with:
           bundler-cache: true
       - run: ./bin/lint
       # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
       - run: yamllint .
+
+  rakefile_tests:
+    name: Rakefile Tests
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: changes
+        with:
+          token: '' # use git commands to avoid excessive rate limit usage
+          filters: .github/ci-filters.yml
+
+      - name: Setup Ruby
+        if: steps.changes.outputs.rakefile_tests == 'true'
+        uses: ruby/setup-ruby@4fc31e1c823882afd7ef55985266a526c589de90 # v1.282.0
+        with:
+          bundler-cache: true
+
+      - name: Run rakefile tests
+        if: steps.changes.outputs.rakefile_tests == 'true'
+        run: script/test-rakefile
 
   integration:
     env:
@@ -111,15 +145,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Build ecosystem image
         run: script/build silent
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: 'silent/tests/go.mod'
 

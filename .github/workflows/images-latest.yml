@@ -34,6 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: bazel, ecosystem: bazel }
           - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
@@ -50,6 +51,7 @@ jobs:
           - { name: gradle, ecosystem: gradle }
           - { name: helm, ecosystem: helm }
           - { name: hex, ecosystem: mix }
+          - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
@@ -58,6 +60,7 @@ jobs:
           - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
+          - { name: opentofu, ecosystem: opentofu }
           - { name: uv, ecosystem: uv }
           - { name: vcpkg, ecosystem: vcpkg }
     env:
@@ -66,11 +69,12 @@ jobs:
       ECOSYSTEM: ${{ matrix.suite.ecosystem }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
-      - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
       - name: Build the dependabot-updater-<ecosystem> image
         # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
@@ -82,7 +86,7 @@ jobs:
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
-      - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

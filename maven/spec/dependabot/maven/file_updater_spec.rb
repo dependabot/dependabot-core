@@ -78,48 +78,6 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
-  describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "is not empty" do
-      expect(updated_files_regex).not_to be_empty
-    end
-
-    context "when files match the regex patterns" do
-      it "returns true for files that should be updated" do
-        matching_files = [
-          "pom.xml",
-          "subproject/pom.xml",
-          "extensions.xml",
-          "subproject/extensions.xml",
-          "somefile.xml",
-          "subproject/somefile.xml",
-          "configs/pom.xml",
-          "configs/somefile.xml"
-        ]
-
-        matching_files.each do |file_name|
-          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-
-      it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          ".github/workflow/main.yml",
-          "some_random_file.rb",
-          "requirements.txt",
-          "package-lock.json",
-          "package.json"
-        ]
-
-        non_matching_files.each do |file_name|
-          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-    end
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -202,14 +160,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             requirements: [{
               file: "pom.xml",
               requirement: "1.6.0.RELEASE",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "1.5.8.RELEASE",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
@@ -486,26 +444,26 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             requirements: [{
               file: "pom.xml",
               requirement: "3.0.0-M2",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { property_name: "maven-javadoc-plugin.version" }
             }, {
               file: "pom.xml",
               requirement: "3.0.0-M2",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "3.0.0-M1",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { property_name: "maven-javadoc-plugin.version" }
             }, {
               file: "pom.xml",
               requirement: "2.10.4",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }],

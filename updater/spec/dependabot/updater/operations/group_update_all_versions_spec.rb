@@ -8,6 +8,7 @@ require "support/dependency_file_helpers"
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
 require "dependabot/service"
+require "dependabot/fetched_files"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/group_update_all_versions"
 require "dependabot/updater/operations/create_group_update_pull_request"
@@ -53,24 +54,19 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition: job_definition_with_fetched_files
+      job_definition:
     )
   end
 
   let(:dependency_snapshot) do
     Dependabot::DependencySnapshot.create_from_job_definition(
-      job: job,
-      job_definition: job_definition_with_fetched_files
+      job:,
+      fetched_files:
     )
   end
 
-  let(:job_definition_with_fetched_files) do
-    job_definition.merge(
-      {
-        "base_commit_sha" => "mock-sha",
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    )
+  let(:fetched_files) do
+    Dependabot::FetchedFiles.new(base_commit_sha: "mock-sha", dependency_files:)
   end
 
   let(:dependency_files) do
@@ -155,24 +151,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       end
     end
 
-    context "when grouped security updates are disabled and job is security updates only" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:grouped_security_updates_disabled).and_return(true)
-        allow(job).to receive_messages(
-          multi_ecosystem_update?: false,
-          updating_a_pull_request?: false,
-          security_updates_only?: true
-        )
-      end
-
-      it "returns false" do
-        expect(described_class.applies_to?(job: job)).to be false
-      end
-    end
-
     context "when job is security updates only" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:grouped_security_updates_disabled).and_return(false)
         allow(job).to receive_messages(
           multi_ecosystem_update?: false,
           updating_a_pull_request?: false,
@@ -285,7 +265,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive(:existing_group_pull_requests).and_return(
             [
-              { "dependency-group-name" => "dummy-group" }
+              { "dependency-group-name" => "dummy-group", "pr_number" => 123 }
             ]
           )
         end
@@ -293,6 +273,13 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         it "skips the group and marks it as handled" do
           expect(mock_create_group_update).not_to receive(:perform)
           expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+
+        it "logs the PR number when it exists" do
+          allow(Dependabot.logger).to receive(:info).and_call_original
+          expect(Dependabot.logger).to receive(:info).once
+                                                     .with("Detected existing pull request #123 for the dependency group 'dummy-group'.") # rubocop:disable Layout/LineLength
           perform
         end
       end

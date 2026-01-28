@@ -1,25 +1,28 @@
+# syntax=docker.io/docker/dockerfile:1.20
+# From https://github.com/sigstore/cosign/releases
+FROM ghcr.io/sigstore/cosign/cosign:v3.0.3 AS cosign
+# From https://github.com/regclient/regclient/releases
+FROM ghcr.io/regclient/regctl:v0.11.1 AS regctl
+
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG TARGETARCH
-
-# Install regctl. See https://github.com/regclient/regclient/releases for updates
-ARG REGCTL_VERSION=0.9.1
-
-# These are manually calculated as they are not provided by the maintainer
-# curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-amd64 | sha256sum
-ARG REGCTL_AMD64_CHECKSUM=b32ba43ce2624fe09ebedbf3a5a5c8c4427eb9964b474b7ad75ed6b5f9a97d38
-# curl -sL https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-arm64 | sha256sum
-ARG REGCTL_ARM64_CHECKSUM=1e37591c83e091391ceabae20154931dcb194ced52d8ac612521eab2cd255b8b
 
 ENV PATH=/opt/bin:$PATH
-RUN cd /tmp \
-  && curl -sSf -o regctl-${TARGETARCH} -L https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/regctl-linux-${TARGETARCH} \
-  && printf "$REGCTL_AMD64_CHECKSUM regctl-amd64\n$REGCTL_ARM64_CHECKSUM regctl-arm64\n" | sha256sum -c --ignore-missing - \
-  && mkdir /opt/bin \
-  && mv regctl-${TARGETARCH} /opt/bin/regctl \
-  && chmod o+rx /opt/bin/regctl
+COPY --from=regctl /regctl /opt/bin/regctl
+COPY --from=cosign /ko-app/cosign /opt/bin/cosign
+
+RUN chmod o+rx /opt/bin/regctl &&  \
+    chmod +x /opt/bin/cosign
+
+# Verify regclient binary. See https://regclient.org/install/#verifying-signatures
+RUN REGCTL_VERSION=$(regctl version --format '{{.VCSTag}}') && \
+    cosign verify \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      --certificate-identity-regexp https://github.com/regclient/regclient/.github/workflows/ \
+      ghcr.io/regclient/regctl:${REGCTL_VERSION} && \
+    # Remove cosign as it is not needed in the final image
+    rm /opt/bin/cosign
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker $DEPENDABOT_HOME/docker
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents docker common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

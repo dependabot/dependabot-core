@@ -5,10 +5,17 @@ shared: &shared
   - 'updater/Gemfil*'
   - 'omnibus/**'
   - '.github/workflows/ci.yml'
+rakefile_tests:
+  - 'rakelib/**'
+  - 'Rakefile'
+  - 'script/test-rakefile'
 dry_run:
   - *shared
   - 'bin/dry-run.rb'
   - 'bin/spec/**'
+bazel:
+  - *shared
+  - 'bazel/**'
 bun:
   - *shared
   - 'bun/**'
@@ -58,6 +65,9 @@ gradle:
 hex:
   - *shared
   - 'hex/**'
+julia:
+  - *shared
+  - 'julia/**'
 maven:
   - *shared
   - 'maven/**'
@@ -82,6 +92,9 @@ swift:
 terraform:
   - *shared
   - 'terraform/**'
+opentofu:
+  - *shared
+  - 'opentofu/**'
 uv:
   - *shared
   - 'uv/**'

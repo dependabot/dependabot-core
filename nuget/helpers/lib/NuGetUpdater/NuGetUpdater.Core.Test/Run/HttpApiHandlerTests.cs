@@ -147,8 +147,9 @@ public class HttpApiHandlerTests
         yield return [new DependencyFileNotParseable("unused"), "record_update_job_error"];
         yield return [new DependencyNotFound("unused"), "record_update_job_error"];
         yield return [new JobRepoNotFound("unused"), "record_update_job_error"];
+        yield return [new OutOfDisk(), "record_update_job_error"];
         yield return [new PrivateSourceAuthenticationFailure(["unused"]), "record_update_job_error"];
-        yield return [new PrivateSourceBadResponse(["unused"]), "record_update_job_error"];
+        yield return [new PrivateSourceBadResponse(["unused"], "unused"), "record_update_job_error"];
         yield return [new PrivateSourceTimedOut("unused"), "record_update_job_error"];
         yield return [new PullRequestExistsForLatestVersion("unused", "unused"), "record_update_job_error"];
         yield return [new PullRequestExistsForSecurityUpdate([]), "record_update_job_error"];

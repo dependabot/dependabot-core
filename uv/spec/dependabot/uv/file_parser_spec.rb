@@ -732,7 +732,10 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(1) }
+      # pydantic (from project.dependencies)
+      # setuptools (from build-system.requires)
+      # setuptools-scm (from build-system.requires)
+      its(:length) { is_expected.to eq(3) }
     end
 
     context "with a pyproject.toml file with no dependencies" do
@@ -744,7 +747,9 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(0) }
+      # setuptools
+      # setuptools-scm
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "with a pyproject.toml in poetry format and a lock file" do
@@ -883,6 +888,23 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
 
+    context "with build-system requirements" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "build_system_pinned.toml")
+        )
+      end
+
+      it "sets groups for build-system deps" do
+        dep = dependencies.find { |d| d.name == "hatchling" }
+        expect(dep).not_to be_nil
+        req = dep.requirements.first
+        expect(req[:groups]).to include("build-system")
+      end
+    end
+
     context "with a uv.lock file" do
       let(:files) { [pyproject, uv_lock] }
       let(:pyproject) do
@@ -898,12 +920,12 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(7) }
+      its(:length) { is_expected.to eq(8) }
 
       describe "top level dependencies" do
         subject(:dependencies) { parser.parse.select(&:top_level?) }
 
-        its(:length) { is_expected.to eq(2) }
+        its(:length) { is_expected.to eq(3) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }

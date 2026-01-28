@@ -25,20 +25,57 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
+    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
+      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
+      T::Array[String]
+    )
+
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
+      validate_group_configuration!(job)
+
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"], applies_to: group["applies-to"])
       end
 
       # Filter out version updates when doing security updates and visa versa
-      groups = if job.security_updates_only?
-                 groups.select { |group| group.applies_to == "security-updates" }
-               else
-                 groups.select { |group| group.applies_to == "version-updates" }
-               end
+      filtered_groups = if job.security_updates_only?
+                          groups.select { |group| group.applies_to == "security-updates" }
+                        else
+                          groups.select { |group| group.applies_to == "version-updates" }
+                        end
 
-      new(dependency_groups: groups)
+      if filtered_groups.count != groups.count
+        filtered_count = groups.count - filtered_groups.count
+        update_type = job.security_updates_only? ? "security" : "version"
+        Dependabot.logger.info(
+          "Filtered #{filtered_count} group(s) not applicable to #{update_type} updates"
+        )
+      end
+
+      new(dependency_groups: filtered_groups)
+    end
+
+    sig { params(job: Dependabot::Job).void }
+    def self.validate_group_configuration!(job)
+      return unless job.dependency_groups.any?
+
+      unsupported_groups = job.dependency_groups.select do |group|
+        rules = group["rules"] || {}
+        rules.key?("dependency-type") &&
+          !PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.include?(job.package_manager)
+      end
+
+      return unless unsupported_groups.any?
+
+      group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
+      Dependabot.logger.warn <<~WARN
+        The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
+        It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
+        Affected groups: #{group_names}
+
+        This option will be ignored. Please remove it from your configuration or use a supported package manager.
+      WARN
     end
 
     sig { returns(T::Array[Dependabot::DependencyGroup]) }
@@ -114,9 +151,25 @@ module Dependabot
       return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
 
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
-      specificity_calculator.dependency_belongs_to_more_specific_group?(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory
+      applies_to = group.applies_to if group.respond_to?(:applies_to)
+
+      Dependabot.logger.info(
+        "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
+
+      more_specific_group_name = specificity_calculator.find_most_specific_group_name(
+        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
+      )
+
+      if more_specific_group_name
+        Dependabot.logger.info(
+          "Skipping #{dependency.name} for group '#{group.name}' - " \
+          "belongs to more specific group '#{more_specific_group_name}'"
+        )
+        return true
+      end
+
+      false
     end
   end
 end

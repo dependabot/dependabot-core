@@ -90,6 +90,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       it { is_expected.to be(false) }
     end
 
+    context "with a nil version in target_version_details" do
+      let(:target_version_details) do
+        {
+          version: nil,
+          source_url: "https://repo.maven.apache.org/maven2"
+        }
+      end
+
+      it { is_expected.to be(false) }
+    end
+
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
@@ -257,13 +268,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               requirements: [{
                 file: "pom.xml",
                 requirement: nil,
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }, {
                 file: "pom.xml",
                 requirement: "23.6-jre",
-                groups: ["test"],
+                groups: ["plugin"],
                 source: {
                   type: "maven_repo",
                   url: "https://repo.maven.apache.org/maven2"
@@ -276,7 +287,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "another.version",
@@ -287,13 +298,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: nil,
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0-M2",
-                groups: ["test"],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "junit-platform.version",
@@ -303,7 +314,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
               }, {
                 file: "pom.xml",
                 requirement: "1.0.0",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: {
                   property_name: "another.version",

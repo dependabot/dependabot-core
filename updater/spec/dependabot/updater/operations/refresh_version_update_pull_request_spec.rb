@@ -50,14 +50,14 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:job) do
     Dependabot::Job.new_update_job(
       job_id: "1558782000",
-      job_definition: job_definition_with_fetched_files
+      job_definition:
     )
   end
 
   let(:dependency_snapshot) do
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
-      job_definition: job_definition_with_fetched_files
+      fetched_files:
     )
   end
 
@@ -81,13 +81,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   let(:supported_versions) { %w(2 3) }
   let(:deprecated_versions) { %w(1) }
 
-  let(:job_definition_with_fetched_files) do
-    job_definition.merge(
-      {
-        "base_commit_sha" => "mock-sha",
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    )
+  let(:fetched_files) do
+    Dependabot::FetchedFiles.new(base_commit_sha: "mock-sha", dependency_files:)
   end
 
   let(:dependency_files) do
@@ -142,7 +137,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
@@ -223,6 +217,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
           :all_versions_ignored?
         ).and_return(true)
         allow(job).to receive(:dependencies).and_return(["dummy-pkg-a"])
+      end
+
+      it "closes the pull request with reason :up_to_date" do
+        expect(refresh_version_update_pull_request).to receive(
+          :close_pull_request
+        ).with(reason: :up_to_date)
+        refresh_version_update_pull_request.send(
+          :check_and_update_pull_request, [dependency]
+        )
       end
 
       it "does not create or update a pull request" do

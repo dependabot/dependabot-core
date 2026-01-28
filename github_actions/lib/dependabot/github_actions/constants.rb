@@ -17,11 +17,6 @@ module Dependabot
       Regexp
     )
 
-    # Matches .yml or .yaml files in the .github/workflows directories
-    WORKFLOW_YAML_REGEX = %r{\.github/workflows/.+\.ya?ml$}
-    # Matches .yml or .yaml files anywhere
-    ALL_YAML_FILES = %r{(?:^|/).+\.ya?ml$}
-
     # The ecosystem name for GitHub Actions
     ECOSYSTEM = T.let("github_actions", String)
 
@@ -40,6 +35,7 @@ module Dependabot
 
     OWNER_KEY = T.let("owner", String)
     REPO_KEY = T.let("repo", String)
+    PATH_KEY = T.let("path", String)
     REF_KEY = T.let("ref", String)
     USES_KEY = T.let("uses", String)
     STEPS_KEY = T.let("steps", String)

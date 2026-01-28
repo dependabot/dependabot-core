@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "nokogiri"
 require "open3"
@@ -61,27 +60,31 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
-          next if file.support_file?
+          # Process module declarations only for non-support files
+          # (we can't update local path modules in support files)
+          unless file.support_file?
+            modules = parsed_file(file).fetch("module", {})
+            # If override.tf files are present, we need to merge the modules
+            if override_terraform_files.any?
+              override_terraform_files.each do |override_file|
+                override_modules = parsed_file(override_file).fetch("module", {})
+                modules = merge_modules(override_modules, modules)
+              end
+            end
 
-          modules = parsed_file(file).fetch("module", {})
-          # If override.tf files are present, we need to merge the modules
-          if override_terraform_files.any?
-            override_terraform_files.each do |override_file|
-              override_modules = parsed_file(override_file).fetch("module", {})
-              modules = merge_modules(override_modules, modules)
+            modules.each do |name, details|
+              details = details.first
+
+              source = source_from(details)
+              # Cannot update local path modules, skip
+              next if source && source[:type] == "path"
+
+              dependency_set << build_terraform_dependency(file, name, T.must(source), details)
             end
           end
 
-          modules.each do |name, details|
-            details = details.first
-
-            source = source_from(details)
-            # Cannot update local path modules, skip
-            next if source && source[:type] == "path"
-
-            dependency_set << build_terraform_dependency(file, name, T.must(source), details)
-          end
-
+          # Always process provider requirements, even in support files
+          # (nested local modules can have their own provider requirements)
           parsed_file(file).fetch("terraform", []).each do |terraform|
             required_providers = terraform.fetch("required_providers", {})
             required_providers.each do |provider|
@@ -305,7 +308,7 @@ module Dependabot
           type: "git",
           url: git_url,
           branch: nil,
-          ref: CGI.parse(querystr.to_s)["ref"].first&.split(%r{(?<!:)//})&.first
+          ref: URI.decode_www_form(querystr.to_s).to_h["ref"]&.split(%r{(?<!:)//})&.first
         }
       end
 

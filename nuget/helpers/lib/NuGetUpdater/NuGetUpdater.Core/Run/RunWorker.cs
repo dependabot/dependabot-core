@@ -40,17 +40,19 @@ public class RunWorker
         _updaterWorker = updateWorker;
     }
 
-    public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, FileInfo outputFilePath)
+    public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = Deserialize(jobFileContent);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        return result;
     }
 
-    public async Task RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    public async Task<int> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
-        await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        var result = await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
+        return result;
     }
 
     private static readonly ImmutableArray<IUpdateHandler> UpdateHandlers =
@@ -65,8 +67,9 @@ public class RunWorker
     public static IUpdateHandler GetUpdateHandler(Job job) =>
         UpdateHandlers.FirstOrDefault(h => h.CanHandle(job)) ?? throw new InvalidOperationException("Unable to find appropriate update handler.");
 
-    private async Task RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
+    private async Task<int> RunScenarioHandlersWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        int result = 0;
         JobErrorBase? error = null;
 
         try
@@ -83,9 +86,11 @@ public class RunWorker
         if (error is not null)
         {
             await _apiHandler.RecordUpdateJobError(error, _logger);
+            result = 1;
         }
 
         await _apiHandler.MarkAsProcessed(new(baseCommitSha));
+        return result;
     }
 
     internal static ImmutableArray<UpdateOperationBase> PatchInOldVersions(ImmutableArray<UpdateOperationBase> updateOperations, ProjectDiscoveryResult? projectDiscovery)
@@ -152,7 +157,7 @@ public class RunWorker
         }
     }
 
-    internal static DependencyInfo GetDependencyInfo(Job job, Dependency dependency, bool allowCooldown)
+    internal static DependencyInfo GetDependencyInfo(Job job, Dependency dependency, IEnumerable<GroupMatcher> groupMatchers, bool allowCooldown)
     {
         var dependencyVersion = NuGetVersion.Parse(dependency.Version!);
         var securityAdvisories = job.SecurityAdvisories.Where(s => s.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -173,8 +178,29 @@ public class RunWorker
         var ignoredUpdateTypes = job.IgnoreConditions
             .Where(c => FileSystemName.MatchesSimpleExpression(c.DependencyName, dependency.Name))
             .SelectMany(c => c.UpdateTypes ?? [])
-            .Distinct()
-            .ToImmutableArray();
+            .ToHashSet();
+
+        // if an update type isn't explicitly allowed by a group matcher, add it to the ignored set
+        foreach (var groupMatcher in groupMatchers)
+        {
+            if (groupMatcher.IsMatch(dependency.Name))
+            {
+                // group update types defaults to everything, so if it's not allowed then it's to be ignored
+                var allowedUpdateTypes = new HashSet<GroupUpdateType>(groupMatcher.UpdateTypes);
+                if (!allowedUpdateTypes.Contains(GroupUpdateType.Major))
+                {
+                    ignoredUpdateTypes.Add(ConditionUpdateType.SemVerMajor);
+                }
+                if (!allowedUpdateTypes.Contains(GroupUpdateType.Minor))
+                {
+                    ignoredUpdateTypes.Add(ConditionUpdateType.SemVerMinor);
+                }
+                if (!allowedUpdateTypes.Contains(GroupUpdateType.Patch))
+                {
+                    ignoredUpdateTypes.Add(ConditionUpdateType.SemVerPatch);
+                }
+            }
+        }
 
         // while it would be nice to lift the cooldown options into the IgnoredUpdateTypes field, we don't know the
         // publish date of the packages, so we have to pass along the whole object for the version finder to sort out
@@ -188,7 +214,7 @@ public class RunWorker
             IsVulnerable = isVulnerable,
             IgnoredVersions = ignoredVersions,
             Vulnerabilities = vulnerabilities,
-            IgnoredUpdateTypes = ignoredUpdateTypes,
+            IgnoredUpdateTypes = [.. ignoredUpdateTypes.OrderBy(t => t)],
             Cooldown = includeCooldown ? job.Cooldown : null,
         };
         return dependencyInfo;

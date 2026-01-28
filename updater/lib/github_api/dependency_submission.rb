@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_graphers"
+require "dependabot/environment"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
@@ -12,9 +13,22 @@ module GithubApi
   class DependencySubmission
     extend T::Sig
 
-    SNAPSHOT_VERSION = 0
+    SNAPSHOT_VERSION = 1
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
+
+    # Expected reasons for empty or degraded snapshots
+    DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
+    EMPTY_REASON_NO_MANIFESTS = "missing manifest files"
+
+    class SnapshotStatus < T::Enum
+      enums do
+        SUCCESS = new("ok")
+        DEGRADED = new("degraded")
+        SKIPPED = new("skipped")
+        FAILED = new("failed")
+      end
+    end
 
     sig { returns(String) }
     attr_reader :job_id
@@ -28,11 +42,17 @@ module GithubApi
     sig { returns(String) }
     attr_reader :package_manager
 
-    sig { returns(T::Hash[String, T.untyped]) }
-    attr_reader :manifests
+    sig { returns(Dependabot::DependencyFile) }
+    attr_reader :manifest_file
 
-    sig { returns(Dependabot::DependencyGraphers::Base) }
-    attr_reader :grapher
+    sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+    attr_reader :resolved_dependencies
+
+    sig { returns(SnapshotStatus) }
+    attr_reader :status
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason
 
     sig do
       params(
@@ -40,24 +60,32 @@ module GithubApi
         branch: String,
         sha: String,
         package_manager: String,
-        dependency_files: T::Array[Dependabot::DependencyFile],
-        dependencies: T::Array[Dependabot::Dependency]
+        manifest_file: Dependabot::DependencyFile,
+        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency],
+        status: SnapshotStatus,
+        reason: T.nilable(String)
       ).void
     end
-    def initialize(job_id:, branch:, sha:, package_manager:, dependency_files:, dependencies:)
+    def initialize(
+      job_id:,
+      branch:,
+      sha:,
+      package_manager:,
+      manifest_file:,
+      resolved_dependencies:,
+      status: SnapshotStatus::SUCCESS,
+      reason: nil
+    )
       @job_id = job_id
       @branch = branch
       @sha = sha
       @package_manager = package_manager
 
-      @grapher = T.let(
-        Dependabot::DependencyGraphers.for_package_manager(package_manager).new(
-          dependency_files:,
-          dependencies:
-        ),
-        Dependabot::DependencyGraphers::Base
-      )
-      @manifests = T.let(build_manifests(dependencies), T::Hash[String, T.untyped])
+      @manifest_file = manifest_file
+      @resolved_dependencies = resolved_dependencies
+
+      @status = status
+      @reason = reason
     end
 
     # TODO: Change to a typed structure?
@@ -75,10 +103,14 @@ module GithubApi
         },
         detector: {
           name: SNAPSHOT_DETECTOR_NAME,
-          version: Dependabot::VERSION,
+          version: detector_version,
           url: SNAPSHOT_DETECTOR_URL
         },
-        manifests: manifests
+        manifests: manifests,
+        metadata: {
+          status: status.serialize,
+          reason: reason
+        }.compact
       }
     end
 
@@ -88,15 +120,12 @@ module GithubApi
     def job_correlator
       base = "#{SNAPSHOT_DETECTOR_NAME}-#{package_manager}"
 
-      # If we don't have any manifests (e.g. empty snapshot) fall back to the base
-      return base if manifests.empty?
-
-      path = grapher.relevant_dependency_file.path
-      dirname = File.dirname(path).gsub(%r{^/}, "")
-      basename = File.basename(path)
-
-      # If manifest is at repository root, append the file name
-      return "#{base}-#{basename}" if dirname == ""
+      # If the manifest file does not have a name (e.g.,
+      # it is an empty file representing a deleted manifest),
+      # `path` will refer to the directory instead of a file.
+      path = manifest_file.path
+      dirname = manifest_file.name.empty? ? path : File.dirname(path)
+      dirname = dirname.gsub(%r{^/}, "")
 
       sanitized_path = if dirname.bytesize > 32
                          # If the dirname is pathologically long, we replace it with a SHA256
@@ -105,7 +134,15 @@ module GithubApi
                          dirname.tr("/", "-")
                        end
 
-      "#{base}-#{sanitized_path}-#{basename}"
+      sanitized_path.empty? ? base : "#{base}-#{sanitized_path}"
+    end
+
+    sig { returns(String) }
+    def detector_version
+      [
+        Dependabot::VERSION,
+        Dependabot::Environment.updater_sha
+      ].compact.join("-")
     end
 
     sig { returns(String) }
@@ -116,24 +153,28 @@ module GithubApi
     end
 
     sig do
-      params(
-        dependencies: T::Array[Dependabot::Dependency]
-      ).returns(T::Hash[String, T.untyped])
+      returns(T::Hash[String, T.untyped])
     end
-    def build_manifests(dependencies)
-      return {} if dependencies.empty?
+    def manifests
+      return {} if resolved_dependencies.empty?
 
-      file = grapher.relevant_dependency_file
       {
-        file.path => {
-          name: file.path,
+        manifest_file.path => {
+          name: manifest_file.path,
           file: {
-            source_location: file.path.gsub(%r{^/}, "")
+            source_location: manifest_file.path.gsub(%r{^/}, "")
           },
           metadata: {
             ecosystem: package_manager
           },
-          resolved: grapher.resolved_dependencies.to_h
+          resolved: resolved_dependencies.transform_values do |resolved|
+            {
+              package_url: resolved.package_url,
+              relationship: resolved.direct ? "direct" : "indirect",
+              scope: resolved.runtime ? "runtime" : "development",
+              dependencies: resolved.dependencies
+            }
+          end
         }
       }
     end

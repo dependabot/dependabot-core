@@ -7,6 +7,7 @@ dependabot \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
   -v "$(pwd)"/bin:/home/dependabot/bin \
+  -v "$(pwd)"/bazel:/home/dependabot/bazel \
   -v "$(pwd)"/bun:/home/dependabot/bun \
   -v "$(pwd)"/bundler:/home/dependabot/bundler \
   -v "$(pwd)"/cargo:/home/dependabot/cargo \
@@ -23,6 +24,7 @@ dependabot \
   -v "$(pwd)"/gradle:/home/dependabot/gradle \
   -v "$(pwd)"/helm:/home/dependabot/helm \
   -v "$(pwd)"/hex:/home/dependabot/hex \
+  -v "$(pwd)"/julia:/home/dependabot/julia \
   -v "$(pwd)"/maven:/home/dependabot/maven \
   -v "$(pwd)"/npm_and_yarn:/home/dependabot/npm_and_yarn \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
@@ -31,6 +33,7 @@ dependabot \
   -v "$(pwd)"/rust_toolchain:/home/dependabot/rust_toolchain \
   -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
+  -v "$(pwd)"/opentofu:/home/dependabot/opentofu \
   -v "$(pwd)"/uv:/home/dependabot/uv \
   -v "$(pwd)"/vcpkg:/home/dependabot/vcpkg \
   "$@"

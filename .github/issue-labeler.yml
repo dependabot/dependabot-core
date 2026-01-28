@@ -67,8 +67,17 @@
 "L: terraform":
     - '(terraform)'
 
+"L: opentofu":
+    - '(opentofu)'
+
 "L: swift":
     - '(swift)'
 
 "L: helm":
     - '(helm)'
+
+"L: bazel":
+    - '(bazel)'
+
+"L: julia":
+    - '(julia)'

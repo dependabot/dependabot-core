@@ -82,6 +82,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
   after do
@@ -1554,7 +1556,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "when updating a dependency that is a peer requirement with npm 6" do
-      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:project_name) { "npm6/peer_dependency" }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do

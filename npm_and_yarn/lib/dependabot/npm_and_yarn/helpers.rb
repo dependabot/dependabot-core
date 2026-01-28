@@ -5,6 +5,8 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/experiments"
 require "sorbet-runtime"
 
 module Dependabot
@@ -12,26 +14,50 @@ module Dependabot
     module Helpers # rubocop:disable Metrics/ModuleLength
       extend T::Sig
 
+      # Thread-local storage for dependency files and credentials
+      # This allows automatic env variable injection without passing parameters everywhere
+      class << self
+        extend T::Sig
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def dependency_files=(files)
+          Thread.current[:npm_and_yarn_dependency_files] = files
+        end
+
+        sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
+        def dependency_files
+          T.cast(Thread.current[:npm_and_yarn_dependency_files], T.nilable(T::Array[Dependabot::DependencyFile]))
+        end
+
+        sig { params(creds: T::Array[Dependabot::Credential]).void }
+        def credentials=(creds)
+          Thread.current[:npm_and_yarn_credentials] = creds
+        end
+
+        sig { returns(T.nilable(T::Array[Dependabot::Credential])) }
+        def credentials
+          T.cast(Thread.current[:npm_and_yarn_credentials], T.nilable(T::Array[Dependabot::Credential]))
+        end
+      end
+
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V10
+      NPM_DEFAULT_VERSION = NPM_V11
 
       # PNPM Version Constants
+      PNPM_V10 = 10
       PNPM_V9 = 9
       PNPM_V8 = 8
       PNPM_V7 = 7
       PNPM_V6 = 6
-      PNPM_DEFAULT_VERSION = PNPM_V9
+      PNPM_DEFAULT_VERSION = PNPM_V10
       PNPM_FALLBACK_VERSION = PNPM_V6
-
-      # BUN Version Constants
-      BUN_V1 = 1
-      BUN_DEFAULT_VERSION = BUN_V1
 
       # YARN Version Constants
       YARN_V3 = 3
@@ -68,7 +94,7 @@ module Dependabot
         lockfile_version = lockfile_version_str.to_i
 
         # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V10 if lockfile_version >= 3
+        return NPM_V11 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
@@ -107,16 +133,11 @@ module Dependabot
 
         pnpm_lockfile_version = pnpm_lockfile_version_str.to_f
 
-        return PNPM_V9 if pnpm_lockfile_version >= 9.0
+        return PNPM_V10 if pnpm_lockfile_version >= 9.0
         return PNPM_V8 if pnpm_lockfile_version >= 6.0
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
 
         PNPM_FALLBACK_VERSION
-      end
-
-      sig { params(_bun_lock: T.nilable(DependencyFile)).returns(Integer) }
-      def self.bun_version_numeric(_bun_lock)
-        BUN_DEFAULT_VERSION
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -275,13 +296,14 @@ module Dependabot
         ).returns(String)
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
+        merged_env = merge_corepack_env(env)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           package_manager_run_command(
             NpmPackageManager::NAME,
             command,
             fingerprint: fingerprint,
             output_observer: ->(output) { command_observer(output) },
-            env: env
+            env: merged_env
           )
         else
           Dependabot::SharedHelpers.run_shell_command(
@@ -337,35 +359,6 @@ module Dependabot
         raise
       end
 
-      sig { returns(T.nilable(String)) }
-      def self.bun_version
-        version = run_bun_command("--version", fingerprint: "--version").strip
-        if version.include?("+")
-          version.split("+").first # Remove build info, if present
-        end
-      rescue StandardError => e
-        Dependabot.logger.error("Error retrieving Bun version: #{e.message}")
-        nil
-      end
-
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_bun_command(command, fingerprint: nil)
-        full_command = "bun #{command}"
-
-        Dependabot.logger.info("Running bun command: #{full_command}")
-
-        result = Dependabot::SharedHelpers.run_shell_command(
-          full_command,
-          fingerprint: "bun #{fingerprint || command}"
-        )
-
-        Dependabot.logger.info("Command executed successfully: #{full_command}")
-        result
-      rescue StandardError => e
-        Dependabot.logger.error("Error running bun command: #{full_command}, Error: #{e.message}")
-        raise
-      end
-
       # Setup yarn and run a single yarn command returning stdout/stderr
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_yarn_command(command, fingerprint: nil)
@@ -399,7 +392,7 @@ module Dependabot
         end
       end
 
-      # Install the package manager for specified version by using corepack
+      # Activate the package manager for specified version by using corepack
       sig do
         params(
           name: String,
@@ -412,22 +405,20 @@ module Dependabot
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
-          # Try to install the specified version
-          output = package_manager_install(name, version, env: env)
+          # Try to activate the specified version
+          output = package_manager_activate(name, version, env: env)
 
           # Confirm success based on the output
-          if output.match?(/Adding #{name}@.* to the cache/)
+          if output.include?("immediate activation...")
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
 
             Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
-            package_manager_activate(name, version)
-
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
             fallback_to_local_version(name)
           end
         rescue StandardError => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
           fallback_to_local_version(name)
         end
 
@@ -472,13 +463,14 @@ module Dependabot
       end
 
       # Prepare the package manager for use by using corepack
-      sig { params(name: String, version: String).returns(String) }
-      def self.package_manager_activate(name, version)
+      sig { params(name: String, version: String, env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.package_manager_activate(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env
         ).strip
       end
 
@@ -524,8 +516,6 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
-
         full_command = "corepack #{name} #{command}"
         fingerprint =  "corepack #{name} #{fingerprint || command}"
 
@@ -547,6 +537,35 @@ module Dependabot
         end
 
         raise
+      end
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+      def self.merge_corepack_env(env)
+        corepack_env = build_corepack_env_variables
+        return env if corepack_env.nil? || corepack_env.empty?
+        return corepack_env if env.nil?
+
+        corepack_env.merge(env)
+      end
+
+      sig { returns(T.nilable(T::Hash[String, String])) }
+      def self.build_corepack_env_variables
+        return nil unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
+        return nil if dependency_files.nil? || credentials.nil?
+
+        files = T.must(dependency_files)
+        creds = T.must(credentials)
+
+        registry_helper = RegistryHelper.new(
+          {
+            npmrc: files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc: files.find { |f| f.name.end_with?(".yarnrc") && !f.name.end_with?(".yarnrc.yml") },
+            yarnrc_yml: files.find { |f| f.name.end_with?(".yarnrc.yml") }
+          },
+          creds
+        )
+
+        registry_helper.find_corepack_env_variables
       end
 
       private_class_method :run_single_yarn_command

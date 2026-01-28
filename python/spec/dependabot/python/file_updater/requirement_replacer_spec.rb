@@ -102,6 +102,22 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
             expect { req_replacer }.to raise_error(Dependabot::DependencyFileNotResolvable)
           end
         end
+
+        context "with a colon-prefixed certificate verify failure message" do
+          let(:response) { "CERTIFICATE_VERIFY_FAILED: certificate verify failed: Missing Authority Key Identifier" }
+
+          it "still raises a helpful error" do
+            expect { req_replacer }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "with a different SSL error that should not match" do
+          let(:response) { "SSL: WRONG_VERSION_NUMBER" }
+
+          it "does not raise any error" do
+            expect { req_replacer }.not_to raise_error
+          end
+        end
       end
     end
   end

@@ -69,7 +69,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
   after do
@@ -77,58 +81,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   end
 
   it_behaves_like "a dependency file updater"
-
-  describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex }
-
-    it "is not empty" do
-      expect(updated_files_regex).not_to be_empty
-    end
-
-    context "when files match the regex patterns" do
-      it "returns true for files that should be updated" do
-        matching_files = [
-          "package.json",
-          "package-lock.json",
-          "npm-shrinkwrap.json",
-          "yarn.lock",
-          "pnpm-lock.yaml",
-          "pnpm-workspace.yaml",
-          "subdirectory/package.json",
-          "subdirectory/package-lock.json",
-          "subdirectory/npm-shrinkwrap.json",
-          "subdirectory/yarn.lock",
-          "subdirectory/pnpm-lock.yaml",
-          "apps/dependabot_business/package.json",
-          "packages/package1/package.json",
-          "packages/package2/yarn.lock",
-          ".yarn/install-state.gz",
-          ".yarn/cache/@es-test-npm-0.46.0-d544b36047-96010ece49.zip",
-          ".pnp.js",
-          ".pnp.cjs"
-        ]
-
-        matching_files.each do |file_name|
-          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-
-      it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          ".github/workflow/main.yml",
-          "some_random_file.rb",
-          "requirements.txt",
-          "Gemfile",
-          "Gemfile.lock"
-        ]
-
-        non_matching_files.each do |file_name|
-          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-    end
-  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -3486,7 +3438,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.1" }
+        let(:version) { "3.14.2" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3496,7 +3448,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content)
             .to include(
               "js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-              '  version "3.14.1"'
+              '  version "3.14.2"'
             )
         end
       end
@@ -3813,7 +3765,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:project_name) { "pnpm/multiple_sub_dependencies" }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.1" }
+        let(:version) { "3.14.2" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3821,7 +3773,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.1:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.2:\n    resolution").once
         end
       end
 

@@ -69,12 +69,12 @@ module Dependabot
                              .select { |index_url| validate_index(index_url) } # Ensure only valid URLs
                              .flat_map do |index_url|
             fetch_from_registry(index_url) || [] # Ensure it always returns an array
-            rescue Excon::Error::Timeout, Excon::Error::Socket
-              raise if MAIN_PYPI_INDEXES.include?(index_url)
+          rescue Excon::Error::Timeout, Excon::Error::Socket
+            raise if MAIN_PYPI_INDEXES.include?(index_url)
 
-              raise PrivateSourceTimedOut, sanitized_url(index_url)
-            rescue URI::InvalidURIError
-              raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
+            raise PrivateSourceTimedOut, sanitized_url(index_url)
+          rescue URI::InvalidURIError
+            raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
           end
 
           Dependabot::Package::PackageDetails.new(
@@ -294,6 +294,12 @@ module Dependabot
             .returns(T.nilable(Dependabot::Package::PackageRelease))
         end
         def format_version_release(version, release_data)
+          # Skip versions that don't conform to PEP 440
+          unless Dependabot::Python::Version.correct?(version)
+            Dependabot.logger.warn("Skipping invalid version #{version}: does not match PEP 440")
+            return nil
+          end
+
           upload_time = release_data["upload_time"]
           released_at = Time.parse(upload_time) if upload_time
           yanked = release_data["yanked"] || false
@@ -306,7 +312,7 @@ module Dependabot
             requires_python: release_data["requires_python"]
           )
 
-          release = Dependabot::Package::PackageRelease.new(
+          Dependabot::Package::PackageRelease.new(
             version: Dependabot::Python::Version.new(version),
             released_at: released_at,
             yanked: yanked,
@@ -316,7 +322,6 @@ module Dependabot
             package_type: package_type,
             language: language
           )
-          release
         end
 
         sig do

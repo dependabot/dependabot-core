@@ -60,6 +60,7 @@ module Dependabot
 
       PACKAGE_MANAGER_LOOKUP = T.let(
         {
+          "bazel" => "bazel",
           "bun" => "bun",
           "bundler" => "bundler",
           "cargo" => "cargo",
@@ -75,10 +76,12 @@ module Dependabot
           "gomod" => "go_modules",
           "gradle" => "gradle",
           "helm" => "helm",
+          "julia" => "julia",
           "maven" => "maven",
           "mix" => "hex",
           "npm" => "npm_and_yarn",
           "nuget" => "nuget",
+          "opentofu" => "opentofu",
           "pip" => "pip",
           "pub" => "pub",
           "rust-toolchain" => "rust_toolchain",

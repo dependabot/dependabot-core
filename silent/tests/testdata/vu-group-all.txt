@@ -76,6 +76,8 @@ job:
         - dependency-name: dependency-a
           dependency-version: 1.2.5
           directory: /
+          pr-number: 123
         - dependency-name: dependency-b
           dependency-version: 2.2.5
           directory: /
+          pr-number: 123

@@ -17,6 +17,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Python
+    # rubocop:disable Metrics/ClassLength
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -35,6 +36,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_version
+        return latest_version_for_git_dependency if git_dependency?
+
         @latest_version ||= T.let(
           fetch_latest_version,
           T.nilable(Gem::Version)
@@ -43,6 +46,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version
+        return latest_resolvable_version_for_git_dependency if git_dependency?
+
         @latest_resolvable_version ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version
@@ -59,6 +64,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version_with_no_unlock
+        return T.cast(dependency.version, T.nilable(Gem::Version)) if git_dependency? && git_commit_checker.pinned?
+
         @latest_resolvable_version_with_no_unlock ||= T.let(
           if resolver_type == :requirements
             resolver.latest_resolvable_version_with_no_unlock
@@ -88,6 +95,8 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        return updated_git_requirements if git_dependency?
+
         RequirementsUpdater.new(
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
@@ -112,6 +121,64 @@ module Dependabot
 
       private
 
+      sig { returns(T::Boolean) }
+      def git_dependency?
+        git_commit_checker.git_dependency?
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def latest_version_for_git_dependency
+        latest_git_version_details&.fetch(:version)
+      end
+
+      sig { returns(T.nilable(Gem::Version)) }
+      def latest_resolvable_version_for_git_dependency
+        # For git dependencies, we assume the latest version is resolvable
+        latest_version_for_git_dependency
+      end
+
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def updated_git_requirements
+        updated_source = updated_git_source
+        return requirements unless updated_source
+
+        requirements.map do |req|
+          req.merge(source: updated_source)
+        end
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def updated_git_source
+        # Update the git tag if a new version is available
+        if git_commit_checker.pinned_ref_looks_like_version? && latest_git_version_details
+          new_tag = T.must(latest_git_version_details).fetch(:tag)
+          source_details = dependency.source_details
+          return source_details.transform_keys(&:to_sym).merge(ref: new_tag) if source_details
+        end
+
+        # Otherwise return the original source
+        dependency.source_details&.transform_keys(&:to_sym)
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def latest_git_version_details
+        @latest_git_version_details ||= T.let(
+          latest_version_finder.latest_version_tag(git_commit_checker: git_commit_checker),
+          T.nilable(T::Hash[Symbol, T.untyped])
+        )
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_commit_checker
+        @git_commit_checker ||= T.let(
+          Dependabot::GitCommitChecker.new(
+            dependency: dependency,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
+      end
+
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't implemented for Python (yet)
@@ -135,10 +202,6 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def resolver
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Python package resolver : #{resolver_type}")
-        end
-
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :pipenv then pipenv_version_resolver
@@ -181,7 +244,10 @@ module Dependabot
 
       sig { returns(Symbol) }
       def pyproject_resolver
-        return :poetry if poetry_based?
+        # For hybrid projects with both [tool.poetry] and [project] sections but no lockfile,
+        # use the requirements resolver to handle PEP 621 dependencies
+        # For pure Poetry projects, use Poetry resolver even without lockfile
+        return :poetry if poetry_based? && (poetry_lock || !standard_details)
 
         :requirements
       end
@@ -207,7 +273,7 @@ module Dependabot
         )
       end
 
-      sig { returns(PipCompileVersionResolver) }
+      sig { overridable.returns(Object) }
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||= T.let(
           PipCompileVersionResolver.new(
@@ -333,24 +399,23 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def library?
-        return false unless updating_pyproject?
-        return false unless library_details
+        return @is_library unless @is_library.nil?
 
-        return false if T.must(library_details)["name"].nil?
+        @is_library = T.let(check_pypi_for_library_match, T.nilable(T::Boolean))
+        @is_library || false
+      end
 
-        # Hit PyPi and check whether there are details for a library with a
-        # matching name and description
-        index_response = Dependabot::RegistryClient.get(
+      sig { returns(T::Boolean) }
+      def check_pypi_for_library_match
+        return false unless updating_pyproject? && library_details && !T.must(library_details)["name"].nil?
+
+        response = Dependabot::RegistryClient.get(
           url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
         )
+        return false unless response.status == 200
 
-        return false unless index_response.status == 200
-
-        pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == T.must(library_details)["description"]
-      rescue Excon::Error::Timeout, Excon::Error::Socket
-        false
-      rescue URI::InvalidURIError
+        (JSON.parse(response.body)["info"] || {})["summary"] == T.must(library_details)["description"]
+      rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
         false
       end
 
@@ -454,6 +519,7 @@ module Dependabot
         dependency_files.select { |f| f.name.end_with?(".in") }
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 

@@ -1,14 +1,17 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COMPOSER_V2_VERSION=2.8.10
 ARG PHP_VERSION=8.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends \
-    software-properties-common
-RUN add-apt-repository ppa:ondrej/php \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends \
+RUN <<EOF
+  apt-get update
+  apt-get upgrade -y
+  apt-get install -y --no-install-recommends software-properties-common
+
+  # Install PHP and its packages
+  add-apt-repository ppa:ondrej/php
+  apt-get update
+  apt-get install -y --no-install-recommends \
     php${PHP_VERSION} \
     php${PHP_VERSION}-apcu \
     php${PHP_VERSION}-bcmath \
@@ -33,10 +36,12 @@ RUN add-apt-repository ppa:ondrej/php \
     php${PHP_VERSION}-xml \
     php${PHP_VERSION}-zip \
     php${PHP_VERSION}-zmq \
-    php${PHP_VERSION}-mcrypt \
-  && rm -rf /var/lib/apt/lists/*
+    php${PHP_VERSION}-mcrypt
+  rm -rf /var/lib/apt/lists/*
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
+  # Install Composer
+  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
+EOF
 
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
@@ -53,6 +58,5 @@ COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 
 RUN bash /opt/composer/helpers/v2/build
 
-COPY --chown=dependabot:dependabot composer $DEPENDABOT_HOME/composer
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents composer common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
