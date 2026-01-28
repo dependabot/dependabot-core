@@ -118,12 +118,21 @@ module Dependabot
           distribution_url = T.let(requirements[0]&.[](:source), T::Hash[Symbol, String])[:url]
           distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
-          # --no-validate-url is required to bypass HTTP proxy issues when running ./gradlew
-          # This prevents validation failures during the wrapper update process
-          # Note: This temporarily sets validateDistributionUrl=false in gradle-wrapper.properties
-          # The original value is restored after the wrapper task completes
-          # see method `get_validate_distribution_url_option` for more details
-          args = %W(wrapper --gradle-version #{version} --no-validate-url) # see
+          args = %W(wrapper --gradle-version #{version})
+
+          # Executing the wrapper task with `validateDistributionUrl=true`,
+          # issues a HEAD request to ensure that the file exists and is reachable.
+          # Example: HEAD https://services.gradle.org/distributions/gradle-9.3.0-bin.zip
+          # Unfortunately, Dependabot's proxy does not seem to support something about this request
+          # This causes the validation to fail and the wrapper task to error out
+          # To work around this, we pass `--no-validate-url` to skip the url validation step,
+          # Note: this temporarily sets `validateDistributionUrl=false` in `gradle-wrapper.properties`.
+          # After the wrapper task completes, we restore the original value, since `--no-validate-url` would otherwise
+          # persist the change in the properties file, which is not the behavior we want for users.
+          # TODO: Investigate and fix the root cause of the proxy issue and remove this workaround
+          # See https://github.com/dependabot/dependabot-core/issues/14036
+          args += %w(--no-validate-url)
+
           args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
@@ -174,12 +183,6 @@ module Dependabot
           end
         end
 
-        # This is a consequence of the lack of proper proxy support in Gradle Wrapper
-        # During the update process, Gradle Wrapper logic will try to validate the distribution URL
-        # by performing an HTTP request. If the environment requires a proxy, this validation will fail
-        # We need to add the `--no-validate-url` the commandline args to disable this validation
-        # However, this change is persistent in the `gradle-wrapper.properties` file
-        # To avoid side effects, we read the existing value before the update and restore it afterward
         sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
         def get_validate_distribution_url_option(properties_file)
           return nil unless File.exist?(properties_file)
