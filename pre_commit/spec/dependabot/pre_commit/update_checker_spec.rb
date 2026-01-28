@@ -109,7 +109,6 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       let(:ignored_versions) { [">= 7.0.0"] }
 
       it "filters out ignored versions" do
-        # Should return a version less than 7.0.0
         expect(latest_version).to be_a(Dependabot::PreCommit::Version)
         expect(latest_version.to_s.split(".").first.to_i).to be < 7
       end

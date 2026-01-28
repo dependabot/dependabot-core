@@ -47,7 +47,6 @@ module Dependabot
           @cooldown_options = cooldown_options
 
           @git_helper = T.let(git_helper, Dependabot::PreCommit::Helpers::Githelper)
-          # Pre-commit does not support security advisories, so pass an empty array to parent
           super(
             dependency: dependency,
             dependency_files: dependency_files,

@@ -36,13 +36,11 @@ module Dependabot
 
       sig { returns(Dependabot::Dependency) }
       def dependency
-        # Pre-commit will only ever be updating a single dependency
         T.must(dependencies.first)
       end
 
       sig { override.void }
       def check_required_files
-        # Just check if there are any files at all.
         return if dependency_files.any?
 
         raise "No pre-commit config files!"
@@ -106,7 +104,6 @@ module Dependabot
         current_repo = T.let(nil, T.nilable(String))
 
         updated_lines = content.lines.map do |line|
-          # Track the current repo based on "- repo: <url>" lines
           repo_match = line.match(/^\s*-\s*repo:\s*(\S+)/)
           current_repo = repo_match[1] if repo_match
 

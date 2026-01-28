@@ -157,8 +157,6 @@ module Dependabot
           if current_branch
             current_branch.delete_prefix("HEAD -> ")
           elsif branches_including_ref.size > 1
-            # If there are multiple non default branches including the pinned SHA,
-            # then it's unclear how we should proceed
             raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
           else
             branches_including_ref.first

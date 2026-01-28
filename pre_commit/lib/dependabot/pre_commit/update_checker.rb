@@ -27,13 +27,11 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
-        # Resolvability isn't an issue for pre-commit hooks.
         latest_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock
-        # No concept of "unlocking" for pre-commit hooks (since no lockfile)
         dependency.version
       end
 
@@ -88,7 +86,6 @@ module Dependabot
         ref = T.cast(source_details.fetch(:ref, nil), T.nilable(String))
         return nil unless ref
 
-        # Try to parse version-like tags (e.g., "v1.2.3" or "1.2.3")
         version_string = ref.sub(/^v/, "")
         return nil unless version_class.correct?(version_string)
 
@@ -97,7 +94,6 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        # Full unlock checks aren't relevant for pre-commit hooks
         false
       end
 
@@ -152,7 +148,6 @@ module Dependabot
           return new_commit_sha
         end
 
-        # Otherwise we can't update the ref
         nil
       end
 
@@ -198,7 +193,6 @@ module Dependabot
         if current_branch
           current_branch.delete_prefix("HEAD -> ")
         elsif branches_including_ref.size > 1
-          # If there are multiple non default branches including the pinned SHA, then it's unclear how we should proceed
           raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
         else
           branches_including_ref.first
