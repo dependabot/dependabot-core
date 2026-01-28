@@ -274,6 +274,16 @@ module Dependabot
         def handle_uv_error(error)
           error_message = error.message
 
+          # Log the full error details for debugging
+          dep = dependency
+          if dep
+            Dependabot.logger.error(
+              "UV lock command failed for dependency: #{dep.name} (#{dep.version})"
+            )
+          end
+          Dependabot.logger.error("Error message: #{error_message}")
+          Dependabot.logger.error("Error context: #{error.error_context}") if error.respond_to?(:error_context)
+
           if resolution_error?(error_message)
             handle_resolution_error(error_message)
           elsif error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
@@ -349,7 +359,21 @@ module Dependabot
         sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
         def run_command(command, fingerprint: nil, env: {})
           Dependabot.logger.info("Running command: #{command}")
+
+          # Log environment variables (excluding sensitive values)
+          unless env.empty?
+            sanitized_env = env.keys.map { |k| "#{k}=<redacted>" }.join(", ")
+            Dependabot.logger.info("With environment: #{sanitized_env}")
+          end
+
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint, env: env)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          # Log the error details before re-raising
+          Dependabot.logger.error("Command failed: #{command}")
+          if e.error_context[:process_exit_value]
+            Dependabot.logger.error("Exit status: #{e.error_context[:process_exit_value]}")
+          end
+          raise
         end
 
         sig { params(pyproject_content: String).void }
