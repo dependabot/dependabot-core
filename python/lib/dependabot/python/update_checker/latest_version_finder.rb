@@ -156,6 +156,60 @@ module Dependabot
           Dependabot.logger.error("Invalid release date format: #{release_date} and error: #{e.message}")
           0
         end
+
+        private
+
+        sig do
+          override
+            .params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          # Filter based on UPPER BOUND constraints only (<, <=, !=)
+          # We want to find the latest version that doesn't exceed upper limits
+          # Lower bounds (>, >=) should NOT restrict - we want newer versions above lower bounds
+          # Pinning constraints (==, ~=, ^) are the target of updates and should be ignored
+          return releases if dependency.requirements.empty?
+
+          reqs = extract_upper_bound_requirements
+          return releases if reqs.empty?
+
+          releases.select { |release| reqs.all? { |req| req.satisfied_by?(release.version) } }
+        end
+
+        sig { returns(T::Array[Dependabot::Requirement]) }
+        def extract_upper_bound_requirements
+          T.let(
+            dependency.requirements.filter_map do |r|
+              requirement_value = r.fetch(:requirement, nil)
+              # Skip if nil or not a String
+              next unless requirement_value.is_a?(String)
+
+              # Type guard above ensures requirement_value is a String
+              requirement_string = T.let(requirement_value, String)
+              upper_bound_parts = extract_upper_bound_parts(requirement_string)
+              next if upper_bound_parts.empty?
+
+              # Join upper bound parts and create a single requirement
+              upper_bound_requirement_string = upper_bound_parts.join(",")
+              requirement_class.new(upper_bound_requirement_string)
+            end.compact,
+            T::Array[Dependabot::Requirement]
+          )
+        end
+
+        sig { params(requirement_string: String).returns(T::Array[String]) }
+        def extract_upper_bound_parts(requirement_string)
+          # Only extract UPPER BOUND constraints: <, <=, !=
+          # NOT lower bounds (>, >=) - we want to find newer versions above lower bounds
+          T.let(
+            requirement_string.split(",").map(&:strip).select do |part|
+              # Match < or <= (but not <=>) or != followed by version
+              part.match?(/^\s*(<(?!=)|<=|!=)\s*\d/)
+            end,
+            T::Array[String]
+          )
+        end
       end
     end
   end
