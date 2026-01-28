@@ -100,10 +100,5 @@ module Dependabot
                                     "development"
                                   end
     end
-
-    sig { returns(T::Boolean) }
-    def experimental_rules_enabled?
-      Dependabot::Experiments.enabled?(:grouped_updates_experimental_rules)
-    end
   end
 end
