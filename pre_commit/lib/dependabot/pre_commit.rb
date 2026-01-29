@@ -10,6 +10,7 @@ require "dependabot/pre_commit/file_updater"
 require "dependabot/pre_commit/metadata_finder"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
+require "dependabot/pre_commit/helpers"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
