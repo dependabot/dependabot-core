@@ -2198,6 +2198,73 @@ RSpec.describe Dependabot::Updater do
         ).twice
       end
 
+      it "does not pass cooldown to the UpdateChecker for security updates even if cooldown is set" do
+        stub_update_checker(vulnerable?: true)
+
+        cooldown = {
+          "default-days" => 7
+        }
+
+        job = build_job(
+          update_cooldown: cooldown,
+          security_updates_only: true,
+          requested_dependencies: ["dummy-pkg-b"],
+          security_advisories: [
+            {
+              "dependency-name" => "dummy-pkg-b",
+              "affected-versions" => ["1.1.0"]
+            }
+          ]
+        )
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        updater.run
+
+        expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
+          dependency: anything,
+          dependency_files: anything,
+          repo_contents_path: anything,
+          credentials: anything,
+          ignored_versions: anything,
+          security_advisories: anything,
+          raise_on_ignored: anything,
+          requirements_update_strategy: anything,
+          update_cooldown: nil,
+          options: anything
+        )
+      end
+
+      it "passes cooldown to the UpdateChecker for version updates" do
+        stub_update_checker
+
+        cooldown = {
+          "default-days" => 7
+        }
+
+        job = build_job(
+          update_cooldown: cooldown,
+          security_updates_only: false
+        )
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        updater.run
+
+        expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
+          dependency: anything,
+          dependency_files: anything,
+          repo_contents_path: anything,
+          credentials: anything,
+          ignored_versions: anything,
+          security_advisories: anything,
+          raise_on_ignored: anything,
+          requirements_update_strategy: anything,
+          update_cooldown: having_attributes(default_days: 7),
+          options: anything
+        ).twice
+      end
+
       # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
       context "with a bundler 2 project" do
         it "updates dependencies correctly" do
