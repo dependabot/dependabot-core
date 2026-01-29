@@ -41,6 +41,12 @@ module Dependabot
           Regexp
         )
 
+        # Maximum number of lines to include in cleaned error messages.
+        # This limit ensures error messages remain readable while providing enough
+        # context for debugging. Most uv error messages convey the key information
+        # within the first few lines.
+        MAX_ERROR_LINES = T.let(10, Integer)
+
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_uv_error(error)
           message = error.message
@@ -76,16 +82,14 @@ module Dependabot
 
         sig { params(message: String).void }
         def handle_git_errors(message)
-          if message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = T.must(match).named_captures.fetch("tag")
+          if (match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX))
+            tag = match.named_captures.fetch("tag")
             raise Dependabot::GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
-          return unless message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+          return unless (match = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX))
 
-          match = message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-          url = T.must(match).named_captures.fetch("url")
+          url = match.named_captures.fetch("url")
           raise Dependabot::GitDependenciesNotReachable, T.must(url)
         end
 
@@ -157,7 +161,7 @@ module Dependabot
             .gsub(/#{Regexp.escape(Utils::BUMP_TMP_DIR_PATH)}[^\s]*/o, "")
             .lines
             .reject { |line| line.strip.empty? }
-            .first(10)
+            .first(MAX_ERROR_LINES)
             .join
             .strip
         end
