@@ -70,7 +70,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def multi_directory?
-          source.directories&.any?
+          !source.directories.nil? && source.directories.any?
         end
 
         sig { returns(String) }

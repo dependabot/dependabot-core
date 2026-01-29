@@ -42,22 +42,27 @@ module Dependabot
 
         sig { returns(String) }
         def application_title
-          "bump " +
-            if dependencies.one?
-              single_dependency_application_title
-            elsif updating_a_property?
+          if dependencies.one?
+            if updating_a_property?
               property_application_title
             elsif updating_a_dependency_set?
               dependency_set_application_title
             else
-              multiple_dependencies_application_title
+              single_dependency_application_title
             end
+          elsif updating_a_property?
+            property_application_title
+          elsif updating_a_dependency_set?
+            dependency_set_application_title
+          else
+            multiple_dependencies_application_title
+          end
         end
 
         sig { returns(String) }
         def single_dependency_application_title
           dep = T.must(dependencies.first)
-          "#{dep.display_name} " \
+          "bump #{dep.display_name} " \
             "#{from_version_msg(dep.humanized_previous_version)}to #{dep.humanized_version}"
         end
 
@@ -65,7 +70,7 @@ module Dependabot
         def property_application_title
           dep = T.must(dependencies.first)
           prop_name = extract_property_name
-          "#{prop_name} " \
+          "bump #{prop_name} " \
             "#{from_version_msg(dep.humanized_previous_version)}to #{dep.humanized_version}"
         end
 
@@ -73,7 +78,7 @@ module Dependabot
         def dependency_set_application_title
           dep = T.must(dependencies.first)
           dep_set = extract_dependency_set
-          "#{dep_set.fetch(:group)} dependency set " \
+          "bump #{dep_set.fetch(:group)} dependency set " \
             "#{from_version_msg(dep.humanized_previous_version)}to #{dep.humanized_version}"
         end
 
@@ -81,9 +86,9 @@ module Dependabot
         def multiple_dependencies_application_title
           names = dependencies.map(&:name).uniq
           if names.one?
-            T.must(names.first)
+            "bump #{T.must(names.first)}"
           else
-            "#{T.must(names[0..-2]).join(', ')} and #{T.must(names[-1])}"
+            "bump #{T.must(names[0..-2]).join(', ')} and #{T.must(names[-1])}"
           end
         end
 

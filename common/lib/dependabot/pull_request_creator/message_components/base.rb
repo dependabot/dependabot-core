@@ -16,14 +16,14 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
-            options: T::Hash[Symbol, T.untyped]
+            options: T.untyped
           ).void
         end
         def initialize(dependencies:, source:, credentials:, **options)
           @dependencies = dependencies
           @source = source
           @credentials = credentials
-          @options = options
+          @options = T.let(options, T::Hash[Symbol, T.untyped])
         end
 
         sig { returns(String) }
