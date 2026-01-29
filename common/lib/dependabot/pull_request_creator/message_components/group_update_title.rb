@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "set"
 require "dependabot/pull_request_creator/message_components/pr_title"
 require "dependabot/pull_request_creator/message_components/single_update_title"
 

@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "pathname"
 require "dependabot/pull_request_creator/message_components/pr_title"
 
 module Dependabot
