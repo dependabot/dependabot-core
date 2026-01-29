@@ -120,6 +120,9 @@ RSpec.describe Dependabot::DependencySnapshot do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:group_membership_enforcement)
       .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:group_by_dependency_name)
+      .and_return(false)
   end
 
   after do
