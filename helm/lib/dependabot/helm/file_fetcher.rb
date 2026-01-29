@@ -30,7 +30,7 @@ module Dependabot
         @helm_files ||=
           T.let(
             repo_contents(raise_errors: false)
-                      .select { |f| f.type == "file" && f.name.downcase.end_with?(".yml", ".yaml") }
+                      .select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }
                       .map { |f| fetch_file_from_host(f.name) },
             T.nilable(T::Array[DependencyFile])
           )
