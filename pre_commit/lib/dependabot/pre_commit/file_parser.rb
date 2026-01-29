@@ -81,7 +81,8 @@ module Dependabot
         rev = repo["rev"]
 
         return nil if repo_url.nil? || rev.nil?
-        return nil if repo_url == "local"
+        # Skip special pre-commit repos that don't have updatable versions
+        return nil if %w(local meta).include?(repo_url)
 
         Dependency.new(
           name: repo_url,
