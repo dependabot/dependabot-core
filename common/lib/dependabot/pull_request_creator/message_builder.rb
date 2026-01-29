@@ -25,6 +25,8 @@ module Dependabot
       require_relative "message_builder/issue_linker"
       require_relative "message_builder/link_and_mention_sanitizer"
       require_relative "pr_name_prefixer"
+      require_relative "message_components/single_update_title"
+      require_relative "message_components/group_update_title"
 
       sig { returns(Dependabot::Source) }
       attr_reader :source
@@ -129,9 +131,29 @@ module Dependabot
 
       sig { returns(String) }
       def pr_name
-        name = dependency_group ? group_pr_name : solo_pr_name
-        name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
-        "#{pr_name_prefix}#{name}"
+        title_component = if dependency_group
+                            MessageComponents::GroupUpdateTitle.new(
+                              dependencies: dependencies,
+                              source: source,
+                              credentials: credentials,
+                              files: files,
+                              vulnerabilities_fixed: vulnerabilities_fixed,
+                              commit_message_options: commit_message_options,
+                              dependency_group: dependency_group
+                            )
+                          else
+                            MessageComponents::SingleUpdateTitle.new(
+                              dependencies: dependencies,
+                              source: source,
+                              credentials: credentials,
+                              files: files,
+                              vulnerabilities_fixed: vulnerabilities_fixed,
+                              commit_message_options: commit_message_options,
+                              dependency_group: nil
+                            )
+                          end
+
+        title_component.build
       end
 
       sig { returns(String) }
