@@ -25,6 +25,8 @@ module Dependabot
       require_relative "message_builder/issue_linker"
       require_relative "message_builder/link_and_mention_sanitizer"
       require_relative "pr_name_prefixer"
+      require_relative "message_components/single_update_title"
+      require_relative "message_components/group_update_title"
 
       sig { returns(Dependabot::Source) }
       attr_reader :source
@@ -129,6 +131,17 @@ module Dependabot
 
       sig { returns(String) }
       def pr_name
+        title_component = select_title_component
+
+        title_component.new(
+          dependencies: dependencies,
+          source: source,
+          credentials: credentials,
+          **title_options
+        ).build
+      rescue StandardError => e
+        # Fallback to old implementation if component fails
+        suppress_error("PR name component", e)
         name = dependency_group ? group_pr_name : solo_pr_name
         name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
         "#{pr_name_prefix}#{name}"
@@ -207,6 +220,26 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T.class_of(MessageComponents::PrTitle)) }
+      def select_title_component
+        if dependency_group
+          MessageComponents::GroupUpdateTitle
+        else
+          MessageComponents::SingleUpdateTitle
+        end
+      end
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      def title_options
+        {
+          library: library?,
+          dependency_group: dependency_group,
+          directory: files.first&.directory,
+          security_fix: vulnerabilities_fixed.values.flatten.any?,
+          commit_message_options: commit_message_options || {}
+        }
+      end
 
       sig { returns(String) }
       def solo_pr_name
