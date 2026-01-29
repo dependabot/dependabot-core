@@ -359,4 +359,52 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
   end
+
+  describe "#update_checker_for" do
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when job is a security update with cooldown configured" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|
+          definition["job"]["security_updates_only"] = true
+          definition["job"]["cooldown"] = {
+            "default-days" => 7
+          }
+        end
+      end
+
+      it "does not pass cooldown to the UpdateChecker" do
+        allow(Dependabot::Bundler::UpdateChecker).to receive(:new).and_return(stub_update_checker)
+
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
+          hash_including(update_cooldown: nil)
+        )
+      end
+    end
+
+    context "when job is a version update with cooldown configured" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|
+          definition["job"]["security_updates_only"] = false
+          definition["job"]["cooldown"] = {
+            "default-days" => 7
+          }
+        end
+      end
+
+      it "passes cooldown to the UpdateChecker" do
+        allow(Dependabot::Bundler::UpdateChecker).to receive(:new).and_return(stub_update_checker)
+
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
+          hash_including(update_cooldown: having_attributes(default_days: 7))
+        )
+      end
+    end
+  end
 end
