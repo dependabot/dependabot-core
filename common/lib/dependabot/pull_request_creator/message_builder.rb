@@ -134,10 +134,13 @@ module Dependabot
         title_component = select_title_component
 
         title_component.new(
-          dependencies: dependencies,
-          source: source,
-          credentials: credentials,
-          **title_options
+          **T.unsafe(
+            {
+              dependencies: dependencies,
+              source: source,
+              credentials: credentials
+            }.merge(title_options)
+          )
         ).build
       rescue StandardError => e
         # Fallback to old implementation if component fails

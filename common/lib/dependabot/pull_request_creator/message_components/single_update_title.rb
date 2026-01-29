@@ -129,9 +129,9 @@ module Dependabot
         sig { returns(String) }
         def extract_property_name
           prop = T.must(dependencies.first)
-              .requirements
-              .find { |r| r.dig(:metadata, :property_name) }
-              &.dig(:metadata, :property_name)
+                  .requirements
+                  .find { |r| r.dig(:metadata, :property_name) }
+                  &.dig(:metadata, :property_name)
 
           raise "No property name!" unless prop
 
@@ -141,9 +141,9 @@ module Dependabot
         sig { returns(T::Hash[Symbol, String]) }
         def extract_dependency_set
           dep_set = T.must(dependencies.first)
-              .requirements
-              .find { |r| r.dig(:metadata, :dependency_set) }
-              &.dig(:metadata, :dependency_set)
+                     .requirements
+                     .find { |r| r.dig(:metadata, :dependency_set) }
+                     &.dig(:metadata, :dependency_set)
 
           raise "No dependency set!" unless dep_set
 

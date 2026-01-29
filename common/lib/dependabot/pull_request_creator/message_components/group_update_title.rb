@@ -62,10 +62,8 @@ module Dependabot
           label = count > 1 ? "directories" : "directory"
 
           if dependencies.one?
-            " across #{count} #{label}"
-          else
-            " across #{count} #{label}"
           end
+          " across #{count} #{label}"
         end
 
         sig { returns(T::Boolean) }
