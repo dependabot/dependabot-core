@@ -634,7 +634,7 @@ module Dependabot
       # The packages/!(not-this-package) syntax is unique to Yarn
       sig { params(glob: String).returns(T.any(String, FalseClass)) }
       def yarn_ignored_glob(glob)
-        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
+        glob.match?(/!\([^)]*\)/) && glob.gsub(/(!\(([^)]*)\))/, '\2')
       end
 
       sig { returns(T.untyped) }
