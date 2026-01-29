@@ -61,8 +61,6 @@ module Dependabot
           count = T.must(directories_with_updates).count
           label = count > 1 ? "directories" : "directory"
 
-          if dependencies.one?
-          end
           " across #{count} #{label}"
         end
 
