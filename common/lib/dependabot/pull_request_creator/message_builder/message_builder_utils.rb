@@ -6,7 +6,7 @@ require "sorbet-runtime"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
-      # MessageBuilderUtils provides shared utilities for building PR titles
+      # Provides shared utilities for building pull request titles
       # that can be reused across different message builder implementations.
       #
       # This ensures PR title construction logic is centralized, so future
