@@ -276,7 +276,7 @@ module Dependabot
       def req_files_for_dir(requirements_dir)
         dir = directory.gsub(%r{(^/|/$)}, "")
         relative_reqs_dir =
-          T.unsafe(requirements_dir).path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
+          requirements_dir.path&.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "")
 
         fetch_requirement_files_from_path(relative_reqs_dir)
       end
