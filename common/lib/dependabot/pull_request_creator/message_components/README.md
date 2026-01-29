@@ -1,10 +1,29 @@
 # Message Components Architecture
 
-This directory contains composable message components for generating PR titles, commit messages, and PR bodies in Dependabot.
+## The Problem
 
-## Overview
+**PR title generation was duplicated between dependabot-core and dependabot-api**, causing inconsistency and maintenance overhead:
 
-The message components architecture provides a clean separation of concerns for building different types of messages (PR titles, PR bodies, commit messages) across different update scenarios (single dependency, grouped dependencies, multi-ecosystem updates).
+1. **Single/group ecosystem titles** → Built in `MessageBuilder` (dependabot-core)
+2. **Multi-ecosystem titles** → Built separately in dependabot-api with different logic
+3. **Result**: 
+   - Different implementations with subtle inconsistencies
+   - Duplicated prefix/capitalization logic
+   - Hard to maintain consistency across both systems
+
+### Related Issues
+
+- PR #14045 attempts to extract shared PR title construction but only partially
+- PR github/dependabot-api#7686 duplicates prefix logic in API layer
+
+## The Solution
+
+This directory contains **composable message components** that can be used by both dependabot-core and dependabot-api, providing:
+
+- **Single source of truth** for PR title generation
+- **Consistent formatting** (prefix, capitalization, security markers)
+- **Reusable components** that API can import directly
+- **Clean separation of concerns** for different update types
 
 ## Architecture
 
@@ -65,39 +84,9 @@ Generates PR titles for multi-ecosystem grouped updates (for `dependabot-api` us
 
 ## Usage
 
-### Basic Usage
+### For dependabot-core (Internal)
 
-```ruby
-# Single dependency update
-title = MessageComponents::SingleUpdateTitle.new(
-  dependencies: [dependency],
-  source: source,
-  credentials: credentials,
-  files: files,
-  vulnerabilities_fixed: {},
-  commit_message_options: nil,
-  dependency_group: nil
-)
-
-puts title.build  # => "Bump rails from 6.0 to 7.0"
-
-# Grouped update
-group_title = MessageComponents::GroupUpdateTitle.new(
-  dependencies: [dep1, dep2, dep3],
-  source: source,
-  credentials: credentials,
-  files: files,
-  vulnerabilities_fixed: {},
-  commit_message_options: nil,
-  dependency_group: dependency_group
-)
-
-puts group_title.build  # => "Bump the security-updates group with 3 updates"
-```
-
-### Integration with MessageBuilder
-
-The `MessageBuilder#pr_name` method now delegates to these components:
+The `MessageBuilder` uses components internally:
 
 ```ruby
 def pr_name
@@ -111,33 +100,84 @@ def pr_name
 end
 ```
 
-### External Usage (e.g., dependabot-api)
+### For dependabot-api (External Consumer)
 
-Components can be used directly by external consumers:
+**This is the key use case** - dependabot-api can now use the same components:
 
 ```ruby
 # In dependabot-api for multi-ecosystem updates
-title = Dependabot::PullRequestCreator::MessageComponents::MultiEcosystemTitle.new(
-  dependencies: all_dependencies,
+require "dependabot/pull_request_creator/message_components"
+
+title_component = Dependabot::PullRequestCreator::MessageComponents.create_title(
+  type: :multi_ecosystem,
+  dependencies: all_dependencies_from_multiple_ecosystems,
   source: source,
   credentials: credentials,
-  files: [],
-  vulnerabilities_fixed: {},
-  commit_message_options: nil,
   dependency_group: dependency_group
 )
 
-puts title.build  # => "Bump the all-deps group with 15 updates across multiple ecosystems"
+pr_title = title_component.build
+# => "Bump the \"all-deps\" group with 15 updates across multiple ecosystems"
+```
+
+### Using the Factory Pattern
+
+For discoverability and ease of use:
+
+```ruby
+# Create single update title
+title = MessageComponents.create_title(
+  type: :single,
+  dependencies: [dependency],
+  source: source,
+  credentials: credentials,
+  files: files
+)
+
+# Create group update title
+title = MessageComponents.create_title(
+  type: :group,
+  dependencies: [dep1, dep2, dep3],
+  source: source,
+  credentials: credentials,
+  files: files,
+  dependency_group: group
+)
+
+# Create multi-ecosystem title (for API)
+title = MessageComponents.create_title(
+  type: :multi_ecosystem,
+  dependencies: all_deps,
+  source: source,
+  credentials: credentials,
+  dependency_group: group
+)
+
+puts title.build  # => Formatted PR title
 ```
 
 ## Design Principles
 
-1. **Separation of Concerns**: Each component has a single responsibility
-2. **Reusability**: Components can be used independently by any consumer
-3. **Composition**: Complex components (e.g., `GroupUpdateTitle`) reuse simpler ones (e.g., `SingleUpdateTitle`)
-4. **Consistency**: All titles use the same prefix/capitalization logic from `PrNamePrefixer`
-5. **Type Safety**: Full Sorbet typing throughout
-6. **Backward Compatibility**: `MessageBuilder` API remains unchanged
+1. **Core/API Consistency**: Same title formatting rules apply everywhere
+2. **Single Source of Truth**: All PR title generation flows through these components
+3. **Reusability**: API can import and use components without duplication
+4. **Composable**: Complex components reuse simpler ones (e.g., `GroupUpdateTitle` uses `SingleUpdateTitle`)
+5. **Testable**: Each component can be tested independently
+6. **Type Safety**: Full Sorbet typing throughout
+7. **Backward Compatibility**: `MessageBuilder` API remains unchanged
+
+## Key Benefits for dependabot-api
+
+Before this refactoring, dependabot-api had to:
+- ❌ Duplicate PR title construction logic
+- ❌ Duplicate prefix/capitalization logic  
+- ❌ Manually stay in sync with core changes
+
+After this refactoring, dependabot-api can:
+- ✅ Import `MessageComponents` directly
+- ✅ Use `MultiEcosystemTitle` component
+- ✅ Get consistent formatting automatically
+- ✅ Benefit from core improvements automatically
 
 ## Testing
 
