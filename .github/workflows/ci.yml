@@ -38,6 +38,7 @@ jobs:
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pre_commit, name: pre_commit, ecosystem: pre-commit }
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: python, name: python, ecosystem: pip }

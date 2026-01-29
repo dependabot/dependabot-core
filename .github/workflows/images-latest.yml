@@ -55,6 +55,7 @@ jobs:
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
+          - { name: pre_commit, ecosystem: pre-commit }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: rust_toolchain, ecosystem: rust-toolchain }
