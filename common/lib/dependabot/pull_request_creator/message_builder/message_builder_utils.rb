@@ -23,12 +23,12 @@ module Dependabot
         # @return [String] The constructed PR title
         #
         # @example Basic usage
-        #   build_pr_title(title: "bump foo to 1.0", prefix: "chore: ")
-        #   # => "chore: bump foo to 1.0"
+        #   build_pr_title(title: "bump foo from 1.0 to 2.0", prefix: "chore: ")
+        #   # => "chore: bump foo from 1.0 to 2.0"
         #
         # @example With capitalization
-        #   build_pr_title(title: "bump foo to 1.0", prefix: "", capitalize_first_word: true)
-        #   # => "Bump foo to 1.0"
+        #   build_pr_title(title: "bump foo from 1.0 to 2.0", prefix: "", capitalize_first_word: true)
+        #   # => "Bump foo from 1.0 to 2.0"
         sig do
           params(
             title: String,
@@ -68,7 +68,7 @@ module Dependabot
           options = {}
           options[:prefix] = prefix if prefix && !prefix.empty?
           options[:prefix_development] = prefix_development if prefix_development && !prefix_development.empty?
-          options[:include_scope] = include_scope
+          options[:include_scope] = include_scope unless include_scope.nil?
           options
         end
       end
