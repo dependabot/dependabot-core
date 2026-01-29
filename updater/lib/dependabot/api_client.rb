@@ -461,10 +461,12 @@ module Dependabot
       Excon.new(
         base_url,
         proxy: proxy,
-        headers: {
-          "Authorization" => job_token,
-          "Content-Type" => "application/json"
-        }
+        **Dependabot::SharedHelpers.excon_defaults(
+          headers: {
+            "Authorization" => job_token,
+            "Content-Type" => "application/json"
+          }
+        )
       )
     end
 
