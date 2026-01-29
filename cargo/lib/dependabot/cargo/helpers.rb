@@ -12,7 +12,7 @@ module Dependabot
       def self.setup_credentials_in_environment(credentials)
         credentials.each do |cred|
           next if cred["type"] != "cargo_registry"
-          next if cred["registry"].nil?
+          next if cred["registry"].nil? # this will not be present for org-level registries
           next if cred["token"].nil?
 
           # If there is a 'token' property, then apply it.
