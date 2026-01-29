@@ -70,13 +70,7 @@ RSpec.describe Dependabot::Cargo::Helpers do
         [Dependabot::Credential.new({ "type" => "cargo_registry", "registry" => "my-registry", "token" => "secret" })]
       end
 
-      it "sets the token environment variable with uppercase registry name" do
-        described_class.setup_credentials_in_environment(credentials)
-
-        expect(ENV.fetch("CARGO_REGISTRIES_MY_REGISTRY_TOKEN", nil)).to eq("secret")
-      end
-
-      it "replaces hyphens with underscores in registry name" do
+      it "sets the token environment variable with uppercase registry name and hyphens replaced with underscores" do
         described_class.setup_credentials_in_environment(credentials)
 
         expect(ENV.fetch("CARGO_REGISTRIES_MY_REGISTRY_TOKEN", nil)).to eq("secret")
