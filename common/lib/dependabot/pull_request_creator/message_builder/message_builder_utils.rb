@@ -68,7 +68,7 @@ module Dependabot
           options = {}
           options[:prefix] = prefix if prefix && !prefix.empty?
           options[:prefix_development] = prefix_development if prefix_development && !prefix_development.empty?
-          options[:include_scope] = include_scope if include_scope
+          options[:include_scope] = include_scope
           options
         end
       end
