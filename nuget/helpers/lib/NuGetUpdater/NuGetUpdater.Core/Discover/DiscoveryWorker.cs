@@ -368,51 +368,11 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
                 foreach (var projectResult in projectResults)
                 {
-                    // If we had packages.config dependencies, merge them with the project dependencies
+                    // If we had earlier dependencies, merge them with the latest
                     if (results.TryGetValue(projectResult.FilePath, out var packagesConfigResult))
                     {
-                        var packagesConfigDependencies = packagesConfigResult.Dependencies
-                            .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
-                            .ToImmutableArray();
-
-                        // merge SDK and packages.config results
-                        var mergedDependencies = projectResult.Dependencies.Concat(packagesConfigResult.Dependencies)
-                            .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(d => d.Name)
-                            .ToImmutableArray();
-                        var mergedTargetFrameworks = projectResult.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
-                            .Select(t =>
-                            {
-                                try
-                                {
-                                    var tfm = NuGetFramework.Parse(t);
-                                    return tfm.GetShortFolderName();
-                                }
-                                catch
-                                {
-                                    return string.Empty;
-                                }
-                            })
-                            .Where(tfm => !string.IsNullOrEmpty(tfm))
-                            .Distinct()
-                            .OrderBy(tfm => tfm)
-                            .ToImmutableArray();
-                        var mergedProperties = projectResult.Properties; // packages.config discovery doesn't produce properties
-                        var mergedImportedFiles = projectResult.ImportedFiles; // packages.config discovery doesn't produce imported files
-                        var mergedAdditionalFiles = projectResult.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(f => f)
-                            .ToImmutableArray();
-                        var mergedResult = new ProjectDiscoveryResult()
-                        {
-                            FilePath = projectResult.FilePath,
-                            Dependencies = mergedDependencies,
-                            TargetFrameworks = mergedTargetFrameworks,
-                            Properties = mergedProperties,
-                            ImportedFiles = mergedImportedFiles,
-                            AdditionalFiles = mergedAdditionalFiles,
-                        };
-                        results[projectResult.FilePath] = mergedResult;
+                        var merged = MergeProjectDiscovery(packagesConfigResult, projectResult);
+                        results[projectResult.FilePath] = merged;
                     }
                     else
                     {
@@ -432,6 +392,72 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         return [.. results.Values];
+    }
+
+    internal static ProjectDiscoveryResult MergeProjectDiscovery(ProjectDiscoveryResult result1, ProjectDiscoveryResult result2)
+    {
+        if (result1.FilePath != result2.FilePath)
+        {
+            throw new InvalidOperationException($"Cannot merge ProjectDiscoveryResult with different file paths: got [{result1.FilePath}] and [{result2.FilePath}]");
+        }
+
+        var mergedDependenciesSet = result1.Dependencies.ToDictionary(d => d.Name, StringComparer.OrdinalIgnoreCase);
+        foreach (var dep in result2.Dependencies)
+        {
+            // second result set wins conflicts
+            mergedDependenciesSet[dep.Name] = dep;
+        }
+
+        var mergedDependencies = mergedDependenciesSet.Values
+            .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray();
+        var mergedProperties = result1.Properties.Concat(result2.Properties)
+            .DistinctBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(p => p.Name)
+            .ToImmutableArray();
+        var mergedTargetFrameworks = result1.TargetFrameworks.Concat(result2.TargetFrameworks)
+            .Select(t =>
+            {
+                try
+                {
+                    var tfm = NuGetFramework.Parse(t);
+                    return tfm.GetShortFolderName();
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            })
+            .Where(tfm => !string.IsNullOrEmpty(tfm))
+            .Distinct()
+            .OrderBy(tfm => tfm)
+            .ToImmutableArray();
+        var mergedReferencedProjects = result1.ReferencedProjectPaths.Concat(result2.ReferencedProjectPaths)
+            .Distinct(PathComparer.Instance)
+            .OrderBy(p => p, PathComparer.Instance)
+            .ToImmutableArray();
+        var mergedImportedFiles = result1.ImportedFiles.Concat(result2.ImportedFiles)
+            .Distinct(PathComparer.Instance)
+            .OrderBy(p => p, PathComparer.Instance)
+            .ToImmutableArray();
+        var mergedAdditionalFiles = result1.AdditionalFiles.Concat(result2.AdditionalFiles)
+            .Distinct(PathComparer.Instance)
+            .OrderBy(f => f, PathComparer.Instance)
+            .ToImmutableArray();
+        var mergedResult = new ProjectDiscoveryResult()
+        {
+            FilePath = result2.FilePath,
+            Dependencies = mergedDependencies,
+            IsSuccess = result1.IsSuccess && result2.IsSuccess,
+            Error = result1.Error ?? result2.Error,
+            Properties = mergedProperties,
+            TargetFrameworks = mergedTargetFrameworks,
+            ReferencedProjectPaths = mergedReferencedProjects,
+            ImportedFiles = mergedImportedFiles,
+            AdditionalFiles = mergedAdditionalFiles,
+            CentralPackageTransitivePinningEnabled = result1.CentralPackageTransitivePinningEnabled || result2.CentralPackageTransitivePinningEnabled,
+        };
+        return mergedResult;
     }
 
     internal static async Task WriteResultsAsync(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)
