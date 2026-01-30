@@ -40,6 +40,10 @@ module Dependabot
           /No matching distribution found|package.*not found|No versions found/i,
           Regexp
         )
+        UV_REQUIRED_VERSION_REGEX = T.let(
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+          Regexp
+        )
 
         # Maximum number of lines to include in cleaned error messages.
         # This limit ensures error messages remain readable while providing enough
@@ -51,6 +55,7 @@ module Dependabot
         def handle_uv_error(error)
           message = error.message
 
+          handle_required_version_errors(message)
           handle_resolution_errors(message)
           handle_git_errors(message)
           handle_authentication_errors(message)
@@ -63,6 +68,17 @@ module Dependabot
         end
 
         private
+
+        sig { params(message: String).void }
+        def handle_required_version_errors(message)
+          return unless (version_match = message.match(UV_REQUIRED_VERSION_REGEX))
+
+          raise Dependabot::ToolVersionNotSupported.new(
+            "uv",
+            T.must(version_match[:required]),
+            T.must(version_match[:running])
+          )
+        end
 
         sig { params(message: String).void }
         def handle_resolution_errors(message)

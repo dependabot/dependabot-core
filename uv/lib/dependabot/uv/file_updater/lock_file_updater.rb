@@ -269,24 +269,6 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           error_handler.handle_uv_error(e)
         end
-        
-        def handle_uv_error(error)
-          error_message = error.message
-
-          if (version_match = error_message.match(UV_REQUIRED_VERSION_REGEX))
-            raise Dependabot::ToolVersionNotSupported.new(
-              "uv",
-              T.must(version_match[:required]),
-              T.must(version_match[:running])
-            )
-          elsif resolution_error?(error_message)
-            handle_resolution_error(error_message)
-          elsif error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
-            raise Dependabot::DependencyFileNotResolvable, error_message
-          else
-            raise error
-          end
-        end
 
         sig { params(error_message: String).returns(T::Boolean) }
         def resolution_error?(error_message)
@@ -321,6 +303,9 @@ module Dependabot
 
           match = normalized_message.match(conflict_pattern)
           return [] unless match
+
+          [T.must(match[1]), T.must(match[2])].uniq
+        end
 
         sig { returns(LockFileErrorHandler) }
         def error_handler
