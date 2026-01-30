@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/conda/update_checker"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 
 RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
   subject(:finder) do
