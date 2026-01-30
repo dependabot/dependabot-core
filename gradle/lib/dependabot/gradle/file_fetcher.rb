@@ -188,11 +188,12 @@ module Dependabot
           file = fetch_file_if_present(File.join(dir, filename))
           next unless file
 
-          if file.name.end_with?(".jar")
+          if File.basename(file.name) == "gradle-wrapper.jar"
             file.content = Base64.encode64(T.must(file.content)) if file.content
             file.content_encoding = DependencyFile::ContentEncoding::BASE64
           end
-          file.mode = DependencyFile::Mode::EXECUTABLE if file.name.end_with?("gradlew", "gradlew.bat")
+
+          file.mode = DependencyFile::Mode::EXECUTABLE if File.basename(file.name) == "gradlew"
           file
         rescue Dependabot::DependencyFileNotFound
           # Gradle itself doesn't worry about missing subprojects, so we don't
