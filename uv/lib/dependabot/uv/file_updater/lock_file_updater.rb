@@ -29,6 +29,10 @@ module Dependabot
         UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
+        UV_REQUIRED_VERSION_REGEX = T.let(
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+          Regexp
+        )
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -274,7 +278,13 @@ module Dependabot
         def handle_uv_error(error)
           error_message = error.message
 
-          if resolution_error?(error_message)
+          if (version_match = error_message.match(UV_REQUIRED_VERSION_REGEX))
+            raise Dependabot::ToolVersionNotSupported.new(
+              "uv",
+              T.must(version_match[:required]),
+              T.must(version_match[:running])
+            )
+          elsif resolution_error?(error_message)
             handle_resolution_error(error_message)
           elsif error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             raise Dependabot::DependencyFileNotResolvable, error_message
