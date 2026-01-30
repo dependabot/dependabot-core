@@ -725,6 +725,17 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
           it { is_expected.to eq(["dependencies"]) }
         end
+
+        context "when custom labels are configured" do
+          let(:custom_labels) { ["wontfix"] }
+          let(:previous_version) { "1.4.0" }
+          let(:version) { "2.5.1" }
+
+          it { is_expected.to eq(["wontfix"]) }
+          it { is_expected.not_to include("major") }
+          it { is_expected.not_to include("minor") }
+          it { is_expected.not_to include("patch") }
+        end
       end
 
       context "when applying an update that fixes a security vulnerability" do
