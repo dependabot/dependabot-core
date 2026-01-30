@@ -23,6 +23,7 @@ module Dependabot
 
         require_relative "pyproject_preparer"
         require_relative "version_config_parser"
+        require_relative "lock_file_error_handler"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
 
@@ -266,15 +267,9 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_uv_error(e)
+          error_handler.handle_uv_error(e)
         end
-
-        sig do
-          params(
-            error: SharedHelpers::HelperSubprocessFailed
-          )
-            .returns(T.noreturn)
-        end
+        
         def handle_uv_error(error)
           error_message = error.message
 
@@ -327,8 +322,9 @@ module Dependabot
           match = normalized_message.match(conflict_pattern)
           return [] unless match
 
-          # Return both the package being updated and the blocking dependency
-          [match[1], match[2]].compact
+        sig { returns(LockFileErrorHandler) }
+        def error_handler
+          @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
         end
 
         sig { returns(T.nilable(String)) }
