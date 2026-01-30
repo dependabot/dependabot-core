@@ -1400,7 +1400,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
 
   describe "#handle_uv_error" do
-    subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
+    subject(:handle_uv_error) { updater.send(:error_handler).handle_uv_error(error) }
 
     context "when error contains a dependency conflict pattern" do
       let(:error) do
