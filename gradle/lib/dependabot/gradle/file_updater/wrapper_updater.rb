@@ -80,7 +80,7 @@ module Dependabot
 
               begin
                 # first attempt: run the wrapper task via the local Gradle wrapper (if present)
-                # `gradle-wrapper.jar` might be too old to run on host's Java version or
+                # `gradle-wrapper.jar` might not be compatible with the host's Java version or
                 # the `gradlew` script may be corrupted, so we try and fall back to system Gradle before giving up
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env)
               rescue SharedHelpers::HelperSubprocessFailed => e
