@@ -160,7 +160,7 @@ module Dependabot
           key_extractor: T.proc.params(directory: String, dep: Dependabot::Dependency).returns(T.untyped)
         ).returns(T::Array[Dependabot::Dependency])
       end
-      def deduplicate_dependencies_with_key(changes_by_dir, &key_extractor)
+      def deduplicate_dependencies_with_key(changes_by_dir)
         seen_keys = T.let(Set.new, T::Set[T.untyped])
         merged_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
@@ -168,7 +168,7 @@ module Dependabot
           directory = change.job.source.directory || "."
 
           Array(change.updated_dependencies).each do |dep|
-            key = key_extractor.call(directory, dep)
+            key = yield(directory, dep)
             next if seen_keys.include?(key)
 
             seen_keys.add(key)
