@@ -23,12 +23,17 @@ module Dependabot
 
         require_relative "pyproject_preparer"
         require_relative "version_config_parser"
+        require_relative "lock_file_error_handler"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
 
         UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
+        UV_REQUIRED_VERSION_REGEX = T.let(
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+          Regexp
+        )
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -262,25 +267,7 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_uv_error(e)
-        end
-
-        sig do
-          params(
-            error: SharedHelpers::HelperSubprocessFailed
-          )
-            .returns(T.noreturn)
-        end
-        def handle_uv_error(error)
-          error_message = error.message
-
-          if resolution_error?(error_message)
-            handle_resolution_error(error_message)
-          elsif error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
-            raise Dependabot::DependencyFileNotResolvable, error_message
-          else
-            raise error
-          end
+          error_handler.handle_uv_error(e)
         end
 
         sig { params(error_message: String).returns(T::Boolean) }
@@ -317,8 +304,12 @@ module Dependabot
           match = normalized_message.match(conflict_pattern)
           return [] unless match
 
-          # Return both the package being updated and the blocking dependency
-          [match[1], match[2]].compact
+          [T.must(match[1]), T.must(match[2])].uniq
+        end
+
+        sig { returns(LockFileErrorHandler) }
+        def error_handler
+          @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
         end
 
         sig { returns(T.nilable(String)) }

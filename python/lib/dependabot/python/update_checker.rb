@@ -163,7 +163,7 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_git_version_details
         @latest_git_version_details ||= T.let(
-          git_commit_checker.local_tag_for_latest_version,
+          latest_version_finder.latest_version_tag(git_commit_checker: git_commit_checker),
           T.nilable(T::Hash[Symbol, T.untyped])
         )
       end

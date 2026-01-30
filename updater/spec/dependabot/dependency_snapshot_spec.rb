@@ -6,6 +6,7 @@ require "support/dependency_file_helpers"
 
 require "dependabot/dependency_file"
 require "dependabot/errors"
+require "dependabot/fetched_files"
 
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
@@ -118,6 +119,9 @@ RSpec.describe Dependabot::DependencySnapshot do
       .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:group_membership_enforcement)
+      .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:group_by_dependency_name)
       .and_return(false)
   end
 

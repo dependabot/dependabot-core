@@ -5,6 +5,8 @@ require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/git_commit_checker"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/python/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
@@ -770,6 +772,149 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           it { is_expected.to be_nil }
         end
+      end
+    end
+  end
+
+  describe "#latest_version_tag" do
+    subject(:latest_version_tag) { git_finder.latest_version_tag(git_commit_checker: git_commit_checker) }
+
+    let(:git_dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: "0.110.0",
+        requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          groups: ["dependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/tiangolo/fastapi",
+            ref: "0.110.0",
+            branch: nil
+          }
+        }],
+        package_manager: "pip"
+      )
+    end
+
+    let(:git_commit_checker) do
+      Dependabot::GitCommitChecker.new(
+        dependency: git_dependency,
+        credentials: credentials,
+        ignored_versions: [],
+        raise_on_ignored: false
+      )
+    end
+
+    let(:git_finder) do
+      described_class.new(
+        dependency: git_dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: raise_on_ignored,
+        cooldown_options: cooldown_options,
+        security_advisories: security_advisories
+      )
+    end
+
+    let(:cooldown_options) { nil }
+
+    let(:allowed_version_tags) do
+      [
+        { tag: "0.110.0", version: Gem::Version.new("0.110.0"), commit_sha: "abc1", tag_sha: "def1" },
+        { tag: "0.111.0", version: Gem::Version.new("0.111.0"), commit_sha: "abc2", tag_sha: "def2" },
+        { tag: "0.120.0", version: Gem::Version.new("0.120.0"), commit_sha: "abc3", tag_sha: "def3" },
+        { tag: "0.124.0", version: Gem::Version.new("0.124.0"), commit_sha: "abc4", tag_sha: "def4" },
+        { tag: "0.124.2", version: Gem::Version.new("0.124.2"), commit_sha: "abc5", tag_sha: "def5" },
+        { tag: "0.125.0", version: Gem::Version.new("0.125.0"), commit_sha: "abc6", tag_sha: "def6" },
+        { tag: "0.126.0", version: Gem::Version.new("0.126.0"), commit_sha: "abc7", tag_sha: "def7" },
+        { tag: "0.127.0", version: Gem::Version.new("0.127.0"), commit_sha: "abc8", tag_sha: "def8" },
+        { tag: "0.128.0", version: Gem::Version.new("0.128.0"), commit_sha: "abc9", tag_sha: "def9" }
+      ]
+    end
+
+    let(:git_tag_details) do
+      [
+        Dependabot::GitTagWithDetail.new(tag: "0.110.0", release_date: "2025-02-01"),
+        Dependabot::GitTagWithDetail.new(tag: "0.111.0", release_date: "2025-05-15"),
+        Dependabot::GitTagWithDetail.new(tag: "0.120.0", release_date: "2025-10-01"),
+        Dependabot::GitTagWithDetail.new(tag: "0.124.0", release_date: "2025-12-06"),
+        Dependabot::GitTagWithDetail.new(tag: "0.124.2", release_date: "2025-12-10"),
+        Dependabot::GitTagWithDetail.new(tag: "0.125.0", release_date: "2025-12-17"),
+        Dependabot::GitTagWithDetail.new(tag: "0.126.0", release_date: "2025-12-20"),
+        Dependabot::GitTagWithDetail.new(tag: "0.127.0", release_date: "2025-12-21"),
+        Dependabot::GitTagWithDetail.new(tag: "0.128.0", release_date: "2025-12-27")
+      ]
+    end
+
+    before do
+      allow(git_commit_checker).to receive_messages(
+        local_tags_for_allowed_versions: allowed_version_tags,
+        local_tag_for_latest_version: allowed_version_tags.last,
+        refs_for_tag_with_detail: git_tag_details
+      )
+      # Freeze time to January 21, 2026
+      allow(Time).to receive(:now).and_return(Time.parse("2026-01-21"))
+    end
+
+    context "when cooldown is not set" do
+      let(:cooldown_options) { nil }
+
+      it "returns the latest version without filtering" do
+        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.128.0"))
+      end
+    end
+
+    context "when cooldown applies with 40-day default" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 40)
+      end
+
+      it "returns the latest version outside cooldown period" do
+        # 0.128.0 released 2025-12-27 is 25 days old (in cooldown)
+        # 0.124.2 released 2025-12-10 is 42 days old (outside cooldown)
+        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.124.2"))
+      end
+    end
+
+    context "when cooldown applies with 10-day default" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10)
+      end
+
+      it "returns the latest version outside 10-day cooldown" do
+        # 0.128.0 released 2025-12-27 is 25 days old (outside 10-day cooldown)
+        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.128.0"))
+      end
+    end
+
+    context "when all versions are in cooldown" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 365)
+      end
+
+      it "returns nil" do
+        expect(latest_version_tag).to be_nil
+      end
+    end
+
+    context "when cooldown has semver-based days" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 0,
+          semver_major_days: 60,
+          semver_minor_days: 40,
+          semver_patch_days: 10
+        )
+      end
+
+      it "applies semver-based cooldown correctly" do
+        # Minor bump from 0.110.0 to 0.128.0 uses semver_minor_days: 40
+        # 0.128.0 released 2025-12-27 is 25 days old (in cooldown with 40 days)
+        # 0.124.2 released 2025-12-10 is 42 days old (outside cooldown with 40 days)
+        expect(latest_version_tag[:version]).to eq(Gem::Version.new("0.124.2"))
       end
     end
   end

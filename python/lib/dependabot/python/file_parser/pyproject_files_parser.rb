@@ -180,10 +180,14 @@ module Dependabot
               }
             else
               check_requirements(requirement)
+              # String sources are registry name references (e.g., "custom") that reference
+              # [[tool.poetry.source]] definitions. Resolve them to proper hashes.
+              source_value = requirement.fetch("source", nil)
+              source = resolve_source(source_value)
               {
                 requirement: requirement["version"],
                 file: T.must(pyproject).name,
-                source: requirement.fetch("source", nil),
+                source: source,
                 groups: [type]
               }
             end
@@ -297,6 +301,34 @@ module Dependabot
         sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        sig { params(source_value: T.untyped).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def resolve_source(source_value)
+          # Return nil if no source specified
+          return nil if source_value.nil?
+
+          # If already a hash, return as-is (handles git sources)
+          return source_value if source_value.is_a?(Hash)
+
+          # String sources are references to [[tool.poetry.source]] definitions
+          # Look up the source definition and create a hash
+          return nil unless source_value.is_a?(String)
+
+          source_name = source_value
+          poetry_sources = parsed_pyproject.dig("tool", "poetry", "source") || []
+          source_def = poetry_sources.find { |s| s["name"] == source_name }
+
+          # If source definition not found, return nil
+          return nil unless source_def
+
+          # Create a hash with type and url from the source definition
+          # Use "registry" as the type since these are package index sources
+          {
+            type: "registry",
+            url: source_def["url"],
+            name: source_name
+          }
         end
 
         sig { returns(T.untyped) }

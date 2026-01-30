@@ -1,0 +1,19 @@
+[
+  {
+    "name": "MODULE.bazel",
+    "path": "MODULE.bazel",
+    "type": "file",
+    "sha": "fromfile123"
+  },
+  {
+    "name": "go.mod",
+    "path": "go.mod",
+    "type": "file",
+    "sha": "gomod123"
+  },
+  {
+    "name": "containers",
+    "path": "containers",
+    "type": "dir"
+  }
+]

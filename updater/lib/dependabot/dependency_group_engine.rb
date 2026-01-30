@@ -35,7 +35,12 @@ module Dependabot
       validate_group_configuration!(job)
 
       groups = job.dependency_groups.map do |group|
-        Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"], applies_to: group["applies-to"])
+        Dependabot::DependencyGroup.new(
+          name: group["name"],
+          rules: group["rules"],
+          applies_to: group["applies-to"],
+          group_by: group.dig("rules", "group-by")
+        )
       end
 
       # Filter out version updates when doing security updates and visa versa
@@ -92,20 +97,8 @@ module Dependabot
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def assign_to_groups!(dependencies:)
       if dependency_groups.any?
-        specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
-
-        dependencies.each do |dependency|
-          matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
-            next unless group.contains?(dependency)
-            next if should_skip_due_to_specificity?(group, dependency, specificity_calculator)
-
-            group.dependencies.push(dependency)
-            matches << group
-          end
-
-          # If we had no matches, collect the dependency as ungrouped
-          @ungrouped_dependencies << dependency if matched_groups.empty?
-        end
+        assign_dependencies_to_groups(dependencies)
+        create_dynamic_subgroups_for_dependency_name_groups(dependencies)
       else
         @ungrouped_dependencies += dependencies
       end
@@ -115,6 +108,48 @@ module Dependabot
 
     private
 
+    sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
+    def assign_dependencies_to_groups(dependencies)
+      specificity_calculator = Dependabot::Updater::PatternSpecificityCalculator.new
+
+      dependencies.each do |dependency|
+        matched_groups = assign_dependency_to_matching_groups(dependency, specificity_calculator)
+        mark_ungrouped_if_no_matches(dependency, matched_groups)
+      end
+    end
+
+    sig do
+      params(
+        dependency: Dependabot::Dependency,
+        specificity_calculator: Dependabot::Updater::PatternSpecificityCalculator
+      ).returns(T::Array[Dependabot::DependencyGroup])
+    end
+    def assign_dependency_to_matching_groups(dependency, specificity_calculator)
+      @dependency_groups.each_with_object([]) do |group, matches|
+        next if group.group_by_dependency_name?
+        next unless group.contains?(dependency)
+        next if should_skip_due_to_specificity?(group, dependency, specificity_calculator)
+
+        group.dependencies.push(dependency)
+        matches << group
+      end
+    end
+
+    sig { params(dependency: Dependabot::Dependency, matched_groups: T::Array[Dependabot::DependencyGroup]).void }
+    def mark_ungrouped_if_no_matches(dependency, matched_groups)
+      return unless matched_groups.empty?
+      return if matches_group_by_parent_group?(dependency)
+
+      @ungrouped_dependencies << dependency
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def matches_group_by_parent_group?(dependency)
+      @dependency_groups.any? do |group|
+        group.group_by_dependency_name? && group.contains?(dependency)
+      end
+    end
+
     sig { params(dependency_groups: T::Array[Dependabot::DependencyGroup]).void }
     def initialize(dependency_groups:)
       @dependency_groups = dependency_groups
@@ -123,7 +158,11 @@ module Dependabot
 
     sig { void }
     def validate_groups
-      empty_groups = dependency_groups.select { |group| group.dependencies.empty? }
+      # Exclude parent groups with group_by_dependency_name? from empty group warnings
+      # as they intentionally have no direct dependencies (subgroups have them)
+      empty_groups = dependency_groups.select do |group|
+        group.dependencies.empty? && !group.group_by_dependency_name?
+      end
       warn_misconfigured_groups(empty_groups) if empty_groups.any?
     end
 
@@ -170,6 +209,28 @@ module Dependabot
       end
 
       false
+    end
+
+    sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
+    def create_dynamic_subgroups_for_dependency_name_groups(dependencies)
+      parent_groups = @dependency_groups.select(&:group_by_dependency_name?)
+
+      parent_groups.each do |parent_group|
+        matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
+
+        matching_deps.group_by(&:name).each do |dep_name, deps|
+          subgroup = Dependabot::DependencyGroup.new(
+            name: "#{parent_group.name}/#{dep_name}",
+            rules: parent_group.rules.merge("patterns" => [dep_name]),
+            applies_to: parent_group.applies_to
+            # NOTE: subgroups don't inherit group_by to prevent infinite recursion
+          )
+          subgroup.dependencies.concat(deps)
+          @dependency_groups << subgroup
+        end
+
+        parent_group.dependencies.clear
+      end
     end
   end
 end

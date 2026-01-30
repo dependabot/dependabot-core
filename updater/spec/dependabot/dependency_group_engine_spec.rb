@@ -275,9 +275,13 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, ungrouped_pkg] }
 
       before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement)
           .and_return(experiment_enabled)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name)
+          .and_return(false)
       end
 
       context "when experiment is enabled" do
@@ -618,6 +622,261 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       it "does not log a warning" do
         expect(Dependabot.logger).not_to receive(:warn)
         dependency_group_engine
+      end
+    end
+  end
+
+  context "when a group has group-by: dependency-name configured" do
+    let(:dummy_pkg_a_dir1) do
+      Dependabot::Dependency.new(
+        name: "dummy-pkg-a",
+        package_manager: "bundler",
+        version: "1.1.0",
+        requirements: [
+          {
+            file: "packages/app1/Gemfile",
+            requirement: "~> 1.1.0",
+            groups: ["default"],
+            source: nil
+          }
+        ],
+        directory: "/packages/app1"
+      )
+    end
+
+    let(:dummy_pkg_a_dir2) do
+      Dependabot::Dependency.new(
+        name: "dummy-pkg-a",
+        package_manager: "bundler",
+        version: "1.0.0",
+        requirements: [
+          {
+            file: "packages/app2/Gemfile",
+            requirement: "~> 1.0.0",
+            groups: ["default"],
+            source: nil
+          }
+        ],
+        directory: "/packages/app2"
+      )
+    end
+
+    let(:dummy_pkg_b_dir1) do
+      Dependabot::Dependency.new(
+        name: "dummy-pkg-b",
+        package_manager: "bundler",
+        version: "2.0.0",
+        requirements: [
+          {
+            file: "packages/app1/Gemfile",
+            requirement: "~> 2.0.0",
+            groups: ["default"],
+            source: nil
+          }
+        ],
+        directory: "/packages/app1"
+      )
+    end
+
+    let(:other_pkg) do
+      Dependabot::Dependency.new(
+        name: "other-pkg",
+        package_manager: "bundler",
+        version: "1.0.0",
+        requirements: [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: ["default"],
+            source: nil
+          }
+        ],
+        directory: "/"
+      )
+    end
+
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "monorepo-deps",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+            "group-by" => "dependency-name"
+          }
+        }
+      ]
+    end
+
+    let(:job) do
+      instance_double(
+        Dependabot::Job,
+        dependency_groups: dependency_groups_config,
+        source: source,
+        dependencies: nil,
+        security_updates_only?: false,
+        package_manager: "bundler"
+      )
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:group_by_dependency_name)
+        .and_return(true)
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:group_membership_enforcement)
+        .and_return(false)
+    end
+
+    describe "::from_job_config" do
+      it "creates groups with group_by attribute set" do
+        expect(dependency_group_engine.dependency_groups.length).to eq(1)
+        parent_group = dependency_group_engine.find_group(name: "monorepo-deps")
+        expect(parent_group.group_by).to eq("dependency-name")
+      end
+    end
+
+    describe "#assign_to_groups!" do
+      let(:dependencies) { [dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1, other_pkg] }
+
+      before do
+        dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+      end
+
+      it "creates subgroups for each unique dependency name" do
+        subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+        subgroup_b = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-b")
+
+        expect(subgroup_a).not_to be_nil
+        expect(subgroup_b).not_to be_nil
+      end
+
+      it "assigns all instances of a dependency across directories to its subgroup" do
+        subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+
+        expect(subgroup_a.dependencies).to contain_exactly(dummy_pkg_a_dir1, dummy_pkg_a_dir2)
+      end
+
+      it "leaves the parent group with no dependencies" do
+        parent_group = dependency_group_engine.find_group(name: "monorepo-deps")
+
+        expect(parent_group.dependencies).to be_empty
+      end
+
+      it "marks dependencies not matching the parent group pattern as ungrouped" do
+        expect(dependency_group_engine.ungrouped_dependencies).to contain_exactly(other_pkg)
+      end
+
+      it "does not warn about the empty parent group" do
+        # The parent group being empty is expected behavior, not a misconfiguration
+        expect(Dependabot.logger).not_to receive(:warn)
+        dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+      end
+
+      it "sets subgroup rules to target the specific dependency" do
+        subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+
+        expect(subgroup_a.rules["patterns"]).to eq(["dummy-pkg-a"])
+      end
+
+      it "preserves parent group applies_to in subgroups" do
+        subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+
+        expect(subgroup_a.applies_to).to eq("version-updates")
+      end
+
+      it "does not set group_by on subgroups to prevent infinite recursion" do
+        subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+
+        expect(subgroup_a.group_by).to be_nil
+        expect(subgroup_a.group_by_dependency_name?).to be(false)
+      end
+    end
+
+    context "when the feature flag is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name)
+          .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(false)
+      end
+
+      describe "#assign_to_groups!" do
+        let(:dependencies) { [dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1] }
+
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "treats the group as a regular group and assigns dependencies directly" do
+          parent_group = dependency_group_engine.find_group(name: "monorepo-deps")
+
+          # When flag is disabled, group_by_dependency_name? returns false
+          # so the group is treated as a regular group
+          expect(parent_group.dependencies).to contain_exactly(
+            dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1
+          )
+        end
+
+        it "does not create subgroups" do
+          subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+          expect(subgroup_a).to be_nil
+        end
+      end
+    end
+
+    context "when there are mixed regular groups and group-by groups" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "monorepo-deps",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "group-by" => "dependency-name"
+            }
+          },
+          {
+            "name" => "other-deps",
+            "rules" => {
+              "patterns" => ["other-*"]
+            }
+          }
+        ]
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name)
+          .and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_membership_enforcement)
+          .and_return(false)
+      end
+
+      describe "#assign_to_groups!" do
+        let(:dependencies) { [dummy_pkg_a_dir1, dummy_pkg_a_dir2, other_pkg] }
+
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "handles both group types correctly" do
+          # Regular group should have its dependencies
+          other_group = dependency_group_engine.find_group(name: "other-deps")
+          expect(other_group.dependencies).to contain_exactly(other_pkg)
+
+          # Subgroup should be created for the group-by group
+          subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
+          expect(subgroup_a.dependencies).to contain_exactly(dummy_pkg_a_dir1, dummy_pkg_a_dir2)
+        end
+
+        it "does not mark dependencies as ungrouped if they match any group" do
+          expect(dependency_group_engine.ungrouped_dependencies).to be_empty
+        end
       end
     end
   end

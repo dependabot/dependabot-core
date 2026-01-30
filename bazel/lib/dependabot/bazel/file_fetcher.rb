@@ -206,6 +206,8 @@ module Dependabot
       end
 
       # Fetches files and tracks their directories for BUILD file resolution.
+      # Directories are tracked even if the referenced file doesn't exist yet,
+      # as Bazel requires BUILD files to recognize directories as valid packages.
       sig do
         params(
           paths: T::Array[String],
@@ -215,12 +217,12 @@ module Dependabot
       def fetch_paths_and_track_directories(paths, directories)
         files = T.let([], T::Array[DependencyFile])
         paths.each do |path|
-          fetched_file = fetch_file_if_present(path)
-          next unless fetched_file
-
-          files << fetched_file
+          # Track the directory regardless of whether the file exists
           dir = File.dirname(path)
           directories.add(dir) unless dir == "."
+
+          fetched_file = fetch_file_if_present(path)
+          files << fetched_file if fetched_file
         end
         files
       end
