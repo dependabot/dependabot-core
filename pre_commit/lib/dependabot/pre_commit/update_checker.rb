@@ -154,13 +154,19 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def latest_commit_sha
         new_tag = T.must(latest_version_finder).latest_version_tag
-        return unless new_tag
 
-        if git_commit_checker.local_tag_for_pinned_sha
-          T.cast(new_tag.fetch(:commit_sha), String)
-        else
-          latest_commit_for_pinned_ref
+        if new_tag
+          return T.cast(new_tag.fetch(:commit_sha), String) if git_commit_checker.local_tag_for_pinned_sha
+
+          return latest_commit_for_pinned_ref
+
         end
+
+        # If there's no tag but we have a latest_version (commit SHA), use it
+        latest_ver = latest_version
+        return latest_ver if latest_ver.is_a?(String)
+
+        nil
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
