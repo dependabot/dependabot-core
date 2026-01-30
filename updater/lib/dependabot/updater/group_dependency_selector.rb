@@ -157,10 +157,10 @@ module Dependabot
       sig do
         params(
           changes_by_dir: T::Array[Dependabot::DependencyChange],
-          blk: T.proc.params(directory: String, dep: Dependabot::Dependency).returns(T.untyped)
+          _blk: T.proc.params(directory: String, dep: Dependabot::Dependency).returns(T.untyped)
         ).returns(T::Array[Dependabot::Dependency])
       end
-      def deduplicate_dependencies_with_key(changes_by_dir, &blk)
+      def deduplicate_dependencies_with_key(changes_by_dir, &_blk)
         seen_keys = T.let(Set.new, T::Set[T.untyped])
         merged_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
