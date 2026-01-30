@@ -40,7 +40,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "/update_jobs/#{job_id}/create_pull_request"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
         response = http_client.post(path: api_url, body: { data: data }.to_json)
         if response.status >= 400 && dependency_file_not_supported_error?(response.body.to_s)
@@ -67,7 +67,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "/update_jobs/#{job_id}/update_pull_request"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/update_pull_request"
         body = {
           data: {
             "dependency-names": dependency_change.updated_dependencies.map(&:name),
@@ -93,7 +93,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::PR_CLOSE_REASON, reason.to_s)
 
-        api_url = "/update_jobs/#{job_id}/close_pull_request"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/close_pull_request"
         body = { data: { "dependency-names": dependency_names, reason: reason } }
         response = http_client.post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
@@ -115,7 +115,7 @@ module Dependabot
           error_type: error_type,
           error_details: error_details
         )
-        api_url = "/update_jobs/#{job_id}/record_update_job_error"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_update_job_error"
         body = {
           data: {
             "error-type": error_type,
@@ -149,7 +149,7 @@ module Dependabot
           warn_title: warn_title,
           warn_description: warn_description
         )
-        api_url = "/update_jobs/#{job_id}/record_update_job_warning"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_update_job_warning"
         body = {
           data: {
             "warn-type": warn_type,
@@ -179,7 +179,7 @@ module Dependabot
           error_details: error_details
         )
 
-        api_url = "/update_jobs/#{job_id}/record_update_job_unknown_error"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_update_job_unknown_error"
         body = {
           data: {
             "error-type": error_type,
@@ -204,7 +204,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "/update_jobs/#{job_id}/mark_as_processed"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
         response = http_client.patch(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
@@ -223,7 +223,7 @@ module Dependabot
       ::Dependabot::OpenTelemetry.tracer.in_span("update_dependency_list", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "/update_jobs/#{job_id}/update_dependency_list"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/update_dependency_list"
         body = {
           data: {
             dependencies: dependencies,
@@ -247,7 +247,7 @@ module Dependabot
       ::Dependabot::OpenTelemetry.tracer.in_span("create_dependency_submission", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "/update_jobs/#{job_id}/create_dependency_submission"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/create_dependency_submission"
         body = {
           data: dependency_submission
         }
@@ -266,7 +266,7 @@ module Dependabot
     sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
     def record_ecosystem_versions(ecosystem_versions)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_versions", kind: :internal) do |_span|
-        api_url = "/update_jobs/#{job_id}/record_ecosystem_versions"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_versions"
         body = {
           data: { ecosystem_versions: ecosystem_versions }
         }
@@ -291,7 +291,7 @@ module Dependabot
           span.set_attribute(key.to_s, value.to_s)
         end
 
-        api_url = "/update_jobs/#{job_id}/increment_metric"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/increment_metric"
         body = {
           data: {
             metric: metric,
@@ -314,7 +314,7 @@ module Dependabot
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
-          api_url = "/update_jobs/#{job_id}/record_ecosystem_meta"
+          api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_meta"
 
           body = {
             data: [
@@ -359,7 +359,7 @@ module Dependabot
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
-          api_url = "/update_jobs/#{job_id}/record_cooldown_meta"
+          api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_cooldown_meta"
 
           body = {
             data: [
