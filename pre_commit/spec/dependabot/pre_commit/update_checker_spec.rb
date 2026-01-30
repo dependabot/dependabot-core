@@ -122,11 +122,50 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       expect(updated_requirements).to be_an(Array)
     end
 
-    context "when updating a version" do
+    context "when updating a version tag" do
       let(:reference) { "v4.4.0" }
 
       it "updates the ref in the source" do
         expect(updated_requirements.first[:source][:ref]).not_to eq(reference)
+      end
+    end
+
+    context "when dependency is pinned to commit SHA without version tags" do
+      let(:reference) { "abc123def456" }
+      let(:dependency_version) { reference }
+      let(:new_commit_sha) { "def789ghi012" }
+
+      before do
+        latest_version_finder = instance_double(
+          Dependabot::PreCommit::UpdateChecker::LatestVersionFinder,
+          latest_version_tag: nil, # No tags in repo
+          latest_release: new_commit_sha
+        )
+        allow(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)
+          .to receive(:new).and_return(latest_version_finder)
+
+        git_checker = instance_double(
+          Dependabot::GitCommitChecker,
+          git_dependency?: true,
+          pinned_ref_looks_like_commit_sha?: true,
+          ref_looks_like_commit_sha?: true
+        )
+
+        allow(checker).to receive_messages(
+          latest_version: new_commit_sha,
+          git_commit_checker: git_checker
+        )
+      end
+
+      it "falls back to using latest_version when no tags exist" do
+        # When latest_version_tag is nil,
+        # latest_commit_sha should fall back to latest_version
+        expect(updated_requirements).to be_an(Array)
+        expect(updated_requirements.first[:source][:ref]).to eq(new_commit_sha)
+      end
+
+      it "does not raise 'No files changed!' error" do
+        expect { updated_requirements }.not_to raise_error
       end
     end
   end
