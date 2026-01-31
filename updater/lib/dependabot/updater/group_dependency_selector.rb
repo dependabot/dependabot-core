@@ -137,17 +137,41 @@ module Dependabot
 
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_dependencies(changes_by_dir)
-        seen_updates = T.let(Set.new, T::Set[[String, String]])
+        if @group.group_by_dependency_name?
+          deduplicate_by_name_only(changes_by_dir)
+        else
+          deduplicate_by_directory_and_name(changes_by_dir)
+        end
+      end
+
+      sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
+      def deduplicate_by_directory_and_name(changes_by_dir)
+        deduplicate_dependencies_with_key(changes_by_dir) { |directory, dep| [directory, dep.name] }
+      end
+
+      sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
+      def deduplicate_by_name_only(changes_by_dir)
+        deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+      end
+
+      sig do
+        params(
+          changes_by_dir: T::Array[Dependabot::DependencyChange],
+          _blk: T.proc.params(directory: String, dep: Dependabot::Dependency).returns(T.untyped)
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def deduplicate_dependencies_with_key(changes_by_dir, &_blk)
+        seen_keys = T.let(Set.new, T::Set[T.untyped])
         merged_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         changes_by_dir.each do |change|
           directory = change.job.source.directory || "."
 
           Array(change.updated_dependencies).each do |dep|
-            key = [directory, dep.name]
-            next if seen_updates.include?(key)
+            key = yield(directory, dep)
+            next if seen_keys.include?(key)
 
-            seen_updates.add(key)
+            seen_keys.add(key)
             @source_directory = directory
             merged_dependencies << dep
           end
