@@ -3,7 +3,6 @@
 
 require "excon"
 require "open3"
-require "ostruct"
 require "sorbet-runtime"
 require "tmpdir"
 require "dependabot/errors"
@@ -14,6 +13,22 @@ require "dependabot/credential"
 module Dependabot
   class GitMetadataFetcher
     extend T::Sig
+
+    class GitResponse
+      extend T::Sig
+
+      sig { returns(String) }
+      attr_reader :body
+
+      sig { returns(Integer) }
+      attr_reader :status
+
+      sig { params(body: String, status: Integer).void }
+      def initialize(body:, status:)
+        @body = body
+        @status = status
+      end
+    end
 
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
 
@@ -210,12 +225,12 @@ module Dependabot
         stdout, stderr, process = Open3.capture3(env, command)
         # package the command response like a HTTP response so error handling remains unchanged
       rescue Errno::ENOENT => e # thrown when `git` isn't installed...
-        OpenStruct.new(body: e.message, status: 500)
+        GitResponse.new(body: e.message, status: 500)
       else
         if process.success?
-          OpenStruct.new(body: stdout, status: 200)
+          GitResponse.new(body: stdout, status: 200)
         else
-          OpenStruct.new(body: stderr, status: 500)
+          GitResponse.new(body: stderr, status: 500)
         end
       end
     end
@@ -340,7 +355,7 @@ module Dependabot
         clone_command = SharedHelpers.escape_command(clone_command)
 
         _stdout, stderr, process = Open3.capture3(env, clone_command)
-        return OpenStruct.new(body: stderr, status: 500) unless process.success?
+        return GitResponse.new(body: stderr, status: 500) unless process.success?
 
         # Change to the cloned repository directory
         Dir.chdir(dir) do
@@ -348,7 +363,7 @@ module Dependabot
           tags_command = 'git for-each-ref --format="%(refname:short) %(creatordate:short)" refs/tags'
           tags_stdout, stderr, process = Open3.capture3(env, tags_command)
 
-          return OpenStruct.new(body: stderr, status: 500) unless process.success?
+          return GitResponse.new(body: stderr, status: 500) unless process.success?
 
           # Parse and sort tags by creation date
           tags = tags_stdout.lines.map do |line|
@@ -359,11 +374,11 @@ module Dependabot
 
           # Format the output as a string
           formatted_output = sorted_tags.map { |tag| "#{tag[:tag]} #{tag[:date]}" }.join("\n")
-          return OpenStruct.new(body: formatted_output, status: 200)
+          return GitResponse.new(body: formatted_output, status: 200)
         end
       end
     rescue Errno::ENOENT => e # Thrown when `git` isn't installed
-      OpenStruct.new(body: e.message, status: 500)
+      GitResponse.new(body: e.message, status: 500)
     end
 
     sig do

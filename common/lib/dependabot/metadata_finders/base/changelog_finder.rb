@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "excon"
-require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"
@@ -14,6 +13,47 @@ require "dependabot/metadata_finders/base"
 module Dependabot
   module MetadataFinders
     class Base
+      class ChangelogFile
+        extend T::Sig
+
+        sig { returns(String) }
+        attr_reader :name
+
+        sig { returns(String) }
+        attr_reader :type
+
+        sig { returns(Integer) }
+        attr_reader :size
+
+        sig { returns(String) }
+        attr_reader :html_url
+
+        sig { returns(String) }
+        attr_reader :download_url
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :path
+
+        sig do
+          params(
+            name: String,
+            type: String,
+            size: Integer,
+            html_url: String,
+            download_url: String,
+            path: T.nilable(String)
+          ).void
+        end
+        def initialize(name:, type:, size:, html_url:, download_url:, path: nil)
+          @name = name
+          @type = type
+          @size = size
+          @html_url = html_url
+          @download_url = download_url
+          @path = path
+        end
+      end
+
       # rubocop:disable Metrics/ClassLength
       class ChangelogFinder
         extend T::Sig
@@ -141,18 +181,18 @@ module Dependabot
           @changelog_from_suggested_url = nil
         end
 
-        sig { returns(T.nilable(T.any(OpenStruct, Sawyer::Resource))) }
+        sig { returns(T.nilable(T.any(ChangelogFile, Sawyer::Resource))) }
         def default_branch_changelog
           return unless source
 
           @default_branch_changelog ||=
             T.let(
               changelog_from_ref(nil),
-              T.nilable(T.any(OpenStruct, Sawyer::Resource))
+              T.nilable(T.any(ChangelogFile, Sawyer::Resource))
             )
         end
 
-        sig { returns(T.nilable(T.any(OpenStruct, Sawyer::Resource))) }
+        sig { returns(T.nilable(T.any(ChangelogFile, Sawyer::Resource))) }
         def relevant_tag_changelog
           return unless source
           return unless tag_for_new_version
@@ -160,11 +200,11 @@ module Dependabot
           @relevant_tag_changelog ||=
             T.let(
               changelog_from_ref(tag_for_new_version),
-              T.nilable(T.any(OpenStruct, Sawyer::Resource))
+              T.nilable(T.any(ChangelogFile, Sawyer::Resource))
             )
         end
 
-        sig { params(ref: T.nilable(String)).returns(T.nilable(T.any(OpenStruct, Sawyer::Resource))) }
+        sig { params(ref: T.nilable(String)).returns(T.nilable(T.any(ChangelogFile, Sawyer::Resource))) }
         def changelog_from_ref(ref)
           files =
             dependency_file_list(ref)
@@ -343,7 +383,7 @@ module Dependabot
                    when "commit_directory" then "dir"
                    else file.fetch("type")
                    end
-            OpenStruct.new(
+            ChangelogFile.new(
               name: file.fetch("path").split("/").last,
               type: type,
               size: file.fetch("size", 100),
@@ -366,7 +406,7 @@ module Dependabot
                    when "tree" then "dir"
                    else file.fetch("type")
                    end
-            OpenStruct.new(
+            ChangelogFile.new(
               name: file.name,
               type: type,
               size: 100, # GitLab doesn't return file size
@@ -387,7 +427,7 @@ module Dependabot
                    else entry.fetch("gitObjectType")
                    end
 
-            OpenStruct.new(
+            ChangelogFile.new(
               name: File.basename(entry.fetch("relativePath")),
               type: type,
               size: entry.fetch("size"),

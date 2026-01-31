@@ -42,7 +42,6 @@ PATH
       opentelemetry-api (~> 1.5)
       opentelemetry-logs-api (~> 0.2)
       opentelemetry-metrics-api (~> 0.3)
-      ostruct (~> 0.6)
       parser (~> 3.3)
       psych (~> 5.0)
       sorbet-runtime (~> 0.6)
@@ -302,7 +301,6 @@ GEM
       opentelemetry-api (~> 1.0)
     opentelemetry-metrics-api (0.3.0)
       opentelemetry-api (~> 1.0)
-    ostruct (0.6.1)
     parallel (1.27.0)
     parallel_tests (4.10.1)
       parallel
@@ -574,7 +572,6 @@ CHECKSUMS
   opentelemetry-api (1.5.0) sha256=8dcc33e7aba70b1da630065ce0db3d6f50cb8ebd2017383209739439025ea997
   opentelemetry-logs-api (0.2.0) sha256=0e9241b9b53a315101a6a5f2efbfa80278a0d39f9220915871f8d6057c39b117
   opentelemetry-metrics-api (0.3.0) sha256=29f4b82cd5c5992884f4dc68d279a2cc114560f433c431bf9ef6f42d8d0f10b1
-  ostruct (0.6.1) sha256=09a3fb7ecc1fa4039f25418cc05ae9c82bd520472c5c6a6f515f03e4988cb817
   parallel (1.27.0) sha256=4ac151e1806b755fb4e2dc2332cbf0e54f2e24ba821ff2d3dcf86bf6dc4ae130
   parallel_tests (4.10.1) sha256=df05458c691462b210f7a41fc2651d4e4e8a881e8190e6d1e122c92c07735d70
   parseconfig (1.0.8) sha256=b86e117fcb635eb850b6dbae2454fc7a5a7b3767482951a07a9eb06f667a222f
