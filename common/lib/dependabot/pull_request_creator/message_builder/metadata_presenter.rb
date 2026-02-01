@@ -31,6 +31,7 @@ module Dependabot
                        :changelog_text,
                        :commits_url,
                        :commits,
+                       :install_script_changes,
                        :maintainer_changes,
                        :releases_url,
                        :releases_text,
@@ -71,6 +72,7 @@ module Dependabot
           msg += upgrade_guide_cascade
           msg += commits_cascade
           msg += maintainer_changes_cascade
+          msg += install_script_changes_cascade
           msg += break_tag unless msg == ""
           "\n" + sanitize_links_and_mentions(msg, unsafe: true)
         end
@@ -178,6 +180,16 @@ module Dependabot
           build_details_tag(
             summary: "Maintainer changes",
             body: sanitize_links_and_mentions(maintainer_changes) + "\n"
+          )
+        end
+
+        sig { returns(String) }
+        def install_script_changes_cascade
+          return "" unless install_script_changes
+
+          build_details_tag(
+            summary: "Install script changes",
+            body: sanitize_links_and_mentions(install_script_changes) + "\n"
           )
         end
 

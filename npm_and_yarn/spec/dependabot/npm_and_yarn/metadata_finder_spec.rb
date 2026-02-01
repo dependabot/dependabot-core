@@ -528,6 +528,135 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     end
   end
 
+  describe "#install_script_changes" do
+    subject(:install_script_changes) { finder.install_script_changes }
+
+    let(:dependency_name) { "install-scripts-pkg" }
+    let(:npm_url) { "https://registry.npmjs.org/install-scripts-pkg" }
+    let(:npm_all_versions_response) do
+      fixture("npm_responses", "install_scripts.json")
+    end
+
+    before do
+      stub_request(:get, npm_url)
+        .to_return(status: 200, body: npm_all_versions_response)
+    end
+
+    context "when there is no previous version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.1.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when a preinstall script is added alongside existing postinstall" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.3.0",
+          previous_version: "1.2.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns a notification about the added script" do
+        expect(install_script_changes).to eq(
+          "This version adds `preinstall` script that runs during installation. " \
+          "Review the package contents before updating."
+        )
+      end
+    end
+
+    context "when a postinstall script is added" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.1.0",
+          previous_version: "1.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns a notification about the added script" do
+        expect(install_script_changes).to eq(
+          "This version adds `postinstall` script that runs during installation. " \
+          "Review the package contents before updating."
+        )
+      end
+    end
+
+    context "when a postinstall script is modified" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.2.0",
+          previous_version: "1.1.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns a notification about the modified script" do
+        expect(install_script_changes).to eq(
+          "This version modifies `postinstall` script that runs during installation. " \
+          "Review the package contents before updating."
+        )
+      end
+    end
+
+    context "when only non-install scripts change" do
+      let(:npm_all_versions_response) do
+        fixture("npm_responses", "etag.json")
+      end
+      let(:dependency_name) { "etag" }
+      let(:npm_url) { "https://registry.npmjs.org/etag" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.7.0",
+          previous_version: "1.6.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#dependency_url" do
     subject(:dependency_url) { finder.send(:dependency_url) }
 
