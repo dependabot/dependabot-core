@@ -901,6 +901,56 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
       end
+
+      context "with multiple version catalogs" do
+        let(:dependency_files) { [libs_catalog, tools_catalog, plugins_catalog] }
+        let(:libs_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:tools_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/tools.versions.toml",
+            content: fixture("version_catalog_file", "tools.versions.toml")
+          )
+        end
+        let(:plugins_catalog) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/plugins.versions.toml",
+            content: fixture("version_catalog_file", "plugins.versions.toml")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "junit:junit",
+            version: "4.13.3",
+            previous_version: "4.13.2",
+            requirements: [{
+              file: "gradle/tools.versions.toml",
+              requirement: "4.13.3",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "junit" }
+            }],
+            previous_requirements: [{
+              file: "gradle/tools.versions.toml",
+              requirement: "4.13.2",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "junit" }
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        it "updates the correct version catalog" do
+          expect(updated_files.length).to eq(1)
+          expect(updated_files.first.name).to eq("gradle/tools.versions.toml")
+          expect(updated_files.first.content).to include('junit = "4.13.3"')
+        end
+      end
     end
   end
 end

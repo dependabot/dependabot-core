@@ -1150,6 +1150,28 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       its(:length) { is_expected.to eq(2) }
     end
+
+    describe "with multiple version catalog files" do
+      let(:files) { [tools_catalog, plugins_catalog] }
+      let(:tools_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/tools.versions.toml",
+          content: fixture("version_catalog_file", "tools.versions.toml")
+        )
+      end
+      let(:plugins_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/plugins.versions.toml",
+          content: fixture("version_catalog_file", "plugins.versions.toml")
+        )
+      end
+
+      it "parses dependencies from all catalogs" do
+        expect(dependencies.map(&:name)).to include("junit:junit")
+        expect(dependencies.map(&:name)).to include("org.jmailen.kotlinter")
+        expect(dependencies.length).to eq(2)
+      end
+    end
   end
 
   describe "#ecosystem" do
