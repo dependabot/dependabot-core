@@ -40,6 +40,10 @@ module Dependabot
           /No matching distribution found|package.*not found|No versions found/i,
           Regexp
         )
+        UV_REQUIRED_VERSION_REGEX = T.let(
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+          Regexp
+        )
 
         # Maximum number of lines to include in cleaned error messages.
         # This limit ensures error messages remain readable while providing enough
@@ -51,6 +55,7 @@ module Dependabot
         def handle_uv_error(error)
           message = error.message
 
+          handle_required_version_errors(message)
           handle_resolution_errors(message)
           handle_git_errors(message)
           handle_authentication_errors(message)
@@ -65,6 +70,17 @@ module Dependabot
         private
 
         sig { params(message: String).void }
+        def handle_required_version_errors(message)
+          return unless (version_match = message.match(UV_REQUIRED_VERSION_REGEX))
+
+          raise Dependabot::ToolVersionNotSupported.new(
+            "uv",
+            T.must(version_match[:required]),
+            T.must(version_match[:running])
+          )
+        end
+
+        sig { params(message: String).void }
         def handle_resolution_errors(message)
           return unless message.include?("No solution found when resolving dependencies") ||
                         message.include?("Failed to build") ||
@@ -73,11 +89,29 @@ module Dependabot
           match_unresolvable = message.scan(UV_UNRESOLVABLE_REGEX).last
           match_build_failed = message.scan(UV_BUILD_FAILED_REGEX).last
 
-          formatted_error = extract_match_string(match_unresolvable) ||
-                            extract_match_string(match_build_failed) ||
-                            message
+          if match_unresolvable
+            formatted_error = extract_match_string(match_unresolvable) || message
+            conflicting_deps = extract_conflicting_dependencies(formatted_error)
+            raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
 
+            raise Dependabot::DependencyFileNotResolvable, formatted_error
+          end
+
+          formatted_error = extract_match_string(match_build_failed) || message
           raise Dependabot::DependencyFileNotResolvable, formatted_error
+        end
+
+        sig { params(error_message: String).returns(T::Array[String]) }
+        def extract_conflicting_dependencies(error_message)
+          # Extract conflicting dependency names from the error message
+          # Pattern: "Because <pkg>==<ver> depends on <dep>>=<ver> and your project depends on <dep>==<ver>"
+          normalized_message = error_message.gsub(/\s+/, " ")
+          conflict_pattern = /Because (\S+)==\S+ depends on (\S+)[><=!]+\S+ and your project depends on \2==\S+/
+
+          match = normalized_message.match(conflict_pattern)
+          return [] unless match
+
+          [T.must(match[1]), T.must(match[2])].uniq
         end
 
         sig { params(message: String).void }
