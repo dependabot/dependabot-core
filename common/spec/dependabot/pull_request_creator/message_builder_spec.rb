@@ -847,6 +847,74 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
+    context "when targeting a non-default branch" do
+      let(:builder) do
+        described_class.new(
+          source: source,
+          dependencies: dependencies,
+          files: files,
+          credentials: credentials,
+          pr_message_header: pr_message_header,
+          pr_message_footer: pr_message_footer,
+          commit_message_options: commit_message_options,
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          github_redirection_service: github_redirection_service,
+          dependency_group: dependency_group,
+          ignore_conditions: ignore_conditions,
+          notices: notices,
+          target_branch: "develop",
+          default_branch: "main"
+        )
+      end
+
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(
+            status: 200,
+            body: fixture("github", "commits.json"),
+            headers: json_header
+          )
+      end
+
+      it "prefixes the PR name with the target branch" do
+        expect(pr_name).to eq("[develop] Bump business from 1.4.0 to 1.5.0")
+      end
+    end
+
+    context "when targeting the default branch" do
+      let(:builder) do
+        described_class.new(
+          source: source,
+          dependencies: dependencies,
+          files: files,
+          credentials: credentials,
+          pr_message_header: pr_message_header,
+          pr_message_footer: pr_message_footer,
+          commit_message_options: commit_message_options,
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          github_redirection_service: github_redirection_service,
+          dependency_group: dependency_group,
+          ignore_conditions: ignore_conditions,
+          notices: notices,
+          target_branch: "main",
+          default_branch: "main"
+        )
+      end
+
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(
+            status: 200,
+            body: fixture("github", "commits.json"),
+            headers: json_header
+          )
+      end
+
+      it "does not prefix the PR name when targeting default branch" do
+        expect(pr_name).to eq("Bump business from 1.4.0 to 1.5.0")
+      end
+    end
+
     context "when dealing with a dependency group with one dependency" do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })

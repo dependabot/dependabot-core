@@ -68,6 +68,12 @@ module Dependabot
       sig { returns(T.nilable(T::Array[Dependabot::Notice])) }
       attr_reader :notices
 
+      sig { returns(T.nilable(String)) }
+      attr_reader :target_branch
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :default_branch
+
       TRUNCATED_MSG = "...\n\n_Description has been truncated_"
 
       sig do
@@ -85,7 +91,9 @@ module Dependabot
           pr_message_max_length: T.nilable(Integer),
           pr_message_encoding: T.nilable(Encoding),
           ignore_conditions: T::Array[T::Hash[String, String]],
-          notices: T.nilable(T::Array[Dependabot::Notice])
+          notices: T.nilable(T::Array[Dependabot::Notice]),
+          target_branch: T.nilable(String),
+          default_branch: T.nilable(String)
         )
           .void
       end
@@ -103,7 +111,9 @@ module Dependabot
         pr_message_max_length: nil,
         pr_message_encoding: nil,
         ignore_conditions: [],
-        notices: nil
+        notices: nil,
+        target_branch: nil,
+        default_branch: nil
       )
         @dependencies               = dependencies
         @files                      = files
@@ -118,6 +128,8 @@ module Dependabot
         @pr_message_max_length      = pr_message_max_length
         @pr_message_encoding        = pr_message_encoding
         @ignore_conditions          = ignore_conditions
+        @target_branch              = target_branch
+        @default_branch             = default_branch
         @notices                    = notices
       end
 
@@ -131,7 +143,8 @@ module Dependabot
       def pr_name
         name = dependency_group ? group_pr_name : solo_pr_name
         name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
-        "#{pr_name_prefix}#{name}"
+        branch_prefix = branch_name_prefix
+        "#{branch_prefix}#{pr_name_prefix}#{name}"
       end
 
       sig { returns(String) }
@@ -306,6 +319,18 @@ module Dependabot
         pr_name_prefixer.pr_name_prefix
       rescue StandardError => e
         suppress_error("PR name", e)
+        ""
+      end
+
+      sig { returns(String) }
+      def branch_name_prefix
+        # Add branch name prefix if PR is targeting a non-default branch
+        return "" unless target_branch && default_branch
+        return "" if target_branch == default_branch
+
+        "[#{target_branch}] "
+      rescue StandardError => e
+        suppress_error("Branch name prefix", e)
         ""
       end
 

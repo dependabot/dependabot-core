@@ -4,6 +4,11 @@
 require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/credential"
+require "dependabot/clients/github_with_retries"
+require "dependabot/clients/gitlab_with_retries"
+require "dependabot/clients/azure"
+require "dependabot/clients/bitbucket"
+require "dependabot/clients/codecommit"
 
 module Dependabot
   class PullRequestCreator # rubocop:disable Metrics/ClassLength
@@ -405,8 +410,94 @@ module Dependabot
         github_redirection_service: github_redirection_service,
         dependency_group: dependency_group,
         pr_message_max_length: pr_message_max_length,
-        pr_message_encoding: pr_message_encoding
+        pr_message_encoding: pr_message_encoding,
+        target_branch: source.branch,
+        default_branch: default_branch_name
       )
+    end
+
+    sig { returns(T.nilable(String)) }
+    def default_branch_name
+      @default_branch_name ||= T.let(fetch_default_branch_from_api, T.nilable(String))
+    end
+
+    sig { returns(T.nilable(String)) }
+    def fetch_default_branch_from_api
+      case source.provider
+      when "github"
+        github_client.fetch_default_branch(source.repo)
+      when "gitlab"
+        gitlab_client.fetch_default_branch(source.repo)
+      when "azure"
+        azure_client.fetch_default_branch(source.repo)
+      when "bitbucket"
+        bitbucket_client.fetch_default_branch(source.repo)
+      when "codecommit"
+        codecommit_client.fetch_default_branch(source.repo)
+      end
+    rescue StandardError => e
+      Dependabot.logger.error("Error fetching default branch: #{e.message}")
+      nil
+    end
+
+    sig { returns(Dependabot::Clients::GithubWithRetries) }
+    def github_client
+      @github_client ||=
+        T.let(
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Clients::GithubWithRetries)
+        )
+    end
+
+    sig { returns(Dependabot::Clients::GitlabWithRetries) }
+    def gitlab_client
+      @gitlab_client ||=
+        T.let(
+          Dependabot::Clients::GitlabWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Clients::GitlabWithRetries)
+        )
+    end
+
+    sig { returns(Dependabot::Clients::Azure) }
+    def azure_client
+      @azure_client ||=
+        T.let(
+          Dependabot::Clients::Azure.for_source(
+            source: source,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Clients::Azure)
+        )
+    end
+
+    sig { returns(Dependabot::Clients::Bitbucket) }
+    def bitbucket_client
+      @bitbucket_client ||=
+        T.let(
+          Dependabot::Clients::Bitbucket.for_source(
+            source: source,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Clients::Bitbucket)
+        )
+    end
+
+    sig { returns(Dependabot::Clients::CodeCommit) }
+    def codecommit_client
+      @codecommit_client ||=
+        T.let(
+          Dependabot::Clients::CodeCommit.for_source(
+            source: source,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::Clients::CodeCommit)
+        )
     end
 
     sig { returns(Dependabot::PullRequestCreator::BranchNamer) }
