@@ -143,6 +143,7 @@ module Dependabot
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
+        return false if git_dependency?
         return false if version_resolver(remove_git_source: false).latest_allowable_version_incompatible_with_ruby?
 
         updated_dependencies = force_updater.updated_dependencies
@@ -160,6 +161,8 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
+        return [] if git_dependency?
+
         force_updater.updated_dependencies
       end
 
