@@ -1175,7 +1175,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
-        describe "for a module with lifecycle.enabled block" do
+    describe "for a module with lifecycle.enabled block" do
       let(:project_name) { "module_with_lifecycle_enabled" }
       let(:dependencies) do
         [
