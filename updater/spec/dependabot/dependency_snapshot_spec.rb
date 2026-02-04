@@ -257,6 +257,59 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
     end
 
+    context "when dependency_group_to_refresh refers to a dynamic subgroup" do
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
+      end
+
+      let(:dependency_groups) do
+        [
+          {
+            "name" => "monorepo-deps",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "group-by" => "dependency-name"
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          package_manager: "bundler",
+          security_updates_only?: false,
+          repo_contents_path: nil,
+          credentials: [],
+          reject_external_code?: false,
+          source: source,
+          dependency_groups: dependency_groups,
+          allowed_update?: true,
+          dependency_group_to_refresh: "monorepo-deps/dummy-pkg-a",
+          dependencies: nil,
+          experiments: { large_hadron_collider: true }
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name).and_return(true)
+      end
+
+      it "returns the dynamic subgroup when job_group is called" do
+        snapshot = create_dependency_snapshot
+
+        # The parent group should have dynamic subgroups created
+        expect(snapshot.groups.map(&:name)).to include("monorepo-deps/dummy-pkg-a")
+        expect(snapshot.groups.map(&:name)).to include("monorepo-deps/dummy-pkg-b")
+
+        # job_group should find the subgroup by name
+        job_group = snapshot.job_group
+        expect(job_group).not_to be_nil
+        expect(job_group.name).to eq("monorepo-deps/dummy-pkg-a")
+      end
+    end
+
     context "when it's a security update and has dependencies" do
       let(:fetched_files) do
         Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
