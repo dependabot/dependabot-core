@@ -563,7 +563,7 @@ module Dependabot
         return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
 
         unglobbed_path =
-          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+          glob.gsub(%r{^\./}, "").gsub(/!\([^)]*\)/, "*")
               .split("*")
               .first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
@@ -580,7 +580,7 @@ module Dependabot
       sig { params(glob: String, paths: T::Array[String]).returns(T::Array[String]) }
       def matching_paths(glob, paths)
         ignored_glob = yarn_ignored_glob(glob)
-        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\([^)]*\)/, "*")
         glob = "#{glob}/*" if glob.end_with?("**")
 
         results = paths.select { |filename| File.fnmatch?(glob, filename, File::FNM_PATHNAME) }
@@ -634,7 +634,7 @@ module Dependabot
       # The packages/!(not-this-package) syntax is unique to Yarn
       sig { params(glob: String).returns(T.any(String, FalseClass)) }
       def yarn_ignored_glob(glob)
-        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
+        glob.match?(/!\([^)]*\)/) && glob.gsub(/(!\(([^)]*)\))/, '\2')
       end
 
       sig { returns(T.untyped) }
