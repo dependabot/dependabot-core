@@ -161,8 +161,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        # Git dependencies are handled separately and don't use force_updater
-        # which expects a Gem::Version, not a commit SHA
+        # Git dependencies don't use force_updater as it expects Gem::Version, not commit SHAs
         return [] if git_dependency?
 
         force_updater.updated_dependencies
