@@ -6,8 +6,8 @@ require "dependabot/shared/shared_file_fetcher"
 module Dependabot
   module Helm
     class FileFetcher < Dependabot::Shared::SharedFileFetcher
-      FILENAME_REGEX = /.*\.ya?ml$/i
-      CHART_LOCK_REGEXP = /Chart\.lock/i
+      FILENAME_REGEX = /\.ya?ml\z/i
+      CHART_LOCK_FILENAME = "Chart.lock"
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
@@ -41,7 +41,7 @@ module Dependabot
         @chart_locks ||=
           T.let(
             repo_contents(raise_errors: false)
-                      .select { |f| f.type == "file" && f.name.match?(CHART_LOCK_REGEXP) }
+                      .select { |f| f.type == "file" && f.name.casecmp(CHART_LOCK_FILENAME).zero? }
                       .map { |f| fetch_file_from_host(f.name) },
             T.nilable(T::Array[DependencyFile])
           )

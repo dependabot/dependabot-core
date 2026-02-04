@@ -330,7 +330,7 @@ module Dependabot
         return [glob] unless glob.include?("*")
 
         unglobbed_path =
-          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+          glob.gsub(%r{^\./}, "").gsub(/!\([^)]*\)/, "*")
               .split("*")
               .first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
@@ -346,7 +346,7 @@ module Dependabot
 
       sig { params(glob: String, paths: T::Array[String]).returns(T::Array[String]) }
       def matching_paths(glob, paths)
-        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\([^)]*\)/, "*")
         glob = "#{glob}/*" if glob.end_with?("**")
 
         paths.select { |filename| File.fnmatch?(glob, filename, File::FNM_PATHNAME) }
