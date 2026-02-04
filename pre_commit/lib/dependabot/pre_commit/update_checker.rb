@@ -6,9 +6,8 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/version"
-require "dependabot/pre_commit/package/pypi_package_details_fetcher"
-require "dependabot/pre_commit/python_requirements_updater"
-require "dependabot/requirements_update_strategy"
+require "dependabot/pre_commit/additional_dependency_checkers"
+require "dependabot/pre_commit/additional_dependency_checkers/python"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -99,35 +98,14 @@ module Dependabot
         language = additional_dependency_language
         source = additional_dependency_source
         return nil unless source
+        return nil unless language
 
-        case language
-        when "python"
-          fetch_latest_python_version(source[:package_name])
-        when "node"
-          Dependabot.logger.debug("Node.js additional_dependencies update checking not yet supported")
-          nil
-        when "golang"
-          Dependabot.logger.debug("Go additional_dependencies update checking not yet supported")
-          nil
-        else
+        unless AdditionalDependencyCheckers.supported?(language)
           Dependabot.logger.debug("Unsupported language for additional_dependencies: #{language}")
-          nil
+          return nil
         end
-      end
 
-      sig { params(package_name: T.nilable(String)).returns(T.nilable(String)) }
-      def fetch_latest_python_version(package_name)
-        return nil unless package_name
-
-        @pypi_version_cache ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        return @pypi_version_cache[package_name] if @pypi_version_cache.key?(package_name)
-
-        fetcher = Package::PypiPackageDetailsFetcher.new(
-          package_name: package_name,
-          credentials: credentials
-        )
-
-        @pypi_version_cache[package_name] = fetcher.latest_version
+        additional_dependency_checker(language, source).latest_version
       end
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -136,58 +114,31 @@ module Dependabot
         return dependency.requirements unless latest_ver
 
         language = additional_dependency_language
-        case language
-        when "python"
-          updated_python_requirements
-        else
-          # For unsupported languages, return requirements unchanged
+        source = additional_dependency_source
+        return dependency.requirements unless language && source
+
+        unless AdditionalDependencyCheckers.supported?(language)
           Dependabot.logger.debug("Unsupported language for requirements update: #{language}")
-          dependency.requirements
+          return dependency.requirements
         end
-      end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-      def updated_python_requirements
-        # Use Python's RequirementsUpdater (extended for pre-commit) to handle
-        # version updates with proper precision and operator preservation
-        updated_reqs = PythonRequirementsUpdater.new(
-          requirements: dependency.requirements,
-          update_strategy: RequirementsUpdateStrategy::BumpVersions,
-          has_lockfile: false,
-          latest_resolvable_version: latest_version.to_s
-        ).updated_requirements
-
-        # Update the original_string in source for each requirement
-        updated_reqs.map do |req|
-          source = req[:source]
-          next req unless source.is_a?(Hash)
-          next req unless source[:type] == "additional_dependency"
-
-          new_original_string = build_updated_original_string_from_requirement(
-            source: source,
-            new_requirement: req[:requirement]
-          )
-
-          new_source = source.merge(original_string: new_original_string)
-          req.merge(source: new_source)
-        end
+        additional_dependency_checker(language, source).updated_requirements(latest_ver.to_s)
       end
 
       sig do
         params(
-          source: T::Hash[Symbol, T.untyped],
-          new_requirement: String
-        ).returns(String)
+          language: String,
+          source: T::Hash[Symbol, T.untyped]
+        ).returns(AdditionalDependencyCheckers::Base)
       end
-      def build_updated_original_string_from_requirement(source:, new_requirement:)
-        package_name = source[:original_name] || source[:package_name]
-        extras = source[:extras]
-
-        if extras
-          "#{package_name}[#{extras}]#{new_requirement}"
-        else
-          "#{package_name}#{new_requirement}"
-        end
+      def additional_dependency_checker(language, source)
+        checker_class = AdditionalDependencyCheckers.for_language(language)
+        checker_class.new(
+          source: source,
+          credentials: credentials,
+          requirements: dependency.requirements,
+          current_version: dependency.version
+        )
       end
 
       sig { returns(T.nilable(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)) }

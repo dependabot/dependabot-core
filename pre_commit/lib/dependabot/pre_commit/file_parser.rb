@@ -10,7 +10,8 @@ require "dependabot/errors"
 require "dependabot/pre_commit/package_manager"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
-require "dependabot/pre_commit/additional_dependency_parser"
+require "dependabot/pre_commit/additional_dependency_parsers"
+require "dependabot/pre_commit/additional_dependency_parsers/python"
 
 module Dependabot
   module PreCommit
@@ -149,15 +150,17 @@ module Dependabot
 
         language = detect_hook_language(hook, hook_id, repo_url)
         return dependencies unless language
+        return dependencies unless AdditionalDependencyParsers.supported?(language)
+
+        parser_class = AdditionalDependencyParsers.for_language(language)
 
         additional_deps.each do |dep_string|
           next unless dep_string.is_a?(String)
 
-          dependency = AdditionalDependencyParser.parse(
+          dependency = parser_class.parse(
             dep_string: dep_string,
             hook_id: hook_id,
             repo_url: repo_url,
-            language: language,
             file_name: file.name
           )
 
