@@ -100,7 +100,9 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      # Update to newer cosign-installer commit to avoid v3.0.2 which has issues on linux/amd64
+      # This commit defaults to cosign v3.0.3 which properly supports linux/amd64
+      - uses: sigstore/cosign-installer@430b6a704fe0c92f1b1261d84376a900f38d90ff # post-v4.0.0, defaults to cosign v3.0.3
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -115,9 +117,10 @@ jobs:
           # The format is "APPROVED:OPEN:<PR_COMMIT_SHA>", so compare the end of the string to the current commit.
           [[ ${{needs.approval.outputs.decision}} =~ $(git rev-parse HEAD)$ ]]
 
-          git fetch origin main
-          git merge origin/main --ff-only || exit 1
-          git submodule update --init --recursive
+          # Build exactly the approved PR commit without merging.
+          # Merging origin/main can fail with "refusing to merge unrelated histories" for PRs from forks.
+          # Since we build/sign only the approved commit (security validated above), merging is unnecessary.
+          # Submodules are already initialized by the checkout action with submodules: recursive.
           echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 

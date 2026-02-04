@@ -74,7 +74,9 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      # Update to newer cosign-installer commit to avoid v3.0.2 which has issues on linux/amd64
+      # This commit defaults to cosign v3.0.3 which properly supports linux/amd64
+      - uses: sigstore/cosign-installer@430b6a704fe0c92f1b1261d84376a900f38d90ff # post-v4.0.0, defaults to cosign v3.0.3
 
       - name: Build the dependabot-updater-<ecosystem> image
         # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
