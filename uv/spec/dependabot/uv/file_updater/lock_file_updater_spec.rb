@@ -1400,7 +1400,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
 
   describe "#handle_uv_error" do
-    subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
+    subject(:handle_uv_error) { updater.send(:error_handler).handle_uv_error(error) }
 
     context "when error contains a dependency conflict pattern" do
       let(:error) do
@@ -1496,6 +1496,24 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           expect(raised_error.message).to include("Failed to build")
           expect(raised_error.message).to include("setuptools-scm was unable to detect version")
           expect(raised_error.message).to include("Make sure you're either building from a fully intact git repository")
+        end
+      end
+    end
+
+    context "when error contains a uv required-version mismatch" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "error: Required uv version `==0.9.11` does not match the running version `0.9.18`. " \
+                   "Update `uv` by running `uv self update 0.9.11`.",
+          error_context: {}
+        )
+      end
+
+      it "raises ToolVersionNotSupported with the required and running versions" do
+        expect { handle_uv_error }.to raise_error(Dependabot::ToolVersionNotSupported) do |raised_error|
+          expect(raised_error.tool_name).to eq("uv")
+          expect(raised_error.detected_version).to eq("==0.9.11")
+          expect(raised_error.supported_versions).to eq("0.9.18")
         end
       end
     end

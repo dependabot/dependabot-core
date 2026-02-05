@@ -268,22 +268,28 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Fact]
-    public async Task DiscoverWithMultipleTargetFrameworks()
+    [Theory]
+    [InlineData("net7.0")] // under the safe limit for parallel processing
+    [InlineData("net7.0", "net8.0")] // at the safe limit for parallel processing
+    [InlineData("net7.0", "net8.0", "net9.0")] // above the safe limit for parallel processing
+    [InlineData("netstandard2.0", "netstandard2.1", "net6.0", "net7.0", "net8.0", "net9.0", "net10.0")] // well above the safe limit for parallel processing
+    public async Task DiscoverWithMultipleTargetFrameworks(params string[] targetFrameworks)
     {
+        // tfms are sorted for reporting purposes
+        var sortedTargetFrameworks = targetFrameworks.OrderBy(t => t, StringComparer.Ordinal).ToArray();
         await TestDiscoverAsync(
             packages:
             [
-                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "net7.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "netstandard2.0"), // the lowest TFM this test uses
             ],
             startingDirectory: "src",
             projectPath: "src/library.csproj",
             files:
             [
-                ("src/library.csproj", """
+                ("src/library.csproj", $"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                        <TargetFrameworks>{string.Join(";", targetFrameworks)}</TargetFrameworks>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Dependency" Version="1.2.3" />
@@ -298,14 +304,14 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     FilePath = "library.csproj",
                     Dependencies =
                     [
-                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: [.. sortedTargetFrameworks], IsDirect: true),
                     ],
                     ImportedFiles = [],
                     Properties =
                     [
-                        new("TargetFrameworks", "net7.0;net8.0", "src/library.csproj"),
+                        new("TargetFrameworks", string.Join(";", targetFrameworks), "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net7.0", "net8.0"],
+                    TargetFrameworks = [.. sortedTargetFrameworks],
                     ReferencedProjectPaths = [],
                     AdditionalFiles = [],
                 },

@@ -242,5 +242,52 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
         expect(namer.new_branch_name).to start_with("dependabot_bundler_rails-app_develop_my-dependency-group")
       end
     end
+
+    context "when the group name contains a slash (dynamic subgroup)" do
+      let(:directory) { "/" }
+      let(:target_branch) { "" }
+      let(:separator) { "/" }
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(name: "monorepo-deps/lodash", rules: { patterns: ["lodash"] })
+      end
+
+      it "preserves the slash in the branch name as a path separator" do
+        expect(namer.new_branch_name).to start_with("dependabot/bundler/monorepo-deps/lodash")
+      end
+
+      it "generates a valid git branch name" do
+        # Git branch names can contain slashes as path separators
+        expect(namer.new_branch_name).to match(%r{^dependabot/bundler/monorepo-deps/lodash-[a-f0-9]+$})
+      end
+    end
+
+    context "when the group name contains a scoped package name with @" do
+      let(:directory) { "/" }
+      let(:target_branch) { "" }
+      let(:separator) { "/" }
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(name: "monorepo-deps/@angular/core", rules: { patterns: ["@angular/core"] })
+      end
+
+      it "strips the @ symbol from the branch name" do
+        # The @ symbol is not allowed in git branch names by sanitize_ref
+        expect(namer.new_branch_name).to start_with("dependabot/bundler/monorepo-deps/angular/core")
+        expect(namer.new_branch_name).not_to include("@")
+      end
+    end
+
+    context "when the group name contains a slash and using underscore separator" do
+      let(:directory) { "/" }
+      let(:target_branch) { "" }
+      let(:separator) { "_" }
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(name: "monorepo-deps/lodash", rules: { patterns: ["lodash"] })
+      end
+
+      it "replaces all slashes with the custom separator" do
+        expect(namer.new_branch_name).to start_with("dependabot_bundler_monorepo-deps_lodash")
+        expect(namer.new_branch_name).not_to include("/")
+      end
+    end
   end
 end

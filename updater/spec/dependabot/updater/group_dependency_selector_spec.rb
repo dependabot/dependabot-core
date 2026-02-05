@@ -14,7 +14,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       Dependabot::DependencyGroup,
       name: group_name,
       dependencies: [],
-      rules: group_rules
+      rules: group_rules,
+      group_by_dependency_name?: false
     )
   end
 
@@ -119,6 +120,53 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         )
 
         selector.merge_per_directory!([change1, change2])
+      end
+
+      context "when group_by_dependency_name? is true" do
+        before do
+          allow(dependency_group).to receive(:group_by_dependency_name?).and_return(true)
+        end
+
+        it "deduplicates by name only, ignoring directory" do
+          result = selector.merge_per_directory!([change1, change2])
+
+          # rails appears in both /api and /web, but should only appear once
+          expect(result.updated_dependencies.length).to eq(3)
+          dependency_names = result.updated_dependencies.map(&:name)
+          expect(dependency_names).to contain_exactly("rails", "pg", "redis")
+        end
+
+        it "still merges all updated files from all directories" do
+          result = selector.merge_per_directory!([change1, change2])
+
+          expect(result.updated_dependency_files.length).to eq(2)
+          file_paths = result.updated_dependency_files.map { |f| [f.directory, f.name] }
+          expect(file_paths).to contain_exactly(["/api", "Gemfile"], ["/web", "Gemfile"])
+        end
+
+        it "logs merge statistics with deduplicated count" do
+          expect(Dependabot.logger).to receive(:info).with(
+            "GroupDependencySelector merged 2 directory changes into 3 unique dependencies " \
+            "[group=#{group_name}, ecosystem=bundler]"
+          )
+
+          selector.merge_per_directory!([change1, change2])
+        end
+      end
+
+      context "when group_by_dependency_name? is false" do
+        before do
+          allow(dependency_group).to receive(:group_by_dependency_name?).and_return(false)
+        end
+
+        it "deduplicates by directory and name (original behavior)" do
+          result = selector.merge_per_directory!([change1, change2])
+
+          # rails appears in both /api and /web, both should be kept
+          expect(result.updated_dependencies.length).to eq(4)
+          dependency_names = result.updated_dependencies.map(&:name)
+          expect(dependency_names).to contain_exactly("rails", "pg", "redis", "rails")
+        end
       end
     end
   end

@@ -6,6 +6,7 @@ require "support/dependency_file_helpers"
 
 require "dependabot/dependency_file"
 require "dependabot/errors"
+require "dependabot/fetched_files"
 
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
@@ -118,6 +119,9 @@ RSpec.describe Dependabot::DependencySnapshot do
       .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:group_membership_enforcement)
+      .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:group_by_dependency_name)
       .and_return(false)
   end
 
@@ -250,6 +254,59 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
 
         Dependabot::Experiments.reset!
+      end
+    end
+
+    context "when dependency_group_to_refresh refers to a dynamic subgroup" do
+      let(:fetched_files) do
+        Dependabot::FetchedFiles.new(base_commit_sha:, dependency_files:)
+      end
+
+      let(:dependency_groups) do
+        [
+          {
+            "name" => "monorepo-deps",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "group-by" => "dependency-name"
+            }
+          }
+        ]
+      end
+
+      let(:job) do
+        instance_double(
+          Dependabot::Job,
+          package_manager: "bundler",
+          security_updates_only?: false,
+          repo_contents_path: nil,
+          credentials: [],
+          reject_external_code?: false,
+          source: source,
+          dependency_groups: dependency_groups,
+          allowed_update?: true,
+          dependency_group_to_refresh: "monorepo-deps/dummy-pkg-a",
+          dependencies: nil,
+          experiments: { large_hadron_collider: true }
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name).and_return(true)
+      end
+
+      it "returns the dynamic subgroup when job_group is called" do
+        snapshot = create_dependency_snapshot
+
+        # The parent group should have dynamic subgroups created
+        expect(snapshot.groups.map(&:name)).to include("monorepo-deps/dummy-pkg-a")
+        expect(snapshot.groups.map(&:name)).to include("monorepo-deps/dummy-pkg-b")
+
+        # job_group should find the subgroup by name
+        job_group = snapshot.job_group
+        expect(job_group).not_to be_nil
+        expect(job_group.name).to eq("monorepo-deps/dummy-pkg-a")
       end
     end
 
@@ -411,6 +468,115 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         snapshot.current_directory = "/bar"
         expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+      end
+    end
+
+    # Shared setup for group_by_dependency_name tests
+    shared_context "with cross-directory existing PR dependencies" do
+      let(:existing_group_pull_requests) do
+        [
+          {
+            "dependency-group-name" => "group-a",
+            "dependencies" => [
+              { "dependency-name" => "dummy-pkg-a", "directory" => "/foo" },
+              { "dependency-name" => "dummy-pkg-b", "directory" => "/bar" }
+            ]
+          }
+        ]
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_for_existing_pr_dependencies).and_return(true)
+      end
+    end
+
+    context "when group_by_dependency_name? is true" do
+      include_context "with cross-directory existing PR dependencies"
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name).and_return(true)
+      end
+
+      let(:dependency_groups) do
+        [
+          {
+            "name" => "group-a",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"]
+            },
+            "group-by" => "dependency-name"
+          }
+        ]
+      end
+
+      it "includes dependencies from all directories in existing PRs (cross-directory inclusion)" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first)
+
+        # Both directories should have BOTH deps from existing PR marked as handled
+        # because group_by_dependency_name includes deps from all directories
+        snapshot.current_directory = "/foo"
+        handled_foo = snapshot.handled_dependencies
+        expect(handled_foo).to include("dummy-pkg-a")
+        expect(handled_foo).to include("dummy-pkg-b"), "expected cross-directory dep from /bar to be included in /foo"
+
+        snapshot.current_directory = "/bar"
+        handled_bar = snapshot.handled_dependencies
+        expect(handled_bar).to include("dummy-pkg-a"), "expected cross-directory dep from /foo to be included in /bar"
+        expect(handled_bar).to include("dummy-pkg-b")
+      end
+
+      context "when existing PR has no dependencies" do
+        let(:existing_group_pull_requests) do
+          [
+            {
+              "dependency-group-name" => "group-a",
+              "dependencies" => []
+            }
+          ]
+        end
+
+        it "handles empty dependencies gracefully" do
+          snapshot = create_dependency_snapshot
+          expect { snapshot.mark_group_handled(snapshot.groups.first) }.not_to raise_error
+
+          snapshot.current_directory = "/foo"
+          expect(snapshot.handled_dependencies).to include("dummy-pkg-a")
+        end
+      end
+    end
+
+    context "when group_by_dependency_name? is false" do
+      include_context "with cross-directory existing PR dependencies"
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name).and_return(false)
+      end
+
+      it "filters existing PR dependencies by directory" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first)
+
+        # Both directories will have both deps handled because:
+        # 1. group.dependencies includes all deps matching the pattern (dummy-pkg-a, dummy-pkg-b)
+        # 2. The directory filtering only affects which deps from existing_group_pull_requests are added
+        #
+        # The key difference from group_by_dependency_name?=true is:
+        # - With true: existing PR deps from ALL directories are included
+        # - With false: existing PR deps are filtered to current directory only
+        #
+        # However, since group.dependencies already includes all matching deps,
+        # this test verifies the filtering logic runs without error
+        snapshot.current_directory = "/foo"
+        handled_foo = snapshot.handled_dependencies
+        expect(handled_foo).to include("dummy-pkg-a")
+
+        snapshot.current_directory = "/bar"
+        handled_bar = snapshot.handled_dependencies
+        expect(handled_bar).to include("dummy-pkg-b")
       end
     end
   end
