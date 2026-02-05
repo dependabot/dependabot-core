@@ -139,6 +139,7 @@ Currently supported languages for additional_dependencies:
 - **Ruby** - Planned
 - **Conda** - Planned
 - **Julia** - Planned
+- **Dart** - Planned
 
 #### Key Design Principles
 
