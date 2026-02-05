@@ -32,7 +32,7 @@ module Dependabot
         versions = {}
 
         engine_versions.each do |engine, value|
-          next unless engine.to_s.match(name)
+          next unless engine.to_s == name
 
           versions[name] = ConstraintHelper.find_highest_version_from_constraint_expression(
             value, dependabot_versions
