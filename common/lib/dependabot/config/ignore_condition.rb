@@ -37,12 +37,18 @@ module Dependabot
         @update_types = T.let(update_types || [], T::Array[String])
       end
 
-      sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
-      def ignored_versions(dependency, security_updates_only)
+      sig do
+        params(
+          dependency: Dependency,
+          security_updates_only: T::Boolean,
+          semantic_versioning: String
+        ).returns(T::Array[String])
+      end
+      def ignored_versions(dependency, security_updates_only, semantic_versioning: "relaxed")
         return versions if security_updates_only
         return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
 
-        versions_by_type(dependency) + versions
+        versions_by_type(dependency, semantic_versioning: semantic_versioning) + versions
       end
 
       private
@@ -52,19 +58,19 @@ module Dependabot
         update_types.map(&:downcase).filter_map(&:strip)
       end
 
-      sig { params(dependency: Dependency).returns(T::Array[T.untyped]) }
-      def versions_by_type(dependency)
+      sig { params(dependency: Dependency, semantic_versioning: String).returns(T::Array[T.untyped]) }
+      def versions_by_type(dependency, semantic_versioning: "relaxed")
         version = correct_version_for(dependency)
         return [] unless version
 
         transformed_update_types.flat_map do |t|
           case t
           when PATCH_VERSION_TYPE
-            version.ignored_patch_versions
+            version.ignored_patch_versions_for_mode(semantic_versioning)
           when MINOR_VERSION_TYPE
-            version.ignored_minor_versions
+            version.ignored_minor_versions_for_mode(semantic_versioning)
           when MAJOR_VERSION_TYPE
-            version.ignored_major_versions
+            version.ignored_major_versions_for_mode(semantic_versioning)
           else
             []
           end
