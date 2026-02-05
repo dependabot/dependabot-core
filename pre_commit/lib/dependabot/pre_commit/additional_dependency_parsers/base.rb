@@ -7,10 +7,6 @@ require "dependabot/dependency"
 module Dependabot
   module PreCommit
     module AdditionalDependencyParsers
-      # Abstract base class for language-specific additional_dependency parsers.
-      # Each language implementation should inherit from this class and implement
-      # the abstract methods.
-      #
       class Base
         extend T::Sig
         extend T::Helpers
@@ -25,12 +21,9 @@ module Dependabot
           @file_name = file_name
         end
 
-        # Parse the dependency string and return a Dependabot::Dependency
-        # Returns nil if the dependency string cannot be parsed
         sig { abstract.returns(T.nilable(Dependabot::Dependency)) }
         def parse; end
 
-        # Class method for convenient parsing without instantiation
         sig do
           params(
             dep_string: String,
@@ -62,8 +55,6 @@ module Dependabot
         sig { returns(String) }
         attr_reader :file_name
 
-        # Build a unique dependency name that includes context
-        # Format: repo_url::hook_id::package_name
         sig { params(package_name: String).returns(String) }
         def build_dependency_name(package_name)
           "#{repo_url}::#{hook_id}::#{package_name}"

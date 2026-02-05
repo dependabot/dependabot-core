@@ -13,12 +13,6 @@ require "dependabot/pre_commit/additional_dependency_parsers/base"
 module Dependabot
   module PreCommit
     module AdditionalDependencyParsers
-      # Python implementation for parsing additional_dependency strings.
-      # Parses PEP 440 compliant dependency specifications like:
-      # - flake8==3.9.0
-      # - flake8-bugbear>=24.1.0
-      # - requests[security]>=2.20.0
-      #
       class Python < Base
         extend T::Sig
 
@@ -48,17 +42,13 @@ module Dependabot
           requirements_string = match[:requirements]
           extras = match[:extras]
 
-          # Skip dependencies without any version constraint
           return nil if requirements_string.nil? || requirements_string.strip.empty?
 
-          # Use Python's Requirement class to parse the version constraint
           version = extract_version_from_requirement(requirements_string)
           return nil unless version
 
-          # Extract the operator to preserve the version format when updating
           operator = extract_operator_from_requirement(requirements_string)
 
-          # Create a unique dependency name that includes context
           dependency_name = build_dependency_name(normalised_name)
 
           Dependabot::Dependency.new(
@@ -92,7 +82,6 @@ module Dependabot
           # For ranges (>=, ~=, etc.), extract the lower bound
           extract_version_from_constraints(requirement)
         rescue Gem::Requirement::BadRequirementError, Dependabot::BadRequirementError
-          # If we can't parse the requirement, try simple regex extraction
           extract_version_fallback(T.must(requirements_string))
         end
 
@@ -100,11 +89,9 @@ module Dependabot
         def extract_version_from_constraints(requirement)
           constraints = requirement.requirements
 
-          # Look for exact pin first (==)
           exact_pin = constraints.find { |op, _| op == "==" || op == "=" }
           return exact_pin[1].to_s if exact_pin
 
-          # For ranges, find the lower bound (>=, >, ~>)
           lower_bound = constraints.find { |op, _| LOWER_BOUND_OPERATORS.include?(op) }
           return lower_bound[1].to_s if lower_bound
 
@@ -114,7 +101,6 @@ module Dependabot
 
         sig { params(requirements_string: String).returns(T.nilable(String)) }
         def extract_version_fallback(requirements_string)
-          # Fallback: try to extract version using simple patterns
           match = requirements_string.match(/(?:==|>=|~=)\s*(?<version>[^\s,<>!=]+)/)
           return nil unless match
 
@@ -131,11 +117,9 @@ module Dependabot
           requirement = Dependabot::Python::Requirement.new(requirements_string)
           constraints = requirement.requirements
 
-          # Look for exact pin first (==)
           exact_pin = constraints.find { |op, _| op == "==" || op == "=" }
           return "==" if exact_pin
 
-          # For ranges, find the operator
           lower_bound = constraints.find { |op, _| LOWER_BOUND_OPERATORS.include?(op) }
           if lower_bound
             op = lower_bound[0]
@@ -146,8 +130,6 @@ module Dependabot
           # Default to exact pin
           "=="
         rescue Gem::Requirement::BadRequirementError, Dependabot::BadRequirementError
-          # Fallback: try to extract operator using regex
-          # requirements_string is guaranteed non-nil here due to early return above
           match = T.must(requirements_string).match(/^(?<op>==|>=|>|~=|<=|<|!=)/)
           match ? match[:op].to_s : "=="
         end
@@ -179,7 +161,6 @@ module Dependabot
   end
 end
 
-# Register Python as a supported language
 Dependabot::PreCommit::AdditionalDependencyParsers.register(
   "python",
   Dependabot::PreCommit::AdditionalDependencyParsers::Python

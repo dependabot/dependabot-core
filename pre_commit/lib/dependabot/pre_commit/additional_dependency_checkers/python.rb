@@ -10,13 +10,6 @@ require "dependabot/pre_commit/additional_dependency_checkers/base"
 module Dependabot
   module PreCommit
     module AdditionalDependencyCheckers
-      # Python implementation for additional_dependency update checking.
-      # Delegates to Python ecosystem's UpdateChecker for:
-      # - Version fetching from PyPI (including private registries)
-      # - Requirements updating with precision/operator preservation
-      #
-      # This follows the same pattern as Helm's delegation to Docker UpdateChecker.
-      #
       class Python < Base
         extend T::Sig
 
@@ -33,26 +26,21 @@ module Dependabot
         sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
-            # Preserve original source - Python's checker doesn't know about pre-commit structure
             original_source = original_req[:source]
             next original_req unless original_source.is_a?(Hash)
             next original_req unless original_source[:type] == "additional_dependency"
 
-            # Get original operator and build new requirement preserving it
             original_requirement = original_req[:requirement]
             new_requirement = build_updated_requirement(original_requirement, latest_version)
 
-            # Build the new original_string with updated version
             new_original_string = build_original_string(
               original_name: original_source[:original_name] || original_source[:package_name],
               extras: original_source[:extras],
               requirement: new_requirement
             )
 
-            # Update the source with new original_string
             new_source = original_source.merge(original_string: new_original_string)
 
-            # Return original requirement with updated requirement string and source
             original_req.merge(
               requirement: new_requirement,
               source: new_source
@@ -108,8 +96,6 @@ module Dependabot
 
           # Use an exact requirement (==version) to force Python's UpdateChecker
           # to use the :requirements resolver instead of subdependency_resolver.
-          # Python's resolver_type checks: dependency.version && !exact_requirement?(reqs)
-          # If both are true, it treats as sub-dependency requiring a lockfile.
           exact_requirement = version ? "==#{version}" : nil
 
           # Build a dependency that Python's UpdateChecker understands
@@ -131,14 +117,12 @@ module Dependabot
           req_string = requirements.first&.dig(:requirement)
           return nil unless req_string
 
-          # Extract version number from requirement string (e.g., ">=24.1.0" -> "24.1.0")
           match = req_string.match(/[\d]+(?:\.[\d]+)*(?:\.?\w+)*/)
           match&.[](0)
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def build_pip_dependency_files
-          # Create a minimal requirements.txt with exact version for Python's UpdateChecker
           version = current_version || extract_version_from_requirement
           exact_requirement = version ? "==#{version}" : ""
           content = "#{package_name}#{exact_requirement}\n"
@@ -165,12 +149,10 @@ module Dependabot
           base
         end
 
-        # Build updated requirement preserving the original operator
         sig { params(original_requirement: T.nilable(String), new_version: String).returns(String) }
         def build_updated_requirement(original_requirement, new_version)
           return ">=#{new_version}" unless original_requirement
 
-          # Extract operator from original requirement (e.g., ">=", "~=", "==", etc.)
           operator_match = original_requirement.match(/\A([<>=!~]+)/)
           operator = operator_match ? operator_match[1] : ">="
 
@@ -181,7 +163,6 @@ module Dependabot
   end
 end
 
-# Register Python as a supported language
 Dependabot::PreCommit::AdditionalDependencyCheckers.register(
   "python",
   Dependabot::PreCommit::AdditionalDependencyCheckers::Python
