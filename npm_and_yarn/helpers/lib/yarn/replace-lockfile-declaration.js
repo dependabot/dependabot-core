@@ -1,6 +1,5 @@
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
-  .default;
+import parseLib from "@dependabot/yarn-lib/lib/lockfile/parse";
+import stringifyLib from "@dependabot/yarn-lib/lib/lockfile/stringify";
 
 // Get an array of a dependency's requested version ranges from a lockfile
 function getRequestedVersions(depName, lockfileJson) {
@@ -21,15 +20,15 @@ function getRequestedVersions(depName, lockfileJson) {
   return requestedVersions;
 }
 
-module.exports = (
+export default function (
   oldLockfileContent,
   newLockfileContent,
   depName,
   newVersionRequirement,
   existingVersionRequirement
-) => {
-  const oldJson = parse(oldLockfileContent).object;
-  const newJson = parse(newLockfileContent).object;
+) {
+  const oldJson = parseLib.default(oldLockfileContent).object;
+  const newJson = parseLib.default(newLockfileContent).object;
 
   const enableLockfileVersions = Boolean(
     oldLockfileContent.match(/^# yarn v/m)
@@ -53,5 +52,5 @@ module.exports = (
     delete newJson[`${depName}@${reqToReplace}`];
   }
 
-  return stringify(newJson, noHeader, enableLockfileVersions);
+  return stringifyLib.default(newJson, noHeader, enableLockfileVersions);
 };
