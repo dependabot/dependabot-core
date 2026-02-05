@@ -92,7 +92,7 @@ module Dependabot
           return unless requirement_node
 
           begin
-            eval(requirement_node.children[2].loc.expression.source)
+            eval("var=#{requirement_node.children[2].loc.expression.source}")
           rescue StandardError
             nil # If we can't evaluate the expression just return nil
           end
