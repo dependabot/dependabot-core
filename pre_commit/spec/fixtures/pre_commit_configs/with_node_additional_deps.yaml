@@ -1,0 +1,21 @@
+# Pre-commit config with Node.js additional_dependencies (eslint plugins)
+repos:
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.35.0
+    hooks:
+      - id: eslint
+        language: node
+        additional_dependencies:
+          - eslint@8.35.0
+          - eslint-plugin-react@7.32.2
+          - '@typescript-eslint/parser@5.54.0'
+          - '@typescript-eslint/eslint-plugin@5.54.0'
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        language: node
+        additional_dependencies:
+          - prettier@3.0.0
+          - prettier-plugin-toml@1.0.0

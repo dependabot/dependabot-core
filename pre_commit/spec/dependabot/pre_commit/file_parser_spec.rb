@@ -154,5 +154,77 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dependencies).to eq([])
       end
     end
+
+    context "with Python additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_python_additional_deps.yaml")
+        )
+      end
+
+      it "returns both repo dependencies and additional_dependencies" do
+        # 3 repos + 4 Python additional dependencies
+        expect(dependencies.length).to eq(7)
+      end
+
+      it "parses repo dependencies correctly" do
+        repo_deps = dependencies.select do |d|
+          d.requirements.first.dig(:source, :type) == "git"
+        end
+        expect(repo_deps.length).to eq(3)
+      end
+
+      it "parses additional_dependencies correctly" do
+        add_deps = dependencies.select do |d|
+          d.requirements.first.dig(:source, :type) == "additional_dependency"
+        end
+        expect(add_deps.length).to eq(4)
+      end
+
+      it "parses types-requests dependency correctly" do
+        dep = dependencies.find { |d| d.name.include?("types-requests") }
+        expect(dep).not_to be_nil
+        expect(dep.name).to eq("https://github.com/pre-commit/mirrors-mypy::mypy::types-requests")
+        expect(dep.version).to eq("2.28.11.5")
+
+        source = dep.requirements.first[:source]
+        expect(source[:type]).to eq("additional_dependency")
+        expect(source[:language]).to eq("python")
+        expect(source[:package_name]).to eq("types-requests")
+        expect(source[:hook_id]).to eq("mypy")
+      end
+
+      it "parses dependency with extras correctly" do
+        dep = dependencies.find { |d| d.name.include?("click") }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("8.1.3")
+
+        source = dep.requirements.first[:source]
+        expect(source[:extras]).to eq("testing")
+      end
+
+      it "groups additional_dependencies correctly" do
+        dep = dependencies.find { |d| d.name.include?("types-requests") }
+        expect(dep.requirements.first[:groups]).to eq(["additional_dependencies"])
+      end
+    end
+
+    context "with Node.js additional_dependencies (language specified)" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_node_additional_deps.yaml")
+        )
+      end
+
+      it "parses repo dependencies but skips Node.js additional_deps (not yet implemented)" do
+        # 2 repos only (Node.js additional deps not yet supported)
+        repo_deps = dependencies.select do |d|
+          d.requirements.first.dig(:source, :type) == "git"
+        end
+        expect(repo_deps.length).to eq(2)
+      end
+    end
   end
 end
