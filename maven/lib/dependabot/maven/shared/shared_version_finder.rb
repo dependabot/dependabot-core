@@ -64,6 +64,8 @@ module Dependabot
           current = dependency.version
           candidate = comparison_version.to_s
 
+          return true if contains_date?(current) && contains_date?(candidate)
+
           return true if pre_release_compatible?(current, candidate)
 
           return true if upgrade_to_stable?(current, candidate)
@@ -106,6 +108,8 @@ module Dependabot
         def suffix_compatible?(current, candidate)
           current_suffix = extract_version_suffix(current)
           candidate_suffix = extract_version_suffix(candidate)
+
+          return true if contains_date?(current_suffix) && contains_date?(candidate_suffix)
 
           if jre_or_jdk?(current_suffix) && jre_or_jdk?(candidate_suffix)
             return compatible_java_runtime?(T.must(current_suffix), T.must(candidate_suffix))
@@ -169,6 +173,73 @@ module Dependabot
           version.split(/[-._]/).any? { |part| git_sha?(part) } ||
             # Check if removing delimiters reveals a SHA (e.g., "va_b_018a_a_6b_0d3")
             git_sha?(version.gsub(/[-._]/, ""))
+        end
+
+        # Determines whether a version string contains a date.
+        #
+        # This method checks if any part of a version string (when split by common
+        # delimiters like '-', '.', or '_') is a valid date.
+        #
+        # @example Standard delimiter-separated SHAs
+        #   contains_date?("2025-12-16-05-04") # => true
+        #   contains_date?("2025_12_16_05_04") # => true
+        #   contains_date?("1.0-2025_12_16_05_04") # => true
+        # @example Compact date formats
+        #   contains_date?("20251216") # => true
+        #   contains_date?("v20251216-beta") # => true
+        #
+        #   contains_date?("1.2.3-alpha")          # => false
+        #   contains_date?("abcdef123")            # => false
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def contains_date?(version)
+          return false unless version
+
+          contains_compact_date?(version) || contains_delimited_date?(version)
+        end
+
+        sig { params(version: String).returns(T::Boolean) }
+        def contains_compact_date?(version)
+          # Examples: "20251216", "v20251216-beta", "release20251216"
+          digits = version.gsub(/\D/, "")
+
+          digits.scan(/\d{8}/).each do |chunk|
+            Date.strptime(chunk, "%Y%m%d")
+            return true
+          rescue ArgumentError
+            # Not a valid date, ignore
+          end
+
+          false
+        end
+
+        sig { params(version: String).returns(T::Boolean) }
+        def contains_delimited_date?(version)
+          # Examples: "2025-12-16", "2025_1_5", "v2025.12.16-beta"
+          parts = version.split(/[-._]/)
+
+          parts.each_cons(3) do |y, m, d|
+            next unless valid_date_parts?(y, m, d)
+
+            begin
+              Date.new(y.to_i, m.to_i, d.to_i)
+              return true
+            rescue ArgumentError
+              # Not a valid date, ignore
+            end
+          end
+
+          false
+        end
+
+        sig do
+          params(
+            year: T.nilable(String),
+            month: T.nilable(String),
+            day: T.nilable(String)
+          ).returns(T::Boolean)
+        end
+        def valid_date_parts?(year, month, day)
+          !!(year&.match?(/\A\d{4}\z/) && month&.match?(/\A\d{1,2}\z/) && day&.match?(/\A\d{1,2}\z/))
         end
 
         # Determines whether two versions are compatible based on pre-release status.

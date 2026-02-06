@@ -659,6 +659,64 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           it { is_expected.to be true }
         end
       end
+
+      context "when the dependency versions uses dates for the delimiter" do
+        context "when the date is dot separated" do
+          let(:dependency_version) { "2025.12.16.05.04" }
+          let(:comparison_version) { "2026.12.16.05.06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is dash separated" do
+          let(:dependency_version) { "2025-12-16-05-04" }
+          let(:comparison_version) { "2026-12-16-05-06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is compact YYYYMMDD" do
+          let(:dependency_version) { "20251216" }
+          let(:comparison_version) { "20261216" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is compact YYYYMMDD delimiter" do
+          let(:dependency_version) { "1.0-20251216" }
+          let(:comparison_version) { "1.0-20261216" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is embedded in a version string" do
+          let(:dependency_version) { "1.0.0-2025_12_16_05_04" }
+          let(:comparison_version) { "1.0.0-2026_12_16_05_06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date has single digit month/day" do
+          let(:dependency_version) { "2025_1_6_05_04" }
+          let(:comparison_version) { "2026_1_6_05_06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version contains no date" do
+          let(:dependency_version) { "1.2.3-2025_1_6_05_04" }
+          let(:comparison_version) { "2.0.0-beta" }
+
+          it { is_expected.to be false }
+        end
+
+        context "when date appears with prefix and suffix text" do
+          let(:dependency_version) { "release-2025_12_16_05_04-hotfix" }
+          let(:comparison_version) { "release-2026_12_16_05_06-hotfix" }
+
+          it { is_expected.to be true }
+        end
+      end
     end
   end
 end
