@@ -28,7 +28,7 @@ RUN cd dependabot-updater \
   && bundle config unset without \
   && bundle install \
   && BUNDLE_BIN=.bundle/bin bundle binstubs --all \
-  && rm -f .bundle/bin/bundle # let RubyGems manage Bundler
+  && rm .bundle/bin/bundle # let RubyGems manage Bundler
 
 ENV PATH="${DEPENDABOT_HOME}/dependabot-updater/.bundle/bin:$PATH"
 

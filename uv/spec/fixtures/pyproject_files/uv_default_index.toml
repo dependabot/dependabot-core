@@ -1,0 +1,15 @@
+[project]
+name = "default-index-project"
+version = "0.1.0"
+description = "Test UV default index configuration"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[tool.uv]
+default-index = "https://private-pypi.example.com/simple"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
