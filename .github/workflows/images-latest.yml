@@ -1,6 +1,7 @@
 name: Latest images
 env:
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
+  BACKUP_REGISTRY: "dependabot-acr-apim-production.azure-api.net"
 on: # yamllint disable-line rule:truthy
   push:
     branches:
@@ -97,6 +98,12 @@ jobs:
           docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
           # All tags should resolve to the same digest so we only need to look up one of them
           cosign sign --yes $(cosign triangulate --type=digest "${UPDATER_IMAGE}${ECOSYSTEM}:latest")
+
+      - name: Pull images through backup registry
+        run: |
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:latest"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
       - name: Set summary
         run: |
