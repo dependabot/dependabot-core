@@ -342,5 +342,124 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
       end
     end
+
+    context "with semantic_versioning option" do
+      let(:ignore_condition) { described_class.new(dependency_name: dependency_name, update_types: update_types) }
+
+      context "with 0.y.z versions" do
+        let(:dependency_version) { "0.15.5" }
+        let(:patch_upgrades) { %w(0.15.6 0.15.7) }
+        let(:minor_upgrades) { %w(0.16.0 0.17.0) }
+        let(:major_upgrades) { %w(1.0.0 2.0.0) }
+
+        context "with ignore_major_versions in relaxed mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "relaxed")
+          end
+
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "only ignores actual major versions (1.0+)" do
+            expect(ignored_versions).to eq([">= 1.a"])
+          end
+
+          it "allows minor and patch upgrades within 0.y.z" do
+            expect_allowed(patch_upgrades + minor_upgrades)
+            expect_ignored(major_upgrades)
+          end
+        end
+
+        context "with ignore_major_versions in strict mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "strict")
+          end
+
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "treats minor bumps in 0.y.z as major" do
+            expect(ignored_versions).to eq([">= 0.16.a"])
+          end
+
+          it "ignores minor bumps as breaking changes" do
+            expect_allowed(patch_upgrades)
+            expect_ignored(minor_upgrades + major_upgrades)
+          end
+        end
+
+        context "with ignore_minor_versions in strict mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "strict")
+          end
+
+          let(:update_types) { ["version-update:semver-minor"] }
+
+          it "treats 0.y.z minor changes as major, so no minor range exists" do
+            # In strict mode, minor changes in 0.y.z are major, so ignoring "minor" returns the major range
+            expect(ignored_versions).to eq([">= 0.16.a"])
+          end
+        end
+      end
+
+      context "with 0.0.z versions" do
+        let(:dependency_version) { "0.0.3" }
+        let(:patch_upgrades) { %w(0.0.4 0.0.5) }
+        let(:minor_upgrades) { %w(0.1.0 0.2.0) }
+        let(:major_upgrades) { %w(1.0.0 2.0.0) }
+
+        context "with ignore_major_versions in strict mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "strict")
+          end
+
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "treats patch bumps in 0.0.z as major" do
+            expect(ignored_versions).to eq([">= 0.0.4.a"])
+          end
+
+          it "ignores all version bumps as breaking changes" do
+            expect_ignored(patch_upgrades + minor_upgrades + major_upgrades)
+          end
+        end
+
+        context "with ignore_patch_versions in strict mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "strict")
+          end
+
+          let(:update_types) { ["version-update:semver-patch"] }
+
+          it "treats 0.0.z patch changes as major, so returns major range" do
+            # In strict mode, patch changes in 0.0.z are major, so ignoring "patch" returns the major range
+            expect(ignored_versions).to eq([">= 0.0.4.a"])
+          end
+        end
+      end
+
+      context "with 1.y.z versions (standard semver)" do
+        let(:dependency_version) { "1.2.3" }
+        let(:update_types) { ["version-update:semver-major"] }
+
+        context "with relaxed mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "relaxed")
+          end
+
+          it "uses standard semver" do
+            expect(ignored_versions).to eq([">= 2.a"])
+          end
+        end
+
+        context "with strict mode" do
+          subject(:ignored_versions) do
+            ignore_condition.ignored_versions(dependency, security_updates_only, semantic_versioning: "strict")
+          end
+
+          it "uses standard semver (same as relaxed for >= 1.0)" do
+            expect(ignored_versions).to eq([">= 2.a"])
+          end
+        end
+      end
+    end
   end
 end

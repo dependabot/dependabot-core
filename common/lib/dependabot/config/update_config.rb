@@ -32,8 +32,14 @@ module Dependabot
         @exclude_paths = exclude_paths
       end
 
-      sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
-      def ignored_versions_for(dependency, security_updates_only: false)
+      sig do
+        params(
+          dependency: Dependency,
+          security_updates_only: T::Boolean,
+          semantic_versioning: String
+        ).returns(T::Array[String])
+      end
+      def ignored_versions_for(dependency, security_updates_only: false, semantic_versioning: "relaxed")
         normalizer = name_normaliser_for(dependency)
         dep_name = T.must(normalizer).call(dependency.name)
 
@@ -43,7 +49,7 @@ module Dependabot
 
         @ignore_conditions
           .select { |ic| self.class.wildcard_match?(T.must(normalizer).call(ic.dependency_name), dep_name) }
-          .map { |ic| ic.ignored_versions(dependency, security_updates_only) }
+          .map { |ic| ic.ignored_versions(dependency, security_updates_only, semantic_versioning: semantic_versioning) }
           .flatten
           .compact
           .uniq

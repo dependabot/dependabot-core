@@ -47,6 +47,7 @@ module Dependabot
         requirements_update_strategy
         security_advisories
         security_updates_only
+        semantic_versioning
         source
         update_subdependencies
         updating_a_pull_request
@@ -116,6 +117,9 @@ module Dependabot
 
     sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
+
+    sig { returns(String) }
+    attr_reader :semantic_versioning
 
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
@@ -210,6 +214,7 @@ module Dependabot
         build_cooldown(attributes.fetch(:cooldown, nil)),
         T.nilable(Dependabot::Package::ReleaseCooldownOptions)
       )
+      @semantic_versioning            = T.let(attributes.fetch(:semantic_versioning, "relaxed"), String)
       @multi_ecosystem_update         = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
       # TODO: Make this hash required
       #
@@ -432,7 +437,8 @@ module Dependabot
     def ignore_conditions_for(dependency)
       update_config.ignored_versions_for(
         dependency,
-        security_updates_only: security_updates_only?
+        security_updates_only: security_updates_only?,
+        semantic_versioning: semantic_versioning
       )
     end
 

@@ -406,7 +406,6 @@ module Dependabot
       # then it should not be in the group, but be an individual PR, or in another group that fits it.
       # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
       # Other rules are applied earlier in the process.
-      # rubocop:disable Metrics/AbcSize
       sig do
         params(
           group: Dependabot::DependencyGroup,
@@ -436,14 +435,57 @@ module Dependabot
         # Ensure that semver components are of the same type and can be compared with each other.
         return false unless %i(major minor patch).all? { |k| current[k].instance_of?(latest[k].class) }
 
-        return T.must(group.rules["update-types"]).include?("major") if T.must(latest[:major]) > T.must(current[:major])
-        return T.must(group.rules["update-types"]).include?("minor") if T.must(latest[:minor]) > T.must(current[:minor])
-        return T.must(group.rules["update-types"]).include?("patch") if T.must(latest[:patch]) > T.must(current[:patch])
+        # Determine the actual update type based on semantic versioning mode
+        actual_update_type = determine_update_type(current, latest)
+        return false unless actual_update_type
 
-        # some ecosystems don't do semver exactly, so anything lower gets individual for now
-        false
+        T.must(group.rules["update-types"]).include?(actual_update_type)
       end
-      # rubocop:enable Metrics/AbcSize
+      # Determines the update type based on the semantic versioning mode
+      sig { params(current: T::Hash[Symbol, Integer], latest: T::Hash[Symbol, Integer]).returns(T.nilable(String)) }
+      def determine_update_type(current, latest)
+        if job.semantic_versioning == "strict"
+          determine_strict_update_type(current, latest)
+        else
+          determine_relaxed_update_type(current, latest)
+        end
+      end
+
+      sig { params(current: T::Hash[Symbol, Integer], latest: T::Hash[Symbol, Integer]).returns(T.nilable(String)) }
+      def determine_relaxed_update_type(current, latest)
+        return "major" if T.must(latest[:major]) > T.must(current[:major])
+        return "minor" if T.must(latest[:minor]) > T.must(current[:minor])
+        return "patch" if T.must(latest[:patch]) > T.must(current[:patch])
+
+        nil
+      end
+
+      sig { params(current: T::Hash[Symbol, Integer], latest: T::Hash[Symbol, Integer]).returns(T::Boolean) }
+      def zero_version_with_changes?(current, latest)
+        T.must(current[:major]).zero? && T.must(current[:minor]).zero? &&
+          (T.must(latest[:minor]) > T.must(current[:minor]) || T.must(latest[:patch]) > T.must(current[:patch]))
+      end
+
+      sig { params(current: T::Hash[Symbol, Integer], latest: T::Hash[Symbol, Integer]).returns(T.nilable(String)) }
+      def determine_strict_update_type(current, latest)
+        # Major version change is always major
+        return "major" if T.must(latest[:major]) > T.must(current[:major])
+
+        # For 0.0.z versions, any change is major
+        return "major" if zero_version_with_changes?(current, latest)
+
+        # For 0.y.z versions (y > 0), minor changes are major
+        if T.must(current[:major]).zero?
+          return "major" if T.must(latest[:minor]) > T.must(current[:minor])
+          return "patch" if T.must(latest[:patch]) > T.must(current[:patch])
+        end
+
+        # Standard semver for >= 1.0.0
+        return "minor" if T.must(latest[:minor]) > T.must(current[:minor])
+        return "patch" if T.must(latest[:patch]) > T.must(current[:patch])
+
+        nil
+      end
 
       sig { params(version: Gem::Version).returns(T::Hash[Symbol, Integer]) }
       def semver_segments(version)
