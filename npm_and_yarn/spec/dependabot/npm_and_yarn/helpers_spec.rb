@@ -7,6 +7,237 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  describe "::pnpm_outside_workspace?" do
+    def make_file(name:, content: "", directory: "/")
+      Dependabot::DependencyFile.new(name: name, content: content, directory: directory)
+    end
+
+    let(:ws_content) { "packages:\n  - packages/*\n" }
+
+    context "when no pnpm-workspace.yaml exists" do
+      it "returns false" do
+        files = [make_file(name: "package.json")]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+    end
+
+    context "when pnpm-workspace.yaml is in the current directory (root)" do
+      it "returns false" do
+        files = [
+          make_file(name: "pnpm-workspace.yaml", content: ws_content),
+          make_file(name: "package.json")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+    end
+
+    context "when directory is NOT in workspace patterns" do
+      it "returns true" do
+        files = [
+          make_file(name: "package.json", directory: "/docs"),
+          make_file(name: "../pnpm-workspace.yaml", content: ws_content, directory: "/docs")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be true
+      end
+    end
+
+    context "when directory matches a workspace pattern" do
+      it "returns false with ../../ name convention" do
+        files = [
+          make_file(name: "package.json", directory: "/packages/abc"),
+          make_file(name: "../../pnpm-workspace.yaml", content: ws_content, directory: "/packages/abc")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+    end
+
+    context "when workspace uses ** glob patterns" do
+      let(:ws_content) { "packages:\n  - packages/**\n" }
+
+      it "returns false for a direct child" do
+        files = [
+          make_file(name: "package.json", directory: "/packages/foo"),
+          make_file(name: "../../pnpm-workspace.yaml", content: ws_content, directory: "/packages/foo")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+
+      it "returns false for a deeply nested package" do
+        files = [
+          make_file(name: "package.json", directory: "/packages/foo/bar"),
+          make_file(name: "../../../pnpm-workspace.yaml", content: ws_content, directory: "/packages/foo/bar")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+
+      it "returns true for a directory outside the pattern" do
+        files = [
+          make_file(name: "package.json", directory: "/docs"),
+          make_file(name: "../pnpm-workspace.yaml", content: ws_content, directory: "/docs")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be true
+      end
+    end
+
+    context "when directory is excluded by a negation pattern" do
+      let(:ws_content) { "packages:\n  - '*'\n  - '!docs'\n" }
+
+      it "returns true" do
+        files = [
+          make_file(name: "package.json", directory: "/docs"),
+          make_file(name: "../pnpm-workspace.yaml", content: ws_content, directory: "/docs")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be true
+      end
+    end
+
+    context "when workspace yaml content is invalid" do
+      it "returns false" do
+        files = [
+          make_file(name: "package.json", directory: "/docs"),
+          make_file(name: "../pnpm-workspace.yaml", content: "{{invalid yaml", directory: "/docs")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+    end
+
+    context "when workspace yaml has no packages key" do
+      it "returns true (no patterns means nothing matches)" do
+        files = [
+          make_file(name: "package.json", directory: "/docs"),
+          make_file(name: "../pnpm-workspace.yaml", content: "catalog:\n  react: ^18\n", directory: "/docs")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be true
+      end
+    end
+
+    context "with nested workspace where inner workspace includes directory" do
+      it "returns false" do
+        files = [
+          make_file(name: "package.json", directory: "/docs/stuff/a"),
+          make_file(name: "../../pnpm-workspace.yaml", content: "packages:\n  - stuff/*\n", directory: "/docs/stuff/a")
+        ]
+        expect(described_class.pnpm_outside_workspace?(files)).to be false
+      end
+    end
+  end
+
+  describe "::pnpm_glob_match?" do
+    def pnpm_glob_match?(pattern, path)
+      described_class.send(:pnpm_glob_match?, pattern, path)
+    end
+
+    it "matches a single-level wildcard" do
+      expect(pnpm_glob_match?("packages/*", "packages/foo")).to be true
+    end
+
+    it "does not match nested paths with a single-level wildcard" do
+      expect(pnpm_glob_match?("packages/*", "packages/foo/bar")).to be false
+    end
+
+    it "matches a direct child with trailing **" do
+      expect(pnpm_glob_match?("packages/**", "packages/foo")).to be true
+    end
+
+    it "matches a deeply nested path with trailing **" do
+      expect(pnpm_glob_match?("packages/**", "packages/foo/bar")).to be true
+    end
+
+    it "matches with **/* pattern" do
+      expect(pnpm_glob_match?("packages/**/*", "packages/foo/bar")).to be true
+    end
+
+    it "matches a top-level wildcard against a single segment" do
+      expect(pnpm_glob_match?("*", "foo")).to be true
+    end
+
+    it "does not match a top-level wildcard against nested paths" do
+      expect(pnpm_glob_match?("*", "foo/bar")).to be false
+    end
+
+    it "does not match unrelated paths" do
+      expect(pnpm_glob_match?("packages/*", "apps/foo")).to be false
+    end
+
+    it "matches an exact path" do
+      expect(pnpm_glob_match?("packages/foo", "packages/foo")).to be true
+    end
+
+    it "does not match a partial exact path" do
+      expect(pnpm_glob_match?("packages/foo", "packages/foobar")).to be false
+    end
+  end
+
+  describe "::pnpm_workspace_includes?" do
+    def make_ws_file(content)
+      Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content)
+    end
+
+    def pnpm_workspace_includes?(ws_file, relative_path)
+      described_class.send(:pnpm_workspace_includes?, ws_file, relative_path)
+    end
+
+    it "matches a simple wildcard pattern" do
+      ws = make_ws_file("packages:\n  - packages/*\n")
+      expect(pnpm_workspace_includes?(ws, "packages/foo")).to be true
+    end
+
+    it "does not match a path outside the pattern" do
+      ws = make_ws_file("packages:\n  - packages/*\n")
+      expect(pnpm_workspace_includes?(ws, "apps/foo")).to be false
+    end
+
+    it "strips ./ prefix from include patterns" do
+      ws = make_ws_file("packages:\n  - ./packages/*\n")
+      expect(pnpm_workspace_includes?(ws, "packages/foo")).to be true
+    end
+
+    it "matches if any include pattern matches" do
+      ws = make_ws_file("packages:\n  - packages/*\n  - apps/*\n")
+      expect(pnpm_workspace_includes?(ws, "apps/web")).to be true
+    end
+
+    it "excludes paths matching a negation pattern" do
+      ws = make_ws_file("packages:\n  - '*'\n  - '!docs'\n")
+      expect(pnpm_workspace_includes?(ws, "docs")).to be false
+    end
+
+    it "includes paths that match include but not the negation" do
+      ws = make_ws_file("packages:\n  - '*'\n  - '!docs'\n")
+      expect(pnpm_workspace_includes?(ws, "web")).to be true
+    end
+
+    it "strips ./ prefix from negation patterns" do
+      ws = make_ws_file("packages:\n  - '*'\n  - '!./docs'\n")
+      expect(pnpm_workspace_includes?(ws, "docs")).to be false
+    end
+
+    it "returns false when packages list is empty" do
+      ws = make_ws_file("packages: []\n")
+      expect(pnpm_workspace_includes?(ws, "foo")).to be false
+    end
+
+    it "returns false when packages key is missing" do
+      ws = make_ws_file("catalog:\n  react: ^18\n")
+      expect(pnpm_workspace_includes?(ws, "foo")).to be false
+    end
+
+    it "returns true for invalid YAML (assumes included)" do
+      ws = make_ws_file("{{invalid yaml")
+      expect(pnpm_workspace_includes?(ws, "foo")).to be true
+    end
+
+    it "returns true for empty content (assumes included)" do
+      ws = make_ws_file("")
+      expect(pnpm_workspace_includes?(ws, "foo")).to be false
+    end
+
+    it "handles recursive ** patterns" do
+      ws = make_ws_file("packages:\n  - packages/**\n")
+      expect(pnpm_workspace_includes?(ws, "packages/foo/bar")).to be true
+    end
+  end
+
   describe "::dependencies_with_all_versions_metadata" do
     let(:foo_a) do
       Dependabot::Dependency.new(
