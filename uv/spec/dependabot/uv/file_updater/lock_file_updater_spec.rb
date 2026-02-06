@@ -674,6 +674,76 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(options).not_to include("--index")
       end
     end
+
+    context "with multiple replaces-base credentials" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://first-pypi.example.com/simple",
+              "token" => "first_token",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://second-pypi.example.com/simple",
+              "token" => "second_token",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://extra.example.com/simple",
+              "token" => "extra_token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "uses only the first replaces-base credential for --default-index" do
+        options = lock_index_options.join(" ")
+        expect(options.scan(/--default-index/).count).to eq(1)
+        expect(options).to include("--default-index https://first_token@first-pypi.example.com/simple")
+        expect(options).not_to include("--default-index https://second_token@second-pypi.example.com/simple")
+        expect(options).to include("--index https://extra_token@extra.example.com/simple")
+      end
+    end
+
+    context "with default-index already configured in pyproject.toml" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_default_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://extra.example.com/simple",
+              "token" => "extra_token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "does not add --default-index when pyproject.toml already has one" do
+        options = lock_index_options.join(" ")
+        expect(options).not_to include("--default-index")
+        expect(options).to include("--index https://extra_token@extra.example.com/simple")
+      end
+    end
   end
 
   describe "#explicit_index_env_vars" do
@@ -862,11 +932,11 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
     it "includes the expected options in the command and fingerprint" do
       expected_command = "pyenv exec uv lock --upgrade-package requests==2.23.0 " \
-                         "--index https://token@example.com/simple " \
-                         "--default-index https://another_token@another.com/simple"
+                         "--default-index https://another_token@another.com/simple " \
+                         "--index https://token@example.com/simple"
       expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
-                             "--index <index> " \
-                             "--default-index <default_index>"
+                             "--default-index <default_index> " \
+                             "--index <index>"
 
       run_update_command
 
@@ -901,11 +971,11 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
       it "strips extras from the package name in the command" do
         expected_command = "pyenv exec uv lock --upgrade-package yt-dlp==2025.6.9 " \
-                           "--index https://token@example.com/simple " \
-                           "--default-index https://another_token@another.com/simple"
+                           "--default-index https://another_token@another.com/simple " \
+                           "--index https://token@example.com/simple"
         expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
-                               "--index <index> " \
-                               "--default-index <default_index>"
+                               "--default-index <default_index> " \
+                               "--index <index>"
 
         run_update_command
 
@@ -941,11 +1011,11 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
       it "uses only the package name without version constraint" do
         expected_command = "pyenv exec uv lock --upgrade-package requests " \
-                           "--index https://token@example.com/simple " \
-                           "--default-index https://another_token@another.com/simple"
+                           "--default-index https://another_token@another.com/simple " \
+                           "--index https://token@example.com/simple"
         expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
-                               "--index <index> " \
-                               "--default-index <default_index>"
+                               "--default-index <default_index> " \
+                               "--index <index>"
 
         run_update_command
 

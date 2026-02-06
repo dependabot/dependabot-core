@@ -400,18 +400,31 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def lock_index_options
-          credentials
-            .select { |cred| cred["type"] == "python_index" }
-            .reject { |cred| explicit_index?(cred) }
-            .map do |cred|
-            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+          python_creds = credentials
+                         .select { |cred| cred["type"] == "python_index" }
+                         .reject { |cred| explicit_index?(cred) }
 
-            if cred.replaces_base?
-              "--default-index #{authed_url}"
-            else
-              "--index #{authed_url}"
-            end
+          default_cred = python_creds.find(&:replaces_base?)
+          extra_creds = python_creds.reject(&:replaces_base?)
+
+          options = T.let([], T::Array[String])
+          if default_cred && !pyproject_has_default_index?
+            options << "--default-index #{AuthedUrlBuilder.authed_url(credential: default_cred)}"
           end
+          extra_creds.each do |cred|
+            options << "--index #{AuthedUrlBuilder.authed_url(credential: cred)}"
+          end
+          options
+        end
+
+        sig { returns(T::Boolean) }
+        def pyproject_has_default_index?
+          return false unless pyproject&.content
+
+          parsed = TomlRB.parse(T.must(pyproject).content)
+          !parsed.dig("tool", "uv", "default-index").nil?
+        rescue TomlRB::ParseError
+          false
         end
 
         sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
@@ -496,9 +509,9 @@ module Dependabot
 
         sig { params(options: String).returns(String) }
         def lock_options_fingerprint(options)
-          options.sub(
+          options.gsub(
             /--default-index\s+\S+/, "--default-index <default_index>"
-          ).sub(
+          ).gsub(
             /--index\s+\S+/, "--index <index>"
           )
         end
