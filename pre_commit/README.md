@@ -256,15 +256,15 @@ Create spec files:
 
 #### Supported Languages
 
-Language support status for additional_dependencies:
-
-| Language | Status | Parser | Checker |
-|----------|--------|--------|---------|
-| Python   | 🚧 Planned | - | - |
-| Node     | 🚧 Planned | - | - |
-| Go       | 🚧 Planned | - | - |
-| Rust     | 🚧 Planned | - | - |
-| Ruby     | 🚧 Planned | - | - |
+Currently supported languages for additional_dependencies:
+- **Python** 
+- **Node**
+- **Go**
+- **Rust**
+- **Ruby**
+- **Conda**
+- **Julia**
+- **Dart**
 
 #### Integration Points
 
