@@ -697,6 +697,195 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           end
         end
       end
+
+      context "when the dependency versions uses dates for the delimiter" do
+        context "when the date is dot separated" do
+          let(:dependency_version) { "2025.12.16.05.04" }
+          let(:comparison_version) { "2026.12.16.05.06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is dash separated" do
+          let(:dependency_version) { "2025-12-16-05-04" }
+          let(:comparison_version) { "2026-12-16-05-06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is compact YYYYMMDD" do
+          let(:dependency_version) { "20251216" }
+          let(:comparison_version) { "20261216" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when it is a compact YYYYMMDD date" do
+          let(:dependency_version) { "1.0-20251216" }
+          let(:comparison_version) { "1.0-20261216" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date is embedded in a version string" do
+          let(:dependency_version) { "1.0.0-2025_12_16_05_04" }
+          let(:comparison_version) { "1.0.0-2026_12_16_05_06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the date has single digit month/day" do
+          let(:dependency_version) { "2025_1_6_05_04" }
+          let(:comparison_version) { "2026_1_6_05_06" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when date appears with prefix and suffix text" do
+          let(:dependency_version) { "release-2025_12_16_05_04-hotfix" }
+          let(:comparison_version) { "release-2026_12_16_05_06-hotfix" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the dependency version uses dates for the delimiter" do
+          context "when the date is dot separated" do
+            let(:dependency_version) { "2025.12.16.05.04" }
+            let(:comparison_version) { "2026.12.16.05.06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is dash separated" do
+            let(:dependency_version) { "2025-12-16-05-04" }
+            let(:comparison_version) { "2026-12-16-05-06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is compact YYYYMMDD" do
+            let(:dependency_version) { "20251216" }
+            let(:comparison_version) { "20261216" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is a unix timestamp" do
+            # This test is not resolved via the date logic but the numeric suffix logic
+            # but it's worth testing that it doesn't cause a failure
+            let(:dependency_version) { "1.0-1766457600" }
+            let(:comparison_version) { "2.0-1766257600" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is embedded after a semver prefix" do
+            let(:dependency_version) { "1.0-20251216" }
+            let(:comparison_version) { "1.0-20261216" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is embedded in a version string" do
+            let(:dependency_version) { "1.0.0-2025_12_16_05_04" }
+            let(:comparison_version) { "1.0.0-2026_12_16_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date has single digit month and day" do
+            let(:dependency_version) { "2025_1_6_05_04" }
+            let(:comparison_version) { "2026_1_6_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when only current is a date" do
+            let(:dependency_version) { "2025-12-16" }
+            let(:comparison_version) { "1.0" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when comparison version is a date" do
+            let(:dependency_version) { "1.0" }
+            let(:comparison_version) { "2025-12-16" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date has a leading separator" do
+            let(:dependency_version) { "_2025_12_16_05_04" }
+            let(:comparison_version) { "_2026_12_16_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the version has a single number" do
+            # May or may not be a date
+            let(:dependency_version) { "2024919191" }
+            let(:comparison_version) { "2024.1" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date appears with prefix and suffix text" do
+            let(:dependency_version) { "release-2025_12_16_05_04-hotfix" }
+            let(:comparison_version) { "release-2026_12_16_05_06-hotfix" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the version contains an invalid date" do
+            let(:dependency_version) { "2025_13_16_05_04" }
+            let(:comparison_version) { "2026_13_16_05_06" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when the version contains an invalid day" do
+            let(:dependency_version) { "2025_12_32_05_04" }
+            let(:comparison_version) { "2026_12_32_05_06" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when candidate is a pre-release version" do
+            let(:dependency_version) { "2026_12_32_05_06" }
+            let(:comparison_version) { "23.0-RC1" }
+
+            it { is_expected.to be false }
+          end
+
+          context "when existing is a pre-release version" do
+            let(:dependency_version) { "23.0-RC1" }
+            let(:comparison_version) { "2026_12_32_05_06" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when the date is embedded in a non semantic version" do
+            let(:dependency_version) { "RELEASE-2025.07.3" }
+            let(:comparison_version) { "RELEASE-2025.08.3" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when it is missing the day" do
+            let(:dependency_version) { "RELEASE-2024.1" }
+            let(:comparison_version) { "RELEASE-2024.1" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when there is a mix" do
+            let(:dependency_version) { "2019.05.Stable.3" }
+            let(:comparison_version) { "2019.05.Stable.4" }
+
+            it { is_expected.to be true }
+          end
+        end
+      end
     end
   end
 end
