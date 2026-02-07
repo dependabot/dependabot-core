@@ -72,6 +72,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
   before do
     FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
@@ -690,6 +691,90 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
   end
 
+  describe "outside workspace handling" do
+    context "when outside a pnpm workspace" do
+      let(:project_name) { "pnpm/simple" }
+
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: fixture("projects", "pnpm", "simple", "package.json"),
+            directory: "/docs"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "pnpm-lock.yaml",
+            content: fixture("projects", "pnpm", "simple", "pnpm-lock.yaml"),
+            directory: "/docs"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "../pnpm-workspace.yaml",
+            content: "packages:\n  - packages/*\n",
+            directory: "/docs"
+          )
+        ]
+      end
+
+      let(:repo_contents_path) { build_tmp_repo("pnpm/outside_workspace", path: "projects") }
+
+      let(:pnpm_lock) do
+        files.find { |f| f.name == "pnpm-lock.yaml" }
+      end
+
+      it "uses --ignore-workspace instead of -r for update" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(
+            "update fetch-factory@0.0.2 --lockfile-only --no-save --ignore-workspace",
+            { fingerprint: "update <dependency_updates> --lockfile-only --no-save --ignore-workspace" }
+          )
+          .ordered
+
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only --ignore-workspace")
+          .ordered
+
+        updated_pnpm_lock_content
+      end
+    end
+
+    context "when inside a pnpm workspace" do
+      it "returns false from pnpm_outside_workspace?" do
+        files = [
+          Dependabot::DependencyFile.new(
+            name: "../../pnpm-workspace.yaml",
+            content: "packages:\n  - packages/*\n",
+            directory: "/packages/abc"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: "{}",
+            directory: "/packages/abc"
+          )
+        ]
+        expect(Dependabot::NpmAndYarn::Helpers.pnpm_outside_workspace?(files)).to be false
+      end
+    end
+
+    context "when no workspace file exists" do
+      let(:project_name) { "pnpm/simple" }
+
+      it "uses -r flag for update (normal behavior)" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with(
+            "update fetch-factory@0.0.2 --lockfile-only --no-save -r",
+            { fingerprint: "update <dependency_updates> --lockfile-only --no-save -r" }
+          )
+          .ordered
+
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .with("install --lockfile-only")
+          .ordered
+
+        updated_pnpm_lock_content
+      end
+    end
+  end
+
   describe "lockfile updates" do
     context "when updating a regular package dependency" do
       let(:project_name) { "pnpm/catalog_prettier" }
@@ -719,8 +804,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         it "uses pnpm update followed by install" do
           expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
             .with(
-              "update prettier@3.3.3  --lockfile-only --no-save -r",
-              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+              "update prettier@3.3.3 --lockfile-only --no-save -r",
+              { fingerprint: "update <dependency_updates> --lockfile-only --no-save -r" }
             )
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("install --lockfile-only")
@@ -734,8 +819,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         it "uses pnpm update followed by install" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "update prettier@3.3.3  --lockfile-only --no-save -r",
-              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+              "update prettier@3.3.3 --lockfile-only --no-save -r",
+              { fingerprint: "update <dependency_updates> --lockfile-only --no-save -r" }
             )
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)

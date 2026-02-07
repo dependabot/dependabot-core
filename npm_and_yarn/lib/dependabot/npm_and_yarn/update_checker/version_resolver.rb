@@ -719,9 +719,10 @@ module Dependabot
         def run_pnpm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              ignore_ws = Helpers.pnpm_outside_workspace?(dependency_files) ? " --ignore-workspace" : ""
               output = Helpers.run_pnpm_command(
-                "update #{dependency.name}@#{version} --lockfile-only",
-                fingerprint: "update <dependency_name>@<version> --lockfile-only"
+                "update #{dependency.name}@#{version} --lockfile-only#{ignore_ws}",
+                fingerprint: "update <dependency_name>@<version> --lockfile-only#{ignore_ws}"
               )
               if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
                 raise SharedHelpers::HelperSubprocessFailed.new(
