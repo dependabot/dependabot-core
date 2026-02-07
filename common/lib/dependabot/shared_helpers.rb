@@ -163,15 +163,11 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
-          env_cmd,
-          stdin_data: stdin_data,
-          timeout: timeout
-        )
-      else
-        stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
-      end
+      stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+        env_cmd,
+        stdin_data: stdin_data,
+        timeout: timeout
+      )
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
@@ -480,22 +476,16 @@ module Dependabot
       opts[:chdir] = cwd if cwd
 
       env_cmd = [env || {}, cmd, opts].compact
-      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-        kwargs = {
-          stderr_to_stdout: stderr_to_stdout,
-          timeout: timeout
-        }
-        kwargs[:output_observer] = output_observer if output_observer
+      kwargs = {
+        stderr_to_stdout: stderr_to_stdout,
+        timeout: timeout
+      }
+      kwargs[:output_observer] = output_observer if output_observer
 
-        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
-          env_cmd,
-          **kwargs
-        )
-      elsif stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd, opts)
-      else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
-      end
+      stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+        env_cmd,
+        **kwargs
+      )
 
       time_taken = Time.now - start
 
