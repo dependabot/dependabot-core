@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/version"
+require "dependabot/pre_commit/additional_dependency_checkers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -19,6 +20,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
+        return additional_dependency_latest_version if additional_dependency?
+
         @latest_version ||= T.let(
           T.must(latest_version_finder).latest_release,
           T.nilable(T.any(String, Gem::Version))
@@ -37,6 +40,8 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        return additional_dependency_updated_requirements if additional_dependency?
+
         dependency.requirements.map do |req|
           source = T.cast(req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           updated = updated_ref(source)
@@ -203,6 +208,65 @@ module Dependabot
         else
           branches_including_ref.first
         end
+      end
+
+      # Additional dependency support methods
+
+      sig { returns(T::Boolean) }
+      def additional_dependency?
+        source = T.let(dependency.requirements.first&.dig(:source), T.untyped)
+        return false unless source.is_a?(Hash)
+
+        T.cast(source[:type], T.nilable(String)) == "additional_dependency"
+      end
+
+      sig { returns(T.nilable(T.any(String, Gem::Version))) }
+      def additional_dependency_latest_version
+        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, T.untyped])
+        language = T.cast(source[:language], T.nilable(String))
+        return nil unless language && AdditionalDependencyCheckers.supported?(language)
+
+        checker = additional_dependency_checker(language, source)
+        return nil unless checker
+
+        latest = checker.latest_version
+        Dependabot.logger.info("Latest version for #{dependency.name}: #{latest || 'none'}")
+
+        latest
+      end
+
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def additional_dependency_updated_requirements
+        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, T.untyped])
+        language = T.cast(source[:language], T.nilable(String))
+        return dependency.requirements unless language && AdditionalDependencyCheckers.supported?(language)
+
+        checker = additional_dependency_checker(language, source)
+        return dependency.requirements unless checker
+
+        latest = checker.latest_version
+        return dependency.requirements unless latest
+
+        checker.updated_requirements(latest)
+      end
+
+      sig do
+        params(
+          language: String,
+          source: T::Hash[Symbol, T.untyped]
+        ).returns(T.nilable(Dependabot::PreCommit::AdditionalDependencyCheckers::Base))
+      end
+      def additional_dependency_checker(language, source)
+        checker_class = AdditionalDependencyCheckers.for_language(language)
+        checker_class.new(
+          source: source,
+          credentials: credentials,
+          requirements: dependency.requirements,
+          current_version: dependency.version
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Error creating checker for #{language}: #{e.message}")
+        nil
       end
     end
   end
