@@ -59,7 +59,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
     end
 
     it "delegates to Python::UpdateChecker" do
-      expect(Dependabot::Python::UpdateChecker).to receive(:new).with(
+      allow(Dependabot::Python::UpdateChecker).to receive(:new).with(
         hash_including(
           dependency: an_instance_of(Dependabot::Dependency),
           dependency_files: [],

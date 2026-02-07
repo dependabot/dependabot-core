@@ -215,8 +215,11 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def additional_dependency?
-        source = T.let(dependency.requirements.first&.dig(:source), T.untyped)
-        return false unless source.is_a?(Hash)
+        requirement = dependency.requirements.first
+        return false unless requirement
+
+        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+        return false unless source
 
         T.cast(source[:type], T.nilable(String)) == "additional_dependency"
       end
