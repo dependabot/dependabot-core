@@ -164,7 +164,7 @@ module Dependabot
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
-        options: job.experiments
+        options: job.options
       )
     end
   end

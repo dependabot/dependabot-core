@@ -241,7 +241,7 @@ module Dependabot
             raise_on_ignored: true, # always true for security updates
             requirements_update_strategy: job.requirements_update_strategy,
             # exclude_paths: job.exclude_paths,
-            options: job.experiments
+            options: job.options
           )
         end
 
