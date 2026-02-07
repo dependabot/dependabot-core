@@ -445,8 +445,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Time).to receive(:now).and_return(Time.parse("2019-08-06 18:29:44 -0400"))
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_shared_helpers_command_timeout).and_return(true)
         end
 
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
@@ -471,8 +469,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       before do
         allow(Time).to receive(:now).and_return(Time.parse("2022-09-07 23:33:35 +0100"))
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(true)
       end
 
       context "when pinned to an up to date commit in the default branch" do
