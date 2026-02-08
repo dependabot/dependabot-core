@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/additional_dependency_checkers"
+require "dependabot/pre_commit/additional_dependency_checkers/python"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -214,8 +215,11 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def additional_dependency?
-        source = T.let(dependency.requirements.first&.dig(:source), T.untyped)
-        return false unless source.is_a?(Hash)
+        requirement = dependency.requirements.first
+        return false unless requirement
+
+        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+        return false unless source
 
         T.cast(source[:type], T.nilable(String)) == "additional_dependency"
       end
