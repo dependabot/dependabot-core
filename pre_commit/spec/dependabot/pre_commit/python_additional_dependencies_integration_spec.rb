@@ -4,9 +4,13 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/pre_commit/file_parser"
 require "dependabot/pre_commit/update_checker"
 require "dependabot/pre_commit/file_updater"
+require "dependabot/python"
+require "dependabot/python/update_checker"
+require "dependabot/python/version"
 
 RSpec.describe "Python additional_dependencies integration" do
   let(:file) do
@@ -27,11 +31,18 @@ RSpec.describe "Python additional_dependencies integration" do
     )]
   end
 
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "dependabot/dependabot-core"
+    )
+  end
+
   describe "FileParser" do
     let(:parser) do
       Dependabot::PreCommit::FileParser.new(
         dependency_files: [file],
-        source: { provider: "github", repo: "dependabot/dependabot-core" },
+        source: source,
         credentials: credentials
       )
     end
@@ -44,22 +55,23 @@ RSpec.describe "Python additional_dependencies integration" do
         dep.requirements.any? { |req| req[:source]&.dig(:type) == "additional_dependency" }
       end
 
-      expect(additional_deps.length).to eq(4)
+      # We have 12 parseable additional_dependencies in the fixture (those with versions)
+      expect(additional_deps.length).to eq(12)
 
       # Verify types-requests
       types_requests = additional_deps.find do |dep|
         dep.requirements.first[:source][:package_name] == "types-requests"
       end
       expect(types_requests).not_to be_nil
-      expect(types_requests.name).to eq("https://github.com/pre-commit/mirrors-mypy::mypy::types-requests")
+      expect(types_requests.name).to eq("types-requests")
       expect(types_requests.version).to eq("2.31.0.1")
       expect(types_requests.requirements.first[:requirement]).to eq("==2.31.0.1")
       expect(types_requests.requirements.first[:source][:language]).to eq("python")
       expect(types_requests.requirements.first[:source][:hook_id]).to eq("mypy")
 
-      # Verify types-PyYAML
+      # Verify types-PyYAML (normalized to types-pyyaml)
       types_pyyaml = additional_deps.find do |dep|
-        dep.requirements.first[:source][:package_name] == "types-PyYAML"
+        dep.requirements.first[:source][:package_name] == "types-pyyaml"
       end
       expect(types_pyyaml).not_to be_nil
       expect(types_pyyaml.version).to eq("6.0.0")
@@ -98,7 +110,7 @@ RSpec.describe "Python additional_dependencies integration" do
     let(:parser) do
       Dependabot::PreCommit::FileParser.new(
         dependency_files: [file],
-        source: { provider: "github", repo: "dependabot/dependabot-core" },
+        source: source,
         credentials: credentials
       )
     end
@@ -163,7 +175,7 @@ RSpec.describe "Python additional_dependencies integration" do
     let(:parser) do
       Dependabot::PreCommit::FileParser.new(
         dependency_files: [file],
-        source: { provider: "github", repo: "dependabot/dependabot-core" },
+        source: source,
         credentials: credentials
       )
     end
@@ -290,7 +302,7 @@ RSpec.describe "Python additional_dependencies integration" do
       # Step 1: Parse dependencies
       parser = Dependabot::PreCommit::FileParser.new(
         dependency_files: [file],
-        source: { provider: "github", repo: "dependabot/dependabot-core" },
+        source: source,
         credentials: credentials
       )
       dependencies = parser.parse
