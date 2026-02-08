@@ -11,6 +11,7 @@ require "dependabot/pre_commit/package_manager"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/additional_dependency_parsers"
+require "dependabot/pre_commit/additional_dependency_parsers/python"
 
 module Dependabot
   module PreCommit
