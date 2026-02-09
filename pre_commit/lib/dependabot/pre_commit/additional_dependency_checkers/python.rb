@@ -4,6 +4,8 @@
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/update_checkers"
+require "dependabot/requirements_update_strategy"
+require "dependabot/python/update_checker/requirements_updater"
 require "dependabot/pre_commit/additional_dependency_checkers"
 require "dependabot/pre_commit/additional_dependency_checkers/base"
 
@@ -59,6 +61,9 @@ module Dependabot
           Dependabot.logger.info("Python UpdateChecker found latest version: #{latest || 'none'}")
 
           latest&.to_s
+        rescue StandardError => e
+          Dependabot.logger.debug("Error checking Python package: #{e.message}")
+          nil
         end
 
         sig { returns(T.nilable(Dependabot::UpdateCheckers::Base)) }
@@ -149,14 +154,50 @@ module Dependabot
           base
         end
 
-        sig { params(original_requirement: T.nilable(String), new_version: String).returns(String) }
+        sig { params(original_requirement: T.nilable(String), new_version: String).returns(T.nilable(String)) }
         def build_updated_requirement(original_requirement, new_version)
           return ">=#{new_version}" unless original_requirement
 
-          operator_match = original_requirement.match(/\A([<>=!~]+)/)
-          operator = operator_match ? operator_match[1] : ">="
+          updater = Dependabot::Python::UpdateChecker::RequirementsUpdater.new(
+            requirements: [{
+              requirement: original_requirement,
+              file: "requirements.txt",
+              groups: [],
+              source: nil
+            }],
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
+            has_lockfile: false,
+            latest_resolvable_version: new_version
+          )
 
-          "#{operator}#{new_version}"
+          updated_reqs = updater.updated_requirements
+          updated_req = updated_reqs.first&.fetch(:requirement, nil)
+
+          return ">=#{new_version}" if updated_req == :unfixable
+
+          # Python's updater preserves satisfied constraints, but pre-commit has no lockfile
+          # so we need to force bump lower bounds to ensure file changes occur
+          if updated_req == original_requirement
+            force_bump_lower_bounds(original_requirement, new_version)
+          else
+            updated_req || ">=#{new_version}"
+          end
+        end
+
+        sig { params(requirement: String, new_version: String).returns(String) }
+        def force_bump_lower_bounds(requirement, new_version)
+          constraints = requirement.split(",").map(&:strip)
+
+          updated = constraints.map do |constraint|
+            if constraint.match?(/\A(>=|>|~=)/)
+              operator = T.must(constraint.match(/\A(>=|>|~=)/))[1]
+              "#{operator}#{new_version}"
+            else
+              constraint
+            end
+          end
+
+          updated.join(",")
         end
       end
     end

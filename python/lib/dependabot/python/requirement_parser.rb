@@ -100,7 +100,8 @@ module Dependabot
         end
         return T.cast(exact_pin[1], Gem::Version).to_s if exact_pin
 
-        lower_bound = constraints.find { |pair| %w(>= > ~>).include?(T.cast(pair[0], String)) }
+        lower_bound_operators = %w(>= > ~>).freeze
+        lower_bound = constraints.find { |pair| lower_bound_operators.include?(T.cast(pair[0], String)) }
         return T.cast(lower_bound[1], Gem::Version).to_s if lower_bound
 
         nil

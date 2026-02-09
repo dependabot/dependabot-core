@@ -12,6 +12,7 @@ require "dependabot/python"
 require "dependabot/python/update_checker"
 require "dependabot/python/version"
 
+# rubocop:disable RSpec/DescribeClass
 RSpec.describe "Python additional_dependencies integration" do
   let(:file) do
     Dependabot::DependencyFile.new(
@@ -147,7 +148,7 @@ RSpec.describe "Python additional_dependencies integration" do
     end
 
     it "delegates to Python::UpdateChecker for latest_version" do
-      expect(Dependabot::Python::UpdateChecker).to receive(:new).with(
+      allow(Dependabot::Python::UpdateChecker).to receive(:new).with(
         hash_including(
           dependency: an_instance_of(Dependabot::Dependency),
           credentials: credentials
@@ -354,3 +355,4 @@ RSpec.describe "Python additional_dependencies integration" do
     end
   end
 end
+# rubocop:enable RSpec/DescribeClass

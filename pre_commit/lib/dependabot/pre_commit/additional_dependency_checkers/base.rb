@@ -79,7 +79,6 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :current_version
 
-        # Helper to extract package name from source
         sig { returns(T.nilable(String)) }
         def package_name
           source[:package_name]&.to_s
