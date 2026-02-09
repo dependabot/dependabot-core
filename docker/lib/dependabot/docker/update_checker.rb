@@ -14,6 +14,7 @@ require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/package/package_release"
+require "dependabot/experiments"
 
 module Dependabot
   module Docker
@@ -49,7 +50,7 @@ module Dependabot
           if tag
             updated_tag = latest_version_from(tag)
             updated_source[:tag] = updated_tag
-            updated_source[:digest] = digest_of(updated_tag) if digest
+            updated_source[:digest] = digest_of(updated_tag) if digest || pin_digests?
           elsif digest
             updated_source[:digest] = digest_of("latest")
           end
@@ -104,9 +105,23 @@ module Dependabot
       sig { returns(T::Boolean) }
       def digest_up_to_date?
         digest_requirements.all? do |req|
-          next true unless updated_digest
+          source = req.fetch(:source)
+          source_digest = source.fetch(:digest)
+          source_tag = source[:tag]
 
-          req.fetch(:source).fetch(:digest) == updated_digest
+          expected_digest =
+            if source_tag
+              latest_tag = latest_tag_from(source_tag)
+              digest_of(latest_tag.name)
+            else
+              updated_digest
+            end
+
+          # If we can't determine an expected digest (for example if the registry does not return digests)
+          # assume it's up to date
+          next true if expected_digest.nil?
+
+          source_digest == expected_digest
         end
       end
 
@@ -649,6 +664,11 @@ module Dependabot
       sig { returns(T::Boolean) }
       def cooldown_enabled?
         true
+      end
+
+      sig { returns(T::Boolean) }
+      def pin_digests?
+        Dependabot::Experiments.enabled?(:docker_pin_digests)
       end
 
       sig do

@@ -246,11 +246,15 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
     def most_specific_version_tag_for_sha(commit_sha)
-      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                       .sort_by { |t| version_class.new(t.name) }
+      tags = local_tags_matching_sha(commit_sha)
       return if tags.empty?
 
       tags[-1]&.name
+    end
+
+    sig { params(commit_sha: T.nilable(String)).returns(T::Array[String]) }
+    def most_specific_version_tags_for_sha(commit_sha)
+      local_tags_matching_sha(commit_sha).map(&:name)
     end
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
@@ -331,6 +335,12 @@ module Dependabot
 
       filtered
         .reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+    end
+
+    sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
+    def local_tags_matching_sha(commit_sha)
+      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+                .sort_by { |t| version_class.new(t.name) }
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }

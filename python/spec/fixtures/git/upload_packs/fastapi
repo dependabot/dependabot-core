@@ -1,0 +1,13 @@
+001e# service=git-upload-pack
+00000160d4a12f1e9f1e9c8e6b5a3c2d1e0f9a8b7c6d5e4f3a2b1c HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow no-progress include-tag multi_ack_detailed symref=HEAD:refs/heads/master agent=git/2.39.0
+003fd4a12f1e9f1e9c8e6b5a3c2d1e0f9a8b7c6d5e4f3a2b1c refs/heads/master
+003e8f7e6d5c4b3a2918273645f6e5d4c3b2a19182736 refs/tags/0.110.0
+003e9a8b7c6d5e4f3a2b1c0d1e2f3a4b5c6d7e8f9a0b1 refs/tags/0.111.0
+003e1a2b3c4d5e6f7890abcdef1234567890abcdef12 refs/tags/0.120.0
+003e2b3c4d5e6f7890abcdef1234567890abcdef1234 refs/tags/0.124.0
+003e3c4d5e6f7890abcdef1234567890abcdef123456 refs/tags/0.124.2
+003e4d5e6f7890abcdef1234567890abcdef12345678 refs/tags/0.125.0
+003e5e6f7890abcdef1234567890abcdef1234567890 refs/tags/0.126.0
+003e6f7890abcdef1234567890abcdef12345678901a refs/tags/0.127.0
+003eabcdef1234567890abcdef1234567890abcdef12 refs/tags/0.128.0
+0000

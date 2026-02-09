@@ -40,9 +40,11 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        return if dependency_files.any? { |f| f.name == VCPKG_JSON_FILENAME }
+        return if dependency_files.any? do |f|
+          [VCPKG_JSON_FILENAME, VCPKG_CONFIGURATION_JSON_FILENAME].include?(f.name)
+        end
 
-        raise Dependabot::DependencyFileNotFound, VCPKG_JSON_FILENAME
+        raise Dependabot::DependencyFileNotFound.new(nil, "No vcpkg manifest files found")
       end
 
       sig { params(dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
@@ -51,7 +53,7 @@ module Dependabot
 
         case dependency_file.name
         in VCPKG_JSON_FILENAME then parse_vcpkg_json(dependency_file)
-        in VCPKG_CONFIGURATION_JSON_FILENAME then [] # TODO
+        in VCPKG_CONFIGURATION_JSON_FILENAME then parse_vcpkg_configuration_json(dependency_file)
         else []
         end
       end
@@ -64,7 +66,21 @@ module Dependabot
         dependencies = []
 
         parsed_json["builtin-baseline"]&.then do |baseline|
-          dependencies << parse_baseline_dependency(baseline:, dependency_file:)
+          dependencies << Dependabot::Dependency.new(
+            name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
+            version: baseline,
+            package_manager: "vcpkg",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: VCPKG_DEFAULT_BASELINE_URL,
+                ref: VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH
+              },
+              file: dependency_file.name
+            }]
+          )
         end
 
         parsed_json["dependencies"]&.each do |dep|
@@ -78,23 +94,29 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
       end
 
-      sig { params(baseline: String, dependency_file: Dependabot::DependencyFile).returns(Dependabot::Dependency) }
-      def parse_baseline_dependency(baseline:, dependency_file:)
-        Dependabot::Dependency.new(
-          name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
-          version: baseline,
-          package_manager: "vcpkg",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            source: {
-              type: "git",
-              url: VCPKG_DEFAULT_BASELINE_URL,
-              ref: VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH
-            },
-            file: dependency_file.name
-          }]
-        )
+      sig { params(dependency_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_vcpkg_configuration_json(dependency_file)
+        contents = T.must(dependency_file.content)
+        parsed_json = JSON.parse(contents)
+
+        dependencies = []
+
+        # Parse default-registry if it exists
+        parsed_json["default-registry"]&.then do |registry|
+          dependency = parse_registry_dependency(registry:, dependency_file:, is_default: true)
+          dependencies << dependency if dependency
+        end
+
+        # Parse registries array if it exists
+        parsed_json["registries"]&.each do |registry|
+          dependency = parse_registry_dependency(registry:, dependency_file:, is_default: false)
+          dependencies << dependency if dependency
+        end
+
+        dependencies.compact
+      rescue JSON::ParserError
+        Dependabot.logger.warn("Failed to parse #{dependency_file.name}: #{dependency_file.content}")
+        raise Dependabot::DependencyFileNotParseable, dependency_file.path
       end
 
       sig do
@@ -138,6 +160,70 @@ module Dependabot
         else
           Dependabot.logger.warn("Skipping unknown vcpkg dependency format: #{dep.inspect}")
           nil
+        end
+      end
+
+      sig do
+        params(
+          registry: T::Hash[String, T.untyped],
+          dependency_file: Dependabot::DependencyFile,
+          is_default: T::Boolean
+        )
+          .returns(T.nilable(Dependabot::Dependency))
+      end
+      def parse_registry_dependency(registry:, dependency_file:, is_default: false) # rubocop:disable Metrics/MethodLength
+        kind = registry["kind"]
+        baseline = registry["baseline"]
+
+        # Only track git and builtin registries
+        return nil unless VCPKG_SUPPORTED_REGISTRY_TYPES.include?(kind)
+        return nil unless baseline.is_a?(String)
+
+        case kind
+        when "git"
+          repository = registry["repository"]
+          return nil unless repository.is_a?(String)
+
+          reference = registry["reference"] || "HEAD"
+
+          Dependabot::Dependency.new(
+            name: repository,
+            version: baseline,
+            package_manager: "vcpkg",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: repository,
+                ref: reference
+              },
+              file: dependency_file.name
+            }],
+            metadata: {
+              default: is_default
+            }
+          )
+        when "builtin"
+          Dependabot::Dependency.new(
+            name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
+            version: baseline,
+            package_manager: "vcpkg",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: VCPKG_DEFAULT_BASELINE_URL,
+                ref: VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH
+              },
+              file: dependency_file.name
+            }],
+            metadata: {
+              builtin: true,
+              default: is_default
+            }
+          )
         end
       end
 
