@@ -159,7 +159,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
         }]
       end
 
-      it "preserves the >= operator" do
+      it "bumps the lower bound to the new version" do
+        # Pre-commit has no lockfile, so we always bump lower bounds
         updated = checker.updated_requirements("6.0.0")
         expect(updated.first[:requirement]).to eq(">=6.0.0")
         expect(updated.first[:source][:original_string]).to eq("flake8>=6.0.0")
@@ -188,10 +189,11 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
         }]
       end
 
-      it "preserves the ~= operator" do
+      it "preserves the ~= operator and bumps version" do
         updated = checker.updated_requirements("7.4.0")
-        expect(updated.first[:requirement]).to eq("~=7.4.0")
-        expect(updated.first[:source][:original_string]).to eq("pytest~=7.4.0")
+        # ~= gets bumped to match the precision
+        expect(updated.first[:requirement]).to eq("~=7.4")
+        expect(updated.first[:source][:original_string]).to eq("pytest~=7.4")
       end
     end
 
@@ -217,7 +219,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
         }]
       end
 
-      it "preserves extras in the updated original_string" do
+      it "bumps the lower bound and preserves extras" do
+        # Pre-commit has no lockfile, so we always bump lower bounds
         updated = checker.updated_requirements("24.0.0")
         expect(updated.first[:requirement]).to eq(">=24.0.0")
         expect(updated.first[:source][:original_string]).to eq("black[d]>=24.0.0")
@@ -246,35 +249,131 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
         }]
       end
 
-      it "preserves all extras in the updated original_string" do
+      it "bumps the lower bound and preserves all extras" do
+        # Pre-commit has no lockfile, so we always bump lower bounds
         updated = checker.updated_requirements("0.25.0")
         expect(updated.first[:requirement]).to eq(">=0.25.0")
         expect(updated.first[:source][:original_string]).to eq("httpx[http2,cli]>=0.25.0")
       end
     end
 
-    context "with other operators" do
-      {
-        "<=" => "<=",
-        ">" => ">",
-        "<" => "<",
-        "!=" => "!=",
-        "===" => "==="
-      }.each do |operator, expected_operator|
-        context "with #{operator} operator" do
-          let(:requirements) do
-            [{
-              requirement: "#{operator}2.31.0.1",
-              groups: ["additional_dependencies"],
-              file: ".pre-commit-config.yaml",
-              source: source
-            }]
-          end
+    context "with range constraints (lower and upper bounds)" do
+      let(:source) do
+        {
+          type: "additional_dependency",
+          language: "python",
+          hook_id: "mypy",
+          repo_url: "https://github.com/pre-commit/mirrors-mypy",
+          package_name: "typing-extensions",
+          original_name: "typing-extensions",
+          original_string: "typing-extensions>=4.0.0,<5.0.0"
+        }
+      end
 
-          it "preserves the #{operator} operator" do
-            updated = checker.updated_requirements("2.32.0")
-            expect(updated.first[:requirement]).to eq("#{expected_operator}2.32.0")
-          end
+      let(:requirements) do
+        [{
+          requirement: ">=4.0.0,<5.0.0",
+          groups: ["additional_dependencies"],
+          file: ".pre-commit-config.yaml",
+          source: source
+        }]
+      end
+
+      it "bumps the lower bound and preserves upper bound when new version fits" do
+        # Pre-commit has no lockfile, so we always bump lower bounds
+        updated = checker.updated_requirements("4.15.0")
+        expect(updated.first[:requirement]).to eq(">=4.15.0,<5.0.0")
+        expect(updated.first[:source][:original_string]).to eq("typing-extensions>=4.15.0,<5.0.0")
+      end
+
+      it "updates the upper bound when new version exceeds it" do
+        updated = checker.updated_requirements("5.1.0")
+        # Python's RequirementsUpdater updates upper bound to next major version
+        expect(updated.first[:requirement]).to eq(">=4.0.0,<6.0.0")
+        expect(updated.first[:source][:original_string]).to eq("typing-extensions>=4.0.0,<6.0.0")
+      end
+    end
+
+    context "with other operators" do
+      context "with <= operator (not satisfied)" do
+        let(:requirements) do
+          [{
+            requirement: "<=2.31.0.1",
+            groups: ["additional_dependencies"],
+            file: ".pre-commit-config.yaml",
+            source: source
+          }]
+        end
+
+        it "updates the upper bound to include the new version" do
+          updated = checker.updated_requirements("2.32.0")
+          expect(updated.first[:requirement]).to eq("<=2.32.0")
+        end
+      end
+
+      context "with > operator (satisfied)" do
+        let(:requirements) do
+          [{
+            requirement: ">2.31.0.1",
+            groups: ["additional_dependencies"],
+            file: ".pre-commit-config.yaml",
+            source: source
+          }]
+        end
+
+        it "bumps the lower bound" do
+          # Pre-commit has no lockfile, so we always bump lower bounds
+          updated = checker.updated_requirements("2.32.0")
+          expect(updated.first[:requirement]).to eq(">2.32.0")
+        end
+      end
+
+      context "with === operator" do
+        let(:requirements) do
+          [{
+            requirement: "===2.31.0.1",
+            groups: ["additional_dependencies"],
+            file: ".pre-commit-config.yaml",
+            source: source
+          }]
+        end
+
+        it "updates the exact version" do
+          updated = checker.updated_requirements("2.32.0")
+          expect(updated.first[:requirement]).to eq("===2.32.0")
+        end
+      end
+
+      context "with < operator (not satisfied)" do
+        let(:requirements) do
+          [{
+            requirement: "<2.31.0.1",
+            groups: ["additional_dependencies"],
+            file: ".pre-commit-config.yaml",
+            source: source
+          }]
+        end
+
+        it "updates the upper bound to allow the new version" do
+          updated = checker.updated_requirements("2.32.0")
+          # Python's RequirementsUpdater increments last segment at same precision
+          expect(updated.first[:requirement]).to eq("<2.32.1.0")
+        end
+      end
+
+      context "with != operator (satisfied)" do
+        let(:requirements) do
+          [{
+            requirement: "!=2.31.0.1",
+            groups: ["additional_dependencies"],
+            file: ".pre-commit-config.yaml",
+            source: source
+          }]
+        end
+
+        it "preserves the != constraint" do
+          updated = checker.updated_requirements("2.32.0")
+          expect(updated.first[:requirement]).to eq("!=2.31.0.1")
         end
       end
     end
@@ -289,9 +388,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
         }]
       end
 
-      it "defaults to == operator" do
+      it "updates the version preserving no-operator format" do
         updated = checker.updated_requirements("2.31.0.10")
-        expect(updated.first[:requirement]).to eq("==2.31.0.10")
+        expect(updated.first[:requirement]).to eq("2.31.0.10")
       end
     end
 
