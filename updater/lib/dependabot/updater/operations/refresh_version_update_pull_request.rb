@@ -235,7 +235,7 @@ module Dependabot
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
             update_cooldown: job.cooldown,
-            options: job.experiments
+            options: job.options
           )
         end
 

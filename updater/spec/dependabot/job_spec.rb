@@ -46,7 +46,8 @@ RSpec.describe Dependabot::Job do
       security_updates_only: security_updates_only,
       dependency_groups: dependency_groups,
       repo_private: repo_private,
-      cooldown: cooldown
+      cooldown: cooldown,
+      registries: registries
     }
   end
 
@@ -75,6 +76,7 @@ RSpec.describe Dependabot::Job do
   let(:dependency_groups) { [] }
   let(:repo_private) { false }
   let(:cooldown) { nil }
+  let(:registries) { nil }
 
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
@@ -492,6 +494,58 @@ RSpec.describe Dependabot::Job do
 
       it "preserves the values" do
         expect(job.experiments).to eq(timeout_per_operation_seconds: 600)
+      end
+    end
+  end
+
+  describe "#registries" do
+    it "handles nil values" do
+      expect(job.registries).to eq({})
+    end
+
+    context "with registries" do
+      let(:registries) do
+        {
+          "julia" => [
+            { "type" => "git", "url" => "https://github.com/HolyLab/HolyLabRegistry.git" }
+          ]
+        }
+      end
+
+      it "transforms the keys" do
+        expect(job.registries).to eq(
+          julia: [
+            { "type" => "git", "url" => "https://github.com/HolyLab/HolyLabRegistry.git" }
+          ]
+        )
+      end
+    end
+  end
+
+  describe "#options" do
+    it "returns experiments merged with registries" do
+      expect(job.options).to eq(registries: {})
+    end
+
+    context "with experiments and registries" do
+      let(:experiments) { { "simple" => true } }
+      let(:registries) do
+        { "julia" => [{ "type" => "git", "url" => "https://example.com/registry.git" }] }
+      end
+
+      it "combines experiments and registries" do
+        expect(job.options).to eq(
+          simple: true,
+          registries: {
+            julia: [{ "type" => "git", "url" => "https://example.com/registry.git" }]
+          }
+        )
+      end
+
+      it "allows ecosystem code to access registries via dig" do
+        expect(job.options.dig(:registries, :julia)).to eq(
+          [{ "type" => "git", "url" => "https://example.com/registry.git" }]
+        )
       end
     end
   end
