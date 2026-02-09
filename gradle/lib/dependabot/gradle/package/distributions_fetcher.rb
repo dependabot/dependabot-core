@@ -22,9 +22,9 @@ module Dependabot
           versions = T.let(
             JSON.parse(
               T.let(response.body, String),
-              object_class: OpenStruct
+              symbolize_names: true
             ),
-            T::Array[OpenStruct]
+            T::Array[T::Hash[Symbol, T.untyped]]
           )
           @available_versions +=
             versions
@@ -38,7 +38,7 @@ module Dependabot
             end
         end
 
-        sig { params(version: OpenStruct).returns(T::Boolean) }
+        sig { params(version: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
         def self.release_version?(version:)
           Gradle::Version.correct?(T.let(version[:version], String)) &&
             T.let(version[:broken], T::Boolean) == false &&

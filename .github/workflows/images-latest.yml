@@ -1,6 +1,7 @@
 name: Latest images
 env:
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
+  BACKUP_REGISTRY: "dependabot-acr-apim-production.azure-api.net"
 on: # yamllint disable-line rule:truthy
   push:
     branches:
@@ -70,7 +71,7 @@ jobs:
       ECOSYSTEM: ${{ matrix.suite.ecosystem }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           persist-credentials: false
@@ -87,7 +88,7 @@ jobs:
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
-      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -98,6 +99,12 @@ jobs:
           docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
           # All tags should resolve to the same digest so we only need to look up one of them
           cosign sign --yes $(cosign triangulate --type=digest "${UPDATER_IMAGE}${ECOSYSTEM}:latest")
+
+      - name: Pull images through backup registry
+        run: |
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:latest"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
       - name: Set summary
         run: |

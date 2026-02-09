@@ -1108,9 +1108,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "packages/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "packages/crate1"),
-            OpenStruct.new(type: "dir", path: "packages/crate2"),
-            OpenStruct.new(type: "file", path: "packages/README.md")
+            Data.define(:type, :path).new("dir", "packages/crate1"),
+            Data.define(:type, :path).new("dir", "packages/crate2"),
+            Data.define(:type, :path).new("file", "packages/README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "packages/*")
@@ -1123,9 +1123,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "crate1"),
-            OpenStruct.new(type: "dir", path: "crate2"),
-            OpenStruct.new(type: "file", path: "README.md")
+            Data.define(:type, :path).new("dir", "crate1"),
+            Data.define(:type, :path).new("dir", "crate2"),
+            Data.define(:type, :path).new("file", "README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "*")
@@ -1138,9 +1138,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "test-crate"),
-            OpenStruct.new(type: "dir", path: "prod-crate"),
-            OpenStruct.new(type: "file", path: "README.md")
+            Data.define(:type, :path).new("dir", "test-crate"),
+            Data.define(:type, :path).new("dir", "prod-crate"),
+            Data.define(:type, :path).new("file", "README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "*-crate")
@@ -1153,9 +1153,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "src/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "src/bin-crate-v1"),
-            OpenStruct.new(type: "dir", path: "src/lib-crate-v2"),
-            OpenStruct.new(type: "dir", path: "src/other")
+            Data.define(:type, :path).new("dir", "src/bin-crate-v1"),
+            Data.define(:type, :path).new("dir", "src/lib-crate-v2"),
+            Data.define(:type, :path).new("dir", "src/other")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "src/*-crate-*")
@@ -1179,9 +1179,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "apps/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "apps/web/frontend"),
-            OpenStruct.new(type: "dir", path: "apps/api/backend"),
-            OpenStruct.new(type: "file", path: "apps/config.json")
+            Data.define(:type, :path).new("dir", "apps/web/frontend"),
+            Data.define(:type, :path).new("dir", "apps/api/backend"),
+            Data.define(:type, :path).new("file", "apps/config.json")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "apps/*/frontend")

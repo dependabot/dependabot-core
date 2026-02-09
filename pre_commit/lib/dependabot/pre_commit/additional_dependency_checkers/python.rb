@@ -61,8 +61,13 @@ module Dependabot
           Dependabot.logger.info("Python UpdateChecker found latest version: #{latest || 'none'}")
 
           latest&.to_s
-        rescue StandardError => e
-          Dependabot.logger.debug("Error checking Python package: #{e.message}")
+        rescue Dependabot::PrivateSourceTimedOut,
+               Dependabot::PrivateSourceAuthenticationFailure,
+               Dependabot::DependencyFileNotResolvable,
+               Dependabot::DependencyNotFound,
+               Excon::Error::Timeout,
+               Excon::Error::Socket => e
+          Dependabot.logger.warn("Error checking Python package: #{e.message}")
           nil
         end
 
@@ -175,8 +180,6 @@ module Dependabot
 
           return ">=#{new_version}" if updated_req == :unfixable
 
-          # Python's updater preserves satisfied constraints, but pre-commit has no lockfile
-          # so we need to force bump lower bounds to ensure file changes occur
           if updated_req == original_requirement
             force_bump_lower_bounds(original_requirement, new_version)
           else

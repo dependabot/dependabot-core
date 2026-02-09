@@ -1009,6 +1009,102 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           end
         end
       end
+
+      context "with a replaces-base credential and no .npmrc" do
+        let(:dependency_files) { project_dependency_files("npm6/simple") }
+
+        context "when the credential has replaces-base flag" do
+          let(:credentials) do
+            [Dependabot::Credential.new(
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }
+            ), Dependabot::Credential.new(
+              {
+                "type" => "npm_registry",
+                "registry" => "artifactory.example.com/artifactory/api/npm/npm",
+                "token" => "my_token",
+                "replaces-base" => true
+              }
+            )]
+          end
+
+          it "adds a global registry line with always-auth even without .npmrc" do
+            expect(npmrc_content)
+              .to eq(
+                "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+                "//artifactory.example.com/artifactory/api/npm/npm/:_authToken=my_token\n" \
+                "always-auth = true"
+              )
+          end
+
+          context "with basic auth credentials" do
+            let(:credentials) do
+              [Dependabot::Credential.new(
+                {
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }
+              ), Dependabot::Credential.new(
+                {
+                  "type" => "npm_registry",
+                  "registry" => "artifactory.example.com/artifactory/api/npm/npm",
+                  "token" => "user:password",
+                  "replaces-base" => true
+                }
+              )]
+            end
+
+            it "adds a global registry line with always-auth and basic auth" do
+              expect(npmrc_content)
+                .to eq(
+                  "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+                  "//artifactory.example.com/artifactory/api/npm/npm/:_auth=dXNlcjpwYXNzd29yZA==\n" \
+                  "always-auth = true"
+                )
+            end
+          end
+
+          context "when lockfile URLs contain port numbers not in credential" do
+            let(:dependency_files) do
+              [
+                Dependabot::DependencyFile.new(
+                  name: "package.json",
+                  content: fixture("projects", "npm6", "simple", "package.json")
+                ),
+                Dependabot::DependencyFile.new(
+                  name: "package-lock.json",
+                  content: '{
+                    "name": "test",
+                    "lockfileVersion": 3,
+                    "packages": {
+                      "": {"dependencies": {"mongodb": "^6.19.0"}},
+                      "node_modules/mongodb": {
+                        "version": "6.19.0",
+                        "resolved": "https://artifactory.example.com:443/artifactory/api/npm/npm/mongodb/-/mongodb-6.19.0.tgz"
+                      }
+                    }
+                  }'
+                )
+              ]
+            end
+
+            it "still generates .npmrc with always-auth using replaces-base" do
+              expect(npmrc_content)
+                .to eq(
+                  "registry = https://artifactory.example.com/artifactory/api/npm/npm\n" \
+                  "//artifactory.example.com/artifactory/api/npm/npm/:_authToken=my_token\n" \
+                  "always-auth = true"
+                )
+            end
+          end
+        end
+      end
     end
 
     context "with a pnpm-lock.yaml" do

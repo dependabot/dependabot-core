@@ -194,24 +194,6 @@ module Dependabot
         dependencies
       end
 
-      sig do
-        params(
-          hook: T::Hash[String, T.untyped],
-          hook_id: String,
-          repo_url: String
-        ).returns(T.nilable(String))
-      end
-      def detect_hook_language(hook, hook_id, repo_url)
-        language = hook["language"]
-        return language if language.is_a?(String)
-
-        Dependabot.logger.warn(
-          "Skipping additional_dependencies for hook '#{hook_id}' in repo '#{repo_url}': " \
-          "no 'language' field specified. Add 'language: python' (or node, golang, etc.) to enable updates."
-        )
-        nil
-      end
-
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pre_commit_config_files
         dependency_files.select { |f| f.name.match?(CONFIG_FILE_PATTERN) }

@@ -23,12 +23,17 @@ module Dependabot
 
         require_relative "pyproject_preparer"
         require_relative "version_config_parser"
+        require_relative "lock_file_error_handler"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
 
         UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
+        UV_REQUIRED_VERSION_REGEX = T.let(
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+          Regexp
+        )
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -42,19 +47,24 @@ module Dependabot
         sig { returns(T.nilable(T::Array[T.nilable(String)])) }
         attr_reader :index_urls
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
+
         sig do
           params(
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[T.nilable(String)])
+            index_urls: T.nilable(T::Array[T.nilable(String)]),
+            repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil, repo_contents_path: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
           @index_urls = index_urls
+          @repo_contents_path = repo_contents_path
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -244,7 +254,7 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def updated_lockfile_content_for(pyproject_content)
-          SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(pyproject_content)
 
@@ -257,47 +267,49 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_uv_error(e)
+          error_handler.handle_uv_error(e)
         end
 
-        sig do
-          params(
-            error: SharedHelpers::HelperSubprocessFailed
-          )
-            .returns(T.noreturn)
+        sig { params(error_message: String).returns(T::Boolean) }
+        def resolution_error?(error_message)
+          ["No solution found when resolving dependencies", "Failed to build"].any? do |pattern|
+            error_message.include?(pattern)
+          end
         end
-        def handle_uv_error(error)
-          error_message = error.message
-          error_message_patterns = ["No solution found when resolving dependencies", "Failed to build"]
 
-          if error_message_patterns.any? { |value| error_message.include?(value) }
-            match_unresolvable_regex = error_message.scan(UV_UNRESOLVABLE_REGEX).last
-            match_failed_to_build_regex = error_message.scan(UV_BUILD_FAILED_REGEX).last
+        sig { params(error_message: String).returns(T.noreturn) }
+        def handle_resolution_error(error_message)
+          match_unresolvable = error_message.scan(UV_UNRESOLVABLE_REGEX).last
+          match_build_failed = error_message.scan(UV_BUILD_FAILED_REGEX).last
 
-            if match_unresolvable_regex
-              formatted_error = if match_unresolvable_regex.is_a?(Array)
-                                  match_unresolvable_regex.join
-                                else
-                                  match_unresolvable_regex
-                                end
-            end
-
-            if match_failed_to_build_regex
-              formatted_error = if match_failed_to_build_regex.is_a?(Array)
-                                  match_failed_to_build_regex.join
-                                else
-                                  match_failed_to_build_regex
-                                end
-            end
+          if match_unresolvable
+            formatted_error = Array(match_unresolvable).join
+            conflicting_deps = extract_conflicting_dependencies(formatted_error)
+            raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
 
             raise Dependabot::DependencyFileNotResolvable, formatted_error
           end
 
-          if error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
-            raise Dependabot::DependencyFileNotResolvable, error_message
-          end
+          formatted_error = match_build_failed ? Array(match_build_failed).join : error_message
+          raise Dependabot::DependencyFileNotResolvable, formatted_error
+        end
 
-          raise error
+        sig { params(error_message: String).returns(T::Array[String]) }
+        def extract_conflicting_dependencies(error_message)
+          # Extract conflicting dependency names from the error message
+          # Pattern: "Because <pkg>==<ver> depends on <dep>>=<ver> and your project depends on <dep>==<ver>"
+          normalized_message = error_message.gsub(/\s+/, " ")
+          conflict_pattern = /Because (\S+)==\S+ depends on (\S+)[><=!]+\S+ and your project depends on \2==\S+/
+
+          match = normalized_message.match(conflict_pattern)
+          return [] unless match
+
+          [T.must(match[1]), T.must(match[2])].uniq
+        end
+
+        sig { returns(LockFileErrorHandler) }
+        def error_handler
+          @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
         end
 
         sig { returns(T.nilable(String)) }
@@ -556,6 +568,11 @@ module Dependabot
             dependency_files.find { |f| f.name == "pyproject.toml" },
             T.nilable(Dependabot::DependencyFile)
           )
+        end
+
+        sig { returns(String) }
+        def directory
+          dependency_files.first&.directory || "/"
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

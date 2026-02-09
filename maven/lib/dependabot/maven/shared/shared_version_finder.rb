@@ -68,11 +68,85 @@ module Dependabot
           current_suffix = extract_version_suffix(current_version_string)
           candidate_suffix = extract_version_suffix(candidate_version_string)
 
+          if jre_or_jdk?(current_suffix) && jre_or_jdk?(candidate_suffix)
+            return compatible_java_runtime?(T.must(current_suffix), T.must(candidate_suffix))
+          end
+
           # If both versions share the exact suffix or no suffix, they are compatible
           current_suffix == candidate_suffix
         end
 
         private
+
+        # Determines whether two Java runtime suffixes are compatible.
+        #
+        # Compatibility rules:
+        # - Both suffixes must be present and parseable.
+        # - Java major versions must match (e.g., jdk8 != jdk11).
+        # - JDK → JRE is NOT compatible (runtime capability downgrade).
+        # - JRE → JDK is compatible (the JDK includes the JRE).
+        # - JRE → JRE and JDK → JDK are compatible when versions match.
+        # @example
+        #   compatible_java_runtime?("jre8", "jre8")   # => true   (same version, JRE → JRE)
+        #   compatible_java_runtime?("jdk8", "jdk8")   # => true   (same version, JDK → JDK)
+        #   compatible_java_runtime?("jre8", "jdk8")   # => true   (JRE → JDK is compatible)
+        #   compatible_java_runtime?("jdk8", "jre8")   # => false  (JDK → JRE is NOT compatible)
+        #   compatible_java_runtime?("jre8", "jre11")  # => false  (version mismatch)
+        #   compatible_java_runtime?("jdk8", "jdk11")  # => false  (version mismatch)
+        sig do
+          params(
+            current_suffix: String,
+            candidate_suffix: String
+          ).returns(T::Boolean)
+        end
+        def compatible_java_runtime?(current_suffix, candidate_suffix)
+          current_major_version = java_major_version(current_suffix)
+          candidate_major_version = java_major_version(candidate_suffix)
+          return false unless current_major_version == candidate_major_version
+
+          is_downgrade = jdk?(current_suffix) && jre?(candidate_suffix)
+
+          !is_downgrade
+        end
+
+        # Extracts the major Java version number from a JRE/JDK version suffix.
+        #
+        # @example
+        #   java_major_version("jre8")  # => 8
+        #   java_major_version("jdk17") # => 17
+        sig { params(jre_jdk_suffix: String).returns(Integer) }
+        def java_major_version(jre_jdk_suffix)
+          jre_jdk_suffix[/\d+/].to_i
+        end
+
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def jre_or_jdk?(version)
+          jre?(version) || jdk?(version)
+        end
+
+        # Matches if the current version is a JRE version suffix.
+        #
+        # @example
+        #   jre?( "jre8") # => true
+        #   jre?("jdk8") # => false
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def jre?(version)
+          return false unless version
+
+          version.match?(/\A(jre)\d+\z/i)
+        end
+
+        # Matches if the current version is a JDK version suffix.
+        #
+        # @example
+        #   jdk?("jre8")  # => false
+        #   jdk?("jdk8") # => true
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def jdk?(version)
+          return false unless version
+
+          version.match?(/\A(jdk)\d+\z/i)
+        end
 
         # Extracts the qualifier/suffix from a Maven version string.
         #
@@ -95,6 +169,14 @@ module Dependabot
             # Normalize delimiters to ensure consistent comparison
             # e.g., "beta-1" and "beta_1" are treated the same
             suffix = suffix.tr("-", "_")
+
+            # Special case for JDK/JRE suffixes
+            # e.g., "13.2.1.jre8" or "13.2.1-jdk8"
+            # In Java, these suffixes often indicate compatibility with specific Java runtimes
+            # and are meaningful in version comparisons as we should not mix versions built for different runtimes.
+            # For example, "1.0.0.jdk8" should not be considered the same as "1.0.0.jdk11"
+            # because they target different Java versions.
+            return suffix if jre_or_jdk?(suffix)
 
             # Ignore purely numeric suffixes (e.g., "-1", "_2")
             # e.g., "1.0.0-1" or "1.0.0_2" are not considered to have a meaningful suffix

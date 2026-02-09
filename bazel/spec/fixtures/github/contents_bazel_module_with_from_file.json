@@ -1,0 +1,13 @@
+{
+  "name": "MODULE.bazel",
+  "path": "MODULE.bazel",
+  "sha": "fromfile123",
+  "size": 500,
+  "url": "https://api.github.com/repos/example/repo/contents/MODULE.bazel?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/MODULE.bazel",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/fromfile123",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/MODULE.bazel",
+  "type": "file",
+  "content": "YmF6ZWxfZGVwKG5hbWUgPSAicnVsZXNfZ28iLCB2ZXJzaW9uID0gIjAuNTAuMCIpCmJhemVsX2RlcChuYW1lID0gImdhemVsbGUiLCB2ZXJzaW9uID0gIjAuMzkuMCIpCmJhemVsX2RlcChuYW1lID0gInJ1bGVzX2Rpc3Ryb2xlc3MiLCB2ZXJzaW9uID0gIjAuMS4wIikKCmdvID0gdXNlX2V4dGVuc2lvbigiQGdhemVsbGUvLzpleHRlbnNpb25zOmdvLmJ6bCIsICJnbyIpCmdvLmRlcHMoCiAgICBuYW1lID0gImdvX2RlcHMiLAogICAgZnJvbV9maWxlID0gIi8vOmdvLm1vZCIsCikKCmFwdCA9IHVzZV9leHRlbnNpb24oIkBydWxlc19kaXN0cm9sZXNzLy9hcHQ6ZXh0ZW5zaW9ucy5iemwiLCAiYXB0IikKYXB0Lmluc3RhbGwoCiAgICBuYW1lID0gImJhc2UtY29udGFpbmVyIiwKICAgIGxvY2tfZmlsZSA9ICIvL2NvbnRhaW5lcnMvZGlzdHJvbGVzczpiYXNlLmxvY2suanNvbiIsCikKYXB0Lmluc3RhbGwoCiAgICBuYW1lID0gInV0aWwtY29udGFpbmVyIiwKICAgIGxvY2tfZmlsZSA9ICIvL2NvbnRhaW5lcnMvZGlzdHJvbGVzczp1dGlsLWNvbnRhaW5lci5sb2NrLmpzb24iLAopCg==\n",
+  "encoding": "base64"
+}
