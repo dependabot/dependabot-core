@@ -168,6 +168,8 @@ module Dependabot
         stdin_data: stdin_data,
         timeout: timeout
       )
+      stdout ||= ""
+      stderr ||= ""
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
