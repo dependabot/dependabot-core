@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.1
+    hooks:
+      - id: mypy
+        language: python
+        additional_dependencies:
+          - types-requests==2.31.0.1
+          - types-PyYAML>=6.0.0
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        language: python
+        additional_dependencies:
+          - black[d]>=23.0.0
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        language: python
+        additional_dependencies:
+          - flake8-docstrings~=1.7.0

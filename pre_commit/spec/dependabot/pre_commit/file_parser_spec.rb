@@ -154,5 +154,52 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dependencies).to eq([])
       end
     end
+
+    context "with python additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_python_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(3)
+        expect(additional_deps.length).to eq(4)
+      end
+
+      it "parses an exact-pinned additional dependency" do
+        dep = dependencies.find { |d| d.name == "mypy:types-requests" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("2.31.0.1")
+        expect(dep.requirements.first[:requirement]).to eq("==2.31.0.1")
+        expect(dep.requirements.first[:source][:language]).to eq("python")
+        expect(dep.requirements.first[:source][:package_name]).to eq("types-requests")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("mypy")
+      end
+
+      it "parses a lower-bound additional dependency" do
+        dep = dependencies.find { |d| d.name == "mypy:types-pyyaml" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("6.0.0")
+        expect(dep.requirements.first[:requirement]).to eq(">=6.0.0")
+      end
+
+      it "parses an additional dependency with extras" do
+        dep = dependencies.find { |d| d.name == "black:black" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("23.0.0")
+        expect(dep.requirements.first[:source][:extras]).to eq("d")
+      end
+
+      it "parses a compatible release (~=) additional dependency" do
+        dep = dependencies.find { |d| d.name == "flake8:flake8-docstrings" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.7.0")
+      end
+    end
   end
 end
