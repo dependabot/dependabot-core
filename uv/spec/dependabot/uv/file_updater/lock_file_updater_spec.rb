@@ -707,7 +707,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
       it "uses only the first replaces-base credential for --default-index" do
         options = lock_index_options.join(" ")
-        expect(options.scan(/--default-index/).count).to eq(1)
+        expect(options.scan("--default-index").count).to eq(1)
         expect(options).to include("--default-index https://first_token@first-pypi.example.com/simple")
         expect(options).not_to include("--default-index https://second_token@second-pypi.example.com/simple")
         expect(options).to include("--index https://extra_token@extra.example.com/simple")
