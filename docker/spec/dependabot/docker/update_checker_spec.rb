@@ -1632,6 +1632,86 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           )
       end
     end
+
+    context "when docker_pin_digests experiment is enabled" do
+      before do
+        Dependabot::Experiments.register(:docker_pin_digests, true)
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      context "when specified with a tag only (no digest)" do
+        let(:source) { { tag: version } }
+
+        it "adds a digest to the tag" do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  tag: "17.10",
+                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                          "ca97eba880ebf600d68608"
+                }
+              }]
+            )
+        end
+      end
+
+      context "when specified with a tag and a digest" do
+        let(:source) { { digest: "old_digest", tag: "17.04" } }
+
+        it "updates both the tag and the digest" do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                          "ca97eba880ebf600d68608",
+                  tag: "17.10"
+                }
+              }]
+            )
+        end
+      end
+    end
+
+    context "when docker_pin_digests experiment is disabled" do
+      before do
+        Dependabot::Experiments.register(:docker_pin_digests, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      context "when specified with a tag only (no digest)" do
+        let(:source) { { tag: version } }
+
+        it "does not add a digest" do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { tag: "17.10" }
+              }]
+            )
+        end
+      end
+    end
   end
 
   describe ".docker_read_timeout_in_seconds" do

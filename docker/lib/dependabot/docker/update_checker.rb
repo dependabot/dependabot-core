@@ -14,6 +14,7 @@ require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/package/package_release"
+require "dependabot/experiments"
 
 module Dependabot
   module Docker
@@ -49,7 +50,7 @@ module Dependabot
           if tag
             updated_tag = latest_version_from(tag)
             updated_source[:tag] = updated_tag
-            updated_source[:digest] = digest_of(updated_tag) if digest
+            updated_source[:digest] = digest_of(updated_tag) if digest || pin_digests?
           elsif digest
             updated_source[:digest] = digest_of("latest")
           end
@@ -663,6 +664,11 @@ module Dependabot
       sig { returns(T::Boolean) }
       def cooldown_enabled?
         true
+      end
+
+      sig { returns(T::Boolean) }
+      def pin_digests?
+        Dependabot::Experiments.enabled?(:docker_pin_digests)
       end
 
       sig do

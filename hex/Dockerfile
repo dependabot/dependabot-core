@@ -29,8 +29,8 @@ RUN apt-get update \
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.18.4
-ARG ELIXIR_CHECKSUM=11c97de2d8420f62b4c6728eb3e3c50298293b82725ae528cb5eb1f1ac5bd868
+ARG ELIXIR_VERSION=v1.19.5
+ARG ELIXIR_CHECKSUM=db6701f2232be899190ecb8dbf280104fe2434675093c2b5935e563a08052afb
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
@@ -42,7 +42,7 @@ USER dependabot
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
-ENV HEX_VERSION="2.2.2"
+ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 

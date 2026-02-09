@@ -73,9 +73,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_engine_version_detection)
-      .and_return(true)
   end
 
   describe "#package_manager" do

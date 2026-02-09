@@ -396,9 +396,17 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
 
       it "passes cooldown to the UpdateChecker" do
+<<<<<<< HEAD
         update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
 
         expect(stub_update_checker_class).to have_received(:new).with(
+=======
+        allow(Dependabot::Bundler::UpdateChecker).to receive(:new).and_return(stub_update_checker)
+
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
+>>>>>>> b214d4bb4bb7b88ab23affbc2d0b8c59b7875ee1
           hash_including(update_cooldown: having_attributes(default_days: 7))
         )
       end
