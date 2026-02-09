@@ -89,6 +89,8 @@ module Dependabot
 
       # Extracts the pinned or lower-bound version from a requirement string.
       # For "==2.31.0" returns "2.31.0", for ">=1.0,<2.0" returns "1.0".
+      LOWER_BOUND_OPS = T.let(%w(>= > ~>).freeze, T::Array[String])
+
       sig { params(requirements_string: String).returns(T.nilable(String)) }
       def self.extract_pinned_version(requirements_string)
         requirement = Dependabot::Python::Requirement.new(requirements_string)
@@ -100,7 +102,7 @@ module Dependabot
         end
         return T.cast(exact_pin[1], Gem::Version).to_s if exact_pin
 
-        lower_bound = constraints.find { |pair| %w(>= > ~>).include?(T.cast(pair[0], String)) }
+        lower_bound = constraints.find { |pair| LOWER_BOUND_OPS.include?(T.cast(pair[0], String)) }
         return T.cast(lower_bound[1], Gem::Version).to_s if lower_bound
 
         nil
