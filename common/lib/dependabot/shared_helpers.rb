@@ -163,13 +163,13 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+      raw_stdout, raw_stderr, process = CommandHelpers.capture3_with_timeout(
         env_cmd,
         stdin_data: stdin_data,
         timeout: timeout
       )
-      stdout ||= ""
-      stderr ||= ""
+      stdout = T.let(raw_stdout || "", String)
+      stderr = T.let(raw_stderr || "", String)
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
