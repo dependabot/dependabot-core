@@ -404,14 +404,15 @@ module Dependabot
                          .select { |cred| cred["type"] == "python_index" }
                          .reject { |cred| explicit_index?(cred) }
 
-          default_cred = python_creds.find(&:replaces_base?)
-          extra_creds = python_creds.reject(&:replaces_base?)
+          replaces_base_creds, extra_creds = python_creds.partition(&:replaces_base?)
+          default_cred = replaces_base_creds.first
+          demoted_creds = replaces_base_creds.drop(1)
 
           options = T.let([], T::Array[String])
           if default_cred && !pyproject_has_default_index?
             options << "--default-index #{AuthedUrlBuilder.authed_url(credential: default_cred)}"
           end
-          extra_creds.each do |cred|
+          (demoted_creds + extra_creds).each do |cred|
             options << "--index #{AuthedUrlBuilder.authed_url(credential: cred)}"
           end
           options
