@@ -10,8 +10,7 @@ require "dependabot/errors"
 require "dependabot/pre_commit/package_manager"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
-require "dependabot/pre_commit/additional_dependency_parsers"
-require "dependabot/pre_commit/additional_dependency_parsers/python"
+require "dependabot/python/requirement_parser"
 
 module Dependabot
   module PreCommit
@@ -22,6 +21,20 @@ module Dependabot
 
       CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
       ECOSYSTEM = "pre_commit"
+
+      # Registry of language parsers. Each parser is a callable that takes a
+      # dependency string and returns a hash with :name, :normalised_name,
+      # :version, :requirement, :extras, :language, :registry — or nil if
+      # the string cannot be parsed.
+      #
+      # To add a new language, register a parser:
+      #   LANGUAGE_PARSERS["node"] = ->(dep_string) { ... }
+      LANGUAGE_PARSERS = T.let(
+        {
+          "python" => ->(dep_string) { Dependabot::Python::RequirementParser.parse(dep_string) }
+        }.freeze,
+        T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
+      )
 
       sig { override.returns(Ecosystem) }
       def ecosystem
@@ -142,50 +155,43 @@ module Dependabot
       def parse_hook_additional_dependencies(hook, repo_url, file)
         dependencies = []
 
-        hook_id = hook["id"]
-        return dependencies unless hook_id
+        return dependencies unless hook["id"]
 
         additional_deps = hook.fetch("additional_dependencies", [])
         return dependencies if additional_deps.empty?
 
-        language = detect_hook_language(hook, hook_id, repo_url)
-        return dependencies unless language
-        return dependencies unless AdditionalDependencyParsers.supported?(language)
-
-        parser_class = AdditionalDependencyParsers.for_language(language)
+        parser = LANGUAGE_PARSERS[hook["language"]]
+        return dependencies unless parser
 
         additional_deps.each do |dep_string|
           next unless dep_string.is_a?(String)
 
-          dependency = parser_class.parse(
-            dep_string: dep_string,
-            hook_id: hook_id,
-            repo_url: repo_url,
-            file_name: file.name
-          )
+          parsed = parser.call(dep_string)
+          next unless parsed
 
-          dependencies << dependency if dependency
+          dependencies << Dependabot::Dependency.new(
+            name: parsed[:normalised_name],
+            version: parsed[:version],
+            requirements: [{
+              requirement: parsed[:requirement],
+              groups: ["additional_dependencies"],
+              file: file.name,
+              source: {
+                type: "additional_dependency",
+                language: hook["language"],
+                package_name: parsed[:normalised_name],
+                original_name: parsed[:name],
+                hook_id: hook["id"],
+                hook_repo: repo_url,
+                extras: parsed[:extras],
+                original_string: dep_string
+              }
+            }],
+            package_manager: ECOSYSTEM
+          )
         end
 
         dependencies
-      end
-
-      sig do
-        params(
-          hook: T::Hash[String, T.untyped],
-          hook_id: String,
-          repo_url: String
-        ).returns(T.nilable(String))
-      end
-      def detect_hook_language(hook, hook_id, repo_url)
-        language = hook["language"]
-        return language if language.is_a?(String)
-
-        Dependabot.logger.warn(
-          "Skipping additional_dependencies for hook '#{hook_id}' in repo '#{repo_url}': " \
-          "no 'language' field specified. Add 'language: python' (or node, golang, etc.) to enable updates."
-        )
-        nil
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
