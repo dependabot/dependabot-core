@@ -175,8 +175,6 @@ module Dependabot
 
           return ">=#{new_version}" if updated_req == :unfixable
 
-          # Python's updater preserves satisfied constraints, but pre-commit has no lockfile
-          # so we need to force bump lower bounds to ensure file changes occur
           if updated_req == original_requirement
             force_bump_lower_bounds(original_requirement, new_version)
           else
