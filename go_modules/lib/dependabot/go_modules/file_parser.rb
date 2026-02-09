@@ -207,10 +207,13 @@ module Dependabot
           groups: []
         }]
 
+        # Tool dependencies should be treated as direct dependencies even if marked as indirect
+        is_tool_dependency = tool_module_paths.include?(details["Path"])
+
         Dependency.new(
           name: details["Path"],
           version: version,
-          requirements: details["Indirect"] ? [] : reqs,
+          requirements: details["Indirect"] && !is_tool_dependency ? [] : reqs,
           package_manager: "go_modules"
         )
       end
@@ -221,6 +224,40 @@ module Dependabot
           T.let(
             JSON.parse(run_in_parsed_context("go mod edit -json"))["Require"] || [],
             T.nilable(T::Array[T::Hash[String, T.untyped]])
+          )
+      end
+
+      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      def tool_packages
+        @tool_packages ||=
+          T.let(
+            JSON.parse(run_in_parsed_context("go mod edit -json"))["Tool"] || [],
+            T.nilable(T::Array[T::Hash[String, T.untyped]])
+          )
+      end
+
+      # Extract module paths from tool package paths
+      # Tool directive contains package paths (e.g., golang.org/x/tools/cmd/stringer)
+      # but we need to match against module paths in Require (e.g., golang.org/x/tools)
+      sig { returns(T::Set[String]) }
+      def tool_module_paths
+        @tool_module_paths ||=
+          T.let(
+            begin
+              modules = Set.new
+              tool_packages.each do |tool|
+                package_path = tool["Path"]
+                next unless package_path
+
+                matching_module = required_packages.find do |req|
+                  package_path.start_with?("#{req['Path']}/") || package_path == req["Path"]
+                end
+
+                modules.add(matching_module["Path"]) if matching_module
+              end
+              modules
+            end,
+            T.nilable(T::Set[String])
           )
       end
 
