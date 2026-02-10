@@ -24,8 +24,8 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - name: Build dependabot-updater-core image
-        run: script/build common
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -33,21 +33,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push latest image
-        id: push
-        run: |
-          docker push "$UPDATER_CORE_IMAGE:latest"
-        
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-name: ${{ env.UPDATER_CORE_IMAGE }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-
-      - name: Push tagged image
+      - name: Determine version tag
+        id: version
         if: contains(github.ref, 'refs/tags')
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot.rb)"
-          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE:$VERSION"
-          docker push "$UPDATER_CORE_IMAGE:$VERSION"
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push updater-core image
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile.updater-core
+          push: true
+          tags: |
+            ${{ env.UPDATER_CORE_IMAGE }}:latest
+            ${{ steps.version.outputs.tag && format('{0}:{1}', env.UPDATER_CORE_IMAGE, steps.version.outputs.tag) || '' }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            USER_UID=1000
+            USER_GID=1000
+          cache-from: type=registry,ref=${{ env.UPDATER_CORE_IMAGE }}:latest
+          cache-to: type=inline
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        with:
+          subject-name: ${{ env.UPDATER_CORE_IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
