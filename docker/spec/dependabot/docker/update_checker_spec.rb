@@ -1519,6 +1519,54 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("17.10") }
     end
+
+    describe "with cooldown options when blob request returns 404" do
+      subject(:latest_version) { checker.latest_version }
+
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        mock_client = instance_double(DockerRegistry2::Registry)
+        allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+        allow(mock_client).to receive(:tags).and_return("tags" => %w(17.04 17.10))
+        allow(mock_client).to receive(:digest).and_return("sha256:abc123")
+        allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::NotFound)
+        allow(mock_client).to receive(:manifest_digest)
+          .and_return("sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608")
+        allow(Dependabot.logger).to receive(:warn)
+        allow(Dependabot.logger).to receive(:info)
+      end
+
+      it "still returns the latest version instead of crashing" do
+        expect(latest_version).to eq("17.10")
+      end
+    end
+
+    describe "with cooldown options when digest request raises authentication error" do
+      subject(:latest_version) { checker.latest_version }
+
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        mock_client = instance_double(DockerRegistry2::Registry)
+        allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+        allow(mock_client).to receive(:tags).and_return("tags" => %w(17.04 17.10))
+        allow(mock_client).to receive(:digest)
+          .and_raise(DockerRegistry2::RegistryAuthenticationException)
+        allow(mock_client).to receive(:manifest_digest)
+          .and_return("sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608")
+        allow(Dependabot.logger).to receive(:warn)
+        allow(Dependabot.logger).to receive(:info)
+      end
+
+      it "still returns the latest version instead of crashing" do
+        expect(latest_version).to eq("17.10")
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -1843,6 +1891,78 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         result = get_tag_publication_details
         expect(result.version).to be_a(Dependabot::Docker::Version)
         expect(result.version.class).to eq(Dependabot::Docker::Version)
+      end
+    end
+
+    context "when client.digest raises DockerRegistry2::NotFound" do
+      before do
+        allow(mock_client).to receive(:digest).and_raise(DockerRegistry2::NotFound)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Failed to fetch publication details.*skipping cooldown.*NotFound/
+        )
+      end
+    end
+
+    context "when client.dohead raises DockerRegistry2::NotFound for blob" do
+      before do
+        allow(mock_client).to receive(:digest).and_return("sha256:abc123")
+        allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::NotFound)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Failed to fetch publication details.*skipping cooldown.*NotFound/
+        )
+      end
+    end
+
+    context "when client.digest raises RegistryAuthenticationException" do
+      before do
+        allow(mock_client).to receive(:digest)
+          .and_raise(DockerRegistry2::RegistryAuthenticationException)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Failed to fetch publication details.*skipping cooldown.*RegistryAuthenticationException/
+        )
+      end
+    end
+
+    context "when client.digest raises RestClient::Forbidden" do
+      before do
+        allow(mock_client).to receive(:digest).and_raise(RestClient::Forbidden)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Failed to fetch publication details.*skipping cooldown.*Forbidden/
+        )
+      end
+    end
+
+    context "when client.digest raises RestClient::TooManyRequests" do
+      before do
+        allow(mock_client).to receive(:digest).and_raise(RestClient::TooManyRequests)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning" do
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn).with(
+          /Failed to fetch publication details.*skipping cooldown.*TooManyRequests/
+        )
       end
     end
   end
