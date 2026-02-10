@@ -1245,7 +1245,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it "returns nil to skip the version silently" do
-          expect(subject).to be_nil
+          expect(resolver.latest_resolvable_version).to be_nil
         end
       end
     end

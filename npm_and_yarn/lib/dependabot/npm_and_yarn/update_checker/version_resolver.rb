@@ -472,7 +472,7 @@ module Dependabot
             end.compact
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.match?(/ERR_PNPM_TRUST_DOWNGRADE/)
+          if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
             Dependabot.logger.warn(
               "pnpm trust downgrade detected during peer dependency check; version will be skipped"
             )
@@ -713,7 +713,7 @@ module Dependabot
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.match?(/ERR_PNPM_TRUST_DOWNGRADE/)
+          if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
             Dependabot.logger.warn(
               "pnpm trust downgrade detected in run_checker; version will be skipped"
             )
