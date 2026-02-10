@@ -207,8 +207,8 @@ module Dependabot
         candidate_tags.reverse_each do |tag|
           details = publication_detail(tag)
 
-          # If we can't determine publication details, skip cooldown for this tag
-          # to avoid blocking updates when the registry doesn't support the required API calls
+          # If we can't determine publication details, skip cooldown for this tag and use it
+          # rather than blocking the update when the registry doesn't support the required API calls
           return [tag] if !details || !details.released_at
 
           return [tag] unless cooldown_period?(details.released_at)
