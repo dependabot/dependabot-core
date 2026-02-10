@@ -1,8 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-require "ostruct"
-
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -99,15 +97,16 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
 
       it "delegates to CompileFileUpdater" do
+        stub_file = Data.define(:name).new("updated files")
         dummy_updater =
           instance_double(described_class::CompileFileUpdater)
         allow(described_class::CompileFileUpdater).to receive(:new)
           .and_return(dummy_updater)
         allow(dummy_updater)
           .to receive(:updated_dependency_files)
-          .and_return([OpenStruct.new(name: "updated files")])
+          .and_return([stub_file])
         expect(updater.updated_dependency_files)
-          .to eq([OpenStruct.new(name: "updated files")])
+          .to eq([stub_file])
       end
 
       context "when a requirements.txt that specifies a subdependency" do
@@ -129,15 +128,16 @@ RSpec.describe Dependabot::Uv::FileUpdater do
         end
 
         it "delegates to CompileFileUpdater" do
+          stub_file = Data.define(:name).new("updated files")
           dummy_updater =
             instance_double(described_class::CompileFileUpdater)
           allow(described_class::CompileFileUpdater).to receive(:new)
             .and_return(dummy_updater)
           allow(dummy_updater)
             .to receive(:updated_dependency_files)
-            .and_return([OpenStruct.new(name: "updated files")])
+            .and_return([stub_file])
           expect(updater.updated_dependency_files)
-            .to eq([OpenStruct.new(name: "updated files")])
+            .to eq([stub_file])
         end
       end
     end

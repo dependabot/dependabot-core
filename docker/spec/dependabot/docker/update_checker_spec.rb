@@ -1632,6 +1632,86 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           )
       end
     end
+
+    context "when docker_pin_digests experiment is enabled" do
+      before do
+        Dependabot::Experiments.register(:docker_pin_digests, true)
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      context "when specified with a tag only (no digest)" do
+        let(:source) { { tag: version } }
+
+        it "adds a digest to the tag" do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  tag: "17.10",
+                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                          "ca97eba880ebf600d68608"
+                }
+              }]
+            )
+        end
+      end
+
+      context "when specified with a tag and a digest" do
+        let(:source) { { digest: "old_digest", tag: "17.04" } }
+
+        it "updates both the tag and the digest" do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: {
+                  digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                          "ca97eba880ebf600d68608",
+                  tag: "17.10"
+                }
+              }]
+            )
+        end
+      end
+    end
+
+    context "when docker_pin_digests experiment is disabled" do
+      before do
+        Dependabot::Experiments.register(:docker_pin_digests, false)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      context "when specified with a tag only (no digest)" do
+        let(:source) { { tag: version } }
+
+        it "does not add a digest" do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { tag: "17.10" }
+              }]
+            )
+        end
+      end
+    end
   end
 
   describe ".docker_read_timeout_in_seconds" do
@@ -1763,6 +1843,163 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         result = get_tag_publication_details
         expect(result.version).to be_a(Dependabot::Docker::Version)
         expect(result.version.class).to eq(Dependabot::Docker::Version)
+      end
+    end
+  end
+
+  describe "#digest_up_to_date?" do
+    subject(:digest_up_to_date?) { checker.send(:digest_up_to_date?) }
+
+    let(:headers_response) do
+      fixture("docker", "registry_manifest_headers", "generic.json")
+    end
+
+    context "when a tag and digest are present and match the latest digest" do
+      let(:version) { "17.10" }
+      let(:source) do
+        {
+          tag: "17.10",
+          digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608"
+        }
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      it "returns true" do
+        expect(digest_up_to_date?).to be true
+      end
+    end
+
+    context "when a tag and digest are present but do not match" do
+      let(:version) { "17.10" }
+      let(:source) do
+        {
+          tag: "17.10",
+          digest: "old_digest"
+        }
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      it "returns false" do
+        expect(digest_up_to_date?).to be false
+      end
+    end
+
+    context "when only a digest is present (no tag)" do
+      let(:version) { "latest" }
+      let(:source) do
+        {
+          digest: "old_digest"
+        }
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/latest")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      it "compares against the updated digest and returns false if different" do
+        expect(digest_up_to_date?).to be false
+      end
+    end
+
+    context "when the registry does not return a digest" do
+      let(:version) { "17.10" }
+      let(:source) do
+        {
+          tag: "17.10",
+          digest: "any_digest"
+        }
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(
+            status: 200,
+            headers: JSON.parse(headers_response).except("docker_content_digest")
+          )
+      end
+
+      it "assumes the digest is up to date" do
+        expect(digest_up_to_date?).to be true
+      end
+    end
+
+    context "when multiple digest requirements are present" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "17.10", digest: "old_digest" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "17.04", digest: "old_digest" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+
+        stub_request(:head, repo_url + "manifests/17.04")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      it "returns false if any digest is out of date" do
+        expect(digest_up_to_date?).to be false
+      end
+    end
+
+    context "when one requirement has no expected digest and others match" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "17.10", digest: "any_digest" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "17.04", digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      before do
+        stub_tag_with_no_digest("17.10")
+
+        stub_request(:head, repo_url + "manifests/17.04")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      it "returns true" do
+        expect(digest_up_to_date?).to be true
       end
     end
   end
