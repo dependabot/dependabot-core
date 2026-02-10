@@ -66,7 +66,7 @@ module Dependabot
         return nil if parts.length < 2
 
         name = T.must(parts[0])
-        constraint = parts[1..].join(":")
+        constraint = T.must(parts[1..]).join(":")
         return nil if name.empty? || constraint.strip.empty?
 
         constraint = constraint.strip
