@@ -143,6 +143,7 @@ module Dependabot
             nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
           )
           @peer_dependency_errors = T.let(nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]))
+          @trust_downgrade_detected = T.let(false, T::Boolean)
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -152,7 +153,17 @@ module Dependabot
           return if types_update_available?
           return if original_package_update_available?
 
-          return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
+          # Trigger peer dependency check which also detects trust downgrades
+          has_unmet_peers = relevant_unmet_peer_dependencies.any?
+
+          if @trust_downgrade_detected
+            Dependabot.logger.info(
+              "Skipping #{dependency.name} update due to pnpm trust downgrade"
+            )
+            return nil
+          end
+
+          return latest_allowable_version unless has_unmet_peers
 
           satisfying_versions.first
         end
@@ -460,7 +471,15 @@ module Dependabot
               run_checker(path: path, version: version)
             end.compact
           end
-        rescue SharedHelpers::HelperSubprocessFailed
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          if e.message.match?(/ERR_PNPM_TRUST_DOWNGRADE/)
+            Dependabot.logger.warn(
+              "pnpm trust downgrade detected during peer dependency check; version will be skipped"
+            )
+            @trust_downgrade_detected = true
+            return []
+          end
+
           # Fall back to allowing the version through. Whatever error
           # occurred should be properly handled by the FileUpdater. We
           # can slowly migrate error handling to this class over time.
@@ -694,6 +713,14 @@ module Dependabot
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
+          if e.message.match?(/ERR_PNPM_TRUST_DOWNGRADE/)
+            Dependabot.logger.warn(
+              "pnpm trust downgrade detected in run_checker; version will be skipped"
+            )
+            @trust_downgrade_detected = true
+            return nil
+          end
+
           handle_peer_dependency_errors(e.message)
         end
 
