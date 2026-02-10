@@ -96,7 +96,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
 
     context "when the npm registry is unreachable" do
       before do
-        allow(npm_checker_class).to receive(:new).and_raise(StandardError, "Connection failed")
+        allow(npm_checker_class).to receive(:new).and_raise(Dependabot::RegistryError.new(503, "Connection failed"))
       end
 
       it "returns nil" do

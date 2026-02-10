@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "excon"
 require "json"
 require "sorbet-runtime"
 require "dependabot/dependency"
@@ -59,7 +60,7 @@ module Dependabot
           Dependabot.logger.info("Node UpdateChecker found latest version: #{latest || 'none'}")
 
           latest&.to_s
-        rescue StandardError => e
+        rescue Dependabot::DependabotError, Excon::Error, JSON::ParserError => e
           Dependabot.logger.debug("Error checking Node package #{package_name}: #{e.message}")
           nil
         end
