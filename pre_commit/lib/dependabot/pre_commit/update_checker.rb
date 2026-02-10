@@ -270,7 +270,7 @@ module Dependabot
           requirements: dependency.requirements,
           current_version: dependency.version
         )
-      rescue Dependabot::DependabotError, RuntimeError => e
+      rescue StandardError => e
         Dependabot.logger.error("Error creating checker for #{language}: #{e.message}")
         nil
       end

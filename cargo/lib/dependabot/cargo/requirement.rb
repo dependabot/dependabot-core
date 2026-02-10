@@ -48,6 +48,8 @@ module Dependabot
         [new(requirement_string)]
       end
 
+      # Parses a pre-commit Rust additional_dependency string.
+      # Formats: "package_name:version", "cli:package_name:version"
       sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def self.parse_dep_string(dep_string)
         stripped = dep_string.strip
