@@ -6,14 +6,6 @@ require "dependabot/pre_commit/additional_dependency_checkers/base"
 
 module Dependabot
   module PreCommit
-    # Registry for additional_dependency update checkers by language.
-    # Similar pattern to Dependabot::UpdateCheckers but for pre-commit hook languages.
-    #
-    # Usage:
-    #   checker_class = AdditionalDependencyCheckers.for_language("python")
-    #   checker = checker_class.new(source: source, credentials: credentials, ...)
-    #   latest_version = checker.latest_version
-    #
     module AdditionalDependencyCheckers
       extend T::Sig
 

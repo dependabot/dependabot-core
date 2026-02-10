@@ -100,15 +100,11 @@ module Dependabot
         def build_pip_dependency
           return nil unless package_name
 
-          # Extract version from requirement string if current_version is nil
-          # This prevents Python's UpdateChecker from treating it as a sub-dependency
           version = current_version || extract_version_from_requirement
 
-          # Use an exact requirement (==version) to force Python's UpdateChecker
-          # to use the :requirements resolver instead of subdependency_resolver.
+          # Force :requirements resolver instead of subdependency_resolver
           exact_requirement = version ? "==#{version}" : nil
 
-          # Build a dependency that Python's UpdateChecker understands
           Dependabot::Dependency.new(
             name: T.must(package_name),
             version: version,

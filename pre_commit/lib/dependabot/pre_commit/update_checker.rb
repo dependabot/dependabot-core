@@ -9,6 +9,7 @@ require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/additional_dependency_checkers"
 require "dependabot/pre_commit/additional_dependency_checkers/node"
 require "dependabot/pre_commit/additional_dependency_checkers/python"
+require "dependabot/pre_commit/additional_dependency_checkers/rust"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -269,7 +270,7 @@ module Dependabot
           requirements: dependency.requirements,
           current_version: dependency.version
         )
-      rescue StandardError => e
+      rescue Dependabot::DependabotError, RuntimeError => e
         Dependabot.logger.error("Error creating checker for #{language}: #{e.message}")
         nil
       end

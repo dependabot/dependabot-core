@@ -252,5 +252,56 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep.requirements.first[:requirement]).to eq("^10.9.0")
       end
     end
+
+    context "with rust additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_rust_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(4)
+        expect(additional_deps.length).to eq(7)
+      end
+
+      it "parses a simple rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "serde" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.0.193")
+        expect(dep.requirements.first[:requirement]).to eq("1.0.193")
+        expect(dep.requirements.first[:source][:language]).to eq("rust")
+        expect(dep.requirements.first[:source][:package_name]).to eq("serde")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("nickel-lint")
+        expect(dep.requirements.first[:source][:original_string]).to eq("serde:1.0.193")
+      end
+
+      it "parses a CLI rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "rustfmt-nightly" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.6.0")
+        expect(dep.requirements.first[:requirement]).to eq("1.6.0")
+        expect(dep.requirements.first[:source][:extras]).to eq("cli")
+        expect(dep.requirements.first[:source][:original_string]).to eq("cli:rustfmt-nightly:1.6.0")
+      end
+
+      it "parses a tilde-range rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "anyhow" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.0.0")
+        expect(dep.requirements.first[:requirement]).to eq("~1.0.0")
+      end
+
+      it "parses a caret-range rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "clap" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("4.4.0")
+        expect(dep.requirements.first[:requirement]).to eq("^4.4.0")
+      end
+    end
   end
 end
