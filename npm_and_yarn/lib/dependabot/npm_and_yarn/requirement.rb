@@ -15,6 +15,8 @@ module Dependabot
       AND_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/, Regexp)
       OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
 
+      NAME_AT_VERSION_SPLIT = T.let(/(?<=\w)@/, Regexp)
+
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
@@ -57,6 +59,40 @@ module Dependabot
           new(requirements)
         end
       end
+
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse_dep_string(dep_string)
+        stripped = dep_string.strip
+        return nil if stripped.empty?
+
+        parts = stripped.split(NAME_AT_VERSION_SPLIT, 2)
+        name = T.must(parts[0])
+        constraint = parts[1]
+
+        return nil if constraint.nil? || constraint.strip.empty?
+
+        constraint = constraint.strip
+        version = extract_version(constraint)
+
+        {
+          name: name,
+          normalised_name: name,
+          version: version,
+          requirement: constraint,
+          extras: nil
+        }
+      end
+
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.extract_version(constraint)
+        version_part = constraint.sub(/\A(?:[~^]|[><=]+)\s*/, "")
+
+        return nil unless NpmAndYarn::Version.correct?(version_part)
+
+        version_part
+      end
+
+      private_class_method :extract_version
 
       sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
