@@ -24,13 +24,6 @@ module Dependabot
       GO_DEP_WITHOUT_VERSION =
         /\A\s*(?<name>#{MODULE_PATH})\s*\z/x
 
-      # Parses a single Go module dependency string (e.g. "golang.org/x/text@v0.3.0")
-      # into a structured hash. Returns nil if the string cannot be parsed
-      # or has no version.
-      #
-      # The returned hash follows the same interface as
-      # Dependabot::Python::RequirementParser.parse:
-      #   { name:, normalised_name:, version:, requirement:, extras:, language:, registry: }
       sig { params(dependency_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def self.parse(dependency_string)
         match = dependency_string.strip.match(GO_DEP_WITH_VERSION)
@@ -39,8 +32,7 @@ module Dependabot
         name = T.must(match[:name])
         raw_version = T.must(match[:version])
 
-        # Strip leading "v" for the stored version but keep it for the requirement
-        version = raw_version.sub(/\Av/, "")
+        version = raw_version.delete_prefix("v")
         return nil unless Version.correct?(version)
 
         {
@@ -54,8 +46,6 @@ module Dependabot
         }
       end
 
-      # Go module names are already normalised (lowercase paths).
-      # We simply downcase to ensure consistency.
       sig { params(name: String).returns(String) }
       def self.normalise_name(name)
         name.downcase

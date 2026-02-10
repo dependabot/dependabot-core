@@ -118,7 +118,7 @@ module Dependabot
           return nil unless req_string
 
           # Go versions are like "v1.2.3" — strip the leading "v"
-          version = req_string.to_s.sub(/\Av/, "")
+          version = req_string.to_s.delete_prefix("v")
           return nil unless Dependabot::GoModules::Version.correct?(version)
 
           version
