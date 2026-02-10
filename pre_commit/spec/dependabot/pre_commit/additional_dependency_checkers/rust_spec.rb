@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/cargo/update_checker"
 require "dependabot/pre_commit/additional_dependency_checkers/rust"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
@@ -49,9 +50,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
   let(:current_version) { "1.0.193" }
 
   describe "#latest_version" do
-    # rubocop:disable RSpec/VerifiedDoubleReference
-    let(:cargo_checker_class) { class_double("Dependabot::Cargo::UpdateChecker") }
-    # rubocop:enable RSpec/VerifiedDoubleReference
+    let(:cargo_checker_class) { class_double(Dependabot::Cargo::UpdateChecker) }
     let(:cargo_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
     let(:latest_version_obj) { Gem::Version.new("1.0.200") }
 
