@@ -114,6 +114,55 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when error contains git fetch credential failure" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: git_fetch_credential_error,
+          error_context: {}
+        )
+      end
+
+      let(:git_fetch_credential_error) do
+        <<~ERROR
+          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+             Updating https://github.com/org/private-repo (7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f)
+            × Failed to download and build `private-repo @
+            │ git+https://github.com/org/private-repo@7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f#subdirectory=pkg`
+            ├─▶ Git operation failed
+            ├─▶ failed to clone into:
+            │   /home/dependabot/.cache/uv/git-v0/db/12ae7fa1cd90829b
+            ├─▶ failed to fetch commit `7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f`
+            ╰─▶ process didn't exit successfully: `/home/dependabot/bin/git fetch --force
+                --update-head-ok 'https://github.com/org/private-repo'
+                '+7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f:refs/commit/7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f'`
+                (exit status: 128)
+                --- stderr
+                fatal: could not read Username for 'https://github.com': terminal prompts disabled
+        ERROR
+      end
+
+      it "raises GitDependenciesNotReachable with the repository URL" do
+        expect { handle_uv_error }.to raise_error(Dependabot::GitDependenciesNotReachable) do |raised_error|
+          expect(raised_error.dependency_urls).to include("https://github.com/org/private-repo")
+        end
+      end
+    end
+
+    context "when error contains git credential failure without git+ URL" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "fatal: could not read Username for 'https://github.com': terminal prompts disabled",
+          error_context: {}
+        )
+      end
+
+      it "raises GitDependenciesNotReachable with the host URL" do
+        expect { handle_uv_error }.to raise_error(Dependabot::GitDependenciesNotReachable) do |raised_error|
+          expect(raised_error.dependency_urls).to include("https://github.com")
+        end
+      end
+    end
+
     context "when error contains 401 authentication failure" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
@@ -230,6 +279,178 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       it "raises DependencyFileNotResolvable" do
         expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
           expect(raised_error.message).to include("No matching distribution found")
+        end
+      end
+    end
+
+    context "when error contains a TOML parse error" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Failed to parse: `pyproject.toml`\nTOML parse error at line 5",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotParseable" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotParseable, /pyproject\.toml/)
+      end
+    end
+
+    context "when error contains a TOML parse error for a nested file" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Failed to parse: `subdir/pyproject.toml`\nExpected '=' after key",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotParseable with the file path" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotParseable) do |raised_error|
+          expect(raised_error.message).to include("subdir/pyproject.toml")
+        end
+      end
+    end
+
+    context "when error contains a pyproject schema error (missing project field)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Field `project.name` is required in pyproject.toml",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotParseable for pyproject.toml" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotParseable, /pyproject\.toml/)
+      end
+    end
+
+    context "when error contains a workspace member error" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Failed to find workspace member `packages/missing-pkg`",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotResolvable" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("workspace member")
+        end
+      end
+    end
+
+    context "when error contains a path dependency error" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Failed to read `../local-lib/pyproject.toml`",
+          error_context: {}
+        )
+      end
+
+      it "raises PathDependenciesNotReachable" do
+        expect { handle_uv_error }.to raise_error(Dependabot::PathDependenciesNotReachable) do |raised_error|
+          expect(raised_error.dependencies).to include("../local-lib/pyproject.toml")
+        end
+      end
+    end
+
+    context "when error contains a UV misconfiguration (unknown field)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "unknown field `foo`, expected one of `dependencies`, `dev-dependencies`",
+          error_context: {}
+        )
+      end
+
+      it "raises MisconfiguredTooling" do
+        expect { handle_uv_error }.to raise_error(Dependabot::MisconfiguredTooling) do |raised_error|
+          expect(raised_error.tool_name).to eq("uv")
+          expect(raised_error.message).to include("unknown field")
+        end
+      end
+    end
+
+    context "when error contains an HTTP 500 server error" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "HTTP status code: 500 for https://registry.example.com/simple/package/",
+          error_context: {}
+        )
+      end
+
+      it "raises PrivateSourceBadResponse" do
+        expect { handle_uv_error }.to raise_error(Dependabot::PrivateSourceBadResponse) do |raised_error|
+          expect(raised_error.source).to include("registry.example.com")
+        end
+      end
+    end
+
+    context "when error contains an HTTP 502 bad gateway error" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "HTTP status code: 502 for https://pypi.org/simple/package/",
+          error_context: {}
+        )
+      end
+
+      it "raises PrivateSourceBadResponse" do
+        expect { handle_uv_error }.to raise_error(Dependabot::PrivateSourceBadResponse) do |raised_error|
+          expect(raised_error.source).to include("pypi.org")
+        end
+      end
+    end
+
+    context "when error contains a connection refused error" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "ConnectionError: connection refused while connecting to https://down.example.com",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotResolvable with network error context" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("Network error")
+        end
+      end
+    end
+
+    context "when error contains a required uv version mismatch" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Required uv version `>=0.5.0` does not match the running version `0.4.0`",
+          error_context: {}
+        )
+      end
+
+      it "raises ToolVersionNotSupported" do
+        expect { handle_uv_error }.to raise_error(Dependabot::ToolVersionNotSupported) do |raised_error|
+          expect(raised_error.message).to include(">=0.5.0")
+          expect(raised_error.message).to include("0.4.0")
+        end
+      end
+    end
+
+    context "when error contains conflicting dependency versions" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: conflicting_deps_error,
+          error_context: {}
+        )
+      end
+
+      let(:conflicting_deps_error) do
+        <<~ERROR
+          × No solution found when resolving dependencies:
+          ╰─▶ Because flask==2.0.0 depends on werkzeug>=2.0 and your project depends on werkzeug==1.0.0,
+              we can conclude that flask==2.0.0 is incompatible with your project.
+        ERROR
+      end
+
+      it "raises UpdateNotPossible with the conflicting dependencies" do
+        expect { handle_uv_error }.to raise_error(Dependabot::UpdateNotPossible) do |raised_error|
+          expect(raised_error.dependencies).to include("flask")
+          expect(raised_error.dependencies).to include("werkzeug")
         end
       end
     end
