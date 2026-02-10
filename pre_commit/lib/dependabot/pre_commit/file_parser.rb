@@ -11,6 +11,7 @@ require "dependabot/pre_commit/package_manager"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
 require "dependabot/python/requirement_parser"
+require "dependabot/go_modules/requirement_parser"
 
 module Dependabot
   module PreCommit
@@ -31,7 +32,8 @@ module Dependabot
       #   LANGUAGE_PARSERS["node"] = ->(dep_string) { ... }
       LANGUAGE_PARSERS = T.let(
         {
-          "python" => ->(dep_string) { Dependabot::Python::RequirementParser.parse(dep_string) }
+          "python" => ->(dep_string) { Dependabot::Python::RequirementParser.parse(dep_string) },
+          "golang" => ->(dep_string) { Dependabot::GoModules::RequirementParser.parse(dep_string) }
         }.freeze,
         T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
       )
