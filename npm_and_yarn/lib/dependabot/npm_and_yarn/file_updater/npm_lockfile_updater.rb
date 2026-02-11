@@ -306,7 +306,7 @@ module Dependabot
 
             # Clean up any remaining side effects from the workspace install:
             # spurious root lockfile entries and removed optional peer deps.
-            cleanup_workspace_lockfile(T.must(previous_package_json))
+            cleanup_workspace_lockfile(previous_package_json)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
