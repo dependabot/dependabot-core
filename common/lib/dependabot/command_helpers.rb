@@ -103,7 +103,11 @@ module Dependabot
           Dependabot.logger.info("Started process PID: #{pid} with command: #{sanitized_env_cmd.join(' ')}")
 
           # Write to stdin if input data is provided
-          stdin&.write(stdin_data) if stdin_data
+          begin
+            stdin&.write(stdin_data) if stdin_data
+          rescue Errno::EPIPE
+            # Process exited before reading stdin - continue to collect output
+          end
           stdin&.close
 
           stdout_io.sync = true
