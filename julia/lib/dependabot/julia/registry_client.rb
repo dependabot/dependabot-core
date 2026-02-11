@@ -21,6 +21,21 @@ module Dependabot
         @custom_registries = custom_registries
       end
 
+      sig { params(package_name: String).returns(T.nilable(String)) }
+      def resolve_package_uuid(package_name)
+        result = call_julia_helper(
+          function: "resolve_package_uuid",
+          args: { package_name: package_name }
+        )
+
+        return nil if result["error"]
+
+        result["uuid"]
+      rescue StandardError => e
+        Dependabot.logger.warn("Failed to resolve UUID for #{package_name}: #{e.message}")
+        nil
+      end
+
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T.nilable(Gem::Version)) }
       def fetch_latest_version(package_name, package_uuid = nil)
         # Use custom registries if available

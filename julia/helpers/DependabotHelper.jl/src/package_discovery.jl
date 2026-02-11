@@ -46,6 +46,37 @@ function get_latest_version(package_name::String, package_uuid::String)
 end
 
 """
+    resolve_package_uuid(package_name::String)
+
+Resolve a package UUID from just its name by searching all reachable registries.
+Returns the UUID string if found, or nothing if the package is not registered.
+"""
+function resolve_package_uuid(package_name::String)
+    try
+        for reg in Pkg.Registry.reachable_registries()
+            for (uuid, entry) in reg.pkgs
+                if entry.name == package_name
+                    return Dict("uuid" => string(uuid), "name" => package_name)
+                end
+            end
+        end
+        return Dict("error" => "Package $package_name not found in any registry")
+    catch ex
+        @error "resolve_package_uuid: Failed to resolve UUID" package_name=package_name exception=(ex, catch_backtrace())
+        return Dict("error" => "Failed to resolve UUID: $(sprint(showerror, ex))")
+    end
+end
+
+# Args wrapper for resolve_package_uuid
+function resolve_package_uuid(args::AbstractDict)
+    package_name = get(args, "package_name", "")
+    if isempty(package_name)
+        return Dict("error" => "package_name is required")
+    end
+    return resolve_package_uuid(package_name)
+end
+
+"""
     get_latest_version(args::AbstractDict)
 
 Args wrapper for get_latest_version function with UUID requirement
