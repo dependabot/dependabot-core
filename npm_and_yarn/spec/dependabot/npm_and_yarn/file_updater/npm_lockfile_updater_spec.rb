@@ -253,6 +253,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "when dealing with workspace with nested optional peer dependencies" do
+    let(:dependency_name) { "etag" }
+    let(:version) { "1.8.2" }
+    let(:previous_version) { "1.8.1" }
+    let(:requirements) do
+      [{
+        file: "packages/app/package.json",
+        requirement: "1.8.2",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "packages/app/package.json",
+        requirement: "1.8.1",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+
+    let(:files) { project_dependency_files("npm8/workspace_with_nested_optional_peer_deps") }
+
+    it "preserves nested optional peer dependencies during workspace cleanup" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+      packages = parsed_lockfile["packages"]
+
+      # Verify the updated dependency
+      expect(packages["node_modules/etag"]["version"]).to eq("1.8.2")
+
+      # Verify nested optional peer dependency is still present
+      nested_peer = packages["node_modules/test-dep/node_modules/nested-peer"]
+      expect(nested_peer).not_to be_nil
+      expect(nested_peer["version"]).to eq("1.5.0")
+      expect(nested_peer["optional"]).to be(true)
+      expect(nested_peer["peer"]).to be(true)
+    end
+  end
+
   context "with a registry that times out" do
     registry_source = "https://registry.npm.com"
     let(:files) { project_dependency_files("npm/simple_with_registry_that_times_out") }
