@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/julia/update_checker"
+require "dependabot/julia/registry_client"
 require "dependabot/pre_commit/additional_dependency_checkers/julia"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Julia do
@@ -48,63 +50,62 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Julia do
 
   let(:current_version) { "0.21.4" }
 
-  let(:versions_toml) do
-    <<~TOML
-      ["0.21.3"]
-      git-tree-sha1 = "abc123"
+  let(:registry_client) { instance_double(Dependabot::Julia::RegistryClient) }
+  let(:resolved_uuid) { "682c06a0-de6a-54ab-a142-c8b1cf79cde6" }
 
-      ["0.21.4"]
-      git-tree-sha1 = "def456"
-
-      ["1.0.0"]
-      git-tree-sha1 = "ghi789"
-
-      ["1.4.0"]
-      git-tree-sha1 = "jkl012"
-    TOML
-  end
-
-  let(:registry_url) do
-    "https://raw.githubusercontent.com/JuliaRegistries/General/master/J/JSON/Versions.toml"
+  before do
+    allow(Dependabot::Julia::RegistryClient).to receive(:new).and_return(registry_client)
+    allow(registry_client).to receive(:resolve_package_uuid).and_return(resolved_uuid)
   end
 
   describe "#latest_version" do
+    let(:julia_checker_class) { class_double(Dependabot::Julia::UpdateChecker) }
+    let(:julia_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
+    let(:latest_version_obj) { Gem::Version.new("0.22.0") }
+
     before do
-      stub_request(:get, registry_url).to_return(status: 200, body: versions_toml)
+      allow(Dependabot::UpdateCheckers).to receive(:for_package_manager)
+        .with("julia")
+        .and_return(julia_checker_class)
+      allow(julia_checker_class).to receive(:new).and_return(julia_checker)
+      allow(julia_checker).to receive(:latest_version).and_return(latest_version_obj)
     end
 
-    it "fetches the latest version from the General registry" do
-      expect(checker.latest_version).to eq("1.4.0")
+    it "delegates to Julia UpdateChecker" do
+      result = checker.latest_version
+      expect(result).to eq("0.22.0")
     end
 
-    it "requests the correct registry URL" do
+    it "creates a julia-compatible dependency" do
+      expect(julia_checker_class).to receive(:new) do |args|
+        dep = args[:dependency]
+        expect(dep.name).to eq("JSON")
+        expect(dep.package_manager).to eq("julia")
+        expect(dep.metadata[:julia_uuid]).to eq(resolved_uuid)
+        julia_checker
+      end
+
       checker.latest_version
-      expect(WebMock).to have_requested(:get, registry_url)
     end
 
-    context "when the package has yanked versions" do
-      let(:versions_toml) do
-        <<~TOML
-          ["1.0.0"]
-          git-tree-sha1 = "abc123"
-
-          ["2.0.0"]
-          git-tree-sha1 = "def456"
-          yanked = true
-
-          ["1.5.0"]
-          git-tree-sha1 = "ghi789"
-        TOML
+    it "builds a synthetic Project.toml with resolved UUID" do
+      expect(julia_checker_class).to receive(:new) do |args|
+        files = args[:dependency_files]
+        expect(files.length).to eq(1)
+        expect(files.first.name).to eq("Project.toml")
+        expect(files.first.content).to include("JSON")
+        expect(files.first.content).to include("[deps]")
+        expect(files.first.content).to include("[compat]")
+        expect(files.first.content).to include(resolved_uuid)
+        julia_checker
       end
 
-      it "skips yanked versions" do
-        expect(checker.latest_version).to eq("1.5.0")
-      end
+      checker.latest_version
     end
 
-    context "when the registry returns 404" do
+    context "when the registry is unreachable" do
       before do
-        stub_request(:get, registry_url).to_return(status: 404)
+        allow(registry_client).to receive(:resolve_package_uuid).and_return(nil)
       end
 
       it "returns nil" do
@@ -112,9 +113,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Julia do
       end
     end
 
-    context "when the registry is unreachable" do
+    context "when the package doesn't exist" do
       before do
-        stub_request(:get, registry_url).to_raise(Excon::Error::Socket.new(StandardError.new("Connection refused")))
+        allow(julia_checker).to receive(:latest_version).and_return(nil)
       end
 
       it "returns nil" do

@@ -57,6 +57,8 @@ function run(input::String)
             expand_version_constraint(args["constraint"])
 
         # Package discovery and metadata
+        elseif func_name == "resolve_package_uuid"
+            resolve_package_uuid(args)
         elseif func_name == "get_latest_version"
             get_latest_version(args)
         elseif func_name == "get_package_metadata"
