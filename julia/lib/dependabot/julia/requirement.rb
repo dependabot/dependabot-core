@@ -3,10 +3,50 @@
 
 require "dependabot/requirement"
 require "dependabot/utils"
+require "dependabot/julia/version"
 
 module Dependabot
   module Julia
     class Requirement < Dependabot::Requirement
+      # Parses a pre-commit Julia additional_dependency string.
+      # Format: "PackageName@version" (Pkg REPL add syntax)
+      # Examples: "JSON@0.21", "HTTP@1.10.0", "DataFrames@^1.6"
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse_dep_string(dep_string)
+        stripped = dep_string.strip
+        return nil if stripped.empty?
+
+        parts = stripped.split("@", 2)
+        name = T.must(parts[0]).strip
+        constraint = parts[1]
+
+        return nil if name.empty?
+        return nil if constraint.nil? || constraint.strip.empty?
+
+        constraint = constraint.strip
+        version = extract_version(constraint)
+
+        {
+          name: name,
+          normalised_name: name,
+          version: version,
+          requirement: constraint,
+          extras: nil
+        }
+      end
+
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.extract_version(constraint)
+        version_part = constraint.sub(/\A(?:[~^]|[><=]+)\s*/, "")
+        version_part = version_part.delete_prefix("v")
+
+        return nil unless Julia::Version.correct?(version_part)
+
+        version_part
+      end
+
+      private_class_method :extract_version
+
       sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Dependabot::Julia::Requirement]) }
       def self.requirements_array(requirement_string)
         # Julia version specifiers can be:

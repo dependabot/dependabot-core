@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/example/julia-lint
+    rev: v1.0.0
+    hooks:
+      - id: julia-lint
+        language: julia
+        additional_dependencies:
+          - "JSON@0.21.4"
+          - "HTTP@1.10.0"
+          - "DataFrames@1.6.1"
+  - repo: https://github.com/example/julia-format
+    rev: v2.0.0
+    hooks:
+      - id: julia-format
+        language: julia
+        additional_dependencies:
+          - "JuliaFormatter@^1.0.0"
+          - "CSTParser@~3.3.0"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace

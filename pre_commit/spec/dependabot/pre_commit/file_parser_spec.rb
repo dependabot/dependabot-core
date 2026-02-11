@@ -252,5 +252,46 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep.requirements.first[:requirement]).to eq("^10.9.0")
       end
     end
+
+    context "with julia additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_julia_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(3)
+        expect(additional_deps.length).to eq(5)
+      end
+
+      it "parses a simple julia additional dependency" do
+        dep = dependencies.find { |d| d.name == "JSON" && d.requirements.first[:source][:language] == "julia" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("0.21.4")
+        expect(dep.requirements.first[:requirement]).to eq("0.21.4")
+        expect(dep.requirements.first[:source][:language]).to eq("julia")
+        expect(dep.requirements.first[:source][:package_name]).to eq("JSON")
+        expect(dep.requirements.first[:source][:original_string]).to eq("JSON@0.21.4")
+      end
+
+      it "parses a caret-range julia additional dependency" do
+        dep = dependencies.find { |d| d.name == "JuliaFormatter" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.0.0")
+        expect(dep.requirements.first[:requirement]).to eq("^1.0.0")
+      end
+
+      it "parses a tilde-range julia additional dependency" do
+        dep = dependencies.find { |d| d.name == "CSTParser" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("3.3.0")
+        expect(dep.requirements.first[:requirement]).to eq("~3.3.0")
+      end
+    end
   end
 end
