@@ -455,6 +455,23 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when error contains a CLI argument conflict (e.g. --default-index used multiple times)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "error: the argument '--default-index <DEFAULT_INDEX>' cannot be used multiple times\n\n" \
+                   "Usage: uv lock [OPTIONS]\n\nFor more information, try '--help'.",
+          error_context: {}
+        )
+      end
+
+      it "raises MisconfiguredTooling" do
+        expect { handle_uv_error }.to raise_error(Dependabot::MisconfiguredTooling) do |raised_error|
+          expect(raised_error.tool_name).to eq("uv")
+          expect(raised_error.message).to include("--default-index")
+        end
+      end
+    end
+
     context "when error is unknown" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(

@@ -85,7 +85,8 @@ module Dependabot
             /unknown field `[^`]+`, expected one of/i,
             /Unrecognized.*value:/i,
             /URL scheme `[^`]+` is not supported/i,
-            /Failed to parse URL/i
+            /Failed to parse URL/i,
+            /the argument '--[^']+' cannot be used/i
           ),
           Regexp
         )
