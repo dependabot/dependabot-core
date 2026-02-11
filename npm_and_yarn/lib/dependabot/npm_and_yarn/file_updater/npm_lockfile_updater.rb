@@ -311,7 +311,6 @@ module Dependabot
             # Verify optional peer dependencies weren't removed during cleanup
             lockfile_after_cleanup = File.read(lockfile_basename)
             restore_optional_peer_dependencies_if_removed(
-              lockfile_before_cleanup,
               lockfile_after_cleanup,
               optional_peers_before
             )
@@ -1157,13 +1156,12 @@ module Dependabot
         # when a newer version exists at the root level.
         sig do
           params(
-            _lockfile_before: String,
             lockfile_after: String,
             optional_peers_before: T::Hash[String, T::Hash[String, T.untyped]]
           )
             .void
         end
-        def restore_optional_peer_dependencies_if_removed(_lockfile_before, lockfile_after, optional_peers_before)
+        def restore_optional_peer_dependencies_if_removed(lockfile_after, optional_peers_before)
           return if optional_peers_before.empty?
 
           parsed_after = JSON.parse(lockfile_after)
@@ -1184,8 +1182,9 @@ module Dependabot
             packages_after[path] = optional_peers_before[path]
           end
 
-          # Write the corrected lockfile
-          File.write(lockfile_basename, JSON.pretty_generate(parsed_after))
+          # Write the corrected lockfile with original indentation
+          indent = detect_indentation(lockfile_after)
+          File.write(lockfile_basename, JSON.pretty_generate(parsed_after, indent: indent))
         rescue JSON::ParserError => e
           Dependabot.logger.error("Failed to restore optional peer dependencies: #{e.message}")
           # Don't fail the update - just log the error
