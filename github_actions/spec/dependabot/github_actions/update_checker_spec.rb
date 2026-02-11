@@ -561,7 +561,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when a git commit SHA not pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
-      let(:exit_status) { double(success?: true) }
 
       before do
         checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
@@ -572,16 +571,18 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         allow(Dir).to receive(:chdir).and_yield
 
-        allow(Open3).to receive(:capture2e)
-          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}, anything)
-          .and_return(["", exit_status])
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
       end
 
       context "when it's in the current (default) branch" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/HEAD -> origin/master\n  origin/master")
         end
 
         it "can update to the latest version" do
@@ -593,9 +594,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:tip_of_releases_v1) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/releases/v1\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/releases/v1\n")
         end
 
         it "can update to the latest version" do
@@ -605,9 +607,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when multiple branches include it and the current (default) branch among them" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n")
         end
 
         it "can update to the latest version" do
@@ -617,9 +620,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when multiple branches include it and the current (default) branch NOT among them" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/3.3-stable\n  origin/production\n")
         end
 
         it "raises an error" do
