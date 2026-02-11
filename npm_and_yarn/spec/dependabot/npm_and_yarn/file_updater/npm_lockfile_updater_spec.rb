@@ -254,13 +254,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   end
 
   context "when dealing with workspace with nested optional peer dependencies" do
-    let(:dependency_name) { "etag" }
-    let(:version) { "1.8.2" }
-    let(:previous_version) { "1.8.1" }
+    let(:dependency_name) { "semver" }
+    let(:version) { "7.7.1" }
+    let(:previous_version) { "7.6.3" }
     let(:requirements) do
       [{
         file: "packages/app/package.json",
-        requirement: "1.8.2",
+        requirement: "7.7.1",
         groups: ["dependencies"],
         source: nil
       }]
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     let(:previous_requirements) do
       [{
         file: "packages/app/package.json",
-        requirement: "1.8.1",
+        requirement: "7.6.3",
         groups: ["dependencies"],
         source: nil
       }]
@@ -281,14 +281,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       packages = parsed_lockfile["packages"]
 
       # Verify the updated dependency
-      expect(packages["node_modules/etag"]["version"]).to eq("1.8.2")
+      expect(packages["node_modules/semver"]["version"]).to eq("7.7.1")
 
-      # Verify nested optional peer dependency is still present
-      nested_peer = packages["node_modules/test-dep/node_modules/nested-peer"]
-      expect(nested_peer).not_to be_nil
-      expect(nested_peer["version"]).to eq("1.5.0")
-      expect(nested_peer["optional"]).to be(true)
-      expect(nested_peer["peer"]).to be(true)
+      # Verify nested optional peer dependency (chokidar@3.6.0 under @nestjs/schematics)
+      # is still present - this is the exact scenario from the reported issue where npm's
+      # --package-lock-only removes nested optional peer deps during workspace cleanup
+      nested_chokidar = packages["node_modules/@nestjs/schematics/node_modules/chokidar"]
+      expect(nested_chokidar).not_to be_nil
+      expect(nested_chokidar["version"]).to eq("3.6.0")
+      expect(nested_chokidar["optional"]).to be(true)
+      expect(nested_chokidar["peer"]).to be(true)
     end
   end
 

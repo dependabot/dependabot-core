@@ -281,8 +281,7 @@ module Dependabot
             # NOTE: When updating a dependency in a nested workspace project, npm
             # will add the dependency as a new top-level dependency to the root
             # lockfile. To overcome this, we save the content before the update,
-            # and then re-run `npm install` after the update against the previous
-            # content to remove that
+            # then surgically remove the spurious entry from the lockfile.
             previous_package_json = File.read(T.must(package_json).name)
           end
 
@@ -297,23 +296,13 @@ module Dependabot
           end
 
           unless dependencies_in_current_package_json
-            # Capture optional peer dependencies before cleanup to prevent npm from
-            # incorrectly removing them when a newer version exists at the root level.
-            # This is a workaround for npm's --package-lock-only behavior in workspaces.
-            lockfile_before_cleanup = File.read(lockfile_basename)
-            optional_peers_before = extract_optional_peer_dependencies(lockfile_before_cleanup)
-
             File.write(T.must(package_json).name, previous_package_json)
 
-            # Run final install without specific dependencies
-            run_npm_install_lockfile_only([], has_optional_dependencies: false)
-
-            # Verify optional peer dependencies weren't removed during cleanup
-            lockfile_after_cleanup = File.read(lockfile_basename)
-            restore_optional_peer_dependencies_if_removed(
-              lockfile_after_cleanup,
-              optional_peers_before
-            )
+            # Rather than running a second `npm install` to remove the spurious
+            # root entry (which re-resolves the entire tree and can remove nested
+            # optional peer dependencies — see GitHub issue #14110), we fix the
+            # lockfile directly.
+            cleanup_lockfile_for_workspace_update(T.must(previous_package_json))
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -1134,66 +1123,99 @@ module Dependabot
           package_name.gsub("%2f", "/").gsub("%2F", "/")
         end
 
-        # Extracts optional peer dependencies from a lockfile's packages section.
-        # Returns a hash mapping package paths to their full package definitions.
-        sig { params(lockfile_content: String).returns(T::Hash[String, T::Hash[String, T.untyped]]) }
-        def extract_optional_peer_dependencies(lockfile_content)
-          parsed = JSON.parse(lockfile_content)
-          packages = parsed["packages"] || {}
+        # Cleans up side effects of running `npm install <pkg>` at the root
+        # level for a dependency that lives in a workspace package:
+        #
+        # 1. npm adds the dependency to packages[""] even though it's not in
+        #    the root package.json — we remove those spurious entries.
+        # 2. npm's tree resolution may remove nested optional peer
+        #    dependencies when a newer version of the same package exists at
+        #    the root — we restore them from the original lockfile.
+        #
+        # This replaces the previous approach of running a second bare
+        # `npm install` to clean up, which re-resolved the entire tree and
+        # caused the same optional-peer-dep removal (GitHub issue #14110).
+        sig { params(original_package_json_content: String).void }
+        def cleanup_lockfile_for_workspace_update(original_package_json_content)
+          lockfile_content = File.read(lockfile_basename)
+          updated = JSON.parse(lockfile_content)
+          original_pkg = JSON.parse(original_package_json_content)
+          original = JSON.parse(T.must(lockfile.content))
 
-          packages.select do |_path, package_info|
-            optional_peer_dependency?(package_info)
-          end
+          spurious = remove_spurious_root_dependencies(updated, original_pkg)
+          restored = restore_removed_optional_peer_dependencies(updated, original)
+
+          return unless spurious || restored
+
+          indent = detect_indentation(lockfile_content)
+          File.write(lockfile_basename, JSON.pretty_generate(updated, indent: indent))
         rescue JSON::ParserError => e
-          Dependabot.logger.warn("Failed to parse lockfile for optional peer dependencies: #{e.message}")
-          {}
+          Dependabot.logger.warn("Failed to clean up workspace lockfile: #{e.message}")
         end
 
-        # Checks if a package is an optional peer dependency
-        sig { params(package_info: T.untyped).returns(T::Boolean) }
-        def optional_peer_dependency?(package_info)
-          package_info.is_a?(Hash) &&
-            package_info["optional"] == true &&
-            package_info["peer"] == true
-        end
-
-        # Restores optional peer dependencies that were removed during workspace cleanup.
-        # This prevents npm from incorrectly removing nested optional peer dependencies
-        # when a newer version exists at the root level.
+        # Removes dependency entries from packages[""] that npm added but
+        # are not present in the original root package.json. Returns true
+        # if any entries were removed.
         sig do
           params(
-            lockfile_after: String,
-            optional_peers_before: T::Hash[String, T::Hash[String, T.untyped]]
-          )
-            .void
+            parsed_lockfile_json: T::Hash[String, T.untyped],
+            original_pkg: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
         end
-        def restore_optional_peer_dependencies_if_removed(lockfile_after, optional_peers_before)
-          return if optional_peers_before.empty?
+        def remove_spurious_root_dependencies(parsed_lockfile_json, original_pkg)
+          root_entry = parsed_lockfile_json.dig("packages", "")
+          return false unless root_entry
 
-          parsed_after = JSON.parse(lockfile_after)
-          packages_after = parsed_after["packages"] || {}
+          changed = false
 
-          # Find which optional peers were removed
-          removed_peers = optional_peers_before.keys.reject { |path| packages_after.key?(path) }
+          %w(dependencies devDependencies peerDependencies optionalDependencies).each do |dep_type|
+            next unless root_entry[dep_type]
 
-          return if removed_peers.empty?
+            unless original_pkg[dep_type]
+              root_entry.delete(dep_type)
+              changed = true
+              next
+            end
 
-          Dependabot.logger.info(
-            "Restoring #{removed_peers.size} optional peer dependencies " \
-            "removed during workspace cleanup: #{removed_peers.join(', ')}"
-          )
+            root_entry[dep_type].each_key do |dep_name|
+              unless original_pkg[dep_type].key?(dep_name)
+                root_entry[dep_type].delete(dep_name)
+                changed = true
+              end
+            end
 
-          # Restore removed optional peer dependencies
-          removed_peers.each do |path|
-            packages_after[path] = optional_peers_before[path]
+            next unless root_entry[dep_type].empty?
+
+            root_entry.delete(dep_type)
+            changed = true
           end
 
-          # Write the corrected lockfile with original indentation
-          indent = detect_indentation(lockfile_after)
-          File.write(lockfile_basename, JSON.pretty_generate(parsed_after, indent: indent))
-        rescue JSON::ParserError => e
-          Dependabot.logger.error("Failed to restore optional peer dependencies: #{e.message}")
-          # Don't fail the update - just log the error
+          changed
+        end
+
+        # Restores optional peer dependencies that npm removed during tree
+        # resolution. Returns true if any were restored.
+        sig do
+          params(
+            updated_lockfile_json: T::Hash[String, T.untyped],
+            original_lockfile_json: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
+        end
+        def restore_removed_optional_peer_dependencies(updated_lockfile_json, original_lockfile_json)
+          original_packages = original_lockfile_json["packages"] || {}
+          updated_packages = updated_lockfile_json["packages"] || {}
+          changed = false
+
+          original_packages.each do |path, pkg_info|
+            next if updated_packages.key?(path)
+            next unless pkg_info.is_a?(Hash) && pkg_info["optional"] == true && pkg_info["peer"] == true
+
+            Dependabot.logger.info("Restoring optional peer dependency removed during workspace update: #{path}")
+            updated_packages[path] = pkg_info
+            changed = true
+          end
+
+          changed
         end
 
         sig { returns(String) }

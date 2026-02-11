@@ -1,7 +1,12 @@
 {
-  "name": "test-workspace",
-  "private": true,
-  "workspaces": [
-    "packages/app"
-  ]
+	"name": "test-workspace",
+	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
+	"devDependencies": {
+		"@angular-devkit/schematics": "^19.0.0",
+		"@nestjs/schematics": "^10.0.0",
+		"chokidar": "^4.0.0"
+	}
 }
