@@ -9,18 +9,13 @@ module Dependabot
     class RequirementParser
       extend T::Sig
 
-      # Go module paths follow the pattern: host/path/segments
-      # Examples: golang.org/x/text, github.com/stretchr/testify
       MODULE_PATH = %r{[a-zA-Z0-9\-_.~]+(?:/[a-zA-Z0-9\-_.~]+)+}
 
-      # Go versions follow semver with a "v" prefix: v1.2.3, v0.0.0-20210101-abcdef123456
       GO_VERSION = /v?#{Version::VERSION_PATTERN}/
 
-      # Full additional_dependency string: module/path@vX.Y.Z
       GO_DEP_WITH_VERSION =
         /\A\s*(?<name>#{MODULE_PATH})\s*@\s*(?<version>#{GO_VERSION})\s*\z/x
 
-      # Module path without version
       GO_DEP_WITHOUT_VERSION =
         /\A\s*(?<name>#{MODULE_PATH})\s*\z/x
 
