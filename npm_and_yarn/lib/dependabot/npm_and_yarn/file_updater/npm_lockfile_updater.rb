@@ -1142,13 +1142,19 @@ module Dependabot
           packages = parsed["packages"] || {}
 
           packages.select do |_path, package_info|
-            package_info.is_a?(Hash) &&
-              package_info["optional"] == true &&
-              package_info["peer"] == true
+            optional_peer_dependency?(package_info)
           end
         rescue JSON::ParserError => e
           Dependabot.logger.warn("Failed to parse lockfile for optional peer dependencies: #{e.message}")
           {}
+        end
+
+        # Checks if a package is an optional peer dependency
+        sig { params(package_info: T.untyped).returns(T::Boolean) }
+        def optional_peer_dependency?(package_info)
+          package_info.is_a?(Hash) &&
+            package_info["optional"] == true &&
+            package_info["peer"] == true
         end
 
         # Restores optional peer dependencies that were removed during workspace cleanup.
