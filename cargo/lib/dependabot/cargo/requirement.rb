@@ -48,6 +48,52 @@ module Dependabot
         [new(requirement_string)]
       end
 
+      # Parses a pre-commit Rust additional_dependency string.
+      # Formats: "package_name:version", "cli:package_name:version"
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse_dep_string(dep_string)
+        stripped = dep_string.strip
+        return nil if stripped.empty?
+
+        parts = stripped.split(":", -1)
+
+        cli = false
+        if parts.first&.downcase == "cli"
+          return nil if parts.length < 3
+
+          cli = true
+          parts.shift
+        end
+
+        return nil if parts.length < 2
+
+        name = T.must(parts[0])
+        constraint = T.must(parts[1..]).join(":")
+        return nil if name.empty? || constraint.strip.empty?
+
+        constraint = constraint.strip
+        version = extract_version(constraint)
+
+        {
+          name: name,
+          normalised_name: name,
+          version: version,
+          requirement: constraint,
+          extras: cli ? "cli" : nil
+        }
+      end
+
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.extract_version(constraint)
+        version_part = constraint.sub(/\A(?:[~^]|[><=]+)\s*/, "")
+
+        return nil unless Cargo::Version.correct?(version_part)
+
+        version_part
+      end
+
+      private_class_method :extract_version
+
       sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|

@@ -89,11 +89,11 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
 
     context "when PyPI is unreachable" do
       before do
-        allow(Dependabot::Python::UpdateChecker).to receive(:new).and_raise(StandardError, "Connection failed")
+        allow(Dependabot::Python::UpdateChecker).to receive(:new).and_raise(Excon::Error::Timeout)
       end
 
       it "returns nil and logs the error" do
-        expect(Dependabot.logger).to receive(:debug).with(/Error checking Python package/)
+        expect(Dependabot.logger).to receive(:warn).with(/Error checking Python package/)
         expect(checker.latest_version).to be_nil
       end
     end

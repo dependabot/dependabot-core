@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/pre_commit/additional_dependency_checkers/node"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
@@ -49,9 +50,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
   let(:current_version) { "4.15.0" }
 
   describe "#latest_version" do
-    # rubocop:disable RSpec/VerifiedDoubleReference
-    let(:npm_checker_class) { class_double("Dependabot::NpmAndYarn::UpdateChecker") }
-    # rubocop:enable RSpec/VerifiedDoubleReference
+    let(:npm_checker_class) { class_double(Dependabot::NpmAndYarn::UpdateChecker) }
     let(:npm_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
     let(:latest_version_obj) { Gem::Version.new("9.0.0") }
 
