@@ -278,10 +278,6 @@ module Dependabot
           end
 
           unless dependencies_in_current_package_json
-            # NOTE: When updating a dependency in a nested workspace project, npm
-            # will add the dependency as a new top-level dependency to the root
-            # lockfile. To overcome this, we save the content before the update,
-            # then surgically remove the spurious entry from the lockfile.
             previous_package_json = File.read(T.must(package_json).name)
           end
 
@@ -292,17 +288,27 @@ module Dependabot
           top_level_dependencies.each do |dependency|
             install_args = [npm_install_args(dependency)]
             is_optional = optional_dependency?(dependency)
+
+            # When the dependency lives in a workspace package (not the root
+            # package.json), pass --workspace so npm installs it in the correct
+            # context. Without this, npm temporarily adds the dependency to the
+            # root, which strips dev flags and can remove nested optional peer
+            # dependencies during tree resolution (see GitHub issue #14110).
+            unless dependency_in_package_json?(dependency)
+              workspace_directories_for(dependency).each do |dir|
+                install_args << "--workspace=#{dir}"
+              end
+            end
+
             run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
           end
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
-            # Rather than running a second `npm install` to remove the spurious
-            # root entry (which re-resolves the entire tree and can remove nested
-            # optional peer dependencies — see GitHub issue #14110), we fix the
-            # lockfile directly.
-            cleanup_lockfile_for_workspace_update(previous_package_json)
+            # Clean up any remaining side effects from the workspace install:
+            # spurious root lockfile entries and removed optional peer deps.
+            cleanup_workspace_lockfile(T.must(previous_package_json))
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -428,6 +434,31 @@ module Dependabot
           dependency.requirements.any? do |req|
             req[:groups]&.include?("optionalDependencies")
           end
+        end
+
+        # Returns the workspace directories (relative to root) that contain
+        # the given dependency. Reads the actual package files on disk rather
+        # than the requirement :file paths, which may not match the workspace
+        # directory layout exactly.
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+        def workspace_directories_for(dependency)
+          root_pkg_name = T.must(package_json).name
+
+          package_files
+            .reject { |f| f.name == root_pkg_name }
+            .select { |f| package_json_contains_dependency?(f, dependency) }
+            .map { |f| File.dirname(f.name) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile, dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def package_json_contains_dependency?(file, dependency)
+          content = File.read(file.name)
+          pkg = JSON.parse(content)
+          %w(dependencies devDependencies peerDependencies optionalDependencies).any? do |dep_type|
+            pkg.fetch(dep_type, {}).key?(dependency.name)
+          end
+        rescue JSON::ParserError
+          false
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -1123,51 +1154,37 @@ module Dependabot
           package_name.gsub("%2f", "/").gsub("%2F", "/")
         end
 
-        # Cleans up side effects of running `npm install <pkg>` at the root
-        # level for a dependency that lives in a workspace package:
-        #
-        # 1. npm adds the dependency to packages[""] even though it's not in
-        #    the root package.json — we remove those spurious entries.
-        # 2. npm's tree resolution may remove nested optional peer
-        #    dependencies when a newer version of the same package exists at
-        #    the root — we restore them from the original lockfile.
-        # 3. npm removes "dev"/"devOptional" flags from packages that were
-        #    previously dev-only, since the dependency is now a direct root
-        #    dependency — we restore the original flags.
-        #
-        # This replaces the previous approach of running a second bare
-        # `npm install` to clean up, which re-resolved the entire tree and
-        # caused the same optional-peer-dep removal (GitHub issue #14110).
+        # Cleans up the lockfile after a workspace dependency update:
+        # 1. Removes any dependencies npm added to packages[""] that aren't
+        #    in the original root package.json.
+        # 2. Restores optional peer dependencies that npm's tree resolution
+        #    may have removed (see GitHub issue #14110).
         sig { params(original_package_json_content: String).void }
-        def cleanup_lockfile_for_workspace_update(original_package_json_content)
+        def cleanup_workspace_lockfile(original_package_json_content)
           lockfile_content = File.read(lockfile_basename)
-          updated = JSON.parse(lockfile_content)
+          parsed = JSON.parse(lockfile_content)
           original_pkg = JSON.parse(original_package_json_content)
-          original = JSON.parse(T.must(lockfile.content))
+          original_lockfile = JSON.parse(T.must(lockfile.content))
 
-          spurious = remove_spurious_root_dependencies(updated, original_pkg)
-          restored = restore_removed_optional_peer_dependencies(updated, original)
-          dev_flags = restore_dev_dependency_flags(updated, original)
+          changed = remove_spurious_root_deps(parsed, original_pkg)
+          changed = restore_optional_peer_deps(parsed, original_lockfile) || changed
 
-          return unless spurious || restored || dev_flags
+          return unless changed
 
           indent = detect_indentation(lockfile_content)
-          File.write(lockfile_basename, "#{JSON.pretty_generate(updated, indent: indent)}\n")
+          File.write(lockfile_basename, "#{JSON.pretty_generate(parsed, indent: indent)}\n")
         rescue JSON::ParserError => e
           Dependabot.logger.warn("Failed to clean up workspace lockfile: #{e.message}")
         end
 
-        # Removes dependency entries from packages[""] that npm added but
-        # are not present in the original root package.json. Returns true
-        # if any entries were removed.
         sig do
           params(
-            parsed_lockfile_json: T::Hash[String, T.untyped],
+            parsed_lockfile: T::Hash[String, T.untyped],
             original_pkg: T::Hash[String, T.untyped]
           ).returns(T::Boolean)
         end
-        def remove_spurious_root_dependencies(parsed_lockfile_json, original_pkg)
-          root_entry = parsed_lockfile_json.dig("packages", "")
+        def remove_spurious_root_deps(parsed_lockfile, original_pkg)
+          root_entry = parsed_lockfile.dig("packages", "")
           return false unless root_entry
 
           changed = T.let(false, T::Boolean)
@@ -1188,26 +1205,24 @@ module Dependabot
               end
             end
 
-            next unless root_entry[dep_type].empty?
-
-            root_entry.delete(dep_type)
-            changed = true
+            if root_entry[dep_type].empty?
+              root_entry.delete(dep_type)
+              changed = true
+            end
           end
 
           changed
         end
 
-        # Restores optional peer dependencies that npm removed during tree
-        # resolution. Returns true if any were restored.
         sig do
           params(
-            updated_lockfile_json: T::Hash[String, T.untyped],
-            original_lockfile_json: T::Hash[String, T.untyped]
+            updated_lockfile: T::Hash[String, T.untyped],
+            original_lockfile: T::Hash[String, T.untyped]
           ).returns(T::Boolean)
         end
-        def restore_removed_optional_peer_dependencies(updated_lockfile_json, original_lockfile_json)
-          original_packages = original_lockfile_json["packages"] || {}
-          updated_packages = updated_lockfile_json["packages"] || {}
+        def restore_optional_peer_deps(updated_lockfile, original_lockfile)
+          original_packages = original_lockfile["packages"] || {}
+          updated_packages = updated_lockfile["packages"] || {}
           changed = T.let(false, T::Boolean)
 
           original_packages.each do |path, pkg_info|
@@ -1220,133 +1235,6 @@ module Dependabot
           end
 
           changed
-        end
-
-        # Restores "dev" and "devOptional" flags that npm removed when it
-        # temporarily added the dependency as a direct root dependency.
-        # Returns true if any flags were restored.
-        sig do
-          params(
-            updated_lockfile_json: T::Hash[String, T.untyped],
-            original_lockfile_json: T::Hash[String, T.untyped]
-          ).returns(T::Boolean)
-        end
-        def restore_dev_dependency_flags(updated_lockfile_json, original_lockfile_json)
-          changed = restore_dev_flags_in_packages(
-            updated_lockfile_json["packages"] || {},
-            original_lockfile_json["packages"] || {}
-          )
-
-          if updated_lockfile_json.key?("dependencies") && original_lockfile_json.key?("dependencies")
-            changed = restore_dev_flags_in_legacy_deps(
-              updated_lockfile_json["dependencies"],
-              original_lockfile_json["dependencies"]
-            ) || changed
-          end
-
-          changed
-        end
-
-        DEV_FLAGS = T.let(%w(dev devOptional).freeze, T::Array[String])
-        private_constant :DEV_FLAGS
-
-        # Restores dev flags in the packages section. Returns true if
-        # any flags were restored.
-        sig do
-          params(
-            updated_packages: T::Hash[String, T.untyped],
-            original_packages: T::Hash[String, T.untyped]
-          ).returns(T::Boolean)
-        end
-        def restore_dev_flags_in_packages(updated_packages, original_packages)
-          changed = T.let(false, T::Boolean)
-
-          updated_packages.each do |path, pkg_info|
-            next if path == ""
-
-            flags = missing_dev_flags(pkg_info, original_packages[path])
-            next if flags.empty?
-
-            updated_packages[path] = insert_flags_after_integrity(pkg_info, flags)
-            changed = true
-          end
-
-          changed
-        end
-
-        # Recursively restores dev flags in the legacy "dependencies"
-        # section (lockfileVersion 2). Returns true if any flags were
-        # restored.
-        sig do
-          params(
-            updated_deps: T::Hash[String, T.untyped],
-            original_deps: T::Hash[String, T.untyped]
-          ).returns(T::Boolean)
-        end
-        def restore_dev_flags_in_legacy_deps(updated_deps, original_deps)
-          changed = T.let(false, T::Boolean)
-
-          updated_deps.each do |name, dep_info|
-            next unless dep_info.is_a?(Hash)
-
-            original_dep = original_deps[name]
-            flags = missing_dev_flags(dep_info, original_dep)
-
-            if flags.any?
-              updated_deps[name] = insert_flags_after_integrity(dep_info, flags)
-              dep_info = updated_deps[name]
-              changed = true
-            end
-
-            next unless dep_info.key?("dependencies") && original_dep&.key?("dependencies")
-
-            changed = restore_dev_flags_in_legacy_deps(
-              dep_info["dependencies"],
-              original_dep["dependencies"]
-            ) || changed
-          end
-
-          changed
-        end
-
-        # Returns the list of dev flags present in the original entry but
-        # missing from the updated entry.
-        sig do
-          params(
-            updated_entry: T::Hash[String, T.untyped],
-            original_entry: T.untyped
-          ).returns(T::Array[String])
-        end
-        def missing_dev_flags(updated_entry, original_entry)
-          return [] unless original_entry.is_a?(Hash)
-
-          DEV_FLAGS.select { |flag| original_entry[flag] == true && !updated_entry.key?(flag) }
-        end
-
-        # Inserts dev/devOptional flags after the "integrity" key to match
-        # npm's standard key ordering in lockfile entries.
-        sig do
-          params(
-            entry: T::Hash[String, T.untyped],
-            flags: T::Array[String]
-          ).returns(T::Hash[String, T.untyped])
-        end
-        def insert_flags_after_integrity(entry, flags)
-          ordered = T.let({}, T::Hash[String, T.untyped])
-          inserted = T.let(false, T::Boolean)
-
-          entry.each do |key, value|
-            ordered[key] = value
-            next unless key == "integrity" && !inserted
-
-            flags.each { |flag| ordered[flag] = true }
-            inserted = true
-          end
-
-          # If no "integrity" key exists, append the flags
-          flags.each { |flag| ordered[flag] = true } unless inserted
-
-          ordered
         end
 
         sig { returns(String) }
