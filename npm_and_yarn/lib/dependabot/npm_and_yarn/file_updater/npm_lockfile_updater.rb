@@ -302,7 +302,7 @@ module Dependabot
             # root entry (which re-resolves the entire tree and can remove nested
             # optional peer dependencies — see GitHub issue #14110), we fix the
             # lockfile directly.
-            cleanup_lockfile_for_workspace_update(T.must(previous_package_json))
+            cleanup_lockfile_for_workspace_update(previous_package_json)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -1131,6 +1131,9 @@ module Dependabot
         # 2. npm's tree resolution may remove nested optional peer
         #    dependencies when a newer version of the same package exists at
         #    the root — we restore them from the original lockfile.
+        # 3. npm removes "dev"/"devOptional" flags from packages that were
+        #    previously dev-only, since the dependency is now a direct root
+        #    dependency — we restore the original flags.
         #
         # This replaces the previous approach of running a second bare
         # `npm install` to clean up, which re-resolved the entire tree and
@@ -1144,11 +1147,12 @@ module Dependabot
 
           spurious = remove_spurious_root_dependencies(updated, original_pkg)
           restored = restore_removed_optional_peer_dependencies(updated, original)
+          dev_flags = restore_dev_dependency_flags(updated, original)
 
-          return unless spurious || restored
+          return unless spurious || restored || dev_flags
 
           indent = detect_indentation(lockfile_content)
-          File.write(lockfile_basename, JSON.pretty_generate(updated, indent: indent))
+          File.write(lockfile_basename, "#{JSON.pretty_generate(updated, indent: indent)}\n")
         rescue JSON::ParserError => e
           Dependabot.logger.warn("Failed to clean up workspace lockfile: #{e.message}")
         end
@@ -1166,7 +1170,7 @@ module Dependabot
           root_entry = parsed_lockfile_json.dig("packages", "")
           return false unless root_entry
 
-          changed = false
+          changed = T.let(false, T::Boolean)
 
           %w(dependencies devDependencies peerDependencies optionalDependencies).each do |dep_type|
             next unless root_entry[dep_type]
@@ -1204,7 +1208,7 @@ module Dependabot
         def restore_removed_optional_peer_dependencies(updated_lockfile_json, original_lockfile_json)
           original_packages = original_lockfile_json["packages"] || {}
           updated_packages = updated_lockfile_json["packages"] || {}
-          changed = false
+          changed = T.let(false, T::Boolean)
 
           original_packages.each do |path, pkg_info|
             next if updated_packages.key?(path)
@@ -1216,6 +1220,133 @@ module Dependabot
           end
 
           changed
+        end
+
+        # Restores "dev" and "devOptional" flags that npm removed when it
+        # temporarily added the dependency as a direct root dependency.
+        # Returns true if any flags were restored.
+        sig do
+          params(
+            updated_lockfile_json: T::Hash[String, T.untyped],
+            original_lockfile_json: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
+        end
+        def restore_dev_dependency_flags(updated_lockfile_json, original_lockfile_json)
+          changed = restore_dev_flags_in_packages(
+            updated_lockfile_json["packages"] || {},
+            original_lockfile_json["packages"] || {}
+          )
+
+          if updated_lockfile_json.key?("dependencies") && original_lockfile_json.key?("dependencies")
+            changed = restore_dev_flags_in_legacy_deps(
+              updated_lockfile_json["dependencies"],
+              original_lockfile_json["dependencies"]
+            ) || changed
+          end
+
+          changed
+        end
+
+        DEV_FLAGS = T.let(%w(dev devOptional).freeze, T::Array[String])
+        private_constant :DEV_FLAGS
+
+        # Restores dev flags in the packages section. Returns true if
+        # any flags were restored.
+        sig do
+          params(
+            updated_packages: T::Hash[String, T.untyped],
+            original_packages: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
+        end
+        def restore_dev_flags_in_packages(updated_packages, original_packages)
+          changed = T.let(false, T::Boolean)
+
+          updated_packages.each do |path, pkg_info|
+            next if path == ""
+
+            flags = missing_dev_flags(pkg_info, original_packages[path])
+            next if flags.empty?
+
+            updated_packages[path] = insert_flags_after_integrity(pkg_info, flags)
+            changed = true
+          end
+
+          changed
+        end
+
+        # Recursively restores dev flags in the legacy "dependencies"
+        # section (lockfileVersion 2). Returns true if any flags were
+        # restored.
+        sig do
+          params(
+            updated_deps: T::Hash[String, T.untyped],
+            original_deps: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
+        end
+        def restore_dev_flags_in_legacy_deps(updated_deps, original_deps)
+          changed = T.let(false, T::Boolean)
+
+          updated_deps.each do |name, dep_info|
+            next unless dep_info.is_a?(Hash)
+
+            original_dep = original_deps[name]
+            flags = missing_dev_flags(dep_info, original_dep)
+
+            if flags.any?
+              updated_deps[name] = insert_flags_after_integrity(dep_info, flags)
+              dep_info = updated_deps[name]
+              changed = true
+            end
+
+            next unless dep_info.key?("dependencies") && original_dep&.key?("dependencies")
+
+            changed = restore_dev_flags_in_legacy_deps(
+              dep_info["dependencies"],
+              original_dep["dependencies"]
+            ) || changed
+          end
+
+          changed
+        end
+
+        # Returns the list of dev flags present in the original entry but
+        # missing from the updated entry.
+        sig do
+          params(
+            updated_entry: T::Hash[String, T.untyped],
+            original_entry: T.untyped
+          ).returns(T::Array[String])
+        end
+        def missing_dev_flags(updated_entry, original_entry)
+          return [] unless original_entry.is_a?(Hash)
+
+          DEV_FLAGS.select { |flag| original_entry[flag] == true && !updated_entry.key?(flag) }
+        end
+
+        # Inserts dev/devOptional flags after the "integrity" key to match
+        # npm's standard key ordering in lockfile entries.
+        sig do
+          params(
+            entry: T::Hash[String, T.untyped],
+            flags: T::Array[String]
+          ).returns(T::Hash[String, T.untyped])
+        end
+        def insert_flags_after_integrity(entry, flags)
+          ordered = T.let({}, T::Hash[String, T.untyped])
+          inserted = T.let(false, T::Boolean)
+
+          entry.each do |key, value|
+            ordered[key] = value
+            next unless key == "integrity" && !inserted
+
+            flags.each { |flag| ordered[flag] = true }
+            inserted = true
+          end
+
+          # If no "integrity" key exists, append the flags
+          flags.each { |flag| ordered[flag] = true } unless inserted
+
+          ordered
         end
 
         sig { returns(String) }
