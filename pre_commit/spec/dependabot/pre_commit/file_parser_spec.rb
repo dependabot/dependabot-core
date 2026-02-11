@@ -261,14 +261,6 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         )
       end
 
-    context "with rust additional_dependencies" do
-      let(:pre_commit_config) do
-        Dependabot::DependencyFile.new(
-          name: ".pre-commit-config.yaml",
-          content: fixture("pre_commit_configs", "with_rust_additional_dependencies.yaml")
-        )
-      end
-
       it "parses both repo and additional dependencies" do
         repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
         additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
@@ -295,8 +287,17 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep.requirements.first[:requirement]).to eq("v1.9.0")
         expect(dep.requirements.first[:source][:original_string]).to eq("github.com/stretchr/testify@v1.9.0")
       end
+    end
 
-           it "parses a simple rust additional dependency" do
+    context "with rust additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_rust_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses a simple rust additional dependency" do
         dep = dependencies.find { |d| d.name == "serde" }
         expect(dep).not_to be_nil
         expect(dep.version).to eq("1.0.193")
@@ -328,7 +329,6 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep).not_to be_nil
         expect(dep.version).to eq("4.4.0")
         expect(dep.requirements.first[:requirement]).to eq("^4.4.0")
-      end
       end
     end
   end
