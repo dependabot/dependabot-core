@@ -228,7 +228,7 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   describe "#group_by" do
-    context "when group_by is not provided" do
+    context "when rules do not contain group-by" do
       let(:dependency_group) { described_class.new(name: name, rules: rules) }
 
       it "returns nil" do
@@ -236,30 +236,34 @@ RSpec.describe Dependabot::DependencyGroup do
       end
     end
 
-    context "when group_by is provided" do
-      let(:dependency_group) { described_class.new(name: name, rules: rules, group_by: "dependency-name") }
+    context "when rules contain group-by" do
+      let(:rules_with_group_by) { { "patterns" => ["test-*"], "group-by" => "dependency-name" } }
+      let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
 
-      it "returns the group_by value" do
+      it "returns the group-by value from rules" do
         expect(dependency_group.group_by).to eq("dependency-name")
       end
     end
   end
 
   describe "#group_by_dependency_name?" do
+    let(:rules_with_group_by) { { "patterns" => ["test-*"], "group-by" => "dependency-name" } }
+    let(:rules_with_other_group_by) { { "patterns" => ["test-*"], "group-by" => "something-else" } }
+
     context "when the feature flag is disabled" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:group_by_dependency_name).and_return(false)
       end
 
-      context "when group_by is set to 'dependency-name'" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules, group_by: "dependency-name") }
+      context "when rules contain group-by: dependency-name" do
+        let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
 
         it "returns false" do
           expect(dependency_group.group_by_dependency_name?).to be(false)
         end
       end
 
-      context "when group_by is nil" do
+      context "when rules do not contain group-by" do
         let(:dependency_group) { described_class.new(name: name, rules: rules) }
 
         it "returns false" do
@@ -273,15 +277,15 @@ RSpec.describe Dependabot::DependencyGroup do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:group_by_dependency_name).and_return(true)
       end
 
-      context "when group_by is set to 'dependency-name'" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules, group_by: "dependency-name") }
+      context "when rules contain group-by: dependency-name" do
+        let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
 
         it "returns true" do
           expect(dependency_group.group_by_dependency_name?).to be(true)
         end
       end
 
-      context "when group_by is nil" do
+      context "when rules do not contain group-by" do
         let(:dependency_group) { described_class.new(name: name, rules: rules) }
 
         it "returns false" do
@@ -289,8 +293,8 @@ RSpec.describe Dependabot::DependencyGroup do
         end
       end
 
-      context "when group_by is set to a different value" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules, group_by: "something-else") }
+      context "when rules contain a different group-by value" do
+        let(:dependency_group) { described_class.new(name: name, rules: rules_with_other_group_by) }
 
         it "returns false" do
           expect(dependency_group.group_by_dependency_name?).to be(false)
