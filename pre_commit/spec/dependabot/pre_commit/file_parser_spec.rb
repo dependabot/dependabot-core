@@ -252,5 +252,55 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep.requirements.first[:requirement]).to eq("^10.9.0")
       end
     end
+
+    context "with ruby additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_ruby_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(3)
+        expect(additional_deps.length).to eq(5)
+      end
+
+      it "parses a simple ruby additional dependency" do
+        dep = dependencies.find { |d| d.name == "scss_lint" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("0.52.0")
+        expect(dep.requirements.first[:requirement]).to eq("0.52.0")
+        expect(dep.requirements.first[:source][:language]).to eq("ruby")
+        expect(dep.requirements.first[:source][:package_name]).to eq("scss_lint")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("scss-lint")
+        expect(dep.requirements.first[:source][:original_string]).to eq("scss_lint:0.52.0")
+      end
+
+      it "parses a pessimistic version ruby additional dependency" do
+        dep = dependencies.find { |d| d.name == "rubocop" && d.requirements.first[:source][:hook_id] == "rubocop" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.50")
+        expect(dep.requirements.first[:requirement]).to eq("~> 1.50")
+        expect(dep.requirements.first[:source][:language]).to eq("ruby")
+      end
+
+      it "parses a hyphenated gem name" do
+        dep = dependencies.find { |d| d.name == "rubocop-rails" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("2.19.0")
+        expect(dep.requirements.first[:requirement]).to eq("2.19.0")
+      end
+
+      it "parses a >= constraint ruby additional dependency" do
+        dep = dependencies.find { |d| d.name == "rubocop-performance" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.17.0")
+        expect(dep.requirements.first[:requirement]).to eq(">= 1.17.0")
+      end
+    end
   end
 end

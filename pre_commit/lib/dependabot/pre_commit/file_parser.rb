@@ -12,6 +12,7 @@ require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/python/requirement_parser"
+require "dependabot/bundler/requirement"
 
 module Dependabot
   module PreCommit
@@ -26,7 +27,8 @@ module Dependabot
       LANGUAGE_PARSERS = T.let(
         {
           "python" => ->(dep_string) { Dependabot::Python::RequirementParser.parse(dep_string) },
-          "node" => ->(dep_string) { Dependabot::NpmAndYarn::Requirement.parse_dep_string(dep_string) }
+          "node" => ->(dep_string) { Dependabot::NpmAndYarn::Requirement.parse_dep_string(dep_string) },
+          "ruby" => ->(dep_string) { Dependabot::Bundler::Requirement.parse_dep_string(dep_string) }
         }.freeze,
         T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
       )
