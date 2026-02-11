@@ -85,7 +85,7 @@ RSpec.describe "Python additional_dependencies integration" do
       expect(black).not_to be_nil
       expect(black.version).to eq("23.0.0")
       expect(black.requirements.first[:requirement]).to eq(">=23.0.0")
-      expect(black.requirements.first[:source][:original_name]).to eq("black[d]")
+      expect(black.requirements.first[:source][:original_name]).to eq("black")
       expect(black.requirements.first[:source][:hook_id]).to eq("black")
 
       # Verify flake8-docstrings
