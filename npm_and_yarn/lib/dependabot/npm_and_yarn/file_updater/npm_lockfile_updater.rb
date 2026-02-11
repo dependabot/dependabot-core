@@ -277,9 +277,7 @@ module Dependabot
             dependency_in_package_json?(dependency)
           end
 
-          unless dependencies_in_current_package_json
-            previous_package_json = File.read(T.must(package_json).name)
-          end
+          previous_package_json = File.read(T.must(package_json).name) unless dependencies_in_current_package_json
 
           # TODO: Update the npm 6 updater to use these args as we currently
           # do the same in the js updater helper, we've kept it separate for
