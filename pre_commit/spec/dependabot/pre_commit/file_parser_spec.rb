@@ -253,11 +253,11 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
     end
 
-    context "with rust additional_dependencies" do
+    context "with golang additional_dependencies" do
       let(:pre_commit_config) do
         Dependabot::DependencyFile.new(
           name: ".pre-commit-config.yaml",
-          content: fixture("pre_commit_configs", "with_rust_additional_dependencies.yaml")
+          content: fixture("pre_commit_configs", "with_go_additional_dependencies.yaml")
         )
       end
 
@@ -265,8 +265,36 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
         additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
 
-        expect(repo_deps.length).to eq(4)
-        expect(additional_deps.length).to eq(7)
+        expect(repo_deps.length).to eq(2)
+        expect(additional_deps.length).to eq(2)
+      end
+
+      it "parses a Go additional dependency with standard version" do
+        dep = dependencies.find { |d| d.name == "golang.org/x/tools" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("0.28.0")
+        expect(dep.requirements.first[:requirement]).to eq("v0.28.0")
+        expect(dep.requirements.first[:source][:language]).to eq("golang")
+        expect(dep.requirements.first[:source][:package_name]).to eq("golang.org/x/tools")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("golangci-lint")
+        expect(dep.requirements.first[:source][:original_string]).to eq("golang.org/x/tools@v0.28.0")
+      end
+
+      it "parses a second Go additional dependency" do
+        dep = dependencies.find { |d| d.name == "github.com/stretchr/testify" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.9.0")
+        expect(dep.requirements.first[:requirement]).to eq("v1.9.0")
+        expect(dep.requirements.first[:source][:original_string]).to eq("github.com/stretchr/testify@v1.9.0")
+      end
+    end
+
+    context "with rust additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_rust_additional_dependencies.yaml")
+        )
       end
 
       it "parses a simple rust additional dependency" do
