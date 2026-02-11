@@ -6,6 +6,14 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/version"
+<<<<<<< HEAD
+=======
+require "dependabot/pre_commit/additional_dependency_checkers"
+require "dependabot/pre_commit/additional_dependency_checkers/node"
+require "dependabot/pre_commit/additional_dependency_checkers/python"
+require "dependabot/pre_commit/additional_dependency_checkers/go"
+require "dependabot/pre_commit/additional_dependency_checkers/rust"
+>>>>>>> 9d667230f (Add additional dependencies support for go modules (#14144))
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"

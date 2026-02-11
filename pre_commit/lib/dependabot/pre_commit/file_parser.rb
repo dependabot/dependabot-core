@@ -10,10 +10,10 @@ require "dependabot/errors"
 require "dependabot/pre_commit/package_manager"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
-<<<<<<< HEAD
-=======
+require "dependabot/cargo/requirement"
+require "dependabot/npm_and_yarn/requirement"
 require "dependabot/python/requirement_parser"
->>>>>>> 9bb567464 (Refactor Ecosystem Parsing in Pre-Commit (#14123))
+require "dependabot/go_modules/requirement_parser"
 
 module Dependabot
   module PreCommit
@@ -25,16 +25,12 @@ module Dependabot
       CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
       ECOSYSTEM = "pre_commit"
 
-      # Registry of language parsers. Each parser is a callable that takes a
-      # dependency string and returns a hash with :name, :normalised_name,
-      # :version, :requirement, :extras, :language, :registry — or nil if
-      # the string cannot be parsed.
-      #
-      # To add a new language, register a parser:
-      #   LANGUAGE_PARSERS["node"] = ->(dep_string) { ... }
       LANGUAGE_PARSERS = T.let(
         {
-          "python" => ->(dep_string) { Dependabot::Python::RequirementParser.parse(dep_string) }
+          "python" => ->(dep_string) { Dependabot::Python::RequirementParser.parse(dep_string) },
+          "node" => ->(dep_string) { Dependabot::NpmAndYarn::Requirement.parse_dep_string(dep_string) },
+          "rust" => ->(dep_string) { Dependabot::Cargo::Requirement.parse_dep_string(dep_string) },
+          "golang" => ->(dep_string) { Dependabot::GoModules::RequirementParser.parse(dep_string) }
         }.freeze,
         T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
       )
@@ -81,6 +77,9 @@ module Dependabot
 
           dependency = parse_repo(repo, file)
           dependency_set << dependency if dependency
+
+          additional_deps = parse_additional_dependencies(repo, file)
+          additional_deps.each { |dep| dependency_set << dep }
         end
 
         dependency_set
@@ -99,7 +98,6 @@ module Dependabot
         rev = repo["rev"]
 
         return nil if repo_url.nil? || rev.nil?
-        # Skip special pre-commit repos that don't have updatable versions
         return nil if %w(local meta).include?(repo_url)
 
         Dependency.new(
@@ -120,8 +118,6 @@ module Dependabot
         )
       end
 
-<<<<<<< HEAD
-=======
       sig do
         params(
           repo: T::Hash[String, T.untyped],
@@ -194,7 +190,6 @@ module Dependabot
         dependencies
       end
 
->>>>>>> 9bb567464 (Refactor Ecosystem Parsing in Pre-Commit (#14123))
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pre_commit_config_files
         dependency_files.select { |f| f.name.match?(CONFIG_FILE_PATTERN) }

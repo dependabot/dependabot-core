@@ -201,5 +201,135 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep.version).to eq("1.7.0")
       end
     end
+
+    context "with node additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_node_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(4)
+        expect(additional_deps.length).to eq(8)
+      end
+
+      it "parses a simple node additional dependency" do
+        dep = dependencies.find { |d| d.name == "eslint" && d.requirements.first[:source][:hook_id] == "eslint" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("4.15.0")
+        expect(dep.requirements.first[:requirement]).to eq("4.15.0")
+        expect(dep.requirements.first[:source][:language]).to eq("node")
+        expect(dep.requirements.first[:source][:package_name]).to eq("eslint")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("eslint")
+        expect(dep.requirements.first[:source][:original_string]).to eq("eslint@4.15.0")
+      end
+
+      it "parses a scoped node additional dependency" do
+        dep = dependencies.find { |d| d.name == "@prettier/plugin-xml" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("3.2.0")
+        expect(dep.requirements.first[:requirement]).to eq("3.2.0")
+        expect(dep.requirements.first[:source][:language]).to eq("node")
+        expect(dep.requirements.first[:source][:original_string]).to eq("@prettier/plugin-xml@3.2.0")
+      end
+
+      it "parses a tilde-range node additional dependency" do
+        dep = dependencies.find { |d| d.name == "typescript" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("5.3.0")
+        expect(dep.requirements.first[:requirement]).to eq("~5.3.0")
+      end
+
+      it "parses a caret-range node additional dependency" do
+        dep = dependencies.find { |d| d.name == "ts-node" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("10.9.0")
+        expect(dep.requirements.first[:requirement]).to eq("^10.9.0")
+      end
+    end
+
+    context "with golang additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_go_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(2)
+        expect(additional_deps.length).to eq(2)
+      end
+
+      it "parses a Go additional dependency with standard version" do
+        dep = dependencies.find { |d| d.name == "golang.org/x/tools" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("0.28.0")
+        expect(dep.requirements.first[:requirement]).to eq("v0.28.0")
+        expect(dep.requirements.first[:source][:language]).to eq("golang")
+        expect(dep.requirements.first[:source][:package_name]).to eq("golang.org/x/tools")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("golangci-lint")
+        expect(dep.requirements.first[:source][:original_string]).to eq("golang.org/x/tools@v0.28.0")
+      end
+
+      it "parses a second Go additional dependency" do
+        dep = dependencies.find { |d| d.name == "github.com/stretchr/testify" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.9.0")
+        expect(dep.requirements.first[:requirement]).to eq("v1.9.0")
+        expect(dep.requirements.first[:source][:original_string]).to eq("github.com/stretchr/testify@v1.9.0")
+      end
+    end
+
+    context "with rust additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_rust_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses a simple rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "serde" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.0.193")
+        expect(dep.requirements.first[:requirement]).to eq("1.0.193")
+        expect(dep.requirements.first[:source][:language]).to eq("rust")
+        expect(dep.requirements.first[:source][:package_name]).to eq("serde")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("nickel-lint")
+        expect(dep.requirements.first[:source][:original_string]).to eq("serde:1.0.193")
+      end
+
+      it "parses a CLI rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "rustfmt-nightly" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.6.0")
+        expect(dep.requirements.first[:requirement]).to eq("1.6.0")
+        expect(dep.requirements.first[:source][:extras]).to eq("cli")
+        expect(dep.requirements.first[:source][:original_string]).to eq("cli:rustfmt-nightly:1.6.0")
+      end
+
+      it "parses a tilde-range rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "anyhow" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.0.0")
+        expect(dep.requirements.first[:requirement]).to eq("~1.0.0")
+      end
+
+      it "parses a caret-range rust additional dependency" do
+        dep = dependencies.find { |d| d.name == "clap" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("4.4.0")
+        expect(dep.requirements.first[:requirement]).to eq("^4.4.0")
+      end
+    end
   end
 end
