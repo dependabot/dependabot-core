@@ -534,7 +534,31 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def pr_exists_for_dependency_group?(group)
-        job.existing_group_pull_requests.any? { |pr| pr["dependency-group-name"] == group.name }
+        !find_existing_group_pr(group).nil?
+      end
+
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def find_existing_group_pr(group)
+        job.existing_group_pull_requests.find do |pr|
+          next false unless pr["dependency-group-name"] == group.name
+
+          existing_pr_covers_job_directories?(pr)
+        end
+      end
+
+      sig { params(pull_request: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def existing_pr_covers_job_directories?(pull_request)
+        pr_directories = pull_request["dependencies"]&.filter_map { |dep| dep["directory"] }
+
+        # Old PRs without directory info — treat as match (backward compat)
+        return true if pr_directories.nil? || pr_directories.empty?
+
+        job_directories = job.source.directories || [job.source.directory || "/"]
+        normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
+        normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
+
+        # Match only when the PR covers every directory the job will process
+        (normalized_job_dirs - normalized_pr_dirs).empty?
       end
 
       sig do
