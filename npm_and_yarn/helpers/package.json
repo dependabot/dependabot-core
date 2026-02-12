@@ -13,7 +13,6 @@
     "@dependabot/yarn-lib": "^1.22.22",
     "@npmcli/arborist": "^9.3.0",
     "detect-indent": "^6.1.0",
-    "nock": "^14.0.11",
     "npm": "6.14.18",
     "@pnpm/lockfile-file": "^9.1.2",
     "@pnpm/dependency-path": "^5.1.1",
