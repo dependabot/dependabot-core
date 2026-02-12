@@ -137,6 +137,18 @@ RSpec.describe Dependabot::Workspace::Git do
           expect(workspace.failed_change_attempts.size).to eq(1)
         end
       end
+
+      context "when error occurs with no file changes" do
+        it "handles missing stash gracefully" do
+          expect do
+            workspace.change("no changes error") { raise "boom" }
+          end.to raise_error(RuntimeError, "boom")
+
+          expect(workspace.failed_change_attempts.size).to eq(1)
+          expect(workspace.change_attempts.first.id).to eq("")
+          expect(workspace.change_attempts.first.memo).to eq("no changes error")
+        end
+      end
     end
   end
 

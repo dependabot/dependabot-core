@@ -92,7 +92,10 @@ module Dependabot
 
       sig { returns(String) }
       def last_stash_sha
-        run_shell_command("git rev-parse refs/stash").strip
+        run_shell_command("git rev-parse --quiet --verify refs/stash", stderr_to_stdout: false).strip
+      rescue SharedHelpers::HelperSubprocessFailed
+        # refs/stash doesn't exist when no stash has been created
+        ""
       end
 
       sig { returns(String) }
