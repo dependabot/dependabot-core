@@ -376,7 +376,7 @@ module Dependabot
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
-          update_cooldown: job.cooldown,
+          update_cooldown: job.security_updates_only? ? nil : job.cooldown,
           options: job.experiments
         )
       end
