@@ -6,10 +6,11 @@
  * Outputs:
  *  - JSON formatted information of dependencies (name, version, dependency-type)
  */
-const { readWantedLockfile } = require("@pnpm/lockfile-file");
-const dependencyPath = require("@pnpm/dependency-path");
+import { readWantedLockfile } from "@pnpm/lockfile-file";
 
-async function parse(directory) {
+import dependencyPath from "@pnpm/dependency-path";
+
+export default async function parse(directory) {
   const lockfile = await readWantedLockfile(directory, {
     ignoreIncompatible: true
   });
@@ -46,7 +47,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
       return false;
     }
 
-    currentSpecifier = projectSpecifiers[name];
+    const currentSpecifier = projectSpecifiers[name];
 
     if (!currentSpecifier) {
       return true;
@@ -78,5 +79,3 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
     aliased: aliased
   }
 }
-
-module.exports = { parse };

@@ -12,20 +12,18 @@
  * Update the dependency to the version specified and rewrite the package.json
  * and yarn.lock files.
  */
-const fs = require("fs");
-const path = require("path");
-const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
-const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
-const {
-  cleanLockfile,
-} = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
-const Config = require("@dependabot/yarn-lib/lib/config").default;
-const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
-const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-const fixDuplicates = require("./fix-duplicates");
-const replaceDeclaration = require("./replace-lockfile-declaration");
-const { LightweightAdd, LightweightInstall } = require("./helpers");
+import fs from "node:fs";
+import path from "node:path";
+import { Add } from "@dependabot/yarn-lib/lib/cli/commands/add";
+import { Install } from "@dependabot/yarn-lib/lib/cli/commands/install";
+import { cleanLockfile } from "@dependabot/yarn-lib/lib/cli/commands/upgrade";
+import Configlib from "@dependabot/yarn-lib/lib/config";
+import ReportersLib from "@dependabot/yarn-lib/lib/reporters";
+import LockfileLib from "@dependabot/yarn-lib/lib/lockfile";
+import ParseLib from "@dependabot/yarn-lib/lib/lockfile/parse";
+import fixDuplicates from "./fix-duplicates";
+import replaceDeclaration from "./replace-lockfile-declaration";
+import { LightweightAdd, LightweightInstall } from "./helpers";
 
 function flattenAllDependencies(manifest) {
   return Object.assign(
@@ -100,7 +98,7 @@ function installArgsWithVersion(
   }
 }
 
-async function updateDependencyFiles(directory, dependencies) {
+export default async function updateDependencyFiles(directory, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
@@ -139,8 +137,8 @@ async function updateDependencyFile(
     dev: devRequirement(requirements),
     optional: optionalRequirement(requirements),
   };
-  const reporter = new EventReporter();
-  const config = new Config(reporter);
+  const reporter = new ReportersLib.EventReporter();
+  const config = new Configlib.default(reporter);
   await config.init({
     cwd: path.join(directory, path.dirname(requirements.file)),
     nonInteractive: true,
@@ -149,7 +147,7 @@ async function updateDependencyFile(
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
-  const lockfile = await Lockfile.fromDirectory(directory, reporter);
+  const lockfile = await LockfileLib.default.fromDirectory(directory, reporter);
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
@@ -194,7 +192,7 @@ async function updateDependencyFile(
     originalPackageJson
   );
 
-  const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
+  const lockfile2 = await LockfileLib.default.fromDirectory(directory, reporter);
   const install2 = new LightweightInstall(flags, config, reporter, lockfile2);
   await install2.init();
 
@@ -205,5 +203,3 @@ async function updateDependencyFile(
     "yarn.lock": updatedYarnLock,
   };
 }
-
-module.exports = { updateDependencyFiles };

@@ -9,13 +9,15 @@
  *  - An array of objects with conflicting dependencies
  */
 
-const fs = require("fs");
-const path = require("path");
-const semver = require("semver");
-const { parse } = require("./lockfile-parser");
-const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
+import fs from "node:fs";
+import path from "node:path";
+import semver from "semver";
+import parse from "./lockfile-parser";
 
-async function findConflictingDependencies(directory, depName, targetVersion) {
+import { LOCKFILE_ENTRY_REGEX } from "./helpers";
+
+
+export default async function findConflictingDependencies(directory, depName, targetVersion) {
   const lockfileJson = await parse(directory);
   const packageJson = fs
     .readFileSync(path.join(directory, "package.json"))
@@ -172,5 +174,3 @@ function findConflictingParentDependencies(
 
   return conflictingParents;
 }
-
-module.exports = { findConflictingDependencies };

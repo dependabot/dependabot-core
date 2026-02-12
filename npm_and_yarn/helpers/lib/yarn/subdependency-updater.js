@@ -1,14 +1,13 @@
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
-const Config = require("@dependabot/yarn-lib/lib/config").default;
-const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
-const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const fixDuplicates = require("./fix-duplicates");
-const { LightweightInstall, LOCKFILE_ENTRY_REGEX } = require("./helpers");
-const { parse } = require("./lockfile-parser");
-const stringify =
-  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import ConfigLib from "@dependabot/yarn-lib/lib/config";
+import ReportersLib from "@dependabot/yarn-lib/lib/reporters";
+import LockfileLib from "@dependabot/yarn-lib/lib/lockfile";
+import fixDuplicates from "./fix-duplicates";
+import { LightweightInstall, LOCKFILE_ENTRY_REGEX } from "./helpers";
+import parse from "./lockfile-parser";
+import StringifyLib from "@dependabot/yarn-lib/lib/lockfile/stringify";
 
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.
@@ -21,7 +20,7 @@ function recoverVersionComments(oldLockfile, newLockfile) {
     .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-async function updateDependencyFile(
+export default async function updateDependencyFile(
   directory,
   lockfileName,
   dependencies
@@ -35,8 +34,9 @@ async function updateDependencyFile(
     ignoreWorkspaceRootCheck: true,
     ignoreEngines: true,
   };
-  const reporter = new EventReporter();
-  const config = new Config(reporter);
+
+  const reporter = new ReportersLib['EventReporter']();
+  const config = new ConfigLib.default(reporter);
   await config.init({
     cwd: directory,
     nonInteractive: true,
@@ -59,13 +59,13 @@ async function updateDependencyFile(
     }
   }
 
-  let newLockFileContent = await stringify(lockfileObject, noHeader, config.enableLockfileVersions);
+  let newLockFileContent = await StringifyLib.default(lockfileObject, noHeader, config.enableLockfileVersions);
   for (const dependency of dependencies) {
     newLockFileContent = fixDuplicates(newLockFileContent, dependency.name);
   }
   fs.writeFileSync(path.join(directory, lockfileName), newLockFileContent);
 
-  const lockfile = await Lockfile.fromDirectory(directory, reporter);
+  const lockfile = await LockfileLib.default.fromDirectory(directory, reporter);
   const install = new LightweightInstall(flags, config, reporter, lockfile);
   await install.init();
 
@@ -79,5 +79,3 @@ async function updateDependencyFile(
     [lockfileName]: updatedYarnLockWithVersion,
   };
 }
-
-module.exports = { updateDependencyFile };
