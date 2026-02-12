@@ -73,7 +73,11 @@ module Dependabot
       def capture_failed_change_attempt(memo = nil, error = nil)
         return nil if changed_files(ignored_mode: "matching").empty? && error.nil?
 
-        sha = stash(memo)
+        sha = if changed_files(ignored_mode: "matching").empty?
+                head_sha
+              else
+                stash(memo)
+              end
         change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, error: error)
       end
 
@@ -92,10 +96,7 @@ module Dependabot
 
       sig { returns(String) }
       def last_stash_sha
-        run_shell_command("git rev-parse --quiet --verify refs/stash", stderr_to_stdout: false).strip
-      rescue SharedHelpers::HelperSubprocessFailed
-        # refs/stash doesn't exist when no stash has been created
-        ""
+        run_shell_command("git rev-parse refs/stash").strip
       end
 
       sig { returns(String) }

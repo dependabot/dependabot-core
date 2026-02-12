@@ -139,13 +139,13 @@ RSpec.describe Dependabot::Workspace::Git do
       end
 
       context "when error occurs with no file changes" do
-        it "handles missing stash gracefully" do
+        it "uses head_sha instead of stashing" do
           expect do
             workspace.change("no changes error") { raise "boom" }
           end.to raise_error(RuntimeError, "boom")
 
           expect(workspace.failed_change_attempts.size).to eq(1)
-          expect(workspace.change_attempts.first.id).to eq("")
+          expect(workspace.change_attempts.first.id).to eq(`git rev-parse HEAD`.strip)
           expect(workspace.change_attempts.first.memo).to eq("no changes error")
         end
       end
