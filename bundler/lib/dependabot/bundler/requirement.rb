@@ -18,6 +18,9 @@ module Dependabot
         new(req[:requirement]).satisfied_by?(version)
       end
 
+      # For consistency with other languages, we define a requirements array.
+      # Ruby doesn't have an `OR` separator for requirements, so it always
+      # contains a single element.
       sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
