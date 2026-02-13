@@ -64,17 +64,12 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
     context "with gradle wrapper properties" do
       before do
-        Dependabot::Experiments.register(:gradle_wrapper_updater, true)
         stub_content_request("?ref=sha", "contents_wrapper.json")
         stub_content_request("gradle/wrapper?ref=sha", "content_gradle_wrapper.json")
         stub_content_request("gradlew?ref=sha", "gradlew.json")
         stub_content_request("gradlew.bat?ref=sha", "gradlew.bat.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.jar?ref=sha", "gradle-wrapper.jar.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.properties?ref=sha", "gradle-wrapper.properties.json")
-      end
-
-      after do
-        Dependabot::Experiments.reset!
       end
 
       it "fetches the wrapper files" do
