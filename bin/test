@@ -61,6 +61,14 @@ if [[ -z "$WORKDIR" ]]; then
   WORKDIR="$ECOSYSTEM"
 fi
 
+# The 'common' directory doesn't have its own ecosystem image with native helpers.
+# Use 'bundler' as the ecosystem for building the Docker image since common tests
+# that require parsing use bundler fixtures.
+DOCKER_ECOSYSTEM="$ECOSYSTEM"
+if [[ "$ECOSYSTEM" == "common" ]]; then
+  DOCKER_ECOSYSTEM="bundler"
+fi
+
 if [[ $# -eq 0 ]]; then
   set -- bundle exec rspec spec
 elif [[ "$1" == spec/* ]] || [[ "$1" == *_spec.rb ]]; then
@@ -97,4 +105,4 @@ fi
 
 WORKDIR_CMD="cd $(printf '%q' "/home/dependabot/$CONTAINER_WORKDIR") && $CMD_STR"
 
-exec "$SCRIPT_DIR/docker-dev-shell" "$ECOSYSTEM" -- bash -lc "$WORKDIR_CMD"
+exec "$SCRIPT_DIR/docker-dev-shell" "$DOCKER_ECOSYSTEM" -- bash -lc "$WORKDIR_CMD"
