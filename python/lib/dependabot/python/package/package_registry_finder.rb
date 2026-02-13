@@ -59,6 +59,9 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+
         sig { returns(String) }
         def main_index_url
           url =
@@ -256,7 +259,17 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def requirements_files
-          dependency_files.select { |f| f.name.match?(/requirements/x) }
+          # Get the list of requirement file names where this dependency appears
+          requirement_file_names = dependency.requirements
+                                             .map { |r| r[:file] }
+                                             .select { |f| f.match?(/requirements/x) }
+
+          # If the dependency has no requirements in any requirements files,
+          # return all requirements files (backward compatibility)
+          return dependency_files.select { |f| f.name.match?(/requirements/x) } if requirement_file_names.empty?
+
+          # Otherwise, only return the requirement files where this dependency appears
+          dependency_files.select { |f| requirement_file_names.include?(f.name) }
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
