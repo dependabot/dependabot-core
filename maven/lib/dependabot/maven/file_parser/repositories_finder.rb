@@ -92,7 +92,7 @@ module Dependabot
           { url: central_repo_url, id: "central" }
         end
 
-        sig { params(entry: Nokogiri::XML::Element).returns(T::Hash[Symbol, T.nilable(String)]) }
+        sig { params(entry: Nokogiri::XML::Node).returns(T::Hash[Symbol, T.nilable(String)]) }
         def serialize_mvn_repo(entry)
           {
             url: entry.at_css("url").content.strip,
@@ -130,22 +130,100 @@ module Dependabot
             .returns(T::Array[T::Hash[Symbol, T.untyped]])
         end
         def gather_repository_urls(pom:, exclude_inherited: false)
-          repos_in_pom =
-            Nokogiri::XML(pom.content)
-                    .css(REPOSITORY_SELECTOR)
-                    .map { |node| serialize_mvn_repo(node) }
-                    .reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }
-                    .select { |entry| entry[:url].start_with?("http") }
-                    .map { |entry| serialize_urls(entry, pom) }
+          repos = repositories_from_pom(pom)
+          return repos if exclude_inherited
 
-          return repos_in_pom if exclude_inherited
+          parent = parent_with_repositories(pom, repos)
+          return repos unless parent
 
-          urls_in_pom = repos_in_pom.map { |repo| repo[:url] }
-          unless (parent = parent_pom(pom, urls_in_pom))
-            return repos_in_pom
+          repos + gather_repository_urls(pom: parent)
+        end
+
+        sig do
+          params(
+            pom: Dependabot::DependencyFile
+          ).returns(
+            T::Array[T::Hash[Symbol, T.untyped]]
+          )
+        end
+        def repositories_from_pom(pom)
+          doc = Nokogiri::XML(pom.content)
+          doc.remove_namespaces!
+
+          repository_nodes(doc)
+            .filter_map { |node| build_repo_entry(node, pom) }
+        end
+
+        sig do
+          params(
+            node: Nokogiri::XML::Node,
+            pom: Dependabot::DependencyFile
+          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        end
+        def build_repo_entry(node, pom)
+          url = node.at_css("url")&.text&.strip.to_s
+          return if url.empty?
+
+          entry = serialize_mvn_repo(node)
+
+          return if property_blocked?(entry)
+          return unless http_url?(entry)
+
+          serialize_urls(entry, pom)
+        end
+
+        sig { params(entry: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+        def property_blocked?(entry)
+          contains_property?(T.must(entry.fetch(:url))) && !evaluate_properties?
+        end
+
+        sig { params(entry: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        def http_url?(entry)
+          entry.fetch(:url)&.start_with?("http")
+        end
+
+        sig do
+          params(
+            pom: Dependabot::DependencyFile,
+            repos: T::Array[T::Hash[Symbol, T.untyped]]
+          ).returns(T.nilable(Dependabot::DependencyFile))
+        end
+        def parent_with_repositories(pom, repos)
+          urls = repos.map { |r| r[:url] }
+          parent_pom(pom, urls)
+        end
+
+        # Returns the repository XML nodes that should be considered when resolving artifacts.
+        #
+        # Selection rules:
+        # - Always includes repositories declared at the project level.
+        # - Repositories declared inside <profiles> are included only activated explicitly
+        #
+        # @example With active profile
+        #   <profile>
+        #     <activation><activeByDefault>true</activeByDefault></activation>
+        #     <repositories>...</repositories>
+        #   </profile>
+        #
+        sig { params(doc: Nokogiri::XML::Document).returns(T::Array[Nokogiri::XML::Node]) }
+        def repository_nodes(doc)
+          doc.css(REPOSITORY_SELECTOR).select do |repo_node|
+            profile = repo_node.ancestors("profile").first
+
+            # Not in a profile => always include
+            next true unless profile
+
+            # In a profile => only include when activeByDefault=true
+            active_by_default_profile?(profile)
           end
+        end
 
-          repos_in_pom + gather_repository_urls(pom: parent)
+        sig { params(profile: Nokogiri::XML::Element).returns(T::Boolean) }
+        def active_by_default_profile?(profile)
+          node = profile.at_xpath("./activation/activeByDefault")
+          return false unless node
+
+          node.text.strip.casecmp?("true")
         end
 
         sig { returns(T::Boolean) }
