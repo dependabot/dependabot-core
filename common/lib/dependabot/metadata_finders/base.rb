@@ -162,6 +162,11 @@ module Dependabot
         nil
       end
 
+      sig { overridable.returns(T.nilable(String)) }
+      def install_script_changes
+        nil
+      end
+
       private
 
       sig { overridable.returns(T.nilable(String)) }
