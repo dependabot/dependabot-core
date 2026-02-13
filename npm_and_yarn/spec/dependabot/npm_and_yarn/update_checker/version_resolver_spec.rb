@@ -1215,6 +1215,39 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         it { is_expected.to eq(Gem::Version.new("0.14.9")) }
       end
+
+      describe "when pnpm returns ERR_PNPM_TRUST_DOWNGRADE" do
+        let(:project_name) { "pnpm/pnpm-lock" }
+        let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "left-pad",
+            version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
+                         "\"left-pad@1.3.0\" (possible package takeover)",
+                error_context: {}
+              )
+            )
+        end
+
+        it "returns nil to skip the version silently" do
+          expect(resolver.latest_resolvable_version).to be_nil
+        end
+      end
     end
   end
 
