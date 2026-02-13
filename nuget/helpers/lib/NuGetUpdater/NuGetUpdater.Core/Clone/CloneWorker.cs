@@ -25,6 +25,8 @@ public class CloneWorker
     // entrypoint for cli
     public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath)
     {
+        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, Environment.CurrentDirectory, _logger);
+
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
 
         // only a limited set of errors can occur here

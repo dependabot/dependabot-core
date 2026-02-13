@@ -40,6 +40,7 @@ RSpec.describe namespace::MetadataPresenter do
       changelog_text: "",
       commits_url: "http://localhost/commits",
       commits: [],
+      install_script_changes: "",
       maintainer_changes: "",
       releases_url: "http://localhost/releases",
       releases_text: "",
@@ -82,6 +83,19 @@ RSpec.describe namespace::MetadataPresenter do
         it "removes all content after the 50th line" do
           expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
         end
+      end
+    end
+
+    context "with install script changes" do
+      before do
+        allow(metadata_finder)
+          .to receive(:install_script_changes)
+          .and_return("This version adds `postinstall` script that runs during installation.")
+      end
+
+      it "includes install script changes section" do
+        expect(presenter.to_s).to include("Install script changes")
+        expect(presenter.to_s).to include("postinstall")
       end
     end
   end
