@@ -289,15 +289,15 @@ module Dependabot
           if requirement_strings.any? { |r| requirement_class.new(r).exact? }
             # True equality match
             T.must(requirement_strings.find { |r| requirement_class.new(r).exact? })
-             .sub(
-               RequirementParser::VERSION,
-               T.must(latest_resolvable_version).to_s
-             )
+             .sub(RequirementParser::VERSION) do |old_version|
+              preserve_local_version(old_version, T.must(latest_resolvable_version).to_s)
+            end
           else
             # Prefix match
             T.must(requirement_strings.find { |r| r.match?(/^(=+|\d)/) })
              .sub(RequirementParser::VERSION) do |v|
-              at_same_precision(T.must(latest_resolvable_version).to_s, v)
+              new_version = at_same_precision(T.must(latest_resolvable_version).to_s, v)
+              preserve_local_version(v, new_version)
             end
           end
         end
@@ -318,6 +318,17 @@ module Dependabot
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
             .join(".")
+        end
+
+        sig { params(old_version: String, new_version: String).returns(String) }
+        def preserve_local_version(old_version, new_version)
+          # Extract local version suffix from old version (e.g., "+cpu" from "1.9.1+cpu")
+          # and append it to the new version to preserve it
+          local_version_match = old_version.match(/(\+[0-9a-zA-Z]+(?:[\._-][0-9a-zA-Z]+)*)/)
+          return new_version unless local_version_match
+
+          local_suffix = T.must(local_version_match.captures.first)
+          new_version + local_suffix
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
@@ -356,10 +367,10 @@ module Dependabot
                                     .captures.first
           )
 
-          req_string.sub(
-            old_version,
-            at_same_precision(version_to_be_permitted, old_version)
-          )
+          new_version = at_same_precision(version_to_be_permitted, old_version)
+          new_version_with_local = preserve_local_version(old_version, new_version)
+
+          req_string.sub(old_version, new_version_with_local)
         end
 
         sig { params(req_string: String, version_to_be_permitted: Dependabot::Python::Version).returns(String) }
