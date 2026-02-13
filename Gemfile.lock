@@ -165,12 +165,12 @@ PATH
 PATH
   remote: pre_commit
   specs:
-    dependabot-pre_commit (0.360.0)
-      dependabot-cargo (= 0.360.0)
-      dependabot-common (= 0.360.0)
-      dependabot-go_modules (= 0.360.0)
-      dependabot-npm_and_yarn (= 0.360.0)
-      dependabot-python (= 0.360.0)
+    dependabot-pre_commit (0.361.1)
+      dependabot-cargo (= 0.361.1)
+      dependabot-common (= 0.361.1)
+      dependabot-go_modules (= 0.361.1)
+      dependabot-npm_and_yarn (= 0.361.1)
+      dependabot-python (= 0.361.1)
 
 PATH
   remote: pub
@@ -548,7 +548,7 @@ CHECKSUMS
   dependabot-npm_and_yarn (0.361.1)
   dependabot-nuget (0.361.1)
   dependabot-opentofu (0.361.1)
-  dependabot-pre_commit (0.361.0)
+  dependabot-pre_commit (0.361.1)
   dependabot-pub (0.361.1)
   dependabot-python (0.361.1)
   dependabot-rust_toolchain (0.361.1)
