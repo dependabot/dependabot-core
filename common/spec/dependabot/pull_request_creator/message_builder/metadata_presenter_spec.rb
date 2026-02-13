@@ -36,6 +36,7 @@ RSpec.describe namespace::MetadataPresenter do
   let(:metadata_finder) do
     instance_double(
       Dependabot::MetadataFinders::Base,
+      attestation_changes: "",
       changelog_url: "http://localhost/changelog.md",
       changelog_text: "",
       commits_url: "http://localhost/commits",
@@ -96,6 +97,19 @@ RSpec.describe namespace::MetadataPresenter do
       it "includes install script changes section" do
         expect(presenter.to_s).to include("Install script changes")
         expect(presenter.to_s).to include("postinstall")
+      end
+    end
+
+    context "with attestation changes" do
+      before do
+        allow(metadata_finder)
+          .to receive(:attestation_changes)
+          .and_return("This version has no provenance attestation, while the previous version (1.0.0) was attested.")
+      end
+
+      it "includes attestation changes section" do
+        expect(presenter.to_s).to include("Attestation changes")
+        expect(presenter.to_s).to include("provenance attestation")
       end
     end
   end
