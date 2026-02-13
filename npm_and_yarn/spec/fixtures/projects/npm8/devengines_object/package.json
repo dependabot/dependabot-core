@@ -1,0 +1,19 @@
+{
+  "name": "test-devengines-object",
+  "version": "1.0.0",
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "^18.0.0",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "npm",
+      "version": "^10.0.0",
+      "onFail": "warn"
+    }
+  },
+  "dependencies": {
+    "etag": "^1.0.0"
+  }
+}
