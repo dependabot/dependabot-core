@@ -321,17 +321,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
       context "when the details come from gradle distributions" do
         before do
-          Dependabot::Experiments.register(:gradle_wrapper_updater, true)
-
           stub_request(:get, "https://services.gradle.org/versions/all")
             .to_return(
               status: 200,
               body: fixture("gradle_distributions_metadata", "versions_all.json")
             )
-        end
-
-        after do
-          Dependabot::Experiments.reset!
         end
 
         describe "the last version" do
