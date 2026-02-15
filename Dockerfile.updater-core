@@ -161,6 +161,10 @@ COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependab
 
 COPY --chown=dependabot:dependabot --parents */.bundle */*.gemspec common/lib/dependabot.rb LICENSE omnibus $DEPENDABOT_HOME
 
+# Ecosystem stub list - update this comment when adding/removing ecosystems to help invalidate cache
+# Current ecosystems: bazel bun bundler cargo common composer conda devcontainers docker docker_compose
+# dotnet_sdk elm git_submodules github_actions go_modules gradle helm hex julia maven npm_and_yarn nuget
+# opentofu pre_commit pub python rust_toolchain silent swift terraform uv vcpkg
 # prevent having all the source in every ecosystem image
 RUN for ecosystem in git_submodules terraform github_actions hex elm docker docker_compose nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun uv helm julia vcpkg rust_toolchain conda bazel opentofu pre_commit; do \
     mkdir -p $ecosystem/lib/dependabot; \
