@@ -182,8 +182,6 @@ module Dependabot
 
       sig { params(dir: String).returns(T::Array[DependencyFile]) }
       def wrapper_files(dir)
-        return [] unless Experiments.enabled?(:gradle_wrapper_updater)
-
         SUPPORTED_WRAPPER_FILES_PATH.filter_map do |filename|
           file = fetch_file_if_present(File.join(dir, filename))
           next unless file
