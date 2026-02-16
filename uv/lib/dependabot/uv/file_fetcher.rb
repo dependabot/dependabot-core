@@ -349,9 +349,7 @@ module Dependabot
         return true if filename.end_with?(".in")
 
         # Match .txt files only if they have "requirements" or "constraints" in the name
-        if filename.end_with?(".txt")
-          return filename.match?(/requirements|constraints/i)
-        end
+        return filename.match?(/requirements|constraints/i) if filename.end_with?(".txt")
 
         false
       end
