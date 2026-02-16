@@ -54,6 +54,18 @@ module Dependabot
           handle_hex_errors(e)
         end
 
+        HEX_AUTH_ERROR_PATTERNS = T.let(
+          [
+            /No authenticated organization found for (?<repo>[a-z_]+)\./,
+            /Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/,
+            /Missing credentials for "(?<repo>[a-z_]+)"/,
+            /Downloading public key for repo "(?<repo>[a-z_]+)"/,
+            /Registry "(?<repo>[a-z_]+)" does not serve a public key/,
+            /Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/
+          ].freeze,
+          T::Array[Regexp]
+        )
+
         private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
@@ -83,12 +95,7 @@ module Dependabot
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_hex_errors(error)
-          match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./)
-          match ||= error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Registry "(?<repo>[a-z_]+)" does not serve a public key/)
-          match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
+          match = HEX_AUTH_ERROR_PATTERNS.lazy.filter_map { |pattern| error.message.match(pattern) }.first
 
           if match
             name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]
