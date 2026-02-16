@@ -167,6 +167,11 @@ module Dependabot
         nil
       end
 
+      sig { overridable.returns(T.nilable(String)) }
+      def attestation_changes
+        nil
+      end
+
       private
 
       sig { overridable.returns(T.nilable(String)) }

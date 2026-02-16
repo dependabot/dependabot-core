@@ -46,6 +46,22 @@ module Dependabot
       end
 
       sig { override.returns(T.nilable(String)) }
+      def attestation_changes
+        return unless dependency.previous_version
+        return if non_standard_registry?
+
+        previous_attested = version_has_attestation?(dependency.previous_version)
+        current_attested = version_has_attestation?(dependency.version)
+
+        return unless previous_attested && !current_attested
+
+        "This version has no provenance attestation, while the previous version " \
+          "(#{dependency.previous_version}) was attested. Review the " \
+          "[package versions](https://www.npmjs.com/package/#{dependency.name}?activeTab=versions) " \
+          "before updating."
+      end
+
+      sig { override.returns(T.nilable(String)) }
       def install_script_changes
         return unless dependency.previous_version
 
@@ -90,6 +106,16 @@ module Dependabot
 
         scripts = version_data["scripts"] || {}
         scripts.slice(*INSTALL_SCRIPTS)
+      end
+
+      sig { params(version: T.nilable(String)).returns(T::Boolean) }
+      def version_has_attestation?(version)
+        return false unless version
+
+        version_data = all_version_listings.find { |v, _| v == version }&.last
+        return false unless version_data
+
+        version_data.dig("dist", "attestations").is_a?(Hash)
       end
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
