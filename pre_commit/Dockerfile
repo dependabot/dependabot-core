@@ -19,5 +19,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 RUN bash /opt/bundler/helpers/v2/build
 
-COPY --chown=dependabot:dependabot --parents pre_commit common bundler go_modules cargo npm_and_yarn python $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents go_modules cargo npm_and_yarn python pre_commit common bundler $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
