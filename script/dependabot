@@ -28,7 +28,6 @@ dependabot \
   -v "$(pwd)"/maven:/home/dependabot/maven \
   -v "$(pwd)"/npm_and_yarn:/home/dependabot/npm_and_yarn \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
-  -v "$(pwd)"/pre_commit:/home/dependabot/pre_commit \
   -v "$(pwd)"/pub:/home/dependabot/pub \
   -v "$(pwd)"/python:/home/dependabot/python \
   -v "$(pwd)"/rust_toolchain:/home/dependabot/rust_toolchain \
