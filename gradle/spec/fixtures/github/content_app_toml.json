@@ -1,0 +1,34 @@
+[
+  {
+    "name": "build.gradle",
+    "path": "app/build.gradle",
+    "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "size": 2355,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+      "html": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle"
+    }
+  },
+  {
+    "name": "libs.versions.toml",
+    "path": "app/libs.versions.toml",
+    "sha": "61e2017c7cfb111d2c1ada6dc9508711ae02b5c1",
+    "size": 1470,
+    "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/app/libs.versions.toml?ref=main",
+    "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/app/libs.versions.toml",
+    "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/61e2017c7cfb111d2c1ada6dc9508711ae02b5c1",
+    "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/app/libs.versions.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/app/libs.versions.toml?ref=main",
+      "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/61e2017c7cfb111d2c1ada6dc9508711ae02b5c1",
+      "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/app/libs.versions.toml"
+    }
+  }
+]
