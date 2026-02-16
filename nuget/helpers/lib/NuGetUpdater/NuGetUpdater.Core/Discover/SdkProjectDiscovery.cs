@@ -122,7 +122,12 @@ internal static class SdkProjectDiscovery
         var requiresIndividualRestores = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkRestores;
         if (!requiresIndividualRestores)
         {
+            logger.Info($"Performing single restore for project {startingProjectPath}");
             projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+        }
+        else
+        {
+            logger.Info($"Performing individual restores for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
         }
 
         foreach (var tfm in projectTfms)
@@ -272,7 +277,7 @@ internal static class SdkProjectDiscovery
                                     if (projectEvaluation is not null)
                                     {
                                         var specificPackageDeps = packageDependencies.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
-                                        var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                        var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                         if (tfm is not null)
                                         {
                                             var packagesByTfm = specificPackageDeps.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
@@ -296,7 +301,7 @@ internal static class SdkProjectDiscovery
                                     break;
                                 }
 
-                                var evaluatedTfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                var evaluatedTfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                 if (evaluatedTfm is null)
                                 {
                                     break;
@@ -383,10 +388,13 @@ internal static class SdkProjectDiscovery
             var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
             if (isProjectLegacy)
             {
+                logger.Info($"Project {projectPath} is legacy");
+
                 // if any TFM had any explicit packages defined, we need to do manual package resolution
                 if (explicitPackageVersionsPerProject.TryGetValue(projectPath, out var projectTfmRefs) &&
                     projectTfmRefs.Values.Any(v => v.Count > 0))
                 {
+                    logger.Info("  ...and setting manual package resolution to true");
                     requiresManualPackageResolution = true;
                     break;
                 }
@@ -782,7 +790,7 @@ internal static class SdkProjectDiscovery
             if (projectEvaluation is not null)
             {
                 // without a tfm we can't do anything meaningful with the package reference
-                var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                 if (tfm is not null)
                 {
                     foreach (var child in node.Children.OfType<Item>())
@@ -820,7 +828,7 @@ internal static class SdkProjectDiscovery
                 var projectEvaluation = GetNearestProjectEvaluation(node);
                 if (projectEvaluation is not null)
                 {
-                    var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                    var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                     if (tfm is not null)
                     {
                         var packageName = child.Name;
