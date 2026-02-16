@@ -195,19 +195,19 @@ RSpec.describe Dependabot::Uv::FileFetcher do
 
         let(:todo_fixture_name) { "requirements_content.json" }
 
-        it "fetches the unexpectedly named file" do
-          expect(file_fetcher_instance.files.count).to eq(2)
+        it "does not fetch the unusually-named todo.txt file" do
+          expect(file_fetcher_instance.files.count).to eq(1)
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(todo.txt requirements.txt))
+            .to eq(["requirements.txt"])
         end
 
         context "when including comments" do
           let(:todo_fixture_name) { "requirements_with_comments.json" }
 
-          it "fetches the unexpectedly named file" do
-            expect(file_fetcher_instance.files.count).to eq(2)
+          it "does not fetch the unusually-named todo.txt file" do
+            expect(file_fetcher_instance.files.count).to eq(1)
             expect(file_fetcher_instance.files.map(&:name))
-              .to match_array(%w(todo.txt requirements.txt))
+              .to eq(["requirements.txt"])
           end
         end
       end
