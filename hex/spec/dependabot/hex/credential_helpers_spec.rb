@@ -35,7 +35,41 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
     end
 
     it "populates the credentials with default properties" do
-      expect(repo_credentials).to eq(%w(hex_repository url auth_key public_key_fingerprint))
+      expect(repo_credentials).to eq(%w(hex_repository url auth_key public_key_fingerprint) + [""])
+    end
+
+    context "when a public_key is provided" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            { "type" => "hex_repository", "url" => "url", "auth_key" => "auth_key",
+              "public_key_fingerprint" => "SHA256:abc123",
+              "public_key" => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----" }
+          )
+        ]
+      end
+
+      it "includes the public_key in the serialized credentials" do
+        expect(repo_credentials).to eq(
+          %w(hex_repository url auth_key SHA256:abc123) +
+          ["-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----"]
+        )
+      end
+    end
+
+    context "when public_key is not provided" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            { "type" => "hex_repository", "url" => "url", "auth_key" => "auth_key",
+              "public_key_fingerprint" => "SHA256:abc123" }
+          )
+        ]
+      end
+
+      it "defaults public_key to an empty string" do
+        expect(repo_credentials).to eq(%w(hex_repository url auth_key SHA256:abc123) + [""])
+      end
     end
   end
 end

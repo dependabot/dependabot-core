@@ -707,6 +707,63 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
         end
       end
+
+      context "when registry does not serve a public key and none is provided" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Registry "dependabot" does not serve a public key and none was provided in credentials',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+          expect { latest_resolvable_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "when registry does not serve a public key but one is embedded in credentials" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url,
+              "public_key" => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----"
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_return("1.1.0")
+        end
+
+        it "returns the expected version using the embedded public key" do
+          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
+      end
     end
 
     context "with a dependency with a git source" do

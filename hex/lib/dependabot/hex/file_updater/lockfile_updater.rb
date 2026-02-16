@@ -87,6 +87,7 @@ module Dependabot
           match ||= error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/)
           match ||= error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/)
           match ||= error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/)
+          match ||= error.message.match(/Registry "(?<repo>[a-z_]+)" does not serve a public key/)
           match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
 
           if match

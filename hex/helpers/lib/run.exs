@@ -96,12 +96,22 @@ defmodule DependencyHelper do
     set_credentials(tail)
   end
 
-  defp set_credentials(["hex_repository", repo, url, auth_key, fingerprint | tail]) do
+  defp set_credentials(["hex_repository", repo, url, auth_key, fingerprint, public_key_pem | tail]) do
     case fetch_public_key(repo, url, auth_key, fingerprint) do
       {:ok, public_key} ->
         update_repos(repo, %{auth_key: auth_key, public_key: public_key, url: url})
 
         set_credentials(tail)
+
+      {:ok_no_key} ->
+        # Public key endpoint not available (e.g. JFrog Artifactory returns 501).
+        # Use embedded public key from credential if provided, otherwise error.
+        if public_key_pem != "" do
+          update_repos(repo, %{auth_key: auth_key, public_key: public_key_pem, url: url})
+          set_credentials(tail)
+        else
+          handle_result({:error, "Registry \"#{repo}\" does not serve a public key and none was provided in credentials"})
+        end
 
       error ->
         handle_result(error)
@@ -128,8 +138,16 @@ defmodule DependencyHelper do
           {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
         end
 
-      {:ok, {code, _, _}} ->
-        {:error, "Downloading public key for repo \"#{repo}\" failed with code: #{inspect(code)}"}
+      {:ok, {401, _, _}} ->
+        {:error, "Downloading public key for repo \"#{repo}\" failed with code: 401"}
+
+      {:ok, {403, _, _}} ->
+        {:error, "Downloading public key for repo \"#{repo}\" failed with code: 403"}
+
+      {:ok, {_code, _, _}} ->
+        # Some registries (e.g. JFrog Artifactory) don't implement the public_key endpoint.
+        # Signal caller to use embedded public key if available.
+        {:ok_no_key}
 
       other ->
         {:error, "Downloading public key for repo \"#{repo}\" failed: #{inspect(other)}"}
