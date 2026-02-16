@@ -342,8 +342,18 @@ module Dependabot
 
       sig { params(filename: String).returns(T::Boolean) }
       def file_matches_requirement_pattern?(filename)
-        T.must(REQUIREMENT_FILE_PATTERNS[:extensions]).any? { |ext| filename.end_with?(ext) } ||
-          T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).any?(filename)
+        # Match specific filenames like "uv.lock"
+        return true if T.must(REQUIREMENT_FILE_PATTERNS[:filenames]).any?(filename)
+
+        # Match all .in files (pip-tools input files)
+        return true if filename.end_with?(".in")
+
+        # Match .txt files only if they have "requirements" or "constraints" in the name
+        if filename.end_with?(".txt")
+          return filename.match?(/requirements|constraints/i)
+        end
+
+        false
       end
 
       sig do
