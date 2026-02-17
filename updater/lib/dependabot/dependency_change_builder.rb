@@ -141,7 +141,6 @@ module Dependabot
       T.cast(change_source, Dependabot::DependencyGroup)
     end
 
-    # Complexity is justified: diagnostic logging for debugging production issues
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
       if updated_dependencies.one?
