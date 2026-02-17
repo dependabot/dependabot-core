@@ -25,6 +25,9 @@ module Dependabot
   class DependencyChangeBuilder
     extend T::Sig
 
+    SUPPORT_FILE_WARNING_NAME_LIMIT = 10
+    SUPPORT_FILES_ONLY_ERROR_MESSAGE = "FileUpdater returned only support files"
+
     sig do
       params(
         job: Dependabot::Job,
@@ -150,15 +153,25 @@ module Dependabot
       # Create file updater and collect notices from it
       file_updater = file_updater_for(relevant_dependencies)
 
+      # Exclude support files since they are not manifests, just needed for supporting the update
       all_files = file_updater.updated_dependency_files
-
-      # Exclude support files because they are needed to perform updates but are
-      # not meaningful update artifacts in the resulting change.
       update_files = all_files.reject(&:support_file?)
+
+      if all_files.any? && update_files.empty?
+        support_file_names = all_files.map(&:name).uniq.sort
+        listed_names = support_file_names.first(SUPPORT_FILE_WARNING_NAME_LIMIT).join(", ")
+        omitted_name_count = support_file_names.length - SUPPORT_FILE_WARNING_NAME_LIMIT
+
+        warning_message = "#{SUPPORT_FILES_ONLY_ERROR_MESSAGE} which were excluded: #{listed_names}"
+        warning_message += " (and #{omitted_name_count} more)" if omitted_name_count.positive?
+
+        Dependabot.logger.warn(warning_message)
+        raise DependabotError, SUPPORT_FILES_ONLY_ERROR_MESSAGE
+      end
 
       # Collect notices from file updater
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
-      updater_notices.each { |notice| @notices << notice }
+      @notices.concat(updater_notices)
 
       update_files
     end
