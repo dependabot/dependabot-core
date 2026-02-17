@@ -137,8 +137,6 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
         def distribution_version_details
-          return nil unless Experiments.enabled?(:gradle_wrapper_updater)
-
           DistributionsFetcher.available_versions.map do |info|
             release_date = begin
               Time.parse(info[:build_time])

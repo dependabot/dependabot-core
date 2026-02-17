@@ -9,4 +9,4 @@ poetry==2.2.1
 tomli==2.2.1
 
 # Some dependencies will only install if Cython is present
-Cython==3.1.2
+Cython==3.2.4
