@@ -166,12 +166,7 @@ PATH
   remote: pre_commit
   specs:
     dependabot-pre_commit (0.361.1)
-      dependabot-bundler (= 0.361.1)
-      dependabot-cargo (= 0.361.1)
       dependabot-common (= 0.361.1)
-      dependabot-go_modules (= 0.361.1)
-      dependabot-npm_and_yarn (= 0.361.1)
-      dependabot-python (= 0.361.1)
 
 PATH
   remote: pub
