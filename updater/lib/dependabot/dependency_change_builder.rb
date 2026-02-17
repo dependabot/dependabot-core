@@ -169,7 +169,7 @@ module Dependabot
       all_files = file_updater.updated_dependency_files
 
       # Exclude support files since they are not manifests, just needed for supporting the update
-      update_files = all_files.reject(&:support_file)
+      update_files = all_files.reject(&:support_file?)
 
       # Log diagnostic information if only support files were returned
       if all_files.any? && update_files.none?
