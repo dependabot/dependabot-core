@@ -86,6 +86,24 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
   end
 
   describe "::create_from" do
+    let(:support_files_only_error_message) { described_class::SUPPORT_FILES_ONLY_ERROR_MESSAGE }
+
+    let(:lead_dependency_change_source) do
+      Dependabot::Dependency.new(
+        name: "dummy-pkg-b",
+        package_manager: "bundler",
+        version: "1.1.0",
+        requirements: [
+          {
+            file: "Gemfile",
+            requirement: "~> 1.1.0",
+            groups: [],
+            source: nil
+          }
+        ]
+      )
+    end
+
     subject(:create_change) do
       described_class.create_from(
         job: job,
@@ -95,22 +113,25 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       )
     end
 
+    def stub_file_updater(updated_dependency_files:)
+      file_updater = instance_double(
+        Dependabot::Bundler::FileUpdater,
+        updated_dependency_files: updated_dependency_files,
+        notices: []
+      )
+
+      expect(Dependabot::Bundler::FileUpdater)
+        .to receive(:new)
+        .with(hash_including(
+                dependencies: updated_dependencies,
+                dependency_files: dependency_files,
+                repo_contents_path: nil
+              ))
+        .and_return(file_updater)
+    end
+
     context "when the source is a lead dependency" do
-      let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
-      end
+      let(:change_source) { lead_dependency_change_source }
 
       it "creates a new DependencyChange with the updated files" do
         dependency_change = create_change
@@ -128,9 +149,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       it "does not include support files in the updated files" do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater)
-          .to receive(:updated_dependency_files)
-          .and_return(dependency_files)
+        stub_file_updater(updated_dependency_files: dependency_files)
 
         dependency_change = described_class.create_from(
           job: job,
@@ -158,28 +177,70 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     end
 
     context "when there are no file changes" do
-      let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
-      end
+      let(:change_source) { lead_dependency_change_source }
 
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+        stub_file_updater(updated_dependency_files: [])
       end
 
       it "raises an exception" do
         expect { create_change }.to raise_error(Dependabot::DependabotError)
+      end
+    end
+
+    context "when only support files are returned" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:support_files) { dependency_files.select(&:support_file?) }
+      let(:updated_support_files) { [support_files.last, support_files.first, support_files.last] }
+
+      before do
+        stub_file_updater(updated_dependency_files: updated_support_files)
+      end
+
+      it "warns with excluded support file names" do
+        expect(Dependabot.logger)
+          .to receive(:warn)
+          .with(satisfy { |message|
+            message.include?(support_files_only_error_message) &&
+              message.include?("excluded:") &&
+              message.include?("sub_dep") &&
+              message.include?("sub_dep.lock") &&
+              !message.include?("(and")
+          })
+
+        expect { create_change }
+          .to raise_error(Dependabot::DependabotError, support_files_only_error_message)
+      end
+    end
+
+    context "when support file names exceed warning limit" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:support_files) do
+        Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT + 1) do |index|
+          Dependabot::DependencyFile.new(
+            name: "support_#{index}.txt",
+            content: "content",
+            directory: "/",
+            support_file: true
+          )
+        end
+      end
+
+      before do
+        stub_file_updater(updated_dependency_files: support_files)
+      end
+
+      it "warns with the listed limit and omitted count" do
+        expect(Dependabot.logger)
+          .to receive(:warn)
+          .with(satisfy { |message|
+            message.include?(support_files_only_error_message) &&
+              message.include?("excluded:") &&
+              message.include?("(and 1 more)")
+          })
+
+        expect { create_change }
+          .to raise_error(Dependabot::DependabotError, support_files_only_error_message)
       end
     end
   end
