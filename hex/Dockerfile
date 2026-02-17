@@ -35,6 +35,8 @@ RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip
+ENV PATH="$PATH:/usr/local/elixir/bin"
+
 USER dependabot
 
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
