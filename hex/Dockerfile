@@ -35,15 +35,16 @@ RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip
-ENV PATH="$PATH:/usr/local/elixir/bin"
-
 USER dependabot
 
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
-# Install Hex from main branch for OTP 26/27 compatibility
-# Temporarily disabled versioned install due to httpc bugs in newer Erlang
-# ENV HEX_VERSION="2.3.1"
+# https://github.com/hexpm/hex/releases
+# Note: Hex 2.3.1 has known compatibility issues with newer Erlang/OTP versions
+# that cause httpc response parsing errors. A fix is available on the main branch
+# but hasn't been released yet. If issues occur, consider upgrading to the next
+# Hex release when available.
+ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 
