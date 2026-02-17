@@ -19,7 +19,7 @@ USER dependabot
 
 ENV MAVEN_ARGS="-Dmaven.repo.local=$DEPENDABOT_HOME/.m2"
 
-COPY --chown=dependabot:dependabot --parents maven common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents maven pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # symlink so script/dependabot just works

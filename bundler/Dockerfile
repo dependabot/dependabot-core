@@ -6,5 +6,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 RUN bash /opt/bundler/helpers/v2/build
 
-COPY --chown=dependabot:dependabot --parents bundler common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents bundler pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

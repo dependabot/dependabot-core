@@ -27,5 +27,5 @@ RUN bash /opt/julia/helpers/build
 # The Julia depot (~/.julia) is already in place from the build step above
 # It contains precompiled packages, registries, and artifacts for fast startup
 
-COPY --chown=dependabot:dependabot --parents julia common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents julia pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

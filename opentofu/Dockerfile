@@ -22,5 +22,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot opentofu/helpers /opt/opentofu/helpers
 RUN bash /opt/opentofu/helpers/build
 
-COPY --chown=dependabot:dependabot --parents opentofu common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents opentofu pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

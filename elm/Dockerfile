@@ -14,5 +14,5 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot --parents elm common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents elm pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

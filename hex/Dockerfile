@@ -46,5 +46,5 @@ ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 
-COPY --chown=dependabot:dependabot --parents hex common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents hex pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

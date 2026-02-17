@@ -23,5 +23,5 @@ USER dependabot
 ENV VCPKG_ROOT="/opt/vcpkg"
 ENV PATH="/opt/vcpkg:$PATH"
 
-COPY --chown=dependabot:dependabot --parents vcpkg common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents vcpkg pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

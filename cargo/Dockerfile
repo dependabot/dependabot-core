@@ -20,5 +20,5 @@ COPY --from=rust /usr/local/cargo $CARGO_HOME
 # Configure cargo to use Git CLI so the Git shim works
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
 
-COPY --chown=dependabot:dependabot --parents cargo common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents cargo pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

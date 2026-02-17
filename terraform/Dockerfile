@@ -21,5 +21,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
 
-COPY --chown=dependabot:dependabot --parents terraform common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents terraform pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

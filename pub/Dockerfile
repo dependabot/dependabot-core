@@ -28,5 +28,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 RUN bash /opt/pub/helpers/build
 
-COPY --chown=dependabot:dependabot --parents pub common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents pub pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

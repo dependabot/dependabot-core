@@ -38,5 +38,5 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
     SSL_CERT_DIR=/etc/ssl/certs \
     BAZEL_SYSTEM_BAZELRC=/etc/bazel.bazelrc
 
-COPY --chown=dependabot:dependabot --parents bazel common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents bazel pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

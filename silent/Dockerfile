@@ -3,5 +3,5 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot --parents silent common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents silent pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

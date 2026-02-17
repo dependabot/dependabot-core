@@ -58,5 +58,5 @@ COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 
 RUN bash /opt/composer/helpers/v2/build
 
-COPY --chown=dependabot:dependabot --parents composer common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents composer pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

@@ -38,5 +38,5 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot bun/helpers /opt/bun/helpers
 RUN bash /opt/bun/helpers/build
 
-COPY --chown=dependabot:dependabot --parents bun common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents bun pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

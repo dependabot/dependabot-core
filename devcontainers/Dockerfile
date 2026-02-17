@@ -34,5 +34,5 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 # Sanity check
 RUN devcontainer --version
 
-COPY --chown=dependabot:dependabot --parents devcontainers common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents devcontainers pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

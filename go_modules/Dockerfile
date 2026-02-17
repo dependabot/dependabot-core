@@ -16,5 +16,5 @@ COPY go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
 
 USER dependabot
-COPY --chown=dependabot:dependabot --parents go_modules common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents go_modules pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

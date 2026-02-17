@@ -171,7 +171,7 @@ RUN apt-get update \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot --parents python common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents python pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
@@ -204,6 +204,6 @@ COPY --from=rust /usr/local/cargo $CARGO_HOME
 # Configure cargo to use Git CLI so the Git shim works
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
 
-COPY --chown=dependabot:dependabot --parents cargo common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents cargo pre_commit common $DEPENDABOT_HOME/
 
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

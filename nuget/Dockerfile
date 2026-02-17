@@ -70,7 +70,7 @@ USER dependabot
 COPY --chown=dependabot:dependabot nuget/helpers /opt/nuget/helpers
 RUN bash /opt/nuget/helpers/build
 
-COPY --chown=dependabot:dependabot --parents nuget common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents nuget pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # ensure windows-style environment variables are set

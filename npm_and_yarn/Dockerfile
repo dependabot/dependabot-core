@@ -57,5 +57,5 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 RUN bash /opt/npm_and_yarn/helpers/build
 
-COPY --chown=dependabot:dependabot --parents npm_and_yarn common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents npm_and_yarn pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

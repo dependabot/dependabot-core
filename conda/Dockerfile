@@ -24,5 +24,5 @@ RUN pip install pyyaml
 USER dependabot
 
 # Copy ecosystem-specific files
-COPY --chown=dependabot:dependabot --parents python conda common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents python conda pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

@@ -44,5 +44,5 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VE
   && tar -C /opt/swift -xzf /tmp/${SWIFT_TARBALL} --strip-components 1 \
   && rm -f /tmp/${SWIFT_TARBALL} /tmp/${SWIFT_SIGNATURE}
 
-COPY --chown=dependabot:dependabot --parents swift common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents swift pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

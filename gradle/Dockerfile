@@ -22,5 +22,5 @@ ARG GRADLE_HOME=/opt/gradle
 ENV PATH=$GRADLE_HOME/bin:$PATH
 
 COPY --from=gradle $GRADLE_HOME $GRADLE_HOME
-COPY --chown=dependabot:dependabot --parents gradle maven common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents gradle maven pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
