@@ -298,8 +298,37 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "exposes immutable support file names on the raised error" do
         expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
           expect(error.support_file_names).to be_frozen
+          expect(error.support_file_names).to all(be_frozen)
           expect { error.support_file_names << "new_support_file" }.to raise_error(FrozenError)
         }
+      end
+
+      it "exposes immutable dependency info on the raised error" do
+        expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
+          expect(error.dependency_info).to be_frozen
+        }
+      end
+
+      it "defensively copies support file names and dependency info" do
+        dependency_info = +"dummy-pkg-b (1.1.0 → 1.2.0)"
+        support_file_names = ["sub_dep", "sub_dep.lock"]
+
+        error = described_class::SupportFilesOnly.new(
+          dependency_info: dependency_info,
+          support_file_names: support_file_names,
+          omitted_support_file_count: 0
+        )
+
+        dependency_info << " (mutated)"
+        support_file_names << "new_support_file"
+
+        expect(error.dependency_info).to eq("dummy-pkg-b (1.1.0 → 1.2.0)")
+        expect(error.support_file_names).to eq(%w(sub_dep sub_dep.lock))
+        expect(error.message).to start_with(
+          "#{support_files_only_error_message} for: dummy-pkg-b (1.1.0 → 1.2.0);"
+        )
+        expect(error.message).to include("excluded support files: sub_dep, sub_dep.lock")
+        expect(error.message).not_to include("new_support_file")
       end
     end
 

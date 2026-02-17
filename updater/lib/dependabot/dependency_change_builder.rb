@@ -48,15 +48,15 @@ module Dependabot
         ).void
       end
       def initialize(dependency_info:, support_file_names:, omitted_support_file_count:)
-        @dependency_info = dependency_info.dup.freeze
-        @support_file_names = support_file_names.map { |name| name.dup.freeze }.freeze
-        @omitted_support_file_count = omitted_support_file_count
+        @dependency_info = T.let(dependency_info.dup.freeze, String)
+        @support_file_names = T.let(support_file_names.map { |name| name.dup.freeze }.freeze, T::Array[String])
+        @omitted_support_file_count = T.let(omitted_support_file_count, Integer)
 
         super(
           message_for(
-            dependency_info: dependency_info,
-            support_file_names: support_file_names,
-            omitted_support_file_count: omitted_support_file_count
+            dependency_info: @dependency_info,
+            support_file_names: @support_file_names,
+            omitted_support_file_count: @omitted_support_file_count
           )
         )
       end
@@ -259,7 +259,8 @@ module Dependabot
 
     sig { params(name: String).returns(T::Array[[Integer, T.any(Integer, String)]]) }
     def natural_sort_segments(name)
-      name.scan(/\d+|\D+/).map do |segment|
+      segments = T.cast(name.scan(/\d+|\D+/), T::Array[String])
+      segments.map do |segment|
         segment.match?(/\A\d+\z/) ? [0, segment.to_i] : [1, segment.downcase]
       end
     end
