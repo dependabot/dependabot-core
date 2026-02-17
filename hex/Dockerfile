@@ -43,9 +43,9 @@ COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
 # Note: Hex 2.3.1 has known compatibility issues with newer Erlang/OTP versions
-# that cause httpc response parsing errors. A fix is available on the main branch
-# but hasn't been released yet. If issues occur, consider upgrading to the next
-# Hex release when available.
+# that cause httpc response parsing errors. This is caused by httpc response format
+# changes in newer OTP versions. Monitor https://github.com/hexpm/hex/releases for
+# version 2.3.2+ which should address OTP 26/27 compatibility.
 ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
