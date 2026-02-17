@@ -51,5 +51,5 @@ RUN cd /tmp \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot --parents docker helm common $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents docker helm pre_commit common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
