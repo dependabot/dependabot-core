@@ -15,6 +15,7 @@ require "dependabot/npm_and_yarn/requirement"
 require "dependabot/python/requirement_parser"
 require "dependabot/bundler/requirement"
 require "dependabot/go_modules/requirement_parser"
+require "dependabot/conda/requirement"
 
 module Dependabot
   module PreCommit
@@ -32,7 +33,8 @@ module Dependabot
           "node" => ->(dep_string) { Dependabot::NpmAndYarn::Requirement.parse_dep_string(dep_string) },
           "rust" => ->(dep_string) { Dependabot::Cargo::Requirement.parse_dep_string(dep_string) },
           "golang" => ->(dep_string) { Dependabot::GoModules::RequirementParser.parse(dep_string) },
-          "ruby" => ->(dep_string) { Dependabot::Bundler::Requirement.parse_dep_string(dep_string) }
+          "ruby" => ->(dep_string) { Dependabot::Bundler::Requirement.parse_dep_string(dep_string) },
+          "conda" => ->(dep_string) { Dependabot::Conda::Requirement.parse_dep_string(dep_string) }
         }.freeze,
         T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
       )
