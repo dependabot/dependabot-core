@@ -77,14 +77,11 @@ module Dependabot
 
       unless updated_files.any?
         dependency_info = if updated_dependencies.one?
-                            dep = updated_dependencies.first
-                            if dep.nil?
-                              "Unknown dependency"
-                            else
-                              prev_ver = dep.previous_version || "unknown"
-                              curr_ver = dep.version || "unknown"
-                              "#{dep.name} (#{prev_ver} → #{curr_ver})"
-                            end
+                            # .one? guarantees exactly one element, so .first cannot be nil
+                            dep = T.must(updated_dependencies.first)
+                            prev_ver = dep.previous_version || "unknown"
+                            curr_ver = dep.version || "unknown"
+                            "#{dep.name} (#{prev_ver} → #{curr_ver})"
                           else
                             updated_dependencies.map(&:name).join(", ")
                           end
@@ -144,6 +141,8 @@ module Dependabot
       T.cast(change_source, Dependabot::DependencyGroup)
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
+    # Complexity is justified: diagnostic logging for debugging production issues
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def generate_dependency_files
       if updated_dependencies.one?
@@ -174,7 +173,8 @@ module Dependabot
 
       # Log diagnostic information if only support files were returned
       if all_files.any? && update_files.none?
-        file_list = all_files.map { |f| "#{f.name} (support)" }.join(", ")
+        support_files = all_files.select(&:support_file?)
+        file_list = support_files.map(&:name).join(", ")
         Dependabot.logger.warn(
           "FileUpdater returned only support files which were excluded: #{file_list}"
         )
@@ -186,6 +186,8 @@ module Dependabot
 
       update_files
     end
+    # rubocop:enable Metrics/PerceivedComplexity
+
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
