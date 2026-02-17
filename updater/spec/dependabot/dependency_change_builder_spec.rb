@@ -95,6 +95,21 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       )
     end
 
+    let(:file_updater_class) { class_double(Dependabot::Bundler::FileUpdater) }
+
+    def stub_file_updater(updated_dependency_files:)
+      file_updater = instance_double(
+        Dependabot::Bundler::FileUpdater,
+        updated_dependency_files: updated_dependency_files,
+        notices: []
+      )
+
+      allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+        .with("bundler")
+        .and_return(file_updater_class)
+      allow(file_updater_class).to receive(:new).and_return(file_updater)
+    end
+
     context "when the source is a lead dependency" do
       let(:change_source) do
         Dependabot::Dependency.new(
@@ -128,16 +143,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       it "does not include support files in the updated files" do
-        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
-        file_updater = instance_double(
-          Dependabot::Bundler::FileUpdater,
-          updated_dependency_files: dependency_files,
-          notices: []
-        )
-        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
-          .with("bundler")
-          .and_return(file_updater_class)
-        allow(file_updater_class).to receive(:new).and_return(file_updater)
+        stub_file_updater(updated_dependency_files: dependency_files)
 
         dependency_change = described_class.create_from(
           job: job,
@@ -182,16 +188,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       before do
-        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
-        file_updater = instance_double(
-          Dependabot::Bundler::FileUpdater,
-          updated_dependency_files: [],
-          notices: []
-        )
-        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
-          .with("bundler")
-          .and_return(file_updater_class)
-        allow(file_updater_class).to receive(:new).and_return(file_updater)
+        stub_file_updater(updated_dependency_files: [])
       end
 
       it "raises an exception with diagnostic dependency details" do
@@ -222,16 +219,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
       before do
         support_files = dependency_files.select(&:support_file?)
-        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
-        file_updater = instance_double(
-          Dependabot::Bundler::FileUpdater,
-          updated_dependency_files: support_files,
-          notices: []
-        )
-        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
-          .with("bundler")
-          .and_return(file_updater_class)
-        allow(file_updater_class).to receive(:new).and_return(file_updater)
+        stub_file_updater(updated_dependency_files: support_files)
       end
 
       it "logs a warning and raises a diagnostic error" do
@@ -302,16 +290,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       before do
-        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
-        file_updater = instance_double(
-          Dependabot::Bundler::FileUpdater,
-          updated_dependency_files: [],
-          notices: []
-        )
-        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
-          .with("bundler")
-          .and_return(file_updater_class)
-        allow(file_updater_class).to receive(:new).and_return(file_updater)
+        stub_file_updater(updated_dependency_files: [])
       end
 
       it "raises an exception listing dependency names" do
@@ -319,6 +298,73 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
           .to raise_error(
             Dependabot::DependabotError,
             "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
+          )
+      end
+    end
+
+    context "when duplicate dependency names have no file changes" do
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.2.0",
+            previous_version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.2.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.3.0",
+            previous_version: "1.2.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.3.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.2.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        ]
+      end
+
+      let(:change_source) do
+        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
+      end
+
+      before do
+        stub_file_updater(updated_dependency_files: [])
+      end
+
+      it "raises an exception with unique dependency names" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b"
           )
       end
     end

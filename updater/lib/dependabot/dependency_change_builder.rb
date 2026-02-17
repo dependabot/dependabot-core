@@ -172,7 +172,7 @@ module Dependabot
 
     sig { returns(String) }
     def dependency_names
-      updated_dependencies.map(&:name).join(", ")
+      updated_dependencies.map(&:name).uniq.join(", ")
     end
 
     sig { returns(String) }
