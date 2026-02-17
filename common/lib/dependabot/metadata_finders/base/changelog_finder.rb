@@ -210,6 +210,7 @@ module Dependabot
             dependency_file_list(ref)
             .select { |f| f.type == "file" }
             .reject { |f| f.name.end_with?(".sh") }
+            .reject { |f| f.name.end_with?(".json") }
             .reject { |f| f.size > 1_000_000 }
             .reject { |f| f.size < 100 }
 
