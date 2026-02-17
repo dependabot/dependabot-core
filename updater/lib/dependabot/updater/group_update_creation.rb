@@ -557,8 +557,8 @@ module Dependabot
         normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
         normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
 
-        # Match only when the PR covers every directory the job will process
-        (normalized_job_dirs - normalized_pr_dirs).empty?
+        # Match only when the PR directories exactly match the job directories
+        normalized_job_dirs.sort == normalized_pr_dirs.sort
       end
 
       sig do
