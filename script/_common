@@ -69,6 +69,11 @@ function docker_build() {
     -f Dockerfile.updater-core \
     .
 
+  # Debug: verify pre_commit exists in core image
+  echo "=== Checking pre_commit in core image ==="
+  docker run --rm "$UPDATER_CORE_IMAGE" bash -c "ls -la /home/dependabot/pre_commit/ && cat /home/dependabot/pre_commit/dependabot-pre_commit.gemspec | head -5"
+  echo "=== Done checking core image ==="
+
   # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
   unset DOCKER_CONTENT_TRUST
 
@@ -78,11 +83,15 @@ function docker_build() {
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from "$UPDATER_CORE_IMAGE" \
     --cache-from "$UPDATER_IMAGE_NAME" \
     -t "$UPDATER_IMAGE_NAME" \
     -f $ECOSYSTEM/Dockerfile \
     .
+
+  # Debug: verify pre_commit exists in ecosystem image
+  echo "=== Checking pre_commit in $UPDATER_IMAGE_NAME ==="
+  docker run --rm "$UPDATER_IMAGE_NAME" bash -c "ls -la /home/dependabot/pre_commit/ && ls -la /home/dependabot/pre_commit/lib/dependabot/"
+  echo "=== Done checking ecosystem image ==="
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
   IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')

@@ -170,6 +170,13 @@ RUN for ecosystem in $ECOSYSTEM_LIST; do \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
+# Debug: verify pre_commit files exist in the core image
+RUN echo "=== pre_commit files in updater-core ===" && \
+    ls -la $DEPENDABOT_HOME/pre_commit/ && \
+    ls -la $DEPENDABOT_HOME/pre_commit/.bundle/ && \
+    ls -la $DEPENDABOT_HOME/pre_commit/lib/dependabot/ && \
+    echo "=== end pre_commit files ==="
+
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
 # RubyGems & Bundler should be bumped together following these steps:
