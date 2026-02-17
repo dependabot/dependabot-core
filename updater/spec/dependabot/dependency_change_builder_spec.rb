@@ -125,17 +125,6 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
     end
 
-    def build_support_files(names)
-      names.map do |name|
-        Dependabot::DependencyFile.new(
-          name: name,
-          content: "content",
-          directory: "/",
-          support_file: true
-        )
-      end
-    end
-
     context "when the source is a lead dependency" do
       let(:change_source) { lead_dependency_change_source }
 
@@ -252,22 +241,11 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: updated_support_files, notices: updater_notices)
       end
 
-      it "warns with excluded support file names" do
-        expect(Dependabot.logger)
-          .to receive(:warn)
-          .with(satisfy { |message|
-            message.include?("FileUpdater returned only support files") &&
-              message.include?("for: #{single_dependency_info}") &&
-              message.include?("sub_dep") &&
-              message.include?("sub_dep.lock") &&
-              !message.include?("(and")
-          })
-
+      it "raises a generic no-files error" do
         expect { create_change }
           .to raise_error(
             Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
-            "FileUpdater returned only support files: sub_dep, sub_dep.lock"
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
           )
       end
 
@@ -275,8 +253,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         expect { create_change }
           .to raise_error(
             Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
-            "FileUpdater returned only support files: sub_dep, sub_dep.lock"
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
           )
 
         expect(notices).to eq(updater_notices)
@@ -298,79 +275,11 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "raises a diagnostics error with sorted and unique dependency names" do
+      it "raises a no-files error listing sorted and unique dependency names" do
         expect { create_change }
           .to raise_error(
             Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b; " \
-            "FileUpdater returned only support files: sub_dep, sub_dep.lock"
-          )
-      end
-    end
-
-    context "when support file names exceed warning limit" do
-      let(:change_source) { lead_dependency_change_source }
-      let(:support_files) do
-        file_names = Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT + 1) do |index|
-          "support_#{index}.txt"
-        end
-        build_support_files(file_names)
-      end
-
-      before do
-        stub_file_updater(updated_dependency_files: support_files)
-      end
-
-      it "adds omitted count to diagnostics" do
-        expected_support_files = Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT) do |index|
-          "support_#{index}.txt"
-        end.join(", ")
-
-        expect { create_change }
-          .to raise_error(
-            Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
-            "FileUpdater returned only support files: #{expected_support_files} (and 1 more)"
-          )
-      end
-    end
-
-    context "when support file names include multi-digit suffixes" do
-      let(:change_source) { lead_dependency_change_source }
-      let(:support_files) do
-        build_support_files([10, 2, 1].map { |index| "support_#{index}.txt" })
-      end
-
-      before do
-        stub_file_updater(updated_dependency_files: support_files)
-      end
-
-      it "orders support file names naturally in diagnostics" do
-        expect { create_change }
-          .to raise_error(
-            Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
-            "FileUpdater returned only support files: support_1.txt, support_2.txt, support_10.txt"
-          )
-      end
-    end
-
-    context "when support file names differ in casing" do
-      let(:change_source) { lead_dependency_change_source }
-      let(:support_files) do
-        build_support_files(["Support_2.txt", "support_10.txt", "support_1.txt"])
-      end
-
-      before do
-        stub_file_updater(updated_dependency_files: support_files)
-      end
-
-      it "orders support file names naturally regardless of case" do
-        expect { create_change }
-          .to raise_error(
-            Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
-            "FileUpdater returned only support files: support_1.txt, Support_2.txt, support_10.txt"
+            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
           )
       end
     end
