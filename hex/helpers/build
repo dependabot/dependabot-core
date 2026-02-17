@@ -10,7 +10,8 @@ fi
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/hex"
 mkdir -p "$install_dir"
 
-mix local.hex "$HEX_VERSION" --force --if-missing
+# Call separate installation script for Hex to handle OTP compatibility
+bash "$(dirname "${BASH_SOURCE[0]}")/install_hex.sh"
 
 # Install deps necessary for Elixir projects using Nerves extensions
 # The `hex` arg isn't re-installing hex, but rather telling

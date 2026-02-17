@@ -41,8 +41,9 @@ USER dependabot
 
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
-# https://github.com/hexpm/hex/releases
-ENV HEX_VERSION="2.3.1"
+# Install Hex from main branch for OTP 26/27 compatibility
+# Temporarily disabled versioned install due to httpc bugs in newer Erlang
+# ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 
