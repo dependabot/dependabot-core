@@ -77,8 +77,14 @@ module Dependabot
 
       unless updated_files.any?
         dependency_info = if updated_dependencies.one?
-                            dep = T.must(updated_dependencies.first)
-                            "#{dep.name} (#{dep.previous_version} → #{dep.version})"
+                            dep = updated_dependencies.first
+                            if dep.nil?
+                              "Unknown dependency"
+                            else
+                              prev_ver = dep.previous_version || "unknown"
+                              curr_ver = dep.version || "unknown"
+                              "#{dep.name} (#{prev_ver} → #{curr_ver})"
+                            end
                           else
                             updated_dependencies.map(&:name).join(", ")
                           end
