@@ -54,18 +54,6 @@ module Dependabot
           handle_hex_errors(e)
         end
 
-        HEX_AUTH_ERROR_PATTERNS = T.let(
-          [
-            /No authenticated organization found for (?<repo>[a-z_]+)\./,
-            /Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/,
-            /Missing credentials for "(?<repo>[a-z_]+)"/,
-            /Downloading public key for repo "(?<repo>[a-z_]+)"/,
-            /Registry "(?<repo>[a-z_]+)" does not serve a public key/,
-            /Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/
-          ].freeze,
-          T::Array[Regexp]
-        )
-
         private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
@@ -95,7 +83,9 @@ module Dependabot
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_hex_errors(error)
-          match = HEX_AUTH_ERROR_PATTERNS.lazy.filter_map { |pattern| error.message.match(pattern) }.first
+          match = CredentialHelpers::HEX_AUTH_ERROR_PATTERNS.lazy.filter_map do |pattern|
+            error.message.match(pattern)
+          end.first
 
           if match
             name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]

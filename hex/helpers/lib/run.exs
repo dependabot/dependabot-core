@@ -144,10 +144,13 @@ defmodule DependencyHelper do
       {:ok, {403, _, _}} ->
         {:error, "Downloading public key for repo \"#{repo}\" failed with code: 403"}
 
-      {:ok, {_code, _, _}} ->
-        # Some registries (e.g. JFrog Artifactory) don't implement the public_key endpoint.
+      {:ok, {code, _, _}} when code in [404, 501] ->
+        # Some registries (e.g. JFrog Artifactory) return 404 or 501 for the public_key endpoint.
         # Signal caller to use embedded public key if available.
         {:ok_no_key}
+
+      {:ok, {code, _, _}} ->
+        {:error, "Downloading public key for repo \"#{repo}\" failed with code: #{inspect(code)}"}
 
       other ->
         {:error, "Downloading public key for repo \"#{repo}\" failed: #{inspect(other)}"}
