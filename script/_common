@@ -89,6 +89,10 @@ function docker_build() {
     .
 
   # Debug: verify pre_commit exists in ecosystem image
+  echo "=== Checking uv in $UPDATER_IMAGE_NAME ==="
+  docker run --rm "$UPDATER_IMAGE_NAME" bash -c "ls -la /home/dependabot/uv/ && ls -la /home/dependabot/uv/lib/dependabot/"
+  echo "=== Done checking ecosystem image ==="
+
   echo "=== Checking pre_commit in $UPDATER_IMAGE_NAME ==="
   docker run --rm "$UPDATER_IMAGE_NAME" bash -c "ls -la /home/dependabot/pre_commit/ && ls -la /home/dependabot/pre_commit/lib/dependabot/"
   echo "=== Done checking ecosystem image ==="
