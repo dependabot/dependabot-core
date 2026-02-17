@@ -106,11 +106,16 @@ defmodule DependencyHelper do
       {:ok_no_key} ->
         # Public key endpoint not available (e.g. JFrog Artifactory returns 501).
         # Use embedded public key from credential if provided, otherwise error.
-        if public_key_pem != "" do
-          update_repos(repo, %{auth_key: auth_key, public_key: public_key_pem, url: url})
-          set_credentials(tail)
-        else
-          handle_result({:error, "Registry \"#{repo}\" does not serve a public key and none was provided in credentials"})
+        cond do
+          public_key_pem == "" ->
+            handle_result({:error, "Registry \"#{repo}\" does not serve a public key and none was provided in credentials"})
+
+          not public_key_matches?(public_key_pem, fingerprint) ->
+            handle_result({:error, "Embedded public key fingerprint mismatch for repo \"#{repo}\""})
+
+          true ->
+            update_repos(repo, %{auth_key: auth_key, public_key: public_key_pem, url: url})
+            set_credentials(tail)
         end
 
       error ->

@@ -741,6 +741,41 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
+      context "when embedded public key fingerprint does not match" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url,
+              "public_key" => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----",
+              "public_key_fingerprint" => "SHA256:wrong"
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Embedded public key fingerprint mismatch for repo "dependabot"',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+          expect { latest_resolvable_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
       context "when registry does not serve a public key but one is embedded in credentials" do
         let(:credentials) do
           [Dependabot::Credential.new(

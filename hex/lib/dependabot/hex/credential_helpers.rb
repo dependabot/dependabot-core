@@ -17,6 +17,7 @@ module Dependabot
           /Missing credentials for "(?<repo>[a-z0-9_-]+)"/,
           /Downloading public key for repo "(?<repo>[a-z0-9_-]+)"/,
           /Registry "(?<repo>[a-z0-9_-]+)" does not serve a public key/,
+          /Embedded public key fingerprint mismatch for repo "(?<repo>[a-z0-9_-]+)"/,
           /Failed to fetch record for (?<repo>[a-z0-9_-]+)(?::(?<org>[a-z0-9_-]+))?/
         ].freeze,
         T::Array[Regexp]
