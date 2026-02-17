@@ -40,7 +40,6 @@ function build() {
   set -x
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from ghcr.io/dependabot/dependabot-updater-core \
     -f Dockerfile.updater-core \
     -t "ghcr.io/dependabot/dependabot-updater-core" .
   docker build \
