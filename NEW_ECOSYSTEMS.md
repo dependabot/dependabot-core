@@ -230,6 +230,12 @@ For files not covered by the automated task or requiring ecosystem-specific cust
 #### Docker Configuration
 - **Ecosystem Dockerfile**: Create or update Docker configurations if your ecosystem requires specific dependencies
   - [Example Helm Dockerfile](https://github.com/dependabot/dependabot-core/blob/main/helm/Dockerfile)
+  - **Important**: All ecosystem Dockerfiles MUST include `pre_commit` in the `COPY --parents` command along with `common`:
+    ```dockerfile
+    COPY --chown=dependabot:dependabot --parents your_ecosystem pre_commit common $DEPENDABOT_HOME/
+    COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+    ```
+  - The `updater/Gemfile` requires `dependabot-pre_commit` as a path-based gem. Without copying the `pre_commit` directory, `bundle install` will fail during CI with "The path `/home/dependabot/pre_commit` does not exist."
 - **Updater Core**: Add ecosystem-specific dependencies to the core updater image if needed
   - [Dockerfile.updater-core](https://github.com/dependabot/dependabot-core/blob/main/Dockerfile.updater-core)
 
