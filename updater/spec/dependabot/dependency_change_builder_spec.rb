@@ -73,7 +73,6 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       )
     end
 
-    let(:support_files_only_error_message) { described_class::SUPPORT_FILES_ONLY_ERROR_MESSAGE }
     let(:notices) { [] }
     let(:lead_dependency_change_source) { build_dependency(name: "dummy-pkg-b", version: "1.1.0") }
     let(:single_dependency_info) { "dummy-pkg-b (1.1.0 → 1.2.0)" }
@@ -135,21 +134,6 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
           support_file: true
         )
       end
-    end
-
-    def expect_support_files_only_error(
-      dependency_info:, support_file_names:, omitted_support_file_count: 0, expected_message: nil
-    )
-      expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
-        expect(error.dependency_info).to eq(dependency_info)
-        expect(error.support_file_names).to eq(support_file_names)
-        expect(error.omitted_support_file_count).to eq(omitted_support_file_count)
-        if expected_message
-          expect(error.message).to eq(expected_message)
-        else
-          expect(error.message).to include(support_files_only_error_message)
-        end
-      }
     end
 
     context "when the source is a lead dependency" do
@@ -272,63 +256,30 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         expect(Dependabot.logger)
           .to receive(:warn)
           .with(satisfy { |message|
-            message.include?(support_files_only_error_message) &&
+            message.include?("FileUpdater returned only support files") &&
               message.include?("for: #{single_dependency_info}") &&
-              message.include?("excluded support files:") &&
               message.include?("sub_dep") &&
               message.include?("sub_dep.lock") &&
               !message.include?("(and")
           })
 
-        expect_support_files_only_error(
-          dependency_info: single_dependency_info,
-          support_file_names: %w(sub_dep sub_dep.lock)
-        )
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
+            "FileUpdater returned only support files: sub_dep, sub_dep.lock"
+          )
       end
 
       it "collects notices before raising" do
-        expect_support_files_only_error(
-          dependency_info: single_dependency_info,
-          support_file_names: %w(sub_dep sub_dep.lock)
-        )
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
+            "FileUpdater returned only support files: sub_dep, sub_dep.lock"
+          )
 
         expect(notices).to eq(updater_notices)
-      end
-
-      it "exposes immutable support file names on the raised error" do
-        expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
-          expect(error.support_file_names).to be_frozen
-          expect(error.support_file_names).to all(be_frozen)
-          expect { error.support_file_names << "new_support_file" }.to raise_error(FrozenError)
-        }
-      end
-
-      it "exposes immutable dependency info on the raised error" do
-        expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
-          expect(error.dependency_info).to be_frozen
-        }
-      end
-
-      it "defensively copies support file names and dependency info" do
-        dependency_info = +"dummy-pkg-b (1.1.0 → 1.2.0)"
-        support_file_names = ["sub_dep", "sub_dep.lock"]
-
-        error = described_class::SupportFilesOnly.new(
-          dependency_info: dependency_info,
-          support_file_names: support_file_names,
-          omitted_support_file_count: 0
-        )
-
-        dependency_info << " (mutated)"
-        support_file_names << "new_support_file"
-
-        expect(error.dependency_info).to eq("dummy-pkg-b (1.1.0 → 1.2.0)")
-        expect(error.support_file_names).to eq(%w(sub_dep sub_dep.lock))
-        expect(error.message).to start_with(
-          "#{support_files_only_error_message} for: dummy-pkg-b (1.1.0 → 1.2.0);"
-        )
-        expect(error.message).to include("excluded support files: sub_dep, sub_dep.lock")
-        expect(error.message).not_to include("new_support_file")
       end
     end
 
@@ -347,16 +298,13 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "raises an exception with sorted and unique dependency names" do
-        expected_message =
-          "FileUpdater returned only support files for: dummy-pkg-a, dummy-pkg-b; " \
-          "excluded support files: sub_dep, sub_dep.lock"
-
-        expect_support_files_only_error(
-          dependency_info: "dummy-pkg-a, dummy-pkg-b",
-          support_file_names: %w(sub_dep sub_dep.lock),
-          expected_message: expected_message
-        )
+      it "raises a diagnostics error with sorted and unique dependency names" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b; " \
+            "FileUpdater returned only support files: sub_dep, sub_dep.lock"
+          )
       end
     end
 
@@ -373,22 +321,17 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "warns with the listed limit and omitted count" do
-        expect(Dependabot.logger)
-          .to receive(:warn)
-          .with(satisfy { |message|
-            message.include?(support_files_only_error_message) &&
-              message.include?("excluded support files:") &&
-              message.include?("(and 1 more)")
-          })
+      it "adds omitted count to diagnostics" do
+        expected_support_files = Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT) do |index|
+          "support_#{index}.txt"
+        end.join(", ")
 
-        expect_support_files_only_error(
-          dependency_info: single_dependency_info,
-          support_file_names: Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT) do |index|
-            "support_#{index}.txt"
-          end,
-          omitted_support_file_count: 1
-        )
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
+            "FileUpdater returned only support files: #{expected_support_files} (and 1 more)"
+          )
       end
     end
 
@@ -402,11 +345,13 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "orders support file names naturally in the raised error" do
-        expect_support_files_only_error(
-          dependency_info: single_dependency_info,
-          support_file_names: %w(support_1.txt support_2.txt support_10.txt)
-        )
+      it "orders support file names naturally in diagnostics" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
+            "FileUpdater returned only support files: support_1.txt, support_2.txt, support_10.txt"
+          )
       end
     end
 
@@ -421,10 +366,12 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       it "orders support file names naturally regardless of case" do
-        expect_support_files_only_error(
-          dependency_info: single_dependency_info,
-          support_file_names: ["support_1.txt", "Support_2.txt", "support_10.txt"]
-        )
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0); " \
+            "FileUpdater returned only support files: support_1.txt, Support_2.txt, support_10.txt"
+          )
       end
     end
   end

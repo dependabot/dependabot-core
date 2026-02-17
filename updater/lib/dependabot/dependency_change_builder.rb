@@ -26,71 +26,6 @@ module Dependabot
     extend T::Sig
 
     SUPPORT_FILE_WARNING_NAME_LIMIT = 10
-    SUPPORT_FILES_ONLY_ERROR_MESSAGE = "FileUpdater returned only support files"
-
-    class SupportFilesOnly < Dependabot::DependabotError
-      extend T::Sig
-
-      sig { returns(String) }
-      attr_reader :dependency_info
-
-      sig { returns(T::Array[String]) }
-      attr_reader :support_file_names
-
-      sig { returns(Integer) }
-      attr_reader :omitted_support_file_count
-
-      sig do
-        params(
-          dependency_info: String,
-          support_file_names: T::Array[String],
-          omitted_support_file_count: Integer
-        ).void
-      end
-      def initialize(dependency_info:, support_file_names:, omitted_support_file_count:)
-        @dependency_info = T.let(dependency_info.dup.freeze, String)
-        @support_file_names = T.let(support_file_names.map { |name| name.dup.freeze }.freeze, T::Array[String])
-        @omitted_support_file_count = T.let(omitted_support_file_count, Integer)
-
-        super(
-          message_for(
-            dependency_info: @dependency_info,
-            support_file_names: @support_file_names,
-            omitted_support_file_count: @omitted_support_file_count
-          )
-        )
-      end
-
-      private
-
-      sig do
-        params(
-          dependency_info: String,
-          support_file_names: T::Array[String],
-          omitted_support_file_count: Integer
-        ).returns(String)
-      end
-      def message_for(dependency_info:, support_file_names:, omitted_support_file_count:)
-        support_files = formatted_support_files(
-          support_file_names: support_file_names,
-          omitted_support_file_count: omitted_support_file_count
-        )
-
-        "#{SUPPORT_FILES_ONLY_ERROR_MESSAGE} for: #{dependency_info}; excluded support files: #{support_files}"
-      end
-
-      sig do
-        params(
-          support_file_names: T::Array[String],
-          omitted_support_file_count: Integer
-        ).returns(String)
-      end
-      def formatted_support_files(support_file_names:, omitted_support_file_count:)
-        support_files = support_file_names.join(", ")
-        support_files += " (and #{omitted_support_file_count} more)" if omitted_support_file_count.positive?
-        support_files
-      end
-    end
 
     sig do
       params(
@@ -134,6 +69,7 @@ module Dependabot
       @updated_dependencies = updated_dependencies
       @change_source = change_source
       @notices = notices
+      @support_files_only_diagnostics = T.let(nil, T.nilable(String))
     end
 
     sig { returns(Dependabot::DependencyChange) }
@@ -141,7 +77,9 @@ module Dependabot
       updated_files = generate_dependency_files
 
       unless updated_files.any?
-        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
+        error_message = "FileUpdater failed to update any files for: #{dependency_info_for_error}"
+        error_message += "; #{support_files_only_diagnostics}" if support_files_only_diagnostics
+        raise DependabotError, error_message
       end
 
       # Remove any unchanged dependencies from the updated list
@@ -183,6 +121,9 @@ module Dependabot
     attr_reader :notices
 
     sig { returns(T.nilable(String)) }
+    attr_reader :support_files_only_diagnostics
+
+    sig { returns(T.nilable(String)) }
     def source_dependency_name
       return nil unless change_source.is_a? Dependabot::Dependency
 
@@ -206,7 +147,8 @@ module Dependabot
           "#{updated_dependency.version}"
         )
       else
-        Dependabot.logger.info("Updating #{dependency_names}")
+        dependency_names = updated_dependencies.map(&:name)
+        Dependabot.logger.info("Updating #{dependency_names.join(', ')}")
       end
 
       # Ignore dependencies that are tagged as information_only. These will be
@@ -225,7 +167,7 @@ module Dependabot
       @notices.concat(updater_notices)
 
       updated_files = all_files.reject(&:support_file?)
-      handle_support_files_only!(all_files: all_files, updated_files: updated_files)
+      add_support_files_only_diagnostics(all_files: all_files, updated_files: updated_files)
 
       updated_files
     end
@@ -236,20 +178,18 @@ module Dependabot
         updated_files: T::Array[Dependabot::DependencyFile]
       ).void
     end
-    def handle_support_files_only!(all_files:, updated_files:)
+    def add_support_files_only_diagnostics(all_files:, updated_files:)
       return unless all_files.any? && updated_files.empty?
 
       support_file_names = naturally_sorted_names(all_files.select(&:support_file?).map(&:name).uniq)
       listed_support_file_names = support_file_names.first(SUPPORT_FILE_WARNING_NAME_LIMIT)
       omitted_support_file_count = support_file_names.length - listed_support_file_names.length
+      support_file_list = listed_support_file_names.join(", ")
+      support_file_list += " (and #{omitted_support_file_count} more)" if omitted_support_file_count.positive?
 
-      error = SupportFilesOnly.new(
-        dependency_info: dependency_info_for_error,
-        support_file_names: listed_support_file_names,
-        omitted_support_file_count: omitted_support_file_count
-      )
-      Dependabot.logger.warn(error.message)
-      raise error
+      diagnostics = "FileUpdater returned only support files: #{support_file_list}"
+      @support_files_only_diagnostics = diagnostics
+      Dependabot.logger.warn("#{diagnostics} for: #{dependency_info_for_error}")
     end
 
     sig { params(names: T::Array[String]).returns(T::Array[String]) }
@@ -266,7 +206,7 @@ module Dependabot
     end
 
     sig { returns(String) }
-    def dependency_names
+    def dependency_names_for_error
       format_names(updated_dependencies.map(&:name))
     end
 
@@ -277,7 +217,7 @@ module Dependabot
 
     sig { returns(String) }
     def dependency_info_for_error
-      return dependency_names unless updated_dependencies.one?
+      return dependency_names_for_error unless updated_dependencies.one?
 
       dependency = T.must(updated_dependencies.first)
       previous_version = dependency.previous_version || "unknown"
