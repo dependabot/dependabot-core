@@ -69,10 +69,21 @@ module Dependabot
       @notices = notices
     end
 
+    # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+    # Complexity is justified: improved error messaging and diagnostics
     sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
-      raise DependabotError, "FileUpdater failed" unless updated_files.any?
+
+      unless updated_files.any?
+        dependency_info = if updated_dependencies.one?
+                            dep = T.must(updated_dependencies.first)
+                            "#{dep.name} (#{dep.previous_version} → #{dep.version})"
+                          else
+                            updated_dependencies.map(&:name).join(", ")
+                          end
+        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info}"
+      end
 
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
@@ -94,6 +105,7 @@ module Dependabot
         notices: notices
       )
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
     private
 
@@ -148,8 +160,19 @@ module Dependabot
       # Create file updater and collect notices from it
       file_updater = file_updater_for(relevant_dependencies)
 
+      # Get all files returned by the updater
+      all_files = file_updater.updated_dependency_files
+
       # Exclude support files since they are not manifests, just needed for supporting the update
-      update_files = file_updater.updated_dependency_files.reject(&:support_file)
+      update_files = all_files.reject(&:support_file)
+
+      # Log diagnostic information if only support files were returned
+      if all_files.any? && update_files.none?
+        file_list = all_files.map { |f| "#{f.name} (support)" }.join(", ")
+        Dependabot.logger.warn(
+          "FileUpdater returned only support files which were excluded: #{file_list}"
+        )
+      end
 
       # Collect notices from file updater
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
