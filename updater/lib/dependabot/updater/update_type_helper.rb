@@ -51,12 +51,18 @@ module Dependabot
       end
 
       sig do
-        params(prev: Dependabot::Version, curr: Dependabot::Version).returns(T.nilable(String))
+        params(
+          prev: Dependabot::Version,
+          curr: Dependabot::Version,
+          semantic_versioning: String
+        ).returns(T.nilable(String))
       end
-      def classify_semver_update(prev, curr)
+      def classify_semver_update(prev, curr, semantic_versioning: "relaxed")
         prev_parts = semver_parts(prev)
         curr_parts = semver_parts(curr)
         return nil if prev_parts.nil? || curr_parts.nil?
+
+        return classify_strict_semver(prev_parts, curr_parts) if semantic_versioning == "strict"
 
         return "major" if curr_parts.major > prev_parts.major
         return "minor" if curr_parts.major == prev_parts.major && curr_parts.minor > prev_parts.minor
@@ -66,6 +72,40 @@ module Dependabot
 
         Dependabot.logger.info(
           "Could not classify semver update: #{prev_parts.major}.#{prev_parts.minor}.#{prev_parts.patch} -> " \
+          "#{curr_parts.major}.#{curr_parts.minor}.#{curr_parts.patch}"
+        )
+        nil
+      end
+
+      sig { params(prev_parts: SemverParts, curr_parts: SemverParts).returns(T::Boolean) }
+      def zero_zero_version_changed?(prev_parts, curr_parts)
+        prev_parts.major.zero? && prev_parts.minor.zero? &&
+          (curr_parts.minor > prev_parts.minor || curr_parts.patch > prev_parts.patch)
+      end
+
+      # Strict semver classification for 0.x versions:
+      # - 0.0.z → any change is major
+      # - 0.y.z → minor change is major, patch change is patch
+      sig { params(prev_parts: SemverParts, curr_parts: SemverParts).returns(T.nilable(String)) }
+      def classify_strict_semver(prev_parts, curr_parts)
+        # Major version increase is always major
+        return "major" if curr_parts.major > prev_parts.major
+
+        # For 0.0.z versions, any change is breaking
+        return "major" if zero_zero_version_changed?(prev_parts, curr_parts)
+
+        # For 0.y.z versions (y > 0), minor changes are breaking
+        if prev_parts.major.zero?
+          return "major" if curr_parts.minor > prev_parts.minor
+          return "patch" if curr_parts.patch > prev_parts.patch
+        end
+
+        # Standard semver for >= 1.0.0
+        return "minor" if curr_parts.minor > prev_parts.minor
+        return "patch" if curr_parts.patch > prev_parts.patch
+
+        Dependabot.logger.info(
+          "Could not classify strict semver update: #{prev_parts.major}.#{prev_parts.minor}.#{prev_parts.patch} -> " \
           "#{curr_parts.major}.#{curr_parts.minor}.#{curr_parts.patch}"
         )
         nil

@@ -169,5 +169,102 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
 
       expect(helper.classify_semver_update(prev_version, curr_version)).to eq("major")
     end
+
+    context "with relaxed mode (default)" do
+      it "treats 0.y.z minor bumps as minor" do
+        prev_version = DummyPackageManager::Version.new("0.2.3")
+        curr_version = DummyPackageManager::Version.new("0.3.0")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "relaxed")).to eq("minor")
+      end
+
+      it "treats 0.0.z patch bumps as patch" do
+        prev_version = DummyPackageManager::Version.new("0.0.3")
+        curr_version = DummyPackageManager::Version.new("0.0.4")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "relaxed")).to eq("patch")
+      end
+    end
+
+    context "with strict mode" do
+      it "treats 0.y.z minor bumps as major" do
+        prev_version = DummyPackageManager::Version.new("0.2.3")
+        curr_version = DummyPackageManager::Version.new("0.3.0")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "strict")).to eq("major")
+      end
+
+      it "treats 0.y.z patch bumps as patch" do
+        prev_version = DummyPackageManager::Version.new("0.2.3")
+        curr_version = DummyPackageManager::Version.new("0.2.4")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "strict")).to eq("patch")
+      end
+
+      it "treats 0.0.z patch bumps as major" do
+        prev_version = DummyPackageManager::Version.new("0.0.3")
+        curr_version = DummyPackageManager::Version.new("0.0.4")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "strict")).to eq("major")
+      end
+
+      it "treats 0.0.z minor bumps as major" do
+        prev_version = DummyPackageManager::Version.new("0.0.3")
+        curr_version = DummyPackageManager::Version.new("0.1.0")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "strict")).to eq("major")
+      end
+
+      it "treats 1.y.z minor bumps as minor (standard semver)" do
+        prev_version = DummyPackageManager::Version.new("1.2.3")
+        curr_version = DummyPackageManager::Version.new("1.3.0")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "strict")).to eq("minor")
+      end
+
+      it "treats 1.y.z major bumps as major (standard semver)" do
+        prev_version = DummyPackageManager::Version.new("1.2.3")
+        curr_version = DummyPackageManager::Version.new("2.0.0")
+
+        expect(helper.classify_semver_update(prev_version, curr_version, semantic_versioning: "strict")).to eq("major")
+      end
+    end
+  end
+
+  describe "#classify_strict_semver" do
+    let(:prev_parts) { Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 2, patch: 3) }
+    let(:curr_parts) { Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 3, patch: 0) }
+
+    before do
+      allow(Dependabot).to receive(:logger).and_return(instance_double(Logger, info: nil))
+    end
+
+    it "classifies 0.y.z to 0.y+1.z as major" do
+      prev = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 11, patch: 5)
+      curr = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 12, patch: 0)
+
+      expect(helper.classify_strict_semver(prev, curr)).to eq("major")
+    end
+
+    it "classifies 0.0.z to 0.0.z+1 as major" do
+      prev = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 0, patch: 3)
+      curr = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 0, patch: 4)
+
+      expect(helper.classify_strict_semver(prev, curr)).to eq("major")
+    end
+
+    it "classifies 0.y.z to 0.y.z+1 as patch" do
+      prev = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 2, patch: 3)
+      curr = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 0, minor: 2, patch: 4)
+
+      expect(helper.classify_strict_semver(prev, curr)).to eq("patch")
+    end
+
+    it "classifies 1.y.z to 1.y+1.z as minor" do
+      prev = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 1, minor: 2, patch: 3)
+      curr = Dependabot::Updater::UpdateTypeHelper::SemverParts.new(major: 1, minor: 3, patch: 0)
+
+      expect(helper.classify_strict_semver(prev, curr)).to eq("minor")
+    end
   end
 end
