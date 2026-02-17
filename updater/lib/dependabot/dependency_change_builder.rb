@@ -28,6 +28,70 @@ module Dependabot
     SUPPORT_FILE_WARNING_NAME_LIMIT = 10
     SUPPORT_FILES_ONLY_ERROR_MESSAGE = "FileUpdater returned only support files"
 
+    class SupportFilesOnly < Dependabot::DependabotError
+      extend T::Sig
+
+      sig { returns(String) }
+      attr_reader :dependency_info
+
+      sig { returns(T::Array[String]) }
+      attr_reader :support_file_names
+
+      sig { returns(Integer) }
+      attr_reader :omitted_support_file_count
+
+      sig do
+        params(
+          dependency_info: String,
+          support_file_names: T::Array[String],
+          omitted_support_file_count: Integer
+        ).void
+      end
+      def initialize(dependency_info:, support_file_names:, omitted_support_file_count:)
+        @dependency_info = dependency_info.dup.freeze
+        @support_file_names = support_file_names.map { |name| name.dup.freeze }.freeze
+        @omitted_support_file_count = omitted_support_file_count
+
+        super(
+          message_for(
+            dependency_info: dependency_info,
+            support_file_names: support_file_names,
+            omitted_support_file_count: omitted_support_file_count
+          )
+        )
+      end
+
+      private
+
+      sig do
+        params(
+          dependency_info: String,
+          support_file_names: T::Array[String],
+          omitted_support_file_count: Integer
+        ).returns(String)
+      end
+      def message_for(dependency_info:, support_file_names:, omitted_support_file_count:)
+        support_files = formatted_support_files(
+          support_file_names: support_file_names,
+          omitted_support_file_count: omitted_support_file_count
+        )
+
+        "#{SUPPORT_FILES_ONLY_ERROR_MESSAGE} for: #{dependency_info}; excluded support files: #{support_files}"
+      end
+
+      sig do
+        params(
+          support_file_names: T::Array[String],
+          omitted_support_file_count: Integer
+        ).returns(String)
+      end
+      def formatted_support_files(support_file_names:, omitted_support_file_count:)
+        support_files = support_file_names.join(", ")
+        support_files += " (and #{omitted_support_file_count} more)" if omitted_support_file_count.positive?
+        support_files
+      end
+    end
+
     sig do
       params(
         job: Dependabot::Job,
@@ -155,25 +219,49 @@ module Dependabot
 
       # Exclude support files since they are not manifests, just needed for supporting the update
       all_files = file_updater.updated_dependency_files
-      update_files = all_files.reject(&:support_file?)
 
-      if all_files.any? && update_files.empty?
-        support_file_names = all_files.map(&:name).uniq.sort
-        listed_names = support_file_names.first(SUPPORT_FILE_WARNING_NAME_LIMIT).join(", ")
-        omitted_name_count = support_file_names.length - SUPPORT_FILE_WARNING_NAME_LIMIT
-
-        warning_message = "#{SUPPORT_FILES_ONLY_ERROR_MESSAGE} which were excluded: #{listed_names}"
-        warning_message += " (and #{omitted_name_count} more)" if omitted_name_count.positive?
-
-        Dependabot.logger.warn(warning_message)
-        raise DependabotError, SUPPORT_FILES_ONLY_ERROR_MESSAGE
-      end
-
-      # Collect notices from file updater
+      # Collect notices from file updater after update attempt
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
       @notices.concat(updater_notices)
 
-      update_files
+      updated_files = all_files.reject(&:support_file?)
+      handle_support_files_only!(all_files: all_files, updated_files: updated_files)
+
+      updated_files
+    end
+
+    sig do
+      params(
+        all_files: T::Array[Dependabot::DependencyFile],
+        updated_files: T::Array[Dependabot::DependencyFile]
+      ).void
+    end
+    def handle_support_files_only!(all_files:, updated_files:)
+      return unless all_files.any? && updated_files.empty?
+
+      support_file_names = naturally_sorted_names(all_files.select(&:support_file?).map(&:name).uniq)
+      listed_support_file_names = support_file_names.first(SUPPORT_FILE_WARNING_NAME_LIMIT)
+      omitted_support_file_count = support_file_names.length - listed_support_file_names.length
+
+      error = SupportFilesOnly.new(
+        dependency_info: dependency_info_for_error,
+        support_file_names: listed_support_file_names,
+        omitted_support_file_count: omitted_support_file_count
+      )
+      Dependabot.logger.warn(error.message)
+      raise error
+    end
+
+    sig { params(names: T::Array[String]).returns(T::Array[String]) }
+    def naturally_sorted_names(names)
+      names.sort_by { |name| natural_sort_segments(name) }
+    end
+
+    sig { params(name: String).returns(T::Array[[Integer, T.any(Integer, String)]]) }
+    def natural_sort_segments(name)
+      name.scan(/\d+|\D+/).map do |segment|
+        segment.match?(/\A\d+\z/) ? [0, segment.to_i] : [1, segment.downcase]
+      end
     end
 
     sig { returns(String) }

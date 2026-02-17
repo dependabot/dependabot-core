@@ -63,39 +63,27 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
   end
 
   describe "::create_from" do
-    let(:support_files_only_error_message) { described_class::SUPPORT_FILES_ONLY_ERROR_MESSAGE }
-
-    let(:lead_dependency_change_source) do
-      Dependabot::Dependency.new(
-        name: "dummy-pkg-b",
-        package_manager: "bundler",
-        version: "1.1.0",
-        requirements: [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.1.0",
-            groups: [],
-            source: nil
-          }
-        ]
-      )
-    end
-
     subject(:create_change) do
       described_class.create_from(
         job: job,
         dependency_files: dependency_files,
         updated_dependencies: updated_dependencies,
-        change_source: change_source
+        change_source: change_source,
+        notices: notices
       )
     end
 
+    let(:support_files_only_error_message) { described_class::SUPPORT_FILES_ONLY_ERROR_MESSAGE }
+    let(:notices) { [] }
+    let(:lead_dependency_change_source) { build_dependency(name: "dummy-pkg-b", version: "1.1.0") }
+    let(:single_dependency_info) { "dummy-pkg-b (1.1.0 → 1.2.0)" }
     let(:file_updater_class) { class_double(Dependabot::Bundler::FileUpdater) }
-    def stub_file_updater(updated_dependency_files:)
+
+    def stub_file_updater(updated_dependency_files:, notices: [])
       file_updater = instance_double(
         Dependabot::Bundler::FileUpdater,
         updated_dependency_files: updated_dependency_files,
-        notices: []
+        notices: notices
       )
 
       allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
@@ -138,10 +126,34 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
     end
 
-    context "when the source is a lead dependency" do
-      let(:change_source) do
-        build_dependency(name: "dummy-pkg-b", version: "1.1.0")
+    def build_support_files(names)
+      names.map do |name|
+        Dependabot::DependencyFile.new(
+          name: name,
+          content: "content",
+          directory: "/",
+          support_file: true
+        )
       end
+    end
+
+    def expect_support_files_only_error(
+      dependency_info:, support_file_names:, omitted_support_file_count: 0, expected_message: nil
+    )
+      expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
+        expect(error.dependency_info).to eq(dependency_info)
+        expect(error.support_file_names).to eq(support_file_names)
+        expect(error.omitted_support_file_count).to eq(omitted_support_file_count)
+        if expected_message
+          expect(error.message).to eq(expected_message)
+        else
+          expect(error.message).to include(support_files_only_error_message)
+        end
+      }
+    end
+
+    context "when the source is a lead dependency" do
+      let(:change_source) { lead_dependency_change_source }
 
       it "creates a new DependencyChange with the updated files" do
         dependency_change = create_change
@@ -185,9 +197,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     end
 
     context "when there are no file changes" do
-      let(:change_source) do
-        build_dependency(name: "dummy-pkg-b", version: "1.1.0")
-      end
+      let(:change_source) { lead_dependency_change_source }
 
       before do
         stub_file_updater(updated_dependency_files: [])
@@ -252,9 +262,10 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       let(:change_source) { lead_dependency_change_source }
       let(:support_files) { dependency_files.select(&:support_file?) }
       let(:updated_support_files) { [support_files.last, support_files.first, support_files.last] }
+      let(:updater_notices) { [instance_double(Dependabot::Notice)] }
 
       before do
-        stub_file_updater(updated_dependency_files: updated_support_files)
+        stub_file_updater(updated_dependency_files: updated_support_files, notices: updater_notices)
       end
 
       it "warns with excluded support file names" do
@@ -262,28 +273,71 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
           .to receive(:warn)
           .with(satisfy { |message|
             message.include?(support_files_only_error_message) &&
-              message.include?("excluded:") &&
+              message.include?("for: #{single_dependency_info}") &&
+              message.include?("excluded support files:") &&
               message.include?("sub_dep") &&
               message.include?("sub_dep.lock") &&
               !message.include?("(and")
           })
 
-        expect { create_change }
-          .to raise_error(Dependabot::DependabotError, support_files_only_error_message)
+        expect_support_files_only_error(
+          dependency_info: single_dependency_info,
+          support_file_names: %w(sub_dep sub_dep.lock)
+        )
+      end
+
+      it "collects notices before raising" do
+        expect_support_files_only_error(
+          dependency_info: single_dependency_info,
+          support_file_names: %w(sub_dep sub_dep.lock)
+        )
+
+        expect(notices).to eq(updater_notices)
+      end
+
+      it "exposes immutable support file names on the raised error" do
+        expect { create_change }.to raise_error(described_class::SupportFilesOnly) { |error|
+          expect(error.support_file_names).to be_frozen
+          expect { error.support_file_names << "new_support_file" }.to raise_error(FrozenError)
+        }
+      end
+    end
+
+    context "when grouped updates return only support files" do
+      let(:updated_dependencies) do
+        [
+          build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0"),
+          build_dependency(name: "dummy-pkg-a", version: "2.0.0", previous_version: "1.9.0"),
+          build_dependency(name: "dummy-pkg-b", version: "1.3.0", previous_version: "1.2.0")
+        ]
+      end
+      let(:change_source) { dependency_group_source }
+      let(:support_files) { dependency_files.select(&:support_file?) }
+
+      before do
+        stub_file_updater(updated_dependency_files: support_files)
+      end
+
+      it "raises an exception with sorted and unique dependency names" do
+        expected_message =
+          "FileUpdater returned only support files for: dummy-pkg-a, dummy-pkg-b; " \
+          "excluded support files: sub_dep, sub_dep.lock"
+
+        expect_support_files_only_error(
+          dependency_info: "dummy-pkg-a, dummy-pkg-b",
+          support_file_names: %w(sub_dep sub_dep.lock),
+          expected_message: expected_message
+        )
       end
     end
 
     context "when support file names exceed warning limit" do
       let(:change_source) { lead_dependency_change_source }
       let(:support_files) do
-        Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT + 1) do |index|
-          Dependabot::DependencyFile.new(
-            name: "support_#{index}.txt",
-            content: "content",
-            directory: "/",
-            support_file: true
-          )
+        file_names = Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT + 1) do |index|
+          "support_#{index}.txt"
         end
+        build_support_files(file_names)
       end
 
       before do
@@ -295,12 +349,53 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
           .to receive(:warn)
           .with(satisfy { |message|
             message.include?(support_files_only_error_message) &&
-              message.include?("excluded:") &&
+              message.include?("excluded support files:") &&
               message.include?("(and 1 more)")
           })
 
-        expect { create_change }
-          .to raise_error(Dependabot::DependabotError, support_files_only_error_message)
+        expect_support_files_only_error(
+          dependency_info: single_dependency_info,
+          support_file_names: Array.new(described_class::SUPPORT_FILE_WARNING_NAME_LIMIT) do |index|
+            "support_#{index}.txt"
+          end,
+          omitted_support_file_count: 1
+        )
+      end
+    end
+
+    context "when support file names include multi-digit suffixes" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:support_files) do
+        build_support_files([10, 2, 1].map { |index| "support_#{index}.txt" })
+      end
+
+      before do
+        stub_file_updater(updated_dependency_files: support_files)
+      end
+
+      it "orders support file names naturally in the raised error" do
+        expect_support_files_only_error(
+          dependency_info: single_dependency_info,
+          support_file_names: %w(support_1.txt support_2.txt support_10.txt)
+        )
+      end
+    end
+
+    context "when support file names differ in casing" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:support_files) do
+        build_support_files(["Support_2.txt", "support_10.txt", "support_1.txt"])
+      end
+
+      before do
+        stub_file_updater(updated_dependency_files: support_files)
+      end
+
+      it "orders support file names naturally regardless of case" do
+        expect_support_files_only_error(
+          dependency_info: single_dependency_info,
+          support_file_names: ["support_1.txt", "Support_2.txt", "support_10.txt"]
+        )
       end
     end
   end
