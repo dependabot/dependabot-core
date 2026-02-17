@@ -12,6 +12,11 @@ public class XmlFileWriterTests_CreateUpdatedVersionRangeTests
     [InlineData("[1.0.0]", "1.0.0", "2.0.0", "[2.0.0]")] // single exact version
     [InlineData("[1.0.0, 3.0.0)", "1.0.0", "2.0.0", "[2.0.0, 3.0.0)")] // narrowing of range
     [InlineData("[1.0.0, 2.0.0)", "1.0.0", "2.0.0", "2.0.0")] // narrowing of range to simple version string
+    [InlineData("*", "1.0.1", "2.0.0", "*")] // wildcard is retained at major level
+    [InlineData("1.*", "1.0.1", "2.0.0", "2.*")] // wildcard is retained at minor level
+    [InlineData("1.0.*", "1.0.1", "2.0.0", "2.0.*")] // wildcard is retained at patch level
+    [InlineData("1.0.0.*", "1.0.1.0", "2.0.0", "2.0.0.*")] // wildcard is retained at revision level
+    [InlineData("1.0.0.*", "1.0.1", "2.0", "2.0.0.*")] // wildcard is retained at revision level with a shorter updated version
     public void CreateUpdatedVersionRange(string existingRangeString, string existingVersionString, string newVersionString, string expectedNewRangeString)
     {
         var existingRange = VersionRange.Parse(existingRangeString);

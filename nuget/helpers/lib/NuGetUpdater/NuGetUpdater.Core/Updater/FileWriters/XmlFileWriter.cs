@@ -611,7 +611,18 @@ public class XmlFileWriter : IFileWriter
         // e.g., "[2.0.0, )" => "2.0.0"
         if (newRange.MaxVersion is null)
         {
-            return requiredVersion.ToString();
+            var requiredVersionString = requiredVersion.ToString();
+            var oldRangeParts = existingRange.OriginalString?.Split('.').ToList() ?? [];
+            var wildcardIndex = oldRangeParts.IndexOf("*");
+            if (wildcardIndex != -1)
+            {
+                // retain wildcard format
+                var newRangeParts = new NuGetVersion(requiredVersion.Major, requiredVersion.Minor, requiredVersion.Patch, requiredVersion.Revision).ToString().Split('.');
+                var rebuiltWildcardVersion = string.Join(string.Empty, newRangeParts.Take(wildcardIndex).Select(part => part + ".")) + "*";
+                requiredVersionString = rebuiltWildcardVersion;
+            }
+
+            return requiredVersionString;
         }
 
         return newRange.ToString();
