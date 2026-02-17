@@ -79,9 +79,6 @@ module Dependabot
 
           dependency = parse_repo(repo, file)
           dependency_set << dependency if dependency
-
-          additional_deps = parse_additional_dependencies(repo, file)
-          additional_deps.each { |dep| dependency_set << dep }
         end
 
         dependency_set
