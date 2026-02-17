@@ -128,9 +128,16 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       it "does not include support files in the updated files" do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater)
-          .to receive(:updated_dependency_files)
-          .and_return(dependency_files)
+        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
+        file_updater = instance_double(
+          Dependabot::Bundler::FileUpdater,
+          updated_dependency_files: dependency_files,
+          notices: []
+        )
+        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+          .with("bundler")
+          .and_return(file_updater_class)
+        allow(file_updater_class).to receive(:new).and_return(file_updater)
 
         dependency_change = described_class.create_from(
           job: job,
@@ -175,11 +182,144 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
+        file_updater = instance_double(
+          Dependabot::Bundler::FileUpdater,
+          updated_dependency_files: [],
+          notices: []
+        )
+        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+          .with("bundler")
+          .and_return(file_updater_class)
+        allow(file_updater_class).to receive(:new).and_return(file_updater)
       end
 
-      it "raises an exception" do
-        expect { create_change }.to raise_error(Dependabot::DependabotError)
+      it "raises an exception with diagnostic dependency details" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
+          )
+      end
+    end
+
+    context "when only support files are returned" do
+      let(:change_source) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: [],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      before do
+        support_files = dependency_files.select(&:support_file?)
+        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
+        file_updater = instance_double(
+          Dependabot::Bundler::FileUpdater,
+          updated_dependency_files: support_files,
+          notices: []
+        )
+        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+          .with("bundler")
+          .and_return(file_updater_class)
+        allow(file_updater_class).to receive(:new).and_return(file_updater)
+      end
+
+      it "logs a warning and raises a diagnostic error" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          "FileUpdater returned only support files which were excluded: sub_dep, sub_dep.lock"
+        )
+
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
+          )
+      end
+    end
+
+    context "when multiple dependencies have no file changes" do
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-a",
+            package_manager: "bundler",
+            version: "2.0.0",
+            previous_version: "1.9.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 2.0.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.9.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.2.0",
+            previous_version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.2.0",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          )
+        ]
+      end
+
+      let(:change_source) do
+        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
+      end
+
+      before do
+        file_updater_class = class_double(Dependabot::Bundler::FileUpdater)
+        file_updater = instance_double(
+          Dependabot::Bundler::FileUpdater,
+          updated_dependency_files: [],
+          notices: []
+        )
+        allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+          .with("bundler")
+          .and_return(file_updater_class)
+        allow(file_updater_class).to receive(:new).and_return(file_updater)
+      end
+
+      it "raises an exception listing dependency names" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
+          )
       end
     end
   end

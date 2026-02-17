@@ -69,23 +69,12 @@ module Dependabot
       @notices = notices
     end
 
-    # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-    # Complexity is justified: improved error messaging and diagnostics
     sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
 
       unless updated_files.any?
-        dependency_info = if updated_dependencies.one?
-                            # .one? guarantees exactly one element, fetch(0) cannot fail
-                            dep = updated_dependencies.fetch(0)
-                            prev_ver = dep.previous_version || "unknown"
-                            curr_ver = dep.version || "unknown"
-                            "#{dep.name} (#{prev_ver} → #{curr_ver})"
-                          else
-                            updated_dependencies.map(&:name).join(", ")
-                          end
-        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info}"
+        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
       end
 
       # Remove any unchanged dependencies from the updated list
@@ -108,7 +97,6 @@ module Dependabot
         notices: notices
       )
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
     private
 
@@ -151,8 +139,7 @@ module Dependabot
           "#{updated_dependency.version}"
         )
       else
-        dependency_names = updated_dependencies.map(&:name)
-        Dependabot.logger.info("Updating #{dependency_names.join(', ')}")
+        Dependabot.logger.info("Updating #{dependency_names}")
       end
 
       # Ignore dependencies that are tagged as information_only. These will be
@@ -163,15 +150,13 @@ module Dependabot
       # Create file updater and collect notices from it
       file_updater = file_updater_for(relevant_dependencies)
 
-      # Get all files returned by the updater
       all_files = file_updater.updated_dependency_files
 
-      # Exclude support files since they are not manifests, just needed for supporting the update
+      # Exclude support files because they are needed to perform updates but are
+      # not meaningful update artifacts in the resulting change.
       update_files = all_files.reject(&:support_file?)
 
-      # Log diagnostic information if only support files were returned
       if all_files.any? && update_files.none?
-        # At this point all_files contains only support files since update_files is empty
         file_list = all_files.map(&:name).join(", ")
         Dependabot.logger.warn(
           "FileUpdater returned only support files which were excluded: #{file_list}"
@@ -184,6 +169,22 @@ module Dependabot
 
       update_files
     end
+
+    sig { returns(String) }
+    def dependency_names
+      updated_dependencies.map(&:name).join(", ")
+    end
+
+    sig { returns(String) }
+    def dependency_info_for_error
+      return dependency_names unless updated_dependencies.one?
+
+      dependency = T.must(updated_dependencies.first)
+      previous_version = dependency.previous_version || "unknown"
+      current_version = dependency.version || "unknown"
+      "#{dependency.name} (#{previous_version} → #{current_version})"
+    end
+
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
