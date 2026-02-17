@@ -198,11 +198,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "logs a deduplicated and sorted warning and raises a diagnostic error" do
-        expect(Dependabot.logger).to receive(:warn).with(
-          "FileUpdater returned only support files which were excluded: sub_dep, sub_dep.lock"
-        )
-
+      it "raises a diagnostic error" do
         expect { create_change }
           .to raise_error(
             Dependabot::DependabotError,

@@ -156,13 +156,6 @@ module Dependabot
       # not meaningful update artifacts in the resulting change.
       update_files = all_files.reject(&:support_file?)
 
-      if all_files.any? && update_files.none?
-        file_list = format_names(all_files.map(&:name))
-        Dependabot.logger.warn(
-          "FileUpdater returned only support files which were excluded: #{file_list}"
-        )
-      end
-
       # Collect notices from file updater
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
       updater_notices.each { |notice| @notices << notice }
