@@ -78,6 +78,7 @@ function docker_build() {
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --cache-from "$UPDATER_CORE_IMAGE" \
     --cache-from "$UPDATER_IMAGE_NAME" \
     -t "$UPDATER_IMAGE_NAME" \
     -f $ECOSYSTEM/Dockerfile \
