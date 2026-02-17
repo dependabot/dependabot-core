@@ -58,13 +58,16 @@ function docker_build() {
   DOCKER_CONTENT_TRUST=1
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
+  # Note: we do NOT use --cache-from "$UPDATER_CORE_IMAGE" here.
+  # Importing the registry manifest causes BuildKit to resolve the FROM directive
+  # in ecosystem Dockerfiles to the registry digest instead of the locally-built
+  # image, which breaks builds when new ecosystems are added.
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
     --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
-    --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \
     .
