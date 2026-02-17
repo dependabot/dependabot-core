@@ -57,11 +57,13 @@ function docker_build() {
   # shellcheck disable=SC2034 # Used implicitly in docker build
   DOCKER_CONTENT_TRUST=1
 
+  # Also tag with a local-only name. BuildKit resolves registry-qualified FROM
+  # directives against the remote registry, ignoring locally-built images with
+  # the same tag. By rewriting the FROM to use a local name, ecosystem builds
+  # correctly use the freshly-built core image.
+  UPDATER_CORE_IMAGE_LOCAL="dependabot-updater-core:local"
+
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  # Note: we do NOT use --cache-from "$UPDATER_CORE_IMAGE" here.
-  # Importing the registry manifest causes BuildKit to resolve the FROM directive
-  # in ecosystem Dockerfiles to the registry digest instead of the locally-built
-  # image, which breaks builds when new ecosystems are added.
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -69,36 +71,26 @@ function docker_build() {
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
     --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
     -t "$UPDATER_CORE_IMAGE" \
+    -t "$UPDATER_CORE_IMAGE_LOCAL" \
     -f Dockerfile.updater-core \
     .
-
-  # Debug: verify pre_commit exists in core image
-  echo "=== Checking pre_commit in core image ==="
-  docker run --rm "$UPDATER_CORE_IMAGE" bash -c "ls -la /home/dependabot/pre_commit/ && cat /home/dependabot/pre_commit/dependabot-pre_commit.gemspec | head -5"
-  echo "=== Done checking core image ==="
 
   # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
   unset DOCKER_CONTENT_TRUST
 
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 
+  # Rewrite FROM to use the local core image tag so BuildKit doesn't resolve
+  # against the remote registry (which may not have new ecosystems yet).
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
+  sed "s|FROM ${UPDATER_CORE_IMAGE}|FROM ${UPDATER_CORE_IMAGE_LOCAL}|g" $ECOSYSTEM/Dockerfile | \
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "$UPDATER_IMAGE_NAME" \
     -t "$UPDATER_IMAGE_NAME" \
-    -f $ECOSYSTEM/Dockerfile \
+    -f - \
     .
-
-  # Debug: verify pre_commit exists in ecosystem image
-  echo "=== Checking uv in $UPDATER_IMAGE_NAME ==="
-  docker run --rm "$UPDATER_IMAGE_NAME" bash -c "ls -la /home/dependabot/uv/ && ls -la /home/dependabot/uv/lib/dependabot/"
-  echo "=== Done checking ecosystem image ==="
-
-  echo "=== Checking pre_commit in $UPDATER_IMAGE_NAME ==="
-  docker run --rm "$UPDATER_IMAGE_NAME" bash -c "ls -la /home/dependabot/pre_commit/ && ls -la /home/dependabot/pre_commit/lib/dependabot/"
-  echo "=== Done checking ecosystem image ==="
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
   IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')
