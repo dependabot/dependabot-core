@@ -157,7 +157,7 @@ module Dependabot
       update_files = all_files.reject(&:support_file?)
 
       if all_files.any? && update_files.none?
-        file_list = all_files.map(&:name).join(", ")
+        file_list = format_names(all_files.map(&:name))
         Dependabot.logger.warn(
           "FileUpdater returned only support files which were excluded: #{file_list}"
         )
@@ -172,7 +172,12 @@ module Dependabot
 
     sig { returns(String) }
     def dependency_names
-      updated_dependencies.map(&:name).uniq.join(", ")
+      format_names(updated_dependencies.map(&:name))
+    end
+
+    sig { params(names: T::Array[String]).returns(String) }
+    def format_names(names)
+      names.uniq.sort.join(", ")
     end
 
     sig { returns(String) }

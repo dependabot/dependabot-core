@@ -59,30 +59,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
   end
 
   let(:updated_dependencies) do
-    [
-      Dependabot::Dependency.new(
-        name: "dummy-pkg-b",
-        package_manager: "bundler",
-        version: "1.2.0",
-        previous_version: "1.1.0",
-        requirements: [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.2.0",
-            groups: [],
-            source: nil
-          }
-        ],
-        previous_requirements: [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.1.0",
-            groups: [],
-            source: nil
-          }
-        ]
-      )
-    ]
+    [build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0")]
   end
 
   describe "::create_from" do
@@ -110,21 +87,43 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       allow(file_updater_class).to receive(:new).and_return(file_updater)
     end
 
+    def build_dependency(name:, version:, previous_version: nil)
+      requirement = {
+        file: "Gemfile",
+        requirement: "~> #{version}",
+        groups: [],
+        source: nil
+      }
+
+      dependency_args = {
+        name: name,
+        package_manager: "bundler",
+        version: version,
+        requirements: [requirement]
+      }
+
+      if previous_version
+        previous_requirement = {
+          file: "Gemfile",
+          requirement: "~> #{previous_version}",
+          groups: [],
+          source: nil
+        }
+
+        dependency_args[:previous_version] = previous_version
+        dependency_args[:previous_requirements] = [previous_requirement]
+      end
+
+      Dependabot::Dependency.new(**dependency_args)
+    end
+
+    def dependency_group_source
+      Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
+    end
+
     context "when the source is a lead dependency" do
       let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
+        build_dependency(name: "dummy-pkg-b", version: "1.1.0")
       end
 
       it "creates a new DependencyChange with the updated files" do
@@ -158,9 +157,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     end
 
     context "when the source is a dependency group" do
-      let(:change_source) do
-        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
-      end
+      let(:change_source) { dependency_group_source }
 
       it "creates a new DependencyChange flagged as a grouped update" do
         dependency_change = create_change
@@ -172,19 +169,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
     context "when there are no file changes" do
       let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
+        build_dependency(name: "dummy-pkg-b", version: "1.1.0")
       end
 
       before do
@@ -202,27 +187,18 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
     context "when only support files are returned" do
       let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
+        build_dependency(name: "dummy-pkg-b", version: "1.1.0")
       end
 
       before do
-        support_files = dependency_files.select(&:support_file?)
+        sub_dep = dependency_files.find { |file| file.name == "sub_dep" }
+        sub_dep_lock = dependency_files.find { |file| file.name == "sub_dep.lock" }
+        # Include duplicates to verify warning output is deduplicated and sorted.
+        support_files = [sub_dep_lock, sub_dep, sub_dep_lock]
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "logs a warning and raises a diagnostic error" do
+      it "logs a deduplicated and sorted warning and raises a diagnostic error" do
         expect(Dependabot.logger).to receive(:warn).with(
           "FileUpdater returned only support files which were excluded: sub_dep, sub_dep.lock"
         )
@@ -238,56 +214,12 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     context "when multiple dependencies have no file changes" do
       let(:updated_dependencies) do
         [
-          Dependabot::Dependency.new(
-            name: "dummy-pkg-a",
-            package_manager: "bundler",
-            version: "2.0.0",
-            previous_version: "1.9.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 2.0.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.9.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          ),
-          Dependabot::Dependency.new(
-            name: "dummy-pkg-b",
-            package_manager: "bundler",
-            version: "1.2.0",
-            previous_version: "1.1.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.2.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.1.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
+          build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0"),
+          build_dependency(name: "dummy-pkg-a", version: "2.0.0", previous_version: "1.9.0")
         ]
       end
 
-      let(:change_source) do
-        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
-      end
+      let(:change_source) { dependency_group_source }
 
       before do
         stub_file_updater(updated_dependency_files: [])
@@ -305,56 +237,12 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     context "when duplicate dependency names have no file changes" do
       let(:updated_dependencies) do
         [
-          Dependabot::Dependency.new(
-            name: "dummy-pkg-b",
-            package_manager: "bundler",
-            version: "1.2.0",
-            previous_version: "1.1.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.2.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.1.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          ),
-          Dependabot::Dependency.new(
-            name: "dummy-pkg-b",
-            package_manager: "bundler",
-            version: "1.3.0",
-            previous_version: "1.2.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.3.0",
-                groups: [],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.2.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          )
+          build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0"),
+          build_dependency(name: "dummy-pkg-b", version: "1.3.0", previous_version: "1.2.0")
         ]
       end
 
-      let(:change_source) do
-        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
-      end
+      let(:change_source) { dependency_group_source }
 
       before do
         stub_file_updater(updated_dependency_files: [])
