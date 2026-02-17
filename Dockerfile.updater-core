@@ -159,8 +159,8 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
 
-COPY --chown=dependabot:dependabot --parents */.bundle */*.gemspec common/lib/dependabot.rb LICENSE omnibus $DEPENDABOT_HOME
 COPY --chown=dependabot:dependabot pre_commit/.bundle pre_commit/dependabot-pre_commit.gemspec pre_commit/
+COPY --chown=dependabot:dependabot --parents */.bundle */*.gemspec common/lib/dependabot.rb LICENSE omnibus $DEPENDABOT_HOME
 
 # This ARG must be updated when adding/removing ecosystems - it invalidates Docker layer cache
 ARG ECOSYSTEM_LIST="bazel bun bundler cargo composer conda devcontainers docker docker_compose dotnet_sdk elm git_submodules github_actions go_modules gradle helm hex julia maven npm_and_yarn nuget opentofu pre_commit pub python rust_toolchain silent swift terraform uv vcpkg"
