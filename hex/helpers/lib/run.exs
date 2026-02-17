@@ -103,12 +103,15 @@ defmodule DependencyHelper do
 
         set_credentials(tail)
 
-      {:ok_no_key} ->
+      {:error, :no_public_key} ->
         # Public key endpoint not available (e.g. JFrog Artifactory returns 501).
         # Use embedded public key from credential if provided, otherwise error.
         cond do
           public_key_pem == "" ->
             handle_result({:error, "Registry \"#{repo}\" does not serve a public key and none was provided in credentials"})
+
+          not valid_pem?(public_key_pem) ->
+            handle_result({:error, "Invalid PEM public key for repo \"#{repo}\""})
 
           not public_key_matches?(public_key_pem, fingerprint) ->
             handle_result({:error, "Embedded public key fingerprint mismatch for repo \"#{repo}\""})
@@ -152,7 +155,7 @@ defmodule DependencyHelper do
       {:ok, {code, _, _}} when code in [404, 501] ->
         # Some registries (e.g. JFrog Artifactory) return 404 or 501 for the public_key endpoint.
         # Signal caller to use embedded public key if available.
-        {:ok_no_key}
+        {:error, :no_public_key}
 
       {:ok, {code, _, _}} ->
         {:error, "Downloading public key for repo \"#{repo}\" failed with code: #{inspect(code)}"}
@@ -162,6 +165,21 @@ defmodule DependencyHelper do
     end
   end
 
+  defp valid_pem?(pem) do
+    try do
+      case :public_key.pem_decode(pem) do
+        [_ | _] -> true
+        _ -> false
+      end
+    rescue
+      _ -> false
+    end
+  end
+
+  # When no fingerprint is provided, any key is accepted. This is intentional:
+  # some registries (e.g. JFrog) don't expose a fingerprint, so operators may
+  # supply only the public key. Verification still happens at the Hex protocol
+  # layer when packages are fetched.
   defp public_key_matches?(_public_key, _fingerprint = ""), do: true
 
   defp public_key_matches?(public_key, fingerprint) do

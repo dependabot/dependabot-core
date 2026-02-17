@@ -72,4 +72,32 @@ RSpec.describe Dependabot::Hex::CredentialHelpers do
       end
     end
   end
+
+  describe "HEX_AUTH_ERROR_PATTERNS" do
+    subject(:patterns) { described_class::HEX_AUTH_ERROR_PATTERNS }
+
+    [
+      ["No authenticated organization found for my-repo_1.", "my-repo_1", nil],
+      ['Public key fingerprint mismatch for repo "jfrog-hex-2"', "jfrog-hex-2", nil],
+      ['Missing credentials for "my_repo"', "my_repo", nil],
+      ['Downloading public key for repo "repo-9" failed with code: 401', "repo-9", nil],
+      ['Registry "my-jfrog" does not serve a public key and none was provided', "my-jfrog", nil],
+      ['Embedded public key fingerprint mismatch for repo "repo-1"', "repo-1", nil],
+      ['Invalid PEM public key for repo "repo-2"', "repo-2", nil],
+      ["Failed to fetch record for my_repo:my_org", "my_repo", "my_org"],
+      ["Failed to fetch record for my_repo", "my_repo", nil]
+    ].each do |message, expected_repo, expected_org|
+      it "matches '#{message}' and extracts repo=#{expected_repo}" do
+        match = patterns.lazy.filter_map { |p| message.match(p) }.first
+        expect(match).not_to be_nil, "Expected a pattern to match: #{message}"
+        expect(match[:repo]).to eq(expected_repo)
+        expect(match[:org]).to eq(expected_org) if expected_org
+      end
+    end
+
+    it "does not match unrelated error messages" do
+      match = patterns.lazy.filter_map { |p| "Something else went wrong".match(p) }.first
+      expect(match).to be_nil
+    end
+  end
 end
