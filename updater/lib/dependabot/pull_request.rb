@@ -126,10 +126,9 @@ module Dependabot
     sig { params(other: PullRequest).returns(T::Boolean) }
     def ==(other)
       if using_directory? && other.using_directory?
-        dependencies.to_set(&:to_h) == other.dependencies.to_set(&:to_h)
+        dependencies_match?(dependencies, other.dependencies, compare_directory: true)
       else
-        dependencies.to_set { |dep| dep.to_h.except(:directory) } ==
-          other.dependencies.to_set { |dep| dep.to_h.except(:directory) }
+        dependencies_match?(dependencies, other.dependencies, compare_directory: false)
       end
     end
 
@@ -142,6 +141,45 @@ module Dependabot
     sig { returns(T::Boolean) }
     def using_directory?
       dependencies.all? { |dep| !!dep.directory }
+    end
+
+    private
+
+    sig do
+      params(
+        deps1: T::Array[Dependency],
+        deps2: T::Array[Dependency],
+        compare_directory: T::Boolean
+      ).returns(T::Boolean)
+    end
+    def dependencies_match?(deps1, deps2, compare_directory:)
+      return false unless deps1.length == deps2.length
+
+      # Sort both arrays by name for consistent comparison
+      sorted1 = deps1.sort_by(&:name)
+      sorted2 = deps2.sort_by(&:name)
+
+      sorted1.each_with_index do |dep1, index|
+        dep2 = T.must(sorted2[index])
+        return false unless dependencies_equal?(dep1, dep2, compare_directory: compare_directory)
+      end
+
+      true
+    end
+
+    sig { params(dep1: Dependency, dep2: Dependency, compare_directory: T::Boolean).returns(T::Boolean) }
+    def dependencies_equal?(dep1, dep2, compare_directory:)
+      return false unless dep1.name == dep2.name
+      return false if compare_directory && dep1.directory != dep2.directory
+      return false unless dep1.removed? == dep2.removed?
+
+      # If either dependency has a nil version, consider them equal (after matching name/directory/removed)
+      # This allows pending PRs without computed versions to match new updates,
+      # preventing duplicate PR creation when the same dependency is processed again
+      return true if dep1.version.nil? || dep2.version.nil?
+
+      # Otherwise, versions must match exactly
+      dep1.version == dep2.version
     end
   end
 end
