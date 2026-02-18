@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/pre-commit/mirrors-scss-lint
+    rev: v0.59.0
+    hooks:
+      - id: scss-lint
+        language: ruby
+        additional_dependencies:
+          - scss_lint:0.52.0
+          - sass:3.7.4
+  - repo: https://github.com/rubocop/rubocop
+    rev: v1.50.0
+    hooks:
+      - id: rubocop
+        language: ruby
+        additional_dependencies:
+          - rubocop:~> 1.50
+          - rubocop-rails:2.19.0
+          - rubocop-performance:>= 1.17.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace

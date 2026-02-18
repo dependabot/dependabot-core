@@ -1,0 +1,18 @@
+{
+    "name": ".pre-commit-config.yaml",
+    "path": ".pre-commit-config.yaml",
+    "sha": "abc123def456789012345678901234567890abcd",
+    "size": 456,
+    "url": "https://api.github.com/repos/example/repo/contents/.pre-commit-config.yaml?ref=main",
+    "html_url": "https://github.com/example/repo/blob/main/.pre-commit-config.yaml",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123def456789012345678901234567890abcd",
+    "download_url": "https://raw.githubusercontent.com/example/repo/main/.pre-commit-config.yaml",
+    "type": "file",
+    "content": "cmVwb3M6CiAgLSByZXBvOiBodHRwczovL2dpdGh1Yi5jb20vcHJlLWNvbW1p\ndC9wcmUtY29tbWl0LWhvb2tzCiAgICByZXY6IHY0LjQuMAogICAgaG9va3M6\nCiAgICAgIC0gaWQ6IHRyYWlsaW5nLXdoaXRlc3BhY2UKICAgICAgLSBpZDog\nZW5kLW9mLWZpbGUtZml4ZXIKICAgICAgLSBpZDogY2hlY2steWFtbAogIC0g\ncmVwbzogaHR0cHM6Ly9naXRodWIuY29tL3BzZi9ibGFjawogICAgcmV2OiAy\nMy4xMi4xCiAgICBob29rczoKICAgICAgLSBpZDogYmxhY2sK",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/example/repo/contents/.pre-commit-config.yaml?ref=main",
+        "git": "https://api.github.com/repos/example/repo/git/blobs/abc123def456789012345678901234567890abcd",
+        "html": "https://github.com/example/repo/blob/main/.pre-commit-config.yaml"
+    }
+}

@@ -95,6 +95,16 @@
     "ecosystem": "nuget"
   },
   {
+    "core": "opentofu",
+    "test": "opentofu",
+    "ecosystem": "opentofu"
+  },
+  {
+    "core": "pre_commit",
+    "test": "pre-commit",
+    "ecosystem": "pre-commit"
+  },
+  {
     "core": "pub",
     "test": "pub",
     "ecosystem": "pub"
@@ -118,11 +128,6 @@
     "core": "terraform",
     "test": "terraform",
     "ecosystem": "terraform"
-  },
-  {
-    "core": "opentofu",
-    "test": "opentofu",
-    "ecosystem": "opentofu"
   },
   {
     "core": "vcpkg",
