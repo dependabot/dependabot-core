@@ -452,6 +452,50 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    context "when updating a tool dependency declared as indirect (Go 1.24 tool)" do
+      let(:project_name) { "tool_directive" }
+      let(:dependency_name) { "golang.org/x/tools" }
+      let(:dependency_version) { "v0.28.0" }
+      let(:dependency_previous_version) { "v0.27.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) { [] }
+
+      it "keeps the dependency marked as indirect after update" do
+        expect(updated_go_mod_content)
+          .to include(%(golang.org/x/tools v0.28.0 // indirect\n))
+      end
+    end
+
+    context "when updating a tool dependency that is direct (also imported)" do
+      let(:project_name) { "tool_directive_direct" }
+      let(:dependency_name) { "golang.org/x/tools" }
+      let(:dependency_version) { "v0.28.0" }
+      let(:dependency_previous_version) { "v0.27.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: { type: "default", source: dependency_name }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: { type: "default", source: dependency_name }
+        }]
+      end
+
+      it "keeps the dependency as direct (no // indirect) after update" do
+        expect(updated_go_mod_content)
+          .to include(%(golang.org/x/tools v0.28.0\n))
+        expect(updated_go_mod_content)
+          .not_to include(%(golang.org/x/tools v0.28.0 // indirect))
+      end
+    end
+
     context "when dealing with an implicit (vgo) indirect dependency" do
       let(:dependency_name) { "rsc.io/sampler" }
       let(:dependency_version) { "v1.2.0" }
