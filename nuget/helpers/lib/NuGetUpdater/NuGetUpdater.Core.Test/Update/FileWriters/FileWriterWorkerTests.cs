@@ -932,8 +932,8 @@ public class FileWriterWorkerTests : TestBase
     {
         await TestAsync(
             dependencyName: "Some.Dependency",
-            oldDependencyVersion: "1.0.0",
-            newDependencyVersion: "2.0.0",
+            oldDependencyVersion: "1.3.4",
+            newDependencyVersion: "2.5.6",
             files: [
                 ("src/project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -949,8 +949,8 @@ public class FileWriterWorkerTests : TestBase
                 ("Directory.Build.targets", "<Project />"),
             ],
             packages: [
-                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net9.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.3.4", "net9.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.5.6", "net9.0"),
             ],
             discoveryWorker: null, // use real worker
             dependencySolver: null, // use real worker
@@ -968,7 +968,7 @@ public class FileWriterWorkerTests : TestBase
                     """),
             ],
             expectedOperations: [
-                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/src/project.csproj"] }
+                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.5.6"), UpdatedFiles = ["/src/project.csproj"] }
             ]
         );
     }
