@@ -27,6 +27,9 @@ public class XmlFileWriterTests_CreateUpdatedVersionRangeTests
         var existingRange = VersionRange.Parse(existingRangeString);
         var existingVersion = NuGetVersion.Parse(existingVersionString);
         var newVersion = NuGetVersion.Parse(newVersionString);
+        var newRange = VersionRange.Parse(expectedNewRangeString);
+
+        Assert.True(newRange.Satisfies(newVersion));
 
         var actualNewRangeString = XmlFileWriter.CreateUpdatedVersionRangeString(existingRange, existingVersion, newVersion);
 
