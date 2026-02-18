@@ -81,16 +81,11 @@ module Dependabot
     sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Dependabot::PullRequest]) }
     def self.create_from_job_definition(attributes)
       attributes.fetch(:existing_pull_requests).map do |pr|
-        case pr
-        when Array
-          pr_number = pr.first["pr-number"]
-        when Hash
-          pr_number = pr["pr-number"]
-          pr = pr["dependencies"] # now pr becomes the dependencies array from the pr
-        end
+        pr_number = pr["pr-number"]
+        deps = pr["dependencies"]
 
         dependencies =
-          pr.map do |dep|
+          deps.map do |dep|
             PullRequest::Dependency.new(
               name: dep.fetch("dependency-name"),
               version: dep.fetch("dependency-version", nil),
