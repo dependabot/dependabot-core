@@ -612,29 +612,57 @@ public class XmlFileWriter : IFileWriter
         if (newRange.MaxVersion is null)
         {
             var requiredVersionString = requiredVersion.ToString();
-            var oldRangeParts = existingRange.OriginalString?.Split('.').ToList() ?? [];
-            var isWildcardVersion = oldRangeParts.Any(p => p.Contains('*'));
+            var isWildcardVersion = existingRange.OriginalString?.Contains('*') == true;
             if (isWildcardVersion)
             {
-                // retain wildcard format
+                var oldRangeParts = existingRange.OriginalString!.Split('.');
                 var newRangeParts = requiredVersion.ToFullString().Split('.');
                 var rebuiltParts = new List<string>();
-                for (int i = 0; i < oldRangeParts.Count; i++)
+                for (int i = 0; i < oldRangeParts.Length; i++)
                 {
                     if (oldRangeParts[i].Contains('*'))
                     {
-                        // as soon as we hit a wildcard we're done
-                        rebuiltParts.AddRange(oldRangeParts.Skip(i));
+                        var dashIndex = oldRangeParts[i].IndexOf('-');
+                        var starIndex = oldRangeParts[i].IndexOf('*');
+                        if (dashIndex >= 0 && dashIndex < starIndex)
+                        {
+                            // prerelease wildcard (e.g., "3-*")
+                            if (i < newRangeParts.Length)
+                            {
+                                var newDashIndex = newRangeParts[i].IndexOf('-');
+                                if (newDashIndex >= 0)
+                                {
+                                    var beforeDash = newRangeParts[i][..newDashIndex];
+                                    var fromDash = oldRangeParts[i][dashIndex..];
+                                    rebuiltParts.Add(beforeDash + fromDash);
+                                    rebuiltParts.AddRange(oldRangeParts.Skip(i + 1));
+                                }
+                                else
+                                {
+                                    // new version is stable, drop prerelease wildcard
+                                    rebuiltParts.Add(newRangeParts[i]);
+                                }
+                            }
+                            else
+                            {
+                                rebuiltParts.Add("0");
+                            }
+                        }
+                        else
+                        {
+                            // version wildcard (e.g., "*", "*-*", "*-preview*")
+                            rebuiltParts.AddRange(oldRangeParts.Skip(i));
+                        }
+
                         break;
                     }
                     else
                     {
-                        rebuiltParts.Add(newRangeParts[i]);
+                        rebuiltParts.Add(i < newRangeParts.Length ? newRangeParts[i] : "0");
                     }
                 }
 
-                var rebuiltWildcardVersion = string.Join(".", rebuiltParts);
-                requiredVersionString = rebuiltWildcardVersion;
+                requiredVersionString = string.Join(".", rebuiltParts);
             }
 
             return requiredVersionString;

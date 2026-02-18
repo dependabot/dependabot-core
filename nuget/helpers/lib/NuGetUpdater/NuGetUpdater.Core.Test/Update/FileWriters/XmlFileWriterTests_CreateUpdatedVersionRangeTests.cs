@@ -20,6 +20,8 @@ public class XmlFileWriterTests_CreateUpdatedVersionRangeTests
     [InlineData("10.*-*", "10.0-beta1", "11.0-beta2", "11.*-*")] // wildcard with prerelease
     [InlineData("10.*-preview*", "10.0-preview1", "11.0-preview4", "11.*-preview*")] // wildcard with specific prerelease
     [InlineData("10.0.0-preview.*", "10.0.0-preview.1", "11.0.0-preview.2", "11.0.0-preview.*")] // wildcard in prerelease
+    [InlineData("1.2.3-*", "1.2.3-beta", "2.0.0-beta", "2.0.0-*")] // wildcard only in prerelease
+    [InlineData("1.2.3-*", "1.2.3-beta", "2.0.0", "2.0.0")] // wildcard in prerelease superseded by stable
     public void CreateUpdatedVersionRange(string existingRangeString, string existingVersionString, string newVersionString, string expectedNewRangeString)
     {
         var existingRange = VersionRange.Parse(existingRangeString);
