@@ -617,7 +617,7 @@ public class XmlFileWriter : IFileWriter
             if (isWildcardVersion)
             {
                 // retain wildcard format
-                var newRangeParts = new NuGetVersion(requiredVersion.Major, requiredVersion.Minor, requiredVersion.Patch, requiredVersion.Revision).ToString().Split('.');
+                var newRangeParts = requiredVersion.ToFullString().Split('.');
                 var rebuiltParts = new List<string>();
                 for (int i = 0; i < oldRangeParts.Count; i++)
                 {
