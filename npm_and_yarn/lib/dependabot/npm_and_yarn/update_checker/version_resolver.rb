@@ -272,11 +272,11 @@ module Dependabot
         def find_version_without_trust_downgrade
           current_version = version_for_dependency(dependency)
           candidate_versions = latest_version_finder(dependency)
-            .possible_versions
-            .select { |v| v < version_class.new(latest_allowable_version.to_s) }
-            .select { |v| current_version.nil? || v > current_version }
-            .sort
-            .reverse
+                               .possible_versions
+                               .select { |v| v < version_class.new(latest_allowable_version.to_s) }
+                               .select { |v| current_version.nil? || v > current_version }
+                               .sort
+                               .reverse
 
           candidate_versions.each do |candidate|
             next if version_has_trust_downgrade?(candidate)
