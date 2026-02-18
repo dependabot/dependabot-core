@@ -1036,6 +1036,40 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(latest_allowable_version) }
+
+        context "when outside a pnpm workspace" do
+          it "passes --ignore-workspace to the pnpm update command" do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+              pnpm_outside_workspace?: true,
+              run_pnpm_command: ""
+            )
+
+            Dir.mktmpdir do |dir|
+              resolver.send(:run_pnpm_checker, path: dir, version: latest_allowable_version)
+            end
+
+            expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+              .with("update left-pad@1.3.0 --lockfile-only --ignore-workspace",
+                    fingerprint: "update <dependency_name>@<version> --lockfile-only --ignore-workspace")
+          end
+        end
+
+        context "when inside a pnpm workspace" do
+          it "does not pass --ignore-workspace to the pnpm update command" do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+              pnpm_outside_workspace?: false,
+              run_pnpm_command: ""
+            )
+
+            Dir.mktmpdir do |dir|
+              resolver.send(:run_pnpm_checker, path: dir, version: latest_allowable_version)
+            end
+
+            expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+              .with("update left-pad@1.3.0 --lockfile-only",
+                    fingerprint: "update <dependency_name>@<version> --lockfile-only")
+          end
+        end
       end
 
       describe "updating a dependency with a peer requirement" do
