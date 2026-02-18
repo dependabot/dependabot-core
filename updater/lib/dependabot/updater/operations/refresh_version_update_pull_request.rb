@@ -70,6 +70,7 @@ module Dependabot
         ensure
           service.record_ecosystem_meta(dependency_snapshot.ecosystem)
           service.record_cooldown_meta(job)
+          service.record_exclude_paths_subdirectory_meta(job)
         end
 
         private
