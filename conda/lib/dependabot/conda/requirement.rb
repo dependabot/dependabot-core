@@ -5,11 +5,57 @@ require "sorbet-runtime"
 require "dependabot/requirement"
 require "dependabot/python/version"
 require "dependabot/conda/version"
+require "dependabot/conda/name_normaliser"
 
 module Dependabot
   module Conda
     class Requirement < Dependabot::Requirement
       extend T::Sig
+
+      # Conda dependency string patterns for pre-commit additional_dependencies
+      # Format: "package_name=version" or "package_name==version" or "channel::package_name=version"
+      # Examples: "numpy=1.26.0", "pandas==2.0.0", "conda-forge::scipy=1.11.0"
+      CONDA_DEP_SPLIT = /\A(?:(?<channel>[a-zA-Z0-9_-]+)::)?(?<name>[a-zA-Z0-9_.-]+)(?:(?<op>=+|>=|<=|>|<|!=|~=)(?<version>[^\s]+))?\z/
+
+      # Parses a pre-commit conda additional_dependency string.
+      # Formats: "package_name=version", "package_name==version", "channel::package_name=version"
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse_dep_string(dep_string)
+        stripped = dep_string.strip
+        return nil if stripped.empty?
+
+        match = stripped.match(CONDA_DEP_SPLIT)
+        return nil unless match
+
+        name = T.must(match[:name])
+        return nil if name.empty?
+
+        operator = match[:op]
+        version_str = match[:version]
+        channel = match[:channel]
+
+        # If no version specified, we can't track it
+        return nil if version_str.nil? || version_str.strip.empty?
+
+        requirement = build_requirement_string(operator, version_str)
+
+        {
+          name: name,
+          normalised_name: NameNormaliser.normalise(name),
+          version: version_str,
+          requirement: requirement,
+          extras: channel
+        }
+      end
+
+      sig { params(operator: T.nilable(String), version_str: String).returns(String) }
+      def self.build_requirement_string(operator, version_str)
+        # Normalize single = to == for consistency
+        normalized_op = operator == "=" ? "==" : (operator || "==")
+        "#{normalized_op}#{version_str}"
+      end
+
+      private_class_method :build_requirement_string
 
       # Conda uses different operators than pip:
       # conda: =, >=, >, <, <=, !=, ~
