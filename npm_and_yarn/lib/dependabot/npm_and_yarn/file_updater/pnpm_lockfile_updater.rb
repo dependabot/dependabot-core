@@ -135,6 +135,10 @@ module Dependabot
         # Peer dependencies configuration error
         ERR_PNPM_PEER_DEP_ISSUES = /ERR_PNPM_PEER_DEP_ISSUES/
 
+        # Trust downgrade error (supply chain security)
+        ERR_PNPM_TRUST_DOWNGRADE = /ERR_PNPM_TRUST_DOWNGRADE/
+        TRUST_DOWNGRADE_PACKAGE = /High-risk trust downgrade for "(?<dep>[^"]+)"/
+
         sig do
           params(
             pnpm_lock: Dependabot::DependencyFile,
@@ -314,6 +318,15 @@ module Dependabot
 
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
             raise_unsupported_platform_error(error_message, pnpm_lock)
+          end
+
+          if error_message.match?(ERR_PNPM_TRUST_DOWNGRADE)
+            dep = error_message.match(TRUST_DOWNGRADE_PACKAGE)&.named_captures&.fetch("dep", nil)
+            dep_info = dep ? " for \"#{dep}\"" : ""
+            msg = "pnpm trust downgrade detected#{dep_info}. " \
+                  "A previously published version had provenance attestation, but the target version does not."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::InconsistentRegistryResponse, msg
           end
 
           error_handler.handle_pnpm_error(error)
