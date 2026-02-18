@@ -733,7 +733,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "raises a helpful error" do
           expect { latest_resolvable_version }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("No output returned from helper script")
+            end
         end
       end
 
