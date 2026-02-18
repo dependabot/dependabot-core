@@ -245,6 +245,43 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "with public key fingerprint mismatch" do
+        let(:error_message) do
+          'Public key fingerprint mismatch for repo "dependabot"'
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "with public key download failure" do
+        let(:error_message) do
+          'Downloading public key for repo "dependabot" failed with code: 401'
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "with no output from helper script" do
+        let(:error_message) { "No output returned from helper script" }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include("Failed to update lockfile")
+            end
+        end
+      end
+
       context "with JSON parsing error" do
         let(:error_message) { "Failed to parse JSON response from helper" }
 
