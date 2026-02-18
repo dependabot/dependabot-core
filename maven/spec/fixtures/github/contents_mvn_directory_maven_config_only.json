@@ -1,0 +1,18 @@
+[
+  {
+      "name": "maven.config",
+      "path": ".mvn/maven.config",
+      "sha": "abc1234567890",
+      "size": 40,
+      "url": "https://api.github.com/repos/gocardless/bump/contents/.mvn/maven.config?ref=master",
+      "html_url": "https://github.com/gocardless/bump/blob/master/.mvn/maven.config",
+      "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc1234567890",
+      "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.mvn/maven.config",
+      "type": "file",
+      "_links": {
+          "self": "https://api.github.com/repos/gocardless/bump/contents/.mvn/maven.config?ref=master",
+          "git": "https://api.github.com/repos/gocardless/bump/git/blobs/abc1234567890",
+          "html": "https://github.com/gocardless/bump/blob/master/.mvn/maven.config"
+      }
+  }
+]

@@ -148,6 +148,42 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+    context "with maven.config defining properties" do
+      let(:files) { [pom, maven_config] }
+      let(:pom_body) { fixture("poms", "maven_config_property_pom.xml") }
+      let(:maven_config) do
+        Dependabot::DependencyFile.new(
+          name: ".mvn/maven.config",
+          content: "-Drevision=1.2.3\n-Dchangelist=-SNAPSHOT\n-Dspringframework.version=4.3.12.RELEASE\n"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency using maven.config property" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details with property metadata" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("org.springframework:spring-beans")
+          expect(dependency.version).to eq("4.3.12.RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.3.12.RELEASE",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar",
+                property_name: "springframework.version",
+                property_source: ".mvn/maven.config"
+              }
+            }]
+          )
+        end
+      end
+    end
+
     context "with rogue whitespace" do
       let(:pom_body) { fixture("poms", "whitespace.xml") }
 

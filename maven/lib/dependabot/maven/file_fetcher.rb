@@ -35,6 +35,7 @@ module Dependabot
         fetched_files += relative_path_parents(fetched_files)
         fetched_files += targetfiles
         fetched_files << extensions if extensions
+        fetched_files << maven_config if maven_config
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
@@ -54,6 +55,11 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def extensions
         @extensions ||= T.let(fetch_file_if_present(".mvn/extensions.xml"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def maven_config
+        @maven_config ||= T.let(fetch_file_if_present(".mvn/maven.config"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T::Array[DependencyFile]) }
