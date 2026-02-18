@@ -45,7 +45,6 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
         )
       ]
     end
-
     let(:dependencies) do
       [
         Dependabot::Dependency.new(
