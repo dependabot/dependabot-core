@@ -158,9 +158,10 @@ module Dependabot
 
           if @trust_downgrade_detected
             Dependabot.logger.info(
-              "Skipping #{dependency.name} update due to pnpm trust downgrade"
+              "pnpm trust downgrade detected for #{dependency.name}@#{latest_allowable_version}, " \
+              "trying older versions"
             )
-            return nil
+            return find_version_without_trust_downgrade
           end
 
           return latest_allowable_version unless has_unmet_peers
@@ -262,6 +263,54 @@ module Dependabot
               security_advisories: [],
               raise_on_ignored: raise_on_ignored
             )
+        end
+
+        # Iterates through versions below the latest_allowable_version (which had a trust
+        # downgrade) to find the highest version that doesn't trigger a pnpm trust downgrade.
+        # Returns nil if no such version exists (or the only option is the current version).
+        sig { returns(T.nilable(T.any(String, Gem::Version))) }
+        def find_version_without_trust_downgrade
+          current_version = version_for_dependency(dependency)
+          candidate_versions = latest_version_finder(dependency)
+            .possible_versions
+            .select { |v| v < version_class.new(latest_allowable_version.to_s) }
+            .select { |v| current_version.nil? || v > current_version }
+            .sort
+            .reverse
+
+          candidate_versions.each do |candidate|
+            next if version_has_trust_downgrade?(candidate)
+
+            Dependabot.logger.info(
+              "Found #{dependency.name}@#{candidate} without trust downgrade"
+            )
+            return candidate
+          end
+
+          Dependabot.logger.info(
+            "No version of #{dependency.name} found without pnpm trust downgrade"
+          )
+          nil
+        end
+
+        # Checks whether a specific version triggers pnpm trust downgrade by running
+        # the peer dependency check and inspecting the trust_downgrade_detected flag.
+        sig { params(version: Gem::Version).returns(T::Boolean) }
+        def version_has_trust_downgrade?(version)
+          @trust_downgrade_detected = false
+          @peer_dependency_errors = nil
+
+          fetch_peer_dependency_errors(version: version)
+
+          # fetch_peer_dependency_errors sets @trust_downgrade_detected as a side effect
+          # when pnpm returns ERR_PNPM_TRUST_DOWNGRADE
+          result = T.unsafe(@trust_downgrade_detected)
+          if result
+            Dependabot.logger.info(
+              "pnpm trust downgrade also detected for #{dependency.name}@#{version}, skipping"
+            )
+          end
+          result
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
