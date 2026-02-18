@@ -17,6 +17,8 @@ public class XmlFileWriterTests_CreateUpdatedVersionRangeTests
     [InlineData("1.0.*", "1.0.1", "2.0.0", "2.0.*")] // wildcard is retained at patch level
     [InlineData("1.0.0.*", "1.0.1.0", "2.0.0", "2.0.0.*")] // wildcard is retained at revision level
     [InlineData("1.0.0.*", "1.0.1", "2.0", "2.0.0.*")] // wildcard is retained at revision level with a shorter updated version
+    [InlineData("10.*-*", "10.0-beta1", "11.0-beta2", "11.*-*")] // wildcard with prerelease
+    [InlineData("10.*-preview*", "10.0-preview1", "11.0-preview4", "11.*-preview*")] // wildcard with specific prerelease
     public void CreateUpdatedVersionRange(string existingRangeString, string existingVersionString, string newVersionString, string expectedNewRangeString)
     {
         var existingRange = VersionRange.Parse(existingRangeString);

@@ -613,12 +613,27 @@ public class XmlFileWriter : IFileWriter
         {
             var requiredVersionString = requiredVersion.ToString();
             var oldRangeParts = existingRange.OriginalString?.Split('.').ToList() ?? [];
-            var wildcardIndex = oldRangeParts.IndexOf("*");
-            if (wildcardIndex != -1)
+            var isWildcardVersion = oldRangeParts.Any(p => p.Contains('*'));
+            if (isWildcardVersion)
             {
                 // retain wildcard format
                 var newRangeParts = new NuGetVersion(requiredVersion.Major, requiredVersion.Minor, requiredVersion.Patch, requiredVersion.Revision).ToString().Split('.');
-                var rebuiltWildcardVersion = string.Join(string.Empty, newRangeParts.Take(wildcardIndex).Select(part => part + ".")) + "*";
+                var rebuiltParts = new List<string>();
+                for (int i = 0; i < oldRangeParts.Count; i++)
+                {
+                    if (oldRangeParts[i].Contains('*'))
+                    {
+                        // as soon as we hit a wildcard we're done
+                        rebuiltParts.AddRange(oldRangeParts.Skip(i));
+                        break;
+                    }
+                    else
+                    {
+                        rebuiltParts.Add(newRangeParts[i]);
+                    }
+                }
+
+                var rebuiltWildcardVersion = string.Join(".", rebuiltParts);
                 requiredVersionString = rebuiltWildcardVersion;
             }
 
