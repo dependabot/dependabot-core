@@ -548,11 +548,14 @@ module Dependabot
 
       sig { params(pull_request: T::Hash[String, T.untyped]).returns(T::Boolean) }
       def existing_pr_covers_job_directories?(pull_request)
-        pr_directories = pull_request["dependencies"]&.filter_map { |dep| dep["directory"] }
+        dependencies = pull_request["dependencies"]
 
-        # Old PRs without directory info — treat as match (backward compat)
-        return true if pr_directories.nil? || pr_directories.empty?
+        # Old PRs without directory info — treat as match (backward compat).
+        # Only enforce directory matching when ALL dependencies include a directory,
+        # consistent with DependencyChange#matches_existing_pr? and PullRequest#using_directory?.
+        return true if dependencies.nil? || !dependencies.all? { |dep| dep["directory"] }
 
+        pr_directories = dependencies.filter_map { |dep| dep["directory"] }
         job_directories = job.source.directories || [job.source.directory || "/"]
         normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
         normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
