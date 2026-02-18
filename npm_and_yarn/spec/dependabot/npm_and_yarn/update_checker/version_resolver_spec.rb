@@ -1362,6 +1362,55 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             expect(resolver.latest_resolvable_version).to be_nil
           end
         end
+
+        context "when an unexpected error occurs during trust check" do
+          before do
+            # First call (for 1.3.0) raises trust downgrade as expected
+            # Second call (for 1.2.0) raises an unexpected error
+            call_count = 0
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **_kwargs|
+              call_count += 1
+              if call_count == 1 && command.include?("@1.3.0")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
+                           "\"left-pad@1.3.0\" (possible package takeover)",
+                  error_context: {}
+                )
+              elsif call_count == 2 && command.include?("@1.2.0")
+                raise StandardError, "Unexpected network timeout"
+              end
+              "" # Success for other versions
+            end
+          end
+
+          it "propagates the unexpected error instead of silently failing" do
+            expect { resolver.latest_resolvable_version }.to raise_error(StandardError, /Unexpected network timeout/)
+          end
+        end
+
+        context "when pre-release versions exist in the registry" do
+          before do
+            # Only the latest stable version (1.3.0) fails trust downgrade;
+            # Pre-release 1.2.1-beta.0 should be filtered out by possible_versions
+            # and not considered as a fallback candidate.
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **_kwargs|
+              if command.include?("@1.3.0")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
+                           "\"left-pad@1.3.0\" (possible package takeover)",
+                  error_context: {}
+                )
+              end
+              "" # Success for other versions
+            end
+          end
+
+          it "skips pre-release versions and falls back to the highest stable version" do
+            result = resolver.latest_resolvable_version
+            # Should return 1.2.0 (stable), not 1.2.1-beta.0 (pre-release)
+            expect(result).to eq(Gem::Version.new("1.2.0"))
+          end
+        end
       end
     end
   end
