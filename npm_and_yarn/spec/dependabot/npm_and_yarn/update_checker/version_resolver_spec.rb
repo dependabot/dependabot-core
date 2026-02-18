@@ -1301,6 +1301,67 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             expect(result).to eq(Gem::Version.new("1.1.3"))
           end
         end
+
+        context "when fallback limit is exceeded" do
+          before do
+            # Stub the constant to 2 so we only check 2 candidates (1.2.0, 1.1.3)
+            stub_const(
+              "Dependabot::NpmAndYarn::UpdateChecker::VersionResolver::MAX_TRUST_DOWNGRADE_FALLBACK_ATTEMPTS", 2
+            )
+
+            # 1.2.0 and 1.1.3 are checked (within limit) but both fail;
+            # versions below are truncated by the limit.
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **_kwargs|
+              if command.include?("@1.3.0") || command.include?("@1.2.0") || command.include?("@1.1.3")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
+                           "\"left-pad\" (possible package takeover)",
+                  error_context: {}
+                )
+              end
+              "" # Would pass, but not reached due to the limit
+            end
+          end
+
+          it "returns nil after checking only the limited number of versions" do
+            expect(resolver.latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when the only passing version equals the current version" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "left-pad",
+              version: "1.2.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.0.1",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.npmjs.org" }
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          before do
+            # All versions above 1.2.0 (only 1.3.0 in this fixture) fail trust downgrade,
+            # and candidates below current version are filtered out.
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **_kwargs|
+              if command.include?("@1.3.0")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
+                           "\"left-pad@1.3.0\" (possible package takeover)",
+                  error_context: {}
+                )
+              end
+              ""
+            end
+          end
+
+          it "returns nil to avoid a no-op update" do
+            expect(resolver.latest_resolvable_version).to be_nil
+          end
+        end
       end
     end
   end
