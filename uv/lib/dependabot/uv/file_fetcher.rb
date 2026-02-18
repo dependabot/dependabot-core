@@ -195,11 +195,11 @@ module Dependabot
         workspace_fetcher.uv_sources_workspace_dependencies
       end
 
-      sig { returns(Dependabot::Uv::RequiremenstFileMatcher) }
+      sig { returns(Dependabot::Uv::RequirementsFileMatcher) }
       def requirements_in_file_matcher
         @requirements_in_file_matcher ||= T.let(
-          RequiremenstFileMatcher.new(requirements_in_files),
-          T.nilable(Dependabot::Uv::RequiremenstFileMatcher)
+          RequirementsFileMatcher.new(requirements_in_files),
+          T.nilable(Dependabot::Uv::RequirementsFileMatcher)
         )
       end
     end

@@ -120,11 +120,11 @@ module Dependabot
           SharedHelpers.run_shell_command(command, env: env, stderr_to_stdout: true)
         end
 
-        sig { returns(T.nilable(RequiremenstFileMatcher)) }
+        sig { returns(T.nilable(RequirementsFileMatcher)) }
         def requirements_in_file_matcher
           @requirements_in_file_matcher = T.let(
-            RequiremenstFileMatcher.new(pip_compile_files),
-            T.nilable(RequiremenstFileMatcher)
+            RequirementsFileMatcher.new(pip_compile_files),
+            T.nilable(RequirementsFileMatcher)
           )
         end
 
