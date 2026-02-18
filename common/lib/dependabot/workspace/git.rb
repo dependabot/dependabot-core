@@ -71,9 +71,10 @@ module Dependabot
           .returns(T.nilable(T::Array[Dependabot::Workspace::ChangeAttempt]))
       end
       def capture_failed_change_attempt(memo = nil, error = nil)
-        return nil if changed_files(ignored_mode: "matching").empty? && error.nil?
+        no_changes = changed_files(ignored_mode: "matching").empty?
+        return nil if no_changes && error.nil?
 
-        sha = if changed_files(ignored_mode: "matching").empty?
+        sha = if no_changes
                 head_sha
               else
                 stash(memo)
