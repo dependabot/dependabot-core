@@ -51,6 +51,7 @@ module Dependabot
 
     MANIFEST_PACKAGE_MANAGER_KEY = "packageManager"
     MANIFEST_ENGINES_KEY = "engines"
+    MANIFEST_DEV_ENGINES_KEY = "devEngines"
 
     DEFAULT_PACKAGE_MANAGER = NpmPackageManager::NAME
 
@@ -90,6 +91,7 @@ module Dependabot
         @package_json = package_json
         @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
         @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, {}), T::Hash[String, T.untyped])
+        @dev_engines = T.let(package_json&.fetch(MANIFEST_DEV_ENGINES_KEY, {}), T::Hash[String, T.untyped])
       end
 
       # Returns npm, yarn, or pnpm based on the lockfiles, package.json, and engines
@@ -98,6 +100,7 @@ module Dependabot
       def detect_package_manager
         package_manager = name_from_lockfiles ||
                           name_from_package_manager_attr ||
+                          name_from_dev_engines ||
                           name_from_engines
 
         if package_manager
@@ -135,6 +138,31 @@ module Dependabot
         PACKAGE_MANAGER_CLASSES.each_key do |manager_name|
           return manager_name if @engines[manager_name]
         end
+        nil
+      end
+
+      sig { returns(T.nilable(String)) }
+      def name_from_dev_engines
+        return unless @dev_engines.is_a?(Hash)
+
+        # devEngines.packageManager can be an object or an array of objects
+        package_manager_config = @dev_engines["packageManager"]
+        return unless package_manager_config
+
+        # Handle array format
+        if package_manager_config.is_a?(Array)
+          package_manager_config.each do |pm|
+            next unless pm.is_a?(Hash)
+
+            manager_name = pm["name"]
+            return manager_name if manager_name && PACKAGE_MANAGER_CLASSES.key?(manager_name)
+          end
+        # Handle object format
+        elsif package_manager_config.is_a?(Hash)
+          manager_name = package_manager_config["name"]
+          return manager_name if manager_name && PACKAGE_MANAGER_CLASSES.key?(manager_name)
+        end
+
         nil
       end
     end
