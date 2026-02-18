@@ -20,6 +20,9 @@ function set_tag() {
       npm_and_yarn)
         TAG=npm
         ;;
+      pre_commit)
+        TAG=pre-commit
+        ;;
       python)
         TAG=pip
         ;;
