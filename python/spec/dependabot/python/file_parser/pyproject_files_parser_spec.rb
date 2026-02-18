@@ -397,6 +397,26 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
       # is ignored because it has markers, plus 1 is build system requires
       its(:length) { is_expected.to eq(5) }
+
+      it "correctly marks production vs development dependencies" do
+        # Main dependency should be production
+        ansys_templates = dependencies.find { |d| d.name == "ansys-templates" }
+        expect(ansys_templates).to be_production
+
+        # Optional dependencies should be development
+        pysocks = dependencies.find { |d| d.name == "pysocks" }
+        expect(pysocks).not_to be_production
+
+        ddt = dependencies.find { |d| d.name == "ddt" }
+        expect(ddt).not_to be_production
+
+        pytest = dependencies.find { |d| d.name == "pytest" }
+        expect(pytest).not_to be_production
+
+        # Build system dependency should be development
+        flit_core = dependencies.find { |d| d.name == "flit-core" }
+        expect(flit_core).not_to be_production
+      end
     end
 
     context "with optional dependencies only" do
@@ -443,6 +463,24 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
 
         its(:length) { is_expected.to be > 0 }
+
+        it "marks optional dependencies as development (non-production)" do
+          # Optional dependencies should be marked as non-production, which makes them
+          # match dependency-type: "development" in the dependency grouping system
+          optional_deps = dependencies.reject { |d| d.name == "setuptools" }
+          expect(optional_deps).to all(satisfy { |dep| !dep.production? })
+        end
+
+        it "has the correct groups for optional dependencies" do
+          pysocks = dependencies.find { |d| d.name == "pysocks" }
+          expect(pysocks.requirements.first[:groups]).to eq(["socks"])
+
+          ddt = dependencies.find { |d| d.name == "ddt" }
+          expect(ddt.requirements.first[:groups]).to eq(["tests"])
+
+          pytest = dependencies.find { |d| d.name == "pytest" }
+          expect(pytest.requirements.first[:groups]).to eq(["tests"])
+        end
       end
 
       context "with PEP 621 and Poetry configuration" do
