@@ -10,10 +10,13 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest # arm64 runner
         suite:
           - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
@@ -60,6 +63,20 @@ jobs:
         with:
           token: '' # use git commands to avoid excessive rate limit usage
           filters: .github/ci-filters.yml
+
+      - name: Install Docker
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install --cask docker
+          brew install docker-buildx
+          CONFIG="$HOME/.docker/config.json"
+          PLUGIN_DIR="/opt/homebrew/lib/docker/cli-plugins"
+
+          if [ ! -f "$CONFIG" ]; then
+            echo '{ "cliPluginsExtraDirs": ["'"$PLUGIN_DIR"'"] }' > "$CONFIG"
+          else
+            jq '.cliPluginsExtraDirs |= ( . // [] | . + ["'"$PLUGIN_DIR"'"] | unique )' "$CONFIG" > "$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+          fi
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
