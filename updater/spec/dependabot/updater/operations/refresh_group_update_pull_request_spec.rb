@@ -245,39 +245,41 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         allow(mock_service).to receive(:update_pull_request)
         allow(mock_service).to receive(:close_pull_request)
         allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
-        allow(job).to receive(:existing_group_pull_requests).and_return([
-          {
-            "dependency-group-name" => "everything-everywhere-all-at-once",
-            "dependencies" => [
-              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
-            ]
-          },
-          {
-            "dependency-group-name" => "overlapping-group",
-            "dependencies" => [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "dependency-version" => "1.2.0",
-                "directory" => "/packages/other"
-              },
-              {
-                "dependency-name" => "dummy-pkg-c",
-                "dependency-version" => "1.0.0",
-                "directory" => "/packages/other"
-              }
-            ]
-          },
-          {
-            "dependency-group-name" => "something-else",
-            "dependencies" => [
-              {
-                "dependency-name" => "dummy-pkg-d",
-                "dependency-version" => "0.1.0",
-                "directory" => "/packages/other"
-              }
-            ]
-          }
-        ])
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "dependency-version" => "1.2.0",
+                  "directory" => "/packages/other"
+                },
+                {
+                  "dependency-name" => "dummy-pkg-c",
+                  "dependency-version" => "1.0.0",
+                  "directory" => "/packages/other"
+                }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-d",
+                  "dependency-version" => "0.1.0",
+                  "directory" => "/packages/other"
+                }
+              ]
+            }
+          ]
+        )
       end
 
       it "does not mark the overlapping groups as handled" do
@@ -304,39 +306,41 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       before do
         stub_rubygems_calls
         allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
-        allow(job).to receive(:existing_group_pull_requests).and_return([
-          {
-            "dependency-group-name" => "everything-everywhere-all-at-once",
-            "dependencies" => [
-              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
-            ]
-          },
-          {
-            "dependency-group-name" => "overlapping-group",
-            "dependencies" => [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "dependency-version" => "1.2.0",
-                "directory" => "/"
-              },
-              {
-                "dependency-name" => "dummy-pkg-c",
-                "dependency-version" => "1.0.0",
-                "directory" => "/"
-              }
-            ]
-          },
-          {
-            "dependency-group-name" => "something-else",
-            "dependencies" => [
-              {
-                "dependency-name" => "dummy-pkg-d",
-                "dependency-version" => "0.1.0",
-                "directory" => "/"
-              }
-            ]
-          }
-        ])
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "dependency-version" => "1.2.0",
+                  "directory" => "/"
+                },
+                {
+                  "dependency-name" => "dummy-pkg-c",
+                  "dependency-version" => "1.0.0",
+                  "directory" => "/"
+                }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-d",
+                  "dependency-version" => "0.1.0",
+                  "directory" => "/"
+                }
+              ]
+            }
+          ]
+        )
       end
 
       it "marks the overlapping groups as handled" do
@@ -363,27 +367,29 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       before do
         stub_rubygems_calls
         allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
-        allow(job).to receive(:existing_group_pull_requests).and_return([
-          {
-            "dependency-group-name" => "everything-everywhere-all-at-once",
-            "dependencies" => [
-              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
-            ]
-          },
-          {
-            "dependency-group-name" => "overlapping-group",
-            "dependencies" => [
-              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" },
-              { "dependency-name" => "dummy-pkg-c", "dependency-version" => "1.0.0" }
-            ]
-          },
-          {
-            "dependency-group-name" => "something-else",
-            "dependencies" => [
-              { "dependency-name" => "dummy-pkg-d", "dependency-version" => "0.1.0" }
-            ]
-          }
-        ])
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" },
+                { "dependency-name" => "dummy-pkg-c", "dependency-version" => "1.0.0" }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-d", "dependency-version" => "0.1.0" }
+              ]
+            }
+          ]
+        )
       end
 
       it "treats the existing PRs as matches and marks the groups as handled" do
