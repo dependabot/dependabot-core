@@ -156,6 +156,28 @@ module Dependabot
           Dependabot.logger.error("Invalid release date format: #{release_date} and error: #{e.message}")
           0
         end
+
+        protected
+
+        sig do
+          override
+            .params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          # Filter out placeholder versions (0.0.0, 0.0, 0) which are commonly used
+          # as development placeholders and should not be considered valid releases
+          filtered = releases.reject do |release|
+            version = T.cast(release.version, Dependabot::Python::Version)
+            version.placeholder?
+          end
+
+          if releases.size > filtered.size
+            Dependabot.logger.info("Filtered out #{releases.size - filtered.size} placeholder versions")
+          end
+
+          filtered
+        end
       end
     end
   end
