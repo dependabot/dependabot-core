@@ -16,7 +16,6 @@ module Dependabot
       def look_up_source
         info = dependency.requirements.filter_map { |r| r[:source] }.first
 
-        # Pre-commit dependencies use the repo URL as the dependency name
         url =
           if info.nil?
             dependency.name
