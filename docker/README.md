@@ -25,15 +25,15 @@ https://github.com/dependabot/dependabot-core/blob/main/docker/lib/dependabot/do
 
 #### Semver
 
-Dependabot will attempt to parse a semver version from a tag and will only update it to a tag with a matching prefix and suffix. 
+Dependabot will attempt to parse a semver version from a tag and will only update it to a tag with a matching prefix and suffix.
 
 As an example, `base-12.5.1` and `base-12.5.1-golden` would be parsed as `<prefix>-<version>` and `<prefix>-<version>-<suffix>` respectively.
 
-That means for `base-12.5.1` only another `<prefix>-<version>` tag would be a viable update, and for `base-12.5.1-golden`, only another `<prefix>-<version>-<suffix>` tag would be viable. The exception to this is if the suffix is a SHA, in which case it does not get compared and only the `<prefix-<version>` parts are considered in finding a viable tag.
+That means for `base-12.5.1` only another `<prefix>-<version>` tag would be a viable update, and for `base-12.5.1-golden`, only another `<prefix>-<version>-<suffix>` tag would be viable. The exception to this is if the suffix is a SHA, in which case it does not get compared and only the `<prefix>-<version>` parts are considered in finding a viable tag.
 
 #### Dates
 
-Dependabot will parse dates in the `yyyy-mm`, `yyyy-mm-dd` formats (or with `.` instead of `-`) and update tags to the latest date. 
+Dependabot will parse dates in the `yyyy-mm`, `yyyy-mm-dd` formats (or with `.` instead of `-`) and update tags to the latest date.
 
 As an example, `2024-01` will get updated to `2024-02` and `2024.01.29` will get updated to `2024.03.15`.
 
