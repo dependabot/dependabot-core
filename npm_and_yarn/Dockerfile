@@ -1,5 +1,7 @@
 # syntax=docker.io/docker/dockerfile:1.20
-FROM ghcr.io/dependabot/dependabot-updater-core
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+
+FROM ${UPDATER_CORE_IMAGE}
 
 # Check for updates at https://github.com/nodejs/corepack/releases
 ARG COREPACK_VERSION=0.33.0

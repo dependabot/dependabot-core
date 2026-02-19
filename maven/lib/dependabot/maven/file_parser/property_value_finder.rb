@@ -20,7 +20,6 @@ module Dependabot
         require_relative "pom_fetcher"
 
         DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
-        MAVEN_PROPERTY_REGEX = /\$\{.+?/
 
         sig do
           params(
@@ -38,15 +37,10 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig do
-          params(
-            property_name: String,
-            callsite_pom: DependencyFile,
-            seen_properties: T::Set[String]
-          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          params(property_name: String, callsite_pom: DependencyFile).returns(T.nilable(T::Hash[Symbol, T.untyped]))
         end
-        def property_details(property_name:, callsite_pom:, seen_properties: Set.new)
+        def property_details(property_name:, callsite_pom:)
           pom = callsite_pom
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
@@ -69,72 +63,52 @@ module Dependabot
               raise DependencyFileNotEvaluatable, e.message
             end
 
-          if node.nil? && parent_pom(pom)
-            return property_details(
+          # and value is an expression
+          if node && /\$\{(?<expression>.+)\}/.match(node.content.strip)
+            return extract_value_from_expression(
+              expression: node.content.strip,
               property_name: property_name,
-              callsite_pom: T.must(parent_pom(pom)),
-              seen_properties: seen_properties
-            )
-          end
-          # If the property can’t be resolved for any reason, we return nil which
-          # causes Dependabot to skip the dependency.
-          # This differs from Maven’s behavior, where an unresolved property would fail the entire build.
-          # We intentionally choose this as a compromise so Dependabot can continue parsing the rest of the project,
-          # rather than failing completely due to a single unknown property.
-          # The trade-off is that some dependencies may not be updated as expected.
-          Dependabot.logger.warn "Could not resolve property '#{property_name}'" unless node
-          return nil unless node
-
-          content = node.content.strip
-
-          # Detect infinite recursion such as ${property1} where property1=${property1}
-          if seen_properties.include?(property_name)
-            raise Dependabot::DependencyFileNotParseable.new(
-              callsite_pom.name,
-              "Error trying to resolve recursive expression '${#{property_name}}'."
+              callsite_pom: callsite_pom
             )
           end
 
-          seen_properties << property_name
+          # If we found a property, return it
+          return { file: pom.name, node: node, value: node.content.strip } if node
 
-          # If the content has no placeholders, return it as-is
-          return { file: pom.name, node: node, value: content } unless content.match?(MAVEN_PROPERTY_REGEX)
+          # Otherwise, look for a value in this pom's parent
+          return unless (parent = parent_pom(pom))
 
-          resolve_property_placeholder(content, callsite_pom, pom, node, seen_properties)
+          property_details(
+            property_name: property_name,
+            callsite_pom: parent
+          )
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
-        # Extract property placeholders from a string and resolve them
-        # These properties can be simple properties such as ${project.version}
-        # or more complex such as ${my.property.${other.property}} or constant.${property}
-        # See https://maven.apache.org/pom.html#properties
-        sig do
-          params(
-            content: String,
-            callsite_pom: DependencyFile,
-            pom: DependencyFile,
-            node: T.untyped,
-            seen_properties: T::Set[String]
-          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
-        end
-        def resolve_property_placeholder(content, callsite_pom, pom, node, seen_properties)
-          resolved_value = content.gsub(/\$\{(.+?)}/) do
-            inner_name = Regexp.last_match(1)
-            resolved = property_details(
-              property_name: T.must(inner_name),
-              callsite_pom: callsite_pom,
-              seen_properties: seen_properties
-            )
-            T.must(resolved)[:value]
-          end
-
-          { file: pom.name, node: node, value: resolved_value }
-        end
-
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
+
+        sig do
+          params(
+            expression: String,
+            property_name: String,
+            callsite_pom: DependencyFile
+          )
+            .returns(T.nilable(T::Hash[Symbol, String]))
+        end
+        def extract_value_from_expression(expression:, property_name:, callsite_pom:)
+          # and the expression is pointing to self then raise the error
+          if expression.eql?("${#{property_name}}")
+            raise Dependabot::DependencyFileNotParseable.new(
+              callsite_pom.name,
+              "Error trying to resolve recursive expression '#{expression}'."
+            )
+          end
+
+          # and the expression is pointing to another tag, then get the value of that tag
+          property_details(property_name: T.must(expression.slice(2..-2)), callsite_pom: callsite_pom)
+        end
 
         sig { params(property_name: String).returns(String) }
         def sanitize_property_name(property_name)

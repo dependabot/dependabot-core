@@ -1,7 +1,9 @@
 # syntax=docker.io/docker/dockerfile:1.20
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+
 FROM docker.io/library/golang:1.25.7-bookworm AS go
 
-FROM ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 ARG TARGETARCH
 
 USER root

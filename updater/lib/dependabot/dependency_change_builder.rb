@@ -72,10 +72,7 @@ module Dependabot
     sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
-
-      unless updated_files.any?
-        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
-      end
+      raise DependabotError, "FileUpdater failed" unless updated_files.any?
 
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
@@ -152,36 +149,14 @@ module Dependabot
       file_updater = file_updater_for(relevant_dependencies)
 
       # Exclude support files since they are not manifests, just needed for supporting the update
-      all_files = file_updater.updated_dependency_files
+      update_files = file_updater.updated_dependency_files.reject(&:support_file)
 
-      # Collect notices from file updater after update attempt
+      # Collect notices from file updater
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
-      @notices.concat(updater_notices)
+      updater_notices.each { |notice| @notices << notice }
 
-      updated_files = all_files.reject(&:support_file?)
-      updated_files
+      update_files
     end
-
-    sig { returns(String) }
-    def dependency_names_for_error
-      format_names(updated_dependencies.map(&:name))
-    end
-
-    sig { params(names: T::Array[String]).returns(String) }
-    def format_names(names)
-      names.uniq.sort.join(", ")
-    end
-
-    sig { returns(String) }
-    def dependency_info_for_error
-      return dependency_names_for_error unless updated_dependencies.one?
-
-      dependency = T.must(updated_dependencies.first)
-      previous_version = dependency.previous_version || "unknown"
-      current_version = dependency.version || "unknown"
-      "#{dependency.name} (#{previous_version} → #{current_version})"
-    end
-
     sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::FileUpdaters::Base) }
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(

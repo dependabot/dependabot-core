@@ -1,7 +1,9 @@
 # syntax=docker.io/docker/dockerfile:1.20
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+
 FROM docker.io/library/rust:1.93.0-bookworm AS rust
 
-FROM ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 USER root
 

@@ -1,7 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "sorbet-runtime"
+# NOTE: This file was scaffolded automatically but is OPTIONAL.
+# If you don't need custom metadata finding logic (changelogs, release notes, etc.),
+# you can safely delete this file and remove the require from lib/dependabot/pre_commit.rb
+
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 
@@ -14,15 +17,9 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-
-        url =
-          if info.nil?
-            dependency.name
-          else
-            info[:url] || info.fetch("url")
-          end
-        Source.from_url(url)
+        # TODO: Implement custom source lookup logic if needed
+        # Otherwise, delete this file and the require in the main registration file
+        nil
       end
     end
   end

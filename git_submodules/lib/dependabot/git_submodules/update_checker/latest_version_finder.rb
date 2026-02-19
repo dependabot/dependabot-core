@@ -39,7 +39,7 @@ module Dependabot
 
           # if there are no releases after applying filters, we fallback to the current tag to avoid empty results
           releases = apply_post_fetch_latest_versions_filter(releases)
-          releases.max_by(&:version)&.tag
+          releases.first&.tag
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
@@ -109,7 +109,7 @@ module Dependabot
           end
 
           releases << Dependabot::Package::PackageRelease.new(
-            version: GitSubmodules::Version.new("0.0.0-0.0"), # Lower than versions from package_details_fetcher
+            version: GitSubmodules::Version.new("1.0.0"),
             tag: dependency.version
           )
 

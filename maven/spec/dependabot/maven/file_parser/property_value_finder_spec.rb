@@ -39,20 +39,6 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
 
-      context "when the property is an nested property using project definition properties" do
-        let(:base_pom_fixture_name) { "pom_with_nested_properties.xml" }
-        let(:property_name) { "channels.maven.groupId" }
-
-        its([:value]) { is_expected.to eq("org.reproducer.channels") }
-      end
-
-      context "when the property is nested multiple times" do
-        let(:base_pom_fixture_name) { "pom_with_nested_properties.xml" }
-        let(:property_name) { "channels.maven.groupId.nested" }
-
-        its([:value]) { is_expected.to eq("org.reproducer.channels2") }
-      end
-
       context "when the property name starts with 'project' but not an attribute of the project" do
         let(:base_pom_fixture_name) { "property_name_starts_with_project_pom.xml" }
         let(:property_name) { "project.dependency.spring-boot.version" }
@@ -87,25 +73,6 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
           expect { property_details }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.message).to eq("Error trying to resolve recursive expression '${dozer.version}'.")
           end
-        end
-      end
-
-      context "when the property cannot be resolved" do
-        subject(:property_result) { property_details }
-
-        let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
-        let(:property_name) { "property.that.does.not.exist" }
-
-        it "returns nil" do
-          expect(property_result).to be_nil
-        end
-
-        it "logs a warning" do
-          expect(Dependabot.logger)
-            .to receive(:warn)
-            .with("Could not resolve property '#{property_name}'")
-
-          property_result
         end
       end
 

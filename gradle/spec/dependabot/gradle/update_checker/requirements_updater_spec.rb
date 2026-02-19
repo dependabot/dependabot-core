@@ -184,8 +184,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
       end
 
       before do
+        Dependabot::Experiments.register(:gradle_wrapper_updater, true)
+
         stub_request(:get, "https://services.gradle.org/distributions/gradle-9.0.0-all.zip.sha256")
           .to_return(status: 200, body: "f759b8dd5204e2e3fa4ca3e73f452f087153cf81bac9561eeb854229cc2c5365")
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "updates url and checksum" do
