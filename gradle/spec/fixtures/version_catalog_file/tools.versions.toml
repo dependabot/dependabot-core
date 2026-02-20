@@ -1,0 +1,4 @@
+[versions]
+junit = "4.13.2"
+[libraries]
+test-junit = { module = "junit:junit", version.ref = "junit" }
