@@ -5,14 +5,16 @@
 # Please instead update this file by running `bin/tapioca gem rspec-its`.
 
 
-# source://rspec-its//lib/rspec/its/version.rb#1
+# source://rspec-its//lib/rspec/its/subject.rb#3
 module RSpec; end
 
 module RSpec::Core::SharedContext
   include ::RSpec::Its
 end
 
-# source://rspec-its//lib/rspec/its/version.rb#2
+# Adds the `its` to RSpec Example Groups, included by default.
+#
+# source://rspec-its//lib/rspec/its/subject.rb#4
 module RSpec::Its
   # Creates a nested example group named by the submitted `attribute`,
   # and then generates an example using the submitted block.
@@ -24,8 +26,8 @@ module RSpec::Its
   # When the subject is a `Hash`, you can refer to the Hash keys by
   # specifying a `Symbol` or `String` in an array.
   #
-  # With an implicit subject, `is_expected` can be used as an alternative
-  # to `should` (e.g. for one-liner use). An `are_expected` alias is also
+  # With an implicit subject, `should` can be used as an alternative
+  # to `is_expected` (e.g. for one-liner use). An `are_expected` alias is also
   # supplied.
   #
   # With an implicit subject, `will` can be used as an alternative
@@ -44,87 +46,110 @@ module RSpec::Its
   # @example
   #
   #   # This ...
-  #   describe Array do
-  #   its(:size) { should eq(0) }
+  #   RSpec.describe Array do
+  #   its(:size) { is_expected.to eq(0) }
   #   end
   #
   #   # ... generates the same runtime structure as this:
-  #   describe Array do
+  #   RSpec.describe Array do
   #   describe "size" do
-  #   it "should eq(0)" do
-  #   subject.size.should eq(0)
+  #   it "is_expected.to eq(0)" do
+  #   expect(subject.size).to eq(0)
   #   end
   #   end
   #   end
   # @example
   #
-  #   describe Person do
-  #   subject do
+  #   RSpec.describe Person do
+  #   subject(:person) do
   #   Person.new.tap do |person|
   #   person.phone_numbers << "555-1212"
   #   end
   #   end
   #
-  #   its("phone_numbers.first") { should eq("555-1212") }
+  #   its("phone_numbers.first") { is_expected.to eq("555-1212") }
   #   end
   # @example
   #
-  #   describe "a configuration Hash" do
+  #   RSpec.describe "a configuration Hash" do
   #   subject do
   #   { :max_users => 3,
   #   'admin' => :all_permissions.
   #   'john_doe' => {:permissions => [:read, :write]}}
   #   end
   #
-  #   its([:max_users]) { should eq(3) }
-  #   its(['admin']) { should eq(:all_permissions) }
-  #   its(['john_doe', :permissions]) { should eq([:read, :write]) }
+  #   its([:max_users]) { is_expected.to eq(3) }
+  #   its(['admin']) { is_expected.to eq(:all_permissions) }
+  #   its(['john_doe', :permissions]) { are_expected.to eq([:read, :write]) }
   #
   #   # You can still access its regular methods this way:
-  #   its(:keys) { should include(:max_users) }
-  #   its(:count) { should eq(2) }
+  #   its(:keys) { is_expected.to include(:max_users) }
+  #   its(:count) { is_expected.to eq(2) }
   #   end
   # @example
   #
-  #   describe Array do
-  #   its(:size) { is_expected.to eq(0) }
+  #   RSpec.describe Array do
+  #   its(:size) { should eq(0) }
   #   end
   # @example
   #
-  #   describe Array do
+  #   RSpec.describe Array do
   #   its(:foo) { will raise_error(NoMethodError) }
   #   end
   # @example
   #
-  #   describe Array do
+  #   RSpec.describe Array do
   #   its(:size) { will_not raise_error }
   #   end
   # @example
   #
   #   # This ...
-  #   describe Array do
-  #   its(:size, :focus) { should eq(0) }
+  #   RSpec.describe Array do
+  #   its(:size, :focus) { is_expected.to eq(0) }
   #   end
   #
   #   # ... generates the same runtime structure as this:
-  #   describe Array do
+  #   RSpec.describe Array do
   #   describe "size" do
-  #   it "should eq(0)", :focus do
-  #   subject.size.should eq(0)
+  #   it "is expected to eq(0)", :focus do
+  #   expect(subject.size).to eq(0)
   #   end
   #   end
   #   end
   # @example
   #
-  #   describe Person do
+  #   RSpec.describe Person do
   #   subject { Person.new }
+  #
   #   before { subject.age = 25 }
-  #   its(:age) { should eq(25) }
+  #
+  #   its(:age) { is_expected.to eq(25) }
   #   end
   #
-  # source://rspec-its//lib/rspec/its.rb#121
+  # source://rspec-its//lib/rspec/its.rb#128
   def its(attribute, *options, &block); end
 end
 
-# source://rspec-its//lib/rspec/its/version.rb#3
+# Handles turning subject into an expectation target
+#
+# @api private
+#
+# source://rspec-its//lib/rspec/its/subject.rb#7
+module RSpec::Its::Subject
+  private
+
+  # @api private
+  #
+  # source://rspec-its//lib/rspec/its/subject.rb#8
+  def for(attribute, subject); end
+
+  class << self
+    # @api private
+    #
+    # source://rspec-its//lib/rspec/its/subject.rb#23
+    def for(attribute, subject); end
+  end
+end
+
+# source://rspec-its//lib/rspec/its/version.rb#5
 RSpec::Its::VERSION = T.let(T.unsafe(nil), String)
