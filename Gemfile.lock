@@ -170,6 +170,7 @@ PATH
       dependabot-cargo (= 0.362.0)
       dependabot-common (= 0.362.0)
       dependabot-go_modules (= 0.362.0)
+      dependabot-julia (= 0.362.0)
       dependabot-npm_and_yarn (= 0.362.0)
       dependabot-python (= 0.362.0)
 
@@ -465,6 +466,7 @@ GEM
     zeitwerk (2.7.1)
 
 PLATFORMS
+  arm64-darwin-23
   arm64-darwin-25
   x86_64-linux
 

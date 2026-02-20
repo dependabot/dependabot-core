@@ -170,6 +170,7 @@ PATH
       dependabot-cargo (= 0.362.0)
       dependabot-common (= 0.362.0)
       dependabot-go_modules (= 0.362.0)
+      dependabot-julia (= 0.362.0)
       dependabot-npm_and_yarn (= 0.362.0)
       dependabot-python (= 0.362.0)
 
