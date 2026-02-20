@@ -36,7 +36,7 @@ gem "dependabot-uv", path: "../uv"
 gem "dependabot-vcpkg", path: "../vcpkg"
 
 gem "http", "~> 5.3"
-gem "octokit", "~> 7.2"
+gem "octokit", "~> 10.0"
 gem "opentelemetry-exporter-otlp", "~> 0.31"
 gem "opentelemetry-exporter-otlp-logs", "~> 0.2"
 gem "opentelemetry-exporter-otlp-metrics", "~> 0.6"
