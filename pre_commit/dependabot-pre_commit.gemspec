@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-go_modules", Dependabot::VERSION
+  spec.add_dependency "dependabot-julia", Dependabot::VERSION
   spec.add_dependency "dependabot-npm_and_yarn", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
 
