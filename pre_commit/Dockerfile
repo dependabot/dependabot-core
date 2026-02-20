@@ -24,5 +24,5 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot julia/helpers /opt/julia/helpers
 RUN bash /opt/julia/helpers/build
 
-COPY --chown=dependabot:dependabot --parents go_modules cargo npm_and_yarn python pre_commit common bundler $DEPENDABOT_HOME/
+COPY --chown=dependabot:dependabot --parents go_modules cargo npm_and_yarn python julia pre_commit common bundler $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
