@@ -36,7 +36,7 @@ PATH
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
       gitlab (~> 5.0)
-      json (< 2.12)
+      json (< 2.19)
       nokogiri (~> 1.8)
       octokit (~> 7.2)
       opentelemetry-api (~> 1.5)
@@ -97,7 +97,7 @@ PATH
   specs:
     dependabot-git_submodules (0.362.0)
       dependabot-common (= 0.362.0)
-      parseconfig (~> 1.0, < 1.1.0)
+      parseconfig (~> 1.0, < 1.2.0)
 
 PATH
   remote: github_actions
