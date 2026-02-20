@@ -49,7 +49,14 @@ end
     resolve_package_uuid(package_name::String)
 
 Resolve a package UUID from just its name by searching all reachable registries.
-Returns the UUID string if found, or nothing if the package is not registered.
+
+Returns a `Dict{String,Any}`. On success, the dict contains:
+  - `"uuid"`: the UUID string of the package
+  - `"name"`: the resolved package name
+
+On failure, the dict contains:
+  - `"error"`: a message describing why resolution failed (for example, if the
+    package is not found in any reachable registry or an internal error occurs).
 """
 function resolve_package_uuid(package_name::String)
     try
