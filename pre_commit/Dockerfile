@@ -2,11 +2,14 @@
 
 # Import pre-built ecosystem images to avoid code duplication
 # These images contain all the native helpers and tools already built
-FROM ghcr.io/dependabot/dependabot-updater-gomod AS go_modules
-FROM ghcr.io/dependabot/dependabot-updater-bundler AS bundler
+ARG GO_MODULES_BASE=ghcr.io/dependabot/dependabot-updater-gomod:latest
+FROM ${GO_MODULES_BASE} AS go_modules
 
-FROM ghcr.io/dependabot/dependabot-updater-core
+ARG BUNDLER_BASE=ghcr.io/dependabot/dependabot-updater-bundler:latest
+FROM ${BUNDLER_BASE} AS bundler
 
+ARG CORE_BASE=ghcr.io/dependabot/dependabot-updater-core:latest
+FROM ${CORE_BASE}
 USER root
 
 # Copy Go installation and helpers from go_modules image
