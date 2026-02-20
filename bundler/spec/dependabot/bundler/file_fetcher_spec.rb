@@ -205,6 +205,48 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
   end
 
+  context "with a custom version file referenced via `ruby file:` option" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby_with_custom_version_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "gemfile_with_ruby_file_option_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "custom-ruby-version?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "custom_ruby_version_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the custom version file specified by `ruby file:` option" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name))
+        .to include("custom-ruby-version")
+    end
+  end
+
   context "with a gems.rb rather than a Gemfile" do
     before do
       stub_request(:get, url + "?ref=sha")

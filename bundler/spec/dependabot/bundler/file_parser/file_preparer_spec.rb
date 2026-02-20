@@ -58,6 +58,16 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
       its(:content) { is_expected.to eq("ruby 2.2.0\n") }
     end
 
+    describe "the updated custom ruby version file specified by `ruby file:` option" do
+      subject do
+        prepared_dependency_files.find { |f| f.name == "custom-ruby-version" }
+      end
+
+      let(:dependency_files) { bundler_project_dependency_files("ruby_file_option") }
+
+      its(:content) { is_expected.to eq("2.2.0\n") }
+    end
+
     describe "the updated .specification file" do
       subject do
         prepared_dependency_files.find { |f| f.name == "plugins/example/.specification" }

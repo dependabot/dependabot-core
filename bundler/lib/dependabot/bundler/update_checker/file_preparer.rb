@@ -114,11 +114,12 @@ module Dependabot
             )
           end
 
-          # No editing required for lockfile or Ruby version file
+          # lockfile や Ruby バージョンファイルは編集不要のためそのまま追加
           files += [
             lockfile,
             ruby_version_file,
             tool_versions_file,
+            ruby_file_version_file,
             *imported_ruby_files,
             *specification_files
           ].compact
@@ -198,6 +199,24 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def tool_versions_file
           dependency_files.find { |f| f.name == ".tool-versions" }
+        end
+
+        # `ruby file: "..."` で指定されたカスタム Ruby バージョンファイルを返す
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def ruby_file_version_file
+          filename = ruby_file_version_filename
+          return unless filename
+
+          dependency_files.find { |f| f.name == filename }
+        end
+
+        sig { returns(T.nilable(String)) }
+        def ruby_file_version_filename
+          content = gemfile&.content
+          return unless content
+
+          match = content.match(/^\s*ruby\s+file:\s*['"]([^'"]+)['"]/)
+          match&.captures&.first
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }

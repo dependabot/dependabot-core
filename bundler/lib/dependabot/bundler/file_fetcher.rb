@@ -50,6 +50,7 @@ module Dependabot
         fetched_files += gemspecs
         fetched_files << T.must(ruby_version_file) if ruby_version_file
         fetched_files << T.must(tool_versions_file) if tool_versions_file
+        fetched_files << T.must(ruby_file_version_file) if ruby_file_version_file
         fetched_files += path_gemspecs
         fetched_files += find_included_files(fetched_files)
 
@@ -136,6 +137,28 @@ module Dependabot
         return unless gemfile
 
         @tool_versions_file ||= T.let(fetch_support_file(".tool-versions"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def ruby_file_version_file
+        return unless gemfile
+
+        @ruby_file_version_file ||= T.let(
+          begin
+            filename = ruby_file_version_filename
+            fetch_support_file(filename) if filename
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def ruby_file_version_filename
+        content = gemfile&.content
+        return unless content
+
+        match = content.match(/^\s*ruby\s+file:\s*['"]([^'"]+)['"]/)
+        match&.captures&.first
       end
 
       sig { returns(T::Array[DependencyFile]) }

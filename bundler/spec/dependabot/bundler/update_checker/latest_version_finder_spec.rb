@@ -227,6 +227,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
       end
 
+      context "when the Gemfile loads a custom ruby version file via `ruby file:` option" do
+        let(:dependency_files) { bundler_project_dependency_files("ruby_file_option") }
+
+        its([:version]) { is_expected.to eq(Dependabot::Bundler::Version.new("1.5.0")) }
+      end
+
       context "with a gemspec and a Gemfile" do
         let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
 
