@@ -6,10 +6,13 @@ defmodule DependencyHelper do
     |> case do
       {output, 0} ->
         output = try_decode(output)
-        if output =~ "No authenticated organization found" do
-          {:error, output}
-        else
-          {:ok, :erlang.binary_to_term(output)}
+        cond do
+          output =~ "No authenticated organization found" ->
+            {:error, output}
+          output == "" ->
+            {:error, "No output returned from helper script"}
+          true ->
+            {:ok, :erlang.binary_to_term(output)}
         end
 
       {error, 1} ->
@@ -121,7 +124,7 @@ defmodule DependencyHelper do
 
   defp fetch_public_key(repo, repo_url, auth_key, fingerprint) do
     case Hex.Repo.get_public_key(%{trusted: true, url: repo_url, auth_key: auth_key}) do
-      {:ok, {200, key, _}} ->
+      {:ok, {200, _headers, key}} ->
         if public_key_matches?(key, fingerprint) do
           {:ok, key}
         else
