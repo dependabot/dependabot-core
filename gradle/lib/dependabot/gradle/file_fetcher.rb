@@ -273,7 +273,7 @@ module Dependabot
         paths = supported_names
                 .map { |name| clean_join([dir, name]) }
                 .each do |path|
-          return cached_files[path] || next
+                  return cached_files[path] || next
         end
         fetch_first_if_present(paths)
       end

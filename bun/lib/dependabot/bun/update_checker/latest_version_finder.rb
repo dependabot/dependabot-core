@@ -237,7 +237,7 @@ module Dependabot
         def possible_previous_releases
           (package_details&.releases || [])
             .reject do |r|
-            r.version.prerelease? && !related_to_current_pre?(T.unsafe(r.version))
+              r.version.prerelease? && !related_to_current_pre?(T.unsafe(r.version))
           end
             .sort_by(&:version).reverse
         end

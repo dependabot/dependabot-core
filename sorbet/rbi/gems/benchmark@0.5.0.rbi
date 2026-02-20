@@ -240,6 +240,15 @@ module Benchmark
   def measure(label = T.unsafe(nil)); end
 
   # Returns the elapsed real time used to execute the given block.
+  # The unit of time is milliseconds.
+  #
+  #       Benchmark.ms { "a" * 1_000_000_000 }
+  #       #=> 509.8029999935534
+  #
+  # source://benchmark//lib/benchmark.rb#335
+  def ms; end
+
+  # Returns the elapsed real time used to execute the given block.
   # The unit of time is seconds.
   #
   #       Benchmark.realtime { "a" * 1_000_000_000 }
@@ -290,7 +299,7 @@ module Benchmark
     #       >total:   2.930000   0.000000   2.930000 (  2.932889)
     #       >avg:     0.976667   0.000000   0.976667 (  0.977630)
     #
-    # source://benchmark//lib/benchmark.rb#328
+    # source://benchmark//lib/benchmark.rb#341
     def benchmark(caption = T.unsafe(nil), label_width = T.unsafe(nil), format = T.unsafe(nil), *labels); end
 
     # A simple interface to the #benchmark method, #bm generates sequential
@@ -313,7 +322,7 @@ module Benchmark
     #       times:    0.960000   0.000000   0.960000 (  0.960423)
     #       upto:     0.950000   0.000000   0.950000 (  0.954864)
     #
-    # source://benchmark//lib/benchmark.rb#328
+    # source://benchmark//lib/benchmark.rb#341
     def bm(label_width = T.unsafe(nil), *labels, &blk); end
 
     # Sometimes benchmark results are skewed because code executed
@@ -353,7 +362,7 @@ module Benchmark
     # #bmbm yields a Benchmark::Job object and returns an array of
     # Benchmark::Tms objects.
     #
-    # source://benchmark//lib/benchmark.rb#328
+    # source://benchmark//lib/benchmark.rb#341
     def bmbm(width = T.unsafe(nil)); end
 
     # Returns the time used to execute the given block as a
@@ -372,8 +381,17 @@ module Benchmark
     #
     #        0.220000   0.000000   0.220000 (  0.227313)
     #
-    # source://benchmark//lib/benchmark.rb#328
+    # source://benchmark//lib/benchmark.rb#341
     def measure(label = T.unsafe(nil)); end
+
+    # Returns the elapsed real time used to execute the given block.
+    # The unit of time is milliseconds.
+    #
+    #       Benchmark.ms { "a" * 1_000_000_000 }
+    #       #=> 509.8029999935534
+    #
+    # source://benchmark//lib/benchmark.rb#341
+    def ms; end
 
     # Returns the elapsed real time used to execute the given block.
     # The unit of time is seconds.
@@ -381,7 +399,7 @@ module Benchmark
     #       Benchmark.realtime { "a" * 1_000_000_000 }
     #       #=> 0.5098029999935534
     #
-    # source://benchmark//lib/benchmark.rb#328
+    # source://benchmark//lib/benchmark.rb#341
     def realtime; end
   end
 end
@@ -389,7 +407,7 @@ end
 # A Job is a sequence of labelled blocks to be processed by the
 # Benchmark.bmbm method.  It is of little direct interest to the user.
 #
-# source://benchmark//lib/benchmark.rb#334
+# source://benchmark//lib/benchmark.rb#347
 class Benchmark::Job
   # Returns an initialized Job instance.
   # Usually, one doesn't call this method directly, as new
@@ -399,38 +417,38 @@ class Benchmark::Job
   #
   # @return [Job] a new instance of Job
   #
-  # source://benchmark//lib/benchmark.rb#342
+  # source://benchmark//lib/benchmark.rb#355
   def initialize(width); end
 
   # Registers the given label and block pair in the job list.
   #
   # @raise [ArgumentError]
   #
-  # source://benchmark//lib/benchmark.rb#350
+  # source://benchmark//lib/benchmark.rb#363
   def item(label = T.unsafe(nil), &blk); end
 
   # An array of 2-element arrays, consisting of label and block pairs.
   #
-  # source://benchmark//lib/benchmark.rb#362
+  # source://benchmark//lib/benchmark.rb#375
   def list; end
 
   # Registers the given label and block pair in the job list.
   #
   # @raise [ArgumentError]
   #
-  # source://benchmark//lib/benchmark.rb#359
+  # source://benchmark//lib/benchmark.rb#372
   def report(label = T.unsafe(nil), &blk); end
 
   # Length of the widest label in the #list.
   #
-  # source://benchmark//lib/benchmark.rb#365
+  # source://benchmark//lib/benchmark.rb#378
   def width; end
 end
 
 # This class is used by the Benchmark.benchmark and Benchmark.bm methods.
 # It is of little direct interest to the user.
 #
-# source://benchmark//lib/benchmark.rb#372
+# source://benchmark//lib/benchmark.rb#385
 class Benchmark::Report
   # Returns an initialized Report instance.
   # Usually, one doesn't call this method directly, as new
@@ -440,43 +458,43 @@ class Benchmark::Report
   #
   # @return [Report] a new instance of Report
   #
-  # source://benchmark//lib/benchmark.rb#380
+  # source://benchmark//lib/benchmark.rb#393
   def initialize(width = T.unsafe(nil), format = T.unsafe(nil)); end
 
   # An array of Benchmark::Tms objects representing each item.
   #
-  # source://benchmark//lib/benchmark.rb#399
+  # source://benchmark//lib/benchmark.rb#412
   def format; end
 
   # Prints the +label+ and measured time for the block,
   # formatted by +format+. See Tms#format for the
   # formatting rules.
   #
-  # source://benchmark//lib/benchmark.rb#389
+  # source://benchmark//lib/benchmark.rb#402
   def item(label = T.unsafe(nil), *format, &blk); end
 
   # An array of Benchmark::Tms objects representing each item.
   #
-  # source://benchmark//lib/benchmark.rb#399
+  # source://benchmark//lib/benchmark.rb#412
   def list; end
 
   # Prints the +label+ and measured time for the block,
   # formatted by +format+. See Tms#format for the
   # formatting rules.
   #
-  # source://benchmark//lib/benchmark.rb#396
+  # source://benchmark//lib/benchmark.rb#409
   def report(label = T.unsafe(nil), *format, &blk); end
 
   # An array of Benchmark::Tms objects representing each item.
   #
-  # source://benchmark//lib/benchmark.rb#399
+  # source://benchmark//lib/benchmark.rb#412
   def width; end
 end
 
 # A data object, representing the times associated with a benchmark
 # measurement.
 #
-# source://benchmark//lib/benchmark.rb#408
+# source://benchmark//lib/benchmark.rb#421
 class Benchmark::Tms
   # Returns an initialized Tms object which has
   # +utime+ as the user CPU time, +stime+ as the system CPU time,
@@ -485,13 +503,13 @@ class Benchmark::Tms
   #
   # @return [Tms] a new instance of Tms
   #
-  # source://benchmark//lib/benchmark.rb#443
+  # source://benchmark//lib/benchmark.rb#456
   def initialize(utime = T.unsafe(nil), stime = T.unsafe(nil), cutime = T.unsafe(nil), cstime = T.unsafe(nil), real = T.unsafe(nil), label = T.unsafe(nil)); end
 
   # Returns a new Tms object obtained by memberwise multiplication
   # of the individual times for this Tms object by +x+.
   #
-  # source://benchmark//lib/benchmark.rb#491
+  # source://benchmark//lib/benchmark.rb#504
   def *(x); end
 
   # Returns a new Tms object obtained by memberwise summation
@@ -499,27 +517,27 @@ class Benchmark::Tms
   # Tms object.
   # This method and #/() are useful for taking statistics.
   #
-  # source://benchmark//lib/benchmark.rb#478
+  # source://benchmark//lib/benchmark.rb#491
   def +(other); end
 
   # Returns a new Tms object obtained by memberwise subtraction
   # of the individual times for the +other+ Tms object from those of this
   # Tms object.
   #
-  # source://benchmark//lib/benchmark.rb#485
+  # source://benchmark//lib/benchmark.rb#498
   def -(other); end
 
   # Returns a new Tms object obtained by memberwise division
   # of the individual times for this Tms object by +x+.
   # This method and #+() are useful for taking statistics.
   #
-  # source://benchmark//lib/benchmark.rb#498
+  # source://benchmark//lib/benchmark.rb#511
   def /(x); end
 
   # Returns a new Tms object whose times are the sum of the times for this
   # Tms object, plus the time required to execute the code block (+blk+).
   #
-  # source://benchmark//lib/benchmark.rb#452
+  # source://benchmark//lib/benchmark.rb#465
   def add(&blk); end
 
   # An in-place version of #add.
@@ -527,17 +545,17 @@ class Benchmark::Tms
   # for this Tms object, plus the time required to execute
   # the code block (+blk+).
   #
-  # source://benchmark//lib/benchmark.rb#462
+  # source://benchmark//lib/benchmark.rb#475
   def add!(&blk); end
 
   # System CPU time of children
   #
-  # source://benchmark//lib/benchmark.rb#426
+  # source://benchmark//lib/benchmark.rb#439
   def cstime; end
 
   # User CPU time of children
   #
-  # source://benchmark//lib/benchmark.rb#423
+  # source://benchmark//lib/benchmark.rb#436
   def cutime; end
 
   # Returns the contents of this Tms object as
@@ -556,22 +574,22 @@ class Benchmark::Tms
   # If +format+ is not given, FORMAT is used as default value, detailing the
   # user, system, total and real elapsed time.
   #
-  # source://benchmark//lib/benchmark.rb#517
+  # source://benchmark//lib/benchmark.rb#530
   def format(format = T.unsafe(nil), *args); end
 
   # Label
   #
-  # source://benchmark//lib/benchmark.rb#435
+  # source://benchmark//lib/benchmark.rb#448
   def label; end
 
   # Elapsed real time
   #
-  # source://benchmark//lib/benchmark.rb#429
+  # source://benchmark//lib/benchmark.rb#442
   def real; end
 
   # System CPU time
   #
-  # source://benchmark//lib/benchmark.rb#420
+  # source://benchmark//lib/benchmark.rb#433
   def stime; end
 
   # Returns a new 6-element array, consisting of the
@@ -579,27 +597,27 @@ class Benchmark::Tms
   # user CPU time, children's system CPU time and elapsed
   # real time.
   #
-  # source://benchmark//lib/benchmark.rb#542
+  # source://benchmark//lib/benchmark.rb#555
   def to_a; end
 
   # Returns a hash containing the same data as `to_a`.
   #
-  # source://benchmark//lib/benchmark.rb#549
+  # source://benchmark//lib/benchmark.rb#562
   def to_h; end
 
   # Same as #format.
   #
-  # source://benchmark//lib/benchmark.rb#532
+  # source://benchmark//lib/benchmark.rb#545
   def to_s; end
 
   # Total time, that is +utime+ + +stime+ + +cutime+ + +cstime+
   #
-  # source://benchmark//lib/benchmark.rb#432
+  # source://benchmark//lib/benchmark.rb#445
   def total; end
 
   # User CPU time
   #
-  # source://benchmark//lib/benchmark.rb#417
+  # source://benchmark//lib/benchmark.rb#430
   def utime; end
 
   protected
@@ -611,7 +629,7 @@ class Benchmark::Tms
   # +op+ can be a mathematical operation such as <tt>+</tt>, <tt>-</tt>,
   # <tt>*</tt>, <tt>/</tt>
   #
-  # source://benchmark//lib/benchmark.rb#570
+  # source://benchmark//lib/benchmark.rb#583
   def memberwise(op, x); end
 end
 

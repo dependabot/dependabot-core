@@ -68,5 +68,41 @@ RSpec.describe Dependabot::Hex::Package::PackageDetailsFetcher do
         expect(fetcher.fetch_package_releases).to eq([])
       end
     end
+
+    context "when the dependency has a hex package name alias" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pulsar",
+          version: "2.8.7",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 2.8.7",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex",
+          metadata: { hex_package: "pulsar_elixir" }
+        )
+      end
+
+      let(:response) do
+        instance_double(
+          Excon::Response,
+          status: 200,
+          body:
+                fixture("package_fetch_response", "hex-parser.json")
+        )
+      end
+
+      before do
+        allow(Dependabot::RegistryClient).to receive(:get).and_return(response)
+      end
+
+      it "queries the hex.pm API using the hex package name" do
+        fetcher.fetch_package_releases
+        expect(Dependabot::RegistryClient).to have_received(:get)
+          .with(url: "https://hex.pm/api/packages/pulsar_elixir")
+      end
+    end
   end
 end

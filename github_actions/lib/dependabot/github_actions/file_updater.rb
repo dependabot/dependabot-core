@@ -55,9 +55,9 @@ module Dependabot
         updated_requirement_pairs =
           dependency.requirements.zip(T.must(dependency.previous_requirements))
                     .reject do |new_req, old_req|
-            next true if new_req[:file] != file.name
+                      next true if new_req[:file] != file.name
 
-            new_req[:source] == T.must(old_req)[:source]
+                      new_req[:source] == T.must(old_req)[:source]
           end
 
         updated_content = T.must(file.content)
