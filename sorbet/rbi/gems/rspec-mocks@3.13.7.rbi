@@ -1927,7 +1927,7 @@ end
 # A generic test double object. `double`, `instance_double` and friends
 # return an instance of this.
 #
-# source://rspec-mocks//lib/rspec/mocks/test_double.rb#134
+# source://rspec-mocks//lib/rspec/mocks/test_double.rb#135
 class RSpec::Mocks::Double
   include ::RSpec::Mocks::TestDouble
 end
@@ -5006,19 +5006,19 @@ module RSpec::Mocks::TestDouble
 
   private
 
-  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#117
+  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#118
   def __build_mock_proxy(order_group); end
 
-  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#113
+  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#114
   def __mock_proxy; end
 
-  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#121
+  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#122
   def __raise_expired_error; end
 
-  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#107
+  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#108
   def assign_stubs(stubs); end
 
-  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#126
+  # source://rspec-mocks//lib/rspec/mocks/test_double.rb#127
   def initialize_copy(other); end
 
   # @raise [NoMethodError]
@@ -5029,21 +5029,21 @@ end
 
 # @private
 #
-# source://rspec-mocks//lib/rspec/mocks/test_double.rb#139
+# source://rspec-mocks//lib/rspec/mocks/test_double.rb#140
 module RSpec::Mocks::TestDoubleFormatter
   class << self
-    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#140
+    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#141
     def format(dbl, unwrap = T.unsafe(nil)); end
 
     private
 
-    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#166
+    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#167
     def name_desc(dbl); end
 
-    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#149
+    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#150
     def type_desc(dbl); end
 
-    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#161
+    # source://rspec-mocks//lib/rspec/mocks/test_double.rb#162
     def verified_module_desc(dbl); end
   end
 end

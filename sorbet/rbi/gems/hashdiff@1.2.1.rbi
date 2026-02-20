@@ -23,19 +23,20 @@ module Hashdiff
     # @param obj2 [Array, Hash]
     # @param options [Hash] the options to use when comparing
     #   * :strict (Boolean) [true] whether numeric values will be compared on type as well as value.  Set to false to allow comparing Integer, Float, BigDecimal to each other
-    #   * :ignore_keys (Symbol, String or Array) [[]] a list of keys to ignore. No comparison is made for the specified key(s)
+    #   * :ignore_keys (Symbol, String or Array) [[]] a list of keys to ignore. No comparison is made for the specified key(s) in either hash
     #   * :indifferent (Boolean) [false] whether to treat hash keys indifferently.  Set to true to ignore differences between symbol keys (ie. {a: 1} ~= {'a' => 1})
     #   * :delimiter (String) ['.'] the delimiter used when returning nested key references
     #   * :numeric_tolerance (Numeric) [0] should be a positive numeric value.  Value by which numeric differences must be greater than.  By default, numeric values are compared exactly; with the :tolerance option, the difference between numeric values must be greater than the given value.
     #   * :strip (Boolean) [false] whether or not to call #strip on strings before comparing
     #   * :array_path (Boolean) [false] whether to return the path references for nested values in an array, can be used for patch compatibility with non string keys.
     #   * :use_lcs (Boolean) [true] whether or not to use an implementation of the Longest common subsequence algorithm for comparing arrays, produces better diffs but is slower.
+    #   * :preserve_key_order (Boolean) [false] If false, operations are grouped by type (-, ~, then +) then by hash key alphabetically. If true, preserves the original key order from the first hash and appends new keys from the second hash in order.
     # @return [Array] an array of changes.
     #   e.g. [[ '+', 'a.b', '45' ], [ '-', 'a.c', '5' ], [ '~', 'a.x', '45', '63']]
     # @since 0.0.1
     # @yield [path, value1, value2] Optional block is used to compare each value, instead of default #==. If the block returns value other than true of false, then other specified comparison options will be used to do the comparison.
     #
-    # source://hashdiff//lib/hashdiff/diff.rb#32
+    # source://hashdiff//lib/hashdiff/diff.rb#33
     def best_diff(obj1, obj2, options = T.unsafe(nil), &block); end
 
     # check if objects are comparable
@@ -96,7 +97,7 @@ module Hashdiff
     # @param obj2 [Array, Hash]
     # @param options [Hash] the options to use when comparing
     #   * :strict (Boolean) [true] whether numeric values will be compared on type as well as value.  Set to false to allow comparing Integer, Float, BigDecimal to each other
-    #   * :ignore_keys (Symbol, String or Array) [[]] a list of keys to ignore. No comparison is made for the specified key(s)
+    #   * :ignore_keys (Symbol, String or Array) [[]] a list of keys to ignore. No comparison is made for the specified key(s) in either hash
     #   * :indifferent (Boolean) [false] whether to treat hash keys indifferently.  Set to true to ignore differences between symbol keys (ie. {a: 1} ~= {'a' => 1})
     #   * :similarity (Numeric) [0.8] should be between (0, 1]. Meaningful if there are similar hashes in arrays. See {best_diff}.
     #   * :delimiter (String) ['.'] the delimiter used when returning nested key references
@@ -104,12 +105,13 @@ module Hashdiff
     #   * :strip (Boolean) [false] whether or not to call #strip on strings before comparing
     #   * :array_path (Boolean) [false] whether to return the path references for nested values in an array, can be used for patch compatibility with non string keys.
     #   * :use_lcs (Boolean) [true] whether or not to use an implementation of the Longest common subsequence algorithm for comparing arrays, produces better diffs but is slower.
+    #   * :preserve_key_order (Boolean) [false] If false, operations are grouped by type (-, ~, then +) then by hash key alphabetically. If true, preserves the original key order from the first hash and appends new keys from the second hash in order.
     # @return [Array] an array of changes.
     #   e.g. [[ '+', 'a.b', '45' ], [ '-', 'a.c', '5' ], [ '~', 'a.x', '45', '63']]
     # @since 0.0.1
     # @yield [path, value1, value2] Optional block is used to compare each value, instead of default #==. If the block returns value other than true of false, then other specified comparison options will be used to do the comparison.
     #
-    # source://hashdiff//lib/hashdiff/diff.rb#80
+    # source://hashdiff//lib/hashdiff/diff.rb#82
     def diff(obj1, obj2, options = T.unsafe(nil), &block); end
 
     # diff array using LCS algorithm
@@ -117,7 +119,7 @@ module Hashdiff
     # @private
     # @yield [links]
     #
-    # source://hashdiff//lib/hashdiff/diff.rb#124
+    # source://hashdiff//lib/hashdiff/diff.rb#127
     def diff_array_lcs(arraya, arrayb, options = T.unsafe(nil)); end
 
     # caculate array difference using LCS algorithm

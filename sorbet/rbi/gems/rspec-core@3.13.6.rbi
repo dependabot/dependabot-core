@@ -11167,7 +11167,7 @@ module RSpec::Core::World::Null
     # @api private
     #
     # source://rspec-core//lib/rspec/core/world.rb#272
-    def traverse_example_group_trees_until; end
+    def traverse_example_group_trees_until(&_block); end
   end
 end
 

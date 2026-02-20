@@ -13,60 +13,60 @@ module Addressable; end
 # source://addressable//lib/addressable/idna/pure.rb#21
 module Addressable::IDNA
   class << self
-    # source://addressable//lib/addressable/idna/pure.rb#122
+    # source://addressable//lib/addressable/idna/pure.rb#117
     def _deprecated_unicode_normalize_kc(value); end
 
     # Converts from a Unicode internationalized domain name to an ASCII
     # domain name as described in RFC 3490.
     #
-    # source://addressable//lib/addressable/idna/pure.rb#67
+    # source://addressable//lib/addressable/idna/pure.rb#62
     def to_ascii(input); end
 
     # Converts from an ASCII domain name to a Unicode internationalized
     # domain name as described in RFC 3490.
     #
-    # source://addressable//lib/addressable/idna/pure.rb#93
+    # source://addressable//lib/addressable/idna/pure.rb#88
     def to_unicode(input); end
 
     # @deprecated Use {String#unicode_normalize(:nfkc)} instead
     #
-    # source://addressable//lib/addressable/idna/pure.rb#117
+    # source://addressable//lib/addressable/idna/pure.rb#112
     def unicode_normalize_kc(*args, **_arg1, &block); end
 
     private
 
-    # source://addressable//lib/addressable/idna/pure.rb#140
+    # source://addressable//lib/addressable/idna/pure.rb#135
     def lookup_unicode_lowercase(codepoint); end
 
     # Bias adaptation method
     #
-    # source://addressable//lib/addressable/idna/pure.rb#488
+    # source://addressable//lib/addressable/idna/pure.rb#4703
     def punycode_adapt(delta, numpoints, firsttime); end
 
     # @return [Boolean]
     #
-    # source://addressable//lib/addressable/idna/pure.rb#456
+    # source://addressable//lib/addressable/idna/pure.rb#4671
     def punycode_basic?(codepoint); end
 
-    # source://addressable//lib/addressable/idna/pure.rb#334
+    # source://addressable//lib/addressable/idna/pure.rb#4549
     def punycode_decode(punycode); end
 
     # Returns the numeric value of a basic codepoint
     # (for use in representing integers) in the range 0 to
     # base - 1, or PUNYCODE_BASE if codepoint does not represent a value.
     #
-    # source://addressable//lib/addressable/idna/pure.rb#474
+    # source://addressable//lib/addressable/idna/pure.rb#4689
     def punycode_decode_digit(codepoint); end
 
     # @return [Boolean]
     #
-    # source://addressable//lib/addressable/idna/pure.rb#461
+    # source://addressable//lib/addressable/idna/pure.rb#4676
     def punycode_delimiter?(codepoint); end
 
-    # source://addressable//lib/addressable/idna/pure.rb#213
+    # source://addressable//lib/addressable/idna/pure.rb#4428
     def punycode_encode(unicode); end
 
-    # source://addressable//lib/addressable/idna/pure.rb#466
+    # source://addressable//lib/addressable/idna/pure.rb#4681
     def punycode_encode_digit(d); end
 
     # Unicode aware downcase method.
@@ -75,99 +75,109 @@ module Addressable::IDNA
     # @param input [String] The input string.
     # @return [String] The downcased result.
     #
-    # source://addressable//lib/addressable/idna/pure.rb#132
+    # source://addressable//lib/addressable/idna/pure.rb#127
     def unicode_downcase(input); end
   end
 end
 
-# source://addressable//lib/addressable/idna/pure.rb#183
+# source://addressable//lib/addressable/idna/pure.rb#4398
 Addressable::IDNA::ACE_MAX_LENGTH = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#40
+# This module is loosely based on idn_actionmailer by Mick Staugaard,
+# the unicode library by Yoshida Masato, and the punycode implementation
+# by Kazuhiro Nishiyama.  Most of the code was copied verbatim, but
+# some reformatting was done, and some translation from C was done.
+#
+# Without their code to work from as a base, we'd all still be relying
+# on the presence of libidn.  Which nobody ever seems to have installed.
+#
+# Original sources:
+# http://github.com/staugaard/idn_actionmailer
+# http://www.yoshidam.net/Ruby.html#unicode
+# http://rubyforge.org/frs/?group_id=2550
+#
+# source://addressable//lib/addressable/idna/pure.rb#35
 Addressable::IDNA::ACE_PREFIX = T.let(T.unsafe(nil), String)
 
-# source://addressable//lib/addressable/idna/pure.rb#172
+# source://addressable//lib/addressable/idna/pure.rb#4387
 Addressable::IDNA::COMPOSITION_TABLE = T.let(T.unsafe(nil), Hash)
 
-# source://addressable//lib/addressable/idna/pure.rb#185
+# source://addressable//lib/addressable/idna/pure.rb#4400
 Addressable::IDNA::PUNYCODE_BASE = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#189
+# source://addressable//lib/addressable/idna/pure.rb#4404
 Addressable::IDNA::PUNYCODE_DAMP = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#192
+# source://addressable//lib/addressable/idna/pure.rb#4407
 Addressable::IDNA::PUNYCODE_DELIMITER = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#190
+# source://addressable//lib/addressable/idna/pure.rb#4405
 Addressable::IDNA::PUNYCODE_INITIAL_BIAS = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#191
+# source://addressable//lib/addressable/idna/pure.rb#4406
 Addressable::IDNA::PUNYCODE_INITIAL_N = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#194
+# source://addressable//lib/addressable/idna/pure.rb#4409
 Addressable::IDNA::PUNYCODE_MAXINT = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#196
+# source://addressable//lib/addressable/idna/pure.rb#4411
 Addressable::IDNA::PUNYCODE_PRINT_ASCII = T.let(T.unsafe(nil), String)
 
-# source://addressable//lib/addressable/idna/pure.rb#188
+# source://addressable//lib/addressable/idna/pure.rb#4403
 Addressable::IDNA::PUNYCODE_SKEW = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#187
+# source://addressable//lib/addressable/idna/pure.rb#4402
 Addressable::IDNA::PUNYCODE_TMAX = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#186
+# source://addressable//lib/addressable/idna/pure.rb#4401
 Addressable::IDNA::PUNYCODE_TMIN = T.let(T.unsafe(nil), Integer)
 
 # Input is invalid.
 #
-# source://addressable//lib/addressable/idna/pure.rb#207
+# source://addressable//lib/addressable/idna/pure.rb#4422
 class Addressable::IDNA::PunycodeBadInput < ::StandardError; end
 
 # Output would exceed the space provided.
 #
-# source://addressable//lib/addressable/idna/pure.rb#209
+# source://addressable//lib/addressable/idna/pure.rb#4424
 class Addressable::IDNA::PunycodeBigOutput < ::StandardError; end
 
 # Input needs wider integers to process.
 #
-# source://addressable//lib/addressable/idna/pure.rb#211
+# source://addressable//lib/addressable/idna/pure.rb#4426
 class Addressable::IDNA::PunycodeOverflow < ::StandardError; end
 
-# source://addressable//lib/addressable/idna/pure.rb#163
+# source://addressable//lib/addressable/idna/pure.rb#151
 Addressable::IDNA::UNICODE_DATA = T.let(T.unsafe(nil), Hash)
 
-# source://addressable//lib/addressable/idna/pure.rb#150
+# source://addressable//lib/addressable/idna/pure.rb#145
 Addressable::IDNA::UNICODE_DATA_CANONICAL = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#148
+# source://addressable//lib/addressable/idna/pure.rb#143
 Addressable::IDNA::UNICODE_DATA_COMBINING_CLASS = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#151
+# source://addressable//lib/addressable/idna/pure.rb#146
 Addressable::IDNA::UNICODE_DATA_COMPATIBILITY = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#149
+# source://addressable//lib/addressable/idna/pure.rb#144
 Addressable::IDNA::UNICODE_DATA_EXCLUSION = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#153
+# source://addressable//lib/addressable/idna/pure.rb#148
 Addressable::IDNA::UNICODE_DATA_LOWERCASE = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#154
+# source://addressable//lib/addressable/idna/pure.rb#149
 Addressable::IDNA::UNICODE_DATA_TITLECASE = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#152
+# source://addressable//lib/addressable/idna/pure.rb#147
 Addressable::IDNA::UNICODE_DATA_UPPERCASE = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#182
+# source://addressable//lib/addressable/idna/pure.rb#4397
 Addressable::IDNA::UNICODE_MAX_LENGTH = T.let(T.unsafe(nil), Integer)
 
-# source://addressable//lib/addressable/idna/pure.rb#36
-Addressable::IDNA::UNICODE_TABLE = T.let(T.unsafe(nil), String)
-
-# source://addressable//lib/addressable/idna/pure.rb#42
+# source://addressable//lib/addressable/idna/pure.rb#37
 Addressable::IDNA::UTF8_REGEX = T.let(T.unsafe(nil), Regexp)
 
-# source://addressable//lib/addressable/idna/pure.rb#53
+# source://addressable//lib/addressable/idna/pure.rb#48
 Addressable::IDNA::UTF8_REGEX_MULTIBYTE = T.let(T.unsafe(nil), Regexp)
 
 # This is an implementation of a URI template based on
@@ -640,7 +650,7 @@ class Addressable::Template::MatchData
   # @param key [String, Symbol, Fixnum] Capture index or name. Note that when accessing by with index
   #   of 0, the full URI will be returned. The intention is to mimic
   #   the ::MatchData#[] behavior.
-  # @param len [#to_int, nil] If provided, an array of values will be returend with the given
+  # @param len [#to_int, nil] If provided, an array of values will be returned with the given
   #   parameter used as length.
   # @return [Array, String, nil] The captured value corresponding to the index or name. If the
   #   value was not provided or the key is unknown, nil will be

@@ -396,13 +396,13 @@ class WEBrick::GenericServer
   # You must subclass GenericServer and implement \#run which accepts a TCP
   # client socket
   #
-  # source://webrick//lib/webrick/server.rb#244
+  # source://webrick//lib/webrick/server.rb#243
   def run(sock); end
 
   # Shuts down the server and all listening sockets.  New listeners must be
   # provided to restart the server.
   #
-  # source://webrick//lib/webrick/server.rb#234
+  # source://webrick//lib/webrick/server.rb#233
   def shutdown; end
 
   # Starts the server and runs the +block+ for each connection.  This method
@@ -437,7 +437,7 @@ class WEBrick::GenericServer
 
   # Stops the server from accepting new connections.
   #
-  # source://webrick//lib/webrick/server.rb#222
+  # source://webrick//lib/webrick/server.rb#221
   def stop; end
 
   # Tokens control the number of outstanding clients.  The
@@ -451,24 +451,24 @@ class WEBrick::GenericServer
   # Accepts a TCP client socket from the TCP server socket +svr+ and returns
   # the client socket.
   #
-  # source://webrick//lib/webrick/server.rb#256
+  # source://webrick//lib/webrick/server.rb#255
   def accept_client(svr); end
 
-  # source://webrick//lib/webrick/server.rb#347
+  # source://webrick//lib/webrick/server.rb#346
   def alarm_shutdown_pipe; end
 
   # Calls the callback +callback_name+ from the configuration with +args+
   #
-  # source://webrick//lib/webrick/server.rb#334
+  # source://webrick//lib/webrick/server.rb#333
   def call_callback(callback_name, *args); end
 
-  # source://webrick//lib/webrick/server.rb#359
+  # source://webrick//lib/webrick/server.rb#358
   def cleanup_listener; end
 
-  # source://webrick//lib/webrick/server.rb#342
+  # source://webrick//lib/webrick/server.rb#341
   def cleanup_shutdown_pipe(shutdown_pipe); end
 
-  # source://webrick//lib/webrick/server.rb#338
+  # source://webrick//lib/webrick/server.rb#337
   def setup_shutdown_pipe; end
 
   # Starts a server thread for the client socket +sock+ that runs the given
@@ -479,7 +479,7 @@ class WEBrick::GenericServer
   #
   # If any errors occur in the block they are logged and handled.
   #
-  # source://webrick//lib/webrick/server.rb#288
+  # source://webrick//lib/webrick/server.rb#287
   def start_thread(sock, &block); end
 end
 

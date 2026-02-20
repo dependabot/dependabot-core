@@ -55,22 +55,22 @@ module Commonmarker::Config
   extend ::Commonmarker::Utils
 
   class << self
-    # source://commonmarker//lib/commonmarker/config.rb#81
+    # source://commonmarker//lib/commonmarker/config.rb#86
     def process_extension_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#65
+    # source://commonmarker//lib/commonmarker/config.rb#70
     def process_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#81
+    # source://commonmarker//lib/commonmarker/config.rb#86
     def process_parse_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#73
+    # source://commonmarker//lib/commonmarker/config.rb#78
     def process_plugins(plugins); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#81
+    # source://commonmarker//lib/commonmarker/config.rb#86
     def process_render_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#98
+    # source://commonmarker//lib/commonmarker/config.rb#103
     def process_syntax_highlighter_plugin(options); end
   end
 end
@@ -81,7 +81,7 @@ end
 # source://commonmarker//lib/commonmarker/config.rb#7
 Commonmarker::Config::OPTIONS = T.let(T.unsafe(nil), Hash)
 
-# source://commonmarker//lib/commonmarker/config.rb#55
+# source://commonmarker//lib/commonmarker/config.rb#60
 Commonmarker::Config::PLUGINS = T.let(T.unsafe(nil), Hash)
 
 # source://commonmarker//lib/commonmarker/constants.rb#4

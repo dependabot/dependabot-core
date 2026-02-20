@@ -25,7 +25,7 @@ class Terminal::Table
   # Check if _other_ is equal to self. _other_ is considered equal
   # if it contains the same headings and rows.
   #
-  # source://terminal-table//lib/terminal-table/table.rb#204
+  # source://terminal-table//lib/terminal-table/table.rb#206
   def ==(other); end
 
   # Add a row.
@@ -74,7 +74,7 @@ class Terminal::Table
   # This is separated from the String rendering so that certain features may be tweaked
   # before the String is built.
   #
-  # source://terminal-table//lib/terminal-table/table.rb#126
+  # source://terminal-table//lib/terminal-table/table.rb#128
   def elaborate_rows; end
 
   # Returns the value of attribute headings.
@@ -100,21 +100,21 @@ class Terminal::Table
 
   # Render the table.
   #
-  # source://terminal-table//lib/terminal-table/table.rb#169
+  # source://terminal-table//lib/terminal-table/table.rb#171
   def render; end
 
   # Return rows without separator rows.
   #
-  # source://terminal-table//lib/terminal-table/table.rb#178
+  # source://terminal-table//lib/terminal-table/table.rb#180
   def rows; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#182
+  # source://terminal-table//lib/terminal-table/table.rb#184
   def rows=(array); end
 
-  # source://terminal-table//lib/terminal-table/table.rb#191
+  # source://terminal-table//lib/terminal-table/table.rb#193
   def style; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#187
+  # source://terminal-table//lib/terminal-table/table.rb#189
   def style=(options); end
 
   # Returns the value of attribute title.
@@ -122,37 +122,37 @@ class Terminal::Table
   # source://terminal-table//lib/terminal-table/table.rb#6
   def title; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#195
+  # source://terminal-table//lib/terminal-table/table.rb#197
   def title=(title); end
 
   # Render the table.
   #
-  # source://terminal-table//lib/terminal-table/table.rb#173
+  # source://terminal-table//lib/terminal-table/table.rb#175
   def to_s; end
 
   private
 
-  # source://terminal-table//lib/terminal-table/table.rb#367
+  # source://terminal-table//lib/terminal-table/table.rb#369
   def column_widths; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#212
+  # source://terminal-table//lib/terminal-table/table.rb#214
   def columns_width; end
 
   # Return headings combined with rows.
   #
-  # source://terminal-table//lib/terminal-table/table.rb#346
+  # source://terminal-table//lib/terminal-table/table.rb#348
   def headings_with_rows; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#216
+  # source://terminal-table//lib/terminal-table/table.rb#218
   def recalc_column_widths; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#363
+  # source://terminal-table//lib/terminal-table/table.rb#365
   def require_column_widths_recalc; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#359
+  # source://terminal-table//lib/terminal-table/table.rb#361
   def title_cell_options; end
 
-  # source://terminal-table//lib/terminal-table/table.rb#350
+  # source://terminal-table//lib/terminal-table/table.rb#352
   def yield_or_eval(&block); end
 end
 

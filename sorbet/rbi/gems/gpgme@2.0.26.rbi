@@ -313,13 +313,13 @@ module GPGME
     # TODO find out what it does, can't seem to find a proper parameter that
     # returns something other than nil.
     #
-    # source://gpgme//lib/gpgme.rb#93
+    # source://gpgme//lib/gpgme.rb#148
     def check_version(options = T.unsafe(nil)); end
 
     # Auxiliary method used by all the library to generate exceptions
     # from error codes returned by the C extension.
     #
-    # source://gpgme//lib/gpgme.rb#31
+    # source://gpgme//lib/gpgme.rb#86
     def error_to_exception(err); end
 
     # source://gpgme//lib/gpgme.rb#1
@@ -619,17 +619,54 @@ module GPGME
     # source://gpgme//lib/gpgme.rb#1
     def gpgme_wait(_arg0, _arg1, _arg2); end
 
-    # source://gpgme//lib/gpgme.rb#26
+    # source://gpgme//lib/gpgme.rb#81
     def hash_algo_name(_arg0); end
 
     # From the c extension
     #
-    # source://gpgme//lib/gpgme.rb#25
+    # source://gpgme//lib/gpgme.rb#80
     def pubkey_algo_name(_arg0); end
+
+    # Execute a block with the GPGME mutex held if thread-safe mode is
+    # enabled. If thread-safe mode is disabled, the block is executed
+    # directly without locking.
+    #
+    # source://gpgme//lib/gpgme.rb#71
+    def synchronize(&block); end
+
+    # Enable or disable thread-safe mode. Enabled by default. When
+    # enabled, all high-level GPGME operations (encrypt, decrypt, sign,
+    # verify, key listing, etc.) are serialized through a global monitor
+    # to prevent concurrent access to gpg-agent from causing "Bad file
+    # descriptor" errors. Disable for single-threaded apps if the
+    # synchronization overhead is undesirable.
+    #
+    # @param value [Boolean] false to disable thread-safe mode
+    #
+    # source://gpgme//lib/gpgme.rb#52
+    def thread_safe=(_arg0); end
+
+    # Returns true if thread-safe mode is enabled.
+    #
+    # @return [Boolean]
+    #
+    # source://gpgme//lib/gpgme.rb#55
+    def thread_safe?; end
+
+    # The mutex used for thread-safe serialization. Can be used directly
+    # if you need finer-grained control over locking.
+    #
+    # @example manual locking
+    #   GPGME.synchronize do
+    #   # multiple GPGME operations atomically
+    #   end
+    #
+    # source://gpgme//lib/gpgme.rb#66
+    def thread_safe_mutex; end
   end
 end
 
-# source://gpgme//lib/gpgme/constants.rb#355
+# source://gpgme//lib/gpgme/constants.rb#373
 GPGME::CREATE_GROUP = T.let(T.unsafe(nil), Integer)
 
 # Different, independent methods providing the simplest possible API to
@@ -655,7 +692,7 @@ class GPGME::Crypto
   #
   # Same functionality of {.sign} only doing clearsigns by default.
   #
-  # source://gpgme//lib/gpgme/crypto.rb#330
+  # source://gpgme//lib/gpgme/crypto.rb#332
   def clearsign(text, options = T.unsafe(nil)); end
 
   # Decrypts a previously encrypted element
@@ -695,7 +732,7 @@ class GPGME::Crypto
   #   for a key that's not available currently.
   # @return [GPGME::Data] a {GPGME::Data} that can be read.
   #
-  # source://gpgme//lib/gpgme/crypto.rb#164
+  # source://gpgme//lib/gpgme/crypto.rb#166
   def decrypt(cipher, options = T.unsafe(nil)); end
 
   # Returns the value of attribute default_options.
@@ -709,7 +746,7 @@ class GPGME::Crypto
   #
   # Same functionality of {.sign} only doing detached signs by default.
   #
-  # source://gpgme//lib/gpgme/crypto.rb#340
+  # source://gpgme//lib/gpgme/crypto.rb#342
   def detach_sign(text, options = T.unsafe(nil)); end
 
   # Encrypts an element
@@ -792,7 +829,7 @@ class GPGME::Crypto
   # @raise [GPGME::Error::UnusableSecretKey] TODO don't know when
   # @return [GPGME::Data] a {GPGME::Data} that can be read.
   #
-  # source://gpgme//lib/gpgme/crypto.rb#235
+  # source://gpgme//lib/gpgme/crypto.rb#237
   def sign(text, options = T.unsafe(nil)); end
 
   # Verifies a previously signed element
@@ -830,14 +867,26 @@ class GPGME::Crypto
   # @return [GPGME::Data] unless the sign is detached, the {GPGME::Data}
   #   object with the plain text. If the sign is detached, will return nil.
   #
-  # source://gpgme//lib/gpgme/crypto.rb#304
+  # source://gpgme//lib/gpgme/crypto.rb#306
   def verify(sig, options = T.unsafe(nil)); end
+
+  private
+
+  # Resolves keys for signing, reusing already-fetched recipient keys when possible
+  # to avoid redundant key lookups which can be slow.
+  #
+  # @param signers_input [Array, String, Key] The signer identifiers
+  # @param recipient_keys [Array<Key>, nil] Already-fetched recipient keys to check for reuse
+  # @return [Array<Key>] Keys suitable for signing
+  #
+  # source://gpgme//lib/gpgme/crypto.rb#366
+  def resolve_keys_for_signing(signers_input, recipient_keys); end
 
   class << self
     # Allows calling of methods directly in the module without the need to
     # create a new instance.
     #
-    # source://gpgme//lib/gpgme/crypto.rb#347
+    # source://gpgme//lib/gpgme/crypto.rb#349
     def method_missing(method, *args, &block); end
   end
 end
@@ -851,38 +900,41 @@ end
 class GPGME::Ctx
   # Add _keys_ to the list of signers.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#524
+  # source://gpgme//lib/gpgme/ctx.rb#532
   def add_signer(*keys); end
 
   # Return true if the output is ASCII armored.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#165
+  # source://gpgme//lib/gpgme/ctx.rb#167
   def armor; end
 
   # Tell whether the output should be ASCII armored.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#159
+  # source://gpgme//lib/gpgme/ctx.rb#161
   def armor=(yes); end
 
   # Edit attributes of the key on the card.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#481
+  # The callback receives (hook_value, status, args, fd) where status is
+  # a numeric status code (e.g., GPGME::GPGME_STATUS_GET_BOOL).
+  #
+  # source://gpgme//lib/gpgme/ctx.rb#489
   def card_edit(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Remove the list of signers from this object.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#519
+  # source://gpgme//lib/gpgme/ctx.rb#527
   def clear_signers; end
 
   # Decrypt the ciphertext and return the plaintext.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#488
+  # source://gpgme//lib/gpgme/ctx.rb#496
   def decrypt(cipher, plain = T.unsafe(nil)); end
 
-  # source://gpgme//lib/gpgme/ctx.rb#502
+  # source://gpgme//lib/gpgme/ctx.rb#510
   def decrypt_result; end
 
-  # source://gpgme//lib/gpgme/ctx.rb#495
+  # source://gpgme//lib/gpgme/ctx.rb#503
   def decrypt_verify(cipher, plain = T.unsafe(nil)); end
 
   # Delete the key from the key ring.
@@ -890,7 +942,7 @@ class GPGME::Ctx
   # otherwise secret keys are deleted as well.
   # If force is true, the confirmation dialog will not be displayed.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#464
+  # source://gpgme//lib/gpgme/ctx.rb#466
   def delete(key, allow_secret = T.unsafe(nil), force = T.unsafe(nil)); end
 
   # Delete the key from the key ring.
@@ -898,7 +950,7 @@ class GPGME::Ctx
   # otherwise secret keys are deleted as well.
   # If force is true, the confirmation dialog will not be displayed.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#451
+  # source://gpgme//lib/gpgme/ctx.rb#453
   def delete_key(key, allow_secret = T.unsafe(nil), force = T.unsafe(nil)); end
 
   # Convenient method to iterate over keys.
@@ -909,7 +961,7 @@ class GPGME::Ctx
   # See {GPGME::Key.find} for an example of how to use, or for an easier way
   # to use.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#359
+  # source://gpgme//lib/gpgme/ctx.rb#361
   def each_key(pattern = T.unsafe(nil), secret_only = T.unsafe(nil), &block); end
 
   # Convenient method to iterate over keys.
@@ -920,39 +972,51 @@ class GPGME::Ctx
   # See {GPGME::Key.find} for an example of how to use, or for an easier way
   # to use.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#369
+  # source://gpgme//lib/gpgme/ctx.rb#371
   def each_keys(pattern = T.unsafe(nil), secret_only = T.unsafe(nil), &block); end
 
   # Edit attributes of the key in the local key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#472
+  # The callback receives (hook_value, status, args, fd) where status is
+  # a numeric status code (e.g., GPGME::GPGME_STATUS_GET_BOOL).
+  #
+  # source://gpgme//lib/gpgme/ctx.rb#477
   def edit(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Edit attributes of the key on the card.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#480
+  # The callback receives (hook_value, status, args, fd) where status is
+  # a numeric status code (e.g., GPGME::GPGME_STATUS_GET_BOOL).
+  #
+  # source://gpgme//lib/gpgme/ctx.rb#488
   def edit_card(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Edit attributes of the key on the card.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#475
+  # The callback receives (hook_value, status, args, fd) where status is
+  # a numeric status code (e.g., GPGME::GPGME_STATUS_GET_BOOL).
+  #
+  # source://gpgme//lib/gpgme/ctx.rb#483
   def edit_card_key(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Edit attributes of the key in the local key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#467
+  # The callback receives (hook_value, status, args, fd) where status is
+  # a numeric status code (e.g., GPGME::GPGME_STATUS_GET_BOOL).
+  #
+  # source://gpgme//lib/gpgme/ctx.rb#472
   def edit_key(key, editfunc, hook_value = T.unsafe(nil), out = T.unsafe(nil)); end
 
   # Encrypt the plaintext in the data object for the recipients and
   # return the ciphertext.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#548
+  # source://gpgme//lib/gpgme/ctx.rb#556
   def encrypt(recp, plain, cipher = T.unsafe(nil), flags = T.unsafe(nil)); end
 
-  # source://gpgme//lib/gpgme/ctx.rb#555
+  # source://gpgme//lib/gpgme/ctx.rb#563
   def encrypt_result; end
 
-  # source://gpgme//lib/gpgme/ctx.rb#559
+  # source://gpgme//lib/gpgme/ctx.rb#567
   def encrypt_sign(recp, plain, cipher = T.unsafe(nil), flags = T.unsafe(nil)); end
 
   # Extract the public keys that match the +recipients+. Returns a
@@ -964,7 +1028,7 @@ class GPGME::Ctx
   # If passed, the key will be exported to +keydata+, which must be
   # a {GPGME::Data} object.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#433
+  # source://gpgme//lib/gpgme/ctx.rb#435
   def export(recipients, keydata = T.unsafe(nil), mode = T.unsafe(nil)); end
 
   # Extract the public keys that match the +recipients+. Returns a
@@ -976,7 +1040,7 @@ class GPGME::Ctx
   # If passed, the key will be exported to +keydata+, which must be
   # a {GPGME::Data} object.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#427
+  # source://gpgme//lib/gpgme/ctx.rb#429
   def export_keys(recipients, keydata = T.unsafe(nil), mode = T.unsafe(nil)); end
 
   # Generate a new key pair.
@@ -997,7 +1061,7 @@ class GPGME::Ctx
   # If +pubkey+ and +seckey+ are both set to +nil+, it stores the generated
   # key pair into your key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#412
+  # source://gpgme//lib/gpgme/ctx.rb#414
   def generate_key(parms, pubkey = T.unsafe(nil), seckey = T.unsafe(nil)); end
 
   # Generate a new key pair.
@@ -1018,7 +1082,7 @@ class GPGME::Ctx
   # If +pubkey+ and +seckey+ are both set to +nil+, it stores the generated
   # key pair into your key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#417
+  # source://gpgme//lib/gpgme/ctx.rb#419
   def genkey(parms, pubkey = T.unsafe(nil), seckey = T.unsafe(nil)); end
 
   # Get the value of the Ctx flag with the given name.
@@ -1045,18 +1109,18 @@ class GPGME::Ctx
   #
   # Please consult the GPGPME documentation for more details
   #
-  # source://gpgme//lib/gpgme/ctx.rb#131
+  # source://gpgme//lib/gpgme/ctx.rb#133
   def get_ctx_flag(flag_name); end
 
   # Get the key with the +fingerprint+.
   # If +secret+ is +true+, secret key is returned.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#383
+  # source://gpgme//lib/gpgme/ctx.rb#385
   def get_key(fingerprint, secret = T.unsafe(nil)); end
 
   # Return true if the MDC integrity protection is disabled.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#181
+  # source://gpgme//lib/gpgme/ctx.rb#183
   def ignore_mdc_error; end
 
   # This option ignores a MDC integrity protection failure.
@@ -1066,47 +1130,47 @@ class GPGME::Ctx
   # Be aware that a missing or failed MDC can be an indication of an attack.
   # Use with great caution.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#175
+  # source://gpgme//lib/gpgme/ctx.rb#177
   def ignore_mdc_error=(yes); end
 
   # Add the keys in the data buffer to the key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#441
+  # source://gpgme//lib/gpgme/ctx.rb#443
   def import(keydata); end
 
   # Add the keys in the data buffer to the key ring.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#436
+  # source://gpgme//lib/gpgme/ctx.rb#438
   def import_keys(keydata); end
 
-  # source://gpgme//lib/gpgme/ctx.rb#443
+  # source://gpgme//lib/gpgme/ctx.rb#445
   def import_result; end
 
-  # source://gpgme//lib/gpgme/ctx.rb#606
+  # source://gpgme//lib/gpgme/ctx.rb#614
   def inspect; end
 
   # End a pending key list operation.
   #
   # Used by {GPGME::Ctx#each_key}
   #
-  # source://gpgme//lib/gpgme/ctx.rb#346
+  # source://gpgme//lib/gpgme/ctx.rb#348
   def keylist_end; end
 
   # Return the current key listing mode.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#203
+  # source://gpgme//lib/gpgme/ctx.rb#205
   def keylist_mode; end
 
   # Change the default behaviour of the key listing functions.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#197
+  # source://gpgme//lib/gpgme/ctx.rb#199
   def keylist_mode=(mode); end
 
   # Advance to the next key in the key listing operation.
   #
   # Used by {GPGME::Ctx#each_key}
   #
-  # source://gpgme//lib/gpgme/ctx.rb#335
+  # source://gpgme//lib/gpgme/ctx.rb#337
   def keylist_next; end
 
   # Initiate a key listing operation for given pattern. If +pattern+ is
@@ -1115,45 +1179,45 @@ class GPGME::Ctx
   #
   # Used by {GPGME::Ctx#each_key}
   #
-  # source://gpgme//lib/gpgme/ctx.rb#326
+  # source://gpgme//lib/gpgme/ctx.rb#328
   def keylist_start(pattern = T.unsafe(nil), secret_only = T.unsafe(nil)); end
 
   # Returns the keys that match the +pattern+, or all if +pattern+ is nil.
   # Returns only secret keys if +secret_only+ is true.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#373
+  # source://gpgme//lib/gpgme/ctx.rb#375
   def keys(pattern = T.unsafe(nil), secret_only = T.unsafe(nil)); end
 
   # Return the current offline mode.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#226
+  # source://gpgme//lib/gpgme/ctx.rb#228
   def offline; end
 
   # Change the default behaviour of the dirmngr that might require
   # connections to external services.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#220
+  # source://gpgme//lib/gpgme/ctx.rb#222
   def offline=(mode); end
 
   # Return the current pinentry mode.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#214
+  # source://gpgme//lib/gpgme/ctx.rb#216
   def pinentry_mode; end
 
   # Change the default behaviour of the pinentry invocation.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#208
+  # source://gpgme//lib/gpgme/ctx.rb#210
   def pinentry_mode=(mode); end
 
   # Return the +protocol+ used within this context.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#154
+  # source://gpgme//lib/gpgme/ctx.rb#156
   def protocol; end
 
   # Set the +protocol+ used within this context. See {GPGME::Ctx.new} for
   # possible values.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#146
+  # source://gpgme//lib/gpgme/ctx.rb#148
   def protocol=(proto); end
 
   # Generate cryptographically strong random bytes.
@@ -1163,7 +1227,7 @@ class GPGME::Ctx
   # @param mode [Integer] Random generation mode (RANDOM_MODE_NORMAL or RANDOM_MODE_ZBASE32)
   # @return [String] Random bytes as a binary string
   #
-  # source://gpgme//lib/gpgme/ctx.rb#579
+  # source://gpgme//lib/gpgme/ctx.rb#587
   def random_bytes(size, mode = T.unsafe(nil)); end
 
   # Generate a cryptographically strong random unsigned integer value.
@@ -1172,7 +1236,7 @@ class GPGME::Ctx
   # @param limit [Integer] Upper limit for the random value (exclusive)
   # @return [Integer] Random unsigned integer value in range [0, limit)
   #
-  # source://gpgme//lib/gpgme/ctx.rb#595
+  # source://gpgme//lib/gpgme/ctx.rb#603
   def random_value(limit); end
 
   # Releases the Ctx instance. Must be called if it was initialized without
@@ -1183,13 +1247,13 @@ class GPGME::Ctx
   #   # operate on ctx
   #   ctx.release
   #
-  # source://gpgme//lib/gpgme/ctx.rb#99
+  # source://gpgme//lib/gpgme/ctx.rb#101
   def release; end
 
   # Set the Ctx flag with the given name
   # to the given value.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#137
+  # source://gpgme//lib/gpgme/ctx.rb#139
   def set_ctx_flag(flag_name, val); end
 
   # Set the passphrase callback with given hook value.
@@ -1238,7 +1302,7 @@ class GPGME::Ctx
   #   $stderr.puts
   #   end
   #
-  # source://gpgme//lib/gpgme/ctx.rb#280
+  # source://gpgme//lib/gpgme/ctx.rb#282
   def set_passphrase_callback(passfunc, hook_value = T.unsafe(nil)); end
 
   # Set the passphrase callback with given hook value.
@@ -1287,7 +1351,7 @@ class GPGME::Ctx
   #   $stderr.puts
   #   end
   #
-  # source://gpgme//lib/gpgme/ctx.rb#283
+  # source://gpgme//lib/gpgme/ctx.rb#285
   def set_passphrase_cb(passfunc, hook_value = T.unsafe(nil)); end
 
   # Set the progress callback with given hook value.
@@ -1300,7 +1364,7 @@ class GPGME::Ctx
   #
   #  ctx.set_progress_callback(method(:progfunc))
   #
-  # source://gpgme//lib/gpgme/ctx.rb#295
+  # source://gpgme//lib/gpgme/ctx.rb#297
   def set_progress_callback(progfunc, hook_value = T.unsafe(nil)); end
 
   # Set the progress callback with given hook value.
@@ -1313,7 +1377,7 @@ class GPGME::Ctx
   #
   #  ctx.set_progress_callback(method(:progfunc))
   #
-  # source://gpgme//lib/gpgme/ctx.rb#298
+  # source://gpgme//lib/gpgme/ctx.rb#300
   def set_progress_cb(progfunc, hook_value = T.unsafe(nil)); end
 
   # Set the status callback with given hook value.
@@ -1329,7 +1393,7 @@ class GPGME::Ctx
   #    return 0
   #  end
   #
-  # source://gpgme//lib/gpgme/ctx.rb#312
+  # source://gpgme//lib/gpgme/ctx.rb#314
   def set_status_callback(statusfunc, hook_value = T.unsafe(nil)); end
 
   # Set the status callback with given hook value.
@@ -1345,38 +1409,38 @@ class GPGME::Ctx
   #    return 0
   #  end
   #
-  # source://gpgme//lib/gpgme/ctx.rb#315
+  # source://gpgme//lib/gpgme/ctx.rb#317
   def set_status_cb(statusfunc, hook_value = T.unsafe(nil)); end
 
   # Create a signature for the text.
   # +plain+ is a data object which contains the text.
   # +sig+ is a data object where the generated signature is stored.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#535
+  # source://gpgme//lib/gpgme/ctx.rb#543
   def sign(plain, sig = T.unsafe(nil), mode = T.unsafe(nil)); end
 
-  # source://gpgme//lib/gpgme/ctx.rb#542
+  # source://gpgme//lib/gpgme/ctx.rb#550
   def sign_result; end
 
-  # source://gpgme//lib/gpgme/ctx.rb#566
+  # source://gpgme//lib/gpgme/ctx.rb#574
   def spawn(file, argv, datain, dataout, dataerr, flags = T.unsafe(nil)); end
 
   # Return true if canonical text mode is enabled.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#192
+  # source://gpgme//lib/gpgme/ctx.rb#194
   def textmode; end
 
   # Tell whether canonical text mode should be used.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#186
+  # source://gpgme//lib/gpgme/ctx.rb#188
   def textmode=(yes); end
 
   # Verify that the signature in the data object is a valid signature.
   #
-  # source://gpgme//lib/gpgme/ctx.rb#507
+  # source://gpgme//lib/gpgme/ctx.rb#515
   def verify(sig, signed_text = T.unsafe(nil), plain = T.unsafe(nil)); end
 
-  # source://gpgme//lib/gpgme/ctx.rb#514
+  # source://gpgme//lib/gpgme/ctx.rb#522
   def verify_result; end
 
   class << self
@@ -1413,7 +1477,7 @@ class GPGME::Ctx
     # source://gpgme//lib/gpgme/ctx.rb#45
     def new(options = T.unsafe(nil)); end
 
-    # source://gpgme//lib/gpgme/ctx.rb#614
+    # source://gpgme//lib/gpgme/ctx.rb#622
     def pass_function(pass, uid_hint, passphrase_info, prev_was_bad, fd); end
   end
 end
@@ -1430,13 +1494,13 @@ GPGME::DATA_ENCODING_BINARY = T.let(T.unsafe(nil), Integer)
 # source://gpgme//lib/gpgme/constants.rb#99
 GPGME::DATA_ENCODING_NONE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#350
+# source://gpgme//lib/gpgme/constants.rb#368
 GPGME::DECRYPT_LISTONLY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#332
+# source://gpgme//lib/gpgme/constants.rb#350
 GPGME::DELETE_ALLOW_SECRET = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#336
+# source://gpgme//lib/gpgme/constants.rb#354
 GPGME::DELETE_FORCE = T.let(T.unsafe(nil), Integer)
 
 # A class whose purpose is to unify the way we work with the data (both input
@@ -1617,19 +1681,37 @@ end
 # source://gpgme//lib/gpgme/constants.rb#100
 GPGME::ENCRYPT_ALWAYS_TRUST = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#302
+# source://gpgme//lib/gpgme/constants.rb#108
+GPGME::ENCRYPT_EXPECT_SIGN = T.let(T.unsafe(nil), Integer)
+
+# source://gpgme//lib/gpgme/constants.rb#111
+GPGME::ENCRYPT_NO_COMPRESS = T.let(T.unsafe(nil), Integer)
+
+# source://gpgme//lib/gpgme/constants.rb#102
+GPGME::ENCRYPT_NO_ENCRYPT_TO = T.let(T.unsafe(nil), Integer)
+
+# source://gpgme//lib/gpgme/constants.rb#105
+GPGME::ENCRYPT_PREPARE = T.let(T.unsafe(nil), Integer)
+
+# source://gpgme//lib/gpgme/constants.rb#117
+GPGME::ENCRYPT_SYMMETRIC = T.let(T.unsafe(nil), Integer)
+
+# source://gpgme//lib/gpgme/constants.rb#120
+GPGME::ENCRYPT_THROW_KEYIDS = T.let(T.unsafe(nil), Integer)
+
+# source://gpgme//lib/gpgme/constants.rb#320
 GPGME::EXPORT_MODE_EXTERN = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#306
+# source://gpgme//lib/gpgme/constants.rb#324
 GPGME::EXPORT_MODE_MINIMAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#312
+# source://gpgme//lib/gpgme/constants.rb#330
 GPGME::EXPORT_MODE_PKCS12 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#311
+# source://gpgme//lib/gpgme/constants.rb#329
 GPGME::EXPORT_MODE_RAW = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#310
+# source://gpgme//lib/gpgme/constants.rb#328
 GPGME::EXPORT_MODE_SECRET = T.let(T.unsafe(nil), Integer)
 
 # source://gpgme//lib/gpgme/misc.rb#34
@@ -1914,7 +1996,19 @@ GPGME::GPGME_DATA_ENCODING_NONE = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_DECRYPT_LISTONLY = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_DELETE_ALLOW_SECRET = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_DELETE_FORCE = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_ADD_RECP = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_ENCRYPT_ALWAYS_TRUST = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_ARCHIVE = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_CHG_RECP = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_EXPECT_SIGN = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_FILE = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_NO_COMPRESS = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_NO_ENCRYPT_TO = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_PREPARE = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_SYMMETRIC = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_THROW_KEYIDS = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_WANT_ADDRESS = T.let(T.unsafe(nil), Integer)
+GPGME::GPGME_ENCRYPT_WRAP = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_EXPORT_MODE_EXTERN = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_EXPORT_MODE_MINIMAL = T.let(T.unsafe(nil), Integer)
 GPGME::GPGME_EXPORT_MODE_PKCS12 = T.let(T.unsafe(nil), Integer)
@@ -2106,19 +2200,19 @@ GPGME::GPG_ERR_UNUSABLE_PUBKEY = T.let(T.unsafe(nil), Integer)
 GPGME::GPG_ERR_UNUSABLE_SECKEY = T.let(T.unsafe(nil), Integer)
 GPGME::GPG_ERR_WRONG_KEY_USAGE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#104
+# source://gpgme//lib/gpgme/constants.rb#122
 GPGME::IMPORT_NEW = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#105
+# source://gpgme//lib/gpgme/constants.rb#123
 GPGME::IMPORT_SECRET = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#106
+# source://gpgme//lib/gpgme/constants.rb#124
 GPGME::IMPORT_SIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#107
+# source://gpgme//lib/gpgme/constants.rb#125
 GPGME::IMPORT_SUBKEY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#108
+# source://gpgme//lib/gpgme/constants.rb#126
 GPGME::IMPORT_UID = T.let(T.unsafe(nil), Integer)
 
 # source://gpgme//lib/gpgme/io_callbacks.rb#2
@@ -2131,7 +2225,7 @@ class GPGME::IOCallbacks
   # source://gpgme//lib/gpgme/io_callbacks.rb#7
   def read(hook, length); end
 
-  # source://gpgme//lib/gpgme/io_callbacks.rb#15
+  # source://gpgme//lib/gpgme/io_callbacks.rb#20
   def seek(hook, offset, whence); end
 
   # source://gpgme//lib/gpgme/io_callbacks.rb#11
@@ -2273,28 +2367,28 @@ class GPGME::InvalidKey
   end
 end
 
-# source://gpgme//lib/gpgme/constants.rb#117
+# source://gpgme//lib/gpgme/constants.rb#135
 GPGME::KEYLIST_MODE_EPHEMERAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#109
+# source://gpgme//lib/gpgme/constants.rb#127
 GPGME::KEYLIST_MODE_EXTERN = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#110
+# source://gpgme//lib/gpgme/constants.rb#128
 GPGME::KEYLIST_MODE_LOCAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#315
+# source://gpgme//lib/gpgme/constants.rb#333
 GPGME::KEYLIST_MODE_NAMES = T.let(T.unsafe(nil), Hash)
 
-# source://gpgme//lib/gpgme/constants.rb#111
+# source://gpgme//lib/gpgme/constants.rb#129
 GPGME::KEYLIST_MODE_SIGS = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#114
+# source://gpgme//lib/gpgme/constants.rb#132
 GPGME::KEYLIST_MODE_SIG_NOTATIONS = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#112
+# source://gpgme//lib/gpgme/constants.rb#130
 GPGME::KEYLIST_MODE_VALIDATE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#120
+# source://gpgme//lib/gpgme/constants.rb#138
 GPGME::KEYLIST_MODE_WITH_SECRET = T.let(T.unsafe(nil), Integer)
 
 # A ruby representation of a public or a secret key.
@@ -2585,43 +2679,43 @@ class GPGME::KeySig
   end
 end
 
-# source://gpgme//lib/gpgme/constants.rb#122
+# source://gpgme//lib/gpgme/constants.rb#140
 GPGME::MD_CRC24_RFC2440 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#123
+# source://gpgme//lib/gpgme/constants.rb#141
 GPGME::MD_CRC32 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#124
+# source://gpgme//lib/gpgme/constants.rb#142
 GPGME::MD_CRC32_RFC1510 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#125
+# source://gpgme//lib/gpgme/constants.rb#143
 GPGME::MD_HAVAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#126
+# source://gpgme//lib/gpgme/constants.rb#144
 GPGME::MD_MD2 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#127
+# source://gpgme//lib/gpgme/constants.rb#145
 GPGME::MD_MD4 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#128
+# source://gpgme//lib/gpgme/constants.rb#146
 GPGME::MD_MD5 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#129
+# source://gpgme//lib/gpgme/constants.rb#147
 GPGME::MD_RMD160 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#130
+# source://gpgme//lib/gpgme/constants.rb#148
 GPGME::MD_SHA1 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#131
+# source://gpgme//lib/gpgme/constants.rb#149
 GPGME::MD_SHA256 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#135
+# source://gpgme//lib/gpgme/constants.rb#153
 GPGME::MD_SHA384 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#136
+# source://gpgme//lib/gpgme/constants.rb#154
 GPGME::MD_SHA512 = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#137
+# source://gpgme//lib/gpgme/constants.rb#155
 GPGME::MD_TIGER = T.let(T.unsafe(nil), Integer)
 
 # source://gpgme//lib/gpgme/misc.rb#47
@@ -2667,49 +2761,49 @@ class GPGME::NewSignature
   end
 end
 
-# source://gpgme//lib/gpgme/constants.rb#140
+# source://gpgme//lib/gpgme/constants.rb#158
 GPGME::PINENTRY_MODE_ASK = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#141
+# source://gpgme//lib/gpgme/constants.rb#159
 GPGME::PINENTRY_MODE_CANCEL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#139
+# source://gpgme//lib/gpgme/constants.rb#157
 GPGME::PINENTRY_MODE_DEFAULT = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#142
+# source://gpgme//lib/gpgme/constants.rb#160
 GPGME::PINENTRY_MODE_ERROR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#143
+# source://gpgme//lib/gpgme/constants.rb#161
 GPGME::PINENTRY_MODE_LOOPBACK = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#144
+# source://gpgme//lib/gpgme/constants.rb#162
 GPGME::PINENTRY_MODE_NAMES = T.let(T.unsafe(nil), Hash)
 
-# source://gpgme//lib/gpgme/constants.rb#152
+# source://gpgme//lib/gpgme/constants.rb#170
 GPGME::PK_DSA = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#153
+# source://gpgme//lib/gpgme/constants.rb#171
 GPGME::PK_ELG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#154
+# source://gpgme//lib/gpgme/constants.rb#172
 GPGME::PK_ELG_E = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#155
+# source://gpgme//lib/gpgme/constants.rb#173
 GPGME::PK_RSA = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#159
+# source://gpgme//lib/gpgme/constants.rb#177
 GPGME::PROTOCOL_CMS = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#284
+# source://gpgme//lib/gpgme/constants.rb#302
 GPGME::PROTOCOL_NAMES = T.let(T.unsafe(nil), Hash)
 
-# source://gpgme//lib/gpgme/constants.rb#160
+# source://gpgme//lib/gpgme/constants.rb#178
 GPGME::PROTOCOL_OpenPGP = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#341
+# source://gpgme//lib/gpgme/constants.rb#359
 GPGME::RANDOM_MODE_NORMAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#345
+# source://gpgme//lib/gpgme/constants.rb#363
 GPGME::RANDOM_MODE_ZBASE32 = T.let(T.unsafe(nil), Integer)
 
 # source://gpgme//lib/gpgme/misc.rb#15
@@ -2737,298 +2831,298 @@ class GPGME::Recipient
   end
 end
 
-# source://gpgme//lib/gpgme/constants.rb#161
+# source://gpgme//lib/gpgme/constants.rb#179
 GPGME::SIGSUM_BAD_POLICY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#162
+# source://gpgme//lib/gpgme/constants.rb#180
 GPGME::SIGSUM_CRL_MISSING = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#163
+# source://gpgme//lib/gpgme/constants.rb#181
 GPGME::SIGSUM_CRL_TOO_OLD = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#164
+# source://gpgme//lib/gpgme/constants.rb#182
 GPGME::SIGSUM_GREEN = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#165
+# source://gpgme//lib/gpgme/constants.rb#183
 GPGME::SIGSUM_KEY_EXPIRED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#166
+# source://gpgme//lib/gpgme/constants.rb#184
 GPGME::SIGSUM_KEY_MISSING = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#167
+# source://gpgme//lib/gpgme/constants.rb#185
 GPGME::SIGSUM_KEY_REVOKED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#168
+# source://gpgme//lib/gpgme/constants.rb#186
 GPGME::SIGSUM_RED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#169
+# source://gpgme//lib/gpgme/constants.rb#187
 GPGME::SIGSUM_SIG_EXPIRED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#170
+# source://gpgme//lib/gpgme/constants.rb#188
 GPGME::SIGSUM_SYS_ERROR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#171
+# source://gpgme//lib/gpgme/constants.rb#189
 GPGME::SIGSUM_VALID = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#172
+# source://gpgme//lib/gpgme/constants.rb#190
 GPGME::SIG_MODE_CLEAR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#173
+# source://gpgme//lib/gpgme/constants.rb#191
 GPGME::SIG_MODE_DETACH = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#174
+# source://gpgme//lib/gpgme/constants.rb#192
 GPGME::SIG_MODE_NORMAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#175
+# source://gpgme//lib/gpgme/constants.rb#193
 GPGME::SIG_STAT_BAD = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#176
+# source://gpgme//lib/gpgme/constants.rb#194
 GPGME::SIG_STAT_DIFF = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#177
+# source://gpgme//lib/gpgme/constants.rb#195
 GPGME::SIG_STAT_ERROR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#178
+# source://gpgme//lib/gpgme/constants.rb#196
 GPGME::SIG_STAT_GOOD = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#179
+# source://gpgme//lib/gpgme/constants.rb#197
 GPGME::SIG_STAT_GOOD_EXP = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#180
+# source://gpgme//lib/gpgme/constants.rb#198
 GPGME::SIG_STAT_GOOD_EXPKEY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#181
+# source://gpgme//lib/gpgme/constants.rb#199
 GPGME::SIG_STAT_NOKEY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#182
+# source://gpgme//lib/gpgme/constants.rb#200
 GPGME::SIG_STAT_NONE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#183
+# source://gpgme//lib/gpgme/constants.rb#201
 GPGME::SIG_STAT_NOSIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#184
+# source://gpgme//lib/gpgme/constants.rb#202
 GPGME::STATUS_ABORT = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#185
+# source://gpgme//lib/gpgme/constants.rb#203
 GPGME::STATUS_ALREADY_SIGNED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#249
+# source://gpgme//lib/gpgme/constants.rb#267
 GPGME::STATUS_ATTRIBUTE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#186
+# source://gpgme//lib/gpgme/constants.rb#204
 GPGME::STATUS_BADARMOR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#187
+# source://gpgme//lib/gpgme/constants.rb#205
 GPGME::STATUS_BADMDC = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#188
+# source://gpgme//lib/gpgme/constants.rb#206
 GPGME::STATUS_BADSIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#189
+# source://gpgme//lib/gpgme/constants.rb#207
 GPGME::STATUS_BAD_PASSPHRASE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#190
+# source://gpgme//lib/gpgme/constants.rb#208
 GPGME::STATUS_BEGIN_DECRYPTION = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#191
+# source://gpgme//lib/gpgme/constants.rb#209
 GPGME::STATUS_BEGIN_ENCRYPTION = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#252
+# source://gpgme//lib/gpgme/constants.rb#270
 GPGME::STATUS_BEGIN_SIGNING = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#192
+# source://gpgme//lib/gpgme/constants.rb#210
 GPGME::STATUS_BEGIN_STREAM = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#193
+# source://gpgme//lib/gpgme/constants.rb#211
 GPGME::STATUS_DECRYPTION_FAILED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#194
+# source://gpgme//lib/gpgme/constants.rb#212
 GPGME::STATUS_DECRYPTION_OKAY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#195
+# source://gpgme//lib/gpgme/constants.rb#213
 GPGME::STATUS_DELETE_PROBLEM = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#196
+# source://gpgme//lib/gpgme/constants.rb#214
 GPGME::STATUS_ENC_TO = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#197
+# source://gpgme//lib/gpgme/constants.rb#215
 GPGME::STATUS_END_DECRYPTION = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#198
+# source://gpgme//lib/gpgme/constants.rb#216
 GPGME::STATUS_END_ENCRYPTION = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#199
+# source://gpgme//lib/gpgme/constants.rb#217
 GPGME::STATUS_END_STREAM = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#200
+# source://gpgme//lib/gpgme/constants.rb#218
 GPGME::STATUS_ENTER = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#201
+# source://gpgme//lib/gpgme/constants.rb#219
 GPGME::STATUS_EOF = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#202
+# source://gpgme//lib/gpgme/constants.rb#220
 GPGME::STATUS_ERRMDC = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#203
+# source://gpgme//lib/gpgme/constants.rb#221
 GPGME::STATUS_ERROR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#204
+# source://gpgme//lib/gpgme/constants.rb#222
 GPGME::STATUS_ERRSIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#205
+# source://gpgme//lib/gpgme/constants.rb#223
 GPGME::STATUS_EXPKEYSIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#206
+# source://gpgme//lib/gpgme/constants.rb#224
 GPGME::STATUS_EXPSIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#207
+# source://gpgme//lib/gpgme/constants.rb#225
 GPGME::STATUS_FILE_DONE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#208
+# source://gpgme//lib/gpgme/constants.rb#226
 GPGME::STATUS_FILE_ERROR = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#209
+# source://gpgme//lib/gpgme/constants.rb#227
 GPGME::STATUS_FILE_START = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#210
+# source://gpgme//lib/gpgme/constants.rb#228
 GPGME::STATUS_GET_BOOL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#211
+# source://gpgme//lib/gpgme/constants.rb#229
 GPGME::STATUS_GET_HIDDEN = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#212
+# source://gpgme//lib/gpgme/constants.rb#230
 GPGME::STATUS_GET_LINE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#213
+# source://gpgme//lib/gpgme/constants.rb#231
 GPGME::STATUS_GOODMDC = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#214
+# source://gpgme//lib/gpgme/constants.rb#232
 GPGME::STATUS_GOODSIG = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#215
+# source://gpgme//lib/gpgme/constants.rb#233
 GPGME::STATUS_GOOD_PASSPHRASE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#216
+# source://gpgme//lib/gpgme/constants.rb#234
 GPGME::STATUS_GOT_IT = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#217
+# source://gpgme//lib/gpgme/constants.rb#235
 GPGME::STATUS_IMPORTED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#218
+# source://gpgme//lib/gpgme/constants.rb#236
 GPGME::STATUS_IMPORT_RES = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#219
+# source://gpgme//lib/gpgme/constants.rb#237
 GPGME::STATUS_INV_RECP = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#220
+# source://gpgme//lib/gpgme/constants.rb#238
 GPGME::STATUS_KEYEXPIRED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#221
+# source://gpgme//lib/gpgme/constants.rb#239
 GPGME::STATUS_KEYREVOKED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#222
+# source://gpgme//lib/gpgme/constants.rb#240
 GPGME::STATUS_KEY_CREATED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#255
+# source://gpgme//lib/gpgme/constants.rb#273
 GPGME::STATUS_KEY_NOT_CREATED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#223
+# source://gpgme//lib/gpgme/constants.rb#241
 GPGME::STATUS_LEAVE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#224
+# source://gpgme//lib/gpgme/constants.rb#242
 GPGME::STATUS_MISSING_PASSPHRASE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#243
+# source://gpgme//lib/gpgme/constants.rb#261
 GPGME::STATUS_MOUNTPOINT = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#225
+# source://gpgme//lib/gpgme/constants.rb#243
 GPGME::STATUS_NEED_PASSPHRASE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#226
+# source://gpgme//lib/gpgme/constants.rb#244
 GPGME::STATUS_NEED_PASSPHRASE_SYM = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#227
+# source://gpgme//lib/gpgme/constants.rb#245
 GPGME::STATUS_NODATA = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#228
+# source://gpgme//lib/gpgme/constants.rb#246
 GPGME::STATUS_NOTATION_DATA = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#229
+# source://gpgme//lib/gpgme/constants.rb#247
 GPGME::STATUS_NOTATION_NAME = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#230
+# source://gpgme//lib/gpgme/constants.rb#248
 GPGME::STATUS_NO_PUBKEY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#231
+# source://gpgme//lib/gpgme/constants.rb#249
 GPGME::STATUS_NO_RECP = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#232
+# source://gpgme//lib/gpgme/constants.rb#250
 GPGME::STATUS_NO_SECKEY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#246
+# source://gpgme//lib/gpgme/constants.rb#264
 GPGME::STATUS_PINENTRY_LAUNCHED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#240
+# source://gpgme//lib/gpgme/constants.rb#258
 GPGME::STATUS_PLAINTEXT_LENGTH = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#257
+# source://gpgme//lib/gpgme/constants.rb#275
 GPGME::STATUS_POLICY_URL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#258
+# source://gpgme//lib/gpgme/constants.rb#276
 GPGME::STATUS_PROGRESS = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#259
+# source://gpgme//lib/gpgme/constants.rb#277
 GPGME::STATUS_RSA_OR_IDEA = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#260
+# source://gpgme//lib/gpgme/constants.rb#278
 GPGME::STATUS_SESSION_KEY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#261
+# source://gpgme//lib/gpgme/constants.rb#279
 GPGME::STATUS_SHM_GET = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#262
+# source://gpgme//lib/gpgme/constants.rb#280
 GPGME::STATUS_SHM_GET_BOOL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#263
+# source://gpgme//lib/gpgme/constants.rb#281
 GPGME::STATUS_SHM_GET_HIDDEN = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#264
+# source://gpgme//lib/gpgme/constants.rb#282
 GPGME::STATUS_SHM_INFO = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#265
+# source://gpgme//lib/gpgme/constants.rb#283
 GPGME::STATUS_SIGEXPIRED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#266
+# source://gpgme//lib/gpgme/constants.rb#284
 GPGME::STATUS_SIG_CREATED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#267
+# source://gpgme//lib/gpgme/constants.rb#285
 GPGME::STATUS_SIG_ID = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#268
+# source://gpgme//lib/gpgme/constants.rb#286
 GPGME::STATUS_TRUNCATED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#269
+# source://gpgme//lib/gpgme/constants.rb#287
 GPGME::STATUS_TRUST_FULLY = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#270
+# source://gpgme//lib/gpgme/constants.rb#288
 GPGME::STATUS_TRUST_MARGINAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#271
+# source://gpgme//lib/gpgme/constants.rb#289
 GPGME::STATUS_TRUST_NEVER = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#272
+# source://gpgme//lib/gpgme/constants.rb#290
 GPGME::STATUS_TRUST_ULTIMATE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#273
+# source://gpgme//lib/gpgme/constants.rb#291
 GPGME::STATUS_TRUST_UNDEFINED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#274
+# source://gpgme//lib/gpgme/constants.rb#292
 GPGME::STATUS_UNEXPECTED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#275
+# source://gpgme//lib/gpgme/constants.rb#293
 GPGME::STATUS_USERID_HINT = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#276
+# source://gpgme//lib/gpgme/constants.rb#294
 GPGME::STATUS_VALIDSIG = T.let(T.unsafe(nil), Integer)
 
 class GPGME::SigNotation; end
@@ -3282,25 +3376,25 @@ class GPGME::UserID
   end
 end
 
-# source://gpgme//lib/gpgme/constants.rb#277
+# source://gpgme//lib/gpgme/constants.rb#295
 GPGME::VALIDITY_FULL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#278
+# source://gpgme//lib/gpgme/constants.rb#296
 GPGME::VALIDITY_MARGINAL = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#322
+# source://gpgme//lib/gpgme/constants.rb#340
 GPGME::VALIDITY_NAMES = T.let(T.unsafe(nil), Hash)
 
-# source://gpgme//lib/gpgme/constants.rb#279
+# source://gpgme//lib/gpgme/constants.rb#297
 GPGME::VALIDITY_NEVER = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#280
+# source://gpgme//lib/gpgme/constants.rb#298
 GPGME::VALIDITY_ULTIMATE = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#281
+# source://gpgme//lib/gpgme/constants.rb#299
 GPGME::VALIDITY_UNDEFINED = T.let(T.unsafe(nil), Integer)
 
-# source://gpgme//lib/gpgme/constants.rb#282
+# source://gpgme//lib/gpgme/constants.rb#300
 GPGME::VALIDITY_UNKNOWN = T.let(T.unsafe(nil), Integer)
 
 # source://gpgme//lib/gpgme/misc.rb#9
