@@ -6,11 +6,12 @@ GitHub Actions support for [`dependabot-core`][core-repo].
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell github_actions
-  ```
+   ```
+   $ bin/docker-dev-shell github_actions
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd github_actions && rspec
    ```

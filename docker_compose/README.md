@@ -6,11 +6,12 @@ Docker support for [`dependabot-core`][core-repo].
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell docker_compose
-  ```
+   ```
+   $ bin/docker-dev-shell docker_compose
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd docker_compose && rspec
    ```

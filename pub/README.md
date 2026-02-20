@@ -20,11 +20,12 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell pub
-  ```
+   ```
+   $ bin/docker-dev-shell pub
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd pub && rspec
    ```
