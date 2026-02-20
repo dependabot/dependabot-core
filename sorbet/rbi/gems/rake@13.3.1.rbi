@@ -9,7 +9,7 @@
 #
 # Some top level Constants.
 #
-# source://rake//lib/rake.rb#69
+# source://rake//lib/rake.rb#67
 FileList = Rake::FileList
 
 # --
@@ -196,7 +196,7 @@ class Rake::Application
 
   # Add a file to the list of files to be imported.
   #
-  # source://rake//lib/rake/application.rb#807
+  # source://rake//lib/rake/application.rb#800
   def add_import(fn); end
 
   # Add a loader to handle imported files ending in the extension
@@ -214,13 +214,13 @@ class Rake::Application
   # recognised command-line options, which OptionParser.parse will
   # have taken care of already.
   #
-  # source://rake//lib/rake/application.rb#788
+  # source://rake//lib/rake/application.rb#781
   def collect_command_line_tasks(args); end
 
   # Default task name ("default").
   # (May be overridden by subclasses)
   #
-  # source://rake//lib/rake/application.rb#802
+  # source://rake//lib/rake/application.rb#795
   def default_task_name; end
 
   # Warn about deprecated usage.
@@ -311,7 +311,7 @@ class Rake::Application
 
   # Load the pending list of imported files.
   #
-  # source://rake//lib/rake/application.rb#812
+  # source://rake//lib/rake/application.rb#805
   def load_imports; end
 
   # Find the rakefile and then load it and any pending imports.
@@ -351,7 +351,7 @@ class Rake::Application
   # source://rake//lib/rake/application.rb#30
   def rakefile; end
 
-  # source://rake//lib/rake/application.rb#828
+  # source://rake//lib/rake/application.rb#821
   def rakefile_location(backtrace = T.unsafe(nil)); end
 
   # source://rake//lib/rake/application.rb#725
@@ -376,7 +376,7 @@ class Rake::Application
   # source://rake//lib/rake/application.rb#144
   def run_with_threads; end
 
-  # source://rake//lib/rake/application.rb#837
+  # source://rake//lib/rake/application.rb#830
   def set_default_options; end
 
   # Provide standard exception handling for the given block.
@@ -483,7 +483,7 @@ class Rake::Application
   # source://rake//lib/rake/application.rb#423
   def sort_options(options); end
 
-  # source://rake//lib/rake/application.rb#774
+  # source://rake//lib/rake/application.rb#767
   def standard_system_dir; end
 end
 
@@ -834,7 +834,7 @@ end
 # source://rake//lib/rake/early_time.rb#21
 Rake::EARLY = T.let(T.unsafe(nil), Rake::EarlyTime)
 
-# source://rake//lib/rake/task_arguments.rb#108
+# source://rake//lib/rake/task_arguments.rb#112
 Rake::EMPTY_TASK_ARGS = T.let(T.unsafe(nil), Rake::TaskArguments)
 
 # EarlyTime is a fake timestamp that occurs _before_ any other time value.
@@ -2581,6 +2581,9 @@ class Rake::TaskArguments
   # source://rake//lib/rake/task_arguments.rb#44
   def [](index); end
 
+  # source://rake//lib/rake/task_arguments.rb#97
+  def deconstruct_keys(keys); end
+
   # Enumerates the arguments and their values
   #
   # source://rake//lib/rake/task_arguments.rb#56
@@ -2654,7 +2657,7 @@ class Rake::TaskArguments
 
   protected
 
-  # source://rake//lib/rake/task_arguments.rb#99
+  # source://rake//lib/rake/task_arguments.rb#103
   def lookup(name); end
 end
 
@@ -2788,7 +2791,7 @@ module Rake::TaskManager
   # Return the current description, clearing it in the process.
   #
   # source://rake//lib/rake/task_manager.rb#319
-  def get_description(task); end
+  def get_description; end
 
   # Lookup the task name
   #
@@ -2916,7 +2919,7 @@ class Rake::ThreadPool
 
   # for testing only
   #
-  # source://rake//lib/rake/thread_pool.rb#158
+  # source://rake//lib/rake/thread_pool.rb#152
   def __queue__; end
 
   # processes one item on the queue. Returns true if there was an
@@ -2926,12 +2929,9 @@ class Rake::ThreadPool
   def process_queue_item; end
 
   # source://rake//lib/rake/thread_pool.rb#111
-  def safe_thread_count; end
-
-  # source://rake//lib/rake/thread_pool.rb#117
   def start_thread; end
 
-  # source://rake//lib/rake/thread_pool.rb#145
+  # source://rake//lib/rake/thread_pool.rb#139
   def stat(event, data = T.unsafe(nil)); end
 end
 
@@ -3010,7 +3010,7 @@ end
 # source://rake//lib/rake/win32.rb#11
 class Rake::Win32::Win32HomeError < ::RuntimeError; end
 
-# source://rake//lib/rake.rb#70
+# source://rake//lib/rake.rb#68
 RakeFileUtils = Rake::FileUtilsExt
 
 # source://rake//lib/rake/ext/string.rb#4

@@ -389,9 +389,9 @@ RSpec.describe Dependabot::Bundler::FileParser do
       it "raises a helpful error" do
         expect { parser.parse }
           .to raise_error do |error|
-          expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-          expect(error.message)
-            .to include("No plugin sources available for aws-s3")
+            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+            expect(error.message)
+              .to include("No plugin sources available for aws-s3")
         end
       end
     end
@@ -425,8 +425,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
       it "raises a helpful error" do
         expect { parser.parse }
           .to raise_error do |error|
-          expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-          expect(error.message.encoding.to_s).to eq("UTF-8")
+            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+            expect(error.message.encoding.to_s).to eq("UTF-8")
         end
       end
 
@@ -436,10 +436,10 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it "raises a helpful error" do
           expect { parser.parse }
             .to raise_error do |error|
-            expect(error.message)
-              .to start_with("Error evaluating your dependency files")
-            expect(error.class)
-              .to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message)
+                .to start_with("Error evaluating your dependency files")
+              expect(error.class)
+                .to eq(Dependabot::DependencyFileNotEvaluatable)
           end
         end
       end

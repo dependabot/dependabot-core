@@ -57,7 +57,7 @@ module Dependabot
         vendor_updater
           .updated_files(base_directory: base_dir)
           .each do |file|
-          updated_files << file
+            updated_files << file
         end
 
         updated_files

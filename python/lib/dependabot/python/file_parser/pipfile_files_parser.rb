@@ -140,7 +140,7 @@ module Dependabot
         end
 
         sig do
-          params(obj: T.any(String, NilClass, T::Array[String], T::Hash[String, T.untyped])).returns(T.nilable(String))
+          params(obj: T.nilable(T.any(String, T::Array[String], T::Hash[String, T.untyped]))).returns(T.nilable(String))
         end
         def version_from_hash_or_string(obj)
           case obj
@@ -149,7 +149,7 @@ module Dependabot
           end
         end
 
-        sig { params(req: T.any(String, T::Hash[String, T.untyped])).returns(T.any(T::Boolean, NilClass, String)) }
+        sig { params(req: T.any(String, T::Hash[String, T.untyped])).returns(T.nilable(T.any(T::Boolean, String))) }
         def specifies_version?(req)
           return true if req.is_a?(String)
 
