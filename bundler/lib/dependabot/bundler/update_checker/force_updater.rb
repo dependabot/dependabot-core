@@ -104,25 +104,27 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable
           end
 
-          in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            updated_deps, specs = NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
-              function: "force_update",
-              options: options,
-              args: {
-                dir: tmp_dir,
-                dependency_name: dependency.name,
-                target_version: target_version,
-                credentials: credentials,
-                gemfile_name: T.must(gemfile).name,
-                lockfile_name: T.must(lockfile).name,
-                update_multiple_dependencies: update_multiple_dependencies?
-              }
-            )
-            dependencies_from(updated_deps, specs)
-          rescue SharedHelpers::HelperSubprocessFailed => e
-            msg = e.error_class + " with message: " + e.message
-            raise Dependabot::DependencyFileNotResolvable, msg
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            in_a_native_bundler_context(error_handling: false) do |tmp_dir|
+              updated_deps, specs = NativeHelpers.run_bundler_subprocess(
+                bundler_version: bundler_version,
+                function: "force_update",
+                options: options,
+                args: {
+                  dir: tmp_dir,
+                  dependency_name: dependency.name,
+                  target_version: target_version,
+                  credentials: credentials,
+                  gemfile_name: T.must(gemfile).name,
+                  lockfile_name: T.must(lockfile).name,
+                  update_multiple_dependencies: update_multiple_dependencies?
+                }
+              )
+              dependencies_from(updated_deps, specs)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              msg = e.error_class + " with message: " + e.message
+              raise Dependabot::DependencyFileNotResolvable, msg
+            end
           end
         end
         # rubocop:enable Metrics/AbcSize
