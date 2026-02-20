@@ -4,6 +4,7 @@
 --ignore=.bundle/
 --ignore=bin
 --disable-watchman
+--suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
 # See https://stackoverflow.com/a/76548429

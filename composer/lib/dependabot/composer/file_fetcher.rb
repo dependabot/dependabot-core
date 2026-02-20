@@ -88,12 +88,12 @@ module Dependabot
               .select { |file| file.type == "file" && file.name.end_with?(".zip") }
               .map { |file| File.join(url, file.name) }
               .map do |zip_file|
-              DependencyFile.new(
-                name: zip_file,
-                content: _fetch_file_content(zip_file),
-                directory: directory,
-                type: "file"
-              )
+                DependencyFile.new(
+                  name: zip_file,
+                  content: _fetch_file_content(zip_file),
+                  directory: directory,
+                  type: "file"
+                )
             end
           end.flatten,
           T.nilable(T::Array[Dependabot::DependencyFile])

@@ -45,7 +45,8 @@ RSpec.describe Dependabot::Pub::Requirement do
       context "when specified to version" do
         let(:requirement_string) { "^1.2.3" }
 
-        d = described_class.new(">=1.2.3", "<2.0.0")
+        let(:d) { described_class.new(">=1.2.3", "<2.0.0") }
+
         it { is_expected.to eq(d) }
 
         context "with a zero major" do

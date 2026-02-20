@@ -295,7 +295,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   end
 
   context "with a registry that times out" do
-    registry_source = "https://registry.npm.com"
+    let(:registry_source) { "https://registry.npm.com" }
     let(:files) { project_dependency_files("npm/simple_with_registry_that_times_out") }
     let(:error) { Dependabot::PrivateSourceTimedOut.new(registry_source) }
 

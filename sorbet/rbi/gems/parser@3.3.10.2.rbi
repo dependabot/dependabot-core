@@ -770,8 +770,8 @@ class Parser::Base < ::Racc::Parser
   # `:tSTRING "foo"`; such details must not be relied upon.
   #
   # @api public
-  # @param source_buffer [Parser::Source::Buffer]
   # @param recover [Boolean] If true, recover from syntax errors. False by default.
+  # @param source_buffer [Parser::Source::Buffer]
   # @return [Array]
   #
   # source://parser//lib/parser/base.rb#236
@@ -813,9 +813,9 @@ class Parser::Base < ::Racc::Parser
     # @api public
     # @example
     #   Parser::Base.parse('puts "hello"')
-    # @param string [String] The block of code to parse.
     # @param file [String] The name of the file the code originated from.
     # @param line [Numeric] The initial line number.
+    # @param string [String] The block of code to parse.
     # @return [Parser::AST::Node]
     #
     # source://parser//lib/parser/base.rb#33
@@ -852,9 +852,9 @@ class Parser::Base < ::Racc::Parser
     # @api public
     # @example
     #   Parser::Base.parse_with_comments('puts "hello"')
-    # @param string [String] The block of code to parse.
     # @param file [String] The name of the file the code originated from.
     # @param line [Numeric] The initial line number.
+    # @param string [String] The block of code to parse.
     # @return [Array]
     #
     # source://parser//lib/parser/base.rb#52
@@ -1683,8 +1683,8 @@ end
 # Parser for the running version of Ruby. NOTE: Supports only Ruby <= 3.3. To parse Ruby 3.4+, please use the prism gem. You can also use them in conjunction to support multiple versions using a backwards-compatible AST.
 #
 # @api public
-# @see https://ruby.github.io/prism/rb/docs/ruby_api_md.html prism gem documentation
 # @see https://github.com/whitequark/parser/blob/master/doc/PRISM_TRANSLATION.md Guide to using prism and parser together.
+# @see https://ruby.github.io/prism/rb/docs/ruby_api_md.html prism gem documentation
 #
 # source://parser//lib/parser/current.rb#129
 Parser::CurrentRuby = Parser::Ruby34
@@ -1709,11 +1709,11 @@ end
 # source://parser//lib/parser/diagnostic.rb#31
 class Parser::Diagnostic
   # @api public
-  # @param level [Symbol]
-  # @param reason [Symbol]
   # @param arguments [Hash]
-  # @param location [Parser::Source::Range]
   # @param highlights [Array<Parser::Source::Range>]
+  # @param level [Symbol]
+  # @param location [Parser::Source::Range]
+  # @param reason [Symbol]
   # @return [Diagnostic] a new instance of Diagnostic
   #
   # source://parser//lib/parser/diagnostic.rb#49
@@ -3288,8 +3288,8 @@ class Parser::Rewriter < ::Parser::AST::Processor
   # Inserts new code after the given source range.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/rewriter.rb#77
   def insert_after(range, content); end
@@ -3297,8 +3297,8 @@ class Parser::Rewriter < ::Parser::AST::Processor
   # Inserts new code before the given source range.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/rewriter.rb#67
   def insert_before(range, content); end
@@ -3314,8 +3314,8 @@ class Parser::Rewriter < ::Parser::AST::Processor
   # Replaces the code of the source range `range` with `content`.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/rewriter.rb#87
   def replace(range, content); end
@@ -3324,8 +3324,8 @@ class Parser::Rewriter < ::Parser::AST::Processor
   # version.
   #
   # @api public
-  # @param source_buffer [Parser::Source::Buffer]
   # @param ast [Parser::AST::Node]
+  # @param source_buffer [Parser::Source::Buffer]
   # @return [String]
   #
   # source://parser//lib/parser/rewriter.rb#23
@@ -3334,8 +3334,8 @@ class Parser::Rewriter < ::Parser::AST::Processor
   # Wraps the given source range with the given values.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/rewriter.rb#57
   def wrap(range, before, after); end
@@ -5981,9 +5981,9 @@ class Parser::Source::Range
   include ::Comparable
 
   # @api public
-  # @param source_buffer [Buffer]
   # @param begin_pos [Integer]
   # @param end_pos [Integer]
+  # @param source_buffer [Buffer]
   # @return [Range] a new instance of Range
   #
   # source://parser//lib/parser/source/range.rb#37
@@ -6296,8 +6296,8 @@ class Parser::Source::Rewriter
   #
   # @api public
   # @deprecated Use {TreeRewriter#insert_after}
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6316,8 +6316,8 @@ class Parser::Source::Rewriter
   #   insert_after_multi(range, ')').
   #   insert_after_multi(range, ']').
   #   process
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6328,8 +6328,8 @@ class Parser::Source::Rewriter
   #
   # @api public
   # @deprecated Use {TreeRewriter#insert_before}
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6348,8 +6348,8 @@ class Parser::Source::Rewriter
   #   insert_before_multi(range, '(').
   #   insert_before_multi(range, '[').
   #   process
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6381,8 +6381,8 @@ class Parser::Source::Rewriter
   #
   # @api public
   # @deprecated Use {TreeRewriter#replace}
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6419,9 +6419,9 @@ class Parser::Source::Rewriter
   #
   # @api public
   # @deprecated Use {TreeRewriter#wrap}
-  # @param range [Range]
-  # @param before [String]
   # @param after [String]
+  # @param before [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6767,8 +6767,8 @@ class Parser::Source::TreeRewriter
   # or that needs to be offset. Policies of the receiver are used.
   #
   # @api public
-  # @param rewriter [TreeRewriter] from different source_buffer
   # @param offset [Integer]
+  # @param rewriter [TreeRewriter] from different source_buffer
   # @raise [IndexError] if action ranges (once offset) don't fit the current buffer
   # @return [Rewriter] self
   #
@@ -6784,8 +6784,8 @@ class Parser::Source::TreeRewriter
   # Shortcut for `wrap(range, nil, content)`
   #
   # @api public
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6801,8 +6801,8 @@ class Parser::Source::TreeRewriter
   # Shortcut for `wrap(range, content, nil)`
   #
   # @api public
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6866,8 +6866,8 @@ class Parser::Source::TreeRewriter
   # Replaces the code of the source range `range` with `content`.
   #
   # @api public
-  # @param range [Range]
   # @param content [String]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -6893,9 +6893,9 @@ class Parser::Source::TreeRewriter
   # Inserts the given strings before and after the given range.
   #
   # @api public
-  # @param range [Range]
-  # @param insert_before [String, nil]
   # @param insert_after [String, nil]
+  # @param insert_before [String, nil]
+  # @param range [Range]
   # @raise [ClobberingError] when clobbering is detected
   # @return [Rewriter] self
   #
@@ -7240,8 +7240,8 @@ class Parser::TreeRewriter < ::Parser::AST::Processor
   # Inserts new code after the given source range.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/tree_rewriter.rb#118
   def insert_after(range, content); end
@@ -7249,8 +7249,8 @@ class Parser::TreeRewriter < ::Parser::AST::Processor
   # Inserts new code before the given source range.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/tree_rewriter.rb#108
   def insert_before(range, content); end
@@ -7266,8 +7266,8 @@ class Parser::TreeRewriter < ::Parser::AST::Processor
   # Replaces the code of the source range `range` with `content`.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/tree_rewriter.rb#128
   def replace(range, content); end
@@ -7276,10 +7276,10 @@ class Parser::TreeRewriter < ::Parser::AST::Processor
   # version.
   #
   # @api public
-  # @param source_buffer [Parser::Source::Buffer]
   # @param ast [Parser::AST::Node]
   # @param crossing_deletions:, [Symbol] different_replacements:, swallowed_insertions:
   #   policy arguments for TreeRewriter (optional)
+  # @param source_buffer [Parser::Source::Buffer]
   # @return [String]
   #
   # source://parser//lib/parser/tree_rewriter.rb#62
@@ -7288,8 +7288,8 @@ class Parser::TreeRewriter < ::Parser::AST::Processor
   # Wraps the given source range with the given values.
   #
   # @api public
-  # @param range [Parser::Source::Range]
   # @param content [String]
+  # @param range [Parser::Source::Range]
   #
   # source://parser//lib/parser/tree_rewriter.rb#98
   def wrap(range, before, after); end
