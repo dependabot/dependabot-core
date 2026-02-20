@@ -204,7 +204,7 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
             ecr_stub.stub_responses(
               :get_authorization_token,
               authorization_data:
-                [authorization_token: Base64.encode64("foo:bar")]
+                [{ authorization_token: Base64.encode64("foo:bar") }]
             )
           end
 

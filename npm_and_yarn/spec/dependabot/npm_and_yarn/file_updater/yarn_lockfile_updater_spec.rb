@@ -339,7 +339,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message).to eq("package.json: Name contains illegal characters")
+            expect(error.message).to eq("package.json: Name contains illegal characters")
         end
       end
     end

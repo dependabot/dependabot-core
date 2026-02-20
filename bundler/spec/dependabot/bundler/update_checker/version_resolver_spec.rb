@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       it "raises a PrivateSourceAuthenticationFailure error" do
         expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-          expect(error.message).to include(": rubygems.pkg.github.com")
+            expect(error.message).to include(": rubygems.pkg.github.com")
         end
       end
     end
@@ -325,8 +325,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       it "raises a useful error" do
         expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
-          # Test that the temporary path isn't included in the error message
-          expect(error.message).not_to include("dependabot_20")
+            # Test that the temporary path isn't included in the error message
+            expect(error.message).not_to include("dependabot_20")
         end
       end
     end

@@ -68,13 +68,13 @@ module Dependabot
           package_releases = registry_urls
                              .select { |index_url| validate_index(index_url) } # Ensure only valid URLs
                              .flat_map do |index_url|
-            fetch_from_registry(index_url) || [] # Ensure it always returns an array
-          rescue Excon::Error::Timeout, Excon::Error::Socket
-            raise if MAIN_PYPI_INDEXES.include?(index_url)
+                               fetch_from_registry(index_url) || [] # Ensure it always returns an array
+                             rescue Excon::Error::Timeout, Excon::Error::Socket
+                               raise if MAIN_PYPI_INDEXES.include?(index_url)
 
-            raise PrivateSourceTimedOut, sanitized_url(index_url)
-          rescue URI::InvalidURIError
-            raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
+                               raise PrivateSourceTimedOut, sanitized_url(index_url)
+                             rescue URI::InvalidURIError
+                               raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url(index_url)}"
           end
 
           Dependabot::Package::PackageDetails.new(

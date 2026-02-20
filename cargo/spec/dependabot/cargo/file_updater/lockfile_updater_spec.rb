@@ -112,16 +112,18 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
     end
 
     context "when the dependency doesn't exist" do
-      random_unlikely_package_name = (0...255).map { ("a".."z").to_a[rand(26)] }.join
-      content = <<~CONTENT
-        [package]
-        name = "foo"
-        version = "0.1.0"
-        authors = ["me"]
+      let(:random_unlikely_package_name) { (0...255).map { ("a".."z").to_a[rand(26)] }.join }
+      let(:content) do
+        <<~CONTENT
+          [package]
+          name = "foo"
+          version = "0.1.0"
+          authors = ["me"]
 
-        [dependencies]
-        #{random_unlikely_package_name} = "99.99.99"
-      CONTENT
+          [dependencies]
+          #{random_unlikely_package_name} = "99.99.99"
+        CONTENT
+      end
 
       let(:manifest) do
         Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
@@ -137,14 +139,16 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
     end
 
     context "when the package doesn't exist at the git source" do
-      content = <<~CONTENT
-        [package]
-        name = "foo"
-        version = "0.1.0"
-        authors = ["me"]
-        [dependencies]
-        yewtil = { git = "https://github.com/yewstack/yew" }
-      CONTENT
+      let(:content) do
+        <<~CONTENT
+          [package]
+          name = "foo"
+          version = "0.1.0"
+          authors = ["me"]
+          [dependencies]
+          yewtil = { git = "https://github.com/yewstack/yew" }
+        CONTENT
+      end
 
       let(:manifest) do
         Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
@@ -153,8 +157,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }
           .to raise_error do |error|
-          expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-          expect(error.message).to include("yewtil")
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include("yewtil")
         end
       end
     end
