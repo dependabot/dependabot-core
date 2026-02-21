@@ -24,7 +24,7 @@ class Faraday::Adapter::NetHttp < ::Faraday::Adapter
   # source://faraday-net_http//lib/faraday/adapter/net_http.rb#63
   def call(env); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#51
+  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#50
   def net_http_connection(env); end
 
   private
@@ -32,33 +32,33 @@ class Faraday::Adapter::NetHttp < ::Faraday::Adapter
   # source://faraday-net_http//lib/faraday/adapter/net_http.rb#152
   def configure_request(http, req); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#135
+  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#131
   def configure_ssl(http, ssl); end
 
   # source://faraday-net_http//lib/faraday/adapter/net_http.rb#79
   def create_request(env); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#191
+  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#189
   def encoded_body(http_response); end
 
   # source://faraday-net_http//lib/faraday/adapter/net_http.rb#95
   def perform_request(http, env); end
 
   # source://faraday-net_http//lib/faraday/adapter/net_http.rb#109
-  def request_with_wrapped_block(http, env); end
+  def request_with_wrapped_block(http, env, &block); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#125
+  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#121
   def save_http_response(env, http_response); end
 
   # source://faraday-net_http//lib/faraday/adapter/net_http.rb#172
   def ssl_cert_store(ssl); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#181
+  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#179
   def ssl_verify_mode(ssl); end
 
   # @return [Boolean]
   #
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#203
+  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#201
   def verify_hostname_enabled?(http, ssl); end
 end
 

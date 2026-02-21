@@ -6,9 +6,7 @@
 
 
 # source://http-cookie//lib/http/cookie/version.rb#1
-module HTTP
-  extend ::HTTP::Base64
-end
+module HTTP; end
 
 # This class is used to represent an HTTP Cookie.
 #
@@ -40,13 +38,13 @@ class HTTP::Cookie
   #
   # @return [Cookie] a new instance of Cookie
   #
-  # source://http-cookie//lib/http/cookie.rb#130
+  # source://http-cookie//lib/http/cookie.rb#133
   def initialize(*args); end
 
   # Compares the cookie with another.  When there are many cookies with
   # the same name for a URL, the value of the smallest must be used.
   #
-  # source://http-cookie//lib/http/cookie.rb#643
+  # source://http-cookie//lib/http/cookie.rb#648
   def <=>(other); end
 
   # Tests if it is OK to accept this cookie considering its origin.
@@ -55,7 +53,7 @@ class HTTP::Cookie
   #
   # @return [Boolean]
   #
-  # source://http-cookie//lib/http/cookie.rb#569
+  # source://http-cookie//lib/http/cookie.rb#574
   def acceptable?; end
 
   # Tests if it is OK to accept this cookie if it is sent from a given
@@ -63,90 +61,90 @@ class HTTP::Cookie
   #
   # @return [Boolean]
   #
-  # source://http-cookie//lib/http/cookie.rb#550
+  # source://http-cookie//lib/http/cookie.rb#555
   def acceptable_from_uri?(uri); end
 
   # The time this cookie was last accessed at.
   #
-  # source://http-cookie//lib/http/cookie.rb#546
+  # source://http-cookie//lib/http/cookie.rb#551
   def accessed_at; end
 
   # The time this cookie was last accessed at.
   #
-  # source://http-cookie//lib/http/cookie.rb#546
+  # source://http-cookie//lib/http/cookie.rb#551
   def accessed_at=(_arg0); end
 
   # Returns a string for use in the Cookie header, i.e. `name=value`
   # or `name="value"`.
   #
-  # source://http-cookie//lib/http/cookie.rb#596
+  # source://http-cookie//lib/http/cookie.rb#601
   def cookie_value; end
 
   # The time this cookie was created at.  This value is used as a base
   # date for interpreting the Max-Age attribute value.  See #expires.
   #
-  # source://http-cookie//lib/http/cookie.rb#543
+  # source://http-cookie//lib/http/cookie.rb#548
   def created_at; end
 
   # The time this cookie was created at.  This value is used as a base
   # date for interpreting the Max-Age attribute value.  See #expires.
   #
-  # source://http-cookie//lib/http/cookie.rb#543
+  # source://http-cookie//lib/http/cookie.rb#548
   def created_at=(_arg0); end
 
   # Returns the value of attribute domain.
   #
-  # source://http-cookie//lib/http/cookie.rb#383
+  # source://http-cookie//lib/http/cookie.rb#386
   def domain; end
 
   # See #domain.
   #
-  # source://http-cookie//lib/http/cookie.rb#386
+  # source://http-cookie//lib/http/cookie.rb#389
   def domain=(domain); end
 
   # Returns the domain attribute value as a DomainName object.
   #
-  # source://http-cookie//lib/http/cookie.rb#431
+  # source://http-cookie//lib/http/cookie.rb#434
   def domain_name; end
 
   # Returns the domain, with a dot prefixed only if the domain flag is
   # on.
   #
-  # source://http-cookie//lib/http/cookie.rb#426
+  # source://http-cookie//lib/http/cookie.rb#429
   def dot_domain; end
 
   # YAML serialization helper for Psych.
   #
-  # source://http-cookie//lib/http/cookie.rb#659
+  # source://http-cookie//lib/http/cookie.rb#669
   def encode_with(coder); end
 
   # Expires this cookie by setting the expires attribute value to a
   # past date.
   #
-  # source://http-cookie//lib/http/cookie.rb#536
+  # source://http-cookie//lib/http/cookie.rb#541
   def expire!; end
 
   # Tests if this cookie is expired by now, or by a given time.
   #
   # @return [Boolean]
   #
-  # source://http-cookie//lib/http/cookie.rb#526
+  # source://http-cookie//lib/http/cookie.rb#531
   def expired?(time = T.unsafe(nil)); end
 
-  # source://http-cookie//lib/http/cookie.rb#485
+  # source://http-cookie//lib/http/cookie.rb#488
   def expires; end
 
   # See #expires.
   #
-  # source://http-cookie//lib/http/cookie.rb#490
+  # source://http-cookie//lib/http/cookie.rb#493
   def expires=(t); end
 
-  # source://http-cookie//lib/http/cookie.rb#501
+  # source://http-cookie//lib/http/cookie.rb#506
   def expires_at; end
 
   # See #expires.
   #
-  # source://http-cookie//lib/http/cookie.rb#502
+  # source://http-cookie//lib/http/cookie.rb#507
   def expires_at=(t); end
 
   # The domain flag. (the opposite of host-only-flag)
@@ -155,7 +153,7 @@ class HTTP::Cookie
   # \#domain, including the host domain itself.  If it is false, this
   # cookie will be sent only to the host indicated by the #domain.
   #
-  # source://http-cookie//lib/http/cookie.rb#438
+  # source://http-cookie//lib/http/cookie.rb#441
   def for_domain; end
 
   # The domain flag. (the opposite of host-only-flag)
@@ -164,7 +162,7 @@ class HTTP::Cookie
   # \#domain, including the host domain itself.  If it is false, this
   # cookie will be sent only to the host indicated by the #domain.
   #
-  # source://http-cookie//lib/http/cookie.rb#438
+  # source://http-cookie//lib/http/cookie.rb#441
   def for_domain=(_arg0); end
 
   # The domain flag. (the opposite of host-only-flag)
@@ -173,76 +171,76 @@ class HTTP::Cookie
   # \#domain, including the host domain itself.  If it is false, this
   # cookie will be sent only to the host indicated by the #domain.
   #
-  # source://http-cookie//lib/http/cookie.rb#439
+  # source://http-cookie//lib/http/cookie.rb#442
   def for_domain?; end
 
   # The HttpOnly flag. (http-only-flag)
   #
   # A cookie with this flag on should be hidden from a client script.
   #
-  # source://http-cookie//lib/http/cookie.rb#476
+  # source://http-cookie//lib/http/cookie.rb#479
   def httponly; end
 
   # The HttpOnly flag. (http-only-flag)
   #
   # A cookie with this flag on should be hidden from a client script.
   #
-  # source://http-cookie//lib/http/cookie.rb#476
+  # source://http-cookie//lib/http/cookie.rb#479
   def httponly=(_arg0); end
 
   # The HttpOnly flag. (http-only-flag)
   #
   # A cookie with this flag on should be hidden from a client script.
   #
-  # source://http-cookie//lib/http/cookie.rb#477
+  # source://http-cookie//lib/http/cookie.rb#480
   def httponly?; end
 
   # YAML deserialization helper for Syck.
   #
-  # source://http-cookie//lib/http/cookie.rb#666
+  # source://http-cookie//lib/http/cookie.rb#676
   def init_with(coder); end
 
-  # source://http-cookie//lib/http/cookie.rb#635
+  # source://http-cookie//lib/http/cookie.rb#640
   def inspect; end
 
   # Returns the value of attribute max_age.
   #
-  # source://http-cookie//lib/http/cookie.rb#504
+  # source://http-cookie//lib/http/cookie.rb#509
   def max_age; end
 
   # See #max_age.
   #
-  # source://http-cookie//lib/http/cookie.rb#507
+  # source://http-cookie//lib/http/cookie.rb#512
   def max_age=(sec); end
 
   # Returns the value of attribute name.
   #
-  # source://http-cookie//lib/http/cookie.rb#347
+  # source://http-cookie//lib/http/cookie.rb#350
   def name; end
 
   # See #name.
   #
-  # source://http-cookie//lib/http/cookie.rb#350
+  # source://http-cookie//lib/http/cookie.rb#353
   def name=(name); end
 
   # Returns the value of attribute origin.
   #
-  # source://http-cookie//lib/http/cookie.rb#450
+  # source://http-cookie//lib/http/cookie.rb#453
   def origin; end
 
   # See #origin.
   #
-  # source://http-cookie//lib/http/cookie.rb#453
+  # source://http-cookie//lib/http/cookie.rb#456
   def origin=(origin); end
 
   # Returns the value of attribute path.
   #
-  # source://http-cookie//lib/http/cookie.rb#441
+  # source://http-cookie//lib/http/cookie.rb#444
   def path; end
 
   # See #path.
   #
-  # source://http-cookie//lib/http/cookie.rb#444
+  # source://http-cookie//lib/http/cookie.rb#447
   def path=(path); end
 
   # The secure flag. (secure-only-flag)
@@ -250,7 +248,7 @@ class HTTP::Cookie
   # A cookie with this flag on should only be sent via a secure
   # protocol like HTTPS.
   #
-  # source://http-cookie//lib/http/cookie.rb#470
+  # source://http-cookie//lib/http/cookie.rb#473
   def secure; end
 
   # The secure flag. (secure-only-flag)
@@ -258,7 +256,7 @@ class HTTP::Cookie
   # A cookie with this flag on should only be sent via a secure
   # protocol like HTTPS.
   #
-  # source://http-cookie//lib/http/cookie.rb#470
+  # source://http-cookie//lib/http/cookie.rb#473
   def secure=(_arg0); end
 
   # The secure flag. (secure-only-flag)
@@ -266,21 +264,21 @@ class HTTP::Cookie
   # A cookie with this flag on should only be sent via a secure
   # protocol like HTTPS.
   #
-  # source://http-cookie//lib/http/cookie.rb#471
+  # source://http-cookie//lib/http/cookie.rb#474
   def secure?; end
 
   # The session flag. (the opposite of persistent-flag)
   #
   # A cookie with this flag on should be hidden from a client script.
   #
-  # source://http-cookie//lib/http/cookie.rb#482
+  # source://http-cookie//lib/http/cookie.rb#485
   def session; end
 
   # The session flag. (the opposite of persistent-flag)
   #
   # A cookie with this flag on should be hidden from a client script.
   #
-  # source://http-cookie//lib/http/cookie.rb#483
+  # source://http-cookie//lib/http/cookie.rb#486
   def session?; end
 
   # Returns a string for use in the Set-Cookie header.  If necessary
@@ -288,18 +286,23 @@ class HTTP::Cookie
   # missing, RuntimeError is raised.  It is always the best to set an
   # origin before calling this method.
   #
-  # source://http-cookie//lib/http/cookie.rb#605
+  # source://http-cookie//lib/http/cookie.rb#610
   def set_cookie_value; end
+
+  # Hash serialization helper for use back into other libraries (Like Selenium)
+  #
+  # source://http-cookie//lib/http/cookie.rb#659
+  def to_h; end
 
   # Returns a string for use in the Cookie header, i.e. `name=value`
   # or `name="value"`.
   #
-  # source://http-cookie//lib/http/cookie.rb#599
+  # source://http-cookie//lib/http/cookie.rb#604
   def to_s; end
 
   # YAML serialization helper for Syck.
   #
-  # source://http-cookie//lib/http/cookie.rb#654
+  # source://http-cookie//lib/http/cookie.rb#664
   def to_yaml_properties; end
 
   # Tests if it is OK to send this cookie to a given `uri`.  A
@@ -307,36 +310,36 @@ class HTTP::Cookie
   #
   # @return [Boolean]
   #
-  # source://http-cookie//lib/http/cookie.rb#584
+  # source://http-cookie//lib/http/cookie.rb#589
   def valid_for_uri?(uri); end
 
   # Returns the value of attribute value.
   #
-  # source://http-cookie//lib/http/cookie.rb#364
+  # source://http-cookie//lib/http/cookie.rb#367
   def value; end
 
   # See #value.
   #
-  # source://http-cookie//lib/http/cookie.rb#367
+  # source://http-cookie//lib/http/cookie.rb#370
   def value=(value); end
 
   # YAML deserialization helper for Psych.
   #
-  # source://http-cookie//lib/http/cookie.rb#671
+  # source://http-cookie//lib/http/cookie.rb#681
   def yaml_initialize(tag, map); end
 
   class << self
     # Takes an array of cookies and returns a string for use in the
     # Cookie header, like "name1=value2; name2=value2".
     #
-    # source://http-cookie//lib/http/cookie.rb#331
+    # source://http-cookie//lib/http/cookie.rb#334
     def cookie_value(cookies); end
 
     # Parses a Cookie header value into a hash of name-value string
     # pairs.  The first appearance takes precedence if multiple pairs
     # with the same name occur.
     #
-    # source://http-cookie//lib/http/cookie.rb#338
+    # source://http-cookie//lib/http/cookie.rb#341
     def cookie_value_to_hash(cookie_value); end
 
     # Parses a Set-Cookie header value `set_cookie` assuming that it
@@ -371,7 +374,7 @@ class HTTP::Cookie
     #   cookie definitions containing double-quotes just as naturally
     #   expected.
     #
-    # source://http-cookie//lib/http/cookie.rb#273
+    # source://http-cookie//lib/http/cookie.rb#276
     def parse(set_cookie, origin, options = T.unsafe(nil), &block); end
 
     # Tests if +target_path+ is under +base_path+ as described in RFC
@@ -394,7 +397,7 @@ class HTTP::Cookie
     #
     # @return [Boolean]
     #
-    # source://http-cookie//lib/http/cookie.rb#229
+    # source://http-cookie//lib/http/cookie.rb#232
     def path_match?(base_path, target_path); end
   end
 end
@@ -402,89 +405,123 @@ end
 # Maximum number of cookies per domain (RFC 6265 6.1 requires 50 at
 # least)
 #
-# source://http-cookie//lib/http/cookie.rb#19
+# source://http-cookie//lib/http/cookie.rb#22
 HTTP::Cookie::MAX_COOKIES_PER_DOMAIN = T.let(T.unsafe(nil), Integer)
 
 # Maximum number of cookies total (RFC 6265 6.1 requires 3000 at
 # least)
 #
-# source://http-cookie//lib/http/cookie.rb#22
+# source://http-cookie//lib/http/cookie.rb#25
 HTTP::Cookie::MAX_COOKIES_TOTAL = T.let(T.unsafe(nil), Integer)
 
 # Maximum number of bytes per cookie (RFC 6265 6.1 requires 4096 at
 # least)
 #
-# source://http-cookie//lib/http/cookie.rb#16
+# source://http-cookie//lib/http/cookie.rb#19
 HTTP::Cookie::MAX_LENGTH = T.let(T.unsafe(nil), Integer)
 
-# source://http-cookie//lib/http/cookie.rb#27
+# source://http-cookie//lib/http/cookie.rb#30
 HTTP::Cookie::PERSISTENT_PROPERTIES = T.let(T.unsafe(nil), Array)
 
-# source://http-cookie//lib/http/cookie/scanner.rb#5
+# source://http-cookie//lib/http/cookie/scanner.rb#6
 class HTTP::Cookie::Scanner < ::StringScanner
   # @return [Scanner] a new instance of Scanner
   #
-  # source://http-cookie//lib/http/cookie/scanner.rb#18
+  # source://http-cookie//lib/http/cookie/scanner.rb#19
   def initialize(string, logger = T.unsafe(nil)); end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#104
+  # source://http-cookie//lib/http/cookie/scanner.rb#105
   def parse_cookie_date(s); end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#218
+  # source://http-cookie//lib/http/cookie/scanner.rb#219
   def scan_cookie; end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#34
+  # source://http-cookie//lib/http/cookie/scanner.rb#35
   def scan_dquoted; end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#47
+  # source://http-cookie//lib/http/cookie/scanner.rb#48
   def scan_name; end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#73
+  # source://http-cookie//lib/http/cookie/scanner.rb#74
   def scan_name_value(comma_as_separator = T.unsafe(nil)); end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#156
+  # source://http-cookie//lib/http/cookie/scanner.rb#157
   def scan_set_cookie; end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#53
+  # source://http-cookie//lib/http/cookie/scanner.rb#54
   def scan_value(comma_as_separator = T.unsafe(nil)); end
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#30
+  # source://http-cookie//lib/http/cookie/scanner.rb#31
   def skip_wsp; end
 
   private
 
-  # source://http-cookie//lib/http/cookie/scanner.rb#85
+  # source://http-cookie//lib/http/cookie/scanner.rb#86
   def tuple_to_time(day_of_month, month, year, time); end
 
   class << self
-    # source://http-cookie//lib/http/cookie/scanner.rb#24
+    # source://http-cookie//lib/http/cookie/scanner.rb#25
     def quote(s); end
   end
 end
 
-# source://http-cookie//lib/http/cookie/scanner.rb#13
+# source://http-cookie//lib/http/cookie/scanner.rb#14
 HTTP::Cookie::Scanner::RE_BAD_CHAR = T.let(T.unsafe(nil), Regexp)
 
 # A pattern that matches the comma in a (typically date) value.
 #
-# source://http-cookie//lib/http/cookie/scanner.rb#16
+# source://http-cookie//lib/http/cookie/scanner.rb#17
 HTTP::Cookie::Scanner::RE_COOKIE_COMMA = T.let(T.unsafe(nil), Regexp)
 
 # A pattern that matches a cookie name or attribute name which may
 # be empty, capturing trailing whitespace.
 #
-# source://http-cookie//lib/http/cookie/scanner.rb#11
+# source://http-cookie//lib/http/cookie/scanner.rb#12
 HTTP::Cookie::Scanner::RE_NAME = T.let(T.unsafe(nil), Regexp)
 
 # Whitespace.
 #
-# source://http-cookie//lib/http/cookie/scanner.rb#7
+# source://http-cookie//lib/http/cookie/scanner.rb#8
 HTTP::Cookie::Scanner::RE_WSP = T.let(T.unsafe(nil), Regexp)
 
 # :stopdoc:
 #
-# source://http-cookie//lib/http/cookie.rb#25
+# source://http-cookie//lib/http/cookie.rb#28
 HTTP::Cookie::UNIX_EPOCH = T.let(T.unsafe(nil), Time)
+
+# source://http-cookie//lib/http/cookie/uri_parser.rb#1
+module HTTP::Cookie::URIParser
+  private
+
+  # Escape RFC 3986 "reserved" characters minus valid characters for path
+  # More specifically, gen-delims minus "/" / "?" / "#"
+  #
+  # source://http-cookie//lib/http/cookie/uri_parser.rb#17
+  def escape_path(path); end
+
+  # Parse a URI string or object, relaxing the constraints on the path component
+  #
+  # source://http-cookie//lib/http/cookie/uri_parser.rb#22
+  def parse(uri); end
+
+  class << self
+    # Escape RFC 3986 "reserved" characters minus valid characters for path
+    # More specifically, gen-delims minus "/" / "?" / "#"
+    #
+    # source://http-cookie//lib/http/cookie/uri_parser.rb#17
+    def escape_path(path); end
+
+    # Parse a URI string or object, relaxing the constraints on the path component
+    #
+    # source://http-cookie//lib/http/cookie/uri_parser.rb#22
+    def parse(uri); end
+  end
+end
+
+# Regular Expression taken from RFC 3986 Appendix B
+#
+# source://http-cookie//lib/http/cookie/uri_parser.rb#5
+HTTP::Cookie::URIParser::URIREGEX = T.let(T.unsafe(nil), Regexp)
 
 # source://http-cookie//lib/http/cookie/version.rb#3
 HTTP::Cookie::VERSION = T.let(T.unsafe(nil), String)

@@ -181,10 +181,10 @@ class Aws::EventStream::Encoder
   # Encodes Aws::EventStream::Message to output IO when
   #   provided, else return the encoded binary string
   #
-  # @param message [Aws::EventStream::Message]
   # @param io [IO#write, nil] An IO-like object that
   #   responds to `#write`, encoded message will be
   #   written to this IO when provided
+  # @param message [Aws::EventStream::Message]
   # @return [nil, String] when output IO is provided,
   #   encoded message will be written to that IO, nil
   #   will be returned. Else, encoded binary string is
@@ -222,7 +222,7 @@ end
 # source://aws-eventstream//lib/aws-eventstream/encoder.rb#45
 Aws::EventStream::Encoder::MAX_HEADERS_LENGTH = T.let(T.unsafe(nil), Integer)
 
-# Maximum payload length allowed (after encode) 16mb
+# Maximum payload length allowed (after encode) 24mb
 #
 # source://aws-eventstream//lib/aws-eventstream/encoder.rb#48
 Aws::EventStream::Encoder::MAX_PAYLOAD_LENGTH = T.let(T.unsafe(nil), Integer)
