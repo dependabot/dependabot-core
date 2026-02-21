@@ -582,8 +582,11 @@ module Dependabot
           next if name == "." || name == ".."
 
           absolute_path = File.join(repo_path, name)
+          entry_path = Pathname.new(File.join(relative_path, name)).cleanpath.to_path
           type = if File.symlink?(absolute_path)
                    "symlink"
+                 elsif @submodules.include?(entry_path)
+                   "submodule"
                  elsif Dir.exist?(absolute_path)
                    "dir"
                  else
@@ -592,7 +595,7 @@ module Dependabot
 
           RepositoryContent.new(
             name: name,
-            path: Pathname.new(File.join(relative_path, name)).cleanpath.to_path,
+            path: entry_path,
             type: type,
             size: 0 # NOTE: added for parity with github contents API
           )
