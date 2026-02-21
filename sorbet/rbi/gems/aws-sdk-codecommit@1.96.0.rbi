@@ -32,7 +32,7 @@
 #
 # See {Errors} for more information.
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#10
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit.rb#44
 module Aws::CodeCommit; end
 
 # An API client for CodeCommit.  To construct a client, you need to configure a `:region` and `:credentials`.
@@ -55,7 +55,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload initialize
   # @return [Client] a new instance of Client
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#395
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#480
   def initialize(*args); end
 
   # Creates an association between an approval rule template and a
@@ -80,7 +80,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/AssociateApprovalRuleTemplateWithRepository AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#430
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#515
   def associate_approval_rule_template_with_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates an association between an approval rule template and one or
@@ -110,7 +110,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::BatchAssociateApprovalRuleTemplateWithRepositoriesOutput#errors #errors} => Array&lt;Types::BatchAssociateApprovalRuleTemplateWithRepositoriesError&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchAssociateApprovalRuleTemplateWithRepositories AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#475
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#560
   def batch_associate_approval_rule_template_with_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more merge conflicts in the attempted
@@ -194,7 +194,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::BatchDescribeMergeConflictsOutput#base_commit_id #base_commit_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDescribeMergeConflicts AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#596
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#681
   def batch_describe_merge_conflicts(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes the association between an approval rule template and one or
@@ -224,7 +224,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesOutput#errors #errors} => Array&lt;Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesError&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDisassociateApprovalRuleTemplateFromRepositories AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#642
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#727
   def batch_disassociate_approval_rule_template_from_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about the contents of one or more commits in a
@@ -265,7 +265,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::BatchGetCommitsOutput#errors #errors} => Array&lt;Types::BatchGetCommitsError&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetCommits AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#697
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#782
   def batch_get_commits(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more repositories.
@@ -315,13 +315,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::BatchGetRepositoriesOutput#errors #errors} => Array&lt;Types::BatchGetRepositoriesError&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetRepositories AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#759
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#844
   def batch_get_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @api private
   # @param params [{}]
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5116
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5198
   def build_request(operation_name, params = T.unsafe(nil)); end
 
   # Creates a template for approval rules that can then be associated with
@@ -358,7 +358,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::CreateApprovalRuleTemplateOutput#approval_rule_template #approval_rule_template} => Types::ApprovalRuleTemplate
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateApprovalRuleTemplate AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#850
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#934
   def create_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a branch in a repository and points the branch to a commit.
@@ -383,7 +383,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateBranch AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#885
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#969
   def create_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a commit for a repository on the tip of a specified branch.
@@ -458,7 +458,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::CreateCommitOutput#files_deleted #files_deleted} => Array&lt;Types::FileMetadata&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateCommit AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#992
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1076
   def create_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a pull request in the specified repository.
@@ -520,7 +520,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::CreatePullRequestOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequest AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1084
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1168
   def create_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates an approval rule for a pull request.
@@ -553,7 +553,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::CreatePullRequestApprovalRuleOutput#approval_rule #approval_rule} => Types::ApprovalRule
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestApprovalRule AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1167
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1250
   def create_pull_request_approval_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a new, empty repository.
@@ -592,7 +592,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::CreateRepositoryOutput#repository_metadata #repository_metadata} => Types::RepositoryMetadata
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateRepository AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1252
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1335
   def create_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates an unreferenced commit that represents the result of merging
@@ -665,7 +665,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::CreateUnreferencedMergeCommitOutput#tree_id #tree_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateUnreferencedMergeCommit AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1367
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1450
   def create_unreferenced_merge_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a specified approval rule template. Deleting a template does
@@ -688,7 +688,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DeleteApprovalRuleTemplateOutput#approval_rule_template_id #approval_rule_template_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteApprovalRuleTemplate AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1397
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1480
   def delete_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a branch from a repository, unless that branch is the default
@@ -713,7 +713,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DeleteBranchOutput#deleted_branch #deleted_branch} => Types::BranchInfo
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteBranch AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1431
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1514
   def delete_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes the content of a comment made on a change, file, or commit in
@@ -746,7 +746,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DeleteCommentContentOutput#comment #comment} => Types::Comment
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteCommentContent AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1472
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1555
   def delete_comment_content(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a specified file from a specified branch. A commit is created
@@ -789,7 +789,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DeleteFileOutput#file_path #file_path} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFile AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1552
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1635
   def delete_file(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes an approval rule from a specified pull request. Approval rules
@@ -817,7 +817,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DeletePullRequestApprovalRuleOutput#approval_rule_id #approval_rule_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeletePullRequestApprovalRule AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1590
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1673
   def delete_pull_request_approval_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a repository. If a specified repository was already deleted, a
@@ -843,7 +843,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DeleteRepositoryOutput#repository_id #repository_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteRepository AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1623
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1706
   def delete_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more merge conflicts in the attempted
@@ -923,7 +923,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DescribeMergeConflictsOutput#base_commit_id #base_commit_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribeMergeConflicts AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1737
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1820
   def describe_merge_conflicts(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more pull request events.
@@ -982,7 +982,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::DescribePullRequestEventsOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribePullRequestEvents AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1818
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1901
   def describe_pull_request_events(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes the association between a template and a repository so that
@@ -1004,7 +1004,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DisassociateApprovalRuleTemplateFromRepository AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1849
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1932
   def disassociate_approval_rule_template_from_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Evaluates whether a pull request has met all the conditions specified
@@ -1033,7 +1033,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::EvaluatePullRequestApprovalRulesOutput#evaluation #evaluation} => Types::Evaluation
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EvaluatePullRequestApprovalRules AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1888
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1971
   def evaluate_pull_request_approval_rules(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a specified approval rule template.
@@ -1061,7 +1061,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetApprovalRuleTemplateOutput#approval_rule_template #approval_rule_template} => Types::ApprovalRuleTemplate
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetApprovalRuleTemplate AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1924
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2007
   def get_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the base-64 encoded content of an individual blob in a
@@ -1085,7 +1085,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetBlobOutput#content #content} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBlob AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1957
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2040
   def get_blob(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a repository branch, including its name and
@@ -1110,7 +1110,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetBranchOutput#branch #branch} => Types::BranchInfo
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBranch AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#1992
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2075
   def get_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the content of a comment made on a change, file, or commit in
@@ -1149,7 +1149,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetCommentOutput#comment #comment} => Types::Comment
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetComment AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2039
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2122
   def get_comment(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about reactions to a specified comment ID.
@@ -1188,7 +1188,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetCommentReactionsOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentReactions AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2094
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2177
   def get_comment_reactions(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about comments made on the comparison between two
@@ -1249,7 +1249,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetCommentsForComparedCommitOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForComparedCommit AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2174
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2257
   def get_comments_for_compared_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns comments made on a pull request.
@@ -1312,7 +1312,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetCommentsForPullRequestOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForPullRequest AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2266
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2349
   def get_comments_for_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a commit, including commit message and
@@ -1347,7 +1347,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetCommitOutput#commit #commit} => Types::Commit
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommit AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2310
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2393
   def get_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about the differences in a valid commit specifier
@@ -1393,7 +1393,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetDifferencesOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetDifferences AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2388
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2471
   def get_differences(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the base-64 encoded contents of a specified file and its
@@ -1429,7 +1429,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetFileOutput#file_content #file_content} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFile AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2440
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2523
   def get_file(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the contents of a specified folder in a repository.
@@ -1480,7 +1480,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetFolderOutput#sub_modules #sub_modules} => Array&lt;Types::SubModule&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFolder AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2509
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2592
   def get_folder(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a specified merge commit.
@@ -1515,7 +1515,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetMergeCommitOutput#merged_commit_id #merged_commit_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeCommit AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2569
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2652
   def get_merge_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about merge conflicts between the before and after
@@ -1582,7 +1582,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetMergeConflictsOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeConflicts AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2667
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2750
   def get_merge_conflicts(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about the merge options available for merging two
@@ -1620,7 +1620,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetMergeOptionsOutput#base_commit_id #base_commit_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeOptions AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2730
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2813
   def get_merge_options(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about a pull request in a specified repository.
@@ -1670,7 +1670,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetPullRequestOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequest AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2788
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2871
   def get_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about the approval states for a specified pull
@@ -1697,7 +1697,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetPullRequestApprovalStatesOutput#approvals #approvals} => Array&lt;Types::Approval&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestApprovalStates AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2824
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2907
   def get_pull_request_approval_states(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about whether approval rules have been set aside
@@ -1725,7 +1725,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetPullRequestOverrideStateOutput#overrider #overrider} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOverrideState AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2863
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2946
   def get_pull_request_override_state(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a repository.
@@ -1765,7 +1765,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetRepositoryOutput#repository_metadata #repository_metadata} => Types::RepositoryMetadata
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepository AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2910
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2993
   def get_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about triggers configured for a repository.
@@ -1795,7 +1795,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::GetRepositoryTriggersOutput#triggers #triggers} => Array&lt;Types::RepositoryTrigger&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryTriggers AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2947
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3030
   def get_repository_triggers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all approval rule templates in the specified Amazon Web Services
@@ -1826,7 +1826,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListApprovalRuleTemplatesOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListApprovalRuleTemplates AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#2989
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3072
   def list_approval_rule_templates(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all approval rule templates that are associated with a specified
@@ -1857,7 +1857,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListAssociatedApprovalRuleTemplatesForRepositoryOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListAssociatedApprovalRuleTemplatesForRepository AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3034
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3117
   def list_associated_approval_rule_templates_for_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about one or more branches in a repository.
@@ -1885,7 +1885,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListBranchesOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListBranches AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3071
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3154
   def list_branches(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves a list of commits and changes to a specified file.
@@ -1934,7 +1934,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListFileCommitHistoryResponse#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListFileCommitHistory AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3140
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3223
   def list_file_commit_history(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns a list of pull requests for a specified repository. The return
@@ -1969,7 +1969,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListPullRequestsOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListPullRequests AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3195
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3278
   def list_pull_requests(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about one or more repositories.
@@ -2000,7 +2000,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListRepositoriesOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositories AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3242
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3325
   def list_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all repositories associated with the specified approval rule
@@ -2031,7 +2031,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListRepositoriesForApprovalRuleTemplateOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesForApprovalRuleTemplate AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3287
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3370
   def list_repositories_for_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about Amazon Web Servicestags for a specified Amazon
@@ -2064,7 +2064,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::ListTagsForResourceOutput#next_token #next_token} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListTagsForResource AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3331
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3414
   def list_tags_for_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Merges two branches using the fast-forward merge strategy.
@@ -2093,7 +2093,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::MergeBranchesByFastForwardOutput#tree_id #tree_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByFastForward AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3375
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3458
   def merge_branches_by_fast_forward(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Merges two branches using the squash merge strategy.
@@ -2156,7 +2156,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::MergeBranchesBySquashOutput#tree_id #tree_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesBySquash AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3480
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3563
   def merge_branches_by_squash(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Merges two specified branches using the three-way merge strategy.
@@ -2219,7 +2219,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::MergeBranchesByThreeWayOutput#tree_id #tree_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByThreeWay AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3584
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3667
   def merge_branches_by_three_way(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Attempts to merge the source commit of a pull request into the
@@ -2276,7 +2276,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::MergePullRequestByFastForwardOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByFastForward AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3656
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3739
   def merge_pull_request_by_fast_forward(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Attempts to merge the source commit of a pull request into the
@@ -2367,7 +2367,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::MergePullRequestBySquashOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestBySquash AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3788
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3871
   def merge_pull_request_by_squash(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Attempts to merge the source commit of a pull request into the
@@ -2458,7 +2458,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::MergePullRequestByThreeWayOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByThreeWay AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3920
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4003
   def merge_pull_request_by_three_way(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Sets aside (overrides) all approval rule requirements for a specified
@@ -2479,7 +2479,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OverridePullRequestApprovalRules AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#3958
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4041
   def override_pull_request_approval_rules(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Posts a comment on the comparison between two commits.
@@ -2539,7 +2539,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::PostCommentForComparedCommitOutput#comment #comment} => Types::Comment
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForComparedCommit AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4046
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4129
   def post_comment_for_compared_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Posts a comment on a pull request.
@@ -2603,7 +2603,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::PostCommentForPullRequestOutput#comment #comment} => Types::Comment
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForPullRequest AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4144
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4227
   def post_comment_for_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Posts a comment in reply to an existing comment on a comparison
@@ -2640,7 +2640,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::PostCommentReplyOutput#comment #comment} => Types::Comment
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentReply AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4201
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4284
   def post_comment_reply(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds or updates a reaction to a specified comment for the user whose
@@ -2661,7 +2661,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutCommentReaction AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4237
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4320
   def put_comment_reaction(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds or updates a file in a branch in an CodeCommit repository, and
@@ -2703,7 +2703,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::PutFileOutput#tree_id #tree_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFile AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4321
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4404
   def put_file(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces all triggers for a repository. Used to create or delete
@@ -2735,7 +2735,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::PutRepositoryTriggersOutput#configuration_id #configuration_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutRepositoryTriggers AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4363
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4446
   def put_repository_triggers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds or updates tags for a resource in CodeCommit. For a list of valid
@@ -2761,7 +2761,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TagResource AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4398
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4481
   def tag_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Tests the functionality of repository triggers by sending information
@@ -2800,7 +2800,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::TestRepositoryTriggersOutput#failed_executions #failed_executions} => Array&lt;Types::RepositoryTriggerExecutionFailure&gt;
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TestRepositoryTriggers AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4446
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4529
   def test_repository_triggers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes tags for a resource in CodeCommit. For a list of valid
@@ -2824,7 +2824,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UntagResource AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4479
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4562
   def untag_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the content of an approval rule template. You can change the
@@ -2858,7 +2858,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdateApprovalRuleTemplateContentOutput#approval_rule_template #approval_rule_template} => Types::ApprovalRuleTemplate
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateContent AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4527
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4610
   def update_approval_rule_template_content(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the description for a specified approval rule template.
@@ -2888,7 +2888,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdateApprovalRuleTemplateDescriptionOutput#approval_rule_template #approval_rule_template} => Types::ApprovalRuleTemplate
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateDescription AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4566
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4649
   def update_approval_rule_template_description(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the name of a specified approval rule template.
@@ -2918,7 +2918,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdateApprovalRuleTemplateNameOutput#approval_rule_template #approval_rule_template} => Types::ApprovalRuleTemplate
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateName AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4605
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4688
   def update_approval_rule_template_name(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces the contents of a comment.
@@ -2952,7 +2952,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdateCommentOutput#comment #comment} => Types::Comment
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateComment AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4649
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4732
   def update_comment(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Sets or changes the default branch name for the specified repository.
@@ -2976,7 +2976,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateDefaultBranch AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4682
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4765
   def update_default_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the structure of an approval rule created specifically for a
@@ -3013,7 +3013,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdatePullRequestApprovalRuleContentOutput#approval_rule #approval_rule} => Types::ApprovalRule
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalRuleContent AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4768
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4850
   def update_pull_request_approval_rule_content(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the state of a user's approval on a pull request. The user is
@@ -3034,7 +3034,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalState AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4799
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4881
   def update_pull_request_approval_state(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces the contents of the description of a pull request.
@@ -3086,7 +3086,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdatePullRequestDescriptionOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestDescription AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4862
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4944
   def update_pull_request_description(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the status of a pull request.
@@ -3138,7 +3138,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdatePullRequestStatusOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestStatus AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4926
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5008
   def update_pull_request_status(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces the title of a pull request.
@@ -3190,7 +3190,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdatePullRequestTitleOutput#pull_request #pull_request} => Types::PullRequest
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestTitle AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#4989
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5071
   def update_pull_request_title(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Sets or changes the comment or description for a repository.
@@ -3217,7 +3217,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryDescription AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5026
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5108
   def update_repository_description(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the Key Management Service encryption key used to encrypt and
@@ -3245,7 +3245,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   * {Types::UpdateRepositoryEncryptionKeyOutput#original_kms_key_id #original_kms_key_id} => String
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryEncryptionKey AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5072
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5154
   def update_repository_encryption_key(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Renames a repository. The repository name must be unique across the
@@ -3272,2718 +3272,2723 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @return [Struct] Returns an empty {Seahorse::Client::Response response}.
   # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryName AWS API Documentation
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5107
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5189
   def update_repository_name(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @api private
   # @deprecated
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5131
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5218
   def waiter_names; end
 
   class << self
     # @api private
     #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5141
+    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5228
     def errors_module; end
 
     # @api private
     #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5138
+    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client.rb#5225
     def identifier; end
   end
 end
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#12
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#13
 module Aws::CodeCommit::ClientApi
   include ::Seahorse::Model
 end
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#2127
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#2131
 Aws::CodeCommit::ClientApi::API = T.let(T.unsafe(nil), Seahorse::Model::Api)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#16
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#17
 Aws::CodeCommit::ClientApi::AccountId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#17
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#18
 Aws::CodeCommit::ClientApi::ActorDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#18
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#19
 Aws::CodeCommit::ClientApi::AdditionalData = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#19
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#20
 Aws::CodeCommit::ClientApi::Approval = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#20
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#21
 Aws::CodeCommit::ClientApi::ApprovalList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#21
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#22
 Aws::CodeCommit::ClientApi::ApprovalRule = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#22
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#23
 Aws::CodeCommit::ClientApi::ApprovalRuleContent = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#23
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#24
 Aws::CodeCommit::ClientApi::ApprovalRuleContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#24
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#25
 Aws::CodeCommit::ClientApi::ApprovalRuleDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#25
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#26
 Aws::CodeCommit::ClientApi::ApprovalRuleEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#26
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#27
 Aws::CodeCommit::ClientApi::ApprovalRuleId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#27
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#28
 Aws::CodeCommit::ClientApi::ApprovalRuleName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#28
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#29
 Aws::CodeCommit::ClientApi::ApprovalRuleNameAlreadyExistsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#29
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#30
 Aws::CodeCommit::ClientApi::ApprovalRuleNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#30
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#31
 Aws::CodeCommit::ClientApi::ApprovalRuleOverriddenEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#31
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#32
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplate = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#32
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#33
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateContent = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#33
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#34
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#34
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#35
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateDescription = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#35
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#36
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#36
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#37
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#37
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#38
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateInUseException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#38
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#39
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#39
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#40
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateNameAlreadyExistsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#40
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#41
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateNameList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#41
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#42
 Aws::CodeCommit::ClientApi::ApprovalRuleTemplateNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#42
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#43
 Aws::CodeCommit::ClientApi::ApprovalRulesList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#43
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#44
 Aws::CodeCommit::ClientApi::ApprovalRulesNotSatisfiedList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#44
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#45
 Aws::CodeCommit::ClientApi::ApprovalRulesSatisfiedList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#45
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#46
 Aws::CodeCommit::ClientApi::ApprovalState = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#46
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#47
 Aws::CodeCommit::ClientApi::ApprovalStateChangedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#47
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#48
 Aws::CodeCommit::ClientApi::ApprovalStateRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#48
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#49
 Aws::CodeCommit::ClientApi::Approved = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#49
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#50
 Aws::CodeCommit::ClientApi::Arn = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#50
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#51
 Aws::CodeCommit::ClientApi::AssociateApprovalRuleTemplateWithRepositoryInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#51
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#52
 Aws::CodeCommit::ClientApi::AuthorDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#52
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#53
 Aws::CodeCommit::ClientApi::BatchAssociateApprovalRuleTemplateWithRepositoriesError = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#53
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#54
 Aws::CodeCommit::ClientApi::BatchAssociateApprovalRuleTemplateWithRepositoriesErrorsList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#54
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#55
 Aws::CodeCommit::ClientApi::BatchAssociateApprovalRuleTemplateWithRepositoriesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#55
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#56
 Aws::CodeCommit::ClientApi::BatchAssociateApprovalRuleTemplateWithRepositoriesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#56
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#57
 Aws::CodeCommit::ClientApi::BatchDescribeMergeConflictsError = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#57
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#58
 Aws::CodeCommit::ClientApi::BatchDescribeMergeConflictsErrors = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#58
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#59
 Aws::CodeCommit::ClientApi::BatchDescribeMergeConflictsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#59
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#60
 Aws::CodeCommit::ClientApi::BatchDescribeMergeConflictsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#60
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#61
 Aws::CodeCommit::ClientApi::BatchDisassociateApprovalRuleTemplateFromRepositoriesError = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#61
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#62
 Aws::CodeCommit::ClientApi::BatchDisassociateApprovalRuleTemplateFromRepositoriesErrorsList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#62
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#63
 Aws::CodeCommit::ClientApi::BatchDisassociateApprovalRuleTemplateFromRepositoriesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#63
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#64
 Aws::CodeCommit::ClientApi::BatchDisassociateApprovalRuleTemplateFromRepositoriesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#64
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#65
 Aws::CodeCommit::ClientApi::BatchGetCommitsError = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#65
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#66
 Aws::CodeCommit::ClientApi::BatchGetCommitsErrorsList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#66
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#67
 Aws::CodeCommit::ClientApi::BatchGetCommitsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#67
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#68
 Aws::CodeCommit::ClientApi::BatchGetCommitsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#68
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#69
 Aws::CodeCommit::ClientApi::BatchGetRepositoriesError = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#69
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#70
 Aws::CodeCommit::ClientApi::BatchGetRepositoriesErrorCodeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#70
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#71
 Aws::CodeCommit::ClientApi::BatchGetRepositoriesErrorsList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#71
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#72
 Aws::CodeCommit::ClientApi::BatchGetRepositoriesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#72
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#73
 Aws::CodeCommit::ClientApi::BatchGetRepositoriesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#73
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#74
 Aws::CodeCommit::ClientApi::BeforeCommitIdAndAfterCommitIdAreSameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#74
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#75
 Aws::CodeCommit::ClientApi::BlobIdDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#75
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#76
 Aws::CodeCommit::ClientApi::BlobIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#76
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#77
 Aws::CodeCommit::ClientApi::BlobMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#77
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#78
 Aws::CodeCommit::ClientApi::BranchDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#78
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#79
 Aws::CodeCommit::ClientApi::BranchInfo = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#79
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#80
 Aws::CodeCommit::ClientApi::BranchName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#80
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#81
 Aws::CodeCommit::ClientApi::BranchNameExistsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#81
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#82
 Aws::CodeCommit::ClientApi::BranchNameIsTagNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#82
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#83
 Aws::CodeCommit::ClientApi::BranchNameList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#83
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#84
 Aws::CodeCommit::ClientApi::BranchNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#84
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#85
 Aws::CodeCommit::ClientApi::CallerReactions = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#85
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#86
 Aws::CodeCommit::ClientApi::CannotDeleteApprovalRuleFromTemplateException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#86
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#87
 Aws::CodeCommit::ClientApi::CannotModifyApprovalRuleFromTemplateException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#87
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#88
 Aws::CodeCommit::ClientApi::CapitalBoolean = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#88
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#89
 Aws::CodeCommit::ClientApi::ChangeTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#89
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#90
 Aws::CodeCommit::ClientApi::ClientRequestToken = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#90
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#91
 Aws::CodeCommit::ClientApi::ClientRequestTokenRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#91
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#92
 Aws::CodeCommit::ClientApi::CloneUrlHttp = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#92
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#93
 Aws::CodeCommit::ClientApi::CloneUrlSsh = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#93
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#94
 Aws::CodeCommit::ClientApi::Comment = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#94
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#95
 Aws::CodeCommit::ClientApi::CommentContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#95
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#96
 Aws::CodeCommit::ClientApi::CommentContentSizeLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#96
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#97
 Aws::CodeCommit::ClientApi::CommentDeletedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#97
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#98
 Aws::CodeCommit::ClientApi::CommentDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#98
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#99
 Aws::CodeCommit::ClientApi::CommentId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#99
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#100
 Aws::CodeCommit::ClientApi::CommentIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#100
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#101
 Aws::CodeCommit::ClientApi::CommentNotCreatedByCallerException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#101
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#102
 Aws::CodeCommit::ClientApi::Comments = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#102
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#103
 Aws::CodeCommit::ClientApi::CommentsForComparedCommit = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#103
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#104
 Aws::CodeCommit::ClientApi::CommentsForComparedCommitData = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#104
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#105
 Aws::CodeCommit::ClientApi::CommentsForPullRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#105
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#106
 Aws::CodeCommit::ClientApi::CommentsForPullRequestData = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#106
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#107
 Aws::CodeCommit::ClientApi::Commit = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#107
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#108
 Aws::CodeCommit::ClientApi::CommitDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#108
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#109
 Aws::CodeCommit::ClientApi::CommitId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#109
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#110
 Aws::CodeCommit::ClientApi::CommitIdDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#110
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#111
 Aws::CodeCommit::ClientApi::CommitIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#111
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#112
 Aws::CodeCommit::ClientApi::CommitIdsInputList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#112
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#113
 Aws::CodeCommit::ClientApi::CommitIdsLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#113
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#114
 Aws::CodeCommit::ClientApi::CommitIdsListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#114
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#115
 Aws::CodeCommit::ClientApi::CommitMessageLengthExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#115
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#116
 Aws::CodeCommit::ClientApi::CommitName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#116
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#117
 Aws::CodeCommit::ClientApi::CommitObjectsList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#117
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#118
 Aws::CodeCommit::ClientApi::CommitRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#118
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#119
 Aws::CodeCommit::ClientApi::ConcurrentReferenceUpdateException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#119
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#120
 Aws::CodeCommit::ClientApi::Conflict = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#120
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#121
 Aws::CodeCommit::ClientApi::ConflictDetailLevelTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#121
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#122
 Aws::CodeCommit::ClientApi::ConflictMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#122
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#123
 Aws::CodeCommit::ClientApi::ConflictMetadataList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#123
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#124
 Aws::CodeCommit::ClientApi::ConflictResolution = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#124
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#125
 Aws::CodeCommit::ClientApi::ConflictResolutionStrategyTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#125
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#126
 Aws::CodeCommit::ClientApi::Conflicts = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#126
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#127
 Aws::CodeCommit::ClientApi::Content = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#127
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#128
 Aws::CodeCommit::ClientApi::Count = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#128
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#129
 Aws::CodeCommit::ClientApi::CreateApprovalRuleTemplateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#129
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#130
 Aws::CodeCommit::ClientApi::CreateApprovalRuleTemplateOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#130
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#131
 Aws::CodeCommit::ClientApi::CreateBranchInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#131
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#132
 Aws::CodeCommit::ClientApi::CreateCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#132
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#133
 Aws::CodeCommit::ClientApi::CreateCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#133
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#134
 Aws::CodeCommit::ClientApi::CreatePullRequestApprovalRuleInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#134
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#135
 Aws::CodeCommit::ClientApi::CreatePullRequestApprovalRuleOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#135
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#136
 Aws::CodeCommit::ClientApi::CreatePullRequestInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#136
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#137
 Aws::CodeCommit::ClientApi::CreatePullRequestOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#137
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#138
 Aws::CodeCommit::ClientApi::CreateRepositoryInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#138
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#139
 Aws::CodeCommit::ClientApi::CreateRepositoryOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#139
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#140
 Aws::CodeCommit::ClientApi::CreateUnreferencedMergeCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#140
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#141
 Aws::CodeCommit::ClientApi::CreateUnreferencedMergeCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#141
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#142
 Aws::CodeCommit::ClientApi::CreationDate = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#142
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#143
 Aws::CodeCommit::ClientApi::Date = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#143
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#144
 Aws::CodeCommit::ClientApi::DefaultBranchCannotBeDeletedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#144
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#145
 Aws::CodeCommit::ClientApi::DeleteApprovalRuleTemplateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#145
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#146
 Aws::CodeCommit::ClientApi::DeleteApprovalRuleTemplateOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#146
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#147
 Aws::CodeCommit::ClientApi::DeleteBranchInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#147
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#148
 Aws::CodeCommit::ClientApi::DeleteBranchOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#148
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#149
 Aws::CodeCommit::ClientApi::DeleteCommentContentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#149
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#150
 Aws::CodeCommit::ClientApi::DeleteCommentContentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#150
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#151
 Aws::CodeCommit::ClientApi::DeleteFileEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#151
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#152
 Aws::CodeCommit::ClientApi::DeleteFileEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#152
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#153
 Aws::CodeCommit::ClientApi::DeleteFileInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#153
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#154
 Aws::CodeCommit::ClientApi::DeleteFileOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#154
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#155
 Aws::CodeCommit::ClientApi::DeletePullRequestApprovalRuleInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#155
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#156
 Aws::CodeCommit::ClientApi::DeletePullRequestApprovalRuleOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#156
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#157
 Aws::CodeCommit::ClientApi::DeleteRepositoryInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#157
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#158
 Aws::CodeCommit::ClientApi::DeleteRepositoryOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#158
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#159
 Aws::CodeCommit::ClientApi::DescribeMergeConflictsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#159
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#160
 Aws::CodeCommit::ClientApi::DescribeMergeConflictsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#160
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#161
 Aws::CodeCommit::ClientApi::DescribePullRequestEventsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#161
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#162
 Aws::CodeCommit::ClientApi::DescribePullRequestEventsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#162
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#163
 Aws::CodeCommit::ClientApi::Description = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#163
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#164
 Aws::CodeCommit::ClientApi::Difference = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#164
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#165
 Aws::CodeCommit::ClientApi::DifferenceList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#165
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#166
 Aws::CodeCommit::ClientApi::DirectoryNameConflictsWithFileNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#166
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#167
 Aws::CodeCommit::ClientApi::DisassociateApprovalRuleTemplateFromRepositoryInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#167
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#168
 Aws::CodeCommit::ClientApi::Email = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#168
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#169
 Aws::CodeCommit::ClientApi::EncryptionIntegrityChecksFailedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#169
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#170
 Aws::CodeCommit::ClientApi::EncryptionKeyAccessDeniedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#170
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#171
 Aws::CodeCommit::ClientApi::EncryptionKeyDisabledException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#171
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#172
 Aws::CodeCommit::ClientApi::EncryptionKeyInvalidIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#172
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#173
 Aws::CodeCommit::ClientApi::EncryptionKeyInvalidUsageException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#173
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#174
 Aws::CodeCommit::ClientApi::EncryptionKeyNotFoundException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#174
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#175
 Aws::CodeCommit::ClientApi::EncryptionKeyRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#175
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#176
 Aws::CodeCommit::ClientApi::EncryptionKeyUnavailableException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#176
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#177
 Aws::CodeCommit::ClientApi::ErrorCode = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#177
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#178
 Aws::CodeCommit::ClientApi::ErrorMessage = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#178
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#179
 Aws::CodeCommit::ClientApi::EvaluatePullRequestApprovalRulesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#179
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#180
 Aws::CodeCommit::ClientApi::EvaluatePullRequestApprovalRulesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#180
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#181
 Aws::CodeCommit::ClientApi::Evaluation = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#181
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#182
 Aws::CodeCommit::ClientApi::EventDate = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#182
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#183
 Aws::CodeCommit::ClientApi::ExceptionName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#183
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#184
 Aws::CodeCommit::ClientApi::File = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#184
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#185
 Aws::CodeCommit::ClientApi::FileContent = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BlobShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#185
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#186
 Aws::CodeCommit::ClientApi::FileContentAndSourceFileSpecifiedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#186
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#187
 Aws::CodeCommit::ClientApi::FileContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#187
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#188
 Aws::CodeCommit::ClientApi::FileContentSizeLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#188
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#189
 Aws::CodeCommit::ClientApi::FileDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#189
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#190
 Aws::CodeCommit::ClientApi::FileEntryRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#190
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#191
 Aws::CodeCommit::ClientApi::FileList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#191
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#192
 Aws::CodeCommit::ClientApi::FileMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#192
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#193
 Aws::CodeCommit::ClientApi::FileModeRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#193
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#194
 Aws::CodeCommit::ClientApi::FileModeTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#194
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#195
 Aws::CodeCommit::ClientApi::FileModes = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#195
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#196
 Aws::CodeCommit::ClientApi::FileNameConflictsWithDirectoryNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#196
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#197
 Aws::CodeCommit::ClientApi::FilePathConflictsWithSubmodulePathException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#197
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#198
 Aws::CodeCommit::ClientApi::FilePaths = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#198
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#199
 Aws::CodeCommit::ClientApi::FileSize = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#199
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#200
 Aws::CodeCommit::ClientApi::FileSizes = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#200
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#201
 Aws::CodeCommit::ClientApi::FileTooLargeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#201
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#202
 Aws::CodeCommit::ClientApi::FileVersion = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#202
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#203
 Aws::CodeCommit::ClientApi::FilesMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#203
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#204
 Aws::CodeCommit::ClientApi::Folder = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#204
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#205
 Aws::CodeCommit::ClientApi::FolderContentSizeLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#205
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#206
 Aws::CodeCommit::ClientApi::FolderDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#206
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#207
 Aws::CodeCommit::ClientApi::FolderList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#207
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#208
 Aws::CodeCommit::ClientApi::GetApprovalRuleTemplateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#208
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#209
 Aws::CodeCommit::ClientApi::GetApprovalRuleTemplateOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#209
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#210
 Aws::CodeCommit::ClientApi::GetBlobInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#210
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#211
 Aws::CodeCommit::ClientApi::GetBlobOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#211
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#212
 Aws::CodeCommit::ClientApi::GetBranchInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#212
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#213
 Aws::CodeCommit::ClientApi::GetBranchOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#213
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#214
 Aws::CodeCommit::ClientApi::GetCommentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#214
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#215
 Aws::CodeCommit::ClientApi::GetCommentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#215
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#216
 Aws::CodeCommit::ClientApi::GetCommentReactionsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#216
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#217
 Aws::CodeCommit::ClientApi::GetCommentReactionsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#217
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#218
 Aws::CodeCommit::ClientApi::GetCommentsForComparedCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#218
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#219
 Aws::CodeCommit::ClientApi::GetCommentsForComparedCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#219
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#220
 Aws::CodeCommit::ClientApi::GetCommentsForPullRequestInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#220
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#221
 Aws::CodeCommit::ClientApi::GetCommentsForPullRequestOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#221
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#222
 Aws::CodeCommit::ClientApi::GetCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#222
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#223
 Aws::CodeCommit::ClientApi::GetCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#223
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#224
 Aws::CodeCommit::ClientApi::GetDifferencesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#224
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#225
 Aws::CodeCommit::ClientApi::GetDifferencesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#225
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#226
 Aws::CodeCommit::ClientApi::GetFileInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#226
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#227
 Aws::CodeCommit::ClientApi::GetFileOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#227
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#228
 Aws::CodeCommit::ClientApi::GetFolderInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#228
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#229
 Aws::CodeCommit::ClientApi::GetFolderOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#229
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#230
 Aws::CodeCommit::ClientApi::GetMergeCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#230
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#231
 Aws::CodeCommit::ClientApi::GetMergeCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#231
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#232
 Aws::CodeCommit::ClientApi::GetMergeConflictsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#232
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#233
 Aws::CodeCommit::ClientApi::GetMergeConflictsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#233
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#234
 Aws::CodeCommit::ClientApi::GetMergeOptionsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#234
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#235
 Aws::CodeCommit::ClientApi::GetMergeOptionsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#235
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#236
 Aws::CodeCommit::ClientApi::GetPullRequestApprovalStatesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#236
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#237
 Aws::CodeCommit::ClientApi::GetPullRequestApprovalStatesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#237
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#238
 Aws::CodeCommit::ClientApi::GetPullRequestInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#238
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#239
 Aws::CodeCommit::ClientApi::GetPullRequestOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#239
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#240
 Aws::CodeCommit::ClientApi::GetPullRequestOverrideStateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#240
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#241
 Aws::CodeCommit::ClientApi::GetPullRequestOverrideStateOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#241
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#242
 Aws::CodeCommit::ClientApi::GetRepositoryInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#242
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#243
 Aws::CodeCommit::ClientApi::GetRepositoryOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#243
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#244
 Aws::CodeCommit::ClientApi::GetRepositoryTriggersInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#244
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#245
 Aws::CodeCommit::ClientApi::GetRepositoryTriggersOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#245
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#246
 Aws::CodeCommit::ClientApi::HunkContent = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#246
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#247
 Aws::CodeCommit::ClientApi::IdempotencyParameterMismatchException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#247
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#248
 Aws::CodeCommit::ClientApi::InvalidActorArnException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#248
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#249
 Aws::CodeCommit::ClientApi::InvalidApprovalRuleContentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#249
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#250
 Aws::CodeCommit::ClientApi::InvalidApprovalRuleNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#250
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#251
 Aws::CodeCommit::ClientApi::InvalidApprovalRuleTemplateContentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#251
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#252
 Aws::CodeCommit::ClientApi::InvalidApprovalRuleTemplateDescriptionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#252
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#253
 Aws::CodeCommit::ClientApi::InvalidApprovalRuleTemplateNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#253
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#254
 Aws::CodeCommit::ClientApi::InvalidApprovalStateException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#254
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#255
 Aws::CodeCommit::ClientApi::InvalidAuthorArnException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#255
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#256
 Aws::CodeCommit::ClientApi::InvalidBlobIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#256
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#257
 Aws::CodeCommit::ClientApi::InvalidBranchNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#257
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#258
 Aws::CodeCommit::ClientApi::InvalidClientRequestTokenException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#258
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#259
 Aws::CodeCommit::ClientApi::InvalidCommentIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#259
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#260
 Aws::CodeCommit::ClientApi::InvalidCommitException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#260
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#261
 Aws::CodeCommit::ClientApi::InvalidCommitIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#261
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#262
 Aws::CodeCommit::ClientApi::InvalidConflictDetailLevelException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#262
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#263
 Aws::CodeCommit::ClientApi::InvalidConflictResolutionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#263
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#264
 Aws::CodeCommit::ClientApi::InvalidConflictResolutionStrategyException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#264
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#265
 Aws::CodeCommit::ClientApi::InvalidContinuationTokenException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#265
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#266
 Aws::CodeCommit::ClientApi::InvalidDeletionParameterException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#266
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#267
 Aws::CodeCommit::ClientApi::InvalidDescriptionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#267
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#268
 Aws::CodeCommit::ClientApi::InvalidDestinationCommitSpecifierException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#268
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#269
 Aws::CodeCommit::ClientApi::InvalidEmailException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#269
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#270
 Aws::CodeCommit::ClientApi::InvalidFileLocationException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#270
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#271
 Aws::CodeCommit::ClientApi::InvalidFileModeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#271
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#272
 Aws::CodeCommit::ClientApi::InvalidFilePositionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#272
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#273
 Aws::CodeCommit::ClientApi::InvalidMaxConflictFilesException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#273
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#274
 Aws::CodeCommit::ClientApi::InvalidMaxMergeHunksException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#274
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#275
 Aws::CodeCommit::ClientApi::InvalidMaxResultsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#275
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#276
 Aws::CodeCommit::ClientApi::InvalidMergeOptionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#276
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#277
 Aws::CodeCommit::ClientApi::InvalidOrderException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#277
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#278
 Aws::CodeCommit::ClientApi::InvalidOverrideStatusException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#278
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#279
 Aws::CodeCommit::ClientApi::InvalidParentCommitIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#279
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#280
 Aws::CodeCommit::ClientApi::InvalidPathException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#280
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#281
 Aws::CodeCommit::ClientApi::InvalidPullRequestEventTypeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#281
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#282
 Aws::CodeCommit::ClientApi::InvalidPullRequestIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#282
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#283
 Aws::CodeCommit::ClientApi::InvalidPullRequestStatusException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#283
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#284
 Aws::CodeCommit::ClientApi::InvalidPullRequestStatusUpdateException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#284
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#285
 Aws::CodeCommit::ClientApi::InvalidReactionUserArnException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#285
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#286
 Aws::CodeCommit::ClientApi::InvalidReactionValueException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#286
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#287
 Aws::CodeCommit::ClientApi::InvalidReferenceNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#287
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#288
 Aws::CodeCommit::ClientApi::InvalidRelativeFileVersionEnumException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#288
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#289
 Aws::CodeCommit::ClientApi::InvalidReplacementContentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#289
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#290
 Aws::CodeCommit::ClientApi::InvalidReplacementTypeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#290
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#291
 Aws::CodeCommit::ClientApi::InvalidRepositoryDescriptionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#291
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#292
 Aws::CodeCommit::ClientApi::InvalidRepositoryNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#292
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#293
 Aws::CodeCommit::ClientApi::InvalidRepositoryTriggerBranchNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#293
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#294
 Aws::CodeCommit::ClientApi::InvalidRepositoryTriggerCustomDataException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#294
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#295
 Aws::CodeCommit::ClientApi::InvalidRepositoryTriggerDestinationArnException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#295
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#296
 Aws::CodeCommit::ClientApi::InvalidRepositoryTriggerEventsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#296
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#297
 Aws::CodeCommit::ClientApi::InvalidRepositoryTriggerNameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#297
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#298
 Aws::CodeCommit::ClientApi::InvalidRepositoryTriggerRegionException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#298
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#299
 Aws::CodeCommit::ClientApi::InvalidResourceArnException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#299
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#300
 Aws::CodeCommit::ClientApi::InvalidRevisionIdException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#300
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#301
 Aws::CodeCommit::ClientApi::InvalidRuleContentSha256Exception = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#301
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#302
 Aws::CodeCommit::ClientApi::InvalidSortByException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#302
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#303
 Aws::CodeCommit::ClientApi::InvalidSourceCommitSpecifierException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#303
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#304
 Aws::CodeCommit::ClientApi::InvalidSystemTagUsageException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#304
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#305
 Aws::CodeCommit::ClientApi::InvalidTagKeysListException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#305
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#306
 Aws::CodeCommit::ClientApi::InvalidTagsMapException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#306
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#307
 Aws::CodeCommit::ClientApi::InvalidTargetBranchException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#307
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#308
 Aws::CodeCommit::ClientApi::InvalidTargetException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#308
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#309
 Aws::CodeCommit::ClientApi::InvalidTargetsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#309
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#310
 Aws::CodeCommit::ClientApi::InvalidTitleException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#310
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#311
 Aws::CodeCommit::ClientApi::IsBinaryFile = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#311
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#312
 Aws::CodeCommit::ClientApi::IsCommentDeleted = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#312
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#313
 Aws::CodeCommit::ClientApi::IsContentConflict = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#313
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#314
 Aws::CodeCommit::ClientApi::IsFileModeConflict = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#314
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#315
 Aws::CodeCommit::ClientApi::IsHunkConflict = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#315
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#316
 Aws::CodeCommit::ClientApi::IsMergeable = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#316
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#317
 Aws::CodeCommit::ClientApi::IsMerged = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#317
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#318
 Aws::CodeCommit::ClientApi::IsMove = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#318
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#319
 Aws::CodeCommit::ClientApi::IsObjectTypeConflict = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#319
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#320
 Aws::CodeCommit::ClientApi::KeepEmptyFolders = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#320
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#321
 Aws::CodeCommit::ClientApi::KmsKeyId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#321
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#322
 Aws::CodeCommit::ClientApi::LastModifiedDate = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#322
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#323
 Aws::CodeCommit::ClientApi::Limit = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#323
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#324
 Aws::CodeCommit::ClientApi::LineNumber = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#324
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#325
 Aws::CodeCommit::ClientApi::ListApprovalRuleTemplatesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#325
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#326
 Aws::CodeCommit::ClientApi::ListApprovalRuleTemplatesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#326
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#327
 Aws::CodeCommit::ClientApi::ListAssociatedApprovalRuleTemplatesForRepositoryInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#327
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#328
 Aws::CodeCommit::ClientApi::ListAssociatedApprovalRuleTemplatesForRepositoryOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#328
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#329
 Aws::CodeCommit::ClientApi::ListBranchesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#329
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#330
 Aws::CodeCommit::ClientApi::ListBranchesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#330
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#331
 Aws::CodeCommit::ClientApi::ListFileCommitHistoryRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#331
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#332
 Aws::CodeCommit::ClientApi::ListFileCommitHistoryResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#332
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#333
 Aws::CodeCommit::ClientApi::ListPullRequestsInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#333
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#334
 Aws::CodeCommit::ClientApi::ListPullRequestsOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#334
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#335
 Aws::CodeCommit::ClientApi::ListRepositoriesForApprovalRuleTemplateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#335
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#336
 Aws::CodeCommit::ClientApi::ListRepositoriesForApprovalRuleTemplateOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#336
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#337
 Aws::CodeCommit::ClientApi::ListRepositoriesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#337
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#338
 Aws::CodeCommit::ClientApi::ListRepositoriesOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#338
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#339
 Aws::CodeCommit::ClientApi::ListTagsForResourceInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#339
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#340
 Aws::CodeCommit::ClientApi::ListTagsForResourceOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#340
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#341
 Aws::CodeCommit::ClientApi::Location = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#341
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#342
 Aws::CodeCommit::ClientApi::ManualMergeRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#342
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#343
 Aws::CodeCommit::ClientApi::MaxResults = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#343
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#344
 Aws::CodeCommit::ClientApi::MaximumBranchesExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#344
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#345
 Aws::CodeCommit::ClientApi::MaximumConflictResolutionEntriesExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#345
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#346
 Aws::CodeCommit::ClientApi::MaximumFileContentToLoadExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#346
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#347
 Aws::CodeCommit::ClientApi::MaximumFileEntriesExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#347
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#348
 Aws::CodeCommit::ClientApi::MaximumItemsToCompareExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#348
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#349
 Aws::CodeCommit::ClientApi::MaximumNumberOfApprovalsExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#349
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#350
 Aws::CodeCommit::ClientApi::MaximumOpenPullRequestsExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#350
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#351
 Aws::CodeCommit::ClientApi::MaximumRepositoryNamesExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#351
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#352
 Aws::CodeCommit::ClientApi::MaximumRepositoryTriggersExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#352
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#353
 Aws::CodeCommit::ClientApi::MaximumRuleTemplatesAssociatedWithRepositoryException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#353
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#354
 Aws::CodeCommit::ClientApi::MergeBranchesByFastForwardInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#354
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#355
 Aws::CodeCommit::ClientApi::MergeBranchesByFastForwardOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#355
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#356
 Aws::CodeCommit::ClientApi::MergeBranchesBySquashInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#356
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#357
 Aws::CodeCommit::ClientApi::MergeBranchesBySquashOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#357
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#358
 Aws::CodeCommit::ClientApi::MergeBranchesByThreeWayInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#358
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#359
 Aws::CodeCommit::ClientApi::MergeBranchesByThreeWayOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#359
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#360
 Aws::CodeCommit::ClientApi::MergeHunk = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#360
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#361
 Aws::CodeCommit::ClientApi::MergeHunkDetail = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#361
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#362
 Aws::CodeCommit::ClientApi::MergeHunks = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#362
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#363
 Aws::CodeCommit::ClientApi::MergeMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#363
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#364
 Aws::CodeCommit::ClientApi::MergeOperations = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#364
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#365
 Aws::CodeCommit::ClientApi::MergeOptionRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#365
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#366
 Aws::CodeCommit::ClientApi::MergeOptionTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#366
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#367
 Aws::CodeCommit::ClientApi::MergeOptions = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#367
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#368
 Aws::CodeCommit::ClientApi::MergePullRequestByFastForwardInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#368
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#369
 Aws::CodeCommit::ClientApi::MergePullRequestByFastForwardOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#369
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#370
 Aws::CodeCommit::ClientApi::MergePullRequestBySquashInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#370
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#371
 Aws::CodeCommit::ClientApi::MergePullRequestBySquashOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#371
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#372
 Aws::CodeCommit::ClientApi::MergePullRequestByThreeWayInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#372
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#373
 Aws::CodeCommit::ClientApi::MergePullRequestByThreeWayOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#373
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#374
 Aws::CodeCommit::ClientApi::Message = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#374
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#375
 Aws::CodeCommit::ClientApi::Mode = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#375
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#376
 Aws::CodeCommit::ClientApi::MultipleConflictResolutionEntriesException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#376
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#377
 Aws::CodeCommit::ClientApi::MultipleRepositoriesInPullRequestException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#377
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#378
 Aws::CodeCommit::ClientApi::Name = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#378
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#379
 Aws::CodeCommit::ClientApi::NameLengthExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#379
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#380
 Aws::CodeCommit::ClientApi::NextToken = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#380
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#381
 Aws::CodeCommit::ClientApi::NoChangeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#381
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#382
 Aws::CodeCommit::ClientApi::NumberOfConflicts = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#382
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#383
 Aws::CodeCommit::ClientApi::NumberOfRuleTemplatesExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#383
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#384
 Aws::CodeCommit::ClientApi::NumberOfRulesExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#384
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#385
 Aws::CodeCommit::ClientApi::ObjectId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#385
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#386
 Aws::CodeCommit::ClientApi::ObjectSize = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#386
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#387
 Aws::CodeCommit::ClientApi::ObjectTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#387
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#388
 Aws::CodeCommit::ClientApi::ObjectTypes = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#388
-Aws::CodeCommit::ClientApi::OrderEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
-
-# @api private
-#
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#389
-Aws::CodeCommit::ClientApi::OriginApprovalRuleTemplate = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::OperationNotAllowedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#390
-Aws::CodeCommit::ClientApi::Overridden = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
+Aws::CodeCommit::ClientApi::OrderEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#391
-Aws::CodeCommit::ClientApi::OverrideAlreadySetException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::OriginApprovalRuleTemplate = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#392
-Aws::CodeCommit::ClientApi::OverridePullRequestApprovalRulesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::Overridden = T.let(T.unsafe(nil), Seahorse::Model::Shapes::BooleanShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#393
-Aws::CodeCommit::ClientApi::OverrideStatus = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::OverrideAlreadySetException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#394
-Aws::CodeCommit::ClientApi::OverrideStatusRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::OverridePullRequestApprovalRulesInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#395
-Aws::CodeCommit::ClientApi::ParentCommitDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::OverrideStatus = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#396
-Aws::CodeCommit::ClientApi::ParentCommitIdOutdatedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::OverrideStatusRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#397
-Aws::CodeCommit::ClientApi::ParentCommitIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ParentCommitDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#398
-Aws::CodeCommit::ClientApi::ParentList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::ParentCommitIdOutdatedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#399
-Aws::CodeCommit::ClientApi::Path = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ParentCommitIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#400
-Aws::CodeCommit::ClientApi::PathDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ParentList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#401
-Aws::CodeCommit::ClientApi::PathRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::Path = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#402
-Aws::CodeCommit::ClientApi::Position = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
+Aws::CodeCommit::ClientApi::PathDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#403
-Aws::CodeCommit::ClientApi::PostCommentForComparedCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PathRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#404
-Aws::CodeCommit::ClientApi::PostCommentForComparedCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::Position = T.let(T.unsafe(nil), Seahorse::Model::Shapes::IntegerShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#405
-Aws::CodeCommit::ClientApi::PostCommentForPullRequestInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PostCommentForComparedCommitInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#406
-Aws::CodeCommit::ClientApi::PostCommentForPullRequestOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PostCommentForComparedCommitOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#407
-Aws::CodeCommit::ClientApi::PostCommentReplyInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PostCommentForPullRequestInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#408
-Aws::CodeCommit::ClientApi::PostCommentReplyOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PostCommentForPullRequestOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#409
-Aws::CodeCommit::ClientApi::PullRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PostCommentReplyInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#410
-Aws::CodeCommit::ClientApi::PullRequestAlreadyClosedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PostCommentReplyOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#411
-Aws::CodeCommit::ClientApi::PullRequestApprovalRulesNotSatisfiedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#412
-Aws::CodeCommit::ClientApi::PullRequestCannotBeApprovedByAuthorException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestAlreadyClosedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#413
-Aws::CodeCommit::ClientApi::PullRequestCreatedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestApprovalRulesNotSatisfiedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#414
-Aws::CodeCommit::ClientApi::PullRequestDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestCannotBeApprovedByAuthorException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#415
-Aws::CodeCommit::ClientApi::PullRequestEvent = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestCreatedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#416
-Aws::CodeCommit::ClientApi::PullRequestEventList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::PullRequestDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#417
-Aws::CodeCommit::ClientApi::PullRequestEventType = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::PullRequestEvent = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#418
-Aws::CodeCommit::ClientApi::PullRequestId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::PullRequestEventList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#419
-Aws::CodeCommit::ClientApi::PullRequestIdList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::PullRequestEventType = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#420
-Aws::CodeCommit::ClientApi::PullRequestIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#421
-Aws::CodeCommit::ClientApi::PullRequestMergedStateChangedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestIdList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#422
-Aws::CodeCommit::ClientApi::PullRequestSourceReferenceUpdatedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#423
-Aws::CodeCommit::ClientApi::PullRequestStatusChangedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestMergedStateChangedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#424
-Aws::CodeCommit::ClientApi::PullRequestStatusEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::PullRequestSourceReferenceUpdatedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#425
-Aws::CodeCommit::ClientApi::PullRequestStatusRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestStatusChangedEventMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#426
-Aws::CodeCommit::ClientApi::PullRequestTarget = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestStatusEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#427
-Aws::CodeCommit::ClientApi::PullRequestTargetList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::PullRequestStatusRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#428
-Aws::CodeCommit::ClientApi::PutCommentReactionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PullRequestTarget = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#429
-Aws::CodeCommit::ClientApi::PutFileEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::PullRequestTargetList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#430
-Aws::CodeCommit::ClientApi::PutFileEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PutCommentReactionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#431
-Aws::CodeCommit::ClientApi::PutFileEntryConflictException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PutFileEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#432
-Aws::CodeCommit::ClientApi::PutFileInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PutFileEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#433
-Aws::CodeCommit::ClientApi::PutFileOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PutFileEntryConflictException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#434
-Aws::CodeCommit::ClientApi::PutRepositoryTriggersInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PutFileInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#435
-Aws::CodeCommit::ClientApi::PutRepositoryTriggersOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::PutFileOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#436
-Aws::CodeCommit::ClientApi::ReactionCountsMap = T.let(T.unsafe(nil), Seahorse::Model::Shapes::MapShape)
+Aws::CodeCommit::ClientApi::PutRepositoryTriggersInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#437
-Aws::CodeCommit::ClientApi::ReactionEmoji = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::PutRepositoryTriggersOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#438
-Aws::CodeCommit::ClientApi::ReactionForComment = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReactionCountsMap = T.let(T.unsafe(nil), Seahorse::Model::Shapes::MapShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#439
-Aws::CodeCommit::ClientApi::ReactionLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReactionEmoji = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#440
-Aws::CodeCommit::ClientApi::ReactionShortCode = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReactionForComment = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#441
-Aws::CodeCommit::ClientApi::ReactionUnicode = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReactionLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#442
-Aws::CodeCommit::ClientApi::ReactionUsersList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::ReactionShortCode = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#443
-Aws::CodeCommit::ClientApi::ReactionValue = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReactionUnicode = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#444
-Aws::CodeCommit::ClientApi::ReactionValueFormats = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReactionUsersList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#445
-Aws::CodeCommit::ClientApi::ReactionValueRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReactionValue = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#446
-Aws::CodeCommit::ClientApi::ReactionsForCommentList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::ReactionValueFormats = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#447
-Aws::CodeCommit::ClientApi::ReferenceDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReactionValueRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#448
-Aws::CodeCommit::ClientApi::ReferenceName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReactionsForCommentList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#449
-Aws::CodeCommit::ClientApi::ReferenceNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReferenceDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#450
-Aws::CodeCommit::ClientApi::ReferenceTypeNotSupportedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReferenceName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#451
-Aws::CodeCommit::ClientApi::RelativeFileVersionEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReferenceNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#452
-Aws::CodeCommit::ClientApi::ReplaceContentEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::ReferenceTypeNotSupportedException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#453
-Aws::CodeCommit::ClientApi::ReplaceContentEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RelativeFileVersionEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#454
-Aws::CodeCommit::ClientApi::ReplacementContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReplaceContentEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#455
-Aws::CodeCommit::ClientApi::ReplacementTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReplaceContentEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#456
-Aws::CodeCommit::ClientApi::ReplacementTypeRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReplacementContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#457
-Aws::CodeCommit::ClientApi::RepositoryDescription = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::ReplacementTypeEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#458
-Aws::CodeCommit::ClientApi::RepositoryDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ReplacementTypeRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#459
-Aws::CodeCommit::ClientApi::RepositoryId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryDescription = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#460
-Aws::CodeCommit::ClientApi::RepositoryLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryDoesNotExistException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#461
-Aws::CodeCommit::ClientApi::RepositoryMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#462
-Aws::CodeCommit::ClientApi::RepositoryMetadataList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryLimitExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#463
-Aws::CodeCommit::ClientApi::RepositoryName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryMetadata = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#464
-Aws::CodeCommit::ClientApi::RepositoryNameExistsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryMetadataList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#465
-Aws::CodeCommit::ClientApi::RepositoryNameIdPair = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#466
-Aws::CodeCommit::ClientApi::RepositoryNameIdPairList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryNameExistsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#467
-Aws::CodeCommit::ClientApi::RepositoryNameList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryNameIdPair = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#468
-Aws::CodeCommit::ClientApi::RepositoryNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryNameIdPairList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#469
-Aws::CodeCommit::ClientApi::RepositoryNamesRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryNameList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#470
-Aws::CodeCommit::ClientApi::RepositoryNotAssociatedWithPullRequestException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#471
-Aws::CodeCommit::ClientApi::RepositoryNotFoundList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryNamesRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#472
-Aws::CodeCommit::ClientApi::RepositoryTrigger = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryNotAssociatedWithPullRequestException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#473
-Aws::CodeCommit::ClientApi::RepositoryTriggerBranchNameListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryNotFoundList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#474
-Aws::CodeCommit::ClientApi::RepositoryTriggerCustomData = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryTrigger = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#475
-Aws::CodeCommit::ClientApi::RepositoryTriggerDestinationArnRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerBranchNameListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#476
-Aws::CodeCommit::ClientApi::RepositoryTriggerEventEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerCustomData = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#477
-Aws::CodeCommit::ClientApi::RepositoryTriggerEventList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerDestinationArnRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#478
-Aws::CodeCommit::ClientApi::RepositoryTriggerEventsListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerEventEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#479
-Aws::CodeCommit::ClientApi::RepositoryTriggerExecutionFailure = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerEventList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#480
-Aws::CodeCommit::ClientApi::RepositoryTriggerExecutionFailureList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerEventsListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#481
-Aws::CodeCommit::ClientApi::RepositoryTriggerExecutionFailureMessage = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerExecutionFailure = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#482
-Aws::CodeCommit::ClientApi::RepositoryTriggerName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerExecutionFailureList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#483
-Aws::CodeCommit::ClientApi::RepositoryTriggerNameList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerExecutionFailureMessage = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#484
-Aws::CodeCommit::ClientApi::RepositoryTriggerNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#485
-Aws::CodeCommit::ClientApi::RepositoryTriggersConfigurationId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerNameList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#486
-Aws::CodeCommit::ClientApi::RepositoryTriggersList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggerNameRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#487
-Aws::CodeCommit::ClientApi::RepositoryTriggersListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggersConfigurationId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#488
-Aws::CodeCommit::ClientApi::ResourceArn = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggersList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#489
-Aws::CodeCommit::ClientApi::ResourceArnRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RepositoryTriggersListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#490
-Aws::CodeCommit::ClientApi::RestrictedSourceFileException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::ResourceArn = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#491
-Aws::CodeCommit::ClientApi::RevisionChildren = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::ResourceArnRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#492
-Aws::CodeCommit::ClientApi::RevisionDag = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::RestrictedSourceFileException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#493
-Aws::CodeCommit::ClientApi::RevisionId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RevisionChildren = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#494
-Aws::CodeCommit::ClientApi::RevisionIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RevisionDag = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#495
-Aws::CodeCommit::ClientApi::RevisionNotCurrentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RevisionId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#496
-Aws::CodeCommit::ClientApi::RuleContentSha256 = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::RevisionIdRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#497
-Aws::CodeCommit::ClientApi::SameFileContentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RevisionNotCurrentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#498
-Aws::CodeCommit::ClientApi::SamePathRequestException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::RuleContentSha256 = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#499
-Aws::CodeCommit::ClientApi::SetFileModeEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::SameFileContentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#500
-Aws::CodeCommit::ClientApi::SetFileModeEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::SamePathRequestException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#501
-Aws::CodeCommit::ClientApi::SortByEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::SetFileModeEntries = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#502
-Aws::CodeCommit::ClientApi::SourceAndDestinationAreSameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::SetFileModeEntry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#503
-Aws::CodeCommit::ClientApi::SourceFileOrContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::SortByEnum = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#504
-Aws::CodeCommit::ClientApi::SourceFileSpecifier = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::SourceAndDestinationAreSameException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#505
-Aws::CodeCommit::ClientApi::SubModule = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::SourceFileOrContentRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#506
-Aws::CodeCommit::ClientApi::SubModuleList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::SourceFileSpecifier = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#507
-Aws::CodeCommit::ClientApi::SymbolicLink = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::SubModule = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#508
-Aws::CodeCommit::ClientApi::SymbolicLinkList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::SubModuleList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#509
-Aws::CodeCommit::ClientApi::TagKey = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::SymbolicLink = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#510
-Aws::CodeCommit::ClientApi::TagKeysList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::SymbolicLinkList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#511
-Aws::CodeCommit::ClientApi::TagKeysListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TagKey = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#512
-Aws::CodeCommit::ClientApi::TagPolicyException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TagKeysList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#513
-Aws::CodeCommit::ClientApi::TagResourceInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TagKeysListRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#514
-Aws::CodeCommit::ClientApi::TagValue = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::TagPolicyException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#515
-Aws::CodeCommit::ClientApi::TagsMap = T.let(T.unsafe(nil), Seahorse::Model::Shapes::MapShape)
+Aws::CodeCommit::ClientApi::TagResourceInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#516
-Aws::CodeCommit::ClientApi::TagsMapRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TagValue = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#517
-Aws::CodeCommit::ClientApi::Target = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TagsMap = T.let(T.unsafe(nil), Seahorse::Model::Shapes::MapShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#518
-Aws::CodeCommit::ClientApi::TargetList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
+Aws::CodeCommit::ClientApi::TagsMapRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#519
-Aws::CodeCommit::ClientApi::TargetRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::Target = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#520
-Aws::CodeCommit::ClientApi::TargetsRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TargetList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#521
-Aws::CodeCommit::ClientApi::TestRepositoryTriggersInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TargetRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#522
-Aws::CodeCommit::ClientApi::TestRepositoryTriggersOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TargetsRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#523
-Aws::CodeCommit::ClientApi::TipOfSourceReferenceIsDifferentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TestRepositoryTriggersInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#524
-Aws::CodeCommit::ClientApi::TipsDivergenceExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TestRepositoryTriggersOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#525
-Aws::CodeCommit::ClientApi::Title = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::CodeCommit::ClientApi::TipOfSourceReferenceIsDifferentException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#526
-Aws::CodeCommit::ClientApi::TitleRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TipsDivergenceExceededException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#527
-Aws::CodeCommit::ClientApi::TooManyTagsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::Title = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#528
-Aws::CodeCommit::ClientApi::UntagResourceInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TitleRequiredException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#529
-Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateContentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::TooManyTagsException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#530
-Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateContentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UntagResourceInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#531
-Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateDescriptionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateContentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#532
-Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateDescriptionOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateContentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#533
-Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateNameInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateDescriptionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#534
-Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateNameOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateDescriptionOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#535
-Aws::CodeCommit::ClientApi::UpdateCommentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateNameInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#536
-Aws::CodeCommit::ClientApi::UpdateCommentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateApprovalRuleTemplateNameOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#537
-Aws::CodeCommit::ClientApi::UpdateDefaultBranchInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateCommentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#538
-Aws::CodeCommit::ClientApi::UpdatePullRequestApprovalRuleContentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateCommentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#539
-Aws::CodeCommit::ClientApi::UpdatePullRequestApprovalRuleContentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateDefaultBranchInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#540
-Aws::CodeCommit::ClientApi::UpdatePullRequestApprovalStateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestApprovalRuleContentInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#541
-Aws::CodeCommit::ClientApi::UpdatePullRequestDescriptionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestApprovalRuleContentOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#542
-Aws::CodeCommit::ClientApi::UpdatePullRequestDescriptionOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestApprovalStateInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#543
-Aws::CodeCommit::ClientApi::UpdatePullRequestStatusInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestDescriptionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#544
-Aws::CodeCommit::ClientApi::UpdatePullRequestStatusOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestDescriptionOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#545
-Aws::CodeCommit::ClientApi::UpdatePullRequestTitleInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestStatusInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#546
-Aws::CodeCommit::ClientApi::UpdatePullRequestTitleOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestStatusOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#547
-Aws::CodeCommit::ClientApi::UpdateRepositoryDescriptionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestTitleInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#548
-Aws::CodeCommit::ClientApi::UpdateRepositoryEncryptionKeyInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdatePullRequestTitleOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#549
-Aws::CodeCommit::ClientApi::UpdateRepositoryEncryptionKeyOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateRepositoryDescriptionInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#550
-Aws::CodeCommit::ClientApi::UpdateRepositoryNameInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::CodeCommit::ClientApi::UpdateRepositoryEncryptionKeyInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#551
+Aws::CodeCommit::ClientApi::UpdateRepositoryEncryptionKeyOutput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+
+# @api private
+#
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#552
+Aws::CodeCommit::ClientApi::UpdateRepositoryNameInput = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+
+# @api private
+#
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/client_api.rb#553
 Aws::CodeCommit::ClientApi::UserInfo = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # Endpoint parameters used to influence endpoints per request.
@@ -5999,56 +6004,56 @@ class Aws::CodeCommit::EndpointParameters < ::Struct
 
   # Override the endpoint used to send this request
   #
-  # @return [String]
+  # @return [string]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def endpoint; end
 
   # Override the endpoint used to send this request
   #
-  # @return [String]
+  # @return [string]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def endpoint=(_); end
 
   # The AWS region used to dispatch the request.
   #
-  # @return [String]
+  # @return [string]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def region; end
 
   # The AWS region used to dispatch the request.
   #
-  # @return [String]
+  # @return [string]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def region=(_); end
 
   # When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.
   #
-  # @return [Boolean]
+  # @return [boolean]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def use_dual_stack; end
 
   # When true, use the dual-stack endpoint. If the configured endpoint does not support dual-stack, dispatching the request MAY return an error.
   #
-  # @return [Boolean]
+  # @return [boolean]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def use_dual_stack=(_); end
 
   # When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.
   #
-  # @return [Boolean]
+  # @return [boolean]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def use_fips; end
 
   # When true, send this request to the FIPS-compliant regional endpoint. If the configured endpoint does not have a FIPS compliant endpoint, dispatching the request will return an error.
   #
-  # @return [Boolean]
+  # @return [boolean]
   #
   # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
   def use_fips=(_); end
@@ -6056,6 +6061,9 @@ class Aws::CodeCommit::EndpointParameters < ::Struct
   class << self
     # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
     def [](*_arg0); end
+
+    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#60
+    def create(config, options = T.unsafe(nil)); end
 
     # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoint_parameters.rb#33
     def inspect; end
@@ -6082,953 +6090,12 @@ end
 # @api private
 #
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#13
-module Aws::CodeCommit::Endpoints; end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#15
-class Aws::CodeCommit::Endpoints::AssociateApprovalRuleTemplateWithRepository
+module Aws::CodeCommit::Endpoints
   class << self
     # @api private
     #
     # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#16
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#29
-class Aws::CodeCommit::Endpoints::BatchAssociateApprovalRuleTemplateWithRepositories
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#30
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#43
-class Aws::CodeCommit::Endpoints::BatchDescribeMergeConflicts
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#44
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#57
-class Aws::CodeCommit::Endpoints::BatchDisassociateApprovalRuleTemplateFromRepositories
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#58
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#71
-class Aws::CodeCommit::Endpoints::BatchGetCommits
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#72
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#85
-class Aws::CodeCommit::Endpoints::BatchGetRepositories
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#86
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#99
-class Aws::CodeCommit::Endpoints::CreateApprovalRuleTemplate
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#100
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#113
-class Aws::CodeCommit::Endpoints::CreateBranch
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#114
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#127
-class Aws::CodeCommit::Endpoints::CreateCommit
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#128
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#141
-class Aws::CodeCommit::Endpoints::CreatePullRequest
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#142
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#155
-class Aws::CodeCommit::Endpoints::CreatePullRequestApprovalRule
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#156
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#169
-class Aws::CodeCommit::Endpoints::CreateRepository
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#170
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#183
-class Aws::CodeCommit::Endpoints::CreateUnreferencedMergeCommit
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#184
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#197
-class Aws::CodeCommit::Endpoints::DeleteApprovalRuleTemplate
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#198
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#211
-class Aws::CodeCommit::Endpoints::DeleteBranch
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#212
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#225
-class Aws::CodeCommit::Endpoints::DeleteCommentContent
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#226
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#239
-class Aws::CodeCommit::Endpoints::DeleteFile
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#240
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#253
-class Aws::CodeCommit::Endpoints::DeletePullRequestApprovalRule
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#254
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#267
-class Aws::CodeCommit::Endpoints::DeleteRepository
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#268
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#281
-class Aws::CodeCommit::Endpoints::DescribeMergeConflicts
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#282
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#295
-class Aws::CodeCommit::Endpoints::DescribePullRequestEvents
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#296
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#309
-class Aws::CodeCommit::Endpoints::DisassociateApprovalRuleTemplateFromRepository
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#310
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#323
-class Aws::CodeCommit::Endpoints::EvaluatePullRequestApprovalRules
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#324
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#337
-class Aws::CodeCommit::Endpoints::GetApprovalRuleTemplate
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#338
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#351
-class Aws::CodeCommit::Endpoints::GetBlob
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#352
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#365
-class Aws::CodeCommit::Endpoints::GetBranch
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#366
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#379
-class Aws::CodeCommit::Endpoints::GetComment
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#380
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#393
-class Aws::CodeCommit::Endpoints::GetCommentReactions
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#394
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#407
-class Aws::CodeCommit::Endpoints::GetCommentsForComparedCommit
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#408
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#421
-class Aws::CodeCommit::Endpoints::GetCommentsForPullRequest
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#422
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#435
-class Aws::CodeCommit::Endpoints::GetCommit
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#436
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#449
-class Aws::CodeCommit::Endpoints::GetDifferences
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#450
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#463
-class Aws::CodeCommit::Endpoints::GetFile
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#464
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#477
-class Aws::CodeCommit::Endpoints::GetFolder
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#478
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#491
-class Aws::CodeCommit::Endpoints::GetMergeCommit
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#492
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#505
-class Aws::CodeCommit::Endpoints::GetMergeConflicts
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#506
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#519
-class Aws::CodeCommit::Endpoints::GetMergeOptions
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#520
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#533
-class Aws::CodeCommit::Endpoints::GetPullRequest
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#534
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#547
-class Aws::CodeCommit::Endpoints::GetPullRequestApprovalStates
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#548
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#561
-class Aws::CodeCommit::Endpoints::GetPullRequestOverrideState
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#562
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#575
-class Aws::CodeCommit::Endpoints::GetRepository
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#576
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#589
-class Aws::CodeCommit::Endpoints::GetRepositoryTriggers
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#590
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#603
-class Aws::CodeCommit::Endpoints::ListApprovalRuleTemplates
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#604
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#617
-class Aws::CodeCommit::Endpoints::ListAssociatedApprovalRuleTemplatesForRepository
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#618
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#631
-class Aws::CodeCommit::Endpoints::ListBranches
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#632
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#645
-class Aws::CodeCommit::Endpoints::ListFileCommitHistory
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#646
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#659
-class Aws::CodeCommit::Endpoints::ListPullRequests
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#660
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#673
-class Aws::CodeCommit::Endpoints::ListRepositories
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#674
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#687
-class Aws::CodeCommit::Endpoints::ListRepositoriesForApprovalRuleTemplate
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#688
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#701
-class Aws::CodeCommit::Endpoints::ListTagsForResource
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#702
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#715
-class Aws::CodeCommit::Endpoints::MergeBranchesByFastForward
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#716
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#729
-class Aws::CodeCommit::Endpoints::MergeBranchesBySquash
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#730
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#743
-class Aws::CodeCommit::Endpoints::MergeBranchesByThreeWay
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#744
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#757
-class Aws::CodeCommit::Endpoints::MergePullRequestByFastForward
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#758
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#771
-class Aws::CodeCommit::Endpoints::MergePullRequestBySquash
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#772
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#785
-class Aws::CodeCommit::Endpoints::MergePullRequestByThreeWay
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#786
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#799
-class Aws::CodeCommit::Endpoints::OverridePullRequestApprovalRules
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#800
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#813
-class Aws::CodeCommit::Endpoints::PostCommentForComparedCommit
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#814
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#827
-class Aws::CodeCommit::Endpoints::PostCommentForPullRequest
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#828
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#841
-class Aws::CodeCommit::Endpoints::PostCommentReply
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#842
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#855
-class Aws::CodeCommit::Endpoints::PutCommentReaction
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#856
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#869
-class Aws::CodeCommit::Endpoints::PutFile
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#870
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#883
-class Aws::CodeCommit::Endpoints::PutRepositoryTriggers
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#884
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#897
-class Aws::CodeCommit::Endpoints::TagResource
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#898
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#911
-class Aws::CodeCommit::Endpoints::TestRepositoryTriggers
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#912
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#925
-class Aws::CodeCommit::Endpoints::UntagResource
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#926
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#939
-class Aws::CodeCommit::Endpoints::UpdateApprovalRuleTemplateContent
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#940
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#953
-class Aws::CodeCommit::Endpoints::UpdateApprovalRuleTemplateDescription
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#954
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#967
-class Aws::CodeCommit::Endpoints::UpdateApprovalRuleTemplateName
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#968
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#981
-class Aws::CodeCommit::Endpoints::UpdateComment
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#982
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#995
-class Aws::CodeCommit::Endpoints::UpdateDefaultBranch
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#996
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1009
-class Aws::CodeCommit::Endpoints::UpdatePullRequestApprovalRuleContent
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1010
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1023
-class Aws::CodeCommit::Endpoints::UpdatePullRequestApprovalState
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1024
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1037
-class Aws::CodeCommit::Endpoints::UpdatePullRequestDescription
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1038
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1051
-class Aws::CodeCommit::Endpoints::UpdatePullRequestStatus
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1052
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1065
-class Aws::CodeCommit::Endpoints::UpdatePullRequestTitle
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1066
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1079
-class Aws::CodeCommit::Endpoints::UpdateRepositoryDescription
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1080
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1093
-class Aws::CodeCommit::Endpoints::UpdateRepositoryEncryptionKey
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1094
-    def build(context); end
-  end
-end
-
-# @api private
-#
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1107
-class Aws::CodeCommit::Endpoints::UpdateRepositoryName
-  class << self
-    # @api private
-    #
-    # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/endpoints.rb#1108
-    def build(context); end
+    def parameters_for_operation(context); end
   end
 end
 
@@ -7189,6 +6256,7 @@ end
 # * {NoChangeException}
 # * {NumberOfRuleTemplatesExceededException}
 # * {NumberOfRulesExceededException}
+# * {OperationNotAllowedException}
 # * {OverrideAlreadySetException}
 # * {OverrideStatusRequiredException}
 # * {ParentCommitDoesNotExistException}
@@ -7242,2114 +6310,2125 @@ end
 # Additionally, error classes are dynamically generated for service errors based on the error code
 # if they are not defined above.
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#221
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#222
 module Aws::CodeCommit::Errors
   extend ::Aws::Errors::DynamicErrors
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#225
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#226
 class Aws::CodeCommit::Errors::ActorDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ActorDoesNotExistException]
+  # @param message [String]
   # @return [ActorDoesNotExistException] a new instance of ActorDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#230
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#231
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#235
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#236
 class Aws::CodeCommit::Errors::ApprovalRuleContentRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleContentRequiredException]
+  # @param message [String]
   # @return [ApprovalRuleContentRequiredException] a new instance of ApprovalRuleContentRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#240
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#241
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#245
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#246
 class Aws::CodeCommit::Errors::ApprovalRuleDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleDoesNotExistException]
+  # @param message [String]
   # @return [ApprovalRuleDoesNotExistException] a new instance of ApprovalRuleDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#250
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#251
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#255
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#256
 class Aws::CodeCommit::Errors::ApprovalRuleNameAlreadyExistsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleNameAlreadyExistsException]
+  # @param message [String]
   # @return [ApprovalRuleNameAlreadyExistsException] a new instance of ApprovalRuleNameAlreadyExistsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#260
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#261
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#265
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#266
 class Aws::CodeCommit::Errors::ApprovalRuleNameRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleNameRequiredException]
+  # @param message [String]
   # @return [ApprovalRuleNameRequiredException] a new instance of ApprovalRuleNameRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#270
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#271
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#275
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#276
 class Aws::CodeCommit::Errors::ApprovalRuleTemplateContentRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleTemplateContentRequiredException]
+  # @param message [String]
   # @return [ApprovalRuleTemplateContentRequiredException] a new instance of ApprovalRuleTemplateContentRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#280
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#281
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#285
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#286
 class Aws::CodeCommit::Errors::ApprovalRuleTemplateDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleTemplateDoesNotExistException]
+  # @param message [String]
   # @return [ApprovalRuleTemplateDoesNotExistException] a new instance of ApprovalRuleTemplateDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#290
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#291
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#295
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#296
 class Aws::CodeCommit::Errors::ApprovalRuleTemplateInUseException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleTemplateInUseException]
+  # @param message [String]
   # @return [ApprovalRuleTemplateInUseException] a new instance of ApprovalRuleTemplateInUseException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#300
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#301
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#305
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#306
 class Aws::CodeCommit::Errors::ApprovalRuleTemplateNameAlreadyExistsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleTemplateNameAlreadyExistsException]
+  # @param message [String]
   # @return [ApprovalRuleTemplateNameAlreadyExistsException] a new instance of ApprovalRuleTemplateNameAlreadyExistsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#310
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#311
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#315
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#316
 class Aws::CodeCommit::Errors::ApprovalRuleTemplateNameRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalRuleTemplateNameRequiredException]
+  # @param message [String]
   # @return [ApprovalRuleTemplateNameRequiredException] a new instance of ApprovalRuleTemplateNameRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#320
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#321
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#325
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#326
 class Aws::CodeCommit::Errors::ApprovalStateRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ApprovalStateRequiredException]
+  # @param message [String]
   # @return [ApprovalStateRequiredException] a new instance of ApprovalStateRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#330
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#331
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#335
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#336
 class Aws::CodeCommit::Errors::AuthorDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::AuthorDoesNotExistException]
+  # @param message [String]
   # @return [AuthorDoesNotExistException] a new instance of AuthorDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#340
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#341
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#345
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#346
 class Aws::CodeCommit::Errors::BeforeCommitIdAndAfterCommitIdAreSameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BeforeCommitIdAndAfterCommitIdAreSameException]
+  # @param message [String]
   # @return [BeforeCommitIdAndAfterCommitIdAreSameException] a new instance of BeforeCommitIdAndAfterCommitIdAreSameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#350
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#351
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#355
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#356
 class Aws::CodeCommit::Errors::BlobIdDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BlobIdDoesNotExistException]
+  # @param message [String]
   # @return [BlobIdDoesNotExistException] a new instance of BlobIdDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#360
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#361
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#365
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#366
 class Aws::CodeCommit::Errors::BlobIdRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BlobIdRequiredException]
+  # @param message [String]
   # @return [BlobIdRequiredException] a new instance of BlobIdRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#370
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#371
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#375
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#376
 class Aws::CodeCommit::Errors::BranchDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BranchDoesNotExistException]
+  # @param message [String]
   # @return [BranchDoesNotExistException] a new instance of BranchDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#380
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#381
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#385
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#386
 class Aws::CodeCommit::Errors::BranchNameExistsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BranchNameExistsException]
+  # @param message [String]
   # @return [BranchNameExistsException] a new instance of BranchNameExistsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#390
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#391
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#395
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#396
 class Aws::CodeCommit::Errors::BranchNameIsTagNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BranchNameIsTagNameException]
+  # @param message [String]
   # @return [BranchNameIsTagNameException] a new instance of BranchNameIsTagNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#400
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#401
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#405
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#406
 class Aws::CodeCommit::Errors::BranchNameRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::BranchNameRequiredException]
+  # @param message [String]
   # @return [BranchNameRequiredException] a new instance of BranchNameRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#410
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#411
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#415
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#416
 class Aws::CodeCommit::Errors::CannotDeleteApprovalRuleFromTemplateException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CannotDeleteApprovalRuleFromTemplateException]
+  # @param message [String]
   # @return [CannotDeleteApprovalRuleFromTemplateException] a new instance of CannotDeleteApprovalRuleFromTemplateException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#420
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#421
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#425
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#426
 class Aws::CodeCommit::Errors::CannotModifyApprovalRuleFromTemplateException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CannotModifyApprovalRuleFromTemplateException]
+  # @param message [String]
   # @return [CannotModifyApprovalRuleFromTemplateException] a new instance of CannotModifyApprovalRuleFromTemplateException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#430
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#431
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#435
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#436
 class Aws::CodeCommit::Errors::ClientRequestTokenRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ClientRequestTokenRequiredException]
+  # @param message [String]
   # @return [ClientRequestTokenRequiredException] a new instance of ClientRequestTokenRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#440
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#441
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#445
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#446
 class Aws::CodeCommit::Errors::CommentContentRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommentContentRequiredException]
+  # @param message [String]
   # @return [CommentContentRequiredException] a new instance of CommentContentRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#450
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#451
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#455
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#456
 class Aws::CodeCommit::Errors::CommentContentSizeLimitExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommentContentSizeLimitExceededException]
+  # @param message [String]
   # @return [CommentContentSizeLimitExceededException] a new instance of CommentContentSizeLimitExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#460
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#461
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#465
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#466
 class Aws::CodeCommit::Errors::CommentDeletedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommentDeletedException]
+  # @param message [String]
   # @return [CommentDeletedException] a new instance of CommentDeletedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#470
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#471
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#475
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#476
 class Aws::CodeCommit::Errors::CommentDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommentDoesNotExistException]
+  # @param message [String]
   # @return [CommentDoesNotExistException] a new instance of CommentDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#480
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#481
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#485
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#486
 class Aws::CodeCommit::Errors::CommentIdRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommentIdRequiredException]
+  # @param message [String]
   # @return [CommentIdRequiredException] a new instance of CommentIdRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#490
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#491
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#495
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#496
 class Aws::CodeCommit::Errors::CommentNotCreatedByCallerException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommentNotCreatedByCallerException]
+  # @param message [String]
   # @return [CommentNotCreatedByCallerException] a new instance of CommentNotCreatedByCallerException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#500
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#501
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#505
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#506
 class Aws::CodeCommit::Errors::CommitDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitDoesNotExistException]
+  # @param message [String]
   # @return [CommitDoesNotExistException] a new instance of CommitDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#510
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#511
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#515
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#516
 class Aws::CodeCommit::Errors::CommitIdDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitIdDoesNotExistException]
+  # @param message [String]
   # @return [CommitIdDoesNotExistException] a new instance of CommitIdDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#520
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#521
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#525
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#526
 class Aws::CodeCommit::Errors::CommitIdRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitIdRequiredException]
+  # @param message [String]
   # @return [CommitIdRequiredException] a new instance of CommitIdRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#530
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#531
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#535
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#536
 class Aws::CodeCommit::Errors::CommitIdsLimitExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitIdsLimitExceededException]
+  # @param message [String]
   # @return [CommitIdsLimitExceededException] a new instance of CommitIdsLimitExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#540
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#541
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#545
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#546
 class Aws::CodeCommit::Errors::CommitIdsListRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitIdsListRequiredException]
+  # @param message [String]
   # @return [CommitIdsListRequiredException] a new instance of CommitIdsListRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#550
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#551
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#555
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#556
 class Aws::CodeCommit::Errors::CommitMessageLengthExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitMessageLengthExceededException]
+  # @param message [String]
   # @return [CommitMessageLengthExceededException] a new instance of CommitMessageLengthExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#560
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#561
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#565
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#566
 class Aws::CodeCommit::Errors::CommitRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::CommitRequiredException]
+  # @param message [String]
   # @return [CommitRequiredException] a new instance of CommitRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#570
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#571
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#575
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#576
 class Aws::CodeCommit::Errors::ConcurrentReferenceUpdateException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ConcurrentReferenceUpdateException]
+  # @param message [String]
   # @return [ConcurrentReferenceUpdateException] a new instance of ConcurrentReferenceUpdateException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#580
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#581
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#585
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#586
 class Aws::CodeCommit::Errors::DefaultBranchCannotBeDeletedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::DefaultBranchCannotBeDeletedException]
+  # @param message [String]
   # @return [DefaultBranchCannotBeDeletedException] a new instance of DefaultBranchCannotBeDeletedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#590
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#591
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#595
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#596
 class Aws::CodeCommit::Errors::DirectoryNameConflictsWithFileNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::DirectoryNameConflictsWithFileNameException]
+  # @param message [String]
   # @return [DirectoryNameConflictsWithFileNameException] a new instance of DirectoryNameConflictsWithFileNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#600
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#601
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#605
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#606
 class Aws::CodeCommit::Errors::EncryptionIntegrityChecksFailedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionIntegrityChecksFailedException]
+  # @param message [String]
   # @return [EncryptionIntegrityChecksFailedException] a new instance of EncryptionIntegrityChecksFailedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#610
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#611
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#615
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#616
 class Aws::CodeCommit::Errors::EncryptionKeyAccessDeniedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyAccessDeniedException]
+  # @param message [String]
   # @return [EncryptionKeyAccessDeniedException] a new instance of EncryptionKeyAccessDeniedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#620
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#621
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#625
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#626
 class Aws::CodeCommit::Errors::EncryptionKeyDisabledException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyDisabledException]
+  # @param message [String]
   # @return [EncryptionKeyDisabledException] a new instance of EncryptionKeyDisabledException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#630
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#631
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#635
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#636
 class Aws::CodeCommit::Errors::EncryptionKeyInvalidIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyInvalidIdException]
+  # @param message [String]
   # @return [EncryptionKeyInvalidIdException] a new instance of EncryptionKeyInvalidIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#640
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#641
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#645
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#646
 class Aws::CodeCommit::Errors::EncryptionKeyInvalidUsageException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyInvalidUsageException]
+  # @param message [String]
   # @return [EncryptionKeyInvalidUsageException] a new instance of EncryptionKeyInvalidUsageException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#650
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#651
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#655
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#656
 class Aws::CodeCommit::Errors::EncryptionKeyNotFoundException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyNotFoundException]
+  # @param message [String]
   # @return [EncryptionKeyNotFoundException] a new instance of EncryptionKeyNotFoundException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#660
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#661
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#665
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#666
 class Aws::CodeCommit::Errors::EncryptionKeyRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyRequiredException]
+  # @param message [String]
   # @return [EncryptionKeyRequiredException] a new instance of EncryptionKeyRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#670
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#671
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#675
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#676
 class Aws::CodeCommit::Errors::EncryptionKeyUnavailableException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::EncryptionKeyUnavailableException]
+  # @param message [String]
   # @return [EncryptionKeyUnavailableException] a new instance of EncryptionKeyUnavailableException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#680
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#681
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#685
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#686
 class Aws::CodeCommit::Errors::FileContentAndSourceFileSpecifiedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileContentAndSourceFileSpecifiedException]
+  # @param message [String]
   # @return [FileContentAndSourceFileSpecifiedException] a new instance of FileContentAndSourceFileSpecifiedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#690
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#691
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#695
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#696
 class Aws::CodeCommit::Errors::FileContentRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileContentRequiredException]
+  # @param message [String]
   # @return [FileContentRequiredException] a new instance of FileContentRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#700
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#701
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#705
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#706
 class Aws::CodeCommit::Errors::FileContentSizeLimitExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileContentSizeLimitExceededException]
+  # @param message [String]
   # @return [FileContentSizeLimitExceededException] a new instance of FileContentSizeLimitExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#710
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#711
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#715
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#716
 class Aws::CodeCommit::Errors::FileDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileDoesNotExistException]
+  # @param message [String]
   # @return [FileDoesNotExistException] a new instance of FileDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#720
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#721
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#725
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#726
 class Aws::CodeCommit::Errors::FileEntryRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileEntryRequiredException]
+  # @param message [String]
   # @return [FileEntryRequiredException] a new instance of FileEntryRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#730
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#731
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#735
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#736
 class Aws::CodeCommit::Errors::FileModeRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileModeRequiredException]
+  # @param message [String]
   # @return [FileModeRequiredException] a new instance of FileModeRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#740
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#741
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#745
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#746
 class Aws::CodeCommit::Errors::FileNameConflictsWithDirectoryNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileNameConflictsWithDirectoryNameException]
+  # @param message [String]
   # @return [FileNameConflictsWithDirectoryNameException] a new instance of FileNameConflictsWithDirectoryNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#750
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#751
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#755
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#756
 class Aws::CodeCommit::Errors::FilePathConflictsWithSubmodulePathException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FilePathConflictsWithSubmodulePathException]
+  # @param message [String]
   # @return [FilePathConflictsWithSubmodulePathException] a new instance of FilePathConflictsWithSubmodulePathException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#760
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#761
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#765
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#766
 class Aws::CodeCommit::Errors::FileTooLargeException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FileTooLargeException]
+  # @param message [String]
   # @return [FileTooLargeException] a new instance of FileTooLargeException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#770
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#771
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#775
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#776
 class Aws::CodeCommit::Errors::FolderContentSizeLimitExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FolderContentSizeLimitExceededException]
+  # @param message [String]
   # @return [FolderContentSizeLimitExceededException] a new instance of FolderContentSizeLimitExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#780
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#781
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#785
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#786
 class Aws::CodeCommit::Errors::FolderDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::FolderDoesNotExistException]
+  # @param message [String]
   # @return [FolderDoesNotExistException] a new instance of FolderDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#790
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#791
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#795
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#796
 class Aws::CodeCommit::Errors::IdempotencyParameterMismatchException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::IdempotencyParameterMismatchException]
+  # @param message [String]
   # @return [IdempotencyParameterMismatchException] a new instance of IdempotencyParameterMismatchException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#800
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#801
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#805
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#806
 class Aws::CodeCommit::Errors::InvalidActorArnException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidActorArnException]
+  # @param message [String]
   # @return [InvalidActorArnException] a new instance of InvalidActorArnException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#810
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#811
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#815
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#816
 class Aws::CodeCommit::Errors::InvalidApprovalRuleContentException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidApprovalRuleContentException]
+  # @param message [String]
   # @return [InvalidApprovalRuleContentException] a new instance of InvalidApprovalRuleContentException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#820
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#821
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#825
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#826
 class Aws::CodeCommit::Errors::InvalidApprovalRuleNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidApprovalRuleNameException]
+  # @param message [String]
   # @return [InvalidApprovalRuleNameException] a new instance of InvalidApprovalRuleNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#830
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#831
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#835
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#836
 class Aws::CodeCommit::Errors::InvalidApprovalRuleTemplateContentException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidApprovalRuleTemplateContentException]
+  # @param message [String]
   # @return [InvalidApprovalRuleTemplateContentException] a new instance of InvalidApprovalRuleTemplateContentException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#840
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#841
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#845
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#846
 class Aws::CodeCommit::Errors::InvalidApprovalRuleTemplateDescriptionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidApprovalRuleTemplateDescriptionException]
+  # @param message [String]
   # @return [InvalidApprovalRuleTemplateDescriptionException] a new instance of InvalidApprovalRuleTemplateDescriptionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#850
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#851
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#855
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#856
 class Aws::CodeCommit::Errors::InvalidApprovalRuleTemplateNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidApprovalRuleTemplateNameException]
+  # @param message [String]
   # @return [InvalidApprovalRuleTemplateNameException] a new instance of InvalidApprovalRuleTemplateNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#860
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#861
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#865
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#866
 class Aws::CodeCommit::Errors::InvalidApprovalStateException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidApprovalStateException]
+  # @param message [String]
   # @return [InvalidApprovalStateException] a new instance of InvalidApprovalStateException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#870
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#871
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#875
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#876
 class Aws::CodeCommit::Errors::InvalidAuthorArnException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidAuthorArnException]
+  # @param message [String]
   # @return [InvalidAuthorArnException] a new instance of InvalidAuthorArnException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#880
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#881
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#885
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#886
 class Aws::CodeCommit::Errors::InvalidBlobIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidBlobIdException]
+  # @param message [String]
   # @return [InvalidBlobIdException] a new instance of InvalidBlobIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#890
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#891
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#895
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#896
 class Aws::CodeCommit::Errors::InvalidBranchNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidBranchNameException]
+  # @param message [String]
   # @return [InvalidBranchNameException] a new instance of InvalidBranchNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#900
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#901
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#905
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#906
 class Aws::CodeCommit::Errors::InvalidClientRequestTokenException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidClientRequestTokenException]
+  # @param message [String]
   # @return [InvalidClientRequestTokenException] a new instance of InvalidClientRequestTokenException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#910
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#911
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#915
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#916
 class Aws::CodeCommit::Errors::InvalidCommentIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidCommentIdException]
+  # @param message [String]
   # @return [InvalidCommentIdException] a new instance of InvalidCommentIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#920
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#921
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#925
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#926
 class Aws::CodeCommit::Errors::InvalidCommitException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidCommitException]
+  # @param message [String]
   # @return [InvalidCommitException] a new instance of InvalidCommitException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#930
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#931
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#935
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#936
 class Aws::CodeCommit::Errors::InvalidCommitIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidCommitIdException]
+  # @param message [String]
   # @return [InvalidCommitIdException] a new instance of InvalidCommitIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#940
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#941
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#945
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#946
 class Aws::CodeCommit::Errors::InvalidConflictDetailLevelException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidConflictDetailLevelException]
+  # @param message [String]
   # @return [InvalidConflictDetailLevelException] a new instance of InvalidConflictDetailLevelException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#950
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#951
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#955
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#956
 class Aws::CodeCommit::Errors::InvalidConflictResolutionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidConflictResolutionException]
+  # @param message [String]
   # @return [InvalidConflictResolutionException] a new instance of InvalidConflictResolutionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#960
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#961
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#965
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#966
 class Aws::CodeCommit::Errors::InvalidConflictResolutionStrategyException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidConflictResolutionStrategyException]
+  # @param message [String]
   # @return [InvalidConflictResolutionStrategyException] a new instance of InvalidConflictResolutionStrategyException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#970
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#971
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#975
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#976
 class Aws::CodeCommit::Errors::InvalidContinuationTokenException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidContinuationTokenException]
+  # @param message [String]
   # @return [InvalidContinuationTokenException] a new instance of InvalidContinuationTokenException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#980
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#981
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#985
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#986
 class Aws::CodeCommit::Errors::InvalidDeletionParameterException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidDeletionParameterException]
+  # @param message [String]
   # @return [InvalidDeletionParameterException] a new instance of InvalidDeletionParameterException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#990
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#991
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#995
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#996
 class Aws::CodeCommit::Errors::InvalidDescriptionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidDescriptionException]
+  # @param message [String]
   # @return [InvalidDescriptionException] a new instance of InvalidDescriptionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1000
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1001
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1005
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1006
 class Aws::CodeCommit::Errors::InvalidDestinationCommitSpecifierException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidDestinationCommitSpecifierException]
+  # @param message [String]
   # @return [InvalidDestinationCommitSpecifierException] a new instance of InvalidDestinationCommitSpecifierException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1010
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1011
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1015
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1016
 class Aws::CodeCommit::Errors::InvalidEmailException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidEmailException]
+  # @param message [String]
   # @return [InvalidEmailException] a new instance of InvalidEmailException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1020
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1021
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1025
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1026
 class Aws::CodeCommit::Errors::InvalidFileLocationException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidFileLocationException]
+  # @param message [String]
   # @return [InvalidFileLocationException] a new instance of InvalidFileLocationException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1030
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1031
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1035
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1036
 class Aws::CodeCommit::Errors::InvalidFileModeException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidFileModeException]
+  # @param message [String]
   # @return [InvalidFileModeException] a new instance of InvalidFileModeException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1040
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1041
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1045
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1046
 class Aws::CodeCommit::Errors::InvalidFilePositionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidFilePositionException]
+  # @param message [String]
   # @return [InvalidFilePositionException] a new instance of InvalidFilePositionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1050
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1051
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1055
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1056
 class Aws::CodeCommit::Errors::InvalidMaxConflictFilesException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidMaxConflictFilesException]
+  # @param message [String]
   # @return [InvalidMaxConflictFilesException] a new instance of InvalidMaxConflictFilesException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1060
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1061
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1065
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1066
 class Aws::CodeCommit::Errors::InvalidMaxMergeHunksException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidMaxMergeHunksException]
+  # @param message [String]
   # @return [InvalidMaxMergeHunksException] a new instance of InvalidMaxMergeHunksException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1070
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1071
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1075
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1076
 class Aws::CodeCommit::Errors::InvalidMaxResultsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidMaxResultsException]
+  # @param message [String]
   # @return [InvalidMaxResultsException] a new instance of InvalidMaxResultsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1080
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1081
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1085
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1086
 class Aws::CodeCommit::Errors::InvalidMergeOptionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidMergeOptionException]
+  # @param message [String]
   # @return [InvalidMergeOptionException] a new instance of InvalidMergeOptionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1090
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1091
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1095
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1096
 class Aws::CodeCommit::Errors::InvalidOrderException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidOrderException]
+  # @param message [String]
   # @return [InvalidOrderException] a new instance of InvalidOrderException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1100
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1101
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1105
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1106
 class Aws::CodeCommit::Errors::InvalidOverrideStatusException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidOverrideStatusException]
+  # @param message [String]
   # @return [InvalidOverrideStatusException] a new instance of InvalidOverrideStatusException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1110
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1111
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1115
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1116
 class Aws::CodeCommit::Errors::InvalidParentCommitIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidParentCommitIdException]
+  # @param message [String]
   # @return [InvalidParentCommitIdException] a new instance of InvalidParentCommitIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1120
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1121
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1125
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1126
 class Aws::CodeCommit::Errors::InvalidPathException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidPathException]
+  # @param message [String]
   # @return [InvalidPathException] a new instance of InvalidPathException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1130
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1131
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1135
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1136
 class Aws::CodeCommit::Errors::InvalidPullRequestEventTypeException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidPullRequestEventTypeException]
+  # @param message [String]
   # @return [InvalidPullRequestEventTypeException] a new instance of InvalidPullRequestEventTypeException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1140
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1141
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1145
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1146
 class Aws::CodeCommit::Errors::InvalidPullRequestIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidPullRequestIdException]
+  # @param message [String]
   # @return [InvalidPullRequestIdException] a new instance of InvalidPullRequestIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1150
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1151
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1155
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1156
 class Aws::CodeCommit::Errors::InvalidPullRequestStatusException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidPullRequestStatusException]
+  # @param message [String]
   # @return [InvalidPullRequestStatusException] a new instance of InvalidPullRequestStatusException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1160
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1161
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1165
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1166
 class Aws::CodeCommit::Errors::InvalidPullRequestStatusUpdateException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidPullRequestStatusUpdateException]
+  # @param message [String]
   # @return [InvalidPullRequestStatusUpdateException] a new instance of InvalidPullRequestStatusUpdateException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1170
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1171
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1175
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1176
 class Aws::CodeCommit::Errors::InvalidReactionUserArnException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidReactionUserArnException]
+  # @param message [String]
   # @return [InvalidReactionUserArnException] a new instance of InvalidReactionUserArnException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1180
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1181
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1185
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1186
 class Aws::CodeCommit::Errors::InvalidReactionValueException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidReactionValueException]
+  # @param message [String]
   # @return [InvalidReactionValueException] a new instance of InvalidReactionValueException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1190
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1191
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1195
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1196
 class Aws::CodeCommit::Errors::InvalidReferenceNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidReferenceNameException]
+  # @param message [String]
   # @return [InvalidReferenceNameException] a new instance of InvalidReferenceNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1200
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1201
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1205
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1206
 class Aws::CodeCommit::Errors::InvalidRelativeFileVersionEnumException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRelativeFileVersionEnumException]
+  # @param message [String]
   # @return [InvalidRelativeFileVersionEnumException] a new instance of InvalidRelativeFileVersionEnumException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1210
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1211
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1215
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1216
 class Aws::CodeCommit::Errors::InvalidReplacementContentException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidReplacementContentException]
+  # @param message [String]
   # @return [InvalidReplacementContentException] a new instance of InvalidReplacementContentException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1220
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1221
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1225
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1226
 class Aws::CodeCommit::Errors::InvalidReplacementTypeException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidReplacementTypeException]
+  # @param message [String]
   # @return [InvalidReplacementTypeException] a new instance of InvalidReplacementTypeException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1230
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1231
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1235
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1236
 class Aws::CodeCommit::Errors::InvalidRepositoryDescriptionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryDescriptionException]
+  # @param message [String]
   # @return [InvalidRepositoryDescriptionException] a new instance of InvalidRepositoryDescriptionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1240
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1241
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1245
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1246
 class Aws::CodeCommit::Errors::InvalidRepositoryNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryNameException]
+  # @param message [String]
   # @return [InvalidRepositoryNameException] a new instance of InvalidRepositoryNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1250
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1251
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1255
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1256
 class Aws::CodeCommit::Errors::InvalidRepositoryTriggerBranchNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryTriggerBranchNameException]
+  # @param message [String]
   # @return [InvalidRepositoryTriggerBranchNameException] a new instance of InvalidRepositoryTriggerBranchNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1260
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1261
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1265
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1266
 class Aws::CodeCommit::Errors::InvalidRepositoryTriggerCustomDataException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryTriggerCustomDataException]
+  # @param message [String]
   # @return [InvalidRepositoryTriggerCustomDataException] a new instance of InvalidRepositoryTriggerCustomDataException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1270
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1271
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1275
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1276
 class Aws::CodeCommit::Errors::InvalidRepositoryTriggerDestinationArnException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryTriggerDestinationArnException]
+  # @param message [String]
   # @return [InvalidRepositoryTriggerDestinationArnException] a new instance of InvalidRepositoryTriggerDestinationArnException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1280
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1281
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1285
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1286
 class Aws::CodeCommit::Errors::InvalidRepositoryTriggerEventsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryTriggerEventsException]
+  # @param message [String]
   # @return [InvalidRepositoryTriggerEventsException] a new instance of InvalidRepositoryTriggerEventsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1290
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1291
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1295
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1296
 class Aws::CodeCommit::Errors::InvalidRepositoryTriggerNameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryTriggerNameException]
+  # @param message [String]
   # @return [InvalidRepositoryTriggerNameException] a new instance of InvalidRepositoryTriggerNameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1300
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1301
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1305
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1306
 class Aws::CodeCommit::Errors::InvalidRepositoryTriggerRegionException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRepositoryTriggerRegionException]
+  # @param message [String]
   # @return [InvalidRepositoryTriggerRegionException] a new instance of InvalidRepositoryTriggerRegionException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1310
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1311
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1315
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1316
 class Aws::CodeCommit::Errors::InvalidResourceArnException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidResourceArnException]
+  # @param message [String]
   # @return [InvalidResourceArnException] a new instance of InvalidResourceArnException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1320
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1321
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1325
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1326
 class Aws::CodeCommit::Errors::InvalidRevisionIdException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRevisionIdException]
+  # @param message [String]
   # @return [InvalidRevisionIdException] a new instance of InvalidRevisionIdException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1330
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1331
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1335
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1336
 class Aws::CodeCommit::Errors::InvalidRuleContentSha256Exception < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidRuleContentSha256Exception]
+  # @param message [String]
   # @return [InvalidRuleContentSha256Exception] a new instance of InvalidRuleContentSha256Exception
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1340
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1341
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1345
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1346
 class Aws::CodeCommit::Errors::InvalidSortByException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidSortByException]
+  # @param message [String]
   # @return [InvalidSortByException] a new instance of InvalidSortByException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1350
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1351
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1355
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1356
 class Aws::CodeCommit::Errors::InvalidSourceCommitSpecifierException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidSourceCommitSpecifierException]
+  # @param message [String]
   # @return [InvalidSourceCommitSpecifierException] a new instance of InvalidSourceCommitSpecifierException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1360
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1361
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1365
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1366
 class Aws::CodeCommit::Errors::InvalidSystemTagUsageException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidSystemTagUsageException]
+  # @param message [String]
   # @return [InvalidSystemTagUsageException] a new instance of InvalidSystemTagUsageException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1370
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1371
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1375
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1376
 class Aws::CodeCommit::Errors::InvalidTagKeysListException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidTagKeysListException]
+  # @param message [String]
   # @return [InvalidTagKeysListException] a new instance of InvalidTagKeysListException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1380
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1381
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1385
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1386
 class Aws::CodeCommit::Errors::InvalidTagsMapException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidTagsMapException]
+  # @param message [String]
   # @return [InvalidTagsMapException] a new instance of InvalidTagsMapException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1390
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1391
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1395
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1396
 class Aws::CodeCommit::Errors::InvalidTargetBranchException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidTargetBranchException]
+  # @param message [String]
   # @return [InvalidTargetBranchException] a new instance of InvalidTargetBranchException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1400
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1401
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1405
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1406
 class Aws::CodeCommit::Errors::InvalidTargetException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidTargetException]
+  # @param message [String]
   # @return [InvalidTargetException] a new instance of InvalidTargetException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1410
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1411
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1415
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1416
 class Aws::CodeCommit::Errors::InvalidTargetsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidTargetsException]
+  # @param message [String]
   # @return [InvalidTargetsException] a new instance of InvalidTargetsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1420
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1421
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1425
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1426
 class Aws::CodeCommit::Errors::InvalidTitleException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::InvalidTitleException]
+  # @param message [String]
   # @return [InvalidTitleException] a new instance of InvalidTitleException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1430
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1431
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1435
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1436
 class Aws::CodeCommit::Errors::ManualMergeRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ManualMergeRequiredException]
+  # @param message [String]
   # @return [ManualMergeRequiredException] a new instance of ManualMergeRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1440
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1441
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1445
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1446
 class Aws::CodeCommit::Errors::MaximumBranchesExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumBranchesExceededException]
+  # @param message [String]
   # @return [MaximumBranchesExceededException] a new instance of MaximumBranchesExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1450
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1451
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1455
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1456
 class Aws::CodeCommit::Errors::MaximumConflictResolutionEntriesExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumConflictResolutionEntriesExceededException]
+  # @param message [String]
   # @return [MaximumConflictResolutionEntriesExceededException] a new instance of MaximumConflictResolutionEntriesExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1460
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1461
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1465
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1466
 class Aws::CodeCommit::Errors::MaximumFileContentToLoadExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumFileContentToLoadExceededException]
+  # @param message [String]
   # @return [MaximumFileContentToLoadExceededException] a new instance of MaximumFileContentToLoadExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1470
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1471
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1475
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1476
 class Aws::CodeCommit::Errors::MaximumFileEntriesExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumFileEntriesExceededException]
+  # @param message [String]
   # @return [MaximumFileEntriesExceededException] a new instance of MaximumFileEntriesExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1480
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1481
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1485
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1486
 class Aws::CodeCommit::Errors::MaximumItemsToCompareExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumItemsToCompareExceededException]
+  # @param message [String]
   # @return [MaximumItemsToCompareExceededException] a new instance of MaximumItemsToCompareExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1490
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1491
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1495
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1496
 class Aws::CodeCommit::Errors::MaximumNumberOfApprovalsExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumNumberOfApprovalsExceededException]
+  # @param message [String]
   # @return [MaximumNumberOfApprovalsExceededException] a new instance of MaximumNumberOfApprovalsExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1500
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1501
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1505
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1506
 class Aws::CodeCommit::Errors::MaximumOpenPullRequestsExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumOpenPullRequestsExceededException]
+  # @param message [String]
   # @return [MaximumOpenPullRequestsExceededException] a new instance of MaximumOpenPullRequestsExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1510
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1511
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1515
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1516
 class Aws::CodeCommit::Errors::MaximumRepositoryNamesExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumRepositoryNamesExceededException]
+  # @param message [String]
   # @return [MaximumRepositoryNamesExceededException] a new instance of MaximumRepositoryNamesExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1520
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1521
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1525
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1526
 class Aws::CodeCommit::Errors::MaximumRepositoryTriggersExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumRepositoryTriggersExceededException]
+  # @param message [String]
   # @return [MaximumRepositoryTriggersExceededException] a new instance of MaximumRepositoryTriggersExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1530
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1531
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1535
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1536
 class Aws::CodeCommit::Errors::MaximumRuleTemplatesAssociatedWithRepositoryException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MaximumRuleTemplatesAssociatedWithRepositoryException]
+  # @param message [String]
   # @return [MaximumRuleTemplatesAssociatedWithRepositoryException] a new instance of MaximumRuleTemplatesAssociatedWithRepositoryException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1540
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1541
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1545
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1546
 class Aws::CodeCommit::Errors::MergeOptionRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MergeOptionRequiredException]
+  # @param message [String]
   # @return [MergeOptionRequiredException] a new instance of MergeOptionRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1550
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1551
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1555
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1556
 class Aws::CodeCommit::Errors::MultipleConflictResolutionEntriesException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MultipleConflictResolutionEntriesException]
+  # @param message [String]
   # @return [MultipleConflictResolutionEntriesException] a new instance of MultipleConflictResolutionEntriesException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1560
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1561
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1565
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1566
 class Aws::CodeCommit::Errors::MultipleRepositoriesInPullRequestException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::MultipleRepositoriesInPullRequestException]
+  # @param message [String]
   # @return [MultipleRepositoriesInPullRequestException] a new instance of MultipleRepositoriesInPullRequestException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1570
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1571
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1575
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1576
 class Aws::CodeCommit::Errors::NameLengthExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::NameLengthExceededException]
+  # @param message [String]
   # @return [NameLengthExceededException] a new instance of NameLengthExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1580
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1581
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1585
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1586
 class Aws::CodeCommit::Errors::NoChangeException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::NoChangeException]
+  # @param message [String]
   # @return [NoChangeException] a new instance of NoChangeException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1590
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1591
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1595
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1596
 class Aws::CodeCommit::Errors::NumberOfRuleTemplatesExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::NumberOfRuleTemplatesExceededException]
+  # @param message [String]
   # @return [NumberOfRuleTemplatesExceededException] a new instance of NumberOfRuleTemplatesExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1600
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1601
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1605
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1606
 class Aws::CodeCommit::Errors::NumberOfRulesExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::NumberOfRulesExceededException]
+  # @param message [String]
   # @return [NumberOfRulesExceededException] a new instance of NumberOfRulesExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1610
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1611
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1615
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1616
+class Aws::CodeCommit::Errors::OperationNotAllowedException < ::Aws::CodeCommit::Errors::ServiceError
+  # @param context [Seahorse::Client::RequestContext]
+  # @param data [Aws::CodeCommit::Types::OperationNotAllowedException]
+  # @param message [String]
+  # @return [OperationNotAllowedException] a new instance of OperationNotAllowedException
+  #
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1621
+  def initialize(context, message, data = T.unsafe(nil)); end
+end
+
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1626
 class Aws::CodeCommit::Errors::OverrideAlreadySetException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::OverrideAlreadySetException]
+  # @param message [String]
   # @return [OverrideAlreadySetException] a new instance of OverrideAlreadySetException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1620
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1631
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1625
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1636
 class Aws::CodeCommit::Errors::OverrideStatusRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::OverrideStatusRequiredException]
+  # @param message [String]
   # @return [OverrideStatusRequiredException] a new instance of OverrideStatusRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1630
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1641
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1635
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1646
 class Aws::CodeCommit::Errors::ParentCommitDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ParentCommitDoesNotExistException]
+  # @param message [String]
   # @return [ParentCommitDoesNotExistException] a new instance of ParentCommitDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1640
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1651
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1645
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1656
 class Aws::CodeCommit::Errors::ParentCommitIdOutdatedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ParentCommitIdOutdatedException]
+  # @param message [String]
   # @return [ParentCommitIdOutdatedException] a new instance of ParentCommitIdOutdatedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1650
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1661
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1655
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1666
 class Aws::CodeCommit::Errors::ParentCommitIdRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ParentCommitIdRequiredException]
+  # @param message [String]
   # @return [ParentCommitIdRequiredException] a new instance of ParentCommitIdRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1660
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1671
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1665
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1676
 class Aws::CodeCommit::Errors::PathDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PathDoesNotExistException]
+  # @param message [String]
   # @return [PathDoesNotExistException] a new instance of PathDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1670
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1681
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1675
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1686
 class Aws::CodeCommit::Errors::PathRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PathRequiredException]
+  # @param message [String]
   # @return [PathRequiredException] a new instance of PathRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1680
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1691
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1685
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1696
 class Aws::CodeCommit::Errors::PullRequestAlreadyClosedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PullRequestAlreadyClosedException]
+  # @param message [String]
   # @return [PullRequestAlreadyClosedException] a new instance of PullRequestAlreadyClosedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1690
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1701
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1695
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1706
 class Aws::CodeCommit::Errors::PullRequestApprovalRulesNotSatisfiedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PullRequestApprovalRulesNotSatisfiedException]
+  # @param message [String]
   # @return [PullRequestApprovalRulesNotSatisfiedException] a new instance of PullRequestApprovalRulesNotSatisfiedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1700
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1711
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1705
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1716
 class Aws::CodeCommit::Errors::PullRequestCannotBeApprovedByAuthorException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PullRequestCannotBeApprovedByAuthorException]
+  # @param message [String]
   # @return [PullRequestCannotBeApprovedByAuthorException] a new instance of PullRequestCannotBeApprovedByAuthorException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1710
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1721
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1715
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1726
 class Aws::CodeCommit::Errors::PullRequestDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PullRequestDoesNotExistException]
+  # @param message [String]
   # @return [PullRequestDoesNotExistException] a new instance of PullRequestDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1720
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1731
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1725
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1736
 class Aws::CodeCommit::Errors::PullRequestIdRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PullRequestIdRequiredException]
+  # @param message [String]
   # @return [PullRequestIdRequiredException] a new instance of PullRequestIdRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1730
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1741
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1735
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1746
 class Aws::CodeCommit::Errors::PullRequestStatusRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PullRequestStatusRequiredException]
+  # @param message [String]
   # @return [PullRequestStatusRequiredException] a new instance of PullRequestStatusRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1740
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1751
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1745
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1756
 class Aws::CodeCommit::Errors::PutFileEntryConflictException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::PutFileEntryConflictException]
+  # @param message [String]
   # @return [PutFileEntryConflictException] a new instance of PutFileEntryConflictException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1750
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1761
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1755
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1766
 class Aws::CodeCommit::Errors::ReactionLimitExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReactionLimitExceededException]
+  # @param message [String]
   # @return [ReactionLimitExceededException] a new instance of ReactionLimitExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1760
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1771
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1765
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1776
 class Aws::CodeCommit::Errors::ReactionValueRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReactionValueRequiredException]
+  # @param message [String]
   # @return [ReactionValueRequiredException] a new instance of ReactionValueRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1770
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1781
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1775
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1786
 class Aws::CodeCommit::Errors::ReferenceDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReferenceDoesNotExistException]
+  # @param message [String]
   # @return [ReferenceDoesNotExistException] a new instance of ReferenceDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1780
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1791
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1785
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1796
 class Aws::CodeCommit::Errors::ReferenceNameRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReferenceNameRequiredException]
+  # @param message [String]
   # @return [ReferenceNameRequiredException] a new instance of ReferenceNameRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1790
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1801
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1795
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1806
 class Aws::CodeCommit::Errors::ReferenceTypeNotSupportedException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReferenceTypeNotSupportedException]
+  # @param message [String]
   # @return [ReferenceTypeNotSupportedException] a new instance of ReferenceTypeNotSupportedException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1800
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1811
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1805
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1816
 class Aws::CodeCommit::Errors::ReplacementContentRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReplacementContentRequiredException]
+  # @param message [String]
   # @return [ReplacementContentRequiredException] a new instance of ReplacementContentRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1810
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1821
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1815
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1826
 class Aws::CodeCommit::Errors::ReplacementTypeRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ReplacementTypeRequiredException]
+  # @param message [String]
   # @return [ReplacementTypeRequiredException] a new instance of ReplacementTypeRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1820
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1831
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1825
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1836
 class Aws::CodeCommit::Errors::RepositoryDoesNotExistException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryDoesNotExistException]
+  # @param message [String]
   # @return [RepositoryDoesNotExistException] a new instance of RepositoryDoesNotExistException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1830
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1841
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1835
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1846
 class Aws::CodeCommit::Errors::RepositoryLimitExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryLimitExceededException]
+  # @param message [String]
   # @return [RepositoryLimitExceededException] a new instance of RepositoryLimitExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1840
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1851
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1845
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1856
 class Aws::CodeCommit::Errors::RepositoryNameExistsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryNameExistsException]
+  # @param message [String]
   # @return [RepositoryNameExistsException] a new instance of RepositoryNameExistsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1850
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1861
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1855
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1866
 class Aws::CodeCommit::Errors::RepositoryNameRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryNameRequiredException]
+  # @param message [String]
   # @return [RepositoryNameRequiredException] a new instance of RepositoryNameRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1860
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1871
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1865
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1876
 class Aws::CodeCommit::Errors::RepositoryNamesRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryNamesRequiredException]
+  # @param message [String]
   # @return [RepositoryNamesRequiredException] a new instance of RepositoryNamesRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1870
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1881
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1875
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1886
 class Aws::CodeCommit::Errors::RepositoryNotAssociatedWithPullRequestException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryNotAssociatedWithPullRequestException]
+  # @param message [String]
   # @return [RepositoryNotAssociatedWithPullRequestException] a new instance of RepositoryNotAssociatedWithPullRequestException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1880
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1891
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1885
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1896
 class Aws::CodeCommit::Errors::RepositoryTriggerBranchNameListRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryTriggerBranchNameListRequiredException]
+  # @param message [String]
   # @return [RepositoryTriggerBranchNameListRequiredException] a new instance of RepositoryTriggerBranchNameListRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1890
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1901
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1895
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1906
 class Aws::CodeCommit::Errors::RepositoryTriggerDestinationArnRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryTriggerDestinationArnRequiredException]
+  # @param message [String]
   # @return [RepositoryTriggerDestinationArnRequiredException] a new instance of RepositoryTriggerDestinationArnRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1900
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1911
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1905
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1916
 class Aws::CodeCommit::Errors::RepositoryTriggerEventsListRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryTriggerEventsListRequiredException]
+  # @param message [String]
   # @return [RepositoryTriggerEventsListRequiredException] a new instance of RepositoryTriggerEventsListRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1910
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1921
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1915
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1926
 class Aws::CodeCommit::Errors::RepositoryTriggerNameRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryTriggerNameRequiredException]
+  # @param message [String]
   # @return [RepositoryTriggerNameRequiredException] a new instance of RepositoryTriggerNameRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1920
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1931
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1925
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1936
 class Aws::CodeCommit::Errors::RepositoryTriggersListRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RepositoryTriggersListRequiredException]
+  # @param message [String]
   # @return [RepositoryTriggersListRequiredException] a new instance of RepositoryTriggersListRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1930
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1941
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1935
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1946
 class Aws::CodeCommit::Errors::ResourceArnRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::ResourceArnRequiredException]
+  # @param message [String]
   # @return [ResourceArnRequiredException] a new instance of ResourceArnRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1940
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1951
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1945
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1956
 class Aws::CodeCommit::Errors::RestrictedSourceFileException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RestrictedSourceFileException]
+  # @param message [String]
   # @return [RestrictedSourceFileException] a new instance of RestrictedSourceFileException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1950
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1961
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1955
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1966
 class Aws::CodeCommit::Errors::RevisionIdRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RevisionIdRequiredException]
+  # @param message [String]
   # @return [RevisionIdRequiredException] a new instance of RevisionIdRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1960
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1971
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1965
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1976
 class Aws::CodeCommit::Errors::RevisionNotCurrentException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::RevisionNotCurrentException]
+  # @param message [String]
   # @return [RevisionNotCurrentException] a new instance of RevisionNotCurrentException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1970
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1981
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1975
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1986
 class Aws::CodeCommit::Errors::SameFileContentException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::SameFileContentException]
+  # @param message [String]
   # @return [SameFileContentException] a new instance of SameFileContentException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1980
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1991
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1985
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1996
 class Aws::CodeCommit::Errors::SamePathRequestException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::SamePathRequestException]
+  # @param message [String]
   # @return [SamePathRequestException] a new instance of SamePathRequestException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1990
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2001
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#223
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#224
 class Aws::CodeCommit::Errors::ServiceError < ::Aws::Errors::ServiceError; end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#1995
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2006
 class Aws::CodeCommit::Errors::SourceAndDestinationAreSameException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::SourceAndDestinationAreSameException]
+  # @param message [String]
   # @return [SourceAndDestinationAreSameException] a new instance of SourceAndDestinationAreSameException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2000
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2011
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2005
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2016
 class Aws::CodeCommit::Errors::SourceFileOrContentRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::SourceFileOrContentRequiredException]
+  # @param message [String]
   # @return [SourceFileOrContentRequiredException] a new instance of SourceFileOrContentRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2010
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2021
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2015
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2026
 class Aws::CodeCommit::Errors::TagKeysListRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TagKeysListRequiredException]
+  # @param message [String]
   # @return [TagKeysListRequiredException] a new instance of TagKeysListRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2020
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2031
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2025
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2036
 class Aws::CodeCommit::Errors::TagPolicyException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TagPolicyException]
+  # @param message [String]
   # @return [TagPolicyException] a new instance of TagPolicyException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2030
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2041
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2035
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2046
 class Aws::CodeCommit::Errors::TagsMapRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TagsMapRequiredException]
+  # @param message [String]
   # @return [TagsMapRequiredException] a new instance of TagsMapRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2040
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2051
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2045
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2056
 class Aws::CodeCommit::Errors::TargetRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TargetRequiredException]
+  # @param message [String]
   # @return [TargetRequiredException] a new instance of TargetRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2050
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2061
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2055
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2066
 class Aws::CodeCommit::Errors::TargetsRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TargetsRequiredException]
+  # @param message [String]
   # @return [TargetsRequiredException] a new instance of TargetsRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2060
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2071
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2065
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2076
 class Aws::CodeCommit::Errors::TipOfSourceReferenceIsDifferentException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TipOfSourceReferenceIsDifferentException]
+  # @param message [String]
   # @return [TipOfSourceReferenceIsDifferentException] a new instance of TipOfSourceReferenceIsDifferentException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2070
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2081
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2075
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2086
 class Aws::CodeCommit::Errors::TipsDivergenceExceededException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TipsDivergenceExceededException]
+  # @param message [String]
   # @return [TipsDivergenceExceededException] a new instance of TipsDivergenceExceededException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2080
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2091
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2085
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2096
 class Aws::CodeCommit::Errors::TitleRequiredException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TitleRequiredException]
+  # @param message [String]
   # @return [TitleRequiredException] a new instance of TitleRequiredException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2090
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2101
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2095
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2106
 class Aws::CodeCommit::Errors::TooManyTagsException < ::Aws::CodeCommit::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
-  # @param message [String]
   # @param data [Aws::CodeCommit::Types::TooManyTagsException]
+  # @param message [String]
   # @return [TooManyTagsException] a new instance of TooManyTagsException
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2100
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/errors.rb#2111
   def initialize(context, message, data = T.unsafe(nil)); end
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit.rb#55
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit.rb#57
 Aws::CodeCommit::GEM_VERSION = T.let(T.unsafe(nil), String)
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#12
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit.rb#47
 module Aws::CodeCommit::Plugins; end
 
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#13
 class Aws::CodeCommit::Plugins::Endpoints < ::Seahorse::Client::Plugin
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#222
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#72
   def add_handlers(handlers, _config); end
 end
 
 # @api private
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#26
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#27
 class Aws::CodeCommit::Plugins::Endpoints::Handler < ::Seahorse::Client::Handler
   # @api private
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#27
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#28
   def call(context); end
 
   private
 
   # @api private
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#47
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#60
   def apply_endpoint_headers(context, headers); end
 
   # @api private
   #
-  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#58
-  def parameters_for_operation(context); end
+  # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/plugins/endpoints.rb#48
+  def with_metrics(context, &block); end
 end
 
 # source://aws-sdk-codecommit//lib/aws-sdk-codecommit/resource.rb#12
@@ -10023,138 +9102,138 @@ Aws::CodeCommit::Types::ConflictResolution::SENSITIVE = T.let(T.unsafe(nil), Arr
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateApprovalRuleTemplateInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1362
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1361
 class Aws::CodeCommit::Types::CreateApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1363
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1362
 Aws::CodeCommit::Types::CreateApprovalRuleTemplateInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateApprovalRuleTemplateOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1374
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1373
 class Aws::CodeCommit::Types::CreateApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1375
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1374
 Aws::CodeCommit::Types::CreateApprovalRuleTemplateOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a create branch operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateBranchInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1399
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1398
 class Aws::CodeCommit::Types::CreateBranchInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1400
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1399
 Aws::CodeCommit::Types::CreateBranchInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateCommitInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1463
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1462
 class Aws::CodeCommit::Types::CreateCommitInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1464
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1463
 Aws::CodeCommit::Types::CreateCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateCommitOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1497
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1496
 class Aws::CodeCommit::Types::CreateCommitOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1498
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1497
 Aws::CodeCommit::Types::CreateCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestApprovalRuleInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1559
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1557
 class Aws::CodeCommit::Types::CreatePullRequestApprovalRuleInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1560
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1558
 Aws::CodeCommit::Types::CreatePullRequestApprovalRuleInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestApprovalRuleOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1571
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1569
 class Aws::CodeCommit::Types::CreatePullRequestApprovalRuleOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1572
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1570
 Aws::CodeCommit::Types::CreatePullRequestApprovalRuleOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1615
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1613
 class Aws::CodeCommit::Types::CreatePullRequestInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1616
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1614
 Aws::CodeCommit::Types::CreatePullRequestInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1627
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1625
 class Aws::CodeCommit::Types::CreatePullRequestOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1628
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1626
 Aws::CodeCommit::Types::CreatePullRequestOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a create repository operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateRepositoryInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1689
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1687
 class Aws::CodeCommit::Types::CreateRepositoryInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1690
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1688
 Aws::CodeCommit::Types::CreateRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a create repository operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateRepositoryOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1703
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1701
 class Aws::CodeCommit::Types::CreateRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1704
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1702
 Aws::CodeCommit::Types::CreateRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateUnreferencedMergeCommitInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1781
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1779
 class Aws::CodeCommit::Types::CreateUnreferencedMergeCommitInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1782
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1780
 Aws::CodeCommit::Types::CreateUnreferencedMergeCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateUnreferencedMergeCommitOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1799
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1797
 class Aws::CodeCommit::Types::CreateUnreferencedMergeCommitOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1800
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1798
 Aws::CodeCommit::Types::CreateUnreferencedMergeCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified branch is the default branch for the repository, and
@@ -10163,199 +9242,199 @@ Aws::CodeCommit::Types::CreateUnreferencedMergeCommitOutput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DefaultBranchCannotBeDeletedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1810
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1808
 class Aws::CodeCommit::Types::DefaultBranchCannotBeDeletedException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteApprovalRuleTemplateInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1819
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1817
 class Aws::CodeCommit::Types::DeleteApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1820
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1818
 Aws::CodeCommit::Types::DeleteApprovalRuleTemplateInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteApprovalRuleTemplateOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1833
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1831
 class Aws::CodeCommit::Types::DeleteApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1834
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1832
 Aws::CodeCommit::Types::DeleteApprovalRuleTemplateOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a delete branch operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteBranchInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1852
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1850
 class Aws::CodeCommit::Types::DeleteBranchInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1853
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1851
 Aws::CodeCommit::Types::DeleteBranchInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a delete branch operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteBranchOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1867
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1865
 class Aws::CodeCommit::Types::DeleteBranchOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1868
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1866
 Aws::CodeCommit::Types::DeleteBranchOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteCommentContentInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1880
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1878
 class Aws::CodeCommit::Types::DeleteCommentContentInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1881
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1879
 Aws::CodeCommit::Types::DeleteCommentContentInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteCommentContentOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1892
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1890
 class Aws::CodeCommit::Types::DeleteCommentContentOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1893
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1891
 Aws::CodeCommit::Types::DeleteCommentContentOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A file that is deleted as part of a commit.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFileEntry AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1907
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1905
 class Aws::CodeCommit::Types::DeleteFileEntry < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1908
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1906
 Aws::CodeCommit::Types::DeleteFileEntry::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFileInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1972
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1970
 class Aws::CodeCommit::Types::DeleteFileInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1973
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#1971
 Aws::CodeCommit::Types::DeleteFileInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFileOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2002
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2000
 class Aws::CodeCommit::Types::DeleteFileOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2003
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2001
 Aws::CodeCommit::Types::DeleteFileOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeletePullRequestApprovalRuleInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2020
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2018
 class Aws::CodeCommit::Types::DeletePullRequestApprovalRuleInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2021
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2019
 Aws::CodeCommit::Types::DeletePullRequestApprovalRuleInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeletePullRequestApprovalRuleOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2037
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2035
 class Aws::CodeCommit::Types::DeletePullRequestApprovalRuleOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2038
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2036
 Aws::CodeCommit::Types::DeletePullRequestApprovalRuleOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a delete repository operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteRepositoryInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2051
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2049
 class Aws::CodeCommit::Types::DeleteRepositoryInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2052
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2050
 Aws::CodeCommit::Types::DeleteRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a delete repository operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteRepositoryOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2065
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2063
 class Aws::CodeCommit::Types::DeleteRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2066
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2064
 Aws::CodeCommit::Types::DeleteRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribeMergeConflictsInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2128
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2126
 class Aws::CodeCommit::Types::DescribeMergeConflictsInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2129
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2127
 Aws::CodeCommit::Types::DescribeMergeConflictsInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribeMergeConflictsOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2168
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2166
 class Aws::CodeCommit::Types::DescribeMergeConflictsOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2169
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2167
 Aws::CodeCommit::Types::DescribeMergeConflictsOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribePullRequestEventsInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2207
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2205
 class Aws::CodeCommit::Types::DescribePullRequestEventsInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2208
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2206
 Aws::CodeCommit::Types::DescribePullRequestEventsInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribePullRequestEventsOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2225
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2223
 class Aws::CodeCommit::Types::DescribePullRequestEventsOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2226
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2224
 Aws::CodeCommit::Types::DescribePullRequestEventsOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a set of differences for a commit specifier.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Difference AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2252
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2250
 class Aws::CodeCommit::Types::Difference < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2253
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2251
 Aws::CodeCommit::Types::Difference::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A file cannot be added to the repository because the specified path
@@ -10365,45 +9444,45 @@ Aws::CodeCommit::Types::Difference::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DirectoryNameConflictsWithFileNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2264
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2262
 class Aws::CodeCommit::Types::DirectoryNameConflictsWithFileNameException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DisassociateApprovalRuleTemplateFromRepositoryInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2280
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2278
 class Aws::CodeCommit::Types::DisassociateApprovalRuleTemplateFromRepositoryInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2281
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2279
 Aws::CodeCommit::Types::DisassociateApprovalRuleTemplateFromRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An encryption integrity check failed.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionIntegrityChecksFailedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2289
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2287
 class Aws::CodeCommit::Types::EncryptionIntegrityChecksFailedException < ::Aws::EmptyStructure; end
 
 # An encryption key could not be accessed.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyAccessDeniedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2295
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2293
 class Aws::CodeCommit::Types::EncryptionKeyAccessDeniedException < ::Aws::EmptyStructure; end
 
 # The encryption key is disabled.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyDisabledException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2301
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2299
 class Aws::CodeCommit::Types::EncryptionKeyDisabledException < ::Aws::EmptyStructure; end
 
 # The Key Management Service encryption key is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyInvalidIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2307
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2305
 class Aws::CodeCommit::Types::EncryptionKeyInvalidIdException < ::Aws::EmptyStructure; end
 
 # A KMS encryption key was used to try and encrypt or decrypt a
@@ -10412,48 +9491,48 @@ class Aws::CodeCommit::Types::EncryptionKeyInvalidIdException < ::Aws::EmptyStru
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyInvalidUsageException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2315
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2313
 class Aws::CodeCommit::Types::EncryptionKeyInvalidUsageException < ::Aws::EmptyStructure; end
 
 # No encryption key was found.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyNotFoundException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2321
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2319
 class Aws::CodeCommit::Types::EncryptionKeyNotFoundException < ::Aws::EmptyStructure; end
 
 # A KMS encryption key ID is required but was not specified.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2327
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2325
 class Aws::CodeCommit::Types::EncryptionKeyRequiredException < ::Aws::EmptyStructure; end
 
 # The encryption key is not available.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EncryptionKeyUnavailableException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2333
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2331
 class Aws::CodeCommit::Types::EncryptionKeyUnavailableException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EvaluatePullRequestApprovalRulesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2348
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2346
 class Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2349
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2347
 Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EvaluatePullRequestApprovalRulesOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2364
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2362
 class Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2365
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2363
 Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about the approval rules applied to a pull request
@@ -10461,24 +9540,24 @@ Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesOutput::SENSITIVE = T.le
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Evaluation AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2396
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2394
 class Aws::CodeCommit::Types::Evaluation < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2397
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2395
 Aws::CodeCommit::Types::Evaluation::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a file in a repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/File AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2427
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2425
 class Aws::CodeCommit::Types::File < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2428
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2426
 Aws::CodeCommit::Types::File::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The commit cannot be created because both a source file and file
@@ -10488,7 +9567,7 @@ Aws::CodeCommit::Types::File::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileContentAndSourceFileSpecifiedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2439
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2437
 class Aws::CodeCommit::Types::FileContentAndSourceFileSpecifiedException < ::Aws::EmptyStructure; end
 
 # The file cannot be added because it is empty. Empty files cannot be
@@ -10496,7 +9575,7 @@ class Aws::CodeCommit::Types::FileContentAndSourceFileSpecifiedException < ::Aws
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileContentRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2446
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2444
 class Aws::CodeCommit::Types::FileContentRequiredException < ::Aws::EmptyStructure; end
 
 # The file cannot be added because it is too large. The maximum file
@@ -10505,7 +9584,7 @@ class Aws::CodeCommit::Types::FileContentRequiredException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileContentSizeLimitExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2454
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2452
 class Aws::CodeCommit::Types::FileContentSizeLimitExceededException < ::Aws::EmptyStructure; end
 
 # The specified file does not exist. Verify that you have used the
@@ -10513,7 +9592,7 @@ class Aws::CodeCommit::Types::FileContentSizeLimitExceededException < ::Aws::Emp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2461
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2459
 class Aws::CodeCommit::Types::FileDoesNotExistException < ::Aws::EmptyStructure; end
 
 # The commit cannot be created because no files have been specified as
@@ -10521,19 +9600,19 @@ class Aws::CodeCommit::Types::FileDoesNotExistException < ::Aws::EmptyStructure;
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileEntryRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2468
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2466
 class Aws::CodeCommit::Types::FileEntryRequiredException < ::Aws::EmptyStructure; end
 
 # A file to be added, updated, or deleted as part of a commit.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2491
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2489
 class Aws::CodeCommit::Types::FileMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2492
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2490
 Aws::CodeCommit::Types::FileMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The commit cannot be created because no file mode has been specified.
@@ -10541,19 +9620,19 @@ Aws::CodeCommit::Types::FileMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileModeRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2501
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2499
 class Aws::CodeCommit::Types::FileModeRequiredException < ::Aws::EmptyStructure; end
 
 # Information about file modes in a merge or pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileModes AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2523
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2521
 class Aws::CodeCommit::Types::FileModes < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2524
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2522
 Aws::CodeCommit::Types::FileModes::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A file cannot be added to the repository because the specified file
@@ -10563,7 +9642,7 @@ Aws::CodeCommit::Types::FileModes::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileNameConflictsWithDirectoryNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2535
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2533
 class Aws::CodeCommit::Types::FileNameConflictsWithDirectoryNameException < ::Aws::EmptyStructure; end
 
 # The commit cannot be created because a specified file path points to a
@@ -10572,19 +9651,19 @@ class Aws::CodeCommit::Types::FileNameConflictsWithDirectoryNameException < ::Aw
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FilePathConflictsWithSubmodulePathException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2543
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2541
 class Aws::CodeCommit::Types::FilePathConflictsWithSubmodulePathException < ::Aws::EmptyStructure; end
 
 # Information about the size of files in a merge or pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileSizes AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2564
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2562
 class Aws::CodeCommit::Types::FileSizes < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2565
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2563
 Aws::CodeCommit::Types::FileSizes::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified file exceeds the file size limit for CodeCommit. For
@@ -10597,31 +9676,31 @@ Aws::CodeCommit::Types::FileSizes::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileTooLargeException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2579
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2577
 class Aws::CodeCommit::Types::FileTooLargeException < ::Aws::EmptyStructure; end
 
 # Information about a version of a file.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileVersion AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2610
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2608
 class Aws::CodeCommit::Types::FileVersion < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2611
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2609
 Aws::CodeCommit::Types::FileVersion::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a folder in a repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Folder AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2636
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2634
 class Aws::CodeCommit::Types::Folder < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2637
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2635
 Aws::CodeCommit::Types::Folder::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The commit cannot be created because at least one of the overall
@@ -10631,7 +9710,7 @@ Aws::CodeCommit::Types::Folder::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FolderContentSizeLimitExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2648
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2646
 class Aws::CodeCommit::Types::FolderContentSizeLimitExceededException < ::Aws::EmptyStructure; end
 
 # The specified folder does not exist. Either the folder name is not
@@ -10639,407 +9718,407 @@ class Aws::CodeCommit::Types::FolderContentSizeLimitExceededException < ::Aws::E
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FolderDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2655
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2653
 class Aws::CodeCommit::Types::FolderDoesNotExistException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetApprovalRuleTemplateInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2665
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2663
 class Aws::CodeCommit::Types::GetApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2666
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2664
 Aws::CodeCommit::Types::GetApprovalRuleTemplateInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetApprovalRuleTemplateOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2677
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2675
 class Aws::CodeCommit::Types::GetApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2678
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2676
 Aws::CodeCommit::Types::GetApprovalRuleTemplateOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a get blob operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBlobInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2696
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2694
 class Aws::CodeCommit::Types::GetBlobInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2697
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2695
 Aws::CodeCommit::Types::GetBlobInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a get blob operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBlobOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2710
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2708
 class Aws::CodeCommit::Types::GetBlobOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2711
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2709
 Aws::CodeCommit::Types::GetBlobOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a get branch operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBranchInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2730
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2728
 class Aws::CodeCommit::Types::GetBranchInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2731
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2729
 Aws::CodeCommit::Types::GetBranchInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a get branch operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBranchOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2744
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2742
 class Aws::CodeCommit::Types::GetBranchOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2745
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2743
 Aws::CodeCommit::Types::GetBranchOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2757
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2755
 class Aws::CodeCommit::Types::GetCommentInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2758
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2756
 Aws::CodeCommit::Types::GetCommentInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2769
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2767
 class Aws::CodeCommit::Types::GetCommentOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2770
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2768
 Aws::CodeCommit::Types::GetCommentOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentReactionsInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2801
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2799
 class Aws::CodeCommit::Types::GetCommentReactionsInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2802
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2800
 Aws::CodeCommit::Types::GetCommentReactionsInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentReactionsOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2819
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2817
 class Aws::CodeCommit::Types::GetCommentReactionsOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2820
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2818
 Aws::CodeCommit::Types::GetCommentReactionsOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForComparedCommitInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2856
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2854
 class Aws::CodeCommit::Types::GetCommentsForComparedCommitInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2857
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2855
 Aws::CodeCommit::Types::GetCommentsForComparedCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForComparedCommitOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2874
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2872
 class Aws::CodeCommit::Types::GetCommentsForComparedCommitOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2875
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2873
 Aws::CodeCommit::Types::GetCommentsForComparedCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForPullRequestInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2923
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2921
 class Aws::CodeCommit::Types::GetCommentsForPullRequestInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2924
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2922
 Aws::CodeCommit::Types::GetCommentsForPullRequestInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForPullRequestOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2941
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2939
 class Aws::CodeCommit::Types::GetCommentsForPullRequestOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2942
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2940
 Aws::CodeCommit::Types::GetCommentsForPullRequestOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a get commit operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommitInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2960
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2958
 class Aws::CodeCommit::Types::GetCommitInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2961
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2959
 Aws::CodeCommit::Types::GetCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a get commit operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommitOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2975
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2973
 class Aws::CodeCommit::Types::GetCommitOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2976
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#2974
 Aws::CodeCommit::Types::GetCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetDifferencesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3030
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3028
 class Aws::CodeCommit::Types::GetDifferencesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3031
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3029
 Aws::CodeCommit::Types::GetDifferencesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetDifferencesOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3050
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3048
 class Aws::CodeCommit::Types::GetDifferencesOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3051
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3049
 Aws::CodeCommit::Types::GetDifferencesOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFileInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3077
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3075
 class Aws::CodeCommit::Types::GetFileInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3078
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3076
 Aws::CodeCommit::Types::GetFileInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFileOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3124
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3122
 class Aws::CodeCommit::Types::GetFileOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3125
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3123
 Aws::CodeCommit::Types::GetFileOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFolderInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3153
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3151
 class Aws::CodeCommit::Types::GetFolderInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3154
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3152
 Aws::CodeCommit::Types::GetFolderInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFolderOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3198
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3196
 class Aws::CodeCommit::Types::GetFolderOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3199
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3197
 Aws::CodeCommit::Types::GetFolderOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeCommitInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3240
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3238
 class Aws::CodeCommit::Types::GetMergeCommitInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3241
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3239
 Aws::CodeCommit::Types::GetMergeCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeCommitOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3271
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3269
 class Aws::CodeCommit::Types::GetMergeCommitOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3272
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3270
 Aws::CodeCommit::Types::GetMergeCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeConflictsInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3328
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3326
 class Aws::CodeCommit::Types::GetMergeConflictsInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3329
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3327
 Aws::CodeCommit::Types::GetMergeConflictsInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeConflictsOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3370
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3368
 class Aws::CodeCommit::Types::GetMergeConflictsOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3371
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3369
 Aws::CodeCommit::Types::GetMergeConflictsOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeOptionsInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3412
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3410
 class Aws::CodeCommit::Types::GetMergeOptionsInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3413
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3411
 Aws::CodeCommit::Types::GetMergeOptionsInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeOptionsOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3441
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3439
 class Aws::CodeCommit::Types::GetMergeOptionsOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3442
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3440
 Aws::CodeCommit::Types::GetMergeOptionsOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestApprovalStatesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3458
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3456
 class Aws::CodeCommit::Types::GetPullRequestApprovalStatesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3459
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3457
 Aws::CodeCommit::Types::GetPullRequestApprovalStatesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestApprovalStatesOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3470
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3468
 class Aws::CodeCommit::Types::GetPullRequestApprovalStatesOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3471
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3469
 Aws::CodeCommit::Types::GetPullRequestApprovalStatesOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3483
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3481
 class Aws::CodeCommit::Types::GetPullRequestInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3484
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3482
 Aws::CodeCommit::Types::GetPullRequestInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3495
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3493
 class Aws::CodeCommit::Types::GetPullRequestOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3496
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3494
 Aws::CodeCommit::Types::GetPullRequestOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOverrideStateInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3514
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3512
 class Aws::CodeCommit::Types::GetPullRequestOverrideStateInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3515
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3513
 Aws::CodeCommit::Types::GetPullRequestOverrideStateInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOverrideStateOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3534
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3532
 class Aws::CodeCommit::Types::GetPullRequestOverrideStateOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3535
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3533
 Aws::CodeCommit::Types::GetPullRequestOverrideStateOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a get repository operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3548
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3546
 class Aws::CodeCommit::Types::GetRepositoryInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3549
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3547
 Aws::CodeCommit::Types::GetRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a get repository operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3562
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3560
 class Aws::CodeCommit::Types::GetRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3563
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3561
 Aws::CodeCommit::Types::GetRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a get repository triggers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryTriggersInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3576
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3574
 class Aws::CodeCommit::Types::GetRepositoryTriggersInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3577
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3575
 Aws::CodeCommit::Types::GetRepositoryTriggersInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a get repository triggers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryTriggersOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3595
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3593
 class Aws::CodeCommit::Types::GetRepositoryTriggersOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3596
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3594
 Aws::CodeCommit::Types::GetRepositoryTriggersOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The client request token is not valid. Either the token is not in a
@@ -11048,7 +10127,7 @@ Aws::CodeCommit::Types::GetRepositoryTriggersOutput::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/IdempotencyParameterMismatchException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3606
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3604
 class Aws::CodeCommit::Types::IdempotencyParameterMismatchException < ::Aws::EmptyStructure; end
 
 # The Amazon Resource Name (ARN) is not valid. Make sure that you have
@@ -11057,28 +10136,28 @@ class Aws::CodeCommit::Types::IdempotencyParameterMismatchException < ::Aws::Emp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidActorArnException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3614
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3612
 class Aws::CodeCommit::Types::InvalidActorArnException < ::Aws::EmptyStructure; end
 
 # The content for the approval rule is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidApprovalRuleContentException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3620
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3618
 class Aws::CodeCommit::Types::InvalidApprovalRuleContentException < ::Aws::EmptyStructure; end
 
 # The name for the approval rule is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidApprovalRuleNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3626
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3624
 class Aws::CodeCommit::Types::InvalidApprovalRuleNameException < ::Aws::EmptyStructure; end
 
 # The content of the approval rule template is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidApprovalRuleTemplateContentException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3632
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3630
 class Aws::CodeCommit::Types::InvalidApprovalRuleTemplateContentException < ::Aws::EmptyStructure; end
 
 # The description for the approval rule template is not valid because it
@@ -11092,7 +10171,7 @@ class Aws::CodeCommit::Types::InvalidApprovalRuleTemplateContentException < ::Aw
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidApprovalRuleTemplateDescriptionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3645
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3643
 class Aws::CodeCommit::Types::InvalidApprovalRuleTemplateDescriptionException < ::Aws::EmptyStructure; end
 
 # The name of the approval rule template is not valid. Template names
@@ -11106,7 +10185,7 @@ class Aws::CodeCommit::Types::InvalidApprovalRuleTemplateDescriptionException < 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidApprovalRuleTemplateNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3658
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3656
 class Aws::CodeCommit::Types::InvalidApprovalRuleTemplateNameException < ::Aws::EmptyStructure; end
 
 # The state for the approval is not valid. Valid values include APPROVE
@@ -11114,7 +10193,7 @@ class Aws::CodeCommit::Types::InvalidApprovalRuleTemplateNameException < ::Aws::
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidApprovalStateException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3665
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3663
 class Aws::CodeCommit::Types::InvalidApprovalStateException < ::Aws::EmptyStructure; end
 
 # The Amazon Resource Name (ARN) is not valid. Make sure that you have
@@ -11123,28 +10202,28 @@ class Aws::CodeCommit::Types::InvalidApprovalStateException < ::Aws::EmptyStruct
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidAuthorArnException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3673
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3671
 class Aws::CodeCommit::Types::InvalidAuthorArnException < ::Aws::EmptyStructure; end
 
 # The specified blob is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidBlobIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3679
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3677
 class Aws::CodeCommit::Types::InvalidBlobIdException < ::Aws::EmptyStructure; end
 
 # The specified reference name is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidBranchNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3685
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3683
 class Aws::CodeCommit::Types::InvalidBranchNameException < ::Aws::EmptyStructure; end
 
 # The client request token is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidClientRequestTokenException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3691
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3689
 class Aws::CodeCommit::Types::InvalidClientRequestTokenException < ::Aws::EmptyStructure; end
 
 # The comment ID is not in a valid format. Make sure that you have
@@ -11152,56 +10231,56 @@ class Aws::CodeCommit::Types::InvalidClientRequestTokenException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidCommentIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3698
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3696
 class Aws::CodeCommit::Types::InvalidCommentIdException < ::Aws::EmptyStructure; end
 
 # The specified commit is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidCommitException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3704
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3702
 class Aws::CodeCommit::Types::InvalidCommitException < ::Aws::EmptyStructure; end
 
 # The specified commit ID is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidCommitIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3710
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3708
 class Aws::CodeCommit::Types::InvalidCommitIdException < ::Aws::EmptyStructure; end
 
 # The specified conflict detail level is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidConflictDetailLevelException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3716
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3714
 class Aws::CodeCommit::Types::InvalidConflictDetailLevelException < ::Aws::EmptyStructure; end
 
 # The specified conflict resolution list is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidConflictResolutionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3722
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3720
 class Aws::CodeCommit::Types::InvalidConflictResolutionException < ::Aws::EmptyStructure; end
 
 # The specified conflict resolution strategy is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidConflictResolutionStrategyException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3728
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3726
 class Aws::CodeCommit::Types::InvalidConflictResolutionStrategyException < ::Aws::EmptyStructure; end
 
 # The specified continuation token is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidContinuationTokenException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3734
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3732
 class Aws::CodeCommit::Types::InvalidContinuationTokenException < ::Aws::EmptyStructure; end
 
 # The specified deletion parameter is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidDeletionParameterException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3740
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3738
 class Aws::CodeCommit::Types::InvalidDeletionParameterException < ::Aws::EmptyStructure; end
 
 # The pull request description is not valid. Descriptions cannot be more
@@ -11209,7 +10288,7 @@ class Aws::CodeCommit::Types::InvalidDeletionParameterException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidDescriptionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3747
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3745
 class Aws::CodeCommit::Types::InvalidDescriptionException < ::Aws::EmptyStructure; end
 
 # The destination commit specifier is not valid. You must provide a
@@ -11217,7 +10296,7 @@ class Aws::CodeCommit::Types::InvalidDescriptionException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidDestinationCommitSpecifierException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3754
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3752
 class Aws::CodeCommit::Types::InvalidDestinationCommitSpecifierException < ::Aws::EmptyStructure; end
 
 # The specified email address either contains one or more characters
@@ -11226,7 +10305,7 @@ class Aws::CodeCommit::Types::InvalidDestinationCommitSpecifierException < ::Aws
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidEmailException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3762
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3760
 class Aws::CodeCommit::Types::InvalidEmailException < ::Aws::EmptyStructure; end
 
 # The location of the file is not valid. Make sure that you include the
@@ -11234,7 +10313,7 @@ class Aws::CodeCommit::Types::InvalidEmailException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidFileLocationException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3769
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3767
 class Aws::CodeCommit::Types::InvalidFileLocationException < ::Aws::EmptyStructure; end
 
 # The specified file mode permission is not valid. For a list of valid
@@ -11242,7 +10321,7 @@ class Aws::CodeCommit::Types::InvalidFileLocationException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidFileModeException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3776
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3774
 class Aws::CodeCommit::Types::InvalidFileModeException < ::Aws::EmptyStructure; end
 
 # The position is not valid. Make sure that the line number exists in
@@ -11250,7 +10329,7 @@ class Aws::CodeCommit::Types::InvalidFileModeException < ::Aws::EmptyStructure; 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidFilePositionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3783
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3781
 class Aws::CodeCommit::Types::InvalidFilePositionException < ::Aws::EmptyStructure; end
 
 # The specified value for the number of conflict files to return is not
@@ -11258,7 +10337,7 @@ class Aws::CodeCommit::Types::InvalidFilePositionException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidMaxConflictFilesException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3790
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3788
 class Aws::CodeCommit::Types::InvalidMaxConflictFilesException < ::Aws::EmptyStructure; end
 
 # The specified value for the number of merge hunks to return is not
@@ -11266,14 +10345,14 @@ class Aws::CodeCommit::Types::InvalidMaxConflictFilesException < ::Aws::EmptyStr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidMaxMergeHunksException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3797
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3795
 class Aws::CodeCommit::Types::InvalidMaxMergeHunksException < ::Aws::EmptyStructure; end
 
 # The specified number of maximum results is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidMaxResultsException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3803
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3801
 class Aws::CodeCommit::Types::InvalidMaxResultsException < ::Aws::EmptyStructure; end
 
 # The specified merge option is not valid for this operation. Not all
@@ -11281,14 +10360,14 @@ class Aws::CodeCommit::Types::InvalidMaxResultsException < ::Aws::EmptyStructure
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidMergeOptionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3810
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3808
 class Aws::CodeCommit::Types::InvalidMergeOptionException < ::Aws::EmptyStructure; end
 
 # The specified sort order is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidOrderException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3816
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3814
 class Aws::CodeCommit::Types::InvalidOrderException < ::Aws::EmptyStructure; end
 
 # The override status is not valid. Valid statuses are OVERRIDE and
@@ -11296,7 +10375,7 @@ class Aws::CodeCommit::Types::InvalidOrderException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidOverrideStatusException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3823
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3821
 class Aws::CodeCommit::Types::InvalidOverrideStatusException < ::Aws::EmptyStructure; end
 
 # The parent commit ID is not valid. The commit ID cannot be empty, and
@@ -11305,21 +10384,21 @@ class Aws::CodeCommit::Types::InvalidOverrideStatusException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidParentCommitIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3831
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3829
 class Aws::CodeCommit::Types::InvalidParentCommitIdException < ::Aws::EmptyStructure; end
 
 # The specified path is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidPathException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3837
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3835
 class Aws::CodeCommit::Types::InvalidPathException < ::Aws::EmptyStructure; end
 
 # The pull request event type is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidPullRequestEventTypeException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3843
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3841
 class Aws::CodeCommit::Types::InvalidPullRequestEventTypeException < ::Aws::EmptyStructure; end
 
 # The pull request ID is not valid. Make sure that you have provided the
@@ -11328,7 +10407,7 @@ class Aws::CodeCommit::Types::InvalidPullRequestEventTypeException < ::Aws::Empt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidPullRequestIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3851
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3849
 class Aws::CodeCommit::Types::InvalidPullRequestIdException < ::Aws::EmptyStructure; end
 
 # The pull request status is not valid. The only valid values are `OPEN`
@@ -11336,7 +10415,7 @@ class Aws::CodeCommit::Types::InvalidPullRequestIdException < ::Aws::EmptyStruct
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidPullRequestStatusException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3858
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3856
 class Aws::CodeCommit::Types::InvalidPullRequestStatusException < ::Aws::EmptyStructure; end
 
 # The pull request status update is not valid. The only valid update is
@@ -11344,14 +10423,14 @@ class Aws::CodeCommit::Types::InvalidPullRequestStatusException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidPullRequestStatusUpdateException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3865
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3863
 class Aws::CodeCommit::Types::InvalidPullRequestStatusUpdateException < ::Aws::EmptyStructure; end
 
 # The Amazon Resource Name (ARN) of the user or identity is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidReactionUserArnException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3871
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3869
 class Aws::CodeCommit::Types::InvalidReactionUserArnException < ::Aws::EmptyStructure; end
 
 # The value of the reaction is not valid. For more information, see the
@@ -11363,7 +10442,7 @@ class Aws::CodeCommit::Types::InvalidReactionUserArnException < ::Aws::EmptyStru
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidReactionValueException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3882
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3880
 class Aws::CodeCommit::Types::InvalidReactionValueException < ::Aws::EmptyStructure; end
 
 # The specified reference name format is not valid. Reference names must
@@ -11377,7 +10456,7 @@ class Aws::CodeCommit::Types::InvalidReactionValueException < ::Aws::EmptyStruct
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidReferenceNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3895
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3893
 class Aws::CodeCommit::Types::InvalidReferenceNameException < ::Aws::EmptyStructure; end
 
 # Either the enum is not in a valid format, or the specified file
@@ -11385,7 +10464,7 @@ class Aws::CodeCommit::Types::InvalidReferenceNameException < ::Aws::EmptyStruct
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRelativeFileVersionEnumException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3902
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3900
 class Aws::CodeCommit::Types::InvalidRelativeFileVersionEnumException < ::Aws::EmptyStructure; end
 
 # Automerge was specified for resolving the conflict, but the
@@ -11393,7 +10472,7 @@ class Aws::CodeCommit::Types::InvalidRelativeFileVersionEnumException < ::Aws::E
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidReplacementContentException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3909
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3907
 class Aws::CodeCommit::Types::InvalidReplacementContentException < ::Aws::EmptyStructure; end
 
 # Automerge was specified for resolving the conflict, but the specified
@@ -11401,14 +10480,14 @@ class Aws::CodeCommit::Types::InvalidReplacementContentException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidReplacementTypeException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3916
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3914
 class Aws::CodeCommit::Types::InvalidReplacementTypeException < ::Aws::EmptyStructure; end
 
 # The specified repository description is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryDescriptionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3922
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3920
 class Aws::CodeCommit::Types::InvalidRepositoryDescriptionException < ::Aws::EmptyStructure; end
 
 # A specified repository name is not valid.
@@ -11421,21 +10500,21 @@ class Aws::CodeCommit::Types::InvalidRepositoryDescriptionException < ::Aws::Emp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3934
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3932
 class Aws::CodeCommit::Types::InvalidRepositoryNameException < ::Aws::EmptyStructure; end
 
 # One or more branch names specified for the trigger is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryTriggerBranchNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3940
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3938
 class Aws::CodeCommit::Types::InvalidRepositoryTriggerBranchNameException < ::Aws::EmptyStructure; end
 
 # The custom data provided for the trigger is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryTriggerCustomDataException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3946
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3944
 class Aws::CodeCommit::Types::InvalidRepositoryTriggerCustomDataException < ::Aws::EmptyStructure; end
 
 # The Amazon Resource Name (ARN) for the trigger is not valid for the
@@ -11444,7 +10523,7 @@ class Aws::CodeCommit::Types::InvalidRepositoryTriggerCustomDataException < ::Aw
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryTriggerDestinationArnException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3954
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3952
 class Aws::CodeCommit::Types::InvalidRepositoryTriggerDestinationArnException < ::Aws::EmptyStructure; end
 
 # One or more events specified for the trigger is not valid. Check to
@@ -11453,14 +10532,14 @@ class Aws::CodeCommit::Types::InvalidRepositoryTriggerDestinationArnException < 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryTriggerEventsException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3962
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3960
 class Aws::CodeCommit::Types::InvalidRepositoryTriggerEventsException < ::Aws::EmptyStructure; end
 
 # The name of the trigger is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryTriggerNameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3968
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3966
 class Aws::CodeCommit::Types::InvalidRepositoryTriggerNameException < ::Aws::EmptyStructure; end
 
 # The Amazon Web Services Region for the trigger target does not match
@@ -11470,7 +10549,7 @@ class Aws::CodeCommit::Types::InvalidRepositoryTriggerNameException < ::Aws::Emp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRepositoryTriggerRegionException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3977
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3975
 class Aws::CodeCommit::Types::InvalidRepositoryTriggerRegionException < ::Aws::EmptyStructure; end
 
 # The value for the resource ARN is not valid. For more information
@@ -11483,7 +10562,7 @@ class Aws::CodeCommit::Types::InvalidRepositoryTriggerRegionException < ::Aws::E
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidResourceArnException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3989
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3987
 class Aws::CodeCommit::Types::InvalidResourceArnException < ::Aws::EmptyStructure; end
 
 # The revision ID is not valid. Use GetPullRequest to determine the
@@ -11491,21 +10570,21 @@ class Aws::CodeCommit::Types::InvalidResourceArnException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRevisionIdException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3996
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#3994
 class Aws::CodeCommit::Types::InvalidRevisionIdException < ::Aws::EmptyStructure; end
 
 # The SHA-256 hash signature for the rule content is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidRuleContentSha256Exception AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4002
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4000
 class Aws::CodeCommit::Types::InvalidRuleContentSha256Exception < ::Aws::EmptyStructure; end
 
 # The specified sort by value is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidSortByException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4008
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4006
 class Aws::CodeCommit::Types::InvalidSortByException < ::Aws::EmptyStructure; end
 
 # The source commit specifier is not valid. You must provide a valid
@@ -11513,7 +10592,7 @@ class Aws::CodeCommit::Types::InvalidSortByException < ::Aws::EmptyStructure; en
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidSourceCommitSpecifierException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4015
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4013
 class Aws::CodeCommit::Types::InvalidSourceCommitSpecifierException < ::Aws::EmptyStructure; end
 
 # The specified tag is not valid. Key names cannot be prefixed with
@@ -11521,28 +10600,28 @@ class Aws::CodeCommit::Types::InvalidSourceCommitSpecifierException < ::Aws::Emp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidSystemTagUsageException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4022
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4020
 class Aws::CodeCommit::Types::InvalidSystemTagUsageException < ::Aws::EmptyStructure; end
 
 # The list of tags is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidTagKeysListException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4028
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4026
 class Aws::CodeCommit::Types::InvalidTagKeysListException < ::Aws::EmptyStructure; end
 
 # The map of tags is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidTagsMapException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4034
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4032
 class Aws::CodeCommit::Types::InvalidTagsMapException < ::Aws::EmptyStructure; end
 
 # The specified target branch is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidTargetBranchException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4040
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4038
 class Aws::CodeCommit::Types::InvalidTargetBranchException < ::Aws::EmptyStructure; end
 
 # The target for the pull request is not valid. A target must contain
@@ -11551,7 +10630,7 @@ class Aws::CodeCommit::Types::InvalidTargetBranchException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidTargetException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4048
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4046
 class Aws::CodeCommit::Types::InvalidTargetException < ::Aws::EmptyStructure; end
 
 # The targets for the pull request is not valid or not in a valid
@@ -11561,7 +10640,7 @@ class Aws::CodeCommit::Types::InvalidTargetException < ::Aws::EmptyStructure; en
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidTargetsException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4057
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4055
 class Aws::CodeCommit::Types::InvalidTargetsException < ::Aws::EmptyStructure; end
 
 # The title of the pull request is not valid. Pull request titles cannot
@@ -11569,7 +10648,7 @@ class Aws::CodeCommit::Types::InvalidTargetsException < ::Aws::EmptyStructure; e
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/InvalidTitleException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4064
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4062
 class Aws::CodeCommit::Types::InvalidTitleException < ::Aws::EmptyStructure; end
 
 # Information about whether a file is binary or textual in a merge or
@@ -11577,180 +10656,180 @@ class Aws::CodeCommit::Types::InvalidTitleException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/IsBinaryFile AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4089
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4087
 class Aws::CodeCommit::Types::IsBinaryFile < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4090
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4088
 Aws::CodeCommit::Types::IsBinaryFile::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListApprovalRuleTemplatesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4108
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4106
 class Aws::CodeCommit::Types::ListApprovalRuleTemplatesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4109
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4107
 Aws::CodeCommit::Types::ListApprovalRuleTemplatesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListApprovalRuleTemplatesOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4127
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4125
 class Aws::CodeCommit::Types::ListApprovalRuleTemplatesOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4128
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4126
 Aws::CodeCommit::Types::ListApprovalRuleTemplatesOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListAssociatedApprovalRuleTemplatesForRepositoryInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4152
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4150
 class Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4153
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4151
 Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListAssociatedApprovalRuleTemplatesForRepositoryOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4171
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4169
 class Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4172
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4170
 Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a list branches operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListBranchesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4190
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4188
 class Aws::CodeCommit::Types::ListBranchesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4191
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4189
 Aws::CodeCommit::Types::ListBranchesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a list branches operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListBranchesOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4209
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4207
 class Aws::CodeCommit::Types::ListBranchesOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4210
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4208
 Aws::CodeCommit::Types::ListBranchesOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListFileCommitHistoryRequest AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4246
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4244
 class Aws::CodeCommit::Types::ListFileCommitHistoryRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4247
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4245
 Aws::CodeCommit::Types::ListFileCommitHistoryRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListFileCommitHistoryResponse AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4266
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4264
 class Aws::CodeCommit::Types::ListFileCommitHistoryResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4267
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4265
 Aws::CodeCommit::Types::ListFileCommitHistoryResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListPullRequestsInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4303
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4301
 class Aws::CodeCommit::Types::ListPullRequestsInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4304
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4302
 Aws::CodeCommit::Types::ListPullRequestsInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListPullRequestsOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4321
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4319
 class Aws::CodeCommit::Types::ListPullRequestsOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4322
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4320
 Aws::CodeCommit::Types::ListPullRequestsOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesForApprovalRuleTemplateInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4346
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4344
 class Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4347
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4345
 Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesForApprovalRuleTemplateOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4365
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4363
 class Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4366
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4364
 Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a list repositories operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4394
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4392
 class Aws::CodeCommit::Types::ListRepositoriesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4395
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4393
 Aws::CodeCommit::Types::ListRepositoriesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a list repositories operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4416
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4414
 class Aws::CodeCommit::Types::ListRepositoriesOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4417
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4415
 Aws::CodeCommit::Types::ListRepositoriesOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListTagsForResourceInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4435
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4433
 class Aws::CodeCommit::Types::ListTagsForResourceInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4436
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4434
 Aws::CodeCommit::Types::ListTagsForResourceInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListTagsForResourceOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4454
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4452
 class Aws::CodeCommit::Types::ListTagsForResourceOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4455
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4453
 Aws::CodeCommit::Types::ListTagsForResourceOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about the location of a change or comment in the
@@ -11758,12 +10837,12 @@ Aws::CodeCommit::Types::ListTagsForResourceOutput::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Location AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4481
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4479
 class Aws::CodeCommit::Types::Location < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4482
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4480
 Aws::CodeCommit::Types::Location::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The pull request cannot be merged automatically into the destination
@@ -11772,28 +10851,28 @@ Aws::CodeCommit::Types::Location::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ManualMergeRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4492
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4490
 class Aws::CodeCommit::Types::ManualMergeRequiredException < ::Aws::EmptyStructure; end
 
 # The number of branches for the trigger was exceeded.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumBranchesExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4498
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4496
 class Aws::CodeCommit::Types::MaximumBranchesExceededException < ::Aws::EmptyStructure; end
 
 # The number of allowed conflict resolution entries was exceeded.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumConflictResolutionEntriesExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4504
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4502
 class Aws::CodeCommit::Types::MaximumConflictResolutionEntriesExceededException < ::Aws::EmptyStructure; end
 
 # The number of files to load exceeds the allowed limit.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumFileContentToLoadExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4510
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4508
 class Aws::CodeCommit::Types::MaximumFileContentToLoadExceededException < ::Aws::EmptyStructure; end
 
 # The number of specified files to change as part of this commit exceeds
@@ -11802,7 +10881,7 @@ class Aws::CodeCommit::Types::MaximumFileContentToLoadExceededException < ::Aws:
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumFileEntriesExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4518
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4516
 class Aws::CodeCommit::Types::MaximumFileEntriesExceededException < ::Aws::EmptyStructure; end
 
 # The number of items to compare between the source or destination
@@ -11810,7 +10889,7 @@ class Aws::CodeCommit::Types::MaximumFileEntriesExceededException < ::Aws::Empty
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumItemsToCompareExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4525
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4523
 class Aws::CodeCommit::Types::MaximumItemsToCompareExceededException < ::Aws::EmptyStructure; end
 
 # The number of approvals required for the approval rule exceeds the
@@ -11818,7 +10897,7 @@ class Aws::CodeCommit::Types::MaximumItemsToCompareExceededException < ::Aws::Em
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumNumberOfApprovalsExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4532
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4530
 class Aws::CodeCommit::Types::MaximumNumberOfApprovalsExceededException < ::Aws::EmptyStructure; end
 
 # You cannot create the pull request because the repository has too many
@@ -11828,7 +10907,7 @@ class Aws::CodeCommit::Types::MaximumNumberOfApprovalsExceededException < ::Aws:
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumOpenPullRequestsExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4541
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4539
 class Aws::CodeCommit::Types::MaximumOpenPullRequestsExceededException < ::Aws::EmptyStructure; end
 
 # The maximum number of allowed repository names was exceeded.
@@ -11836,14 +10915,14 @@ class Aws::CodeCommit::Types::MaximumOpenPullRequestsExceededException < ::Aws::
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumRepositoryNamesExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4548
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4546
 class Aws::CodeCommit::Types::MaximumRepositoryNamesExceededException < ::Aws::EmptyStructure; end
 
 # The number of triggers allowed for the repository was exceeded.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumRepositoryTriggersExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4554
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4552
 class Aws::CodeCommit::Types::MaximumRepositoryTriggersExceededException < ::Aws::EmptyStructure; end
 
 # The maximum number of approval rule templates for a repository has
@@ -11852,79 +10931,79 @@ class Aws::CodeCommit::Types::MaximumRepositoryTriggersExceededException < ::Aws
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MaximumRuleTemplatesAssociatedWithRepositoryException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4562
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4560
 class Aws::CodeCommit::Types::MaximumRuleTemplatesAssociatedWithRepositoryException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByFastForwardInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4588
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4586
 class Aws::CodeCommit::Types::MergeBranchesByFastForwardInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4589
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4587
 Aws::CodeCommit::Types::MergeBranchesByFastForwardInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByFastForwardOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4605
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4603
 class Aws::CodeCommit::Types::MergeBranchesByFastForwardOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4606
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4604
 Aws::CodeCommit::Types::MergeBranchesByFastForwardOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesBySquashInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4682
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4680
 class Aws::CodeCommit::Types::MergeBranchesBySquashInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4683
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4681
 Aws::CodeCommit::Types::MergeBranchesBySquashInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesBySquashOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4699
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4697
 class Aws::CodeCommit::Types::MergeBranchesBySquashOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4700
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4698
 Aws::CodeCommit::Types::MergeBranchesBySquashOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByThreeWayInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4776
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4774
 class Aws::CodeCommit::Types::MergeBranchesByThreeWayInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4777
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4775
 Aws::CodeCommit::Types::MergeBranchesByThreeWayInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByThreeWayOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4793
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4791
 class Aws::CodeCommit::Types::MergeBranchesByThreeWayOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4794
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4792
 Aws::CodeCommit::Types::MergeBranchesByThreeWayOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about merge hunks in a merge or pull request operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeHunk AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4830
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4828
 class Aws::CodeCommit::Types::MergeHunk < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4831
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4829
 Aws::CodeCommit::Types::MergeHunk::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about the details of a merge hunk that contains a conflict
@@ -11932,12 +11011,12 @@ Aws::CodeCommit::Types::MergeHunk::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeHunkDetail AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4856
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4854
 class Aws::CodeCommit::Types::MergeHunkDetail < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4857
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4855
 Aws::CodeCommit::Types::MergeHunkDetail::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a merge or potential merge between a source
@@ -11945,91 +11024,91 @@ Aws::CodeCommit::Types::MergeHunkDetail::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4886
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4884
 class Aws::CodeCommit::Types::MergeMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4887
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4885
 Aws::CodeCommit::Types::MergeMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about the file operation conflicts in a merge operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeOperations AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4907
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4905
 class Aws::CodeCommit::Types::MergeOperations < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4908
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4906
 Aws::CodeCommit::Types::MergeOperations::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A merge option or stategy is required, and none was provided.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeOptionRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4916
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4914
 class Aws::CodeCommit::Types::MergeOptionRequiredException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByFastForwardInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4939
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4937
 class Aws::CodeCommit::Types::MergePullRequestByFastForwardInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4940
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4938
 Aws::CodeCommit::Types::MergePullRequestByFastForwardInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByFastForwardOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4951
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4949
 class Aws::CodeCommit::Types::MergePullRequestByFastForwardOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4952
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#4950
 Aws::CodeCommit::Types::MergePullRequestByFastForwardOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestBySquashInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5025
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5023
 class Aws::CodeCommit::Types::MergePullRequestBySquashInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5026
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5024
 Aws::CodeCommit::Types::MergePullRequestBySquashInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestBySquashOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5037
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5035
 class Aws::CodeCommit::Types::MergePullRequestBySquashOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5038
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5036
 Aws::CodeCommit::Types::MergePullRequestBySquashOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByThreeWayInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5111
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5109
 class Aws::CodeCommit::Types::MergePullRequestByThreeWayInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5112
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5110
 Aws::CodeCommit::Types::MergePullRequestByThreeWayInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByThreeWayOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5123
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5121
 class Aws::CodeCommit::Types::MergePullRequestByThreeWayOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5124
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5122
 Aws::CodeCommit::Types::MergePullRequestByThreeWayOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # More than one conflict resolution entries exists for the conflict. A
@@ -12037,7 +11116,7 @@ Aws::CodeCommit::Types::MergePullRequestByThreeWayOutput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MultipleConflictResolutionEntriesException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5133
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5131
 class Aws::CodeCommit::Types::MultipleConflictResolutionEntriesException < ::Aws::EmptyStructure; end
 
 # You cannot include more than one repository in a pull request. Make
@@ -12046,7 +11125,7 @@ class Aws::CodeCommit::Types::MultipleConflictResolutionEntriesException < ::Aws
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MultipleRepositoriesInPullRequestException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5141
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5139
 class Aws::CodeCommit::Types::MultipleRepositoriesInPullRequestException < ::Aws::EmptyStructure; end
 
 # The user name is not valid because it has exceeded the character limit
@@ -12054,7 +11133,7 @@ class Aws::CodeCommit::Types::MultipleRepositoriesInPullRequestException < ::Aws
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/NameLengthExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5148
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5146
 class Aws::CodeCommit::Types::NameLengthExceededException < ::Aws::EmptyStructure; end
 
 # The commit cannot be created because no changes will be made to the
@@ -12063,7 +11142,7 @@ class Aws::CodeCommit::Types::NameLengthExceededException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/NoChangeException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5156
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5154
 class Aws::CodeCommit::Types::NoChangeException < ::Aws::EmptyStructure; end
 
 # The maximum number of approval rule templates has been exceeded for
@@ -12071,7 +11150,7 @@ class Aws::CodeCommit::Types::NoChangeException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/NumberOfRuleTemplatesExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5163
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5161
 class Aws::CodeCommit::Types::NumberOfRuleTemplatesExceededException < ::Aws::EmptyStructure; end
 
 # The approval rule cannot be added. The pull request has the maximum
@@ -12079,49 +11158,56 @@ class Aws::CodeCommit::Types::NumberOfRuleTemplatesExceededException < ::Aws::Em
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/NumberOfRulesExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5170
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5168
 class Aws::CodeCommit::Types::NumberOfRulesExceededException < ::Aws::EmptyStructure; end
 
 # Information about the type of an object in a merge operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ObjectTypes AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5191
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5189
 class Aws::CodeCommit::Types::ObjectTypes < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5192
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5190
 Aws::CodeCommit::Types::ObjectTypes::SENSITIVE = T.let(T.unsafe(nil), Array)
+
+# The requested action is not allowed.
+#
+# @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OperationNotAllowedException AWS API Documentation
+#
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5198
+class Aws::CodeCommit::Types::OperationNotAllowedException < ::Aws::EmptyStructure; end
 
 # Returns information about the template that created the approval rule
 # for a pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OriginApprovalRuleTemplate AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5211
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5215
 class Aws::CodeCommit::Types::OriginApprovalRuleTemplate < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5212
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5216
 Aws::CodeCommit::Types::OriginApprovalRuleTemplate::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The pull request has already had its approval rules set to override.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OverrideAlreadySetException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5220
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5224
 class Aws::CodeCommit::Types::OverrideAlreadySetException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OverridePullRequestApprovalRulesInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5246
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5250
 class Aws::CodeCommit::Types::OverridePullRequestApprovalRulesInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5247
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5251
 Aws::CodeCommit::Types::OverridePullRequestApprovalRulesInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An override status is required, but no value was provided. Valid
@@ -12129,7 +11215,7 @@ Aws::CodeCommit::Types::OverridePullRequestApprovalRulesInput::SENSITIVE = T.let
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OverrideStatusRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5256
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5260
 class Aws::CodeCommit::Types::OverrideStatusRequiredException < ::Aws::EmptyStructure; end
 
 # The parent commit ID is not valid because it does not exist. The
@@ -12138,7 +11224,7 @@ class Aws::CodeCommit::Types::OverrideStatusRequiredException < ::Aws::EmptyStru
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ParentCommitDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5264
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5268
 class Aws::CodeCommit::Types::ParentCommitDoesNotExistException < ::Aws::EmptyStructure; end
 
 # The file could not be added because the provided parent commit ID is
@@ -12147,7 +11233,7 @@ class Aws::CodeCommit::Types::ParentCommitDoesNotExistException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ParentCommitIdOutdatedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5272
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5276
 class Aws::CodeCommit::Types::ParentCommitIdOutdatedException < ::Aws::EmptyStructure; end
 
 # A parent commit ID is required. To view the full commit ID of a branch
@@ -12156,93 +11242,93 @@ class Aws::CodeCommit::Types::ParentCommitIdOutdatedException < ::Aws::EmptyStru
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ParentCommitIdRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5280
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5284
 class Aws::CodeCommit::Types::ParentCommitIdRequiredException < ::Aws::EmptyStructure; end
 
 # The specified path does not exist.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PathDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5286
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5290
 class Aws::CodeCommit::Types::PathDoesNotExistException < ::Aws::EmptyStructure; end
 
 # The folderPath for a location cannot be null.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PathRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5292
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5296
 class Aws::CodeCommit::Types::PathRequiredException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForComparedCommitInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5337
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5341
 class Aws::CodeCommit::Types::PostCommentForComparedCommitInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5338
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5342
 Aws::CodeCommit::Types::PostCommentForComparedCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForComparedCommitOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5385
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5389
 class Aws::CodeCommit::Types::PostCommentForComparedCommitOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5386
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5390
 Aws::CodeCommit::Types::PostCommentForComparedCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForPullRequestInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5442
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5446
 class Aws::CodeCommit::Types::PostCommentForPullRequestInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5443
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5447
 Aws::CodeCommit::Types::PostCommentForPullRequestInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForPullRequestOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5495
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5499
 class Aws::CodeCommit::Types::PostCommentForPullRequestOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5496
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5500
 Aws::CodeCommit::Types::PostCommentForPullRequestOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentReplyInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5526
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5530
 class Aws::CodeCommit::Types::PostCommentReplyInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5527
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5531
 Aws::CodeCommit::Types::PostCommentReplyInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentReplyOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5538
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5542
 class Aws::CodeCommit::Types::PostCommentReplyOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5539
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5543
 Aws::CodeCommit::Types::PostCommentReplyOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequest AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5614
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5618
 class Aws::CodeCommit::Types::PullRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5615
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5619
 Aws::CodeCommit::Types::PullRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The pull request status cannot be updated because it is already
@@ -12250,7 +11336,7 @@ Aws::CodeCommit::Types::PullRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestAlreadyClosedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5624
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5628
 class Aws::CodeCommit::Types::PullRequestAlreadyClosedException < ::Aws::EmptyStructure; end
 
 # The pull request cannot be merged because one or more approval rules
@@ -12258,7 +11344,7 @@ class Aws::CodeCommit::Types::PullRequestAlreadyClosedException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestApprovalRulesNotSatisfiedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5631
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5635
 class Aws::CodeCommit::Types::PullRequestApprovalRulesNotSatisfiedException < ::Aws::EmptyStructure; end
 
 # The approval cannot be applied because the user approving the pull
@@ -12267,7 +11353,7 @@ class Aws::CodeCommit::Types::PullRequestApprovalRulesNotSatisfiedException < ::
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestCannotBeApprovedByAuthorException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5639
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5643
 class Aws::CodeCommit::Types::PullRequestCannotBeApprovedByAuthorException < ::Aws::EmptyStructure; end
 
 # Metadata about the pull request that is used when comparing the pull
@@ -12275,12 +11361,12 @@ class Aws::CodeCommit::Types::PullRequestCannotBeApprovedByAuthorException < ::A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestCreatedEventMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5669
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5673
 class Aws::CodeCommit::Types::PullRequestCreatedEventMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5670
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5674
 Aws::CodeCommit::Types::PullRequestCreatedEventMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The pull request ID could not be found. Make sure that you have
@@ -12289,26 +11375,26 @@ Aws::CodeCommit::Types::PullRequestCreatedEventMetadata::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5680
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5684
 class Aws::CodeCommit::Types::PullRequestDoesNotExistException < ::Aws::EmptyStructure; end
 
 # Returns information about a pull request event.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestEvent AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5749
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5753
 class Aws::CodeCommit::Types::PullRequestEvent < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5750
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5754
 Aws::CodeCommit::Types::PullRequestEvent::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A pull request ID is required, but none was provided.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestIdRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5758
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5762
 class Aws::CodeCommit::Types::PullRequestIdRequiredException < ::Aws::EmptyStructure; end
 
 # Returns information about the change in the merge state for a pull
@@ -12316,77 +11402,77 @@ class Aws::CodeCommit::Types::PullRequestIdRequiredException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestMergedStateChangedEventMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5780
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5784
 class Aws::CodeCommit::Types::PullRequestMergedStateChangedEventMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5781
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5785
 Aws::CodeCommit::Types::PullRequestMergedStateChangedEventMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about an update to the source branch of a pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestSourceReferenceUpdatedEventMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5812
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5816
 class Aws::CodeCommit::Types::PullRequestSourceReferenceUpdatedEventMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5813
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5817
 Aws::CodeCommit::Types::PullRequestSourceReferenceUpdatedEventMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about a change to the status of a pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestStatusChangedEventMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5826
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5830
 class Aws::CodeCommit::Types::PullRequestStatusChangedEventMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5827
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5831
 Aws::CodeCommit::Types::PullRequestStatusChangedEventMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A pull request status is required, but none was provided.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestStatusRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5835
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5839
 class Aws::CodeCommit::Types::PullRequestStatusRequiredException < ::Aws::EmptyStructure; end
 
 # Returns information about a pull request target.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestTarget AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5885
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5889
 class Aws::CodeCommit::Types::PullRequestTarget < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5886
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5890
 Aws::CodeCommit::Types::PullRequestTarget::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutCommentReactionInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5909
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5913
 class Aws::CodeCommit::Types::PutCommentReactionInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5910
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5914
 Aws::CodeCommit::Types::PutCommentReactionInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about a file added or updated as part of a commit.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileEntry AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5942
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5946
 class Aws::CodeCommit::Types::PutFileEntry < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5943
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5947
 Aws::CodeCommit::Types::PutFileEntry::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The commit cannot be created because one or more files specified in
@@ -12394,63 +11480,63 @@ Aws::CodeCommit::Types::PutFileEntry::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileEntryConflictException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5952
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#5956
 class Aws::CodeCommit::Types::PutFileEntryConflictException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6020
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6024
 class Aws::CodeCommit::Types::PutFileInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6021
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6025
 Aws::CodeCommit::Types::PutFileInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6043
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6047
 class Aws::CodeCommit::Types::PutFileOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6044
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6048
 Aws::CodeCommit::Types::PutFileOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of a put repository triggers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutRepositoryTriggersInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6063
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6067
 class Aws::CodeCommit::Types::PutRepositoryTriggersInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6064
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6068
 Aws::CodeCommit::Types::PutRepositoryTriggersInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a put repository triggers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutRepositoryTriggersOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6077
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6081
 class Aws::CodeCommit::Types::PutRepositoryTriggersOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6078
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6082
 Aws::CodeCommit::Types::PutRepositoryTriggersOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about the reaction values provided by users on a comment.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReactionForComment AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6105
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6109
 class Aws::CodeCommit::Types::ReactionForComment < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6106
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6110
 Aws::CodeCommit::Types::ReactionForComment::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The number of reactions has been exceeded. Reactions are limited to
@@ -12458,7 +11544,7 @@ Aws::CodeCommit::Types::ReactionForComment::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReactionLimitExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6115
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6119
 class Aws::CodeCommit::Types::ReactionLimitExceededException < ::Aws::EmptyStructure; end
 
 # Information about the values for reactions to a comment. CodeCommit
@@ -12466,19 +11552,19 @@ class Aws::CodeCommit::Types::ReactionLimitExceededException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReactionValueFormats AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6139
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6143
 class Aws::CodeCommit::Types::ReactionValueFormats < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6140
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6144
 Aws::CodeCommit::Types::ReactionValueFormats::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A reaction value is required.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReactionValueRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6148
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6152
 class Aws::CodeCommit::Types::ReactionValueRequiredException < ::Aws::EmptyStructure; end
 
 # The specified reference does not exist. You must provide a full commit
@@ -12486,21 +11572,21 @@ class Aws::CodeCommit::Types::ReactionValueRequiredException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReferenceDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6155
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6159
 class Aws::CodeCommit::Types::ReferenceDoesNotExistException < ::Aws::EmptyStructure; end
 
 # A reference name is required, but none was provided.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReferenceNameRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6161
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6165
 class Aws::CodeCommit::Types::ReferenceNameRequiredException < ::Aws::EmptyStructure; end
 
 # The specified reference is not a supported type.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReferenceTypeNotSupportedException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6167
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6171
 class Aws::CodeCommit::Types::ReferenceTypeNotSupportedException < ::Aws::EmptyStructure; end
 
 # Information about a replacement content entry in the conflict of a
@@ -12508,12 +11594,12 @@ class Aws::CodeCommit::Types::ReferenceTypeNotSupportedException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReplaceContentEntry AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6196
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6200
 class Aws::CodeCommit::Types::ReplaceContentEntry < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6197
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6201
 Aws::CodeCommit::Types::ReplaceContentEntry::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # USE\_NEW\_CONTENT was specified, but no replacement content has been
@@ -12521,66 +11607,66 @@ Aws::CodeCommit::Types::ReplaceContentEntry::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReplacementContentRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6206
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6210
 class Aws::CodeCommit::Types::ReplacementContentRequiredException < ::Aws::EmptyStructure; end
 
 # A replacement type is required.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReplacementTypeRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6212
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6216
 class Aws::CodeCommit::Types::ReplacementTypeRequiredException < ::Aws::EmptyStructure; end
 
 # The specified repository does not exist.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryDoesNotExistException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6218
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6222
 class Aws::CodeCommit::Types::RepositoryDoesNotExistException < ::Aws::EmptyStructure; end
 
 # A repository resource limit was exceeded.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryLimitExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6224
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6228
 class Aws::CodeCommit::Types::RepositoryLimitExceededException < ::Aws::EmptyStructure; end
 
 # Information about a repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryMetadata AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6288
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6292
 class Aws::CodeCommit::Types::RepositoryMetadata < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6289
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6293
 Aws::CodeCommit::Types::RepositoryMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified repository name already exists.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryNameExistsException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6297
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6301
 class Aws::CodeCommit::Types::RepositoryNameExistsException < ::Aws::EmptyStructure; end
 
 # Information about a repository name and ID.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryNameIdPair AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6313
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6317
 class Aws::CodeCommit::Types::RepositoryNameIdPair < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6314
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6318
 Aws::CodeCommit::Types::RepositoryNameIdPair::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A repository name is required, but was not specified.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryNameRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6322
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6326
 class Aws::CodeCommit::Types::RepositoryNameRequiredException < ::Aws::EmptyStructure; end
 
 # At least one repository name object is required, but was not
@@ -12588,7 +11674,7 @@ class Aws::CodeCommit::Types::RepositoryNameRequiredException < ::Aws::EmptyStru
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryNamesRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6329
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6333
 class Aws::CodeCommit::Types::RepositoryNamesRequiredException < ::Aws::EmptyStructure; end
 
 # The repository does not contain any pull requests with that pull
@@ -12597,7 +11683,7 @@ class Aws::CodeCommit::Types::RepositoryNamesRequiredException < ::Aws::EmptyStr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryNotAssociatedWithPullRequestException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6337
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6341
 class Aws::CodeCommit::Types::RepositoryNotAssociatedWithPullRequestException < ::Aws::EmptyStructure; end
 
 # Information about a trigger for a repository.
@@ -12614,12 +11700,12 @@ class Aws::CodeCommit::Types::RepositoryNotAssociatedWithPullRequestException < 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTrigger AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6391
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6395
 class Aws::CodeCommit::Types::RepositoryTrigger < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6392
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6396
 Aws::CodeCommit::Types::RepositoryTrigger::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # At least one branch name is required, but was not specified in the
@@ -12627,7 +11713,7 @@ Aws::CodeCommit::Types::RepositoryTrigger::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggerBranchNameListRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6401
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6405
 class Aws::CodeCommit::Types::RepositoryTriggerBranchNameListRequiredException < ::Aws::EmptyStructure; end
 
 # A destination ARN for the target service for the trigger is required,
@@ -12635,33 +11721,33 @@ class Aws::CodeCommit::Types::RepositoryTriggerBranchNameListRequiredException <
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggerDestinationArnRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6408
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6412
 class Aws::CodeCommit::Types::RepositoryTriggerDestinationArnRequiredException < ::Aws::EmptyStructure; end
 
 # At least one event for the trigger is required, but was not specified.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggerEventsListRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6414
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6418
 class Aws::CodeCommit::Types::RepositoryTriggerEventsListRequiredException < ::Aws::EmptyStructure; end
 
 # A trigger failed to run.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggerExecutionFailure AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6430
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6434
 class Aws::CodeCommit::Types::RepositoryTriggerExecutionFailure < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6431
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6435
 Aws::CodeCommit::Types::RepositoryTriggerExecutionFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A name for the trigger is required, but was not specified.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggerNameRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6439
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6443
 class Aws::CodeCommit::Types::RepositoryTriggerNameRequiredException < ::Aws::EmptyStructure; end
 
 # The list of triggers for the repository is required, but was not
@@ -12669,7 +11755,7 @@ class Aws::CodeCommit::Types::RepositoryTriggerNameRequiredException < ::Aws::Em
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggersListRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6446
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6450
 class Aws::CodeCommit::Types::RepositoryTriggersListRequiredException < ::Aws::EmptyStructure; end
 
 # A valid Amazon Resource Name (ARN) for an CodeCommit resource is
@@ -12682,7 +11768,7 @@ class Aws::CodeCommit::Types::RepositoryTriggersListRequiredException < ::Aws::E
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ResourceArnRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6458
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6462
 class Aws::CodeCommit::Types::ResourceArnRequiredException < ::Aws::EmptyStructure; end
 
 # The commit cannot be created because one of the changes specifies
@@ -12690,14 +11776,14 @@ class Aws::CodeCommit::Types::ResourceArnRequiredException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RestrictedSourceFileException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6465
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6469
 class Aws::CodeCommit::Types::RestrictedSourceFileException < ::Aws::EmptyStructure; end
 
 # A revision ID is required, but was not provided.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RevisionIdRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6471
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6475
 class Aws::CodeCommit::Types::RevisionIdRequiredException < ::Aws::EmptyStructure; end
 
 # The revision ID provided in the request does not match the current
@@ -12705,7 +11791,7 @@ class Aws::CodeCommit::Types::RevisionIdRequiredException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RevisionNotCurrentException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6478
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6482
 class Aws::CodeCommit::Types::RevisionNotCurrentException < ::Aws::EmptyStructure; end
 
 # The file was not added or updated because the content of the file is
@@ -12714,7 +11800,7 @@ class Aws::CodeCommit::Types::RevisionNotCurrentException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SameFileContentException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6486
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6490
 class Aws::CodeCommit::Types::SameFileContentException < ::Aws::EmptyStructure; end
 
 # The commit cannot be created because one or more changes in this
@@ -12725,19 +11811,19 @@ class Aws::CodeCommit::Types::SameFileContentException < ::Aws::EmptyStructure; 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SamePathRequestException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6496
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6500
 class Aws::CodeCommit::Types::SamePathRequestException < ::Aws::EmptyStructure; end
 
 # Information about the file mode changes.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SetFileModeEntry AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6512
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6516
 class Aws::CodeCommit::Types::SetFileModeEntry < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6513
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6517
 Aws::CodeCommit::Types::SetFileModeEntry::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The source branch and destination branch for the pull request are the
@@ -12746,7 +11832,7 @@ Aws::CodeCommit::Types::SetFileModeEntry::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SourceAndDestinationAreSameException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6523
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6527
 class Aws::CodeCommit::Types::SourceAndDestinationAreSameException < ::Aws::EmptyStructure; end
 
 # The commit cannot be created because no source files or file content
@@ -12754,7 +11840,7 @@ class Aws::CodeCommit::Types::SourceAndDestinationAreSameException < ::Aws::Empt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SourceFileOrContentRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6530
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6534
 class Aws::CodeCommit::Types::SourceFileOrContentRequiredException < ::Aws::EmptyStructure; end
 
 # Information about a source file that is part of changes made in a
@@ -12762,12 +11848,12 @@ class Aws::CodeCommit::Types::SourceFileOrContentRequiredException < ::Aws::Empt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SourceFileSpecifier AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6547
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6551
 class Aws::CodeCommit::Types::SourceFileSpecifier < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6548
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6552
 Aws::CodeCommit::Types::SourceFileSpecifier::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a submodule reference in a repository
@@ -12775,67 +11861,67 @@ Aws::CodeCommit::Types::SourceFileSpecifier::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SubModule AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6574
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6578
 class Aws::CodeCommit::Types::SubModule < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6575
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6579
 Aws::CodeCommit::Types::SubModule::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Returns information about a symbolic link in a repository folder.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SymbolicLink AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6606
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6610
 class Aws::CodeCommit::Types::SymbolicLink < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6607
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6611
 Aws::CodeCommit::Types::SymbolicLink::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A list of tag keys is required. The list cannot be empty or null.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TagKeysListRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6615
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6619
 class Aws::CodeCommit::Types::TagKeysListRequiredException < ::Aws::EmptyStructure; end
 
 # The tag policy is not valid.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TagPolicyException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6621
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6625
 class Aws::CodeCommit::Types::TagPolicyException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TagResourceInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6636
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6640
 class Aws::CodeCommit::Types::TagResourceInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6637
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6641
 Aws::CodeCommit::Types::TagResourceInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A map of tags is required.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TagsMapRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6645
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6649
 class Aws::CodeCommit::Types::TagsMapRequiredException < ::Aws::EmptyStructure; end
 
 # Returns information about a target for a pull request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Target AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6668
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6672
 class Aws::CodeCommit::Types::Target < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6669
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6673
 Aws::CodeCommit::Types::Target::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A pull request target is required. It cannot be empty or null. A pull
@@ -12844,38 +11930,38 @@ Aws::CodeCommit::Types::Target::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TargetRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6679
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6683
 class Aws::CodeCommit::Types::TargetRequiredException < ::Aws::EmptyStructure; end
 
 # An array of target objects is required. It cannot be empty or null.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TargetsRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6685
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6689
 class Aws::CodeCommit::Types::TargetsRequiredException < ::Aws::EmptyStructure; end
 
 # Represents the input of a test repository triggers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TestRepositoryTriggersInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6701
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6705
 class Aws::CodeCommit::Types::TestRepositoryTriggersInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6702
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6706
 Aws::CodeCommit::Types::TestRepositoryTriggersInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the output of a test repository triggers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TestRepositoryTriggersOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6723
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6727
 class Aws::CodeCommit::Types::TestRepositoryTriggersOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6724
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6728
 Aws::CodeCommit::Types::TestRepositoryTriggersOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The tip of the source branch in the destination repository does not
@@ -12885,7 +11971,7 @@ Aws::CodeCommit::Types::TestRepositoryTriggersOutput::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TipOfSourceReferenceIsDifferentException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6735
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6739
 class Aws::CodeCommit::Types::TipOfSourceReferenceIsDifferentException < ::Aws::EmptyStructure; end
 
 # The divergence between the tips of the provided commit specifiers is
@@ -12894,14 +11980,14 @@ class Aws::CodeCommit::Types::TipOfSourceReferenceIsDifferentException < ::Aws::
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TipsDivergenceExceededException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6743
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6747
 class Aws::CodeCommit::Types::TipsDivergenceExceededException < ::Aws::EmptyStructure; end
 
 # A pull request title is required. It cannot be empty or null.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TitleRequiredException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6749
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6753
 class Aws::CodeCommit::Types::TitleRequiredException < ::Aws::EmptyStructure; end
 
 # The maximum number of tags for an CodeCommit resource has been
@@ -12909,253 +11995,253 @@ class Aws::CodeCommit::Types::TitleRequiredException < ::Aws::EmptyStructure; en
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TooManyTagsException AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6756
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6760
 class Aws::CodeCommit::Types::TooManyTagsException < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UntagResourceInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6771
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6775
 class Aws::CodeCommit::Types::UntagResourceInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6772
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6776
 Aws::CodeCommit::Types::UntagResourceInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateContentInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6796
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6800
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6797
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6801
 Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateContentOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6808
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6812
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6809
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6813
 Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateDescriptionInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6826
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6830
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6827
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6831
 Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateDescriptionOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6838
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6842
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6839
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6843
 Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateNameInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6855
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6859
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6856
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6860
 Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateNameOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6867
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6871
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6868
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6872
 Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateCommentInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6886
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6890
 class Aws::CodeCommit::Types::UpdateCommentInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6887
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6891
 Aws::CodeCommit::Types::UpdateCommentInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateCommentOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6898
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6902
 class Aws::CodeCommit::Types::UpdateCommentOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6899
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6903
 Aws::CodeCommit::Types::UpdateCommentOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of an update default branch operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateDefaultBranchInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6918
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6922
 class Aws::CodeCommit::Types::UpdateDefaultBranchInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6919
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6923
 Aws::CodeCommit::Types::UpdateDefaultBranchInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalRuleContentInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6982
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6985
 class Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6983
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6986
 Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalRuleContentOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6994
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6997
 class Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6995
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#6998
 Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalStateInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7016
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7019
 class Aws::CodeCommit::Types::UpdatePullRequestApprovalStateInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7017
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7020
 Aws::CodeCommit::Types::UpdatePullRequestApprovalStateInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestDescriptionInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7035
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7038
 class Aws::CodeCommit::Types::UpdatePullRequestDescriptionInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7036
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7039
 Aws::CodeCommit::Types::UpdatePullRequestDescriptionInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestDescriptionOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7047
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7050
 class Aws::CodeCommit::Types::UpdatePullRequestDescriptionOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7048
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7051
 Aws::CodeCommit::Types::UpdatePullRequestDescriptionOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestStatusInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7067
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7070
 class Aws::CodeCommit::Types::UpdatePullRequestStatusInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7068
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7071
 Aws::CodeCommit::Types::UpdatePullRequestStatusInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestStatusOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7079
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7082
 class Aws::CodeCommit::Types::UpdatePullRequestStatusOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7080
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7083
 Aws::CodeCommit::Types::UpdatePullRequestStatusOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestTitleInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7098
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7101
 class Aws::CodeCommit::Types::UpdatePullRequestTitleInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7099
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7102
 Aws::CodeCommit::Types::UpdatePullRequestTitleInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestTitleOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7110
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7113
 class Aws::CodeCommit::Types::UpdatePullRequestTitleOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7111
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7114
 Aws::CodeCommit::Types::UpdatePullRequestTitleOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of an update repository description operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryDescriptionInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7131
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7134
 class Aws::CodeCommit::Types::UpdateRepositoryDescriptionInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7132
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7135
 Aws::CodeCommit::Types::UpdateRepositoryDescriptionInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryEncryptionKeyInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7157
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7160
 class Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7158
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7161
 Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryEncryptionKeyOutput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7180
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7183
 class Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyOutput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7181
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7184
 Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Represents the input of an update repository description operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryNameInput AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7199
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7202
 class Aws::CodeCommit::Types::UpdateRepositoryNameInput < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7200
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7203
 Aws::CodeCommit::Types::UpdateRepositoryNameInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about the user who made a specified commit.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UserInfo AWS API Documentation
 #
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7225
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7228
 class Aws::CodeCommit::Types::UserInfo < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7226
+# source://aws-sdk-codecommit//lib/aws-sdk-codecommit/types.rb#7229
 Aws::CodeCommit::Types::UserInfo::SENSITIVE = T.let(T.unsafe(nil), Array)
