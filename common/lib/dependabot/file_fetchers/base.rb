@@ -867,7 +867,10 @@ module Dependabot
           path = target_directory || File.join("tmp", source.repo)
           # Assume we're retrying the same branch, or that a `target_directory`
           # is specified when retrying a different branch.
-          return path if Dir.exist?(File.join(path, ".git"))
+          if Dir.exist?(File.join(path, ".git"))
+            @submodules = find_submodules(path)
+            return path
+          end
 
           FileUtils.mkdir_p(path)
 
@@ -907,6 +910,10 @@ module Dependabot
             # Submodules might be in the repo but unrelated to dependencies,
             # so ignoring this error to try the update anyway since the base repo exists.
             Dependabot.logger.error("Cloning of submodule failed: #{url} error: #{code || 'unknown'}")
+
+            # The main repo was cloned even though submodule checkout failed.
+            # Populate @submodules so callers can identify submodule paths.
+            @submodules = find_submodules(path)
           end
 
           if source.commit
