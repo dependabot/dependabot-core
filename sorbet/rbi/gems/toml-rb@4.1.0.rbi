@@ -219,13 +219,13 @@ class TomlRB::Keyvalue
   # source://toml-rb//lib/toml-rb/keyvalue.rb#7
   def initialize(dotted_keys, value); end
 
-  # source://toml-rb//lib/toml-rb/keyvalue.rb#39
+  # source://toml-rb//lib/toml-rb/keyvalue.rb#45
   def accept_visitor(parser); end
 
   # source://toml-rb//lib/toml-rb/keyvalue.rb#13
   def assign(hash, fully_defined_keys, symbolize_keys = T.unsafe(nil)); end
 
-  # source://toml-rb//lib/toml-rb/keyvalue.rb#29
+  # source://toml-rb//lib/toml-rb/keyvalue.rb#35
   def dotted_key_merge(hash, update); end
 
   # Returns the value of attribute dotted_keys.
@@ -245,15 +245,15 @@ class TomlRB::Keyvalue
 
   private
 
-  # source://toml-rb//lib/toml-rb/keyvalue.rb#45
+  # source://toml-rb//lib/toml-rb/keyvalue.rb#51
   def visit_value(a_value); end
 end
 
 # Used in document.citrus
 #
-# source://toml-rb//lib/toml-rb/keyvalue.rb#53
+# source://toml-rb//lib/toml-rb/keyvalue.rb#59
 module TomlRB::KeyvalueParser
-  # source://toml-rb//lib/toml-rb/keyvalue.rb#54
+  # source://toml-rb//lib/toml-rb/keyvalue.rb#60
   def value; end
 end
 
@@ -316,16 +316,16 @@ class TomlRB::Parser
   # source://toml-rb//lib/toml-rb/parser.rb#3
   def hash; end
 
-  # source://toml-rb//lib/toml-rb/parser.rb#35
+  # source://toml-rb//lib/toml-rb/parser.rb#43
   def visit_keyvalue(keyvalue); end
 
-  # source://toml-rb//lib/toml-rb/parser.rb#30
+  # source://toml-rb//lib/toml-rb/parser.rb#38
   def visit_table(table); end
 
   # Read about the Visitor pattern
   # http://en.wikipedia.org/wiki/Visitor_pattern
   #
-  # source://toml-rb//lib/toml-rb/parser.rb#22
+  # source://toml-rb//lib/toml-rb/parser.rb#30
   def visit_table_array(table_array); end
 end
 
@@ -343,10 +343,10 @@ class TomlRB::Table
   # source://toml-rb//lib/toml-rb/table.rb#3
   def initialize(dotted_keys); end
 
-  # source://toml-rb//lib/toml-rb/table.rb#21
+  # source://toml-rb//lib/toml-rb/table.rb#28
   def accept_visitor(parser); end
 
-  # source://toml-rb//lib/toml-rb/table.rb#25
+  # source://toml-rb//lib/toml-rb/table.rb#32
   def full_key; end
 
   # source://toml-rb//lib/toml-rb/table.rb#7
@@ -356,7 +356,7 @@ class TomlRB::Table
 
   # Fail if the key was already defined with a ValueOverwriteError
   #
-  # source://toml-rb//lib/toml-rb/table.rb#32
+  # source://toml-rb//lib/toml-rb/table.rb#39
   def ensure_key_not_defined(visited_keys); end
 end
 
@@ -387,9 +387,9 @@ end
 
 # Used in document.citrus
 #
-# source://toml-rb//lib/toml-rb/table.rb#39
+# source://toml-rb//lib/toml-rb/table.rb#46
 module TomlRB::TableParser
-  # source://toml-rb//lib/toml-rb/table.rb#40
+  # source://toml-rb//lib/toml-rb/table.rb#47
   def value; end
 end
 

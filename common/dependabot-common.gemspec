@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "gitlab", "~> 5.0"
   spec.add_dependency "json", "< 2.19"
   spec.add_dependency "nokogiri", "~> 1.8"
-  spec.add_dependency "octokit", "~> 7.2"
+  spec.add_dependency "octokit", "~> 10.0"
   spec.add_dependency "opentelemetry-api", "~> 1.5"
   spec.add_dependency "opentelemetry-logs-api", "~> 0.2"
   spec.add_dependency "opentelemetry-metrics-api", "~> 0.3"
