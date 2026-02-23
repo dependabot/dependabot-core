@@ -164,20 +164,20 @@ module Dependabot
 
               T.must(captures.fetch("values"))
                .scan(KOTLIN_SINGLE_PROPERTY_SET_REGEX) do
-                declaration_string = Regexp.last_match.to_s.strip
-                sub_captures = T.must(Regexp.last_match).named_captures
-                name = sub_captures.fetch("name")
-                full_name = if namespace == "extra"
-                              name
-                            else
-                              [namespace, name].join(".")
-                            end
+                 declaration_string = Regexp.last_match.to_s.strip
+                 sub_captures = T.must(Regexp.last_match).named_captures
+                 name = sub_captures.fetch("name")
+                 full_name = if namespace == "extra"
+                               name
+                             else
+                               [namespace, name].join(".")
+                             end
 
-                properties[full_name] = {
-                  value: sub_captures.fetch("value"),
-                  declaration_string: declaration_string,
-                  file: buildfile.name
-                }
+                 properties[full_name] = {
+                   value: sub_captures.fetch("value"),
+                   declaration_string: declaration_string,
+                   file: buildfile.name
+                 }
               end
             end
 

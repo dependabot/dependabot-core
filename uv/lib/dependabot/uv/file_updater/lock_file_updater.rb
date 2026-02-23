@@ -359,13 +359,13 @@ module Dependabot
             .select { |cred| cred["type"] == "python_index" }
             .reject { |cred| explicit_index?(cred) }
             .map do |cred|
-            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-            if cred.replaces_base?
-              "--default-index #{authed_url}"
-            else
-              "--index #{authed_url}"
-            end
+              if cred.replaces_base?
+                "--default-index #{authed_url}"
+              else
+                "--index #{authed_url}"
+              end
           end
         end
 
@@ -421,18 +421,18 @@ module Dependabot
             .select { |cred| cred["type"] == "python_index" }
             .select { |cred| explicit_index?(cred) }
             .each do |cred|
-            index_name = find_index_name_for_credential(cred)
-            next unless index_name
+              index_name = find_index_name_for_credential(cred)
+              next unless index_name
 
-            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+              env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
 
-            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+              env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
 
-            if cred["password"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
-            elsif cred["token"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
-            end
+              if cred["password"]
+                env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
+              elsif cred["token"]
+                env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
+              end
           end
 
           env_vars

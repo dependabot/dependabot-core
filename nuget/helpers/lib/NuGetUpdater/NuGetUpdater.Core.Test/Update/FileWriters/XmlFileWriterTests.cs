@@ -361,7 +361,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     <Project Sdk="Microsoft.NET.Sdk">
                       <ItemGroup>
                         <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
-                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="2.*" />
                         <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
                       </ItemGroup>
                     </Project>

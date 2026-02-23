@@ -109,12 +109,12 @@ module Dependabot
           dependency.requirements
                     .select { |r| r[:file] == workspace_file.name }
                     .map do |r|
-            DependencyRequirement.new(
-              file: r[:file],
-              requirement: r[:requirement],
-              groups: r[:groups],
-              source: r[:source]
-            )
+                      DependencyRequirement.new(
+                        file: r[:file],
+                        requirement: r[:requirement],
+                        groups: r[:groups],
+                        source: r[:source]
+                      )
           end
         end
 

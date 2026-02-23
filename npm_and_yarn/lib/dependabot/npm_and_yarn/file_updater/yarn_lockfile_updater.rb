@@ -650,7 +650,7 @@ module Dependabot
           yarnrc_global_registry =
             T.must(T.must(yarnrc_file).content)
              .lines.find { |line| line.match?(regex) }
-             &.match(regex)
+                   &.match(regex)
              &.named_captures
              &.fetch("registry")
 
@@ -875,7 +875,7 @@ module Dependabot
 
       sig do
         params(error_message: String, yarn_lock: Dependabot::DependencyFile)
-          .returns(T::Hash[T.any(Symbol, String), T.any(String, NilClass)])
+          .returns(T::Hash[T.any(Symbol, String), T.nilable(String)])
       end
       def handle_package_not_found(error_message, yarn_lock) # rubocop:disable Metrics/PerceivedComplexity
         # There are 2 different package not found error messages

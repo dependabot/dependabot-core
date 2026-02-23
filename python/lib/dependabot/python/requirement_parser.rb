@@ -1,9 +1,15 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+require "dependabot/python/name_normaliser"
+require "dependabot/python/requirement"
+
 module Dependabot
   module Python
     class RequirementParser
+      extend T::Sig
+
       NAME = /[a-zA-Z0-9](?:[a-zA-Z0-9\-_\.]*[a-zA-Z0-9])?/
       EXTRA = /[a-zA-Z0-9\-_\.]+/
       COMPARISON = /===|==|>=|<=|<|>|~=|!=/
@@ -55,6 +61,56 @@ module Dependabot
         /\s*\\?\s*(?<name>#{NAME})
           (\s*\\?\s*\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
         /x
+
+      # Parses a single pip requirement string (e.g. "types-requests==2.31.0.10")
+      # into a structured hash. Returns nil if the string is not a valid requirement
+      # or has no version constraint.
+      sig { params(dependency_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse(dependency_string)
+        match = dependency_string.strip.match(VALID_REQ_TXT_REQUIREMENT)
+        return nil unless match
+
+        name = T.must(match[:name])
+        requirements_string = match[:requirements]
+        return nil if requirements_string.nil? || requirements_string.strip.empty?
+
+        version = extract_pinned_version(requirements_string)
+        return nil unless version
+
+        {
+          name: name,
+          normalised_name: NameNormaliser.normalise(name),
+          version: version,
+          requirement: requirements_string,
+          extras: match[:extras],
+          markers: match[:markers]
+        }
+      end
+
+      # Extracts the pinned or lower-bound version from a requirement string.
+      # For "==2.31.0" returns "2.31.0", for ">=1.0,<2.0" returns "1.0".
+      sig { params(requirements_string: String).returns(T.nilable(String)) }
+      def self.extract_pinned_version(requirements_string)
+        requirement = Dependabot::Python::Requirement.new(requirements_string)
+        constraints = T.let(requirement.requirements, T::Array[T::Array[T.untyped]])
+
+        exact_pin = constraints.find do |pair|
+          op = T.cast(pair[0], String)
+          op == "==" || op == "="
+        end
+        return T.cast(exact_pin[1], Gem::Version).to_s if exact_pin
+
+        lower_bound_operators = %w(>= > ~>).freeze
+        lower_bound = constraints.find { |pair| lower_bound_operators.include?(T.cast(pair[0], String)) }
+        return T.cast(lower_bound[1], Gem::Version).to_s if lower_bound
+
+        nil
+      rescue Gem::Requirement::BadRequirementError
+        fallback = requirements_string.match(/(?:==|>=|~=)\s*(?<version>[^\s,<>!=]+)/)
+        fallback ? fallback[:version] : nil
+      end
+
+      private_class_method :extract_pinned_version
     end
   end
 end
