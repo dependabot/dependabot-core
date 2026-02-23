@@ -74,7 +74,7 @@ module Dependabot
 
           if latest_version_tag
             if git_commit_checker.local_tag_for_pinned_sha || version_comment?
-              return latest_version_tag.fetch(:version)
+              return T.must(latest_version_tag).fetch(:version)
             end
 
             return latest_commit_for_pinned_ref
@@ -108,25 +108,44 @@ module Dependabot
           return nil unless frozen_ref
 
           prefix = tag_prefix(frozen_ref)
-          return nil unless prefix
+          return nil if prefix.empty?
 
           version_suffix = frozen_ref.sub(/^#{Regexp.escape(prefix)}/, "")
           return nil if version_suffix.empty? || version_suffix !~ /^\d/
 
-          frozen_segments = version_suffix.split(".")
-          tags = git_commit_checker.allowed_version_tags
-
-          matching = tags.select { |tag| tag.name.start_with?(prefix) }
-
-          max_segments = matching.map { |t| t.name.sub(/^#{Regexp.escape(prefix)}/, "").split(".").length }.max || 0
-          if frozen_segments.length < max_segments
-            matching = matching.select do |tag|
-              tag_segments = tag.name.sub(/^#{Regexp.escape(prefix)}/, "").split(".")
-              frozen_segments.each_with_index.all? { |seg, i| tag_segments[i] == seg }
-            end
-          end
-
+          matching = tags_matching_frozen_constraint(prefix, version_suffix.split("."))
           git_commit_checker.max_local_tag(matching)
+        end
+
+        sig do
+          params(
+            prefix: String,
+            frozen_segments: T::Array[String]
+          ).returns(T::Array[Dependabot::GitRef])
+        end
+        def tags_matching_frozen_constraint(prefix, frozen_segments)
+          tags = tags_with_prefix(prefix)
+
+          max_segments = tags.map { |t| tag_version_segments(t.name, prefix).length }.max || 0
+          return tags unless frozen_segments.length < max_segments
+
+          tags.select { |tag| tag_starts_with_segments?(tag.name, prefix, frozen_segments) }
+        end
+
+        sig { params(prefix: String).returns(T::Array[Dependabot::GitRef]) }
+        def tags_with_prefix(prefix)
+          git_commit_checker.allowed_version_tags.select { |tag| tag.name.start_with?(prefix) }
+        end
+
+        sig { params(tag_name: String, prefix: String).returns(T::Array[String]) }
+        def tag_version_segments(tag_name, prefix)
+          tag_name.sub(/^#{Regexp.escape(prefix)}/, "").split(".")
+        end
+
+        sig { params(tag_name: String, prefix: String, frozen_segments: T::Array[String]).returns(T::Boolean) }
+        def tag_starts_with_segments?(tag_name, prefix, frozen_segments)
+          segments = tag_version_segments(tag_name, prefix)
+          frozen_segments.each_with_index.all? { |seg, i| segments[i] == seg }
         end
 
         sig { returns(T.nilable(String)) }

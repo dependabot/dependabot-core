@@ -231,10 +231,15 @@ module Dependabot
       def version_from_comment
         @version_from_comment ||= T.let(
           begin
-            comment = @dependency.requirements.
-              map { |req| T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])[:comment] }.
-              compact.
-              first
+            comment = T.let(
+              @dependency.requirements
+                .filter_map do |req|
+                  val = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])[:comment]
+                  T.cast(val, T.nilable(String))
+                end
+                .first,
+              T.nilable(String)
+            )
             return nil unless comment
 
             version_string = extract_version_from_comment(comment)
@@ -249,10 +254,10 @@ module Dependabot
         )
       end
 
-      sig { params(new_ref: String).returns(T.nilable(String)) }
-      def resolve_new_comment_version(new_ref)
+      sig { params(_new_ref: String).returns(T.nilable(String)) }
+      def resolve_new_comment_version(_new_ref)
         new_tag = T.must(latest_version_finder).latest_version_tag
-        return new_tag&.fetch(:tag, nil) if new_tag
+        return T.cast(new_tag.fetch(:tag, nil), T.nilable(String)) if new_tag
 
         nil
       end

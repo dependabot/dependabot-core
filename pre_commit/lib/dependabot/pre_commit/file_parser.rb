@@ -211,7 +211,7 @@ module Dependabot
           next unless current_repo == repo_url
 
           rev_match = line.match(/^\s*rev:\s*\S+\s*(#.*)$/)
-          return rev_match[1].rstrip if rev_match
+          return T.must(rev_match[1]).rstrip if rev_match
         end
 
         nil

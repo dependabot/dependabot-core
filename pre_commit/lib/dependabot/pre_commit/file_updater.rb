@@ -117,8 +117,14 @@ module Dependabot
         old_version = T.cast(new_metadata[:comment_version], T.nilable(String))
         new_version = T.cast(new_metadata[:new_comment_version], T.nilable(String))
 
-        replace_ref_in_content(content, repo_url, old_ref, new_ref, old_version: old_version,
-                                                                     new_version: new_version)
+        replace_ref_in_content(
+          content,
+          repo_url,
+          old_ref,
+          new_ref,
+          old_version: old_version,
+          new_version: new_version
+        )
       end
 
       sig do
