@@ -355,5 +355,38 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
         )
       end
     end
+
+    context "when the file updater produces no changes" do
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          updated_dependencies: [dependency]
+        )
+        allow(job).to receive(:dependencies).and_return(["dummy-pkg-a"])
+        allow(refresh_version_update_pull_request).to receive(:all_versions_ignored?).and_return(false)
+        allow(Dependabot::DependencyChangeBuilder)
+          .to receive(:create_from)
+          .and_raise(Dependabot::DependencyFileContentNotChanged)
+      end
+
+      it "closes the pull request with reason :update_no_longer_possible" do
+        expect(refresh_version_update_pull_request).to receive(
+          :close_pull_request
+        ).with(reason: :update_no_longer_possible)
+        refresh_version_update_pull_request.send(
+          :check_and_update_pull_request, [dependency]
+        )
+      end
+
+      it "does not create or update a pull request" do
+        expect(refresh_version_update_pull_request).not_to receive(:create_pull_request)
+        expect(refresh_version_update_pull_request).not_to receive(:update_pull_request)
+        allow(refresh_version_update_pull_request).to receive(:close_pull_request)
+        refresh_version_update_pull_request.send(
+          :check_and_update_pull_request, [dependency]
+        )
+      end
+    end
   end
 end
