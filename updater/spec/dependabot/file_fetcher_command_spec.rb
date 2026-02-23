@@ -341,7 +341,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
                        "Git can’t create `dependabot/...` branches while the branch `dependabot` exists." \
                        "Please delete the 'dependabot' branch and retry."
             },
-            error_type: "file_fetcher_error"
+            error_type: "ref_namespace_conflict"
           )
         expect(api_client).to receive(:mark_job_as_processed)
 

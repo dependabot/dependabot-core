@@ -54,7 +54,7 @@ module Dependabot
       }
     when Dependabot::RefNamespaceConflictError
       {
-        "error-type": "file_fetcher_error",
+        "error-type": "ref_namespace_conflict",
         "error-detail": {
           message: error.message
         }
