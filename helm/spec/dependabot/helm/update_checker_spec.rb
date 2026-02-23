@@ -142,6 +142,27 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           )
         end
       end
+
+      context "when tags include git-describe style versions" do
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+            .with("registry.sweet.security/helm/frontierchart")
+            .and_return(
+              "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n" \
+              "1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238\n" \
+              "2.0.4.117.gfc3fee5\n" \
+              "3.26.3-5.g87159cd\n" \
+              "3.26.3.8.g8d771eb\n" \
+              "1.1.0"
+            )
+        end
+
+        it "filters out git-describe tags and returns the latest valid version" do
+          expect(checker.latest_version).to eq(
+            Dependabot::Helm::Version.new("1.1.0")
+          )
+        end
+      end
     end
   end
 
