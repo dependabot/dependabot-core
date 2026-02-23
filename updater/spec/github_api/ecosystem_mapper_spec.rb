@@ -16,7 +16,7 @@ RSpec.describe GithubApi::EcosystemMapper do
       "go_modules" => "golang",
       "maven" => "maven",
       "gradle" => "gradle",
-      "nuget" => "nuget",
+      "nuget" => "nuget"
     }.each do |package_manager, expected_ecosystem|
       it "maps #{package_manager} to #{expected_ecosystem}" do
         expect(described_class.ecosystem_for(package_manager)).to eq(expected_ecosystem)
