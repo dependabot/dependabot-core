@@ -3825,6 +3825,56 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
+        context "when updating a scoped package dependency in a catalog" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "@tanstack/react-query" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "@tanstack/react-query",
+                version: "5.59.15",
+                required_version: "^5.62.0",
+                previous_required_version: "^5.59.15"
+              )
+            ]
+          end
+
+          it "updates the scoped package in the workspace" do
+            expect(updated_files.map(&:name)).to include("pnpm-workspace.yaml")
+            expect(updated_pnpm_workspace.content).to include('"@tanstack/react-query": ^5.62.0')
+          end
+        end
+
+        context "when all dependency files are support files (e.g. fetched from parent directory)" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "^3.4.2",
+                previous_required_version: "^3.3.3"
+              )
+            ]
+          end
+
+          before do
+            # Simulate pnpm-workspace.yaml and pnpm-lock.yaml fetched from a parent
+            # directory (marked as support files). This happens when Dependabot is
+            # configured for a subdirectory but the workspace config is at the root.
+            files.each { |f| f.support_file = true if f.name.end_with?("pnpm-workspace.yaml", "pnpm-lock.yaml") }
+          end
+
+          it "raises NoChangeError instead of DependabotError" do
+            expect { updated_files }.to raise_error(
+              described_class::NoChangeError, "No files were updated!"
+            )
+          end
+        end
+
         context "when updating multiple dependencies in catalogs" do
           let(:project_name) { "pnpm/catalogs_all_examples" }
           let(:dependencies) do
