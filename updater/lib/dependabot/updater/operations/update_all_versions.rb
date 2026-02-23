@@ -183,7 +183,8 @@ module Dependabot
           )
 
           if dependency_change.updated_dependency_files.empty?
-            raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
+            raise Dependabot::DependencyFileContentNotChanged,
+                  "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
           end
 
           # Send warning alerts to the API if any warning notices are present.

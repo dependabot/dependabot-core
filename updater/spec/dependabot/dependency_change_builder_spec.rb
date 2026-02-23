@@ -179,7 +179,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "raises an exception with diagnostic dependency details" do
         expect { create_change }
           .to raise_error(
-            Dependabot::DependabotError,
+            Dependabot::DependencyFileContentNotChanged,
             "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
           )
       end
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "raises an exception listing dependency names" do
         expect { create_change }
           .to raise_error(
-            Dependabot::DependabotError,
+            Dependabot::DependencyFileContentNotChanged,
             "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
           )
       end
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "raises an exception with unique dependency names" do
         expect { create_change }
           .to raise_error(
-            Dependabot::DependabotError,
+            Dependabot::DependencyFileContentNotChanged,
             "FileUpdater failed to update any files for: dummy-pkg-b"
           )
       end
@@ -244,7 +244,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "raises a generic no-files error" do
         expect { create_change }
           .to raise_error(
-            Dependabot::DependabotError,
+            Dependabot::DependencyFileContentNotChanged,
             "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
           )
       end
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "collects notices before raising" do
         expect { create_change }
           .to raise_error(
-            Dependabot::DependabotError,
+            Dependabot::DependencyFileContentNotChanged,
             "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
           )
 
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       it "raises a no-files error listing sorted and unique dependency names" do
         expect { create_change }
           .to raise_error(
-            Dependabot::DependabotError,
+            Dependabot::DependencyFileContentNotChanged,
             "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
           )
       end
