@@ -220,6 +220,8 @@ module Dependabot
 
           # Report this error to the backend to create an update job error
           raise
+        rescue Dependabot::DependencyFileContentNotChanged
+          close_pull_request(reason: :update_no_longer_possible)
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
