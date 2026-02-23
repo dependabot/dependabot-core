@@ -97,12 +97,12 @@ module Dependabot
         # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
         return if workspace_files.empty?
         return if workspace_files.any? { |f| f.directory == "/" }
-        return unless workspace_files.all? { |f| f.name.end_with?("../pnpm-workspace.yaml") }
+        return unless workspace_files.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-workspace\.yaml\z}) }
 
         # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
         return if lockfiles.empty?
         return if lockfiles.any? { |f| f.directory == "/" }
-        return unless lockfiles.all? { |f| f.name.end_with?("../pnpm-lock.yaml") }
+        return unless lockfiles.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-lock\.yaml\z}) }
 
         # ❌ Raise error → Updating inside a subdirectory is misconfigured
         raise MisconfiguredTooling.new(

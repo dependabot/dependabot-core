@@ -3863,15 +3863,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           before do
             # Simulate pnpm-workspace.yaml and pnpm-lock.yaml fetched from a parent
-            # directory (marked as support files). This happens when Dependabot is
-            # configured for a subdirectory but the workspace config is at the root.
-            files.each { |f| f.support_file = true if f.name.end_with?("pnpm-workspace.yaml", "pnpm-lock.yaml") }
+            # directory via fetch_file_from_parent_directories: names get a "../"
+            # prefix and directory is set to the subdirectory (not "/").
+            files.each do |f|
+              next unless f.name.end_with?("pnpm-workspace.yaml", "pnpm-lock.yaml")
+
+              f.name = "../#{f.name}"
+              f.directory = "/packages/app"
+              f.support_file = true
+            end
           end
 
-          it "raises NoChangeError instead of DependabotError" do
-            expect { updated_files }.to raise_error(
-              described_class::NoChangeError, "No files were updated!"
-            )
+          it "raises MisconfiguredTooling instead of DependabotError" do
+            expect { updated_files }.to raise_error(Dependabot::MisconfiguredTooling)
           end
         end
 
