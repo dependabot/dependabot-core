@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/errors"
+require "dependabot/pre_commit/comment_version_helper"
 require "dependabot/pre_commit/helpers"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/update_checker"
@@ -71,11 +72,14 @@ module Dependabot
         def commit_sha_release
           return unless git_commit_checker.pinned_ref_looks_like_commit_sha?
 
-          # Prioritize tagged releases over latest commits
-          # If latest_version_tag exists, use it (even if current SHA doesn't have a tag)
-          return latest_version_tag&.fetch(:version) if latest_version_tag
+          if latest_version_tag
+            if git_commit_checker.local_tag_for_pinned_sha || version_comment?
+              return latest_version_tag.fetch(:version)
+            end
 
-          # Only fall back to latest commit if no tags exist
+            return latest_commit_for_pinned_ref
+          end
+
           latest_commit_for_pinned_ref
         end
 
@@ -83,7 +87,9 @@ module Dependabot
         def latest_version_tag
           @latest_version_tag ||= T.let(
             begin
-              return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
+              if dependency.version.nil? || !Dependabot::PreCommit::Version.correct?(dependency.version)
+                return constrained_latest_version_tag || git_commit_checker.local_tag_for_latest_version
+              end
 
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
               return ref if ref && current_version && ref.fetch(:version) > current_version
@@ -95,6 +101,55 @@ module Dependabot
         end
 
         private
+
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def constrained_latest_version_tag
+          frozen_ref = frozen_comment_ref
+          return nil unless frozen_ref
+
+          prefix = tag_prefix(frozen_ref)
+          return nil unless prefix
+
+          version_suffix = frozen_ref.sub(/^#{Regexp.escape(prefix)}/, "")
+          return nil if version_suffix.empty? || version_suffix !~ /^\d/
+
+          frozen_segments = version_suffix.split(".")
+          tags = git_commit_checker.allowed_version_tags
+
+          matching = tags.select { |tag| tag.name.start_with?(prefix) }
+
+          max_segments = matching.map { |t| t.name.sub(/^#{Regexp.escape(prefix)}/, "").split(".").length }.max || 0
+          if frozen_segments.length < max_segments
+            matching = matching.select do |tag|
+              tag_segments = tag.name.sub(/^#{Regexp.escape(prefix)}/, "").split(".")
+              frozen_segments.each_with_index.all? { |seg, i| tag_segments[i] == seg }
+            end
+          end
+
+          git_commit_checker.max_local_tag(matching)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def frozen_comment_ref
+          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          return nil unless comment
+
+          match = comment.match(CommentVersionHelper::FROZEN_COMMENT_REF_PATTERN)
+          match&.[](1)
+        end
+
+        sig { params(ref: String).returns(String) }
+        def tag_prefix(ref)
+          ref.sub(/\d+(?:\.\d+)*$/, "")
+        end
+
+        sig { returns(T::Boolean) }
+        def version_comment?
+          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          return false unless comment
+
+          comment.match?(CommentVersionHelper::COMMENT_VERSION_PATTERN)
+        end
 
         sig { returns(T.nilable(String)) }
         def current_commit

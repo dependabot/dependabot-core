@@ -113,7 +113,12 @@ module Dependabot
         old_ref = T.cast(old_source.fetch(:ref), String)
         new_ref = T.cast(new_source.fetch(:ref), String)
 
-        replace_ref_in_content(content, repo_url, old_ref, new_ref)
+        new_metadata = T.cast(new_req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])
+        old_version = T.cast(new_metadata[:comment_version], T.nilable(String))
+        new_version = T.cast(new_metadata[:new_comment_version], T.nilable(String))
+
+        replace_ref_in_content(content, repo_url, old_ref, new_ref, old_version: old_version,
+                                                                     new_version: new_version)
       end
 
       sig do
@@ -134,9 +139,16 @@ module Dependabot
       end
 
       sig do
-        params(content: String, repo_url: String, old_ref: String, new_ref: String).returns(String)
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
       end
-      def replace_ref_in_content(content, repo_url, old_ref, new_ref)
+      def replace_ref_in_content(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
         current_repo = T.let(nil, T.nilable(String))
 
         updated_lines = content.lines.map do |line|
@@ -145,13 +157,37 @@ module Dependabot
 
           if current_repo == repo_url &&
              line.match?(/^\s*rev:\s+#{Regexp.escape(old_ref)}(\s*(?:#.*)?)?$/)
-            line.gsub(old_ref, new_ref)
+            updated_line = line.sub(old_ref, new_ref)
+            updated_line = update_version_comment(updated_line, old_version, new_version)
+            updated_line
           else
             line
           end
         end
 
         updated_lines.join
+      end
+
+      sig do
+        params(
+          line: String,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def update_version_comment(line, old_version, new_version)
+        return line unless old_version && new_version
+
+        pattern = /
+          (                # 1: comment prefix
+            \#\s*          # '#' and optional whitespace
+            (?:frozen:\s*)? # optional 'frozen:' label
+          )
+          #{Regexp.escape(old_version)} # the old version
+          (.*)$            # 2: trailing content (whitespace or other characters) up to end of line
+        /x
+
+        line.sub(pattern, "\\1#{new_version}\\2")
       end
 
       sig do
