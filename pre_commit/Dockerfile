@@ -2,25 +2,25 @@
 
 # Import pre-built ecosystem images to avoid code duplication
 # These images contain all the native helpers and tools already built
-ARG GO_MODULES_BASE=ghcr.io/dependabot/dependabot-updater-gomod:latest
-ARG BUNDLER_BASE=ghcr.io/dependabot/dependabot-updater-bundler:latest
-ARG CORE_BASE=ghcr.io/dependabot/dependabot-updater-core:latest
+FROM ghcr.io/dependabot/dependabot-updater-gomod:latest AS go_modules
+FROM ghcr.io/dependabot/dependabot-updater-bundler:latest AS bundler
 
-FROM ${GO_MODULES_BASE} AS go_modules
-FROM ${BUNDLER_BASE} AS bundler
-FROM ${CORE_BASE}
+# Create an intermediate stage that combines both ecosystems into a single layer
+FROM scratch AS combined-helpers
+COPY --from=go_modules /opt/go /opt/go
+COPY --from=go_modules /opt/go_modules /opt/go_modules
+COPY --from=bundler /opt/bundler /opt/bundler
+
+# Final stage - copy all helpers in a single layer from the combined stage
+FROM ghcr.io/dependabot/dependabot-updater-core
 
 USER root
 
-# Copy Go installation and helpers from go_modules image
-COPY --from=go_modules /opt/go /opt/go
-COPY --from=go_modules /opt/go_modules /opt/go_modules
+# Copy all helpers from the combined intermediate stage (single layer)
+COPY --from=combined-helpers --chown=dependabot:dependabot /opt /opt
 ENV PATH=/opt/go/bin:$PATH
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-
-# Copy bundler helpers from bundler image (for Ruby additional_dependencies support)
-COPY --from=bundler --chown=dependabot:dependabot /opt/bundler /opt/bundler
 
 USER dependabot
 
