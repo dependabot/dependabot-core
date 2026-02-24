@@ -890,10 +890,22 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
 
       it "does not treat subgroups as parents on subsequent calls despite having group_by set" do
-        # Subgroups now retain group-by in their rules, so we need to verify
-        # the recursion guard prevents them from spawning sub-subgroups.
-        # Simulate a second directory by calling assign_to_groups! again.
-        dependency_group_engine.assign_to_groups!(dependencies: [dummy_pkg_a_dir2])
+        # Simulate a third directory by calling assign_to_groups! again with a new dep.
+        dummy_pkg_a_dir3 = Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ],
+          directory: "/dir3"
+        )
+        dependency_group_engine.assign_to_groups!(dependencies: [dummy_pkg_a_dir3])
 
         # Should reuse the existing subgroup rather than creating a duplicate
         subgroups_a = dependency_group_engine.dependency_groups.select do |g|

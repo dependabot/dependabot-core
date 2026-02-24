@@ -443,7 +443,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
-  describe "compile_updates_for marks handled deps for group-by-name groups" do
+  describe "#compile_updates_for group-by-name handled deps" do
     let(:dependency) { dependencies.first }
 
     before do
@@ -563,6 +563,11 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       it "does NOT mark the dependency as handled" do
         test_instance.compile_updates_for(dependency, dependency_files, group)
         expect(dependency_snapshot).not_to have_received(:add_handled_dependencies)
+      end
+
+      it "returns an empty array" do
+        result = test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(result).to eq([])
       end
     end
   end

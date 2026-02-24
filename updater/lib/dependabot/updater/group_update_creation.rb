@@ -348,8 +348,6 @@ module Dependabot
         [] # return an empty set
       end
 
-      # When grouping by dependency name, mark the dependency as handled to prevent
-      # per-directory individual PRs from being raised.
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup, reason: String).void }
       def mark_handled_for_group_by_name(dependency, group, reason)
         return unless group.group_by_dependency_name?

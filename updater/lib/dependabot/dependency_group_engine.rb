@@ -153,8 +153,6 @@ module Dependabot
     def initialize(dependency_groups:)
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = T.let([], T::Array[Dependabot::Dependency])
-      # Track the names of originally-configured group-by-dependency-name parent groups
-      # so that subgroups created from them are not treated as parents on subsequent calls.
       @group_by_name_parent_names = T.let(
         dependency_groups.select(&:group_by_dependency_name?).to_set(&:name),
         T::Set[String]
@@ -218,8 +216,6 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def create_dynamic_subgroups_for_dependency_name_groups(dependencies)
-      # Only select originally-configured parent groups, not subgroups created by previous calls.
-      # This prevents infinite recursion when assign_to_groups! is called once per directory.
       parent_groups = @dependency_groups.select { |g| @group_by_name_parent_names.include?(g.name) }
 
       parent_groups.each do |parent_group|
@@ -230,10 +226,9 @@ module Dependabot
           existing_subgroup = @dependency_groups.find { |g| g.name == subgroup_name }
 
           if existing_subgroup
-            existing_subgroup.dependencies.concat(deps)
+            new_deps = deps.reject { |d| existing_subgroup.dependencies.include?(d) }
+            existing_subgroup.dependencies.concat(new_deps)
           else
-            # Preserve "group-by" in subgroup rules so group_by_dependency_name? returns true,
-            # enabling correct handled-dependency tracking when semver rules reject an update.
             subgroup_rules = parent_group.rules.merge("patterns" => [dep_name])
             subgroup = Dependabot::DependencyGroup.new(
               name: subgroup_name,
