@@ -16,6 +16,10 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
+        # Matches the PEP 508 name part of a dependency entry string, including optional extras.
+        # Example: "pillow==12.0.0" → "pillow", "celery[redis]==5.5.3" → "celery[redis]"
+        PEP508_NAME_REGEX = /\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/
+
         sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
@@ -110,21 +114,20 @@ module Dependabot
           end
 
           # Also freeze PEP 621 [project.dependencies] and [project.optional-dependencies]
+          pep621_source_types = %w(directory file url)
           pep621_project = pyproject_object["project"]
           if pep621_project
-            source_types = %w(directory file url)
-            freeze_pep621_deps_array!(pep621_project.fetch("dependencies", []), excluded_names, source_types)
+            freeze_pep621_deps_array!(pep621_project.fetch("dependencies", []), excluded_names, pep621_source_types)
             (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
-              freeze_pep621_deps_array!(optional_deps, excluded_names, source_types)
+              freeze_pep621_deps_array!(optional_deps, excluded_names, pep621_source_types)
             end
           end
 
           # Also freeze PEP 735 [dependency-groups]
           pep735_groups = pyproject_object["dependency-groups"]
           if pep735_groups
-            source_types = %w(directory file url)
             pep735_groups.each_value do |group_deps|
-              freeze_pep621_deps_array!(group_deps, excluded_names, source_types) if group_deps.is_a?(Array)
+              freeze_pep621_deps_array!(group_deps, excluded_names, pep621_source_types) if group_deps.is_a?(Array)
             end
           end
 
@@ -168,7 +171,7 @@ module Dependabot
             next unless dep_entry.is_a?(String)
 
             # PEP 508 name part: letters/digits/._- with optional [extras]
-            name_match = dep_entry.match(/\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/)
+            name_match = dep_entry.match(PEP508_NAME_REGEX)
             next unless name_match
 
             entry_pkg_name = T.must(name_match[1])

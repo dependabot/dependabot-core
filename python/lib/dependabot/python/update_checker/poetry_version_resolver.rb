@@ -44,6 +44,10 @@ module Dependabot
 
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
+        # Matches the PEP 508 name part of a dependency entry string, including optional extras.
+        # Example: "pillow==12.0.0" → "pillow", "celery[redis]==5.5.3" → "celery[redis]"
+        PEP508_NAME_REGEX = /\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/
+
         PACKAGE_RESOLVER_ERRORS = T.let(
           {
             package_info_error: /Unable to determine package info/,
@@ -359,7 +363,7 @@ module Dependabot
             next unless dep_entry.is_a?(String)
 
             # PEP 508 name part: letters/digits/._- with optional [extras]
-            name_match = dep_entry.match(/\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/)
+            name_match = dep_entry.match(PEP508_NAME_REGEX)
             next unless name_match
 
             entry_pkg_name = T.must(name_match[1])
