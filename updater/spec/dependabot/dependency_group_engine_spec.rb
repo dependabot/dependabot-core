@@ -485,6 +485,103 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     end
   end
 
+  context "when a job has group-by: dependency-name configured" do
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "per-dependency",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+            "group-by" => "dependency-name",
+            "update-types" => %w(minor patch)
+          }
+        }
+      ]
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:group_by_dependency_name)
+        .and_return(true)
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:group_membership_enforcement)
+        .and_return(false)
+    end
+
+    describe "#assign_to_groups!" do
+      let(:dependencies) { [dummy_pkg_a, dummy_pkg_b] }
+
+      before do
+        dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+      end
+
+      it "creates subgroups for each dependency name" do
+        subgroup_a = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        subgroup_b = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-b")
+        expect(subgroup_a).not_to be_nil
+        expect(subgroup_b).not_to be_nil
+        expect(subgroup_a.dependencies).to eql([dummy_pkg_a])
+        expect(subgroup_b.dependencies).to eql([dummy_pkg_b])
+      end
+
+      it "clears parent group dependencies" do
+        parent = dependency_group_engine.find_group(name: "per-dependency")
+        expect(parent.dependencies).to be_empty
+      end
+
+      it "preserves group-by in subgroup rules" do
+        subgroup = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        expect(subgroup.rules["group-by"]).to eql("dependency-name")
+      end
+
+      it "subgroups return true for group_by_dependency_name?" do
+        subgroup = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        expect(subgroup.group_by_dependency_name?).to be(true)
+      end
+
+      it "preserves update-types in subgroup rules" do
+        subgroup = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        expect(subgroup.rules["update-types"]).to eql(%w(minor patch))
+      end
+
+      it "does not treat subgroups as parents on subsequent calls" do
+        # Simulate second directory by calling assign_to_groups! again
+        new_pkg_a = Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ],
+          directory: "/app-b"
+        )
+        dependency_group_engine.assign_to_groups!(dependencies: [new_pkg_a])
+
+        # Should have exactly 2 subgroups for dummy-pkg-a (one per directory call),
+        # NOT 3 (which would happen if the first subgroup was treated as a parent)
+        subgroups_a = dependency_group_engine.dependency_groups.select do |g|
+          g.name == "per-dependency/dummy-pkg-a"
+        end
+        expect(subgroups_a.length).to eql(2)
+
+        # Should have no sub-sub-groups
+        nested = dependency_group_engine.dependency_groups.select do |g|
+          g.name.start_with?("per-dependency/dummy-pkg-a/")
+        end
+        expect(nested).to be_empty
+      end
+
+      it "does not mark subgroup dependencies as ungrouped" do
+        expect(dependency_group_engine.ungrouped_dependencies).to be_empty
+      end
+    end
+  end
+
   describe "::from_job_config validation" do
     let(:dependency_groups_config) do
       [
@@ -785,11 +882,29 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         expect(subgroup_a.applies_to).to eq("version-updates")
       end
 
-      it "does not set group_by on subgroups to prevent infinite recursion" do
+      it "preserves group_by in subgroups for correct handled-dependency tracking" do
         subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
 
-        expect(subgroup_a.group_by).to be_nil
-        expect(subgroup_a.group_by_dependency_name?).to be(false)
+        expect(subgroup_a.group_by).to eq("dependency-name")
+        expect(subgroup_a.group_by_dependency_name?).to be(true)
+      end
+
+      it "does not treat subgroups as parents on subsequent calls despite having group_by set" do
+        # Subgroups now retain group-by in their rules, so we need to verify
+        # the recursion guard prevents them from spawning sub-subgroups.
+        # Simulate a second directory by calling assign_to_groups! again.
+        dependency_group_engine.assign_to_groups!(dependencies: [dummy_pkg_a_dir2])
+
+        # Should have subgroups from both calls, but no sub-subgroups
+        subgroups_a = dependency_group_engine.dependency_groups.select do |g|
+          g.name == "monorepo-deps/dummy-pkg-a"
+        end
+        expect(subgroups_a.length).to eq(2)
+
+        nested = dependency_group_engine.dependency_groups.select do |g|
+          g.name.start_with?("monorepo-deps/dummy-pkg-a/")
+        end
+        expect(nested).to be_empty
       end
     end
 
