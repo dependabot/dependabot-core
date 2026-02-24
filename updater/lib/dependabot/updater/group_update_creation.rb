@@ -295,26 +295,11 @@ module Dependabot
 
         if all_versions_ignored?(dependency, checker)
           record_security_update_ignored_if_applicable(dependency, checker, group)
-          # When grouping by dependency name, mark as handled to prevent per-directory individual PRs
-          if group.group_by_dependency_name?
-            Dependabot.logger.info(
-              "Marking #{dependency.name} as handled (all versions ignored) " \
-              "within group-by-name group '#{group.name}'"
-            )
-            dependency_snapshot.add_handled_dependencies(dependency.name)
-          end
+          mark_handled_for_group_by_name(dependency, group, "all versions ignored")
           return []
         end
         unless semver_rules_allow_grouping?(group, dependency, checker)
-          # When grouping by dependency name, mark as handled to prevent per-directory individual PRs.
-          # The dependency should be excluded entirely rather than re-routed to individual updates.
-          if group.group_by_dependency_name?
-            Dependabot.logger.info(
-              "Marking #{dependency.name} as handled (semver rules reject grouping) " \
-              "within group-by-name group '#{group.name}'"
-            )
-            dependency_snapshot.add_handled_dependencies(dependency.name)
-          end
+          mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
           return []
         end
 
@@ -361,6 +346,19 @@ module Dependabot
         dependency_snapshot.add_handled_dependencies(dependency.name)
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
+      end
+
+      # When grouping by dependency name, mark the dependency as handled to prevent
+      # per-directory individual PRs from being raised.
+      sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup, reason: String).void }
+      def mark_handled_for_group_by_name(dependency, group, reason)
+        return unless group.group_by_dependency_name?
+
+        Dependabot.logger.info(
+          "Marking #{dependency.name} as handled (#{reason}) " \
+          "within group-by-name group '#{group.name}'"
+        )
+        dependency_snapshot.add_handled_dependencies(dependency.name)
       end
 
       sig { params(dependency: Dependabot::Dependency).void }
