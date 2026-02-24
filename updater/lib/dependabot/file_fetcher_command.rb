@@ -55,6 +55,7 @@ module Dependabot
             Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
           end
           handle_file_fetcher_error(e)
+          handle_missing_directory_for_pr_update(e)
           service.mark_job_as_processed(@base_commit_sha)
           return nil
         end
@@ -398,6 +399,25 @@ module Dependabot
           ),
           T.nilable(Dependabot::GitMetadataFetcher)
         )
+    end
+
+    # When updating a pull request, if the directory or dependency files
+    # are no longer found, we should close the PR as the dependency has
+    # been removed from the project.
+    sig { params(error: StandardError).void }
+    def handle_missing_directory_for_pr_update(error)
+      dependencies = job.dependencies
+
+      return unless job.updating_a_pull_request?
+      return unless dependencies
+      return unless error.is_a?(Dependabot::DependencyFileNotFound) ||
+                    error.is_a?(Dependabot::DirectoryNotFound)
+
+      Dependabot.logger.info(
+        "Closing pull request for #{dependencies.join(', ')} " \
+        "as the directory or dependency files are no longer present"
+      )
+      service.close_pull_request(dependencies, :dependency_removed)
     end
   end
 end
