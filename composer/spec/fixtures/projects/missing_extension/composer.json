@@ -8,6 +8,9 @@
   "config": {
       "platform": {
           "php": "5.6.4"
-      }
+      },
+    "audit": {
+      "block-insecure": false
+    }
   }
 }
