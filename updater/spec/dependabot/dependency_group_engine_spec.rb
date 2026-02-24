@@ -567,7 +567,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         subgroups_a = dependency_group_engine.dependency_groups.select do |g|
           g.name == "per-dependency/dummy-pkg-a"
         end
-        expect(subgroups_a.length).to eql(2)
+        expect(subgroups_a.length).to be(2)
 
         # Should have no sub-sub-groups
         nested = dependency_group_engine.dependency_groups.select do |g|

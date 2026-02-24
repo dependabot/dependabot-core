@@ -156,7 +156,7 @@ module Dependabot
       # Track the names of originally-configured group-by-dependency-name parent groups
       # so that subgroups created from them are not treated as parents on subsequent calls.
       @group_by_name_parent_names = T.let(
-        dependency_groups.select(&:group_by_dependency_name?).map(&:name).to_set,
+        dependency_groups.select(&:group_by_dependency_name?).to_set(&:name),
         T::Set[String]
       )
     end
