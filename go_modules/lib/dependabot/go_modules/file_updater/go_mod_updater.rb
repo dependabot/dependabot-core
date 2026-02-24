@@ -231,7 +231,9 @@ module Dependabot
           return unless vendor?
 
           command = "go mod vendor"
-          _, stderr, status = Open3.capture3(command)
+          # Set GOWORK=off to prevent failures when a go.work file is present,
+          # since `go mod vendor` cannot run in workspace mode.
+          _, stderr, status = Open3.capture3({ "GOWORK" => "off" }, command)
           handle_subprocess_error(stderr) unless status.success?
         end
 

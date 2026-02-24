@@ -932,6 +932,43 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
       it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
+
+    context "when vendor is enabled" do
+      let(:updater) do
+        described_class.new(
+          dependencies: [dependency],
+          dependency_files: dependency_files,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          directory: directory,
+          options: { tidy: false, vendor: true }
+        )
+      end
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.4.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:exit_status) { instance_double(Process::Status, success?: true) }
+
+      it "sets GOWORK=off when running go mod vendor to support workspace mode" do
+        allow(Open3).to receive(:capture3).and_call_original
+        expect(Open3).to receive(:capture3).with({ "GOWORK" => "off" }, "go mod vendor")
+          .and_return(["", "", exit_status])
+
+        updater.updated_go_mod_content
+      end
+    end
   end
 
   describe "#handle_subprocess_error" do
