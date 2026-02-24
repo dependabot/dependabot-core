@@ -241,7 +241,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: updated_support_files, notices: updater_notices)
       end
 
-      it "raises a generic no-files error" do
+      it "raises a DependencyFileContentNotChanged error" do
         expect { create_change }
           .to raise_error(
             Dependabot::DependencyFileContentNotChanged,
