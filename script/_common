@@ -73,10 +73,14 @@ function docker_build() {
   unset DOCKER_CONTENT_TRUST
 
   # pre_commit depends on go_modules and bundler images, so build them first
-  if [[ "$ECOSYSTEM" == "pre_commit" ]]; then
+  # Use a guard variable to prevent infinite recursion when called recursively
+  if [[ "$ECOSYSTEM" == "pre_commit" && -z "$BUILDING_DEPENDENCY" ]]; then
     echo "Building pre_commit dependencies: go_modules and bundler..."
-    docker_build_ecosystem "go_modules"
-    docker_build_ecosystem "bundler"
+    BUILDING_DEPENDENCY=1 docker_build "go_modules"
+    BUILDING_DEPENDENCY=1 docker_build "bundler"
+    # Restore ecosystem and tag for pre_commit
+    ECOSYSTEM="pre_commit"
+    set_tag
   fi
 
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
@@ -94,37 +98,6 @@ function docker_build() {
   IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')
   echo "$UPDATER_IMAGE_NAME contains $IMAGE_LAYERS layers"
   [[ $IMAGE_LAYERS -lt 126 ]]
-}
-
-function docker_build_ecosystem() {
-  local eco="$1"
-  local saved_ecosystem="$ECOSYSTEM"
-  local saved_tag="$TAG"
-
-  ECOSYSTEM="$eco"
-  set_tag
-  local eco_image_name="$UPDATER_IMAGE$TAG"
-
-  if docker image inspect "$eco_image_name" &>/dev/null; then
-    echo "Image $eco_image_name already exists, skipping build..."
-    ECOSYSTEM="$saved_ecosystem"
-    TAG="$saved_tag"
-    return
-  fi
-
-  echo "Building dependency: $eco_image_name..."
-  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
-    $DOCKER_BUILD_ARGS \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from "$eco_image_name" \
-    -t "$eco_image_name" \
-    -f $eco/Dockerfile \
-    .
-
-  # Restore original ecosystem and tag
-  ECOSYSTEM="$saved_ecosystem"
-  TAG="$saved_tag"
 }
 
 function docker_exec() {
