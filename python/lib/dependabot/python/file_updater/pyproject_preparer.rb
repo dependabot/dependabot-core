@@ -8,6 +8,7 @@ require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pep508_dependency_entry"
 require "securerandom"
 
 module Dependabot
@@ -15,10 +16,6 @@ module Dependabot
     class FileUpdater
       class PyprojectPreparer
         extend T::Sig
-
-        # Matches the PEP 508 name part of a dependency entry string, including optional extras.
-        # Example: "pillow==12.0.0" → "pillow", "celery[redis]==5.5.3" → "celery[redis]"
-        PEP508_NAME_REGEX = /\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/
 
         sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
@@ -170,13 +167,8 @@ module Dependabot
           # Normalize excluded names once for efficient comparison (strips extras)
           excluded_normalised = excluded_names.map { |n| normalise(n) }
           deps_array.each_with_index do |dep_entry, idx|
-            next unless dep_entry.is_a?(String)
-
-            # PEP 508 name part: letters/digits/._- with optional [extras]
-            name_match = dep_entry.match(PEP508_NAME_REGEX)
-            next unless name_match
-
-            entry_pkg_name = T.must(name_match[1])
+            entry_pkg_name = Pep508DependencyEntry.name(dep_entry)
+            next unless entry_pkg_name
             next if excluded_normalised.include?(normalise(entry_pkg_name))
 
             locked = locked_details(entry_pkg_name)

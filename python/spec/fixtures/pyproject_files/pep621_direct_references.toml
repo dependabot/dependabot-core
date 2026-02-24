@@ -1,0 +1,29 @@
+[tool.poetry]
+package-mode = false
+
+[project]
+name = "test-project"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.0; python_version >= '3.10'",
+    "celery[redis]>=5.0",
+    "custom @ https://example.com/custom-1.2.3.whl",
+    "custom-nospace@https://example.com/custom-nospace-2.0.0.whl",
+]
+
+[project.optional-dependencies]
+docs = [
+    "requests[socks]>=2.0; os_name == 'posix'",
+]
+
+[dependency-groups]
+dev = [
+    "requests>=2.0",
+    "hypothesis>=3.0",
+]
+test = []
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

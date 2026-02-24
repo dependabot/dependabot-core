@@ -266,6 +266,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
           expect(result).to include('"hypothesis==3.57.0"')
         end
       end
+
+      context "with a PEP 621 direct reference dependency" do
+        let(:dependencies) { [] }
+        let(:pyproject_fixture_name) { "pep621_direct_references.toml" }
+        let(:poetry_lock_fixture_name) { "pep621_direct_references.lock" }
+
+        it "preserves direct references while freezing non-source dependencies" do
+          result = freeze_top_level_dependencies_except
+          expect(result).to include('"custom @ https://example.com/custom-1.2.3.whl"')
+          expect(result).to include('"custom-nospace@https://example.com/custom-nospace-2.0.0.whl"')
+          expect(result).to include('"requests==2.18.4"')
+        end
+      end
     end
   end
 end

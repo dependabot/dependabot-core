@@ -18,6 +18,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pep508_dependency_entry"
 
 module Dependabot
   module Python
@@ -43,10 +44,6 @@ module Dependabot
         /mx
 
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
-
-        # Matches the PEP 508 name part of a dependency entry string, including optional extras.
-        # Example: "pillow==12.0.0" → "pillow", "celery[redis]==5.5.3" → "celery[redis]"
-        PEP508_NAME_REGEX = /\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/
 
         PACKAGE_RESOLVER_ERRORS = T.let(
           {
@@ -365,11 +362,12 @@ module Dependabot
           deps_array.each_with_index do |dep_entry, idx|
             next unless dep_entry.is_a?(String)
 
-            # PEP 508 name part: letters/digits/._- with optional [extras]
-            name_match = dep_entry.match(PEP508_NAME_REGEX)
-            next unless name_match
+            # Direct references ("pkg @ https://...", "pkg @ git+...")
+            # should be preserved as-is.
+            next if Pep508DependencyEntry.direct_reference?(dep_entry)
 
-            entry_pkg_name = T.must(name_match[1])
+            entry_pkg_name = Pep508DependencyEntry.name(dep_entry)
+            next unless entry_pkg_name
             next unless normalise(entry_pkg_name) == normalise(dependency.name)
 
             # Preserve environment markers such as "; python_version >= '3.10'"

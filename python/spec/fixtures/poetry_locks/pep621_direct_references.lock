@@ -1,0 +1,19 @@
+[[package]]
+name = "custom"
+version = "1.2.3"
+
+[[package]]
+name = "custom-nospace"
+version = "2.0.0"
+
+[[package]]
+name = "requests"
+version = "2.18.4"
+
+[[package]]
+name = "celery"
+version = "5.5.3"
+
+[[package]]
+name = "hypothesis"
+version = "3.57.0"

@@ -321,6 +321,60 @@ RSpec.describe namespace::PoetryVersionResolver do
         end
       end
     end
+
+    context "with PEP 621/735 dependency arrays" do
+      let(:dependency_files) { [pyproject, lockfile] }
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.18.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: ">=2.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:updated_requirement) { "==2.31.0" }
+      let(:pyproject_fixture_name) { "pep621_direct_references.toml" }
+      let(:lockfile_fixture_name) { "pep621_direct_references.lock" }
+      let(:written_pyproject) { +"" }
+      let(:language_manager) do
+        instance_double(
+          Dependabot::Python::UpdateChecker::LanguageVersionManager,
+          python_major_minor: "3.12",
+          install_required_python: nil
+        )
+      end
+
+      before do
+        allow(resolver).to receive(:language_version_manager).and_return(language_manager)
+        allow(resolver).to receive(:run_poetry_command)
+        allow(resolver).to receive(:run_poetry_update_command) do
+          written_pyproject.replace(File.read("pyproject.toml"))
+          File.write(
+            "poetry.lock",
+            <<~TOML
+              [[package]]
+              name = "requests"
+              version = "2.31.0"
+            TOML
+          )
+        end
+      end
+
+      it "updates target entries while preserving extras, markers and direct references" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.31.0"))
+
+        expect(written_pyproject).to include("requests==2.31.0; python_version >= '3.10'")
+        expect(written_pyproject).to include("requests[socks]==2.31.0; os_name == 'posix'")
+        expect(written_pyproject).to include("requests==2.31.0")
+        expect(written_pyproject).to include("celery[redis]>=5.0")
+        expect(written_pyproject).to include("hypothesis>=3.0")
+        expect(written_pyproject).to include("custom @ https://example.com/custom-1.2.3.whl")
+        expect(written_pyproject).to include("custom-nospace@https://example.com/custom-nospace-2.0.0.whl")
+        expect(written_pyproject).to include("test = []")
+      end
+    end
   end
 
   describe "#resolvable?" do
