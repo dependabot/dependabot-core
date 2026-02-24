@@ -1,0 +1,21 @@
+[tool.poetry]
+package-mode = false
+
+[project]
+name = "test-project"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+dependencies = [
+    "geopy>=1.0",
+    "requests>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=3.0",
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -220,5 +220,52 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
       it { is_expected.to include("subdirectory = \"python\"\n") }
     end
+
+    context "with PEP 621 [project.dependencies] and [dependency-groups]" do
+      let(:pyproject_fixture_name) { "pep621_poetry_hybrid.toml" }
+
+      context "with no dependencies to except" do
+        let(:dependencies) { [] }
+
+        it "freezes [project.dependencies] entries to their locked versions" do
+          result = freeze_top_level_dependencies_except
+          expect(result).to include('"geopy==1.14.0"')
+          expect(result).to include('"requests==2.18.4"')
+        end
+
+        it "freezes [dependency-groups] entries to their locked versions" do
+          expect(freeze_top_level_dependencies_except).to include('"hypothesis==3.57.0"')
+        end
+      end
+
+      context "with one PEP 621 dependency to except" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "geopy",
+              version: "1.14.0",
+              package_manager: "pip",
+              requirements: [{
+                requirement: ">=1.0",
+                file: "pyproject.toml",
+                source: nil,
+                groups: ["dependencies"]
+              }]
+            )
+          ]
+        end
+
+        it "does not freeze the excepted dependency" do
+          result = freeze_top_level_dependencies_except
+          expect(result).to include('"geopy>=1.0"')
+        end
+
+        it "still freezes other PEP 621 dependencies" do
+          result = freeze_top_level_dependencies_except
+          expect(result).to include('"requests==2.18.4"')
+          expect(result).to include('"hypothesis==3.57.0"')
+        end
+      end
+    end
   end
 end

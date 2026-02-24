@@ -109,6 +109,25 @@ module Dependabot
             end
           end
 
+          # Also freeze PEP 621 [project.dependencies] and [project.optional-dependencies]
+          pep621_project = pyproject_object["project"]
+          if pep621_project
+            source_types = %w(directory file url)
+            freeze_pep621_deps_array!(pep621_project.fetch("dependencies", []), excluded_names, source_types)
+            (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
+              freeze_pep621_deps_array!(optional_deps, excluded_names, source_types)
+            end
+          end
+
+          # Also freeze PEP 735 [dependency-groups]
+          pep735_groups = pyproject_object["dependency-groups"]
+          if pep735_groups
+            source_types = %w(directory file url)
+            pep735_groups.each_value do |group_deps|
+              freeze_pep621_deps_array!(group_deps, excluded_names, source_types) if group_deps.is_a?(Array)
+            end
+          end
+
           TomlRB.dump(pyproject_object)
         end
         # rubocop:enable Metrics/AbcSize
@@ -131,6 +150,41 @@ module Dependabot
         sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        # Freeze PEP 621/735 array entries in-place to their locked versions,
+        # skipping excluded deps, source deps, and entries without lock data.
+        sig do
+          params(
+            deps_array: T::Array[T.untyped],
+            excluded_names: T::Array[String],
+            source_types: T::Array[String]
+          ).void
+        end
+        def freeze_pep621_deps_array!(deps_array, excluded_names, source_types)
+          # Normalize excluded names once for efficient comparison (strips extras)
+          excluded_normalised = excluded_names.map { |n| normalise(n) }
+          deps_array.each_with_index do |dep_entry, idx|
+            next unless dep_entry.is_a?(String)
+
+            # PEP 508 name part: letters/digits/._- with optional [extras]
+            name_match = dep_entry.match(/\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/)
+            next unless name_match
+
+            entry_pkg_name = T.must(name_match[1])
+            next if excluded_normalised.include?(normalise(entry_pkg_name))
+
+            locked = locked_details(entry_pkg_name)
+            next unless locked
+
+            locked_version = locked.fetch("version", nil)
+            next unless locked_version
+            next if source_types.include?(locked.dig("source", "type"))
+
+            # Preserve environment markers such as "; python_version >= '3.10'"
+            env_marker = dep_entry[/;.*\z/m] || ""
+            deps_array[idx] = "#{entry_pkg_name}==#{locked_version}#{env_marker}"
+          end
         end
 
         sig { returns(T::Hash[String, T.untyped]) }

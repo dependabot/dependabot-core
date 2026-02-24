@@ -327,6 +327,21 @@ module Dependabot
             update_dependency_requirement(group_spec["dependencies"], updated_requirement)
           end
 
+          # Update PEP 621 [project.dependencies] / [project.optional-dependencies]
+          pep621_project = pyproject_object["project"]
+          if pep621_project
+            update_pep621_deps_array(pep621_project.fetch("dependencies", []), updated_requirement)
+            (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
+              update_pep621_deps_array(optional_deps, updated_requirement)
+            end
+          end
+
+          # Update PEP 735 [dependency-groups]
+          pep735_groups = pyproject_object["dependency-groups"]
+          pep735_groups&.each_value do |group_deps|
+            update_pep621_deps_array(group_deps, updated_requirement) if group_deps.is_a?(Array)
+          end
+
           # If this is a sub-dependency, add the new requirement
           unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
             poetry_object[subdep_type] ||= {}
@@ -334,6 +349,26 @@ module Dependabot
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        # Update PEP 621/735 array entries in-place for the target dependency,
+        # replacing the version specifier while preserving name, extras, and markers.
+        sig { params(deps_array: T::Array[T.untyped], updated_requirement: String).void }
+        def update_pep621_deps_array(deps_array, updated_requirement)
+          deps_array.each_with_index do |dep_entry, idx|
+            next unless dep_entry.is_a?(String)
+
+            # PEP 508 name part: letters/digits/._- with optional [extras]
+            name_match = dep_entry.match(/\A([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?:\[[^\]]+\])?)/)
+            next unless name_match
+
+            entry_pkg_name = T.must(name_match[1])
+            next unless normalise(entry_pkg_name) == normalise(dependency.name)
+
+            # Preserve environment markers such as "; python_version >= '3.10'"
+            env_marker = dep_entry[/;.*\z/m] || ""
+            deps_array[idx] = "#{entry_pkg_name}#{updated_requirement}#{env_marker}"
+          end
         end
 
         sig { params(toml_node: T::Hash[String, T.untyped], requirement: String).void }
