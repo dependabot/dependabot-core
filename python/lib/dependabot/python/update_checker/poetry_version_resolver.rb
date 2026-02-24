@@ -331,20 +331,7 @@ module Dependabot
             update_dependency_requirement(group_spec["dependencies"], updated_requirement)
           end
 
-          # Update PEP 621 [project.dependencies] / [project.optional-dependencies]
-          pep621_project = pyproject_object["project"]
-          if pep621_project
-            update_pep621_deps_array(pep621_project.fetch("dependencies", []), updated_requirement)
-            (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
-              update_pep621_deps_array(optional_deps, updated_requirement)
-            end
-          end
-
-          # Update PEP 735 [dependency-groups]
-          pep735_groups = pyproject_object["dependency-groups"]
-          pep735_groups&.each_value do |group_deps|
-            update_pep621_deps_array(group_deps, updated_requirement) if group_deps.is_a?(Array)
-          end
+          update_pep621_pep735_requirements(pyproject_object, updated_requirement)
 
           # If this is a sub-dependency, add the new requirement
           unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
@@ -353,6 +340,22 @@ module Dependabot
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        # Update PEP 621 and PEP 735 dependency entries with the new version requirement.
+        sig { params(pyproject_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def update_pep621_pep735_requirements(pyproject_object, updated_requirement)
+          pep621_project = pyproject_object["project"]
+          if pep621_project
+            update_pep621_deps_array(pep621_project.fetch("dependencies", []), updated_requirement)
+            (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
+              update_pep621_deps_array(optional_deps, updated_requirement)
+            end
+          end
+
+          pyproject_object["dependency-groups"]&.each_value do |group_deps|
+            update_pep621_deps_array(group_deps, updated_requirement) if group_deps.is_a?(Array)
+          end
         end
 
         # Update PEP 621/735 array entries in-place for the target dependency,

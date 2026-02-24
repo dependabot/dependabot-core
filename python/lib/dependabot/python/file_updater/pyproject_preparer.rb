@@ -113,23 +113,7 @@ module Dependabot
             end
           end
 
-          # Also freeze PEP 621 [project.dependencies] and [project.optional-dependencies]
-          pep621_source_types = %w(directory file url)
-          pep621_project = pyproject_object["project"]
-          if pep621_project
-            freeze_pep621_deps_array!(pep621_project.fetch("dependencies", []), excluded_names, pep621_source_types)
-            (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
-              freeze_pep621_deps_array!(optional_deps, excluded_names, pep621_source_types)
-            end
-          end
-
-          # Also freeze PEP 735 [dependency-groups]
-          pep735_groups = pyproject_object["dependency-groups"]
-          if pep735_groups
-            pep735_groups.each_value do |group_deps|
-              freeze_pep621_deps_array!(group_deps, excluded_names, pep621_source_types) if group_deps.is_a?(Array)
-            end
-          end
+          freeze_pep621_pep735_deps!(pyproject_object, excluded_names)
 
           TomlRB.dump(pyproject_object)
         end
@@ -153,6 +137,24 @@ module Dependabot
         sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        # Freeze PEP 621 and PEP 735 dependency entries to their locked versions.
+        sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
+        def freeze_pep621_pep735_deps!(pyproject_object, excluded_names)
+          source_types = %w(directory file url)
+
+          pep621_project = pyproject_object["project"]
+          if pep621_project
+            freeze_pep621_deps_array!(pep621_project.fetch("dependencies", []), excluded_names, source_types)
+            (pep621_project["optional-dependencies"] || {}).each_value do |optional_deps|
+              freeze_pep621_deps_array!(optional_deps, excluded_names, source_types)
+            end
+          end
+
+          pyproject_object["dependency-groups"]&.each_value do |group_deps|
+            freeze_pep621_deps_array!(group_deps, excluded_names, source_types) if group_deps.is_a?(Array)
+          end
         end
 
         # Freeze PEP 621/735 array entries in-place to their locked versions,
