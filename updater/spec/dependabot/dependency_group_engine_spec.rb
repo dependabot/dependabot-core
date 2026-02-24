@@ -562,12 +562,12 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         )
         dependency_group_engine.assign_to_groups!(dependencies: [new_pkg_a])
 
-        # Should have exactly 2 subgroups for dummy-pkg-a (one per directory call),
-        # NOT 3 (which would happen if the first subgroup was treated as a parent)
+        # Should reuse the existing subgroup rather than creating a duplicate
         subgroups_a = dependency_group_engine.dependency_groups.select do |g|
           g.name == "per-dependency/dummy-pkg-a"
         end
-        expect(subgroups_a.length).to be(2)
+        expect(subgroups_a.length).to be(1)
+        expect(subgroups_a.first.dependencies).to contain_exactly(dummy_pkg_a, new_pkg_a)
 
         # Should have no sub-sub-groups
         nested = dependency_group_engine.dependency_groups.select do |g|
@@ -895,11 +895,14 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         # Simulate a second directory by calling assign_to_groups! again.
         dependency_group_engine.assign_to_groups!(dependencies: [dummy_pkg_a_dir2])
 
-        # Should have subgroups from both calls, but no sub-subgroups
+        # Should reuse the existing subgroup rather than creating a duplicate
         subgroups_a = dependency_group_engine.dependency_groups.select do |g|
           g.name == "monorepo-deps/dummy-pkg-a"
         end
-        expect(subgroups_a.length).to eq(2)
+        expect(subgroups_a.length).to eq(1)
+
+        # The existing subgroup should now contain deps from both calls
+        expect(subgroups_a.first.dependencies.count { |d| d.name == "dummy-pkg-a" }).to eq(3)
 
         nested = dependency_group_engine.dependency_groups.select do |g|
           g.name.start_with?("monorepo-deps/dummy-pkg-a/")

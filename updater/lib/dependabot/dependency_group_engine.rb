@@ -145,7 +145,7 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def matches_group_by_parent_group?(dependency)
       @dependency_groups.any? do |group|
-        group.group_by_dependency_name? && group.contains?(dependency)
+        @group_by_name_parent_names.include?(group.name) && group.contains?(dependency)
       end
     end
 
@@ -226,16 +226,23 @@ module Dependabot
         matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
 
         matching_deps.group_by(&:name).each do |dep_name, deps|
-          # Preserve "group-by" in subgroup rules so group_by_dependency_name? returns true,
-          # enabling correct handled-dependency tracking when semver rules reject an update.
-          subgroup_rules = parent_group.rules.merge("patterns" => [dep_name])
-          subgroup = Dependabot::DependencyGroup.new(
-            name: "#{parent_group.name}/#{dep_name}",
-            rules: subgroup_rules,
-            applies_to: parent_group.applies_to
-          )
-          subgroup.dependencies.concat(deps)
-          @dependency_groups << subgroup
+          subgroup_name = "#{parent_group.name}/#{dep_name}"
+          existing_subgroup = @dependency_groups.find { |g| g.name == subgroup_name }
+
+          if existing_subgroup
+            existing_subgroup.dependencies.concat(deps)
+          else
+            # Preserve "group-by" in subgroup rules so group_by_dependency_name? returns true,
+            # enabling correct handled-dependency tracking when semver rules reject an update.
+            subgroup_rules = parent_group.rules.merge("patterns" => [dep_name])
+            subgroup = Dependabot::DependencyGroup.new(
+              name: subgroup_name,
+              rules: subgroup_rules,
+              applies_to: parent_group.applies_to
+            )
+            subgroup.dependencies.concat(deps)
+            @dependency_groups << subgroup
+          end
         end
 
         parent_group.dependencies.clear
