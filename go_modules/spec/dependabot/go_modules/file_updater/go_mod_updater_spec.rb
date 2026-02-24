@@ -963,10 +963,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it "sets GOWORK=off when running go mod vendor to support workspace mode" do
         allow(Open3).to receive(:capture3).and_call_original
-        expect(Open3).to receive(:capture3).with({ "GOWORK" => "off" }, "go mod vendor")
+        allow(Open3).to receive(:capture3)
+          .with({ "GOWORK" => "off" }, "go mod vendor")
           .and_return(["", "", exit_status])
 
         updater.updated_go_mod_content
+
+        expect(Open3).to have_received(:capture3).with({ "GOWORK" => "off" }, "go mod vendor")
       end
     end
   end
