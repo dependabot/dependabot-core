@@ -17,6 +17,8 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        # Patterns that indicate the package is unreachable/missing but not a private-repo auth
+        # failure. See also GoModUpdater::RESOLVABILITY_ERROR_REGEXES for the file-update counterpart.
         RESOLVABILITY_ERROR_REGEXES = T.let(
           [
             # Package url/proxy doesn't include any redirect meta tags
@@ -26,16 +28,18 @@ module Dependabot
             /Repository not found/,
             /unrecognized import path/,
             /malformed module path/,
-            # (Private) module could not be fetched
-            /module .*: git ls-remote .*: exit status 128/m
+            # (Private) module could not be fetched.
+            # For private repos the "If this is a private repository" hint will
+            # be present and ResolvabilityErrors.handle is called first (see the
+            # rescue block below), so this only fires for non-private repos.
+            /module .*: git ls-remote .*: exit status 128/m,
+            # No secure protocol (e.g. https) available for the repository.
+            # NOTE: GoModUpdater has a similar regex (NO_SECURE_PROTOCOL_REGEX) that captures the
+            # host and raises GitDependenciesNotReachable instead — keep both patterns in sync.
+            /no secure protocol found for repository/
           ].freeze,
           T::Array[Regexp]
         )
-        # The module was retracted from the proxy
-        # OR the version of Go required is greater than what Dependabot supports
-        # OR other go.mod version errors
-        INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
-        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         sig do
           params(
@@ -104,6 +108,13 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
 
+          # Private repo auth failures must surface before the graceful fallback.
+          # This takes precedence over RESOLVABILITY_ERROR_REGEXES (e.g. the git ls-remote
+          # exit-status-128 pattern) so that unreachable private repos raise
+          # GitDependenciesNotReachable rather than silently returning the current version.
+          ResolvabilityErrors.handle(e.message) if e.message.include?("If this is a private repository")
+
+          # Only reached when the "private repository" hint is absent.
           if RESOLVABILITY_ERROR_REGEXES.any? { |r| e.message.match?(r) }
             return [package_release(version: T.must(dependency.version))]
           end

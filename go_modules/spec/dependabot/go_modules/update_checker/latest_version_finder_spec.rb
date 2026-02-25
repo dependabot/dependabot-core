@@ -191,12 +191,10 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         )
       end
 
-      it "raises a DependencyFileNotResolvable error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }
-          .to raise_error(error_class) do |error|
-            expect(error.message).to include("example.com/test/package")
-        end
+      # Unreachable/missing packages should not block updates for the rest of
+      # the manifest — return the current version so the update run continues.
+      it "returns the current version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.7.0"))
       end
     end
 
@@ -211,12 +209,10 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         )
       end
 
-      it "raises a DependencyFileNotResolvable error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }
-          .to raise_error(error_class) do |error|
-            expect(error.message).to include("example.com/web/dependabot.com")
-        end
+      # Unreachable/missing packages should not block updates for the rest of
+      # the manifest — return the current version so the update run continues.
+      it "returns the current version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.7.0"))
       end
     end
 
@@ -231,12 +227,10 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         )
       end
 
-      it "raises a DependencyFileNotResolvable error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }
-          .to raise_error(error_class) do |error|
-            expect(error.message).to include("pkg-errors")
-        end
+      # Unreachable/missing packages should not block updates for the rest of
+      # the manifest — return the current version so the update run continues.
+      it "returns the current version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
 

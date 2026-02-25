@@ -16,6 +16,7 @@ module Dependabot
       class GoModUpdater
         extend T::Sig
 
+        # See also PackageDetailsFetcher::RESOLVABILITY_ERROR_REGEXES for the version-lookup counterpart.
         RESOLVABILITY_ERROR_REGEXES = T.let(
           [
             # The checksum in go.sum does not match the downloaded content
@@ -350,6 +351,8 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
+          # Intentionally NOT in RESOLVABILITY_ERROR_REGEXES — this raises
+          # GitDependenciesNotReachable rather than DependencyFileNotResolvable.
           if (matches = stderr.match(NO_SECURE_PROTOCOL_REGEX))
             raise Dependabot::GitDependenciesNotReachable, [T.must(matches[1])]
           end

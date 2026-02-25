@@ -119,6 +119,24 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         end
       end
 
+      context "when the error indicates a private repository" do
+        let(:error_message) do
+          "module github.com/private/repo: git ls-remote https://github.com/private/repo: exit status 128\n" \
+            "If this is a private repository"
+        end
+
+        before do
+          # Stub the inner `go list` call that ResolvabilityErrors.handle uses to
+          # distinguish "private repo" from "bad revision". A non-zero exit status
+          # tells it the repo is unreachable → GitDependenciesNotReachable.
+          allow(Open3).to receive(:capture3).and_return(["", "", instance_double(Process::Status, success?: false)])
+        end
+
+        it "raises GitDependenciesNotReachable instead of returning current version" do
+          expect { fetch }.to raise_error(Dependabot::GitDependenciesNotReachable)
+        end
+      end
+
       context "when the error does not match any resolvability pattern" do
         let(:error_message) { "some unexpected error" }
 

@@ -9,7 +9,6 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
-require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/package/package_details_fetcher"
 require "dependabot/package/package_latest_version_finder"
 
@@ -19,24 +18,6 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        RESOLVABILITY_ERROR_REGEXES = T.let(
-          [
-            # Package url/proxy doesn't include any redirect meta tags
-            /no go-import meta tags/,
-            # Package url 404s
-            /404 Not Found/,
-            /Repository not found/,
-            /unrecognized import path/,
-            /malformed module path/,
-            # (Private) module could not be fetched
-            /module .*: git ls-remote .*: exit status 128/m
-          ].freeze,
-          T::Array[Regexp]
-        )
-        # The module was retracted from the proxy
-        # OR the version of Go required is greater than what Dependabot supports
-        # OR other go.mod version errors
-        INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         sig do
