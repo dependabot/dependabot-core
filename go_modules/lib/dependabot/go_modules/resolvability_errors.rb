@@ -9,9 +9,14 @@ module Dependabot
       extend T::Sig
 
       GITHUB_REPO_REGEX = %r{github.com/[^:@ ]*}
+      NO_SECURE_PROTOCOL_REGEX = /go: ([^@\s]+)@\S+: no secure protocol found for repository/
 
       sig { params(message: String).void }
       def self.handle(message)
+        if (match = message.match(NO_SECURE_PROTOCOL_REGEX))
+          raise Dependabot::GitDependenciesNotReachable, [T.must(match[1])]
+        end
+
         mod_path = message.scan(GITHUB_REPO_REGEX).last
         unless mod_path && message.include?("If this is a private repository")
           raise Dependabot::DependencyFileNotResolvable, message
