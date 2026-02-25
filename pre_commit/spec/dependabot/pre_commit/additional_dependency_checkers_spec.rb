@@ -4,6 +4,12 @@
 require "spec_helper"
 require "dependabot/pre_commit/additional_dependency_checkers"
 require "dependabot/pre_commit/additional_dependency_checkers/base"
+require "dependabot/pre_commit/additional_dependency_checkers/dart"
+require "dependabot/pre_commit/additional_dependency_checkers/go"
+require "dependabot/pre_commit/additional_dependency_checkers/node"
+require "dependabot/pre_commit/additional_dependency_checkers/python"
+require "dependabot/pre_commit/additional_dependency_checkers/ruby"
+require "dependabot/pre_commit/additional_dependency_checkers/rust"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers do
   describe ".register and .for_language" do
