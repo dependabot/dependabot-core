@@ -27,7 +27,9 @@ module Dependabot
             /unrecognized import path/,
             /malformed module path/,
             # (Private) module could not be fetched
-            /module .*: git ls-remote .*: exit status 128/m
+            /module .*: git ls-remote .*: exit status 128/m,
+            # Repository could not be accessed over HTTPS (e.g. private Gerrit, Azure DevOps auth failure)
+            /no secure protocol found for repository/
           ].freeze,
           T::Array[Regexp]
         )

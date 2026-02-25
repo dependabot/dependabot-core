@@ -1070,5 +1070,33 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
+
+    context "when no secure protocol is found for a repository" do
+      let(:stderr) do
+        <<~ERROR
+          go: gerrit.mmt.com/Platform-Comm-Identifier-Go.git@v0.0.0-20220124100240-6f5253e97566: no secure protocol found for repository
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when a local replace directive points to a missing go.mod" do
+      let(:stderr) do
+        <<~ERROR
+          go: github.com/execute008/some-repo@v0.0.0-20251116161827-9bcb0d3e0cf5 (replaced by ./some-repo): reading some-repo/go.mod: open /some-repo/go.mod: no such file or directory
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end

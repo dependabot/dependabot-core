@@ -33,7 +33,9 @@ module Dependabot
             # https://github.com/golang/go/issues/56494
             /can't find reason for requirement on/,
             # import path doesn't exist
-            /package \S+ is not in GOROOT/
+            /package \S+ is not in GOROOT/,
+            # Local replace directive points to a directory without a go.mod
+            %r{reading .+/go\.mod: open .+/go\.mod: no such file or directory}
           ].freeze,
           T::Array[Regexp]
         )
@@ -45,6 +47,8 @@ module Dependabot
             %r{net/http: TLS handshake timeout},
             # (Private) module could not be fetched
             /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
+            # Repository could not be accessed over HTTPS (e.g. private Gerrit, Azure DevOps auth failure)
+            /no secure protocol found for repository/,
             # (Private) module could not be found
             /cannot find module providing package/,
             # Package in module was likely renamed or removed
