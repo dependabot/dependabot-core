@@ -40,6 +40,11 @@ module Dependabot
           T::Array[Regexp]
         )
 
+        NO_SECURE_PROTOCOL_REGEX = T.let(
+          /([^@\s]+)@[^:]+: no secure protocol found for repository/,
+          Regexp
+        )
+
         REPO_RESOLVABILITY_ERROR_REGEXES = T.let(
           [
             /fatal: The remote end hung up unexpectedly/,
@@ -47,8 +52,6 @@ module Dependabot
             %r{net/http: TLS handshake timeout},
             # (Private) module could not be fetched
             /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
-            # Repository could not be accessed over HTTPS (e.g. private Gerrit, Azure DevOps auth failure)
-            /no secure protocol found for repository/,
             # (Private) module could not be found
             /cannot find module providing package/,
             # Package in module was likely renamed or removed
@@ -345,6 +348,10 @@ module Dependabot
 
           if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
             raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
+          end
+
+          if (matches = stderr.match(NO_SECURE_PROTOCOL_REGEX))
+            raise Dependabot::GitDependenciesNotReachable, [T.must(matches[1])]
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
