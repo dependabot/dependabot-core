@@ -1078,10 +1078,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         ERROR
       end
 
-      it "raises the correct error" do
+      it "raises a GitDependenciesNotReachable error with the repo URL" do
         expect do
           updater.send(:handle_subprocess_error, stderr)
-        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end.to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls).to include("gerrit.mmt.com/Platform-Comm-Identifier-Go.git")
+        end
       end
     end
 

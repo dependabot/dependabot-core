@@ -40,6 +40,13 @@ module Dependabot
           T::Array[Regexp]
         )
 
+        # Matches `no secure protocol found for repository` errors to extract the repo path
+        # e.g. "go: gerrit.example.com/some-module.git@v1.0.0: no secure protocol found for repository"
+        NO_SECURE_PROTOCOL_REGEX = T.let(
+          /go(?: get)?: (?<repo>[^@\s]+)(?:@[^\s:]+)?: no secure protocol found for repository/,
+          Regexp
+        )
+
         REPO_RESOLVABILITY_ERROR_REGEXES = T.let(
           [
             /fatal: The remote end hung up unexpectedly/,
@@ -47,8 +54,6 @@ module Dependabot
             %r{net/http: TLS handshake timeout},
             # (Private) module could not be fetched
             /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
-            # Repository could not be accessed over HTTPS (e.g. private Gerrit, Azure DevOps auth failure)
-            /no secure protocol found for repository/,
             # (Private) module could not be found
             /cannot find module providing package/,
             # Package in module was likely renamed or removed
@@ -345,6 +350,12 @@ module Dependabot
 
           if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
             raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
+          end
+
+          # Repository could not be accessed over a secure protocol (e.g. private Gerrit, Azure DevOps)
+          # Parse the repo URL directly from the error message and raise GitDependenciesNotReachable
+          if (matches = stderr.match(NO_SECURE_PROTOCOL_REGEX))
+            raise Dependabot::GitDependenciesNotReachable, [matches[:repo]]
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
