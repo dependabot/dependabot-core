@@ -460,15 +460,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
     end
 
     context "when go get fails due to a missing local replacement go.mod" do
-      include_examples "path dependency replacement go.mod missing",
-                       version: "v1.2.3",
-                       dependency_path: "./local-repo"
+      it_behaves_like "path dependency replacement go.mod missing",
+                      version: "v1.2.3",
+                      dependency_path: "./local-repo"
     end
 
     context "when go get fails due to a missing parent-directory replacement go.mod" do
-      include_examples "path dependency replacement go.mod missing",
-                       version: "v1.2.4",
-                       dependency_path: "../local-repo"
+      it_behaves_like "path dependency replacement go.mod missing",
+                      version: "v1.2.4",
+                      dependency_path: "../local-repo"
     end
 
     context "when go get fails with an insecure protocol repository error" do
