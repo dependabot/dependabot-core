@@ -1446,9 +1446,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:tags_fixture_name) { "owasp.json" }
       let(:repo_url) { "https://registry.hub.docker.com/v2/owasp/modsecurity-crs/" }
 
-      let(:new_headers) do
+      new_headers =
         fixture("docker", "registry_manifest_headers", "generic.json")
-      end
 
       before do
         tags_url = repo_url + "/tags/list"

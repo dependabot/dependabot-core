@@ -254,7 +254,7 @@ RSpec.describe Dependabot::Clients::Azure do
     end
 
     context "when response is 200" do
-      let(:response_body) { fixture("azure", "update_pull_request_details.json") }
+      response_body = fixture("azure", "update_pull_request_details.json")
 
       before do
         request_body = {
@@ -308,7 +308,7 @@ RSpec.describe Dependabot::Clients::Azure do
     let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
 
     context "when response is 200" do
-      let(:response_body) { fixture("azure", "pull_request_details.json") }
+      response_body = fixture("azure", "pull_request_details.json")
 
       before do
         stub_request(:get, pull_request_url)
@@ -386,42 +386,49 @@ RSpec.describe Dependabot::Clients::Azure do
 
   describe "#get" do
     context "when using auth headers" do
-      include_examples "#get using auth headers",
-                       {
-                         "token_type" => "basic non encoded",
-                         "credentials" => Dependabot::Credential.new(
-                           {
-                             "type" => "git_source",
-                             "host" => "dev.azure.com",
-                             "token" => ":test_token"
-                           }
-                         ),
-                         "headers" => { "Authorization" => "Basic #{Base64.encode64(':test_token').delete("\n")}" }
-                       }
-      include_examples "#get using auth headers",
-                       {
-                         "token_type" => "basic encoded",
-                         "credentials" => Dependabot::Credential.new(
-                           {
-                             "type" => "git_source",
-                             "host" => "dev.azure.com",
-                             "token" => Base64.encode64(":test_token").delete("\n")
-                           }
-                         ),
-                         "headers" => { "Authorization" => "Basic #{Base64.encode64(':test_token').delete("\n")}" }
-                       }
-      include_examples "#get using auth headers",
-                       {
-                         "token_type" => "bearer",
-                         "credentials" => Dependabot::Credential.new(
-                           {
-                             "type" => "git_source",
-                             "host" => "dev.azure.com",
-                             "token" => "test_token"
-                           }
-                         ),
-                         "headers" => { "Authorization" => "Bearer test_token" }
-                       }
+      token = ":test_token"
+      encoded_token = Base64.encode64(":test_token").delete("\n")
+      bearer_token = "test_token"
+      basic_non_encoded_token_data =
+        {
+          "token_type" => "basic non encoded",
+          "credentials" => Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "dev.azure.com",
+              "token" => token
+            }
+          ),
+          "headers" => { "Authorization" => "Basic #{encoded_token}" }
+        }
+      basic_encoded_token_data =
+        {
+          "token_type" => "basic encoded",
+          "credentials" => Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "dev.azure.com",
+              "token" => encoded_token.to_s
+            }
+          ),
+          "headers" => { "Authorization" => "Basic #{encoded_token}" }
+        }
+      bearer_token_data =
+        {
+          "token_type" => "bearer",
+          "credentials" => Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "dev.azure.com",
+              "token" => bearer_token
+            }
+          ),
+          "headers" => { "Authorization" => "Bearer #{bearer_token}" }
+        }
+
+      include_examples "#get using auth headers", basic_non_encoded_token_data
+      include_examples "#get using auth headers", basic_encoded_token_data
+      include_examples "#get using auth headers", bearer_token_data
     end
 
     context "when dealing with Retries" do

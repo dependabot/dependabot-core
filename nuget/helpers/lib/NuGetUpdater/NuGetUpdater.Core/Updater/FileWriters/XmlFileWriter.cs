@@ -611,61 +611,7 @@ public class XmlFileWriter : IFileWriter
         // e.g., "[2.0.0, )" => "2.0.0"
         if (newRange.MaxVersion is null)
         {
-            var requiredVersionString = requiredVersion.ToString();
-            var isWildcardVersion = existingRange.OriginalString?.Contains('*') == true;
-            if (isWildcardVersion)
-            {
-                var oldRangeParts = existingRange.OriginalString!.Split('.');
-                var newRangeParts = requiredVersion.ToFullString().Split('.');
-                var rebuiltParts = new List<string>();
-                for (int i = 0; i < oldRangeParts.Length; i++)
-                {
-                    if (oldRangeParts[i].Contains('*'))
-                    {
-                        var dashIndex = oldRangeParts[i].IndexOf('-');
-                        var starIndex = oldRangeParts[i].IndexOf('*');
-                        if (dashIndex >= 0 && dashIndex < starIndex)
-                        {
-                            // prerelease wildcard (e.g., "3-*")
-                            if (i < newRangeParts.Length)
-                            {
-                                var newDashIndex = newRangeParts[i].IndexOf('-');
-                                if (newDashIndex >= 0)
-                                {
-                                    var beforeDash = newRangeParts[i][..newDashIndex];
-                                    var fromDash = oldRangeParts[i][dashIndex..];
-                                    rebuiltParts.Add(beforeDash + fromDash);
-                                    rebuiltParts.AddRange(oldRangeParts.Skip(i + 1));
-                                }
-                                else
-                                {
-                                    // new version is stable, drop prerelease wildcard
-                                    rebuiltParts.Add(newRangeParts[i]);
-                                }
-                            }
-                            else
-                            {
-                                rebuiltParts.Add("0");
-                            }
-                        }
-                        else
-                        {
-                            // version wildcard (e.g., "*", "*-*", "*-preview*")
-                            rebuiltParts.AddRange(oldRangeParts.Skip(i));
-                        }
-
-                        break;
-                    }
-                    else
-                    {
-                        rebuiltParts.Add(i < newRangeParts.Length ? newRangeParts[i] : "0");
-                    }
-                }
-
-                requiredVersionString = string.Join(".", rebuiltParts);
-            }
-
-            return requiredVersionString;
+            return requiredVersion.ToString();
         }
 
         return newRange.ToString();

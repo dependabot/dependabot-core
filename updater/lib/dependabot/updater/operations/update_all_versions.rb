@@ -237,7 +237,7 @@ module Dependabot
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
-            update_cooldown: job.security_updates_only? ? nil : job.cooldown,
+            update_cooldown: job.cooldown,
             options: job.experiments
           )
         end

@@ -145,48 +145,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       its(:content) { is_expected.to include "react-dom: ^16.2.3" }
     end
 
-    context("with a scoped package in catalog") do
-      let(:project_name) { "pnpm/catalog_monorepo" }
-      let(:dependencies) do
-        [
-          create_dependency(
-            file: "pnpm-workspace.yaml",
-            name: "@tanstack/react-query",
-            version: "5.59.15",
-            required_version: "^5.62.0",
-            previous_required_version: "^5.59.15"
-          )
-        ]
-      end
-
-      its(:content) { is_expected.to include '"@tanstack/react-query": ^5.62.0' }
-    end
-
-    context("with multiple scoped packages in catalog") do
-      let(:project_name) { "pnpm/catalog_monorepo" }
-      let(:dependencies) do
-        [
-          create_dependency(
-            file: "pnpm-workspace.yaml",
-            name: "@tanstack/react-query",
-            version: "5.59.15",
-            required_version: "^5.62.0",
-            previous_required_version: "^5.59.15"
-          ),
-          create_dependency(
-            file: "pnpm-workspace.yaml",
-            name: "@trpc/client",
-            version: "11.0.0-rc.477",
-            required_version: "^11.0.0-rc.500",
-            previous_required_version: "^11.0.0-rc.477"
-          )
-        ]
-      end
-
-      its(:content) { is_expected.to include '"@tanstack/react-query": ^5.62.0' }
-      its(:content) { is_expected.to include '"@trpc/client": ^11.0.0-rc.500' }
-    end
-
     context("with catalog and catalog groups with valid yaml") do
       let(:project_name) { "pnpm/catalogs_valid_yaml" }
       let(:dependencies) do

@@ -137,18 +137,6 @@ public partial class Correlator
         for (int i = tableStartLine; i < tableEndLine; i++)
         {
             var line = lines[i].Trim();
-
-            // Strip leading and trailing pipe characters from markdown table rows
-            if (line.StartsWith('|'))
-            {
-                line = line[1..].Trim();
-            }
-
-            if (line.EndsWith('|'))
-            {
-                line = line[..^1].Trim();
-            }
-
             var foundMatch = false;
             foreach (var pattern in SpecialCasePatterns)
             {

@@ -955,10 +955,9 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "when loading a YAML file with alias" do
-    let(:fixture) { "spec/fixtures/projects/yaml_alias/" }
-    let(:alias_info_file) { "pubspec_alias_true.yaml" }
-    let(:non_alias_info_file) { "pubspec.yaml" }
-
+    fixture = "spec/fixtures/projects/yaml_alias/"
+    alias_info_file = "pubspec_alias_true.yaml"
+    non_alias_info_file = "pubspec.yaml"
     it "parses a alias contained YAML file with aliases: true" do
       yaml_object = File.open(fixture + alias_info_file, "r")
       data = yaml_object.read

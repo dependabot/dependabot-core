@@ -52,10 +52,10 @@ module Dependabot
         sig { params(content: T.nilable(String), filename: String, dependency: Dependabot::Dependency).returns(String) }
         def update_requirement(content:, filename:, dependency:)
           updated_req = dependency.requirements.find { |r| r.fetch(:file) == filename }
-                                               &.fetch(:requirement)
+                                  &.fetch(:requirement)
 
           old_req = dependency.previous_requirements&.find { |r| r.fetch(:file) == filename }
-                                                    &.fetch(:requirement)
+                              &.fetch(:requirement)
 
           return T.must(content) unless old_req
 

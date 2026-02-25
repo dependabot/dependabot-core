@@ -106,30 +106,17 @@ module Dependabot
       local_repo_git_metadata_fetcher.head_commit_for_ref_sha(T.must(ref))
     end
 
-    sig { returns(T::Array[GitRef]) }
-    def tags
-      GitMetadataFetcher.new(
-        url: dependency.source_details&.fetch(:url, nil),
-        credentials: credentials
-      ).tags
-    end
-
-    sig { params(ref: String).returns(Excon::Response) }
-    def ref_details(ref)
+    sig { returns(Excon::Response) }
+    def ref_details_for_pinned_ref
       T.must(
         T.let(
           GitMetadataFetcher.new(
             url: dependency.source_details&.fetch(:url, nil),
             credentials: credentials
-          ).ref_details_for_pinned_ref(ref),
+          ).ref_details_for_pinned_ref(ref_pinned),
           T.nilable(Excon::Response)
         )
       )
-    end
-
-    sig { returns(Excon::Response) }
-    def ref_details_for_pinned_ref
-      ref_details(ref_pinned)
     end
 
     sig { params(ref: String).returns(T::Boolean) }

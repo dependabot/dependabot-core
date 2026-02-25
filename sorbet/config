@@ -4,7 +4,6 @@
 --ignore=.bundle/
 --ignore=bin
 --disable-watchman
---suppress-payload-superclass-redefinition-for=RDoc::Markup::Heading
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
 # See https://stackoverflow.com/a/76548429
@@ -30,7 +29,6 @@
 --ignore=maven/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
---ignore=pre_commit/spec/
 --ignore=pub/spec/
 --ignore=python/spec/
 --ignore=rust_toolchain/spec/

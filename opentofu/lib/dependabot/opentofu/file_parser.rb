@@ -145,10 +145,10 @@ module Dependabot
           version: version,
           package_manager: "opentofu",
           requirements: [
-            { requirement: version_req,
-              groups: [],
-              file: file.name,
-              source: source }
+            requirement: version_req,
+            groups: [],
+            file: file.name,
+            source: source
           ]
         )
       end
@@ -174,14 +174,14 @@ module Dependabot
           version: determine_version_for(T.must(hostname), T.must(namespace), T.must(name), version_req),
           package_manager: "opentofu",
           requirements: [
-            { requirement: version_req,
-              groups: [],
-              file: file.name,
-              source: {
-                type: "provider",
-                registry_hostname: hostname,
-                module_identifier: "#{namespace}/#{name}"
-              } }
+            requirement: version_req,
+            groups: [],
+            file: file.name,
+            source: {
+              type: "provider",
+              registry_hostname: hostname,
+              module_identifier: "#{namespace}/#{name}"
+            }
           ]
         )
       end
@@ -213,10 +213,10 @@ module Dependabot
           version: version,
           package_manager: "opentofu",
           requirements: [
-            { requirement: nil,
-              groups: [],
-              file: file.name,
-              source: source }
+            requirement: nil,
+            groups: [],
+            file: file.name,
+            source: source
           ]
         )
       end

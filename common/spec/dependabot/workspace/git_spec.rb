@@ -137,17 +137,6 @@ RSpec.describe Dependabot::Workspace::Git do
           expect(workspace.failed_change_attempts.size).to eq(1)
         end
       end
-
-      context "when error occurs with no file changes" do
-        it "does not record a change attempt" do
-          expect do
-            workspace.change("no changes error") { raise "boom" }
-          end.to raise_error(RuntimeError, "boom")
-
-          expect(workspace.change_attempts).to be_empty
-          expect(workspace.failed_change_attempts).to be_empty
-        end
-      end
     end
   end
 

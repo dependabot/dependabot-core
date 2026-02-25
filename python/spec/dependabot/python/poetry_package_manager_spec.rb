@@ -22,10 +22,8 @@ RSpec.describe Dependabot::Python::PoetryPackageManager do
     context "when poetry version extracted from pyenv is well formed" do
       # If this test starts failing, you need to adjust the "detect_poetry_version" function
       # to return a valid version in format x.x, x.x.x etc. examples: 3.12.5, 3.12
-      let(:version) do
-        Dependabot::SharedHelpers.run_shell_command("pyenv exec poetry --version")
-                                 .split("version ").last&.split(")")&.first
-      end
+      version = Dependabot::SharedHelpers.run_shell_command("pyenv exec poetry --version")
+                                         .split("version ").last&.split(")")&.first
 
       it "does not raise error" do
         expect(version.match(/^\d+(?:\.\d+)*$/)).to be_truthy

@@ -120,6 +120,8 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_distribution_requirements
+          return requirements unless Experiments.enabled?(:gradle_wrapper_updater)
+
           distribution_url = T.let(nil, T.nilable(String))
 
           requirements.map do |req|

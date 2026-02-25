@@ -101,10 +101,12 @@ module Dependabot
         end
 
         # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
-        buildfiles_processed.each_value do |buildfile|
-          wrapper_updater = WrapperUpdater.new(dependency_files: files, dependency: dependency)
-          updated_files = wrapper_updater.update_files(buildfile)
-          replace_updated_files(files, updated_files)
+        if Dependabot::Experiments.enabled?(:gradle_wrapper_updater)
+          buildfiles_processed.each_value do |buildfile|
+            wrapper_updater = WrapperUpdater.new(dependency_files: files, dependency: dependency)
+            updated_files = wrapper_updater.update_files(buildfile)
+            replace_updated_files(files, updated_files)
+          end
         end
         if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
           buildfiles_processed.each_value do |buildfile|

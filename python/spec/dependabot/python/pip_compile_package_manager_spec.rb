@@ -22,10 +22,8 @@ RSpec.describe Dependabot::Python::PipCompilePackageManager do
     context "when pip-compile version extracted from pyenv is well formed" do
       # If this test starts failing, you need to adjust the "detect_pipenv_version" function
       # to return a valid version in format x.x, x.x.x etc. examples: 3.12.5, 3.12
-      let(:version) do
-        Dependabot::SharedHelpers.run_shell_command("pyenv exec pip-compile --version")
-                                 .to_s.split("version ").last&.split(")")&.first
-      end
+      version = Dependabot::SharedHelpers.run_shell_command("pyenv exec pip-compile --version")
+                                         .to_s.split("version ").last&.split(")")&.first
 
       it "does not raise error" do
         expect(version.match(/^\d+(?:\.\d+)*$/)).to be_truthy

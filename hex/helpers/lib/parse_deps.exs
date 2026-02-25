@@ -29,7 +29,6 @@ defmodule Parser do
   defp build_dependency(nil, dep) do
     %{
       name: dep.app,
-      package_name: dep.opts[:hex] || dep.app,
       from: Path.relative_to_cwd(dep.from),
       groups: [],
       requirement: normalise_requirement(dep.requirement),
@@ -43,7 +42,6 @@ defmodule Parser do
 
     %{
       name: dep.app,
-      package_name: dep.opts[:hex] || dep.app,
       from: Path.relative_to_cwd(dep.from),
       version: version,
       groups: groups,

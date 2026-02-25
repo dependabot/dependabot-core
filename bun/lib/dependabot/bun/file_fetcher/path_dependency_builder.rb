@@ -71,9 +71,9 @@ module Dependabot
           path_starts = FileFetcher::PATH_DEPENDENCY_STARTS
           parsed_yarn_lock.to_a
                           .find do |n, _|
-                            next false unless n.split(/(?<=\w)\@/).first == dependency_name
+            next false unless n.split(/(?<=\w)\@/).first == dependency_name
 
-                            T.must(n.split(/(?<=\w)\@/).last).start_with?(*path_starts)
+            T.must(n.split(/(?<=\w)\@/).last).start_with?(*path_starts)
           end&.last
         end
 
@@ -82,7 +82,7 @@ module Dependabot
           path_starts = FileFetcher::NPM_PATH_DEPENDENCY_STARTS
           path_deps = parsed_package_lock.fetch("dependencies", []).to_a
                                          .select do |_, v|
-                                           v.fetch("version", "").start_with?(*path_starts)
+            v.fetch("version", "").start_with?(*path_starts)
           end
           path_deps.find { |n, _| n == dependency_name }&.last
         end
@@ -131,10 +131,10 @@ module Dependabot
             path_from_base =
               parsed_yarn_lock.to_a
                               .find do |n, _|
-                                next false unless n.split(/(?<=\w)\@/).first == name
+                next false unless n.split(/(?<=\w)\@/).first == name
 
-                                T.must(n.split(/(?<=\w)\@/).last)
-                                 .start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
+                T.must(n.split(/(?<=\w)\@/).last)
+                 .start_with?(*FileFetcher::PATH_DEPENDENCY_STARTS)
               end&.first&.split(/(?<=\w)\@/)&.last
 
             next unless path_from_base

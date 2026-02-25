@@ -60,10 +60,10 @@ module Dependabot
           version: version,
           package_manager: package_manager,
           requirements: [
-            { requirement: nil,
-              groups: [],
-              file: file.name,
-              source: source_from(details) }
+            requirement: nil,
+            groups: [],
+            file: file.name,
+            source: source_from(details)
           ]
         )
       end

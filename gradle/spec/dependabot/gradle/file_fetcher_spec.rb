@@ -48,19 +48,12 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       .to_return(status: 404)
   end
 
-  def stub_no_wrapper_files(prefix = "")
-    stub_no_content_request("#{prefix}gradle/wrapper?ref=sha")
-    stub_no_content_request("#{prefix}gradlew?ref=sha")
-    stub_no_content_request("#{prefix}gradlew.bat?ref=sha")
-  end
-
   context "with a basic buildfile" do
     before do
       stub_no_content_request("gradle?ref=sha")
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
       stub_no_content_request("gradle.lockfile?ref=sha")
-      stub_no_wrapper_files
     end
 
     it "fetches the buildfile" do
@@ -71,12 +64,17 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
     context "with gradle wrapper properties" do
       before do
+        Dependabot::Experiments.register(:gradle_wrapper_updater, true)
         stub_content_request("?ref=sha", "contents_wrapper.json")
         stub_content_request("gradle/wrapper?ref=sha", "content_gradle_wrapper.json")
         stub_content_request("gradlew?ref=sha", "gradlew.json")
         stub_content_request("gradlew.bat?ref=sha", "gradlew.bat.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.jar?ref=sha", "gradle-wrapper.jar.json")
         stub_content_request("gradle/wrapper/gradle-wrapper.properties?ref=sha", "gradle-wrapper.properties.json")
+      end
+
+      after do
+        Dependabot::Experiments.reset!
       end
 
       it "fetches the wrapper files" do
@@ -154,7 +152,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("buildSrc?ref=sha", "contents_java.json")
           stub_content_request("buildSrc/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("buildSrc/gradle.lockfile?ref=sha")
-          stub_no_wrapper_files("buildSrc/")
         end
 
         context "when the buildSrc is implicitly included" do
@@ -187,7 +184,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             stub_content_request("included?ref=sha", "contents_java.json")
             stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
             stub_no_content_request("included/gradle.lockfile?ref=sha")
-            stub_no_wrapper_files("included/")
           end
 
           it "doesn't fetch buildSrc buildfiles twice" do
@@ -217,7 +213,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included/app/gradle.lockfile?ref=sha")
-          stub_no_wrapper_files("included/")
         end
 
         it "fetches all buildfiles" do
@@ -253,8 +248,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("included2/settings.gradle?ref=sha", "contents_java_simple_settings.json")
           stub_content_request("included2/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_no_content_request("included2/app/gradle.lockfile?ref=sha")
-          stub_no_wrapper_files("included/")
-          stub_no_wrapper_files("included2/")
         end
 
         it "fetches all buildfiles" do
@@ -303,10 +296,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             "included/included/included/buildSrc/build.gradle?ref=sha",
             "contents_java_basic_buildfile.json"
           )
-          stub_no_wrapper_files("included/")
-          stub_no_wrapper_files("included/included/")
-          stub_no_wrapper_files("included/included/included/")
-          stub_no_wrapper_files("included/included/included/buildSrc/")
         end
 
         it "fetches all buildfiles transitively" do
@@ -339,7 +328,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("included/build.gradle?ref=sha", "contents_java_buildfile_with_script_plugins.json")
           stub_no_content_request("included/gradle.lockfile?ref=sha")
           stub_content_request("included/gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
-          stub_no_wrapper_files("included/")
         end
 
         it "fetches script plugin of main and included build" do
@@ -424,7 +412,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       stub_content_request("?ref=sha", "contents_java.json")
       stub_content_request("build.gradle?ref=sha", "contents_java_buildfile_with_script_plugins.json")
       stub_content_request("gradle/dependencies.gradle?ref=sha", "contents_java_simple_settings.json")
-      stub_no_wrapper_files
     end
 
     it "fetches the buildfile and the dependencies script" do
@@ -474,7 +461,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           body: "[]",
           headers: { "content-type" => "application/json" }
         )
-      stub_no_wrapper_files
     end
 
     it "raises dependency file not found" do

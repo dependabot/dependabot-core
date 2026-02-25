@@ -27,6 +27,14 @@ module Dependabot
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
 
+        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
+        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
+        UV_REQUIRED_VERSION_REGEX = T.let(
+          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
+          Regexp
+        )
+
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
 
@@ -262,6 +270,43 @@ module Dependabot
           error_handler.handle_uv_error(e)
         end
 
+        sig { params(error_message: String).returns(T::Boolean) }
+        def resolution_error?(error_message)
+          ["No solution found when resolving dependencies", "Failed to build"].any? do |pattern|
+            error_message.include?(pattern)
+          end
+        end
+
+        sig { params(error_message: String).returns(T.noreturn) }
+        def handle_resolution_error(error_message)
+          match_unresolvable = error_message.scan(UV_UNRESOLVABLE_REGEX).last
+          match_build_failed = error_message.scan(UV_BUILD_FAILED_REGEX).last
+
+          if match_unresolvable
+            formatted_error = Array(match_unresolvable).join
+            conflicting_deps = extract_conflicting_dependencies(formatted_error)
+            raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
+
+            raise Dependabot::DependencyFileNotResolvable, formatted_error
+          end
+
+          formatted_error = match_build_failed ? Array(match_build_failed).join : error_message
+          raise Dependabot::DependencyFileNotResolvable, formatted_error
+        end
+
+        sig { params(error_message: String).returns(T::Array[String]) }
+        def extract_conflicting_dependencies(error_message)
+          # Extract conflicting dependency names from the error message
+          # Pattern: "Because <pkg>==<ver> depends on <dep>>=<ver> and your project depends on <dep>==<ver>"
+          normalized_message = error_message.gsub(/\s+/, " ")
+          conflict_pattern = /Because (\S+)==\S+ depends on (\S+)[><=!]+\S+ and your project depends on \2==\S+/
+
+          match = normalized_message.match(conflict_pattern)
+          return [] unless match
+
+          [T.must(match[1]), T.must(match[2])].uniq
+        end
+
         sig { returns(LockFileErrorHandler) }
         def error_handler
           @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
@@ -359,13 +404,13 @@ module Dependabot
             .select { |cred| cred["type"] == "python_index" }
             .reject { |cred| explicit_index?(cred) }
             .map do |cred|
-              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-              if cred.replaces_base?
-                "--default-index #{authed_url}"
-              else
-                "--index #{authed_url}"
-              end
+            if cred.replaces_base?
+              "--default-index #{authed_url}"
+            else
+              "--index #{authed_url}"
+            end
           end
         end
 
@@ -421,18 +466,18 @@ module Dependabot
             .select { |cred| cred["type"] == "python_index" }
             .select { |cred| explicit_index?(cred) }
             .each do |cred|
-              index_name = find_index_name_for_credential(cred)
-              next unless index_name
+            index_name = find_index_name_for_credential(cred)
+            next unless index_name
 
-              env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
 
-              env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
 
-              if cred["password"]
-                env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
-              elsif cred["token"]
-                env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
-              end
+            if cred["password"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
+            elsif cred["token"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
+            end
           end
 
           env_vars

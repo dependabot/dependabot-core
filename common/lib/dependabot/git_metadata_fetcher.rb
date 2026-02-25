@@ -31,7 +31,6 @@ module Dependabot
     end
 
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
-    MAX_COMMITS_PER_PAGE = 100
 
     sig do
       params(
@@ -392,7 +391,7 @@ module Dependabot
         github: provider_url.gsub("github.com", "api.github.com/repos")
       }.freeze
 
-      "#{api_url[:github]}/commits?per_page=#{MAX_COMMITS_PER_PAGE}&sha=#{ref}"
+      "#{api_url[:github]}/commits?per_page=100&sha=#{ref}"
     end
   end
 end

@@ -38,7 +38,8 @@ module Dependabot
         Dependabot::DependencyGroup.new(
           name: group["name"],
           rules: group["rules"],
-          applies_to: group["applies-to"]
+          applies_to: group["applies-to"],
+          group_by: group.dig("rules", "group-by")
         )
       end
 
@@ -218,12 +219,11 @@ module Dependabot
         matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
 
         matching_deps.group_by(&:name).each do |dep_name, deps|
-          # Exclude "group-by" from subgroup rules to prevent infinite recursion
-          subgroup_rules = parent_group.rules.except("group-by").merge("patterns" => [dep_name])
           subgroup = Dependabot::DependencyGroup.new(
             name: "#{parent_group.name}/#{dep_name}",
-            rules: subgroup_rules,
+            rules: parent_group.rules.merge("patterns" => [dep_name]),
             applies_to: parent_group.applies_to
+            # NOTE: subgroups don't inherit group_by to prevent infinite recursion
           )
           subgroup.dependencies.concat(deps)
           @dependency_groups << subgroup

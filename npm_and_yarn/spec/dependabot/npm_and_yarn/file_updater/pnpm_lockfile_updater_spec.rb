@@ -323,35 +323,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when pnpm returns ERR_PNPM_TRUST_DOWNGRADE" do
-      let(:project_name) { "pnpm/simple" }
-
-      let(:trust_downgrade_error_message) do
-        "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
-          "\"fetch-factory@0.0.2\" (possible package takeover)\n\n" \
-          "This error happened while installing a direct dependency\n\n" \
-          "Trust checks are based solely on publish date, not semver."
-      end
-
-      before do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-          .and_raise(
-            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-              message: trust_downgrade_error_message,
-              error_context: {}
-            )
-          )
-      end
-
-      it "raises an InconsistentRegistryResponse error" do
-        expect { updated_pnpm_lock_content }
-          .to raise_error(
-            Dependabot::InconsistentRegistryResponse,
-            /pnpm trust downgrade detected for "fetch-factory@0.0.2"/
-          )
-      end
-    end
-
     context "with a registry resolution that returns err_pnpm_unsupported_platform response" do
       let(:dependency_name) { "@swc/core-linux-arm-gnueabihf" }
       let(:version) { "1.7.11" }
@@ -419,12 +390,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls)
-              .to eq(
-                [
-                  "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
-                ]
-              )
+          expect(error.dependency_urls)
+            .to eq(
+              [
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
+              ]
+            )
         end
       end
     end
@@ -467,12 +438,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls)
-              .to eq(
-                [
-                  "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
-                ]
-              )
+          expect(error.dependency_urls)
+            .to eq(
+              [
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
+              ]
+            )
         end
       end
     end

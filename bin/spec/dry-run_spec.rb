@@ -55,9 +55,10 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
       "--commit abc1234",
       "--updater-options goprivate=true,record_ecosystem_versions"
     ].each do |option_str|
-      it "accepts #{option_str.split.first} option" do
-        option_name = option_str.split.first
-        option_value = option_str.split.last
+      option_name = option_str.split.first
+      option_value = option_str.split.last
+
+      it "accepts #{option_name} option" do
         stdout, stderr, = run_with_options([option_name, option_value])
 
         # Ensure it doesn't show usage help (which would indicate option parsing error)

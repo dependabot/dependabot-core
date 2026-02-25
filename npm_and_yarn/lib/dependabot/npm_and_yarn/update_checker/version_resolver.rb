@@ -34,11 +34,6 @@ module Dependabot
           T::Hash[String, T::Array[String]]
         )
 
-        # Maximum number of older versions to check when the latest version
-        # triggers a pnpm trust downgrade. Prevents excessive subprocess spawning
-        # for packages with many published versions.
-        MAX_TRUST_DOWNGRADE_FALLBACK_ATTEMPTS = 5
-
         # Error message returned by `yarn add` (for Yarn classic):
         # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
         # "workspace-aggregator-<random-string> > test > react-dom@15.6.2" has incorrect peer dependency "react@^15.6.2"
@@ -148,7 +143,6 @@ module Dependabot
             nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)])
           )
           @peer_dependency_errors = T.let(nil, T.nilable(T::Array[T.any(T::Hash[String, T.nilable(String)], String)]))
-          @trust_downgrade_detected = T.let(false, T::Boolean)
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -158,18 +152,7 @@ module Dependabot
           return if types_update_available?
           return if original_package_update_available?
 
-          # Trigger peer dependency check which also detects trust downgrades
-          has_unmet_peers = relevant_unmet_peer_dependencies.any?
-
-          if @trust_downgrade_detected
-            Dependabot.logger.info(
-              "pnpm trust downgrade detected for #{dependency.name}@#{latest_allowable_version}, " \
-              "trying older versions"
-            )
-            return find_version_without_trust_downgrade
-          end
-
-          return latest_allowable_version unless has_unmet_peers
+          return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
 
           satisfying_versions.first
         end
@@ -256,11 +239,6 @@ module Dependabot
         sig { returns(T::Boolean) }
         attr_reader :raise_on_ignored
 
-        sig { returns(T::Boolean) }
-        def trust_downgrade_detected?
-          @trust_downgrade_detected
-        end
-
         sig { params(dep: Dependabot::Dependency).returns(PackageLatestVersionFinder) }
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -273,63 +251,6 @@ module Dependabot
               security_advisories: [],
               raise_on_ignored: raise_on_ignored
             )
-        end
-
-        # Iterates through versions below the latest_allowable_version (which had a trust
-        # downgrade) to find the highest version that doesn't trigger a pnpm trust downgrade.
-        # Returns nil if no such version exists (or the only option is the current version).
-        sig { returns(T.nilable(T.any(String, Gem::Version))) }
-        def find_version_without_trust_downgrade
-          current_version = version_for_dependency(dependency)
-          candidate_versions = latest_version_finder(dependency)
-                               .possible_versions
-                               .select { |v| v < version_class.new(latest_allowable_version.to_s) }
-                               .select { |v| current_version.nil? || v > current_version }
-                               .sort
-                               .reverse
-                               .first(MAX_TRUST_DOWNGRADE_FALLBACK_ATTEMPTS)
-
-          candidate_versions.each do |candidate|
-            next if version_has_trust_downgrade?(candidate)
-
-            Dependabot.logger.info(
-              "Found #{dependency.name}@#{candidate} without trust downgrade"
-            )
-            return candidate
-          end
-
-          Dependabot.logger.info(
-            "No version of #{dependency.name} found without pnpm trust downgrade " \
-            "(checked #{candidate_versions.length} versions)"
-          )
-          nil
-        end
-
-        # Checks whether a specific version triggers pnpm trust downgrade by running
-        # the peer dependency check and inspecting the trust_downgrade_detected flag.
-        # Saves and restores instance state to avoid polluting the caller's context.
-        sig { params(version: Gem::Version).returns(T::Boolean) }
-        def version_has_trust_downgrade?(version)
-          saved_trust_downgrade = @trust_downgrade_detected
-          saved_peer_errors = @peer_dependency_errors
-
-          @trust_downgrade_detected = false
-          @peer_dependency_errors = nil
-
-          fetch_peer_dependency_errors(version: version)
-
-          result = trust_downgrade_detected?
-          if result
-            Dependabot.logger.info(
-              "pnpm trust downgrade also detected for #{dependency.name}@#{version}, skipping"
-            )
-          end
-          result
-        ensure
-          # T.must needed because Sorbet considers locals potentially nil in ensure blocks;
-          # @peer_dependency_errors doesn't need it since its type is already nilable.
-          @trust_downgrade_detected = T.must(saved_trust_downgrade)
-          @peer_dependency_errors = saved_peer_errors
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -347,7 +268,7 @@ module Dependabot
                                 .possible_previous_versions_with_details
                                 .map(&:first)
             reqs = dep.requirements.filter_map { |r| r[:requirement] }
-                                   .map { |r| requirement_class.requirements_array(r) }
+                      .map { |r| requirement_class.requirements_array(r) }
 
             # Pick the lowest version from the max possible version from all
             # requirements. This matches the logic when combining the same
@@ -539,15 +460,7 @@ module Dependabot
               run_checker(path: path, version: version)
             end.compact
           end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
-            Dependabot.logger.warn(
-              "pnpm trust downgrade detected during peer dependency check; version will be skipped"
-            )
-            @trust_downgrade_detected = true
-            return []
-          end
-
+        rescue SharedHelpers::HelperSubprocessFailed
           # Fall back to allowing the version through. Whatever error
           # occurred should be properly handled by the FileUpdater. We
           # can slowly migrate error handling to this class over time.
@@ -781,14 +694,6 @@ module Dependabot
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.include?("ERR_PNPM_TRUST_DOWNGRADE")
-            Dependabot.logger.warn(
-              "pnpm trust downgrade detected in run_checker; version will be skipped"
-            )
-            @trust_downgrade_detected = true
-            return nil
-          end
-
           handle_peer_dependency_errors(e.message)
         end
 
@@ -1016,12 +921,12 @@ module Dependabot
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
           dep.requirements.filter_map { |r| r[:requirement] }
-                          .reject { |req_string| req_string.start_with?("<") }
-                          .select { |req_string| req_string.match?(version_regex) }
-                          .map { |req_string| req_string.match(version_regex) }
-                          .select { |version| version_class.correct?(version.to_s) }
-                          .map { |version| version_class.new(version.to_s) }
-                          .max
+             .reject { |req_string| req_string.start_with?("<") }
+             .select { |req_string| req_string.match?(version_regex) }
+             .map { |req_string| req_string.match(version_regex) }
+             .select { |version| version_class.correct?(version.to_s) }
+             .map { |version| version_class.new(version.to_s) }
+             .max
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

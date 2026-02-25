@@ -60,7 +60,7 @@ module Dependabot
           T.let(
             Dependabot::SharedHelpers.in_a_temporary_directory do
               File.write(".gitmodules", gitmodules_file.content)
-              ParseConfig.new(".gitmodules").params.values.filter_map { |p| p["path"] if p.is_a?(Hash) }
+              ParseConfig.new(".gitmodules").params.values.map { |p| p["path"] }
             end,
             T.nilable(T::Array[String])
           )

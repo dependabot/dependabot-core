@@ -175,8 +175,8 @@ module Dependabot
             missing_extensions =
               error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                     name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                     { name: name, requirement: requirement }
+                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
+                { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
           elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
@@ -186,8 +186,8 @@ module Dependabot
             missing_extensions =
               error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                     name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                     { name: name, requirement: requirement }
+                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
+                { name: name, requirement: requirement }
               end
 
             missing_extension = missing_extensions.find do |hash|
@@ -261,8 +261,8 @@ module Dependabot
           missing_extensions =
             message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                     name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                     { name: name, requirement: requirement }
+              name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
+              { name: name, requirement: requirement }
             end
 
           missing_extensions.any? do |hash|
@@ -321,7 +321,7 @@ module Dependabot
 
             old_req =
               dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
-                              &.fetch(:requirement)
+                 &.fetch(:requirement)
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req
@@ -389,24 +389,24 @@ module Dependabot
             JSON.parse(T.must(lockfile.content))
                 .fetch(package_type, [])
                 .each do |details|
-                  next unless details["extra"].is_a?(Hash)
-                  next unless (patches = details.dig("extra", "patches_applied"))
+              next unless details["extra"].is_a?(Hash)
+              next unless (patches = details.dig("extra", "patches_applied"))
 
-                  updated_object = JSON.parse(content)
-                  updated_object_package =
-                    updated_object
-                    .fetch(package_type, [])
-                    .find { |d| d["name"] == details["name"] }
+              updated_object = JSON.parse(content)
+              updated_object_package =
+                updated_object
+                .fetch(package_type, [])
+                .find { |d| d["name"] == details["name"] }
 
-                  next unless updated_object_package
+              next unless updated_object_package
 
-                  updated_object_package["extra"] ||= {}
-                  updated_object_package["extra"]["patches_applied"] = patches
+              updated_object_package["extra"] ||= {}
+              updated_object_package["extra"]["patches_applied"] = patches
 
-                  content =
-                    JSON.pretty_generate(updated_object, indent: "    ")
-                        .gsub(/\[\n\n\s*\]/, "[]")
-                        .gsub(/\}\z/, "}\n")
+              content =
+                JSON.pretty_generate(updated_object, indent: "    ")
+                    .gsub(/\[\n\n\s*\]/, "[]")
+                    .gsub(/\}\z/, "}\n")
             end
           end
           content

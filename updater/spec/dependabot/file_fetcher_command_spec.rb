@@ -264,11 +264,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       it "falls back to existing validation and continues processing" do
         # Should not raise error during early validation, but log warning
-        expect(Dependabot.logger).to receive(:warn)
-          .with(/Could not validate target branch early:/).ordered
-
-        expect(Dependabot.logger).to receive(:warn)
-          .with(/Could not validate the existence of the 'dependabot' branch/).ordered
+        expect(Dependabot.logger).to receive(:warn).with(/Could not validate target branch early:/)
 
         expect { perform_job }.not_to raise_error
       end
@@ -306,42 +302,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
                        "the branch exists in the repository."
             },
             error_type: "branch_not_found"
-          )
-        expect(api_client).to receive(:mark_job_as_processed)
-
-        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
-      end
-    end
-
-    context "when the dependabot branch exists" do
-      let(:job_definition) do
-        job_def = JSON.parse(fixture("jobs/job_with_credentials.json"))
-        job_def
-      end
-
-      let(:git_metadata_fetcher) { double("GitMetadataFetcher") }
-
-      before do
-        allow_any_instance_of(described_class)
-          .to receive(:git_metadata_fetcher)
-          .and_return(git_metadata_fetcher)
-
-        allow(git_metadata_fetcher).to receive_messages(
-          ref_names: %w(main develop dependabot),
-          upload_pack: nil
-        )
-      end
-
-      it "raises error with helpful message before file operations" do
-        expect(api_client)
-          .to receive(:record_update_job_error)
-          .with(
-            error_details: {
-              message: "Branch 'dependabot' already exists and causes a Git ref namespace conflict. " \
-                       "Git can’t create `dependabot/...` branches while the branch `dependabot` exists." \
-                       "Please delete the 'dependabot' branch and retry."
-            },
-            error_type: "file_fetcher_error"
           )
         expect(api_client).to receive(:mark_job_as_processed)
 

@@ -110,14 +110,14 @@ module Dependabot
 
         req_string.split(".")
                   .map do |part|
-                    part.split("-").map.with_index do |p, i|
-                      # Before we hit a wildcard we just return the existing part
-                      next p unless p.match?(WILDCARD_REGEX) || after_wildcard
+          part.split("-").map.with_index do |p, i|
+            # Before we hit a wildcard we just return the existing part
+            next p unless p.match?(WILDCARD_REGEX) || after_wildcard
 
-                      # On or after a wildcard we replace the version part with zero
-                      after_wildcard = true
-                      i.zero? ? "0" : "a"
-                    end.join("-")
+            # On or after a wildcard we replace the version part with zero
+            after_wildcard = true
+            i.zero? ? "0" : "a"
+          end.join("-")
         end.join(".")
       end
 

@@ -31,7 +31,6 @@ module Dependabot
         begin
           connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
           validate_target_branch
-          dependabot_ref_namespace_available?
           clone_repo_contents
           @base_commit_sha = file_fetcher.commit
           raise "base commit SHA not found" unless @base_commit_sha
@@ -209,26 +208,6 @@ module Dependabot
         retries += 1
         retry if retries <= max_retries
         raise
-      end
-    end
-
-    # Validates that the repository does not have a top-level branch named `dependabot`.
-    sig { void }
-    def dependabot_ref_namespace_available?
-      dependabot_branch = "dependabot"
-      begin
-        branch_exists = git_metadata_fetcher.ref_names.include?(dependabot_branch)
-        if branch_exists
-          error_message = "Branch '#{dependabot_branch}' already exists and causes a Git ref namespace conflict. " \
-                          "Git can’t create `dependabot/...` branches while the branch `dependabot` exists." \
-                          "Please delete the '#{dependabot_branch}' branch and retry."
-          raise Dependabot::RefNamespaceConflictError, error_message
-        end
-      rescue Dependabot::RefNamespaceConflictError
-        # Re-raise so they aren't caught by the generic rescue
-        raise
-      rescue StandardError => e
-        Dependabot.logger.warn("Could not validate the existence of the 'dependabot' branch: #{e.message}")
       end
     end
 

@@ -272,40 +272,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         it { is_expected.to be_nil }
       end
 
-      context "with a JSON file with changelog-like name" do
-        let(:github_response) do
-          fixture("github", "business_files_with_json_release.json")
-        end
-
-        before do
-          stub_request(:get, github_url + "?ref=v1.4.0")
-            .to_return(status: github_status,
-                       body: github_response,
-                       headers: { "Content-Type" => "application/json" })
-        end
-
-        it "excludes the JSON file from changelog detection" do
-          expect(changelog_url).to be_nil
-        end
-      end
-
-      context "with a JSON file named release-versions.json" do
-        let(:github_response) do
-          fixture("github", "business_files_with_release_versions_json.json")
-        end
-
-        before do
-          stub_request(:get, github_url + "?ref=v1.4.0")
-            .to_return(status: github_status,
-                       body: github_response,
-                       headers: { "Content-Type" => "application/json" })
-        end
-
-        it "excludes the JSON file from changelog detection" do
-          expect(changelog_url).to be_nil
-        end
-      end
-
       context "with a docs folder" do
         let(:source) do
           Dependabot::Source.new(

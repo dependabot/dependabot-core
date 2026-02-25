@@ -46,12 +46,7 @@ module Dependabot
                            updated_lockfiles
                          end
 
-        # Also treat all-support-file updates as no change — this happens when
-        # pnpm-workspace.yaml and pnpm-lock.yaml are fetched from a parent
-        # directory (marked support_file=true by fetch_file_from_parent_directories).
-        # In that case the updated files would be filtered out by
-        # DependencyChangeBuilder, so we surface the underlying misconfiguration.
-        if updated_files.none? || updated_files.all?(&:support_file?)
+        if updated_files.none?
           if original_pnpm_locks.any?
             raise_tool_not_supported_for_pnpm_if_transitive
             raise_miss_configured_tooling_if_pnpm_subdirectory
@@ -97,12 +92,12 @@ module Dependabot
         # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
         return if workspace_files.empty?
         return if workspace_files.any? { |f| f.directory == "/" }
-        return unless workspace_files.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-workspace\.yaml\z}) }
+        return unless workspace_files.all? { |f| f.name.end_with?("../pnpm-workspace.yaml") }
 
         # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
         return if lockfiles.empty?
         return if lockfiles.any? { |f| f.directory == "/" }
-        return unless lockfiles.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-lock\.yaml\z}) }
+        return unless lockfiles.all? { |f| f.name.end_with?("../pnpm-lock.yaml") }
 
         # ❌ Raise error → Updating inside a subdirectory is misconfigured
         raise MisconfiguredTooling.new(

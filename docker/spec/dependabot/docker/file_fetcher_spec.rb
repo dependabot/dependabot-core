@@ -312,25 +312,22 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     context "with a Helm values file" do
-      let(:matching_filenames) do
-        [
-          "other.values.yml",
-          "other.values.yaml",
-          "other-values.yml",
-          "other-values.yaml",
-          "other_values.yml",
-          "other_values.yaml",
-          "values.yml",
-          "values.yaml",
-          "values-other.yml",
-          "values-other.yaml",
-          "values_other.yml",
-          "values_other.yaml",
-          "values2.yml",
-          "values2.yaml"
-        ]
-      end
-      let(:values_fixture) { fixture("github", "contents_values_yaml.json") }
+      matching_filenames = [
+        "other.values.yml",
+        "other.values.yaml",
+        "other-values.yml",
+        "other-values.yaml",
+        "other_values.yml",
+        "other_values.yaml",
+        "values.yml",
+        "values.yaml",
+        "values-other.yml",
+        "values-other.yaml",
+        "values_other.yml",
+        "values_other.yaml",
+        "values2.yml",
+        "values2.yaml"
+      ]
 
       before do
         stub_request(:get, url + "?ref=sha")
@@ -351,6 +348,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
             )
         end
       end
+
+      let(:values_fixture) { fixture("github", "contents_values_yaml.json") }
 
       it "fetches the values.yaml" do
         expect(file_fetcher_instance.files.count).to eq(matching_filenames.length)

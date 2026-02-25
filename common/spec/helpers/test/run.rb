@@ -1,8 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-# rubocop:disable RSpec/Output -- This is a subprocess helper, not a spec. It must write to stdout/stderr.
-
 require "json"
 
 request = JSON.parse($stdin.read)
@@ -25,4 +23,3 @@ when "killed"
 else
   $stdout.write(JSON.dump(result: request))
 end
-# rubocop:enable RSpec/Output

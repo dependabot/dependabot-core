@@ -27,7 +27,6 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = Dir["lib/**/*"]
 
-  spec.add_dependency "dependabot-bundler", Dependabot::VERSION
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-go_modules", Dependabot::VERSION

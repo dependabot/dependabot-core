@@ -71,6 +71,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         raise "Unexpected shell command: #{command}"
       end
 
+      Dependabot::Experiments.register(:gradle_wrapper_updater, true)
       Dependabot::Experiments.register(:gradle_lockfile_updater, true)
     end
 

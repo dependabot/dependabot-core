@@ -268,10 +268,10 @@ module Dependabot
             else
               version_from_requirement =
                 dependency.requirements.filter_map { |r| r.fetch(:requirement) }
-                                       .flat_map { |req_str| Cargo::Requirement.new(req_str) }
-                                       .flat_map(&:requirements)
-                                       .reject { |req_array| req_array.first.start_with?("<") }
-                                       .map(&:last)
+                          .flat_map { |req_str| Cargo::Requirement.new(req_str) }
+                          .flat_map(&:requirements)
+                          .reject { |req_array| req_array.first.start_with?("<") }
+                          .map(&:last)
                           .max&.to_s
 
               version_from_requirement || 0

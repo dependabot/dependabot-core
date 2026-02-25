@@ -296,9 +296,9 @@ module Dependabot
           title: pr_name,
           description: pr_description,
           targets: [
-            { repository_name: source.unscoped_repo,
-              source_reference: target_branch,
-              destination_reference: source_branch }
+            repository_name: source.unscoped_repo,
+            source_reference: target_branch,
+            destination_reference: source_branch
           ]
         )
       end

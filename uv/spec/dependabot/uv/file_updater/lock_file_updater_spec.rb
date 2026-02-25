@@ -1518,4 +1518,31 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
   end
+
+  describe "#extract_conflicting_dependencies" do
+    subject(:conflicting_deps) { updater.send(:extract_conflicting_dependencies, error_message) }
+
+    context "when error contains a dependency conflict pattern" do
+      let(:error_message) do
+        <<~ERROR
+          × No solution found when resolving dependencies:
+            ╰─▶ Because pandas==2.3.3 depends on numpy>=1.26.0 and your project depends
+                on numpy==1.24.4, we can conclude that pandas==2.3.3 and your project
+                are incompatible.
+        ERROR
+      end
+
+      it "extracts both the updating package and blocking dependency" do
+        expect(conflicting_deps).to contain_exactly("pandas", "numpy")
+      end
+    end
+
+    context "when error does not match the conflict pattern" do
+      let(:error_message) { "Some random error message" }
+
+      it "returns an empty array" do
+        expect(conflicting_deps).to eq([])
+      end
+    end
+  end
 end
