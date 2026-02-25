@@ -27,7 +27,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         {
             // this package ships with the SDK and is automatically added for F# projects but should be manually added here to make the test consistent
             // only direct package discovery finds this, though
-            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true));
+            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsDirect: false, IsTransitive: true));
         }
 
         await TestDiscoveryAsync(
@@ -614,6 +614,179 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         new("dotnetsay", "2.1.3", DependencyType.DotNetTool),
                     ]
                 }
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SdkPackagesAreReportedAppropriately()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="2.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SdkPackagesThatAreUpdatedAreReportedAsTopLevel()
+    {
+        // msbuild sdk has <PackageReference> element that should be reported as a transitive dependency
+        // HOWEVER a later statement in the files updates the package version, so it's now considered top level
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("TestSdk", "1.0.0",
+                    sdkPropsContent: """
+                        <Project>
+                          <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Transitive.Package" Version="1.0.0" />
+                          </ItemGroup>
+                          <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+                        </Project>
+                        """
+                    )
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="TestSdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Transitive.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                    </Project>
+                    """),
+                ("global.json", """
+                    {
+                      "msbuild-sdks": {
+                        "TestSdk": "1.0.0"
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Transitive.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net9.0", "src/project.csproj")
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
+                ],
+                GlobalJson = new()
+                {
+                    FilePath = "../global.json",
+                    Dependencies = [
+                        new("TestSdk", "1.0.0", DependencyType.MSBuildSdk),
+                    ]
+                },
             }
         );
     }
@@ -1571,5 +1744,97 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
         };
         AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
+    public void MergeProjectDiscovery()
+    {
+        // project discovery is frequently merged with prior results (e.g., `packages.config` followed by `<PackageReference>`)
+        // some of the groups getting merged are unlikely to happen in the wild, but it's still interesting just in case it shows up, e.g.,
+        // consider a hybrid project where one set of dependencies exists only in packages.config and another set only in PackageReference
+        var result1 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project.csproj",
+            Dependencies = [new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net9.0"], IsDirect: true)],
+            IsSuccess = true,
+            Error = null,
+            Properties = [new("PropertyA", "Uno", "src/project.csproj")],
+            TargetFrameworks = ["net8.0"],
+            ReferencedProjectPaths = ["referenced/a.csproj"],
+            ImportedFiles = ["imported/a.props"],
+            AdditionalFiles = ["a/packages.config"],
+            CentralPackageTransitivePinningEnabled = false,
+        };
+        var result2 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project.csproj",
+            Dependencies = [
+                new("Package.A", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true), // duplicate package; latest wins
+                new("Package.B", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true)
+            ],
+            IsSuccess = true,
+            Error = null,
+            Properties = [new("PropertyB", "Dos", "src/project.csproj")],
+            TargetFrameworks = ["net9.0"],
+            ReferencedProjectPaths = ["referenced/b.csproj"],
+            ImportedFiles = ["imported/b.props"],
+            AdditionalFiles = ["b/app.config"],
+            CentralPackageTransitivePinningEnabled = true,
+        };
+
+        // to make sure we're checking everything exactly, we'll explicitly check each item
+        var merged = DiscoveryWorker.MergeProjectDiscovery(result1, result2);
+        Assert.Equal("src/project.csproj", merged.FilePath);
+        Assert.Equal(2, merged.Dependencies.Length);
+
+        Assert.Equal("Package.A", merged.Dependencies[0].Name);
+        Assert.Equal("2.0.0", merged.Dependencies[0].Version);
+        Assert.Equal(DependencyType.PackageReference, merged.Dependencies[0].Type);
+        Assert.True(merged.Dependencies[0].IsDirect);
+        Assert.False(merged.Dependencies[0].IsTransitive);
+        AssertEx.Equal(["net9.0"], merged.Dependencies[0].TargetFrameworks);
+
+        Assert.Equal("Package.B", merged.Dependencies[1].Name);
+        Assert.Equal("3.0.0", merged.Dependencies[1].Version);
+        Assert.Equal(DependencyType.Unknown, merged.Dependencies[1].Type);
+        Assert.False(merged.Dependencies[1].IsDirect);
+        Assert.True(merged.Dependencies[1].IsTransitive);
+        AssertEx.Equal(["net9.0"], merged.Dependencies[1].TargetFrameworks);
+
+        Assert.True(merged.IsSuccess);
+        Assert.Null(merged.Error);
+
+        AssertEx.Equal(
+            [
+                new("PropertyA", "Uno", "src/project.csproj"),
+                new("PropertyB", "Dos", "src/project.csproj"),
+            ],
+            merged.Properties);
+
+        AssertEx.Equal(["net8.0", "net9.0"], merged.TargetFrameworks);
+        AssertEx.Equal(["referenced/a.csproj", "referenced/b.csproj"], merged.ReferencedProjectPaths);
+        AssertEx.Equal(["imported/a.props", "imported/b.props"], merged.ImportedFiles);
+        AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);
+        Assert.True(merged.CentralPackageTransitivePinningEnabled);
+    }
+
+    [Fact]
+    public void MergeProjectDiscovery_ThrowsOnNotMatchingPaths()
+    {
+        var result1 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project1.csproj",
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        var result2 = new ProjectDiscoveryResult()
+        {
+            FilePath = "src/project2.csproj",
+            Dependencies = [],
+            ImportedFiles = [],
+            AdditionalFiles = [],
+        };
+        Assert.Throws<InvalidOperationException>(() => DiscoveryWorker.MergeProjectDiscovery(result1, result2));
     }
 }

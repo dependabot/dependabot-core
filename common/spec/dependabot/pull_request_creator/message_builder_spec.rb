@@ -3606,9 +3606,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#message" do
     subject(:message) { builder.message }
 
-    pr_name = "PR title"
-    pr_message = "PR message"
-    commit_message = "Commit message"
+    let(:pr_name) { "PR title" }
+    let(:pr_message) { "PR message" }
+    let(:commit_message) { "Commit message" }
+
     before do
       allow(builder).to receive_messages(pr_name: pr_name, pr_message: pr_message, commit_message: commit_message)
     end

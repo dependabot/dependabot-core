@@ -22,12 +22,10 @@ module Dependabot
         extend T::Sig
 
         require_relative "pyproject_preparer"
+        require_relative "version_config_parser"
+        require_relative "lock_file_error_handler"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
-
-        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
-        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
-        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -41,19 +39,24 @@ module Dependabot
         sig { returns(T.nilable(T::Array[T.nilable(String)])) }
         attr_reader :index_urls
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :repo_contents_path
+
         sig do
           params(
             dependencies: T::Array[Dependency],
             dependency_files: T::Array[DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[T.nilable(String)])
+            index_urls: T.nilable(T::Array[T.nilable(String)]),
+            repo_contents_path: T.nilable(String)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil, repo_contents_path: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
           @index_urls = index_urls
+          @repo_contents_path = repo_contents_path
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -243,7 +246,7 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def updated_lockfile_content_for(pyproject_content)
-          SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(pyproject_content)
 
@@ -256,47 +259,12 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_uv_error(e)
+          error_handler.handle_uv_error(e)
         end
 
-        sig do
-          params(
-            error: SharedHelpers::HelperSubprocessFailed
-          )
-            .returns(T.noreturn)
-        end
-        def handle_uv_error(error)
-          error_message = error.message
-          error_message_patterns = ["No solution found when resolving dependencies", "Failed to build"]
-
-          if error_message_patterns.any? { |value| error_message.include?(value) }
-            match_unresolvable_regex = error_message.scan(UV_UNRESOLVABLE_REGEX).last
-            match_failed_to_build_regex = error_message.scan(UV_BUILD_FAILED_REGEX).last
-
-            if match_unresolvable_regex
-              formatted_error = if match_unresolvable_regex.is_a?(Array)
-                                  match_unresolvable_regex.join
-                                else
-                                  match_unresolvable_regex
-                                end
-            end
-
-            if match_failed_to_build_regex
-              formatted_error = if match_failed_to_build_regex.is_a?(Array)
-                                  match_failed_to_build_regex.join
-                                else
-                                  match_failed_to_build_regex
-                                end
-            end
-
-            raise Dependabot::DependencyFileNotResolvable, formatted_error
-          end
-
-          if error_message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
-            raise Dependabot::DependencyFileNotResolvable, error_message
-          end
-
-          raise error
+        sig { returns(LockFileErrorHandler) }
+        def error_handler
+          @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
         end
 
         sig { returns(T.nilable(String)) }
@@ -317,7 +285,9 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          run_command(command, fingerprint: fingerprint, env: explicit_index_env_vars)
+          env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
+
+          run_command(command, fingerprint: fingerprint, env: env_vars)
         end
 
         sig { params(command: String, fingerprint: T.nilable(String), env: T::Hash[String, String]).returns(String) }
@@ -326,7 +296,7 @@ module Dependabot
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint, env: env)
         end
 
-        sig { params(pyproject_content: String).returns(Integer) }
+        sig { params(pyproject_content: String).void }
         def write_temporary_dependency_files(pyproject_content)
           dependency_files.each do |file|
             path = file.name
@@ -336,23 +306,34 @@ module Dependabot
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)
+
+          ensure_version_file_directories
+        end
+
+        sig { void }
+        def ensure_version_file_directories
+          all_version_configs.each do |config|
+            config.write_paths.each do |write_path|
+              dir = Pathname.new(write_path).dirname
+              next if dir.to_s == "." || dir.to_s.empty?
+
+              Dependabot.logger.info("Creating directory for version file: #{dir}")
+              FileUtils.mkdir_p(dir)
+            end
+          end
         end
 
         sig { void }
         def setup_python_environment
-          # Use LanguageVersionManager to determine and install the appropriate Python version
           Dependabot.logger.info("Setting up Python environment using LanguageVersionManager")
 
           begin
-            # Install the required Python version
             language_version_manager.install_required_python
 
-            # Set the local Python version
             python_version = language_version_manager.python_version
             Dependabot.logger.info("Setting Python version to #{python_version}")
             SharedHelpers.run_shell_command("pyenv local #{python_version}")
 
-            # We don't need to install uv as it should be available in the Docker environment
             Dependabot.logger.info("Using pre-installed uv package")
           rescue StandardError => e
             Dependabot.logger.warn("Error setting up Python environment: #{e.message}")
@@ -378,13 +359,13 @@ module Dependabot
             .select { |cred| cred["type"] == "python_index" }
             .reject { |cred| explicit_index?(cred) }
             .map do |cred|
-            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-            if cred.replaces_base?
-              "--default-index #{authed_url}"
-            else
-              "--index #{authed_url}"
-            end
+              if cred.replaces_base?
+                "--default-index #{authed_url}"
+              else
+                "--index #{authed_url}"
+              end
           end
         end
 
@@ -440,18 +421,18 @@ module Dependabot
             .select { |cred| cred["type"] == "python_index" }
             .select { |cred| explicit_index?(cred) }
             .each do |cred|
-            index_name = find_index_name_for_credential(cred)
-            next unless index_name
+              index_name = find_index_name_for_credential(cred)
+              next unless index_name
 
-            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+              env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
 
-            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+              env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
 
-            if cred["password"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
-            elsif cred["token"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
-            end
+              if cred["password"]
+                env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
+              elsif cred["token"]
+                env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
+              end
           end
 
           env_vars
@@ -544,6 +525,11 @@ module Dependabot
           )
         end
 
+        sig { returns(String) }
+        def directory
+          dependency_files.first&.directory || "/"
+        end
+
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           @lockfile ||= T.let(uv_lock, T.nilable(Dependabot::DependencyFile))
@@ -564,6 +550,61 @@ module Dependabot
           return true if lockfile && T.must(dependency).requirements.empty?
 
           T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def setuptools_scm_pretend_version_env_vars
+          env_vars = T.let({}, T::Hash[String, String])
+
+          all_version_configs.each do |config|
+            package_name = config.package_name
+            next if package_name.nil? || package_name.empty?
+            next unless config.dynamic_version?
+
+            package_env_name = package_name.upcase.gsub(/[-.]/, "_")
+            version = config.fallback_version || "0.0.0"
+
+            env_vars["SETUPTOOLS_SCM_PRETEND_VERSION_FOR_#{package_env_name}"] = version
+          end
+
+          env_vars
+        end
+
+        sig { returns(T::Array[VersionConfigParser::VersionConfig]) }
+        def all_version_configs
+          @all_version_configs ||= T.let(
+            begin
+              configs = []
+
+              root_content = pyproject&.content
+              if root_content
+                parser = VersionConfigParser.new(
+                  pyproject_content: root_content,
+                  base_path: ".",
+                  repo_root: "."
+                )
+                configs << parser.parse
+              end
+
+              dependency_files
+                .select { |f| f.name.end_with?("pyproject.toml") && f.name != "pyproject.toml" }
+                .each do |member_pyproject|
+                  member_content = member_pyproject.content
+                  next unless member_content
+
+                  base_path = Pathname.new(member_pyproject.name).dirname.to_s
+                  parser = VersionConfigParser.new(
+                    pyproject_content: member_content,
+                    base_path: base_path,
+                    repo_root: "."
+                  )
+                  configs << parser.parse
+                end
+
+              configs
+            end,
+            T.nilable(T::Array[VersionConfigParser::VersionConfig])
+          )
         end
       end
       # rubocop:enable Metrics/ClassLength

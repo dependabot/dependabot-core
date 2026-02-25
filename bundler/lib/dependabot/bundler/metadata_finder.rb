@@ -108,7 +108,7 @@ module Dependabot
 
         T.must(rubygems_marshalled_gemspec_response).gsub("\x06;", "\n")
          .scan(Source::SOURCE_REGEX) do
-          github_urls << Regexp.last_match.to_s
+           github_urls << Regexp.last_match.to_s
         end
 
         source_url = github_urls.find do |url|
@@ -127,8 +127,8 @@ module Dependabot
 
         T.must(rubygems_marshalled_gemspec_response).gsub("\x06;", "\n")
          .scan(Dependabot::Source::SOURCE_REGEX) do
-          github_urls << (Regexp.last_match.to_s +
-                         T.must(T.must(Regexp.last_match).post_match.split("\n").first))
+           github_urls << (Regexp.last_match.to_s +
+                          T.must(T.must(Regexp.last_match).post_match.split("\n").first))
         end
 
         github_urls.find do |url|

@@ -83,9 +83,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_file_parser_python_local)
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout)
       .and_return(true)
   end
@@ -1000,6 +997,196 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           end
 
           it { is_expected.to eq(Gem::Version.new("3.5.2")) }
+        end
+      end
+    end
+  end
+
+  describe "Git dependencies" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "fastapi",
+        version: nil,
+        requirements: dependency_requirements,
+        package_manager: "pip"
+      )
+    end
+    let(:dependency_requirements) do
+      [{
+        requirement: nil,
+        file: "pyproject.toml",
+        groups: ["dependencies"],
+        source: {
+          type: "git",
+          url: "https://github.com/tiangolo/fastapi",
+          ref: "0.110.0",
+          branch: nil
+        }
+      }]
+    end
+    let(:pyproject_fixture_name) { "git_dependency_with_tag.toml" }
+    let(:dependency_files) { [pyproject] }
+
+    before do
+      git_url = "https://github.com/tiangolo/fastapi.git"
+      git_header = {
+        "content-type" => "application/x-git-upload-pack-advertisement"
+      }
+      stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", "fastapi"),
+          headers: git_header
+        )
+    end
+
+    describe "#latest_version" do
+      subject(:latest_version) { checker.latest_version }
+
+      it "fetches the latest version tag from the git repository" do
+        expect(latest_version).to eq(Gem::Version.new("0.128.0"))
+      end
+    end
+
+    describe "#latest_resolvable_version" do
+      subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+      it "returns the latest version for git dependencies" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("0.128.0"))
+      end
+    end
+
+    describe "#latest_resolvable_version_with_no_unlock" do
+      subject(:latest_resolvable_version_with_no_unlock) { checker.latest_resolvable_version_with_no_unlock }
+
+      it "returns nil when pinned to a specific tag" do
+        expect(latest_resolvable_version_with_no_unlock).to be_nil
+      end
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      before do
+        allow(checker)
+          .to receive(:latest_version)
+          .and_return(Gem::Version.new("0.128.0"))
+      end
+
+      it "updates the git tag in the source" do
+        expect(updated_requirements).to eq(
+          [{
+            requirement: nil,
+            file: "pyproject.toml",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/tiangolo/fastapi",
+              ref: "0.128.0",
+              branch: nil
+            }
+          }]
+        )
+      end
+    end
+
+    describe "with cooldown options" do
+      let(:tag_details_response) do
+        fixture("git", "tag_details", "fastapi")
+      end
+      let(:git_tag_details) do
+        [
+          Dependabot::GitTagWithDetail.new(tag: "0.110.0", release_date: "2025-02-01"),
+          Dependabot::GitTagWithDetail.new(tag: "0.111.0", release_date: "2025-05-15"),
+          Dependabot::GitTagWithDetail.new(tag: "0.120.0", release_date: "2025-10-01"),
+          Dependabot::GitTagWithDetail.new(tag: "0.124.0", release_date: "2025-12-06"),
+          Dependabot::GitTagWithDetail.new(tag: "0.124.2", release_date: "2025-12-10"),
+          Dependabot::GitTagWithDetail.new(tag: "0.125.0", release_date: "2025-12-17"),
+          Dependabot::GitTagWithDetail.new(tag: "0.126.0", release_date: "2025-12-20"),
+          Dependabot::GitTagWithDetail.new(tag: "0.127.0", release_date: "2025-12-21"),
+          Dependabot::GitTagWithDetail.new(tag: "0.128.0", release_date: "2025-12-27")
+        ]
+      end
+
+      before do
+        # Stub the refs_for_tag_with_detail method on GitCommitChecker instances
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_wrap_original do |method, *args, **kwargs|
+          checker = method.call(*args, **kwargs)
+          allow(checker).to receive(:refs_for_tag_with_detail).and_return(git_tag_details)
+          checker
+        end
+        # Freeze time to January 21, 2026
+        allow(Time).to receive(:now).and_return(Time.parse("2026-01-21"))
+      end
+
+      describe "#latest_version" do
+        subject(:latest_version) { checker.latest_version }
+
+        context "when cooldown is not set" do
+          let(:cooldown_options) { nil }
+
+          it "returns the latest version without filtering" do
+            expect(latest_version).to eq(Gem::Version.new("0.128.0"))
+          end
+        end
+
+        context "when cooldown applies with 40-day default" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 40)
+          end
+
+          it "returns the latest version outside cooldown period" do
+            # 0.128.0 released 2025-12-27 is 25 days old (in cooldown)
+            # 0.124.2 released 2025-12-10 is 42 days old (outside cooldown)
+            expect(latest_version).to eq(Gem::Version.new("0.124.2"))
+          end
+        end
+
+        context "when cooldown applies with 10-day default" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10)
+          end
+
+          it "returns the latest version outside 10-day cooldown" do
+            # 0.128.0 released 2025-12-27 is 25 days old (outside 10-day cooldown)
+            expect(latest_version).to eq(Gem::Version.new("0.128.0"))
+          end
+        end
+
+        context "when all versions are in cooldown" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 365)
+          end
+
+          it "falls back to current version" do
+            expect(latest_version).to be_nil
+          end
+        end
+      end
+
+      describe "#updated_requirements" do
+        subject(:updated_requirements) { checker.updated_requirements }
+
+        context "when cooldown applies with 40-day default" do
+          let(:cooldown_options) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 40)
+          end
+
+          it "updates the git tag to version outside cooldown" do
+            expect(updated_requirements).to eq(
+              [{
+                requirement: nil,
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/tiangolo/fastapi",
+                  ref: "0.124.2",
+                  branch: nil
+                }
+              }]
+            )
+          end
         end
       end
     end

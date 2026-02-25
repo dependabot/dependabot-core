@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.files        = Dir["lib/**/*"]
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
-  spec.add_dependency "parseconfig", "~> 1.0", "< 1.1.0"
+  spec.add_dependency "parseconfig", "~> 1.0", "< 1.2.0"
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list

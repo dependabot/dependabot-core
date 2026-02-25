@@ -50,6 +50,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
 
+    shared_context "with go get command failure stubbed" do
+      before do
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(go_get_command).and_return(["", stderr, exit_status])
+      end
+    end
+
     context "when dealing with a grouped update" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.5.2" }
@@ -220,7 +227,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             error_class = Dependabot::GoModulePathMismatch
             expect { updater.updated_go_sum_content }
               .to raise_error(error_class) do |error|
-              expect(error.message).to include("github.com/DATA-DOG")
+                expect(error.message).to include("github.com/DATA-DOG")
             end
           end
         end
@@ -232,7 +239,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             error_class = Dependabot::GoModulePathMismatch
             expect { updater.updated_go_sum_content }
               .to raise_error(error_class) do |error|
-              expect(error.message).to include("github.com/DATA-DOG")
+                expect(error.message).to include("github.com/DATA-DOG")
             end
           end
         end
@@ -244,8 +251,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             error_class = Dependabot::GoModulePathMismatch
             expect { updater.updated_go_sum_content }
               .to raise_error(error_class) do |error|
-              expect(error.message).to include("github.com/Sirupsen")
-              expect(error.message).to include("github.com/sirupsen")
+                expect(error.message).to include("github.com/Sirupsen")
+                expect(error.message).to include("github.com/sirupsen")
             end
           end
         end
@@ -356,7 +363,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               error_class = Dependabot::DependencyFileNotResolvable
               expect { updater.updated_go_sum_content }
                 .to raise_error(error_class) do |error|
-                expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
+                  expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
               end
             end
           end
@@ -406,6 +413,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       let(:requirements) { [] }
       let(:previous_requirements) { [] }
       let(:exit_status) { double(status: 128, success?: false) }
+      let(:go_get_command) { "go get github.com/spf13/viper@v1.7.1" }
       let(:stderr) do
         <<~ERROR
           go: github.com/spf13/viper@v1.7.1 requires
@@ -415,19 +423,81 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         ERROR
       end
 
-      before do
-        allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with("go get github.com/spf13/viper@v1.7.1").and_return(
-          ["", stderr,
-           exit_status]
-        )
-      end
+      include_context "with go get command failure stubbed"
 
       it {
         expect do
           updated_go_mod_content
         end.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/)
       }
+    end
+
+    shared_examples "path dependency replacement go.mod missing" do |version:, dependency_path:|
+      let(:dependency_name) { "github.com/example/repo" }
+      let(:dependency_version) { version }
+      let(:dependency_previous_version) { version }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:exit_status) { double(status: 1, success?: false) }
+      let(:go_get_command) { "go get github.com/example/repo@#{version}" }
+      let(:stderr) do
+        <<~ERROR
+          go: github.com/example/repo@#{version} (replaced by #{dependency_path}): reading #{dependency_path}/go.mod: open /local-repo/go.mod: no such file or directory
+        ERROR
+      end
+
+      include_context "with go get command failure stubbed"
+
+      it "raises a PathDependenciesNotReachable error" do
+        matcher = raise_error(Dependabot::PathDependenciesNotReachable) do |error|
+          expect(error.dependencies).to eq([dependency_path])
+        end
+
+        expect do
+          updated_go_mod_content
+        end.to matcher
+      end
+    end
+
+    context "when go get fails due to a missing local replacement go.mod" do
+      it_behaves_like "path dependency replacement go.mod missing",
+                      version: "v1.2.3",
+                      dependency_path: "./local-repo"
+    end
+
+    context "when go get fails due to a missing parent-directory replacement go.mod" do
+      it_behaves_like "path dependency replacement go.mod missing",
+                      version: "v1.2.4",
+                      dependency_path: "../local-repo"
+    end
+
+    context "when go get fails with an insecure protocol repository error" do
+      let(:dependency_name) { "gerrit.mmt.com/Platform-Comm-Identifier-Go.git" }
+      let(:dependency_version) { "v0.0.0-20220124100240-6f5253e97566" }
+      let(:dependency_previous_version) { "v0.0.0-20220124100240-6f5253e97566" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:exit_status) { double(status: 1, success?: false) }
+      let(:go_get_command) do
+        "go get gerrit.mmt.com/Platform-Comm-Identifier-Go.git@v0.0.0-20220124100240-6f5253e97566"
+      end
+      let(:stderr) do
+        <<~ERROR
+          go: gerrit.mmt.com/Platform-Comm-Identifier-Go.git@v0.0.0-20220124100240-6f5253e97566: no secure protocol found for repository
+        ERROR
+      end
+
+      include_context "with go get command failure stubbed"
+
+      it "raises a GitDependenciesNotReachable error" do
+        matcher = raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls).to eq(["gerrit.mmt.com/Platform-Comm-Identifier-Go.git"])
+        end
+
+        expect do
+          updated_go_mod_content
+        end.to matcher
+      end
     end
 
     context "when dealing with an explicit indirect dependency" do
@@ -518,7 +588,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("unknown revision v1.33.999")
+            expect(error.message).to include("unknown revision v1.33.999")
         end
       end
     end
@@ -545,7 +615,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("unrecognized import path")
+            expect(error.message).to include("unrecognized import path")
         end
       end
     end
@@ -574,7 +644,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("go.mod has post-v1 module path")
+            expect(error.message).to include("go.mod has post-v1 module path")
         end
       end
     end
@@ -603,10 +673,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include(
-            "go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: " \
-            "invalid pseudo-version:"
-          )
+            expect(error.message).to include(
+              "go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: " \
+              "invalid pseudo-version:"
+            )
         end
       end
     end
@@ -635,11 +705,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include(
-            "go: github.com/deislabs/oras@v0.9.0 requires\n" \
-            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: " \
-            "invalid version: unknown revision"
-          )
+            expect(error.message).to include(
+              "go: github.com/deislabs/oras@v0.9.0 requires\n" \
+              "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: " \
+              "invalid version: unknown revision"
+            )
         end
       end
     end
@@ -666,9 +736,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls)
-            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
 
@@ -717,9 +787,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls)
-            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
 
@@ -737,7 +807,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { updater.updated_go_sum_content }
             .to raise_error(error_class) do |error|
-            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+              expect(error.message).to include("dependabot-fixtures/go-modules-private")
           end
         end
       end
@@ -765,9 +835,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls)
-            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end
@@ -794,9 +864,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }
           .to raise_error(error_class) do |error|
-          expect(error.message).to include("dependabot-fixtures/go-modules-private")
-          expect(error.dependency_urls)
-            .to eq(["github.com/dependabot-fixtures/go-modules-private"])
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls)
+              .to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end

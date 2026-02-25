@@ -65,7 +65,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     instance_double(
       Dependabot::DependencyGroup,
       name: "test-group",
-      dependencies: group_dependencies
+      dependencies: group_dependencies,
+      group_by_dependency_name?: false
     )
   end
 
@@ -101,9 +102,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     # Stub all experiment flags to avoid unexpected argument errors
     allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with("dependency_change_validation")
-      .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:allow_refresh_group_with_all_dependencies)
       .and_return(false)
 
@@ -135,9 +133,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enhanced_grouped_security_error_reporting)
           .and_return(true)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with("dependency_change_validation")
-          .and_return(false)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:allow_refresh_group_with_all_dependencies)
           .and_return(false)
@@ -444,6 +439,135 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
           test_instance.compile_all_dependency_changes_for(group)
         end
+      end
+    end
+  end
+
+  describe "#compile_updates_for group-by-name handled deps" do
+    let(:dependency) { dependencies.first }
+
+    before do
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        semver_rules_allow_grouping?: true,
+        log_up_to_date: nil,
+        requirements_to_unlock: [],
+        log_requirements_for_update: nil
+      )
+      allow(checker).to receive(:up_to_date?).and_return(false)
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:group_by_dependency_name)
+        .and_return(true)
+    end
+
+    context "when semver rules reject grouping for a group-by-name subgroup" do
+      let(:group) do
+        Dependabot::DependencyGroup.new(
+          name: "per-dependency/dep1",
+          rules: {
+            "patterns" => ["dep1"],
+            "group-by" => "dependency-name",
+            "update-types" => %w(minor patch)
+          }
+        )
+      end
+
+      before do
+        allow(test_instance).to receive(:semver_rules_allow_grouping?).and_return(false)
+      end
+
+      it "marks the dependency as handled" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(dependency_snapshot).to have_received(:add_handled_dependencies).with(dependency.name)
+      end
+
+      it "returns an empty array" do
+        result = test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(result).to eq([])
+      end
+    end
+
+    context "when all versions are ignored for a group-by-name subgroup" do
+      let(:group) do
+        Dependabot::DependencyGroup.new(
+          name: "per-dependency/dep1",
+          rules: {
+            "patterns" => ["dep1"],
+            "group-by" => "dependency-name",
+            "update-types" => %w(minor patch)
+          }
+        )
+      end
+
+      before do
+        allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
+        allow(test_instance).to receive(:record_security_update_ignored_if_applicable)
+      end
+
+      it "marks the dependency as handled" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(dependency_snapshot).to have_received(:add_handled_dependencies).with(dependency.name)
+      end
+
+      it "returns an empty array" do
+        result = test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(result).to eq([])
+      end
+    end
+
+    context "when semver rules reject grouping for a regular group (not group-by-name)" do
+      let(:group) do
+        Dependabot::DependencyGroup.new(
+          name: "minor-and-patch",
+          rules: {
+            "patterns" => ["dep1"],
+            "update-types" => %w(minor patch)
+          }
+        )
+      end
+
+      before do
+        allow(test_instance).to receive(:semver_rules_allow_grouping?).and_return(false)
+      end
+
+      it "does NOT mark the dependency as handled" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(dependency_snapshot).not_to have_received(:add_handled_dependencies)
+      end
+
+      it "returns an empty array" do
+        result = test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(result).to eq([])
+      end
+    end
+
+    context "when all versions are ignored for a regular group (not group-by-name)" do
+      let(:group) do
+        Dependabot::DependencyGroup.new(
+          name: "minor-and-patch",
+          rules: {
+            "patterns" => ["dep1"],
+            "update-types" => %w(minor patch)
+          }
+        )
+      end
+
+      before do
+        allow(test_instance).to receive(:all_versions_ignored?).and_return(true)
+        allow(test_instance).to receive(:record_security_update_ignored_if_applicable)
+      end
+
+      it "does NOT mark the dependency as handled" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(dependency_snapshot).not_to have_received(:add_handled_dependencies)
+      end
+
+      it "returns an empty array" do
+        result = test_instance.compile_updates_for(dependency, dependency_files, group)
+        expect(result).to eq([])
       end
     end
   end

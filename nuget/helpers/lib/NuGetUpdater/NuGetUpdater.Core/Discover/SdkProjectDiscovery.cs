@@ -5,15 +5,14 @@ using System.Xml.XPath;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
-using NuGet;
 using NuGet.Frameworks;
-using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
 using Semver;
 
 using LoggerProperty = Microsoft.Build.Logging.StructuredLogger.Property;
+using ThreadingTask = System.Threading.Tasks.Task;
 
 namespace NuGetUpdater.Core.Discover;
 
@@ -21,7 +20,8 @@ internal static class SdkProjectDiscovery
 {
     private static readonly HashSet<string> TopLevelPackageItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "PackageReference"
+        "PackageReference",
+        "GlobalPackageReference",
     };
 
     private static readonly HashSet<string> PackageVersionItemNames = new HashSet<string>(StringComparer.Ordinal)
@@ -63,6 +63,9 @@ internal static class SdkProjectDiscovery
         "GenerateBuildDependencyFile"
     ];
 
+    // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
+    private const int MaximumParallelTargetFrameworkRestores = 2;
+
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
         var extension = Path.GetExtension(startingProjectPath)?.ToLowerInvariant();
@@ -84,8 +87,8 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject = new(PathComparer.Instance);
         //    projectPath                tfm        packageName  packageVersion
 
-        Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject = new(PathComparer.Instance);
-        //    projectPath                tfm, packageNames
+        Dictionary<string, Dictionary<string, HashSet<string>>> implicitlyIgnoredPackages = new(PathComparer.Instance);
+        //    projectPath                tfm  packageNames
 
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject = new(PathComparer.Instance);
         //    projectPath,               tfm,       packageName, packageVersion
@@ -113,16 +116,23 @@ internal static class SdkProjectDiscovery
 
         // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
         // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
+        // alternately, if there are too many target frameworks specified, they must be handled individually
         var projectTfms = await MSBuildHelper.GetProjectTargetFrameworksAsync(startingProjectPath, logger);
-        var requiresIndividualRestores = projectTfms.Any(tfm => tfm.Contains('-'));
+        var hasPlatformTfms = projectTfms.Any(tfm => tfm.Contains('-'));
+        var requiresIndividualRestores = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkRestores;
         if (!requiresIndividualRestores)
         {
+            logger.Info($"Performing single restore for project {startingProjectPath}");
             projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+        }
+        else
+        {
+            logger.Info($"Performing individual restores for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
         }
 
         foreach (var tfm in projectTfms)
         {
-            var isSingleTfmRestore = !string.IsNullOrEmpty(tfm);
+            var isIndividualTfmRestore = !string.IsNullOrEmpty(tfm);
 
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
@@ -132,7 +142,7 @@ internal static class SdkProjectDiscovery
                 var args = new List<string>() { "msbuild", startingProjectPath };
                 var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
                 var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
-                if (useDirectRestore || isSingleTfmRestore)
+                if (useDirectRestore || isIndividualTfmRestore)
                 {
                     // directly call the required targets
                     args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
@@ -151,7 +161,7 @@ internal static class SdkProjectDiscovery
                 args.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
                 args.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
 
-                if (isSingleTfmRestore)
+                if (isIndividualTfmRestore)
                 {
                     args.Add($"/p:TargetFramework={tfm}");
                 }
@@ -222,7 +232,7 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, explicitPackageVersionsPerProject, packageReferenceElementCounts);
+                            ProcessResolvedPackageReference(namedNode, packagesPerProject, implicitlyIgnoredPackages, explicitPackageVersionsPerProject, packageReferenceElementCounts);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -267,7 +277,7 @@ internal static class SdkProjectDiscovery
                                     if (projectEvaluation is not null)
                                     {
                                         var specificPackageDeps = packageDependencies.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
-                                        var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                        var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                         if (tfm is not null)
                                         {
                                             var packagesByTfm = specificPackageDeps.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
@@ -291,7 +301,7 @@ internal static class SdkProjectDiscovery
                                     break;
                                 }
 
-                                var evaluatedTfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                var evaluatedTfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                 if (evaluatedTfm is null)
                                 {
                                     break;
@@ -378,10 +388,13 @@ internal static class SdkProjectDiscovery
             var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
             if (isProjectLegacy)
             {
+                logger.Info($"Project {projectPath} is legacy");
+
                 // if any TFM had any explicit packages defined, we need to do manual package resolution
                 if (explicitPackageVersionsPerProject.TryGetValue(projectPath, out var projectTfmRefs) &&
                     projectTfmRefs.Values.Any(v => v.Count > 0))
                 {
+                    logger.Info("  ...and setting manual package resolution to true");
                     requiresManualPackageResolution = true;
                     break;
                 }
@@ -409,12 +422,13 @@ internal static class SdkProjectDiscovery
             packagesPerProject,
             explicitPackageVersionsPerProject,
             packagesReplacedBySdkPerProject,
-            topLevelPackagesPerProject,
+            implicitlyIgnoredPackages,
             resolvedProperties,
             packageDependencies,
             referencedProjects,
             importedFiles,
-            additionalFiles
+            additionalFiles,
+            logger
         );
         return projectDiscoveryResults;
     }
@@ -425,18 +439,20 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject,
-        Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject,
+        Dictionary<string, Dictionary<string, HashSet<string>>> implicitlyIgnoredPackagesPerProject,
         Dictionary<string, Dictionary<string, string>> resolvedProperties,
         Dictionary<string, Dictionary<string, HashSet<string>>> packageDependencies,
         Dictionary<string, HashSet<string>> referencedProjects,
         Dictionary<string, HashSet<string>> importedFiles,
-        Dictionary<string, HashSet<string>> additionalFiles
+        Dictionary<string, HashSet<string>> additionalFiles,
+        ILogger logger
     )
     {
         var projectDiscoveryResults = new List<ProjectDiscoveryResult>();
         foreach (var projectPath in packagesPerProject.Keys.OrderBy(p => p))
         {
             // gather some project-level information
+            var implicitlyIgnoredPackagesByTfm = implicitlyIgnoredPackagesPerProject.GetValueOrDefault(projectPath, new(StringComparer.OrdinalIgnoreCase));
             var packagesByTfm = packagesPerProject[projectPath];
             if (packagesReplacedBySdkPerProject.TryGetValue(projectPath, out var packagesReplacedBySdk))
             {
@@ -470,10 +486,6 @@ internal static class SdkProjectDiscovery
             var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
             var projectPropertyNames = localPropertyDefinitionElements.Select(e => e.Name.LocalName).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var projectRelativePath = Path.GetRelativePath(workspacePath, projectPath);
-            var topLevelPackageNames = topLevelPackagesPerProject
-                .GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase))
-                .SelectMany(kvp => kvp.Value)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             var propertiesForProject = resolvedProperties.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
             var assetsJson = new Lazy<JsonElement?>(() =>
@@ -488,6 +500,33 @@ internal static class SdkProjectDiscovery
                 return null;
             });
 
+            // track imported files
+            var imported = importedFiles.GetOrAdd(projectPath, () => new(PathComparer.Instance))
+                .Select(p => Path.GetRelativePath(projectFullDirectory, p))
+                .Select(p => p.NormalizePathToUnix())
+                .OrderBy(p => p)
+                .ToImmutableArray();
+
+            // track packages imported directly by the project and its imports
+            var directlyReferencedPackagesPerFile = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            async ThreadingTask EnsurePackagesForFileAsync(string fullFilePath)
+            {
+                if (!directlyReferencedPackagesPerFile.ContainsKey(fullFilePath))
+                {
+                    var packages = await DirectlyReferencedPackagesFromFilePath(fullFilePath, logger);
+                    directlyReferencedPackagesPerFile[fullFilePath] = packages;
+                }
+            }
+            await EnsurePackagesForFileAsync(projectPath);
+            foreach (var importedPath in imported)
+            {
+                var fullImportedPath = Path.Combine(projectFullDirectory, importedPath);
+                await EnsurePackagesForFileAsync(fullImportedPath);
+            }
+            var directlyReferencedPackages = directlyReferencedPackagesPerFile.Values
+                .SelectMany(p => p)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             // create dependencies
             var tfms = packagesByTfm.Keys.OrderBy(tfm => tfm).ToImmutableArray();
             var groupedDependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
@@ -495,6 +534,7 @@ internal static class SdkProjectDiscovery
             {
                 var parsedTfm = NuGetFramework.Parse(tfm);
                 var packages = packagesByTfm[tfm];
+                var implicitlyIgnoredPackages = implicitlyIgnoredPackagesByTfm.GetValueOrDefault(tfm, new(StringComparer.OrdinalIgnoreCase));
 
                 // augment with any packages that might not have reported assemblies
                 var assetsPackageVersions = new Lazy<Dictionary<string, string>>(() =>
@@ -547,7 +587,7 @@ internal static class SdkProjectDiscovery
                 {
                     var packageName = package.Key;
                     var packageVersion = package.Value;
-                    var isTopLevel = topLevelPackageNames.Contains(packageName);
+                    var isTopLevel = directlyReferencedPackages.Contains(packageName) && !implicitlyIgnoredPackages.Contains(packageName);
                     var dependencyType = isTopLevel ? DependencyType.PackageReference : DependencyType.Unknown;
                     var combinedTfms = new HashSet<string>([tfm], StringComparer.OrdinalIgnoreCase);
                     if (groupedDependencies.TryGetValue(packageName, out var existingDependency) &&
@@ -580,11 +620,6 @@ internal static class SdkProjectDiscovery
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var imported = importedFiles.GetOrAdd(projectPath, () => new(PathComparer.Instance))
-                .Select(p => Path.GetRelativePath(projectFullDirectory, p))
-                .Select(p => p.NormalizePathToUnix())
-                .OrderBy(p => p)
-                .ToImmutableArray();
             var additionalFromLocation = ProjectHelper.GetAdditionalFilesFromProjectLocation(projectPath, ProjectHelper.PathFormat.Full);
             var additional = additionalFiles.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Concat(additionalFromLocation)
@@ -614,6 +649,31 @@ internal static class SdkProjectDiscovery
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
         return projectDiscoveryResults.ToImmutableArray();
+    }
+
+    private static async Task<HashSet<string>> DirectlyReferencedPackagesFromFilePath(string fullFilePath, ILogger logger)
+    {
+        try
+        {
+            var content = await File.ReadAllTextAsync(fullFilePath);
+            var doc = XDocument.Parse(content);
+            var packages = doc.Descendants()
+                .Where(e => TopLevelPackageItemNames.Contains(e.Name.LocalName))
+                .SelectMany(e =>
+                {
+                    var includesText = e.Attribute("Include")?.Value ?? string.Empty;
+                    var updateText = e.Attribute("Update")?.Value ?? string.Empty;
+                    return includesText.Split([';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Concat(updateText.Split([';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                })
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return packages;
+        }
+        catch
+        {
+            logger.Warn($"Unable to determine directly referenced packages from file {fullFilePath}");
+            return [];
+        }
     }
 
     private static async Task<Dictionary<string, Dictionary<string, Dictionary<string, string>>>> RebuildPackagesPerProject(
@@ -673,7 +733,7 @@ internal static class SdkProjectDiscovery
     private static void ProcessResolvedPackageReference(
         NamedNode node,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
-        Dictionary<string, Dictionary<string, HashSet<string>>> topLevelPackagesPerProject, // projectPath -> tfm -> packageName
+        Dictionary<string, Dictionary<string, HashSet<string>>> implicitlyIgnoredPackagesPerProject, // projectPath -> tfm -> packageNames
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject, // projectPath -> tfm -> (packageName, packageVersion)
         Dictionary<string, int> packageReferenceElementCounts // projectPath -> count of `<PackageReference>` elements
     )
@@ -694,21 +754,9 @@ internal static class SdkProjectDiscovery
                         continue;
                     }
 
-                    // count instances of `<PackageReference>`
-                    //var packageReferenceElements = packageReferenceElementCounts.GetOrAdd(projectEvaluation.ProjectFile, () => 0);
-                    //packageReferenceElementCounts[projectEvaluation.ProjectFile] = packageReferenceElements + 1;
-
                     var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                     if (tfm is not null)
                     {
-                        var topLevelPackages = topLevelPackagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
-                        var topLevelPackagesPerTfm = topLevelPackages.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
-
-                        if (doRemoveOperation)
-                        {
-                            topLevelPackagesPerTfm.Remove(packageName);
-                        }
-
                         if (doAddOperation)
                         {
                             var isImplicitlyDefined = GetChildMetadataBooleanValue(child, "IsImplicitlyDefined");
@@ -716,10 +764,12 @@ internal static class SdkProjectDiscovery
                             {
                                 // packages with `IsImplicitlyDefined="true"` aren't to be treated as top-level packages and shouldn't be candidates for regular update operations
                                 // they should still appear in the discovery list, though, so security jobs can update them as necessary
+                                var implicitlyIgnoredPerTfm = implicitlyIgnoredPackagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
+                                var implicitlyIgnoredPackages = implicitlyIgnoredPerTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                implicitlyIgnoredPackages.Add(packageName);
                                 continue;
                             }
 
-                            topLevelPackagesPerTfm.Add(packageName);
                             var packageVersion = GetChildMetadataValue(child, "Version");
                             if (packageVersion is not null)
                             {
@@ -740,7 +790,7 @@ internal static class SdkProjectDiscovery
             if (projectEvaluation is not null)
             {
                 // without a tfm we can't do anything meaningful with the package reference
-                var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                 if (tfm is not null)
                 {
                     foreach (var child in node.Children.OfType<Item>())
@@ -778,7 +828,7 @@ internal static class SdkProjectDiscovery
                 var projectEvaluation = GetNearestProjectEvaluation(node);
                 if (projectEvaluation is not null)
                 {
-                    var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                    var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                     if (tfm is not null)
                     {
                         var packageName = child.Name;

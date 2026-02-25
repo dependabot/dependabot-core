@@ -240,9 +240,9 @@ module Dependabot
       def filter_ignored_versions(releases)
         filtered = releases
                    .reject do |release|
-          ignore_requirements.any? do |r|
-            r.satisfied_by?(release.version)
-          end
+                     ignore_requirements.any? do |r|
+                       r.satisfied_by?(release.version)
+                     end
         end
         if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(releases).any?
           raise Dependabot::AllVersionsIgnored
@@ -277,9 +277,9 @@ module Dependabot
 
         releases
           .select do |release|
-          reqs.all? do |r|
-            r.any? { |o| o.satisfied_by?(release.version) }
-          end
+            reqs.all? do |r|
+              r.any? { |o| o.satisfied_by?(release.version) }
+            end
         end
       end
 

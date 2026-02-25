@@ -71,7 +71,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         raise "Unexpected shell command: #{command}"
       end
 
-      Dependabot::Experiments.register(:gradle_wrapper_updater, true)
       Dependabot::Experiments.register(:gradle_lockfile_updater, true)
     end
 
@@ -724,6 +723,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           its(:content) do
             expected_command = %W(
               ./gradlew --no-daemon --stacktrace wrapper --gradle-version 9.0.0 --no-validate-url
+              --network-timeout 10000
               --distribution-type #{type}
             ).join(" ")
             expected_env = { "JAVA_OPTS" => %w(

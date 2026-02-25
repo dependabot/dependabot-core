@@ -153,16 +153,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         context "when containing a version requirement string" do
           subject { dependencies.find { |d| d.name == "etag" } }
 
-          let(:npm_fallback_version_above_v6_enabled) { false }
-
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
           it { is_expected.to be_nil }
         end
 
         context "when containing URL versions (i.e., is from a bad version of npm)" do
-          let(:npm_fallback_version_above_v6_enabled) { false }
-
           let(:files) { project_dependency_files("npm6/url_versions") }
 
           its(:length) { is_expected.to eq(1) }

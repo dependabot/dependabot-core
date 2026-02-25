@@ -250,18 +250,19 @@ module Dependabot
 
         resolution_deps = resolution_objects.flat_map(&:to_a)
                                             .map do |path, value|
-          # skip dependencies that contain invalid values such as inline comments, null, etc.
+                                              # skip dependencies that contain invalid values
+                                              # such as inline comments, null, etc.
 
-          unless value.is_a?(String)
-            Dependabot.logger.warn(
-              "File fetcher: Skipping dependency \"#{path}\" " \
-              "with value: \"#{value}\""
-            )
+                                              unless value.is_a?(String)
+                                                Dependabot.logger.warn(
+                                                  "File fetcher: Skipping dependency \"#{path}\" " \
+                                                  "with value: \"#{value}\""
+                                                )
 
-            next
-          end
+                                                next
+                                              end
 
-          convert_dependency_path_to_name(path, value)
+                                              convert_dependency_path_to_name(path, value)
         end
 
         path_starts = PATH_DEPENDENCY_STARTS
@@ -330,7 +331,7 @@ module Dependabot
         return [glob] unless glob.include?("*")
 
         unglobbed_path =
-          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+          glob.gsub(%r{^\./}, "").gsub(/!\([^)]*\)/, "*")
               .split("*")
               .first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
@@ -346,7 +347,7 @@ module Dependabot
 
       sig { params(glob: String, paths: T::Array[String]).returns(T::Array[String]) }
       def matching_paths(glob, paths)
-        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\([^)]*\)/, "*")
         glob = "#{glob}/*" if glob.end_with?("**")
 
         paths.select { |filename| File.fnmatch?(glob, filename, File::FNM_PATHNAME) }

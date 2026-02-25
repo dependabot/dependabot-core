@@ -1,0 +1,5 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e  # frozen: v4.4.0
+    hooks:
+      - id: trailing-whitespace

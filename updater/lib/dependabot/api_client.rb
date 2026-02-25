@@ -1,7 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "http"
+require "excon"
 require "dependabot/job"
 require "dependabot/opentelemetry"
 require "sorbet-runtime"
@@ -40,16 +40,15 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
-        response = http_client.post(api_url, json: { data: data })
-
-        if response.code >= 400 && dependency_file_not_supported_error?(response.body.to_s)
+        response = http_client.post(path: api_url, body: { data: data }.to_json)
+        if response.status >= 400 && dependency_file_not_supported_error?(response.body.to_s)
           raise Dependabot::DependencyFileNotSupported, response.body.to_s
-        elsif response.code >= 400
+        elsif response.status >= 400
           raise ApiError, response.body
         end
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -68,7 +67,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/update_pull_request"
         body = {
           data: {
             "dependency-names": dependency_change.updated_dependencies.map(&:name),
@@ -76,9 +75,9 @@ module Dependabot
             "base-commit-sha": base_commit_sha
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -94,11 +93,11 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::PR_CLOSE_REASON, reason.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/close_pull_request"
         body = { data: { "dependency-names": dependency_names, reason: reason } }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -116,16 +115,16 @@ module Dependabot
           error_type: error_type,
           error_details: error_details
         )
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_update_job_error"
         body = {
           data: {
             "error-type": error_type,
             "error-details": error_details
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -150,7 +149,7 @@ module Dependabot
           warn_title: warn_title,
           warn_description: warn_description
         )
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_warning"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_update_job_warning"
         body = {
           data: {
             "warn-type": warn_type,
@@ -158,9 +157,9 @@ module Dependabot
             "warn-description": warn_description
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -180,16 +179,16 @@ module Dependabot
           error_details: error_details
         )
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_unknown_error"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_update_job_unknown_error"
         body = {
           data: {
             "error-type": error_type,
             "error-details": error_details
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -205,11 +204,11 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
-        response = http_client.patch(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.patch(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -224,16 +223,16 @@ module Dependabot
       ::Dependabot::OpenTelemetry.tracer.in_span("update_dependency_list", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/update_dependency_list"
         body = {
           data: {
             dependencies: dependencies,
             dependency_files: dependency_files
           }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -248,13 +247,13 @@ module Dependabot
       ::Dependabot::OpenTelemetry.tracer.in_span("create_dependency_submission", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/create_dependency_submission"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/create_dependency_submission"
         body = {
           data: dependency_submission
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -267,13 +266,13 @@ module Dependabot
     sig { params(ecosystem_versions: T::Hash[Symbol, T.untyped]).void }
     def record_ecosystem_versions(ecosystem_versions)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_versions", kind: :internal) do |_span|
-        api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_versions"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_versions"
         body = {
           data: { ecosystem_versions: ecosystem_versions }
         }
-        response = http_client.post(api_url, json: body)
-        raise ApiError, response.body if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        response = http_client.post(path: api_url, body: body.to_json)
+        raise ApiError, response.body if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
         raise if retry_count > MAX_REQUEST_RETRIES
@@ -292,17 +291,17 @@ module Dependabot
           span.set_attribute(key.to_s, value.to_s)
         end
 
-        api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/increment_metric"
         body = {
           data: {
             metric: metric,
             tags: tags
           }
         }
-        response = http_client.post(api_url, json: body)
+        response = http_client.post(path: api_url, body: body.to_json)
         # We treat metrics as fire-and-forget, so just warn if they fail.
-        Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
-      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.status >= 400
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         Dependabot.logger.debug("Unable to report metric '#{metric}'.")
       end
     end
@@ -315,7 +314,7 @@ module Dependabot
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
-          api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_meta"
+          api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_meta"
 
           body = {
             data: [
@@ -332,9 +331,9 @@ module Dependabot
           retry_count = 0
 
           begin
-            response = http_client.post(api_url, json: body)
-            raise ApiError, response.body if response.code >= 400
-          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            response = http_client.post(path: api_url, body: body.to_json)
+            raise ApiError, response.body if response.status >= 400
+          rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
             retry_count += 1
             if retry_count <= MAX_REQUEST_RETRIES
               sleep(rand(3.0..10.0))
@@ -352,6 +351,7 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
       return if job&.cooldown.nil?
@@ -360,7 +360,7 @@ module Dependabot
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
-          api_url = "#{base_url}/update_jobs/#{job_id}/record_cooldown_meta"
+          api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_cooldown_meta"
 
           body = {
             data: [
@@ -382,9 +382,9 @@ module Dependabot
           retry_count = 0
 
           begin
-            response = http_client.post(api_url, json: body)
-            raise ApiError, response.body if response.code >= 400
-          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            response = http_client.post(path: api_url, body: body.to_json)
+            raise ApiError, response.body if response.status >= 400
+          rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
             retry_count += 1
             if retry_count <= MAX_REQUEST_RETRIES
               sleep(rand(3.0..10.0))
@@ -400,6 +400,7 @@ module Dependabot
         Dependabot.logger.error("Failed to record cooldown meta: #{e.message}")
       end
     end
+    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
     private
@@ -450,15 +451,25 @@ module Dependabot
     sig { returns(String) }
     attr_reader :job_token
 
-    sig { returns(T.untyped) }
+    sig { returns(Excon::Connection) }
     def http_client
-      client = HTTP::Client.new.auth(job_token)
-      proxy = ENV["HTTPS_PROXY"] ? URI(T.must(ENV["HTTPS_PROXY"])) : URI(base_url).find_proxy
-      unless proxy.nil?
-        args = T.unsafe([proxy.host, proxy.port, proxy.user, proxy.password].compact)
-        client = client.via(*args)
-      end
-      client
+      proxy =
+        if ENV.key?("HTTPS_PROXY")
+          ENV.fetch("HTTPS_PROXY")
+        else
+          URI(base_url).find_proxy&.to_s
+        end
+
+      Excon.new(
+        base_url,
+        proxy: proxy,
+        **Dependabot::SharedHelpers.excon_defaults(
+          headers: {
+            "Authorization" => job_token,
+            "Content-Type" => "application/json"
+          }
+        )
+      )
     end
 
     sig { params(dependency_change: Dependabot::DependencyChange).returns(T::Hash[String, T.untyped]) }

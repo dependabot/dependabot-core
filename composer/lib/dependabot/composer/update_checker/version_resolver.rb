@@ -253,10 +253,14 @@ module Dependabot
               next unless req.start_with?("dev-")
               next if req.include?("#")
 
-              commit_sha = parsed_lockfile
-                           .fetch(T.must(keys[:lockfile]), [])
-                           .find { |d| d["name"] == name }
-                           &.dig("source", "reference")
+              package = parsed_lockfile
+                        .fetch(T.must(keys[:lockfile]), [])
+                        .find { |d| d["name"] == name }
+
+              commit_sha = package&.dig("source", "reference") || package&.dig("dist", "reference")
+
+              next unless commit_sha
+
               updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
@@ -278,11 +282,11 @@ module Dependabot
             else
               version_for_requirement =
                 dependency.requirements.filter_map { |r| r[:requirement] }
-                          .reject { |req_string| req_string.start_with?("<") }
-                          .select { |req_string| req_string.match?(VERSION_REGEX) }
-                          .map { |req_string| req_string.match(VERSION_REGEX) }
-                          .select { |version| requirement_valid?(">= #{version}") }
-                          .max_by { |version| Composer::Version.new(version.to_s) }
+                                       .reject { |req_string| req_string.start_with?("<") }
+                                       .select { |req_string| req_string.match?(VERSION_REGEX) }
+                                       .map { |req_string| req_string.match(VERSION_REGEX) }
+                                       .select { |version| requirement_valid?(">= #{version}") }
+                                       .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -330,12 +334,12 @@ module Dependabot
             missing_extensions =
               error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                name, requirement = if extension_string.is_a?(Array)
-                                      [extension_string.first.to_s.strip, extension_string.last.to_s]
-                                    else
-                                      extension_string.to_s.strip.split(" ", 2)
-                                    end
-                { name: name, requirement: requirement }
+                     name, requirement = if extension_string.is_a?(Array)
+                                           [extension_string.first.to_s.strip, extension_string.last.to_s]
+                                         else
+                                           extension_string.to_s.strip.split(" ", 2)
+                                         end
+                     { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
           elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
@@ -345,8 +349,8 @@ module Dependabot
             missing_extensions =
               error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-                name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-                { name: name, requirement: requirement }
+                     name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
+                     { name: name, requirement: requirement }
               end
 
             missing_extension = missing_extensions.find do |hash|
@@ -438,8 +442,8 @@ module Dependabot
           missing_extensions =
             message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
                    .map do |extension_string|
-              name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
-              { name: name, requirement: requirement }
+                     name, requirement = T.cast(extension_string, String).strip.split(" ", 2)
+                     { name: name, requirement: requirement }
             end
 
           missing_extensions.any? do |hash|
