@@ -10,7 +10,7 @@ module Dependabot
 
       GITHUB_REPO_REGEX = %r{github.com/[^:@ ]*}
 
-      sig { params(message: String).void }
+      sig { params(message: String).returns(T.noreturn) }
       def self.handle(message)
         mod_path = message.scan(GITHUB_REPO_REGEX).last
         unless mod_path && message.include?("If this is a private repository")
