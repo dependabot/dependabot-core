@@ -37,8 +37,8 @@ module Dependabot
 
         raise Dependabot::DependencyFileNotResolvable, message unless mod_path && requires_reachability_check?(message)
 
-        # Module not found on github.com - query for _any_ version to know if it
-        # doesn't exist (or is private) or we were just given a bad revision by this manifest
+        # Module not found in the module repository (e.g., GitHub, Gerrit) - query for _any_ version
+        # to know if it doesn't exist (or is private) or we were just given a bad revision by this manifest
         SharedHelpers.in_a_temporary_directory do
           File.write("go.mod", "module dummy\n")
 
