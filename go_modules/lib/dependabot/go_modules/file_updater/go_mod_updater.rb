@@ -57,6 +57,8 @@ module Dependabot
             /go(?: get)?: .*: unknown revision/m,
             # Package pointing to a proxy that 404s
             /go(?: get)?: .*: unrecognized import path/m,
+            # Private repository cannot be fetched over a secure protocol
+            Dependabot::GoModules::ResolvabilityErrors::INSECURE_PROTOCOL_REPOSITORY_REGEX,
             # Package not being referenced correctly
             /go:.*imports.*package.+is not in std/m,
             # Invalid version due to missing go.mod files at specified revision
@@ -94,11 +96,21 @@ module Dependabot
           T::Array[Regexp]
         )
 
+        PATH_DEPENDENCY_ERROR_REGEXES = T.let(
+          [
+            /replaced by (?<path>[^)\s]+)\): reading .*go\.mod: open .*: no such file or directory/
+          ].freeze,
+          T::Array[Regexp]
+        )
+
         GO_LANG = "Go"
 
         AMBIGUOUS_ERROR_MESSAGE = /ambiguous import: found package (?<package>.*) in multiple modules/
 
         GO_VERSION_MISMATCH = /requires go (?<current_ver>.*) .*running go (?<req_ver>.*);/
+
+        GITHUB_403_REGEX =
+          %r{https://github\.com/(?<repo>[^/'\s]+/[^/'\s]+)/?': The requested URL returned error: 403}
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
@@ -326,11 +338,8 @@ module Dependabot
         def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           stderr = stderr.gsub(Dir.getwd, "")
 
-          go_mod_parse_error_regex = GO_MOD_PARSE_ERROR_REGEXES.find { |r| stderr =~ r }
-          if go_mod_parse_error_regex
-            error_message = filter_error_message(message: stderr, regex: go_mod_parse_error_regex)
-            raise Dependabot::DependencyFileNotParseable.new(go_mod_path, error_message)
-          end
+          raise_for_go_mod_parse_error(stderr)
+          raise_for_path_dependency_error(stderr)
 
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
@@ -343,8 +352,12 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
+          if github_credentials_configured? && (matches = stderr.match(GITHUB_403_REGEX))
+            raise Dependabot::PrivateSourceAuthenticationFailure, "https://github.com/#{matches[:repo]}"
+          end
+
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
-          ResolvabilityErrors.handle(stderr) if repo_error_regex
+          Dependabot::GoModules::ResolvabilityErrors.handle(stderr) if repo_error_regex
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
           if path_regex
@@ -385,6 +398,44 @@ module Dependabot
 
           # In case the regex is multi-line, match the whole string
           message.match(regex).to_s
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def extract_replacement_path(message)
+          PATH_DEPENDENCY_ERROR_REGEXES.each do |regex|
+            match = regex.match(message)
+            return match[:path] if match
+          end
+
+          nil
+        end
+
+        sig { returns(T::Boolean) }
+        def github_credentials_configured?
+          credentials.any? do |credential|
+            credential["type"] == "git_source" && credential["host"] == "github.com"
+          end
+        end
+
+        sig { params(stderr: String).void }
+        def raise_for_go_mod_parse_error(stderr)
+          go_mod_parse_error_regex = GO_MOD_PARSE_ERROR_REGEXES.find { |r| stderr =~ r }
+          return unless go_mod_parse_error_regex
+
+          error_message = filter_error_message(message: stderr, regex: go_mod_parse_error_regex)
+          raise Dependabot::DependencyFileNotParseable.new(go_mod_path, error_message)
+        end
+
+        sig { params(stderr: String).void }
+        def raise_for_path_dependency_error(stderr)
+          path_error_regex = PATH_DEPENDENCY_ERROR_REGEXES.find { |r| stderr =~ r }
+          return unless path_error_regex
+
+          dependency_path = extract_replacement_path(stderr)
+          raise Dependabot::PathDependenciesNotReachable, [dependency_path] if dependency_path
+
+          error_message = filter_error_message(message: stderr, regex: path_error_regex)
+          raise Dependabot::DependencyFileNotResolvable, error_message
         end
 
         sig { returns(String) }

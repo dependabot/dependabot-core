@@ -102,6 +102,8 @@ module Dependabot
         return nil if repo_url.nil? || rev.nil?
         return nil if %w(local meta).include?(repo_url)
 
+        comment = rev_line_comment(file, repo_url)
+
         Dependency.new(
           name: repo_url,
           version: rev,
@@ -114,7 +116,8 @@ module Dependabot
               url: repo_url,
               ref: rev,
               branch: nil
-            }
+            },
+            metadata: { comment: comment }
           }],
           package_manager: ECOSYSTEM
         )
@@ -190,6 +193,28 @@ module Dependabot
         end
 
         dependencies
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          repo_url: String
+        ).returns(T.nilable(String))
+      end
+      def rev_line_comment(file, repo_url)
+        current_repo = T.let(nil, T.nilable(String))
+
+        T.must(file.content).each_line do |line|
+          repo_match = line.match(/^\s*-\s*repo:\s*(\S+)/)
+          current_repo = repo_match[1] if repo_match
+
+          next unless current_repo == repo_url
+
+          rev_match = line.match(/^\s*rev:\s*\S+\s*(#.*)$/)
+          return T.must(rev_match[1]).rstrip if rev_match
+        end
+
+        nil
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
