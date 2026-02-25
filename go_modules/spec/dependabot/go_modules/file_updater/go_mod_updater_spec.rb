@@ -1081,7 +1081,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       it "raises the correct error" do
         expect do
           updater.send(:handle_subprocess_error, stderr)
-        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end.to raise_error(Dependabot::GitDependenciesNotReachable)
       end
     end
 
