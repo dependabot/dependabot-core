@@ -544,6 +544,73 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "with SHA having multiple short version tags (regression test for substring bug)" do
+        let(:workflow_file_fixture) { "workflow_with_short_version_tags.yml" }
+        let(:workflow_file_body) { fixture("workflow_files", workflow_file_fixture) }
+        let(:previous_version) { "0.58.1" }
+        let(:old_ref) { "1111111111111111111111111111111111111111" }
+        let(:new_ref) { "2222222222222222222222222222222222222222" }
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "example/action",
+            version: "0.58.12",
+            package_manager: "github_actions",
+            previous_version: previous_version,
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/example/action",
+                ref: old_ref,
+                branch: nil
+              },
+              metadata: { declaration_string: "example/action@#{old_ref}" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/example/action",
+                ref: new_ref,
+                branch: nil
+              },
+              metadata: { declaration_string: "example/action@#{new_ref}" }
+            }]
+          )
+        end
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).with(old_ref).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha).with(old_ref).and_return(
+            ["v0.58.1", "v0.58.10", "v0.58.11", "v0.58.12"]
+          )
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(new_ref).and_return("v0.58.12")
+        end
+
+        it "updates SHA and comment correctly without substring replacement" do
+          # This test verifies the fix for a bug where multiple short version tags
+          # (e.g., v0.58.1, v0.58.10, v0.58.12) would cause malformed version comments.
+          # The old code could match a shorter prefix and replace all occurrences,
+          # resulting in a malformed version like "v0.58.12.1.12" instead of "v0.58.12".
+
+          expect(updated_workflow_file.content).to match(/@#{new_ref}\s+#.*v#{dependency.version}\s*$/)
+          expect(updated_workflow_file.content).not_to include("v0.58.12.1.12")
+          expect(updated_workflow_file.content).not_to match(/v\d+\.\d+\.\d+\.\d+/)
+        end
+
+        it "selects the longest matching version tag" do
+          # Verify that when multiple tags exist (v0.58.1, v0.58.10, v0.58.12),
+          # the code selects the longest one (0.58.12) not the shortest
+          expect(updated_workflow_file.content).to include "# v#{dependency.version}"
+        end
+      end
+
       context "with a path based tag with semver" do
         let(:workflow_file_body) do
           fixture("workflow_files", "workflow_monorepo_path_based_semver.yml")
