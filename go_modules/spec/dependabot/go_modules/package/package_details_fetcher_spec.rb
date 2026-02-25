@@ -87,5 +87,45 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         expect(first_result.package_type).to eq(latest_release.package_type)
       end
     end
+
+    context "when the subprocess fails with a resolvability error" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: error_message,
+                       error_context: {}
+                     ))
+      end
+
+      context "when the error is 'no secure protocol found for repository'" do
+        let(:error_message) { "no secure protocol found for repository example.com/mypackage" }
+
+        it "returns the current version instead of raising" do
+          result = fetch
+          expect(result).to be_an(Array)
+          expect(result.length).to eq(1)
+          expect(result.first.version).to eq(Dependabot::GoModules::Version.new("0.3.23"))
+        end
+      end
+
+      context "when the error is '404 Not Found'" do
+        let(:error_message) { "go: module example.com/mypackage: 404 Not Found" }
+
+        it "returns the current version instead of raising" do
+          result = fetch
+          expect(result).to be_an(Array)
+          expect(result.length).to eq(1)
+          expect(result.first.version).to eq(Dependabot::GoModules::Version.new("0.3.23"))
+        end
+      end
+
+      context "when the error does not match any resolvability pattern" do
+        let(:error_message) { "some unexpected error" }
+
+        it "raises DependencyFileNotResolvable" do
+          expect { fetch }.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
   end
 end

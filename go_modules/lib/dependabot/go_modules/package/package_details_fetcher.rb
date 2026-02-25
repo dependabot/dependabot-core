@@ -106,8 +106,11 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
 
+          if RESOLVABILITY_ERROR_REGEXES.any? { |r| e.message.match?(r) }
+            return [package_release(version: T.must(dependency.version))]
+          end
+
           ResolvabilityErrors.handle(e.message)
-          [package_release(version: T.must(dependency.version))]
         end
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
