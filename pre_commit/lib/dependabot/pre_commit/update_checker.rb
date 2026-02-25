@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/errors"
+require "dependabot/pre_commit/comment_version_helper"
 require "dependabot/pre_commit/requirement"
 require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/additional_dependency_checkers"
@@ -55,7 +56,7 @@ module Dependabot
 
           current = T.cast(source&.[](:ref), T.nilable(String))
 
-          # Maintain a short git hash only if it matches the latest
+          # Maintain short git hash when the updated SHA starts with the current SHA
           if T.cast(req[:type], T.nilable(String)) == "git" &&
              git_commit_checker.ref_looks_like_commit_sha?(updated) &&
              current && git_commit_checker.ref_looks_like_commit_sha?(current) &&
@@ -64,7 +65,8 @@ module Dependabot
           end
 
           new_source = T.must(source).merge(ref: updated)
-          req.merge(source: new_source)
+          new_metadata = updated_comment_version_metadata(req, updated)
+          req.merge(source: new_source, metadata: new_metadata)
         end
       end
 
@@ -90,6 +92,9 @@ module Dependabot
       def current_version
         return super if dependency.numeric_version
 
+        frozen_ver = version_from_comment
+        return frozen_ver if frozen_ver
+
         # For git dependencies, try to parse the version from the ref
         source_details = dependency.source_details(allowed_types: ["git"])
         return nil unless source_details
@@ -101,6 +106,17 @@ module Dependabot
         return nil unless version_class.correct?(version_string)
 
         version_class.new(version_string)
+      end
+
+      sig { returns(T::Boolean) }
+      def sha1_version_up_to_date?
+        frozen_ver = version_from_comment
+        return super unless frozen_ver
+
+        resolved_sha = latest_commit_sha
+        return true if resolved_sha && resolved_sha == dependency.version
+
+        false
       end
 
       sig { override.returns(T::Boolean) }
@@ -167,10 +183,11 @@ module Dependabot
         new_tag = T.must(latest_version_finder).latest_version_tag
 
         if new_tag
-          return T.cast(new_tag.fetch(:commit_sha), String) if git_commit_checker.local_tag_for_pinned_sha
+          if version_from_comment || git_commit_checker.local_tag_for_pinned_sha
+            return T.cast(new_tag.fetch(:commit_sha), String)
+          end
 
           return latest_commit_for_pinned_ref
-
         end
 
         # If there's no tag but we have a latest_version (commit SHA), use it
@@ -183,6 +200,67 @@ module Dependabot
       sig { returns(Dependabot::GitCommitChecker) }
       def git_commit_checker
         @git_commit_checker ||= T.let(git_helper.git_commit_checker, T.nilable(Dependabot::GitCommitChecker))
+      end
+
+      sig do
+        params(
+          req: T::Hash[Symbol, T.untyped],
+          new_ref: String
+        ).returns(T::Hash[Symbol, T.untyped])
+      end
+      def updated_comment_version_metadata(req, new_ref)
+        existing_metadata = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])
+        comment = T.cast(existing_metadata[:comment], T.nilable(String))
+        return existing_metadata unless comment
+
+        old_version = extract_version_from_comment(comment)
+        return existing_metadata unless old_version
+
+        new_version = resolve_new_comment_version(new_ref)
+        return existing_metadata unless new_version
+
+        existing_metadata.merge(comment_version: old_version, new_comment_version: new_version)
+      end
+
+      sig { params(comment: String).returns(T.nilable(String)) }
+      def extract_version_from_comment(comment)
+        match = comment.match(CommentVersionHelper::COMMENT_VERSION_PATTERN)
+        match&.[](0)
+      end
+
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def version_from_comment
+        @version_from_comment ||= T.let(
+          begin
+            comment = T.let(
+              @dependency.requirements
+                .filter_map do |req|
+                  val = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])[:comment]
+                  T.cast(val, T.nilable(String))
+                end
+                .first,
+              T.nilable(String)
+            )
+            return nil unless comment
+
+            version_string = extract_version_from_comment(comment)
+            return nil unless version_string
+
+            cleaned = version_string.sub(/^v/, "")
+            return nil unless version_class.correct?(cleaned)
+
+            version_class.new(cleaned)
+          end,
+          T.nilable(Dependabot::Version)
+        )
+      end
+
+      sig { params(_new_ref: String).returns(T.nilable(String)) }
+      def resolve_new_comment_version(_new_ref)
+        new_tag = T.must(latest_version_finder).latest_version_tag
+        return T.cast(new_tag.fetch(:tag, nil), T.nilable(String)) if new_tag
+
+        nil
       end
 
       sig { returns(Dependabot::PreCommit::Helpers::Githelper) }

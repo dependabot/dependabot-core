@@ -69,6 +69,17 @@ function docker_build() {
   # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
   unset DOCKER_CONTENT_TRUST
 
+  # pre_commit depends on go_modules and bundler images, so build them first
+  # Use a guard variable to prevent infinite recursion when called recursively
+  if [[ "$ECOSYSTEM" == "pre_commit" && -z "$BUILDING_DEPENDENCY" ]]; then
+    echo "Building pre_commit dependencies: go_modules and bundler..."
+    BUILDING_DEPENDENCY=1 docker_build "go_modules"
+    BUILDING_DEPENDENCY=1 docker_build "bundler"
+    # Restore ecosystem and tag for pre_commit
+    ECOSYSTEM="pre_commit"
+    set_tag
+  fi
+
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
