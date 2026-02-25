@@ -93,4 +93,26 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers do
       expect(languages).to include("language_b")
     end
   end
+
+  describe "built-in language support" do
+    it "supports python" do
+      expect(described_class.supported?("python")).to be true
+    end
+
+    it "supports node" do
+      expect(described_class.supported?("node")).to be true
+    end
+
+    it "supports golang" do
+      expect(described_class.supported?("golang")).to be true
+    end
+
+    it "supports rust" do
+      expect(described_class.supported?("rust")).to be true
+    end
+
+    it "supports dart" do
+      expect(described_class.supported?("dart")).to be true
+    end
+  end
 end

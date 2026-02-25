@@ -415,5 +415,55 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep.requirements.first[:requirement]).to eq(">= 1.17.0")
       end
     end
+
+    context "with dart additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_dart_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+
+        expect(repo_deps.length).to eq(4)
+        expect(additional_deps.length).to eq(6)
+      end
+
+      it "parses a simple dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "intl" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("0.18.0")
+        expect(dep.requirements.first[:requirement]).to eq("0.18.0")
+        expect(dep.requirements.first[:source][:language]).to eq("dart")
+        expect(dep.requirements.first[:source][:package_name]).to eq("intl")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("dart-format")
+        expect(dep.requirements.first[:source][:original_string]).to eq("intl:0.18.0")
+      end
+
+      it "parses a caret-range dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "json_annotation" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("4.8.0")
+        expect(dep.requirements.first[:requirement]).to eq("^4.8.0")
+        expect(dep.requirements.first[:source][:language]).to eq("dart")
+      end
+
+      it "parses a >= constraint dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "collection" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.17.0")
+        expect(dep.requirements.first[:requirement]).to eq(">=1.17.0")
+      end
+
+      it "parses a tilde-range dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "yaml" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("3.1.0")
+        expect(dep.requirements.first[:requirement]).to eq("~3.1.0")
+      end
+    end
   end
 end
