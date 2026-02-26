@@ -13,6 +13,7 @@ module Dependabot
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
+      COPY_FROM_REGEX = /COPY\s+.*--from\=/i
 
       sig { override.returns(String) }
       def file_type
@@ -26,7 +27,7 @@ module Dependabot
 
       sig { override.returns(Regexp) }
       def container_image_regex
-        %r{^#{FROM_REGEX}\s+(docker\.io/)?}o
+        %r{^(#{FROM_REGEX}\s+|#{COPY_FROM_REGEX})(docker\.io/)?}o
       end
     end
   end

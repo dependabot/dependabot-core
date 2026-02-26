@@ -15,13 +15,29 @@ module Dependabot
       TAG_NO_PREFIX = /(?<tag>[\w][\w.-]{0,127})/
       TAG = /:#{TAG_NO_PREFIX}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
+      IMAGE_SPEC = %r{(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
-      IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
+      WORKFLOW_IMAGE_LINE = /^#{IMAGE_SPEC}$/
+
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
+
+      COPY = /COPY/i
+      # Exclude integers from 'image' capture group as it represents a copy
+      # of build artifact of previous stages into the next one.
+      # (See also https://docs.docker.com/build/building/multi-stage/#use-multi-stage-builds)
+      # However, we have to make sure that it only matches to --from=\d+, as
+      # it's valid to have an image named like regex '\d+/.+'.
+      PREVIOUS_STAGE_REF_LOOKAHEAD = /(?!\d+(?:$|\s))/
+      COPY_FROM = /--from\=#{PREVIOUS_STAGE_REF_LOOKAHEAD}#{IMAGE_SPEC}/
+      # COPY can have optional options set in random order. Listing every possible
+      # combination scales badly if new options are added, so instead we just try
+      # to lookup the --from option.
+      # For a list of possible options, see https://docs.docker.com/reference/dockerfile/#copy
+      COPY_FROM_LINE = /^#{COPY}\s+.*#{COPY_FROM}\s+/x
 
       sig { returns(Ecosystem) }
       def ecosystem
@@ -40,9 +56,9 @@ module Dependabot
 
         dockerfiles.each do |dockerfile|
           T.must(dockerfile.content).each_line do |line|
-            next unless FROM_LINE.match?(line)
+            next unless FROM_LINE.match?(line) || COPY_FROM_LINE.match?(line)
 
-            parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
+            parsed_from_line = T.must(FROM_LINE.match(line) || COPY_FROM_LINE.match(line)).named_captures
             parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
             version = version_from(parsed_from_line)
@@ -93,7 +109,7 @@ module Dependabot
 
           images.each do |string|
             # TODO: Support Docker references and path references
-            details = string.match(IMAGE_SPEC)&.named_captures
+            details = string.match(WORKFLOW_IMAGE_LINE)&.named_captures
             next if details.nil?
 
             details["registry"] = nil if details["registry"] == "docker.io"
