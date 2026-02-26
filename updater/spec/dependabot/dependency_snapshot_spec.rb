@@ -120,9 +120,6 @@ RSpec.describe Dependabot::DependencySnapshot do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:group_membership_enforcement)
       .and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:group_by_dependency_name)
-      .and_return(false)
   end
 
   after do
@@ -289,11 +286,6 @@ RSpec.describe Dependabot::DependencySnapshot do
           dependencies: nil,
           experiments: { large_hadron_collider: true }
         )
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name).and_return(true)
       end
 
       it "returns the dynamic subgroup when job_group is called" do
@@ -494,19 +486,14 @@ RSpec.describe Dependabot::DependencySnapshot do
     context "when group_by_dependency_name? is true" do
       include_context "with cross-directory existing PR dependencies"
 
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name).and_return(true)
-      end
-
       let(:dependency_groups) do
         [
           {
             "name" => "group-a",
             "rules" => {
-              "patterns" => ["dummy-pkg-*"]
-            },
-            "group-by" => "dependency-name"
+              "patterns" => ["dummy-pkg-*"],
+              "group-by" => "dependency-name"
+            }
           }
         ]
       end
@@ -550,11 +537,6 @@ RSpec.describe Dependabot::DependencySnapshot do
 
     context "when group_by_dependency_name? is false" do
       include_context "with cross-directory existing PR dependencies"
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name).and_return(false)
-      end
 
       it "filters existing PR dependencies by directory" do
         snapshot = create_dependency_snapshot

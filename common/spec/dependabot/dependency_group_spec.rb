@@ -250,55 +250,27 @@ RSpec.describe Dependabot::DependencyGroup do
     let(:rules_with_group_by) { { "patterns" => ["test-*"], "group-by" => "dependency-name" } }
     let(:rules_with_other_group_by) { { "patterns" => ["test-*"], "group-by" => "something-else" } }
 
-    context "when the feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:group_by_dependency_name).and_return(false)
-      end
+    context "when rules contain group-by: dependency-name" do
+      let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
 
-      context "when rules contain group-by: dependency-name" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
-
-        it "returns false" do
-          expect(dependency_group.group_by_dependency_name?).to be(false)
-        end
-      end
-
-      context "when rules do not contain group-by" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules) }
-
-        it "returns false" do
-          expect(dependency_group.group_by_dependency_name?).to be(false)
-        end
+      it "returns true" do
+        expect(dependency_group.group_by_dependency_name?).to be(true)
       end
     end
 
-    context "when the feature flag is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:group_by_dependency_name).and_return(true)
+    context "when rules do not contain group-by" do
+      let(:dependency_group) { described_class.new(name: name, rules: rules) }
+
+      it "returns false" do
+        expect(dependency_group.group_by_dependency_name?).to be(false)
       end
+    end
 
-      context "when rules contain group-by: dependency-name" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules_with_group_by) }
+    context "when rules contain a different group-by value" do
+      let(:dependency_group) { described_class.new(name: name, rules: rules_with_other_group_by) }
 
-        it "returns true" do
-          expect(dependency_group.group_by_dependency_name?).to be(true)
-        end
-      end
-
-      context "when rules do not contain group-by" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules) }
-
-        it "returns false" do
-          expect(dependency_group.group_by_dependency_name?).to be(false)
-        end
-      end
-
-      context "when rules contain a different group-by value" do
-        let(:dependency_group) { described_class.new(name: name, rules: rules_with_other_group_by) }
-
-        it "returns false" do
-          expect(dependency_group.group_by_dependency_name?).to be(false)
-        end
+      it "returns false" do
+        expect(dependency_group.group_by_dependency_name?).to be(false)
       end
     end
   end
