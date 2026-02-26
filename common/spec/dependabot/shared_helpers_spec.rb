@@ -919,6 +919,34 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(config).not_to include("insteadOf")
       end
     end
+
+    context "when called multiple times for the same module" do
+      before do
+        2.times do
+          described_class.configure_git_url_for_azure_devops(
+            "dev.azure.com/MyOrg/MyProject/myrepo"
+          )
+        end
+      end
+
+      it "does not accumulate duplicate bare URL entries" do
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
+        bare_entries = config.strip.split("\n").select { |l| l.strip == "https://dev.azure.com/MyOrg/MyProject/myrepo" }
+        expect(bare_entries.length).to eq(1)
+      end
+
+      it "does not accumulate duplicate .git URL entries" do
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
+        git_entries = config.strip.split("\n").select { |l| l.strip == "https://dev.azure.com/MyOrg/MyProject/myrepo.git" }
+        expect(git_entries.length).to eq(1)
+      end
+
+      it "does not accumulate duplicate slash URL entries" do
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo/.insteadOf`
+        slash_entries = config.strip.split("\n").select { |l| l.strip == "https://dev.azure.com/MyOrg/MyProject/myrepo/" }
+        expect(slash_entries.length).to eq(1)
+      end
+    end
   end
 
   describe ".configure_goprivate_for_azure_devops" do
@@ -951,6 +979,38 @@ RSpec.describe Dependabot::SharedHelpers do
 
     it "does nothing for non-Azure DevOps paths" do
       described_class.configure_goprivate_for_azure_devops("github.com/some/repo")
+      expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
+    end
+  end
+
+  describe ".configure_go_for_azure_devops" do
+    let(:git_config_path) { File.expand_path("test_azure_devops_unified.gitconfig", tmp) }
+
+    before do
+      FileUtils.mkdir_p(tmp)
+      File.write(git_config_path, "")
+      ENV["GIT_CONFIG_GLOBAL"] = git_config_path
+    end
+
+    after do
+      ENV.delete("GIT_CONFIG_GLOBAL")
+      ENV.delete("GOPRIVATE")
+      FileUtils.rm_f(git_config_path)
+    end
+
+    it "configures both git URL rewriting and GOPRIVATE" do
+      described_class.configure_go_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+
+      config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
+      expect(config).to include("https://dev.azure.com/MyOrg/MyProject/myrepo\n")
+      expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+    end
+
+    it "does nothing for non-Azure DevOps paths" do
+      described_class.configure_go_for_azure_devops("github.com/some/repo")
+
+      config = `git config --global --list 2>/dev/null`
+      expect(config).not_to include("insteadOf")
       expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
     end
   end

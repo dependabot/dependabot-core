@@ -431,6 +431,14 @@ module Dependabot
       )
     end
 
+    # Configures both git URL rewriting and GOPRIVATE for Azure DevOps Go modules.
+    # Call this instead of the two underlying methods individually.
+    sig { params(module_path: String).void }
+    def self.configure_go_for_azure_devops(module_path)
+      configure_git_url_for_azure_devops(module_path)
+      configure_goprivate_for_azure_devops(module_path)
+    end
+
     # Azure DevOps requires /_git/ in the URL path, but Go module paths use a flat structure:
     #   Module path: dev.azure.com/{org}/{project}/{repo}.git
     #   Correct URL: https://dev.azure.com/{org}/{project}/_git/{repo}
@@ -438,34 +446,60 @@ module Dependabot
     # Go strips the .git VCS qualifier and passes the bare URL to git, e.g.:
     #   https://dev.azure.com/{org}/{project}/{repo}
     # We add insteadOf rules for all URL forms git may encounter.
+    #
+    # Uses --replace-all with a value pattern so each rule replaces only its own
+    # entry and doesn't clobber sibling insteadOf values under the same key.
+    #
+    # NOTE: Repo names containing dots (e.g. "my.utils") are intentionally
+    # excluded to avoid ambiguity with the .git VCS qualifier suffix.
+    #
+    # NOTE: A similar pattern exists in the Go import resolver helper at
+    # go_modules/helpers/importresolver/main.go (azureDevOpsPattern). Keep both
+    # in sync when changing the URL structure.
     sig { params(module_path: String).void }
     def self.configure_git_url_for_azure_devops(module_path)
-      match = module_path.match(%r{^dev\.azure\.com/(?<org>[^/]+)/(?<project>[^/]+)/(?<repo>[^/.]+)(?:\.git)?})
+      match = module_path.match(
+        %r{^dev\.azure\.com/(?<org>[a-zA-Z0-9_.-]+)/(?<project>[a-zA-Z0-9_.-]+)/(?<repo>[a-zA-Z0-9_-]+)(?:\.git)?}
+      )
       return unless match
 
-      org = match[:org]
-      project = match[:project]
-      repo = match[:repo]
+      org = T.must(match[:org])
+      project = T.must(match[:project])
+      repo = T.must(match[:repo])
 
-      azure_git_url = "https://dev.azure.com/#{org}/#{project}/_git/#{repo}"
-      flat_url = "https://dev.azure.com/#{org}/#{project}/#{repo}"
+      azure_git_url = Shellwords.escape("https://dev.azure.com/#{org}/#{project}/_git/#{repo}")
+      flat_url = Shellwords.escape("https://dev.azure.com/#{org}/#{project}/#{repo}")
 
       # Go strips .git and passes the bare URL to git. Match all forms git may see:
       # bare URL, with .git suffix, and with trailing slash.
+      #
+      # Each --replace-all uses a value pattern (POSIX BRE anchored with $) so
+      # only the matching entry is replaced and siblings under the same key are
+      # preserved. Regexp.escape produces compatible output for the URL
+      # characters we allow ([a-zA-Z0-9_.:/-]).
+      base = Regexp.escape("https://dev.azure.com/#{org}/#{project}/#{repo}")
       run_shell_command(
-        "git config --global --add url.#{azure_git_url}.insteadOf #{flat_url}"
+        "git config --global --replace-all url.#{azure_git_url}.insteadOf #{flat_url} #{base}$"
       )
       run_shell_command(
-        "git config --global --add url.#{azure_git_url}.insteadOf #{flat_url}.git"
+        "git config --global --replace-all url.#{azure_git_url}.insteadOf #{flat_url}.git #{base}\\.git$"
       )
       run_shell_command(
-        "git config --global --add url.#{azure_git_url}/.insteadOf #{flat_url}/"
+        "git config --global --replace-all url.#{azure_git_url}/.insteadOf #{flat_url}/ #{base}/$"
       )
     end
 
     # Azure DevOps modules must bypass the Go module proxy since proxy.golang.org
     # does not serve private Azure DevOps packages. Adding dev.azure.com to GOPRIVATE
     # ensures Go uses direct VCS access (where our git insteadOf rules apply).
+    #
+    # We scope to the entire dev.azure.com domain rather than a specific org/project
+    # because Azure DevOps modules are almost always private, and per-org tracking
+    # would add complexity with little benefit.
+    #
+    # NOTE: This mutates ENV["GOPRIVATE"] for the process lifetime. No cleanup is
+    # performed because Go commands run in ephemeral temporary directories inside
+    # short-lived containers, so the mutation does not leak across requests.
     sig { params(module_path: String).void }
     def self.configure_goprivate_for_azure_devops(module_path)
       return unless module_path.start_with?("dev.azure.com/")

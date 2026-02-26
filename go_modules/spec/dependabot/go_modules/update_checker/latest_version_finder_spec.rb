@@ -378,6 +378,31 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "#latest_version with Azure DevOps dependency" do
+    let(:dependency_name) { "dev.azure.com/MyOrg/MyProject/myrepo.git" }
+
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(
+        '{"Version":"v1.1.0","Versions":["v1.0.0","v1.1.0"]}'
+      )
+    end
+
+    it "calls configure_go_for_azure_devops with the dependency name" do
+      # The full lookup may fail since we stub the Go tooling — that's fine,
+      # we only care that Azure DevOps configuration was invoked.
+      begin
+        finder.latest_version
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed,
+             Dependabot::DependabotError
+        nil
+      end
+
+      expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)
+        .with(dependency_name).at_least(:once)
+    end
+  end
+
   describe "#latest_version with cooldown options" do
     context "when there's a newer major version and release date is still in cooldown" do
       before do

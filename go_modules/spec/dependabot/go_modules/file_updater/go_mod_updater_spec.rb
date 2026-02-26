@@ -57,6 +57,44 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    context "when dependency is hosted on Azure DevOps" do
+      let(:dependency_name) { "dev.azure.com/MyOrg/MyProject/myrepo.git" }
+      let(:dependency_version) { "v1.1.0" }
+      let(:dependency_previous_version) { "v1.0.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.0.0",
+          groups: [],
+          source: { type: "default", source: dependency_name }
+        }]
+      end
+
+      it "calls configure_go_for_azure_devops with the dependency name" do
+        allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+
+        # Stub the actual Go commands to avoid needing the real module
+        allow(Open3).to receive_messages(
+          capture3: ["", "", instance_double(Process::Status, success?: true)],
+          capture2e: ["", instance_double(Process::Status, success?: true)]
+        )
+
+        # The full update may fail since we stub the Go tooling — that's fine,
+        # we only care that Azure DevOps configuration was invoked.
+        begin
+          updater.updated_go_mod_content
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed,
+               Dependabot::DependabotError
+          nil
+        end
+
+        expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)
+          .with(dependency_name).at_least(:once)
+      end
+    end
+
     context "when dealing with a grouped update" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.5.2" }

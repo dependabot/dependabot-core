@@ -287,12 +287,11 @@ module Dependabot
             .params(block: T.proc.returns(T.type_parameter(:T)))
             .returns(T.type_parameter(:T))
         end
-        def in_repo_path(&block)
+        def in_repo_path(&block) # rubocop:disable Lint/UnusedMethodArgument
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               dependencies.map(&:name).uniq.each do |name|
-                SharedHelpers.configure_git_url_for_azure_devops(name)
-                SharedHelpers.configure_goprivate_for_azure_devops(name)
+                SharedHelpers.configure_go_for_azure_devops(name)
               end
               yield
             end

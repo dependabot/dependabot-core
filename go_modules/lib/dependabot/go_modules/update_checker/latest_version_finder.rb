@@ -198,9 +198,12 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           begin
+            # with_git_configured provides credentials for all private modules
+            # (this also fixes a pre-existing issue where cooldown checks could
+            # not access any credentialed private module).
+            # configure_go_for_azure_devops adds Azure DevOps-specific URL rewriting.
             release_info = SharedHelpers.with_git_configured(credentials: credentials) do
-              SharedHelpers.configure_git_url_for_azure_devops(dependency.name)
-              SharedHelpers.configure_goprivate_for_azure_devops(dependency.name)
+              SharedHelpers.configure_go_for_azure_devops(dependency.name)
               SharedHelpers.run_shell_command(
                 "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
                 fingerprint: "go list -m -json <dependency_name>"

@@ -66,8 +66,7 @@ module Dependabot
         def fetch_available_versions
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              SharedHelpers.configure_git_url_for_azure_devops(dependency.name)
-              SharedHelpers.configure_goprivate_for_azure_devops(dependency.name)
+              SharedHelpers.configure_go_for_azure_devops(dependency.name)
 
               manifest = parse_manifest
 

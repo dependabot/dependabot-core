@@ -66,6 +66,28 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
   describe "#fetch" do
     subject(:fetch) { fetcher.fetch_available_versions }
 
+    context "when dependency is hosted on Azure DevOps" do
+      let(:dependency_name) { "dev.azure.com/MyOrg/MyProject/myrepo.git" }
+
+      it "calls configure_go_for_azure_devops with the dependency name" do
+        allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+        allow(File).to receive(:write).and_call_original
+
+        # The full fetch may fail since we stub the Go tooling — that's fine,
+        # we only care that Azure DevOps configuration was invoked.
+        begin
+          fetch
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed,
+               Dependabot::DependabotError
+          nil
+        end
+
+        expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)
+          .with(dependency_name).at_least(:once)
+      end
+    end
+
     context "with a valid response" do
       before do
         stub_request(:get, json_url)
