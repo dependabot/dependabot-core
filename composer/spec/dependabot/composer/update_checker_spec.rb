@@ -694,11 +694,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("3.0.2"))
-        stub_request(:get, "https://wpackagist.org/packages.json")
-          .to_return(
-            status: 200,
-            body: fixture("wpackagist_response.json")
-          )
+        # WebMock cannot intercept HTTP calls made by PHP subprocesses,
+        # so we mock the helper subprocess to return the resolved version directly.
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .and_return("3.0.2")
       end
 
       it { is_expected.to be >= Gem::Version.new("3.0.2") }
