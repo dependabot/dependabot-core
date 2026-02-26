@@ -100,7 +100,7 @@ module Dependabot
       def up_to_date?
         # If all versions are ignored, treat the dependency as up-to-date
         # to avoid making registry calls for dependencies that should be skipped entirely.
-       if all_versions_ignored?
+        if all_versions_ignored?
           Dependabot.logger.info("All versions of #{dependency.name} are being ignored")
           return true
         end
