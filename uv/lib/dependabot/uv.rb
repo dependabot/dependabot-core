@@ -16,6 +16,7 @@ end
 
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
+require "dependabot/uv/dependency_grapher"
 require "dependabot/uv/file_fetcher"
 require "dependabot/uv/file_parser"
 require "dependabot/uv/update_checker"
