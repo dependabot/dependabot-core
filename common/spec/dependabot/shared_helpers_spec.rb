@@ -832,6 +832,129 @@ RSpec.describe Dependabot::SharedHelpers do
     end
   end
 
+  describe ".configure_git_url_for_azure_devops" do
+    let(:git_config_path) { File.expand_path("test_azure_devops.gitconfig", tmp) }
+
+    before do
+      FileUtils.mkdir_p(tmp)
+      File.write(git_config_path, "")
+      ENV["GIT_CONFIG_GLOBAL"] = git_config_path
+    end
+
+    after do
+      ENV.delete("GIT_CONFIG_GLOBAL")
+      FileUtils.rm_f(git_config_path)
+    end
+
+    context "with an Azure DevOps module path ending in .git" do
+      before do
+        described_class.configure_git_url_for_azure_devops(
+          "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git"
+        )
+      end
+
+      it "adds git insteadOf rule for the bare URL (Go strips .git)" do
+        config = `git config --global --get-all url.https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.insteadOf`
+        expect(config).to include("https://dev.azure.com/VaronisIO/da-cloud/be-protobuf\n")
+      end
+
+      it "adds git insteadOf rule for the .git URL" do
+        config = `git config --global --get-all url.https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.insteadOf`
+        expect(config).to include("https://dev.azure.com/VaronisIO/da-cloud/be-protobuf.git")
+      end
+
+      it "adds git insteadOf rule for the slash URL" do
+        config = `git config --global --get-all url.https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/.insteadOf`
+        expect(config.strip).to include("https://dev.azure.com/VaronisIO/da-cloud/be-protobuf/")
+      end
+    end
+
+    context "with an Azure DevOps module path without .git" do
+      before do
+        described_class.configure_git_url_for_azure_devops(
+          "dev.azure.com/MyOrg/MyProject/myrepo"
+        )
+      end
+
+      it "adds git insteadOf rule for the bare URL" do
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
+        expect(config).to include("https://dev.azure.com/MyOrg/MyProject/myrepo\n")
+      end
+
+      it "adds git insteadOf rule for the slash URL" do
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo/.insteadOf`
+        expect(config.strip).to include("https://dev.azure.com/MyOrg/MyProject/myrepo/")
+      end
+    end
+
+    context "with an Azure DevOps module path with subpath" do
+      it "extracts the repo name correctly" do
+        described_class.configure_git_url_for_azure_devops(
+          "dev.azure.com/MyOrg/MyProject/myrepo.git/v2"
+        )
+
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
+        expect(config.strip).to include("https://dev.azure.com/MyOrg/MyProject/myrepo.git")
+      end
+    end
+
+    context "with a non-Azure DevOps module path" do
+      it "does nothing" do
+        described_class.configure_git_url_for_azure_devops(
+          "github.com/some/repo"
+        )
+
+        config = `git config --global --list 2>/dev/null`
+        expect(config).not_to include("insteadOf")
+      end
+    end
+
+    context "with an Azure DevOps path with too few segments" do
+      it "does nothing" do
+        described_class.configure_git_url_for_azure_devops(
+          "dev.azure.com/VaronisIO/da-cloud"
+        )
+
+        config = `git config --global --list 2>/dev/null`
+        expect(config).not_to include("insteadOf")
+      end
+    end
+  end
+
+  describe ".configure_goprivate_for_azure_devops" do
+    after do
+      ENV.delete("GOPRIVATE")
+    end
+
+    it "sets GOPRIVATE for Azure DevOps module paths" do
+      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+    end
+
+    it "appends to existing GOPRIVATE" do
+      ENV["GOPRIVATE"] = "github.com/private"
+      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      expect(ENV.fetch("GOPRIVATE", nil)).to eq("github.com/private,dev.azure.com")
+    end
+
+    it "does not duplicate dev.azure.com" do
+      ENV["GOPRIVATE"] = "dev.azure.com"
+      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+    end
+
+    it "skips when GOPRIVATE is wildcard" do
+      ENV["GOPRIVATE"] = "*"
+      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      expect(ENV.fetch("GOPRIVATE", nil)).to eq("*")
+    end
+
+    it "does nothing for non-Azure DevOps paths" do
+      described_class.configure_goprivate_for_azure_devops("github.com/some/repo")
+      expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
+    end
+  end
+
   describe ".handle_json_parse_error" do
     subject(:handle_json_parse_error) do
       described_class.handle_json_parse_error(stdout, stderr, error_context, error_class)

@@ -431,6 +431,51 @@ module Dependabot
       )
     end
 
+    # Azure DevOps requires /_git/ in the URL path, but Go module paths use a flat structure:
+    #   Module path: dev.azure.com/{org}/{project}/{repo}.git
+    #   Correct URL: https://dev.azure.com/{org}/{project}/_git/{repo}
+    #
+    # Go strips the .git VCS qualifier and passes the bare URL to git, e.g.:
+    #   https://dev.azure.com/{org}/{project}/{repo}
+    # We add insteadOf rules for all URL forms git may encounter.
+    sig { params(module_path: String).void }
+    def self.configure_git_url_for_azure_devops(module_path)
+      match = module_path.match(%r{^dev\.azure\.com/(?<org>[^/]+)/(?<project>[^/]+)/(?<repo>[^/.]+)(?:\.git)?})
+      return unless match
+
+      org = match[:org]
+      project = match[:project]
+      repo = match[:repo]
+
+      azure_git_url = "https://dev.azure.com/#{org}/#{project}/_git/#{repo}"
+      flat_url = "https://dev.azure.com/#{org}/#{project}/#{repo}"
+
+      # Go strips .git and passes the bare URL to git. Match all forms git may see:
+      # bare URL, with .git suffix, and with trailing slash.
+      run_shell_command(
+        "git config --global --add url.#{azure_git_url}.insteadOf #{flat_url}"
+      )
+      run_shell_command(
+        "git config --global --add url.#{azure_git_url}.insteadOf #{flat_url}.git"
+      )
+      run_shell_command(
+        "git config --global --add url.#{azure_git_url}/.insteadOf #{flat_url}/"
+      )
+    end
+
+    # Azure DevOps modules must bypass the Go module proxy since proxy.golang.org
+    # does not serve private Azure DevOps packages. Adding dev.azure.com to GOPRIVATE
+    # ensures Go uses direct VCS access (where our git insteadOf rules apply).
+    sig { params(module_path: String).void }
+    def self.configure_goprivate_for_azure_devops(module_path)
+      return unless module_path.start_with?("dev.azure.com/")
+
+      current = ENV.fetch("GOPRIVATE", "")
+      return if current == "*" || current.include?("dev.azure.com")
+
+      ENV["GOPRIVATE"] = [current, "dev.azure.com"].reject(&:empty?).join(",")
+    end
+
     sig { params(path: String).void }
     def self.reset_git_repo(path)
       Dir.chdir(path) do

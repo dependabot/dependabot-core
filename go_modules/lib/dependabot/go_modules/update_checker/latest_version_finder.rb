@@ -198,10 +198,14 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           begin
-            release_info = SharedHelpers.run_shell_command(
-              "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
-              fingerprint: "go list -m -json <dependency_name>"
-            )
+            release_info = SharedHelpers.with_git_configured(credentials: credentials) do
+              SharedHelpers.configure_git_url_for_azure_devops(dependency.name)
+              SharedHelpers.configure_goprivate_for_azure_devops(dependency.name)
+              SharedHelpers.run_shell_command(
+                "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
+                fingerprint: "go list -m -json <dependency_name>"
+              )
+            end
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             Dependabot.logger.info("Error while fetching release date info: #{e.message}")
             return false
