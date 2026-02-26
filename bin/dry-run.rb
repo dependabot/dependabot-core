@@ -766,6 +766,19 @@ begin
     end
   end
 
+  # Filter out dependencies where all versions are ignored.
+  # This skips them entirely (including registry lookups) which prevents errors
+  # for private packages that don't exist on public registries.
+  dependencies.reject! do |dep|
+    ic_versions = ignored_versions_for(dep)
+    if ic_versions.include?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
+      puts "=> skipping #{dep.name} (all versions ignored)"
+      true
+    else
+      false
+    end
+  end
+
   puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
 
   # rubocop:disable Metrics/BlockLength
