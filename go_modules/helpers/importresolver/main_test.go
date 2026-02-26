@@ -40,6 +40,16 @@ func TestRewriteAzureDevOpsURL(t *testing.T) {
 			input:    "https://dev.azure.com/MyOrg/MyProject",
 			expected: "https://dev.azure.com/MyOrg/MyProject",
 		},
+		{
+			name:     "Azure DevOps URL with major version subpath",
+			input:    "https://dev.azure.com/MyOrg/MyProject/myrepo/v2",
+			expected: "https://dev.azure.com/MyOrg/MyProject/_git/myrepo",
+		},
+		{
+			name:     "Azure DevOps URL with .git and subpath",
+			input:    "https://dev.azure.com/MyOrg/MyProject/myrepo.git/v3",
+			expected: "https://dev.azure.com/MyOrg/MyProject/_git/myrepo",
+		},
 	}
 
 	for _, tt := range tests {

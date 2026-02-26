@@ -1,0 +1,71 @@
+{
+  "job": {
+    "command": "version",
+    "allowed-updates": [
+      {
+        "dependency-type": "direct",
+        "update-type": "all"
+      }
+    ],
+    "commit-message-options": {
+      "prefix": null,
+      "prefix-development": null,
+      "include-scope": null
+    },
+    "credentials-metadata": [
+      {
+        "type": "git_source",
+        "host": "github.com"
+      }
+    ],
+    "debug": null,
+    "dependencies": null,
+    "dependency-groups": [],
+    "dependency-group-to-refresh": null,
+    "existing-pull-requests": [],
+    "existing-group-pull-requests": [],
+    "experiments": {
+      "record-ecosystem-versions": true,
+      "record-update-job-unknown-error": true,
+      "proxy-cached": true,
+      "enable-record-ecosystem-meta": true,
+      "enable-corepack-for-npm-and-yarn": true,
+      "enable-private-registry-for-corepack": true,
+      "enable-shared-helpers-command-timeout": true,
+      "avoid-duplicate-updates-package-json": true,
+      "allow-refresh-for-existing-pr-dependencies": true,
+      "allow-refresh-group-with-all-dependencies": true,
+      "enable-enhanced-error-details-for-updater": true,
+      "gradle-lockfile-updater": true,
+      "enable-exclude-paths-subdirectory-manifest-files": true,
+      "group-membership-enforcement": true,
+      "deprecate-reopen-command": true,
+      "disable-reopen-command": true,
+      "group-by-dependency-name": true,
+      "goprivate": "github.com/thavaahariharangit/*"
+    },
+    "ignore-conditions": [],
+    "lockfile-only": false,
+    "max-updater-run-time": 2700,
+    "package-manager": "go_modules",
+    "requirements-update-strategy": null,
+    "reject-external-code": false,
+    "security-advisories": [],
+    "security-updates-only": false,
+    "source": {
+      "provider": "github",
+      "repo": "thavaahariharangit/go-sentry-issue-12497",
+      "branch": null,
+      "directory": "/.",
+      "api-endpoint": "https://api.github.com/",
+      "hostname": "github.com"
+    },
+    "updating-a-pull-request": false,
+    "update-subdependencies": false,
+    "vendor-dependencies": false,
+    "enable-beta-ecosystems": false,
+    "repo-private": true,
+    "multi-ecosystem-update": false,
+    "exclude-paths": null
+  }
+}

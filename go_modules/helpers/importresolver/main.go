@@ -14,9 +14,9 @@ type Args struct {
 
 // azureDevOpsPattern matches Azure DevOps module paths:
 //
-//	dev.azure.com/{org}/{project}/{repo}[.git]
+//	dev.azure.com/{org}/{project}/{repo}[.git][/subpath]
 var azureDevOpsPattern = regexp.MustCompile(
-	`^https://dev\.azure\.com/([^/]+)/([^/]+)/([^/.]+?)(?:\.git)?$`,
+	`^https://dev\.azure\.com/([^/]+)/([^/]+)/([^/.]+?)(?:\.git)?(?:/|$)`,
 )
 
 // rewriteAzureDevOpsURL converts a flat Azure DevOps URL to the correct

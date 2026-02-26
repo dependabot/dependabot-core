@@ -290,9 +290,9 @@ module Dependabot
         def in_repo_path(&block)
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              dependencies.each do |dep|
-                SharedHelpers.configure_git_url_for_azure_devops(dep.name)
-                SharedHelpers.configure_goprivate_for_azure_devops(dep.name)
+              dependencies.map(&:name).uniq.each do |name|
+                SharedHelpers.configure_git_url_for_azure_devops(name)
+                SharedHelpers.configure_goprivate_for_azure_devops(name)
               end
               yield
             end
