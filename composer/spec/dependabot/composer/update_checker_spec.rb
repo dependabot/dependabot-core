@@ -694,8 +694,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("3.0.2"))
-        # WebMock cannot intercept HTTP calls made by PHP subprocesses,
-        # so we mock the helper subprocess to return the resolved version directly.
+        # Mock the helper subprocess to return the resolved version directly.
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
           .and_return("3.0.2")
       end
