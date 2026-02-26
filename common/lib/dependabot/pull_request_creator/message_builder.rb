@@ -279,7 +279,7 @@ module Dependabot
 
         if directories.count > 1
           "bump #{dep.name} across #{directories.count} directories"
-        elsif directories.count == 1
+        elsif directories.one?
           "bump #{dep.name} in #{directories.first}"
         else
           "bump #{dep.name}"
@@ -574,9 +574,11 @@ module Dependabot
         if directories.count > 1
           msg += " across #{directories.count} directories:\n\n"
           msg += directories.map do |dir|
-            "- `#{dir}`: #{dep.humanized_previous_version} → #{dep.humanized_version}"
+            prev_version = dep.humanized_previous_version || "unknown"
+            new_version = dep.humanized_version || "unknown"
+            "- `#{dir}`: #{prev_version} → #{new_version}"
           end.join("\n")
-        elsif directories.count == 1
+        elsif directories.one?
           msg += " in `#{directories.first}`"
           msg += " #{from_version_msg(dep.humanized_previous_version)}"
           msg += "to #{dep.humanized_version}."
