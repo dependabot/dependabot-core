@@ -471,9 +471,10 @@ module Dependabot
       return unless module_path.start_with?("dev.azure.com/")
 
       current = ENV.fetch("GOPRIVATE", "")
-      return if current == "*" || current.include?("dev.azure.com")
+      entries = current.split(",").map(&:strip)
+      return if entries.include?("*") || entries.include?("dev.azure.com")
 
-      ENV["GOPRIVATE"] = [current, "dev.azure.com"].reject(&:empty?).join(",")
+      ENV["GOPRIVATE"] = (entries + ["dev.azure.com"]).reject(&:empty?).join(",")
     end
 
     sig { params(path: String).void }
