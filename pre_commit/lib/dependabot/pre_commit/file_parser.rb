@@ -12,6 +12,7 @@ require "dependabot/pre_commit/version"
 require "dependabot/pre_commit/requirement"
 require "dependabot/cargo/requirement"
 require "dependabot/npm_and_yarn/requirement"
+require "dependabot/pub/requirement"
 require "dependabot/python/requirement_parser"
 require "dependabot/bundler/requirement"
 require "dependabot/go_modules/requirement_parser"
@@ -32,7 +33,8 @@ module Dependabot
           "node" => ->(dep_string) { Dependabot::NpmAndYarn::Requirement.parse_dep_string(dep_string) },
           "rust" => ->(dep_string) { Dependabot::Cargo::Requirement.parse_dep_string(dep_string) },
           "golang" => ->(dep_string) { Dependabot::GoModules::RequirementParser.parse(dep_string) },
-          "ruby" => ->(dep_string) { Dependabot::Bundler::Requirement.parse_dep_string(dep_string) }
+          "ruby" => ->(dep_string) { Dependabot::Bundler::Requirement.parse_dep_string(dep_string) },
+          "dart" => ->(dep_string) { Dependabot::Pub::Requirement.parse_dep_string(dep_string) }
         }.freeze,
         T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
       )
@@ -102,6 +104,8 @@ module Dependabot
         return nil if repo_url.nil? || rev.nil?
         return nil if %w(local meta).include?(repo_url)
 
+        comment = rev_line_comment(file, repo_url)
+
         Dependency.new(
           name: repo_url,
           version: rev,
@@ -114,7 +118,8 @@ module Dependabot
               url: repo_url,
               ref: rev,
               branch: nil
-            }
+            },
+            metadata: { comment: comment }
           }],
           package_manager: ECOSYSTEM
         )
@@ -190,6 +195,28 @@ module Dependabot
         end
 
         dependencies
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          repo_url: String
+        ).returns(T.nilable(String))
+      end
+      def rev_line_comment(file, repo_url)
+        current_repo = T.let(nil, T.nilable(String))
+
+        T.must(file.content).each_line do |line|
+          repo_match = line.match(/^\s*-\s*repo:\s*(\S+)/)
+          current_repo = repo_match[1] if repo_match
+
+          next unless current_repo == repo_url
+
+          rev_match = line.match(/^\s*rev:\s*\S+\s*(#.*)$/)
+          return T.must(rev_match[1]).rstrip if rev_match
+        end
+
+        nil
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
