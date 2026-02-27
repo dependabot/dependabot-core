@@ -22,6 +22,39 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      MANIFEST_LIST_TYPES = T.let(
+        [
+          "application/vnd.docker.distribution.manifest.list.v2+json",
+          "application/vnd.oci.image.index.v1+json"
+        ].freeze,
+        T::Array[String]
+      )
+
+      # Patterns that identify structurally obvious version components in tag
+      # names. Matching parts are excluded from the common-component system
+      # because they represent version data, not platform/variant identifiers.
+      #
+      # Everything that does NOT match these patterns is treated as a
+      # platform/variant component (e.g., "alpine3", "ltsc2022", "bookworm",
+      # "rc1", "jre"). This is intentionally broad — the primary tag filtering
+      # in comparable_to? already handles prerelease and suffix isolation via
+      # exact suffix matching, so component matching is a secondary safety net.
+      #
+      # To exclude a new structural pattern, add a regex here.
+      VERSION_RELATED_PATTERNS = T.let(
+        [
+          /^\d+$/,           # pure numbers: "123", "8"
+          /^\d+\.\d+$/,      # semver-like: "1.2"
+          /^v\d+/,            # v-prefixed: "v2", "v10"
+          /^\d+[a-z]/i,       # digit-leading mixed: PEP 440 prereleases "0a1", "0b1", "0rc1"
+          /^kb\d+$/i,         # Microsoft KB numbers: "KB4505057"
+          /^g[0-9a-f]{5,}$/,  # git SHAs: "g1a2b3c4"
+          /^\d{8,14}$/,       # timestamps: "20250909"
+          /\d+_\d+/           # underscore-separated version parts: "12_8"
+        ].freeze,
+        T::Array[Regexp]
+      )
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         latest_version_from(T.must(dependency.version))
@@ -141,7 +174,7 @@ module Dependabot
       # NOTE: It's important that this *always* returns a tag (even if
       # it's the existing one) as it is what we later check the digest of.
       sig { params(version_tag: Dependabot::Docker::Tag).returns(Dependabot::Docker::Tag) }
-      def fetch_latest_tag(version_tag)
+      def fetch_latest_tag(version_tag) # rubocop:disable Metrics/PerceivedComplexity
         return Tag.new(T.must(latest_digest)) if version_tag.digest? && latest_digest
         return version_tag unless version_tag.comparable?
 
@@ -157,10 +190,14 @@ module Dependabot
         latest_tag = candidate_tags.last
         return version_tag unless latest_tag
 
-        return latest_tag if latest_tag.same_precision?(version_tag)
+        if latest_tag.same_precision?(version_tag)
+          return validate_tag_with_timestamp(latest_tag, version_tag, candidate_tags)
+        end
 
         latest_same_precision_tag = remove_precision_changes(candidate_tags, version_tag).last
-        return latest_tag unless latest_same_precision_tag
+        unless latest_same_precision_tag
+          return validate_tag_with_timestamp(latest_tag, version_tag, candidate_tags)
+        end
 
         latest_same_precision_digest = digest_of(latest_same_precision_tag.name)
         latest_digest = digest_of(latest_tag.name)
@@ -176,11 +213,46 @@ module Dependabot
         # latest tag is just a more precise version of the latest tag that keeps
         # existing precision.
 
-        if latest_same_precision_digest == latest_digest && latest_same_precision_tag.same_but_less_precise?(latest_tag)
-          latest_same_precision_tag
-        else
-          latest_tag
+        selected_tag =
+          if latest_same_precision_digest == latest_digest &&
+             latest_same_precision_tag.same_but_less_precise?(latest_tag)
+            latest_same_precision_tag
+          else
+            latest_tag
+          end
+
+        validate_tag_with_timestamp(selected_tag, version_tag, candidate_tags)
+      end
+
+      sig do
+        params(
+          selected_tag: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag,
+          candidate_tags: T::Array[Dependabot::Docker::Tag]
+        ).returns(Dependabot::Docker::Tag)
+      end
+      def validate_tag_with_timestamp(selected_tag, current_tag, candidate_tags)
+        return selected_tag unless Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
+        return selected_tag if selected_tag.name == current_tag.name
+
+        # Walk backwards through candidates to find one actually newer by build date
+        candidate_tags.reverse_each do |tag|
+          next if comparable_version_from(tag) <= comparable_version_from(current_tag)
+
+          if candidate_newer_by_created_date?(tag, current_tag)
+            Dependabot.logger.info(
+              "Timestamp validation: #{tag.name} confirmed newer than #{current_tag.name}"
+            )
+            return tag
+          end
+
+          Dependabot.logger.info(
+            "Timestamp validation: skipping #{tag.name} — image created date " \
+            "is not newer than #{current_tag.name}"
+          )
         end
+
+        current_tag
       end
 
       sig { params(original_tag: Dependabot::Docker::Tag).returns(T::Array[Dependabot::Docker::Tag]) }
@@ -189,7 +261,6 @@ module Dependabot
         original_components = extract_tag_components(original_tag.name, common_components)
         Dependabot.logger.info("Original tag components: #{original_components.join(',')}")
 
-        tags_from_registry.select { |tag| tag.comparable_to?(original_tag) }
         tags_from_registry.select do |tag|
           tag.comparable_to?(original_tag) &&
             (original_components.empty? ||
@@ -333,18 +404,7 @@ module Dependabot
 
       sig { params(part: String).returns(T::Boolean) }
       def version_related_pattern?(part)
-        patterns = {
-          number: /^\d+$/,
-          semver: /^\d+\.\d+$/,
-          v_prefix: /^v\d+/,
-          version_marker: /^(rc|jre)$/,
-          prerelease: /^(?=.*\d)(?=.*[a-z])[a-z\d]+$/i,
-          sha: /^g[0-9a-f]{5,}$/,
-          timestamp: /^\d{8,14}$/,
-          underscore_parts: /\d+_\d+/
-        }
-
-        patterns.values.any? { |pattern| part.match?(pattern) }
+        VERSION_RELATED_PATTERNS.any? { |pattern| part.match?(pattern) }
       end
 
       sig { params(tag_name: String, common_components: T::Array[String]).returns(T::Array[String]) }
@@ -684,6 +744,105 @@ module Dependabot
       def cooldown_period?(release_date)
         days = cooldown_days_for
         (Time.now.to_i - release_date.to_i) < (days * 24 * 60 * 60)
+      end
+
+      # Fetches the "created" timestamp from the image config blob for a given tag.
+      # This represents the actual build time, which is more reliable than semver
+      # for determining which image is truly newer.
+      sig { params(tag_name: String).returns(T.nilable(Time)) }
+      def fetch_image_config_created(tag_name)
+        return config_created_timestamps[tag_name] if config_created_timestamps.key?(tag_name)
+
+        created = fetch_image_config_created_from_registry(tag_name)
+        config_created_timestamps[tag_name] = created
+        created
+      rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden, JSON::ParserError => e
+        Dependabot.logger.info(
+          "Failed to fetch config created timestamp for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        config_created_timestamps[tag_name] = nil
+        nil
+      end
+
+      sig { params(tag_name: String).returns(T.nilable(Time)) }
+      def fetch_image_config_created_from_registry(tag_name)
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, tag_name)
+        end
+
+        resolved = resolve_platform_manifest(manifest)
+        return nil unless resolved
+
+        config_digest = resolved.dig("config", "digest")
+        return nil unless config_digest
+
+        config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.doget("v2/#{docker_repo_name}/blobs/#{config_digest}")
+        end
+
+        config_data = JSON.parse(config_blob.body)
+        created_str = config_data["created"]
+        return nil unless created_str
+
+        Time.parse(created_str)
+      end
+
+      # Resolves a manifest to a single platform-specific manifest.
+      # If the manifest is a manifest list (multi-arch), selects the most
+      # appropriate platform (preferring linux/amd64).
+      sig { params(manifest: T.untyped).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def resolve_platform_manifest(manifest)
+        media_type = manifest["mediaType"] || manifest[:mediaType]
+
+        unless MANIFEST_LIST_TYPES.include?(media_type)
+          # Already a single-platform manifest
+          return manifest.is_a?(Hash) ? manifest : manifest.to_h
+        end
+
+        manifests = manifest["manifests"] || manifest[:manifests] || []
+        return nil if manifests.empty?
+
+        # Prefer linux/amd64, fall back to first available
+        selected = manifests.find do |m|
+          platform = m["platform"] || m[:platform] || {}
+          (platform["architecture"] || platform[:architecture]) == "amd64"
+        end
+        selected ||= manifests.first
+
+        # Fetch the platform-specific manifest to get the config digest
+        platform_digest = selected&.dig("digest") || selected&.dig(:digest)
+        return nil unless platform_digest
+
+        platform_manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.doget("v2/#{docker_repo_name}/manifests/#{platform_digest}")
+        end
+
+        JSON.parse(platform_manifest.body)
+      end
+
+      sig do
+        params(
+          candidate_tag: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag
+        ).returns(T::Boolean)
+      end
+      def candidate_newer_by_created_date?(candidate_tag, current_tag)
+        candidate_created = fetch_image_config_created(candidate_tag.name)
+        current_created = fetch_image_config_created(current_tag.name)
+
+        # If we can't determine either timestamp, trust semver ordering
+        return true unless candidate_created && current_created
+
+        candidate_created > current_created
+      end
+
+      sig { returns(T::Hash[String, T.nilable(Time)]) }
+      def config_created_timestamps
+        @config_created_timestamps ||= T.let(
+          {},
+          T.nilable(T::Hash[String, T.nilable(Time)])
+        )
       end
     end
     # rubocop:enable Metrics/ClassLength

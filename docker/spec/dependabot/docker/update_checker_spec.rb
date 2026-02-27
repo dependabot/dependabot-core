@@ -1520,6 +1520,272 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("17.10") }
     end
+
+    context "when the dependency has a compound suffix with alpine version" do
+      let(:dependency_name) { "golang" }
+      let(:version) { "1.26.0-alpine3.23" }
+      let(:tags_fixture_name) { "golang.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/golang/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      it "updates to the latest version with the same exact suffix" do
+        expect(checker.latest_version).to eq("1.27.0-alpine3.23")
+      end
+    end
+
+    context "when node has alpine suffix with version" do
+      let(:dependency_name) { "node" }
+      let(:version) { "18.0.0-alpine3.18" }
+      let(:tags_fixture_name) { "node_alpine.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/node/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      it "updates to the latest node version keeping the same alpine suffix" do
+        expect(checker.latest_version).to eq("22.0.0-alpine3.18")
+      end
+    end
+
+    context "when a date-embedded tag has a higher semver but is actually older (timestamp validation)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        created_timestamps = {
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T10:00:00Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2025-10-14T15:30:00Z"),
+          "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8-windowsservercore-ltsc2022" => Time.parse("2024-06-01T00:00:00Z"),
+          "4.8.1-windowsservercore-ltsc2019" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8-windowsservercore-ltsc2019" => Time.parse("2024-06-01T00:00:00Z")
+        }
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          created_timestamps[tag_name]
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "does not suggest upgrading to the older date-tagged version" do
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when upgrading from a date-tagged version to another (both have dates in tag)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub manifest digest requests needed by precision comparison
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "6gc93c3")))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+        stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "4ea71a1")))
+
+        created_timestamps = {
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T10:00:00Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2025-10-14T15:30:00Z"),
+          "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z")
+        }
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          created_timestamps[tag_name]
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "correctly identifies no newer version is available" do
+        # All comparable tags have lower semver than 4.8.1.20251014, so no upgrade is found.
+        # The timestamp validation only applies when semver identifies a candidate "upgrade" —
+        # it rejects false upgrades, it doesn't re-rank downgrades as upgrades.
+        # Users on date-tagged versions should use the non-date tag (4.8.1) directly.
+        expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation is disabled (flag off)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, false)
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "falls back to semver-based ordering (existing behavior)" do
+        # Without timestamp validation, 4.8-20250909 appears "higher" than 4.8.1
+        # because Gem::Version("4.8.20250909") > Gem::Version("4.8.1")
+        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation cannot fetch config (graceful fallback)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        allow(checker).to receive(:fetch_image_config_created).and_return(nil)
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "falls back to semver ordering when config blob cannot be fetched" do
+        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation with a manifest list (multi-arch image)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub at the fetch_image_config_created level to avoid interfering with tag listing
+        created_timestamps = {
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T10:00:00Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2025-10-14T15:30:00Z"),
+          "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z")
+        }
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          created_timestamps[tag_name]
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "validates timestamps and rejects older candidates" do
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when all candidate tags are genuinely newer by timestamp" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub manifest digest requests needed by precision comparison
+        stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+        stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "6gc93c3")))
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          if tag_name == "4.8-windowsservercore-ltsc2022"
+            Time.parse("2024-06-01T00:00:00Z")
+          else
+            Time.parse("2026-01-01T00:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "returns the highest semver tag since all are genuinely newer" do
+        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      end
+    end
+  end
+
+  describe "#version_related_pattern?" do
+    it "does not filter platform identifiers that contain digits" do
+      expect(checker.send(:version_related_pattern?, "alpine3")).to be false
+      expect(checker.send(:version_related_pattern?, "ltsc2022")).to be false
+      expect(checker.send(:version_related_pattern?, "ltsc2019")).to be false
+      expect(checker.send(:version_related_pattern?, "nanoserver1809")).to be false
+    end
+
+    it "does not filter non-structural identifiers (handled by suffix matching instead)" do
+      expect(checker.send(:version_related_pattern?, "rc1")).to be false
+      expect(checker.send(:version_related_pattern?, "beta2")).to be false
+      expect(checker.send(:version_related_pattern?, "alpha")).to be false
+      expect(checker.send(:version_related_pattern?, "alpha3")).to be false
+      expect(checker.send(:version_related_pattern?, "dev")).to be false
+      expect(checker.send(:version_related_pattern?, "preview")).to be false
+      expect(checker.send(:version_related_pattern?, "nightly")).to be false
+      expect(checker.send(:version_related_pattern?, "snapshot")).to be false
+      expect(checker.send(:version_related_pattern?, "canary")).to be false
+      expect(checker.send(:version_related_pattern?, "ea")).to be false
+      expect(checker.send(:version_related_pattern?, "rc")).to be false
+      expect(checker.send(:version_related_pattern?, "jre")).to be false
+    end
+
+    it "filters purely numeric parts" do
+      expect(checker.send(:version_related_pattern?, "123")).to be true
+      expect(checker.send(:version_related_pattern?, "20250909")).to be true
+    end
+
+    it "filters structural version patterns" do
+      expect(checker.send(:version_related_pattern?, "1.2")).to be true
+      expect(checker.send(:version_related_pattern?, "v2")).to be true
+      expect(checker.send(:version_related_pattern?, "KB4505057")).to be true
+      expect(checker.send(:version_related_pattern?, "kb4487017")).to be true
+      expect(checker.send(:version_related_pattern?, "0a1")).to be true
+      expect(checker.send(:version_related_pattern?, "0b1")).to be true
+      expect(checker.send(:version_related_pattern?, "0rc1")).to be true
+    end
+
+    it "does not filter pure-letter platform names" do
+      expect(checker.send(:version_related_pattern?, "bookworm")).to be false
+      expect(checker.send(:version_related_pattern?, "bullseye")).to be false
+      expect(checker.send(:version_related_pattern?, "windowsservercore")).to be false
+      expect(checker.send(:version_related_pattern?, "alpine")).to be false
+      expect(checker.send(:version_related_pattern?, "slim")).to be false
+      expect(checker.send(:version_related_pattern?, "nanoserver")).to be false
+    end
   end
 
   describe "#latest_resolvable_version" do
