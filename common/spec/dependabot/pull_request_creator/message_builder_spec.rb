@@ -988,6 +988,41 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it { is_expected.to eq("Bump the go_modules group across 2 directories with 2 updates") }
       end
     end
+
+    context "when dealing with a dependency-name group with multiple directories" do
+      let(:source) do
+        Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/frontend", "/backend"])
+      end
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(
+          name: "monorepo-deps/business",
+          rules: { "patterns" => ["business"], "group-by" => "dependency-name" }
+        )
+      end
+      let(:metadata) { { directory: "/frontend", updated_directories: ["/frontend", "/backend"] } }
+      let(:commits_response) { fixture("github", "commits.json") }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:group_by_dependency_name).and_return(true)
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200, body: commits_response, headers: json_header)
+      end
+
+      it { is_expected.to eq("Bump business across 2 directories") }
+
+      context "with a single directory" do
+        let(:metadata) { { directory: "/frontend", updated_directories: ["/frontend"] } }
+
+        it { is_expected.to eq("Bump business in /frontend") }
+      end
+
+      context "with no directory info" do
+        let(:metadata) { {} }
+
+        it { is_expected.to eq("Bump business") }
+      end
+    end
   end
 
   describe "#pr_message" do
@@ -3191,6 +3226,68 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                                "| [business6](https://github.com/gocardless/business6) | `6.4.0` | `6.5.0`"
 
             expect(pr_message).to include(expected_message)
+          end
+        end
+      end
+
+      context "when dealing with a dependency-name group" do
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "gocardless/bump",
+            directories: ["/frontend", "/backend"]
+          )
+        end
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(
+            name: "monorepo-deps/business",
+            rules: { "patterns" => ["business"], "group-by" => "dependency-name" }
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: [],
+            metadata: { directory: "/frontend", updated_directories: ["/frontend", "/backend"] }
+          )
+        end
+
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:group_by_dependency_name).and_return(true)
+        end
+
+        it "lists each directory with version changes" do
+          expect(pr_message).to start_with(
+            "Bumps [business](https://github.com/gocardless/business) " \
+            "across 2 directories:\n\n" \
+            "- `/frontend`: 1.4.0 → 1.5.0\n" \
+            "- `/backend`: 1.4.0 → 1.5.0\n"
+          )
+        end
+
+        context "with a single directory" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: [],
+              metadata: { directory: "/frontend", updated_directories: ["/frontend"] }
+            )
+          end
+
+          it "shows the single directory inline" do
+            expect(pr_message).to start_with(
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "in `/frontend` from 1.4.0 to 1.5.0."
+            )
           end
         end
       end
