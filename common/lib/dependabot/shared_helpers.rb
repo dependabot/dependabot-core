@@ -432,7 +432,6 @@ module Dependabot
     end
 
     # Configures both git URL rewriting and GOPRIVATE for Azure DevOps Go modules.
-    # Call this instead of the two underlying methods individually.
     sig { params(module_path: String).void }
     def self.configure_go_for_azure_devops(module_path)
       configure_git_url_for_azure_devops(module_path)
@@ -459,7 +458,7 @@ module Dependabot
     sig { params(module_path: String).void }
     def self.configure_git_url_for_azure_devops(module_path)
       match = module_path.match(
-        %r{^dev\.azure\.com/(?<org>[a-zA-Z0-9_.-]+)/(?<project>[a-zA-Z0-9_.-]+)/(?<repo>[a-zA-Z0-9_-]+)(?:\.git)?}
+        %r{^dev\.azure\.com/(?<org>[a-zA-Z0-9_.-]+)/(?<project>[a-zA-Z0-9_.-]+)/(?<repo>[a-zA-Z0-9_-]+)(?:\.git)?(?:/|$)}
       )
       return unless match
 
@@ -510,6 +509,8 @@ module Dependabot
 
       ENV["GOPRIVATE"] = (entries + ["dev.azure.com"]).reject(&:empty?).join(",")
     end
+
+    private_class_method :configure_git_url_for_azure_devops, :configure_goprivate_for_azure_devops
 
     sig { params(path: String).void }
     def self.reset_git_repo(path)

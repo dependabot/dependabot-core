@@ -28,8 +28,8 @@ var azureDevOpsPattern = regexp.MustCompile(
 
 // rewriteAzureDevOpsURL converts a flat Azure DevOps URL to the correct
 // /_git/ format that Azure DevOps requires for Git operations.
-// Major-version subpaths (e.g. /v2, /v3) are a Go module convention and are
-// not part of the git remote URL, so they are intentionally stripped.
+// Any trailing subpath (including Go major-version suffixes like /v2) is
+// stripped because only the org/project/repo triple identifies the git remote.
 func rewriteAzureDevOpsURL(remote string) string {
 	m := azureDevOpsPattern.FindStringSubmatch(remote)
 	if m == nil {

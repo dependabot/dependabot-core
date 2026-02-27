@@ -694,13 +694,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("3.0.2"))
-
-        version_resolver = instance_double(
-          Dependabot::Composer::UpdateChecker::VersionResolver,
-          latest_resolvable_version: Dependabot::Composer::Version.new("3.0.2")
-        )
-        allow(Dependabot::Composer::UpdateChecker::VersionResolver)
-          .to receive(:new).and_return(version_resolver)
+        stub_request(:get, "https://wpackagist.org/packages.json")
+          .to_return(
+            status: 200,
+            body: fixture("wpackagist_response.json")
+          )
       end
 
       it { is_expected.to be >= Gem::Version.new("3.0.2") }

@@ -848,7 +848,8 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "with an Azure DevOps module path ending in .git" do
       before do
-        described_class.configure_git_url_for_azure_devops(
+        described_class.send(
+          :configure_git_url_for_azure_devops,
           "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git"
         )
       end
@@ -871,7 +872,8 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "with an Azure DevOps module path without .git" do
       before do
-        described_class.configure_git_url_for_azure_devops(
+        described_class.send(
+          :configure_git_url_for_azure_devops,
           "dev.azure.com/MyOrg/MyProject/myrepo"
         )
       end
@@ -889,7 +891,8 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "with an Azure DevOps module path with subpath" do
       it "extracts the repo name correctly" do
-        described_class.configure_git_url_for_azure_devops(
+        described_class.send(
+          :configure_git_url_for_azure_devops,
           "dev.azure.com/MyOrg/MyProject/myrepo.git/v2"
         )
 
@@ -900,7 +903,8 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "with a non-Azure DevOps module path" do
       it "does nothing" do
-        described_class.configure_git_url_for_azure_devops(
+        described_class.send(
+          :configure_git_url_for_azure_devops,
           "github.com/some/repo"
         )
 
@@ -911,7 +915,8 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "with an Azure DevOps path with too few segments" do
       it "does nothing" do
-        described_class.configure_git_url_for_azure_devops(
+        described_class.send(
+          :configure_git_url_for_azure_devops,
           "dev.azure.com/VaronisIO/da-cloud"
         )
 
@@ -923,7 +928,8 @@ RSpec.describe Dependabot::SharedHelpers do
     context "when called multiple times for the same module" do
       before do
         2.times do
-          described_class.configure_git_url_for_azure_devops(
+          described_class.send(
+            :configure_git_url_for_azure_devops,
             "dev.azure.com/MyOrg/MyProject/myrepo"
           )
         end
@@ -955,30 +961,30 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "sets GOPRIVATE for Azure DevOps module paths" do
-      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
       expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
     end
 
     it "appends to existing GOPRIVATE" do
       ENV["GOPRIVATE"] = "github.com/private"
-      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
       expect(ENV.fetch("GOPRIVATE", nil)).to eq("github.com/private,dev.azure.com")
     end
 
     it "does not duplicate dev.azure.com" do
       ENV["GOPRIVATE"] = "dev.azure.com"
-      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
       expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
     end
 
     it "skips when GOPRIVATE is wildcard" do
       ENV["GOPRIVATE"] = "*"
-      described_class.configure_goprivate_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
       expect(ENV.fetch("GOPRIVATE", nil)).to eq("*")
     end
 
     it "does nothing for non-Azure DevOps paths" do
-      described_class.configure_goprivate_for_azure_devops("github.com/some/repo")
+      described_class.send(:configure_goprivate_for_azure_devops, "github.com/some/repo")
       expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
     end
   end
