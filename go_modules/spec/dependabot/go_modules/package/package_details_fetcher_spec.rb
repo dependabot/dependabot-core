@@ -74,13 +74,12 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
         allow(File).to receive(:write).and_call_original
 
-        # The full fetch may fail since we stub the Go tooling — that's fine,
-        # we only care that Azure DevOps configuration was invoked.
+        # The full fetch may fail or produce empty results since we stub the
+        # Go tooling — we only care that Azure DevOps configuration was invoked.
         begin
           fetch
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed,
-               Dependabot::DependabotError
-          nil
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+          # expected in some environments
         end
 
         expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)

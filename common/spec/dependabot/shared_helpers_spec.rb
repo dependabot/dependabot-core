@@ -832,7 +832,7 @@ RSpec.describe Dependabot::SharedHelpers do
     end
   end
 
-  describe ".configure_git_url_for_azure_devops" do
+  describe ".configure_go_for_azure_devops" do
     let(:git_config_path) { File.expand_path("test_azure_devops.gitconfig", tmp) }
 
     before do
@@ -843,13 +843,13 @@ RSpec.describe Dependabot::SharedHelpers do
 
     after do
       ENV.delete("GIT_CONFIG_GLOBAL")
+      ENV.delete("GOPRIVATE")
       FileUtils.rm_f(git_config_path)
     end
 
     context "with an Azure DevOps module path ending in .git" do
       before do
-        described_class.send(
-          :configure_git_url_for_azure_devops,
+        described_class.configure_go_for_azure_devops(
           "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git"
         )
       end
@@ -868,12 +868,15 @@ RSpec.describe Dependabot::SharedHelpers do
         config = `git config --global --get-all url.https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/.insteadOf`
         expect(config.strip).to include("https://dev.azure.com/VaronisIO/da-cloud/be-protobuf/")
       end
+
+      it "sets GOPRIVATE" do
+        expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+      end
     end
 
     context "with an Azure DevOps module path without .git" do
       before do
-        described_class.send(
-          :configure_git_url_for_azure_devops,
+        described_class.configure_go_for_azure_devops(
           "dev.azure.com/MyOrg/MyProject/myrepo"
         )
       end
@@ -883,16 +886,24 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(config).to include("https://dev.azure.com/MyOrg/MyProject/myrepo\n")
       end
 
+      it "adds git insteadOf rule for the .git URL" do
+        config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
+        expect(config).to include("https://dev.azure.com/MyOrg/MyProject/myrepo.git")
+      end
+
       it "adds git insteadOf rule for the slash URL" do
         config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo/.insteadOf`
         expect(config.strip).to include("https://dev.azure.com/MyOrg/MyProject/myrepo/")
+      end
+
+      it "sets GOPRIVATE" do
+        expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
       end
     end
 
     context "with an Azure DevOps module path with subpath" do
       it "extracts the repo name correctly" do
-        described_class.send(
-          :configure_git_url_for_azure_devops,
+        described_class.configure_go_for_azure_devops(
           "dev.azure.com/MyOrg/MyProject/myrepo.git/v2"
         )
 
@@ -902,21 +913,23 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     context "with a non-Azure DevOps module path" do
-      it "does nothing" do
-        described_class.send(
-          :configure_git_url_for_azure_devops,
-          "github.com/some/repo"
-        )
+      it "does not add git insteadOf rules" do
+        described_class.configure_go_for_azure_devops("github.com/some/repo")
 
         config = `git config --global --list 2>/dev/null`
         expect(config).not_to include("insteadOf")
       end
+
+      it "does not set GOPRIVATE" do
+        described_class.configure_go_for_azure_devops("github.com/some/repo")
+
+        expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
+      end
     end
 
     context "with an Azure DevOps path with too few segments" do
-      it "does nothing" do
-        described_class.send(
-          :configure_git_url_for_azure_devops,
+      it "does not add git insteadOf rules" do
+        described_class.configure_go_for_azure_devops(
           "dev.azure.com/VaronisIO/da-cloud"
         )
 
@@ -928,8 +941,7 @@ RSpec.describe Dependabot::SharedHelpers do
     context "when called multiple times for the same module" do
       before do
         2.times do
-          described_class.send(
-            :configure_git_url_for_azure_devops,
+          described_class.configure_go_for_azure_devops(
             "dev.azure.com/MyOrg/MyProject/myrepo"
           )
         end
@@ -952,72 +964,43 @@ RSpec.describe Dependabot::SharedHelpers do
         slash_entries = config.strip.split("\n").select { |l| l.strip == "https://dev.azure.com/MyOrg/MyProject/myrepo/" }
         expect(slash_entries.length).to eq(1)
       end
-    end
-  end
 
-  describe ".configure_goprivate_for_azure_devops" do
-    after do
-      ENV.delete("GOPRIVATE")
+      it "does not duplicate GOPRIVATE entries" do
+        expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+      end
     end
 
-    it "sets GOPRIVATE for Azure DevOps module paths" do
-      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
-      expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+    context "when GOPRIVATE already contains other entries" do
+      before { ENV["GOPRIVATE"] = "github.com/private" }
+      after { ENV.delete("GOPRIVATE") }
+
+      it "appends dev.azure.com to existing GOPRIVATE" do
+        described_class.configure_go_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+
+        expect(ENV.fetch("GOPRIVATE", nil)).to eq("github.com/private,dev.azure.com")
+      end
     end
 
-    it "appends to existing GOPRIVATE" do
-      ENV["GOPRIVATE"] = "github.com/private"
-      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
-      expect(ENV.fetch("GOPRIVATE", nil)).to eq("github.com/private,dev.azure.com")
+    context "when GOPRIVATE already contains dev.azure.com" do
+      before { ENV["GOPRIVATE"] = "dev.azure.com" }
+      after { ENV.delete("GOPRIVATE") }
+
+      it "does not duplicate dev.azure.com" do
+        described_class.configure_go_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
+
+        expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
+      end
     end
 
-    it "does not duplicate dev.azure.com" do
-      ENV["GOPRIVATE"] = "dev.azure.com"
-      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
-      expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
-    end
+    context "when GOPRIVATE is wildcard" do
+      before { ENV["GOPRIVATE"] = "*" }
+      after { ENV.delete("GOPRIVATE") }
 
-    it "skips when GOPRIVATE is wildcard" do
-      ENV["GOPRIVATE"] = "*"
-      described_class.send(:configure_goprivate_for_azure_devops, "dev.azure.com/MyOrg/MyProject/myrepo")
-      expect(ENV.fetch("GOPRIVATE", nil)).to eq("*")
-    end
+      it "does not modify GOPRIVATE" do
+        described_class.configure_go_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
 
-    it "does nothing for non-Azure DevOps paths" do
-      described_class.send(:configure_goprivate_for_azure_devops, "github.com/some/repo")
-      expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
-    end
-  end
-
-  describe ".configure_go_for_azure_devops" do
-    let(:git_config_path) { File.expand_path("test_azure_devops_unified.gitconfig", tmp) }
-
-    before do
-      FileUtils.mkdir_p(tmp)
-      File.write(git_config_path, "")
-      ENV["GIT_CONFIG_GLOBAL"] = git_config_path
-    end
-
-    after do
-      ENV.delete("GIT_CONFIG_GLOBAL")
-      ENV.delete("GOPRIVATE")
-      FileUtils.rm_f(git_config_path)
-    end
-
-    it "configures both git URL rewriting and GOPRIVATE" do
-      described_class.configure_go_for_azure_devops("dev.azure.com/MyOrg/MyProject/myrepo")
-
-      config = `git config --global --get-all url.https://dev.azure.com/MyOrg/MyProject/_git/myrepo.insteadOf`
-      expect(config).to include("https://dev.azure.com/MyOrg/MyProject/myrepo\n")
-      expect(ENV.fetch("GOPRIVATE", nil)).to eq("dev.azure.com")
-    end
-
-    it "does nothing for non-Azure DevOps paths" do
-      described_class.configure_go_for_azure_devops("github.com/some/repo")
-
-      config = `git config --global --list 2>/dev/null`
-      expect(config).not_to include("insteadOf")
-      expect(ENV.fetch("GOPRIVATE", nil)).to be_nil
+        expect(ENV.fetch("GOPRIVATE", nil)).to eq("*")
+      end
     end
   end
 

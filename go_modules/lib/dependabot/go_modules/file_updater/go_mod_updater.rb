@@ -139,6 +139,7 @@ module Dependabot
           @directory = directory
           @tidy = T.let(options.fetch(:tidy, false), T::Boolean)
           @vendor = T.let(options.fetch(:vendor, false), T::Boolean)
+          @azure_devops_configured = T.let(false, T::Boolean)
         end
 
         sig { returns(T.nilable(String)) }
@@ -284,17 +285,25 @@ module Dependabot
 
         sig do
           type_parameters(:T)
-            .params(block: T.proc.returns(T.type_parameter(:T)))
+            .params(_block: T.proc.returns(T.type_parameter(:T)))
             .returns(T.type_parameter(:T))
         end
-        def in_repo_path(&block)
+        def in_repo_path(&_block)
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              dependencies.map(&:name).uniq
-                          .each { |name| SharedHelpers.configure_go_for_azure_devops(name) }
+              configure_azure_devops_modules
               yield
             end
           end
+        end
+
+        sig { void }
+        def configure_azure_devops_modules
+          return if @azure_devops_configured
+
+          dependencies.map(&:name).uniq
+                      .each { |name| SharedHelpers.configure_go_for_azure_devops(name) }
+          @azure_devops_configured = true
         end
 
         sig { params(stub_paths: T::Array[String]).void }

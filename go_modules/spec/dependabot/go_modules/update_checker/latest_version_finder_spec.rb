@@ -389,13 +389,12 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     end
 
     it "calls configure_go_for_azure_devops with the dependency name" do
-      # The full lookup may fail since we stub the Go tooling — that's fine,
-      # we only care that Azure DevOps configuration was invoked.
+      # The full lookup may fail or produce empty results since we stub the
+      # Go tooling — we only care that Azure DevOps configuration was invoked.
       begin
         finder.latest_version
-      rescue Dependabot::SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependabotError
-        nil
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+        # expected in some environments
       end
 
       expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)

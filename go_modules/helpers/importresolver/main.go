@@ -12,24 +12,17 @@ type Args struct {
 	Import string
 }
 
-// azureDevOpsPattern matches Azure DevOps module paths:
+// azureDevOpsPattern matches Azure DevOps URLs:
 //
-//	dev.azure.com/{org}/{project}/{repo}[.git][/subpath]
+//	https://dev.azure.com/{org}/{project}/{repo}[.git][/subpath]
 //
-// Repo names containing dots (e.g. "my.utils") are intentionally excluded
-// to avoid ambiguity with the .git VCS qualifier suffix.
-//
-// NOTE: A similar pattern exists in the Ruby shared helpers at
-// common/lib/dependabot/shared_helpers.rb (configure_git_url_for_azure_devops).
-// Keep both in sync when changing the URL structure.
+// Repo names containing dots are excluded to avoid ambiguity with .git.
+// Keep in sync with common/lib/dependabot/shared_helpers.rb
+// (AZURE_DEVOPS_MODULE_PATTERN), which matches bare module paths (no scheme).
 var azureDevOpsPattern = regexp.MustCompile(
 	`^https://dev\.azure\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_-]+)(?:\.git)?(?:/|$)`,
 )
 
-// rewriteAzureDevOpsURL converts a flat Azure DevOps URL to the correct
-// /_git/ format that Azure DevOps requires for Git operations.
-// Any trailing subpath (including Go major-version suffixes like /v2) is
-// stripped because only the org/project/repo triple identifies the git remote.
 func rewriteAzureDevOpsURL(remote string) string {
 	m := azureDevOpsPattern.FindStringSubmatch(remote)
 	if m == nil {
@@ -47,8 +40,6 @@ func VCSRemoteForImport(args *Args) (interface{}, error) {
 		remote = "https://" + remote
 	}
 
-	// Azure DevOps requires /_git/ in the URL path, but Go module paths
-	// use a flat structure. Rewrite before VCS lookup.
 	rewritten := rewriteAzureDevOpsURL(remote)
 	if rewritten != remote {
 		return rewritten, nil

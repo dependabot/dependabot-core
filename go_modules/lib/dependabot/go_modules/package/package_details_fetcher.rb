@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "shellwords"
 require "sorbet-runtime"
 
 require "dependabot/go_modules/update_checker"
@@ -75,12 +76,14 @@ module Dependabot
               # retain any exclude directives to omit those versions.
               File.write("go.mod", "module dummy\n")
               manifest["Exclude"]&.each do |r|
-                SharedHelpers.run_shell_command("go mod edit -exclude=#{r['Path']}@#{r['Version']}")
+                exc_path = Shellwords.escape(r["Path"])
+                exc_version = Shellwords.escape(r["Version"])
+                SharedHelpers.run_shell_command("go mod edit -exclude=#{exc_path}@#{exc_version}")
               end
 
-              # Turn off the module proxy for private dependencies
+              dep_name = Shellwords.escape(dependency.name)
               versions_json = SharedHelpers.run_shell_command(
-                "go list -m -versions -json #{dependency.name}",
+                "go list -m -versions -json #{dep_name}",
                 fingerprint: "go list -m -versions -json <dependency_name>"
               )
               version_strings = JSON.parse(versions_json)["Versions"]

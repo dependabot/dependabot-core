@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "shellwords"
 require "sorbet-runtime"
 
 require "dependabot/go_modules/update_checker"
@@ -168,8 +169,6 @@ module Dependabot
 
           Dependabot.logger.info("Initializing cooldown filter")
 
-          SharedHelpers.configure_go_for_azure_devops(dependency.name)
-
           sorted_releases = if check_max
                               releases.sort_by(&:version).reverse
                             else
@@ -179,16 +178,23 @@ module Dependabot
           filtered_versions = []
           cooldown_filtered_versions = 0
 
-          # Iterate through the sorted versions lazily, filtering out cooldown versions
-          sorted_releases.each do |release|
-            if in_cooldown_period?(release)
-              Dependabot.logger.info("Filtered out (cooldown) : #{release}")
-              cooldown_filtered_versions += 1
-              next
-            end
+          # in_cooldown_period? shells out to `go list`, which needs the Azure
+          # DevOps insteadOf rules. PackageDetailsFetcher configures a separate
+          # temporary directory, so its git config does not persist here.
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            SharedHelpers.configure_go_for_azure_devops(dependency.name)
 
-            filtered_versions << release
-            break
+            # Iterate through the sorted versions lazily, filtering out cooldown versions
+            sorted_releases.each do |release|
+              if in_cooldown_period?(release)
+                Dependabot.logger.info("Filtered out (cooldown) : #{release}")
+                cooldown_filtered_versions += 1
+                next
+              end
+
+              filtered_versions << release
+              break
+            end
           end
 
           Dependabot.logger.info("Filtered out #{cooldown_filtered_versions} version(s) due to cooldown")
@@ -200,12 +206,12 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           begin
-            release_info = SharedHelpers.with_git_configured(credentials: credentials) do
-              SharedHelpers.run_shell_command(
-                "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
-                fingerprint: "go list -m -json <dependency_name>"
-              )
-            end
+            dep_name = Shellwords.escape(dependency.name)
+            version_str = Shellwords.escape(release.details.[]("version_string"))
+            release_info = SharedHelpers.run_shell_command(
+              "go list -m -json #{dep_name}@#{version_str}",
+              fingerprint: "go list -m -json <dependency_name>"
+            )
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             Dependabot.logger.info("Error while fetching release date info: #{e.message}")
             return false
