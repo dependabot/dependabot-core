@@ -165,8 +165,12 @@ module Dependabot
           segments = path.delete_prefix("/").split("/")
           return name if segments.length < 3
 
-          repo = segments.pop
-          uri.path = "/#{(segments + ['_git', repo]).join('/')}"
+          # Azure DevOps Git URLs follow the pattern:
+          # dev.azure.com/{org}/{project}/_git/{repo}[/{subdir...}]
+          # Insert "_git" after the first two segments (org/project) and
+          # preserve all remaining segments (repo and any subdirectories).
+          new_segments = segments[0, 2] + ["_git"] + segments[2..]
+          uri.path = "/#{new_segments.join('/')}"
 
           uri.to_s.delete_prefix("https://")
         rescue URI::InvalidURIError
