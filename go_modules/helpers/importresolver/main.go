@@ -18,7 +18,7 @@ type Args struct {
 //	https://dev.azure.com/{org}/{project}/{repo}[.git][/subpath]
 //
 // Repo names containing dots are excluded to avoid ambiguity with .git.
-// Keep in sync with common/lib/dependabot/shared_helpers.rb
+// Keep in sync with go_modules/lib/dependabot/go_modules/azure_devops_helper.rb
 // (AZURE_DEVOPS_MODULE_PATTERN), which matches bare module paths (no scheme).
 var azureDevOpsPattern = regexp.MustCompile(
 	`^https://dev\.azure\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_-]+)(?:\.git)?(?:/|$)`,

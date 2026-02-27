@@ -70,7 +70,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
       let(:dependency_name) { "dev.azure.com/MyOrg/MyProject/myrepo.git" }
 
       it "calls configure_go_for_azure_devops with the dependency name" do
-        allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
+        allow(Dependabot::GoModules::AzureDevOpsHelper).to receive(:configure_go_for_azure_devops)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
         allow(File).to receive(:write).and_call_original
 
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
           # expected in some environments
         end
 
-        expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)
+        expect(Dependabot::GoModules::AzureDevOpsHelper).to have_received(:configure_go_for_azure_devops)
           .with(dependency_name).at_least(:once)
       end
     end

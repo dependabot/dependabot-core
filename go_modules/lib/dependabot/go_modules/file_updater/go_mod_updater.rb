@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
+require "dependabot/go_modules/azure_dev_ops_helper"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
@@ -302,7 +303,7 @@ module Dependabot
           return if @azure_devops_configured
 
           dependencies.map(&:name).uniq
-                      .each { |name| SharedHelpers.configure_go_for_azure_devops(name) }
+                      .each { |name| AzureDevOpsHelper.configure_go_for_azure_devops(name) }
           @azure_devops_configured = true
         end
 

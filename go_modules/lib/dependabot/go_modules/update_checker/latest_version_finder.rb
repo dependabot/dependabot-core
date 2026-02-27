@@ -9,6 +9,7 @@ require "dependabot/go_modules/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/go_modules/azure_dev_ops_helper"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/package/package_details_fetcher"
@@ -182,7 +183,7 @@ module Dependabot
           # DevOps insteadOf rules. PackageDetailsFetcher configures a separate
           # temporary directory, so its git config does not persist here.
           SharedHelpers.with_git_configured(credentials: credentials) do
-            SharedHelpers.configure_go_for_azure_devops(dependency.name)
+            AzureDevOpsHelper.configure_go_for_azure_devops(dependency.name)
 
             # Iterate through the sorted versions lazily, filtering out cooldown versions
             sorted_releases.each do |release|

@@ -382,7 +382,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     let(:dependency_name) { "dev.azure.com/MyOrg/MyProject/myrepo.git" }
 
     before do
-      allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
+      allow(Dependabot::GoModules::AzureDevOpsHelper).to receive(:configure_go_for_azure_devops)
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(
         '{"Version":"v1.1.0","Versions":["v1.0.0","v1.1.0"]}'
       )
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         # expected in some environments
       end
 
-      expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)
+      expect(Dependabot::GoModules::AzureDevOpsHelper).to have_received(:configure_go_for_azure_devops)
         .with(dependency_name).at_least(:once)
     end
   end

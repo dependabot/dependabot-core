@@ -9,6 +9,7 @@ require "dependabot/go_modules/update_checker"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/go_modules/azure_dev_ops_helper"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
 
@@ -67,7 +68,7 @@ module Dependabot
         def fetch_available_versions
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              SharedHelpers.configure_go_for_azure_devops(dependency.name)
+              AzureDevOpsHelper.configure_go_for_azure_devops(dependency.name)
 
               manifest = parse_manifest
 

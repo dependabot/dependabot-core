@@ -72,7 +72,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       it "calls configure_go_for_azure_devops with the dependency name" do
-        allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
+        allow(Dependabot::GoModules::AzureDevOpsHelper).to receive(:configure_go_for_azure_devops)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
 
         # Stub the actual Go commands to avoid needing the real module.
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           # expected in some environments
         end
 
-        expect(Dependabot::SharedHelpers).to have_received(:configure_go_for_azure_devops)
+        expect(Dependabot::GoModules::AzureDevOpsHelper).to have_received(:configure_go_for_azure_devops)
           .with(dependency_name).at_least(:once)
       end
     end
