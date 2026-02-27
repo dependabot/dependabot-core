@@ -99,7 +99,8 @@ module Dependabot
           ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
         end
         def fetch_from_github(source, revision)
-          response = T.unsafe(github_client).contents(
+          response = github_client.send(
+            :contents,
             source.repo,
             path: HOOKS_FILE,
             ref: revision
@@ -130,18 +131,18 @@ module Dependabot
             repo_contents_path = File.join(temp_dir, File.basename(source.repo))
 
             SharedHelpers.run_shell_command(
-              "git clone --no-checkout --depth 1 #{repo_url} #{repo_contents_path} 2>/dev/null",
+              "git clone --no-checkout --depth 1 #{repo_url} #{repo_contents_path}",
               fingerprint: "git clone --no-checkout --depth 1 <url> <path>"
             )
 
             Dir.chdir(repo_contents_path) do
               # Fetch the specific revision and checkout the hooks file
               SharedHelpers.run_shell_command(
-                "git fetch --depth 1 origin #{revision} 2>/dev/null",
+                "git fetch --depth 1 origin #{revision}",
                 fingerprint: "git fetch --depth 1 origin <revision>"
               )
               SharedHelpers.run_shell_command(
-                "git checkout FETCH_HEAD -- #{HOOKS_FILE} 2>/dev/null",
+                "git checkout FETCH_HEAD -- #{HOOKS_FILE}",
                 fingerprint: "git checkout FETCH_HEAD -- <file>"
               )
 
