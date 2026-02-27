@@ -117,5 +117,35 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
           )
       end
     end
+
+    context "with an Azure DevOps module path that includes a subdirectory" do
+      let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git/submodule" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Versions":["v1.0.0"]}')
+      end
+
+      it "preserves the subdirectory while adding _git" do
+        fetch
+
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+      end
+    end
   end
 end

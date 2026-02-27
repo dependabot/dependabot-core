@@ -60,9 +60,10 @@ func normalizeAzureDevOpsURL(remote string) string {
 
 	// Azure DevOps paths are /{org}/{project}/_git/{repo}[/{subdir}...].
 	// Insert "_git" after the first two segments and preserve the rest.
-	prefixSegments := segments[:2]
-	remainingSegments := segments[2:]
-	normalizedSegments := append(append(prefixSegments, "_git"), remainingSegments...)
+	normalizedSegments := make([]string, 0, len(segments)+1)
+	normalizedSegments = append(normalizedSegments, segments[:2]...)
+	normalizedSegments = append(normalizedSegments, "_git")
+	normalizedSegments = append(normalizedSegments, segments[2:]...)
 	uri.Path = "/" + strings.Join(normalizedSegments, "/")
 
 	return uri.String()

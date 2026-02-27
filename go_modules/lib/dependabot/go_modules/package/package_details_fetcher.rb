@@ -10,7 +10,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
-require "uri"
+require "dependabot/go_modules/azure_devops_path_normalizer"
 
 module Dependabot
   module GoModules
@@ -78,7 +78,7 @@ module Dependabot
               end
 
               # Turn off the module proxy for private dependencies
-              dependency_name = normalized_dependency_name(dependency.name)
+              dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
               versions_json = SharedHelpers.run_shell_command(
                 "go list -m -versions -json #{dependency_name}",
                 fingerprint: "go list -m -versions -json <dependency_name>"
@@ -148,33 +148,6 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
-        end
-
-        sig { params(name: String).returns(String) }
-        def normalized_dependency_name(name)
-          normalize_azure_devops_module_path(name)
-        end
-
-        sig { params(name: String).returns(String) }
-        def normalize_azure_devops_module_path(name)
-          return name unless name.start_with?("dev.azure.com/")
-          return name if name.include?("/_git/")
-
-          uri = URI.parse("https://#{name}")
-          path = uri.path || ""
-          segments = path.delete_prefix("/").split("/")
-          return name if segments.length < 3
-
-          # Azure DevOps Git URLs follow the pattern:
-          # dev.azure.com/{org}/{project}/_git/{repo}[/{subdir...}]
-          # Insert "_git" after the first two segments (org/project) and
-          # preserve all remaining segments (repo and any subdirectories).
-          new_segments = segments[0, 2] + ["_git"] + segments[2..]
-          uri.path = "/#{new_segments.join('/')}"
-
-          uri.to_s.delete_prefix("https://")
-        rescue URI::InvalidURIError
-          name
         end
 
         sig do

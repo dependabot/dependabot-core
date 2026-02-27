@@ -11,8 +11,8 @@ require "dependabot/errors"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/package/package_details_fetcher"
+require "dependabot/go_modules/azure_devops_path_normalizer"
 require "dependabot/package/package_latest_version_finder"
-require "uri"
 
 module Dependabot
   module GoModules
@@ -199,7 +199,7 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           begin
-            dependency_name = normalize_azure_devops_module_path(dependency.name)
+            dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
             release_info = SharedHelpers.run_shell_command(
               "go list -m -json #{dependency_name}@#{release.details.[]('version_string')}",
               fingerprint: "go list -m -json <dependency_name>"
@@ -274,24 +274,6 @@ module Dependabot
             end,
             T.nilable(T::Boolean)
           )
-        end
-
-        sig { params(name: String).returns(String) }
-        def normalize_azure_devops_module_path(name)
-          return name unless name.start_with?("dev.azure.com/")
-          return name if name.include?("/_git/")
-
-          uri = URI.parse("https://#{name}")
-          path = uri.path || ""
-          segments = path.delete_prefix("/").split("/")
-          return name if segments.length < 3
-
-          repo = segments.pop
-          uri.path = "/#{(segments + ['_git', repo]).join('/')}"
-
-          uri.to_s.delete_prefix("https://")
-        rescue URI::InvalidURIError
-          name
         end
       end
     end
