@@ -519,7 +519,7 @@ RSpec.describe Dependabot::DependencySnapshot do
         let(:existing_group_pull_requests) do
           [
             {
-              "dependency-group-name" => "group-a",
+              "dependency-group-name" => "group-a/dummy-pkg-a",
               "dependencies" => []
             }
           ]
@@ -527,7 +527,9 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         it "handles empty dependencies gracefully" do
           snapshot = create_dependency_snapshot
-          expect { snapshot.mark_group_handled(snapshot.groups.first) }.not_to raise_error
+          # Use the subgroup since group-by: dependency-name creates subgroups
+          subgroup = snapshot.groups.find { |g| g.name == "group-a/dummy-pkg-a" }
+          expect { snapshot.mark_group_handled(subgroup) }.not_to raise_error
 
           snapshot.current_directory = "/foo"
           expect(snapshot.handled_dependencies).to include("dummy-pkg-a")
