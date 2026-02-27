@@ -1,4 +1,1 @@
 inherit_from: ../.rubocop.yml
-Sorbet/ForbidTUnsafe:
-  Exclude:
-    - lib/dependabot/pre_commit/file_parser/hook_language_fetcher.rb
