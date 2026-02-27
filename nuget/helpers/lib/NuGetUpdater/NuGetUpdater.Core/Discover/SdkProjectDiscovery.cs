@@ -63,6 +63,9 @@ internal static class SdkProjectDiscovery
         "GenerateBuildDependencyFile"
     ];
 
+    // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
+    private const int MaximumParallelTargetFrameworkRestores = 2;
+
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
         var extension = Path.GetExtension(startingProjectPath)?.ToLowerInvariant();
@@ -113,16 +116,23 @@ internal static class SdkProjectDiscovery
 
         // due to how MSBuild handles multi-TFM projects with target platforms we may need to process each TFM separately
         // we detect that by determining if there are multiple target frameworks specified and if any of them have a platform suffix (e.g., `-windows`, `-android`, etc)
+        // alternately, if there are too many target frameworks specified, they must be handled individually
         var projectTfms = await MSBuildHelper.GetProjectTargetFrameworksAsync(startingProjectPath, logger);
-        var requiresIndividualRestores = projectTfms.Any(tfm => tfm.Contains('-'));
+        var hasPlatformTfms = projectTfms.Any(tfm => tfm.Contains('-'));
+        var requiresIndividualRestores = hasPlatformTfms || projectTfms.Length > MaximumParallelTargetFrameworkRestores;
         if (!requiresIndividualRestores)
         {
+            logger.Info($"Performing single restore for project {startingProjectPath}");
             projectTfms = [string.Empty]; // a single restore can handle everything, but we need to loop at least once and an empty TFM is our signal to not specify anything
+        }
+        else
+        {
+            logger.Info($"Performing individual restores for project {startingProjectPath} using target frameworks {string.Join(", ", projectTfms)}");
         }
 
         foreach (var tfm in projectTfms)
         {
-            var isSingleTfmRestore = !string.IsNullOrEmpty(tfm);
+            var isIndividualTfmRestore = !string.IsNullOrEmpty(tfm);
 
             // create a binlog
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
@@ -132,7 +142,7 @@ internal static class SdkProjectDiscovery
                 var args = new List<string>() { "msbuild", startingProjectPath };
                 var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
                 var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
-                if (useDirectRestore || isSingleTfmRestore)
+                if (useDirectRestore || isIndividualTfmRestore)
                 {
                     // directly call the required targets
                     args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
@@ -151,7 +161,7 @@ internal static class SdkProjectDiscovery
                 args.Add($"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}");
                 args.Add($"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}");
 
-                if (isSingleTfmRestore)
+                if (isIndividualTfmRestore)
                 {
                     args.Add($"/p:TargetFramework={tfm}");
                 }
@@ -267,7 +277,7 @@ internal static class SdkProjectDiscovery
                                     if (projectEvaluation is not null)
                                     {
                                         var specificPackageDeps = packageDependencies.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
-                                        var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                        var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                         if (tfm is not null)
                                         {
                                             var packagesByTfm = specificPackageDeps.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
@@ -291,7 +301,7 @@ internal static class SdkProjectDiscovery
                                     break;
                                 }
 
-                                var evaluatedTfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                                var evaluatedTfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                                 if (evaluatedTfm is null)
                                 {
                                     break;
@@ -378,10 +388,13 @@ internal static class SdkProjectDiscovery
             var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
             if (isProjectLegacy)
             {
+                logger.Info($"Project {projectPath} is legacy");
+
                 // if any TFM had any explicit packages defined, we need to do manual package resolution
                 if (explicitPackageVersionsPerProject.TryGetValue(projectPath, out var projectTfmRefs) &&
                     projectTfmRefs.Values.Any(v => v.Count > 0))
                 {
+                    logger.Info("  ...and setting manual package resolution to true");
                     requiresManualPackageResolution = true;
                     break;
                 }
@@ -777,7 +790,7 @@ internal static class SdkProjectDiscovery
             if (projectEvaluation is not null)
             {
                 // without a tfm we can't do anything meaningful with the package reference
-                var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                 if (tfm is not null)
                 {
                     foreach (var child in node.Children.OfType<Item>())
@@ -815,7 +828,7 @@ internal static class SdkProjectDiscovery
                 var projectEvaluation = GetNearestProjectEvaluation(node);
                 if (projectEvaluation is not null)
                 {
-                    var tfm = GetPropertyValueFromProjectEvaluation(projectEvaluation, "TargetFramework");
+                    var tfm = GetTargetFrameworkFromProjectEvaluation(projectEvaluation);
                     if (tfm is not null)
                     {
                         var packageName = child.Name;

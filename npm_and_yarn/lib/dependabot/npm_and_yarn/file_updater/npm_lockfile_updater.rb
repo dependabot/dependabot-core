@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -276,14 +277,7 @@ module Dependabot
             dependency_in_package_json?(dependency)
           end
 
-          unless dependencies_in_current_package_json
-            # NOTE: When updating a dependency in a nested workspace project, npm
-            # will add the dependency as a new top-level dependency to the root
-            # lockfile. To overcome this, we save the content before the update,
-            # and then re-run `npm install` after the update against the previous
-            # content to remove that
-            previous_package_json = File.read(T.must(package_json).name)
-          end
+          previous_package_json = File.read(T.must(package_json).name) unless dependencies_in_current_package_json
 
           # TODO: Update the npm 6 updater to use these args as we currently
           # do the same in the js updater helper, we've kept it separate for
@@ -292,14 +286,27 @@ module Dependabot
           top_level_dependencies.each do |dependency|
             install_args = [npm_install_args(dependency)]
             is_optional = optional_dependency?(dependency)
+
+            # When the dependency lives in a workspace package (not the root
+            # package.json), pass --workspace so npm installs it in the correct
+            # context. Without this, npm temporarily adds the dependency to the
+            # root, which strips dev flags and can remove nested optional peer
+            # dependencies during tree resolution (see GitHub issue #14110).
+            unless dependency_in_package_json?(dependency)
+              workspace_directories_for(dependency).each do |dir|
+                install_args << "--workspace=#{dir}"
+              end
+            end
+
             run_npm_install_lockfile_only(install_args, has_optional_dependencies: is_optional)
           end
 
           unless dependencies_in_current_package_json
             File.write(T.must(package_json).name, previous_package_json)
 
-            # Run final install without specific dependencies
-            run_npm_install_lockfile_only([], has_optional_dependencies: false)
+            # Clean up any remaining side effects from the workspace install:
+            # spurious root lockfile entries and removed optional peer deps.
+            cleanup_workspace_lockfile(previous_package_json)
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
@@ -425,6 +432,31 @@ module Dependabot
           dependency.requirements.any? do |req|
             req[:groups]&.include?("optionalDependencies")
           end
+        end
+
+        # Returns the workspace directories (relative to root) that contain
+        # the given dependency. Reads the actual package files on disk rather
+        # than the requirement :file paths, which may not match the workspace
+        # directory layout exactly.
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+        def workspace_directories_for(dependency)
+          root_pkg_name = T.must(package_json).name
+
+          package_files
+            .reject { |f| f.name == root_pkg_name }
+            .select { |f| package_json_contains_dependency?(f, dependency) }
+            .map { |f| File.dirname(f.name) }
+        end
+
+        sig { params(file: Dependabot::DependencyFile, dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def package_json_contains_dependency?(file, dependency)
+          content = File.read(file.name)
+          pkg = JSON.parse(content)
+          %w(dependencies devDependencies peerDependencies optionalDependencies).any? do |dep_type|
+            pkg.fetch(dep_type, {}).key?(dependency.name)
+          end
+        rescue JSON::ParserError
+          false
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -1118,6 +1150,89 @@ module Dependabot
         sig { params(package_name: String).returns(String) }
         def sanitize_package_name(package_name)
           package_name.gsub("%2f", "/").gsub("%2F", "/")
+        end
+
+        # Cleans up the lockfile after a workspace dependency update:
+        # 1. Removes any dependencies npm added to packages[""] that aren't
+        #    in the original root package.json.
+        # 2. Restores optional peer dependencies that npm's tree resolution
+        #    may have removed (see GitHub issue #14110).
+        sig { params(original_package_json_content: String).void }
+        def cleanup_workspace_lockfile(original_package_json_content)
+          lockfile_content = File.read(lockfile_basename)
+          parsed = JSON.parse(lockfile_content)
+          original_pkg = JSON.parse(original_package_json_content)
+          original_lockfile = JSON.parse(T.must(lockfile.content))
+
+          changed = remove_spurious_root_deps(parsed, original_pkg)
+          changed = restore_optional_peer_deps(parsed, original_lockfile) || changed
+
+          return unless changed
+
+          indent = detect_indentation(lockfile_content)
+          File.write(lockfile_basename, "#{JSON.pretty_generate(parsed, indent: indent)}\n")
+        rescue JSON::ParserError => e
+          Dependabot.logger.warn("Failed to clean up workspace lockfile: #{e.message}")
+        end
+
+        sig do
+          params(
+            parsed_lockfile: T::Hash[String, T.untyped],
+            original_pkg: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
+        end
+        def remove_spurious_root_deps(parsed_lockfile, original_pkg)
+          root_entry = parsed_lockfile.dig("packages", "")
+          return false unless root_entry
+
+          changed = T.let(false, T::Boolean)
+
+          %w(dependencies devDependencies peerDependencies optionalDependencies).each do |dep_type|
+            next unless root_entry[dep_type]
+
+            unless original_pkg[dep_type]
+              root_entry.delete(dep_type)
+              changed = true
+              next
+            end
+
+            root_entry[dep_type].each_key do |dep_name|
+              unless original_pkg[dep_type].key?(dep_name)
+                root_entry[dep_type].delete(dep_name)
+                changed = true
+              end
+            end
+
+            if root_entry[dep_type].empty?
+              root_entry.delete(dep_type)
+              changed = true
+            end
+          end
+
+          changed
+        end
+
+        sig do
+          params(
+            updated_lockfile: T::Hash[String, T.untyped],
+            original_lockfile: T::Hash[String, T.untyped]
+          ).returns(T::Boolean)
+        end
+        def restore_optional_peer_deps(updated_lockfile, original_lockfile)
+          original_packages = original_lockfile["packages"] || {}
+          updated_packages = updated_lockfile["packages"] || {}
+          changed = T.let(false, T::Boolean)
+
+          original_packages.each do |path, pkg_info|
+            next if updated_packages.key?(path)
+            next unless pkg_info.is_a?(Hash) && pkg_info["optional"] == true && pkg_info["peer"] == true
+
+            Dependabot.logger.info("Restoring optional peer dependency removed during workspace update: #{path}")
+            updated_packages[path] = pkg_info
+            changed = true
+          end
+
+          changed
         end
 
         sig { returns(String) }

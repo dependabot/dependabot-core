@@ -321,7 +321,7 @@ module Dependabot
           params(
             dir: T.nilable(String),
             raise_errors: T::Boolean
-          ).returns(T::Array[OpenStruct])
+          ).returns(T::Array[Dependabot::FileFetchers::RepositoryContent])
         end
         def repo_contents(dir: nil, raise_errors: true)
           @file_fetcher.send(:repo_contents, dir: dir, raise_errors: raise_errors)

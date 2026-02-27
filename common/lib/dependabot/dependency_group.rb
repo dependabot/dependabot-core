@@ -25,6 +25,9 @@ module Dependabot
     sig { returns(String) }
     attr_reader :applies_to
 
+    sig { returns(T.nilable(String)) }
+    attr_reader :group_by
+
     sig do
       params(
         name: String,
@@ -38,6 +41,7 @@ module Dependabot
       # For backwards compatibility, if no applies_to is provided, default to "version-updates"
       @applies_to = T.let(applies_to || "version-updates", String)
       @rules = rules
+      @group_by = T.let(rules["group-by"], T.nilable(String))
       @dependencies = T.let([], T::Array[Dependabot::Dependency])
     end
 
@@ -47,6 +51,13 @@ module Dependabot
       return false if matches_excluded_pattern?(dependency.name)
 
       matches_pattern?(dependency.name) && matches_dependency_type?(dependency)
+    end
+
+    sig { returns(T::Boolean) }
+    def group_by_dependency_name?
+      return false unless Dependabot::Experiments.enabled?(:group_by_dependency_name)
+
+      @group_by == "dependency-name"
     end
 
     sig { returns(T::Hash[String, String]) }

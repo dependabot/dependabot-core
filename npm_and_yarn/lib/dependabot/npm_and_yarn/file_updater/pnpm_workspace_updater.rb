@@ -10,7 +10,7 @@ class DependencyRequirement < T::Struct
   const :file, String
   const :requirement, String
   const :groups, T::Array[String]
-  const :source, T.nilable(String)
+  const :source, T.nilable(T::Hash[Symbol, T.untyped])
 end
 
 module Dependabot
@@ -109,12 +109,12 @@ module Dependabot
           dependency.requirements
                     .select { |r| r[:file] == workspace_file.name }
                     .map do |r|
-            DependencyRequirement.new(
-              file: r[:file],
-              requirement: r[:requirement],
-              groups: r[:groups],
-              source: r[:source]
-            )
+                      DependencyRequirement.new(
+                        file: r[:file],
+                        requirement: r[:requirement],
+                        groups: r[:groups],
+                        source: r[:source]
+                      )
           end
         end
 

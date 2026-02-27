@@ -193,6 +193,37 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
     end
 
+    context "with an executable file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "gradlew",
+            content: "#!/bin/bash\necho 'Hello'",
+            mode: Dependabot::DependencyFile::Mode::EXECUTABLE
+          )
+        ]
+      end
+
+      it "preserves the executable mode when pushing a commit to GitHub" do
+        updater.update
+
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/trees")
+          .with(body: {
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "gradlew",
+              mode: "100755",
+              type: "blob",
+              content: "#!/bin/bash\necho 'Hello'"
+            }]
+          })
+
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
     context "with a binary file" do
       let(:gem_content) do
         Base64.encode64(fixture("ruby", "gems", "addressable-2.7.0.gem"))

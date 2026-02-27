@@ -309,11 +309,11 @@ module Dependabot
           T.unsafe(bitbucket_client)
            .compare(T.must(source).repo, previous_tag, new_tag)
            .map do |commit|
-            {
-              message: commit.dig("summary", "raw"),
-              sha: commit["hash"],
-              html_url: commit.dig("links", "html", "href")
-            }
+             {
+               message: commit.dig("summary", "raw"),
+               sha: commit["hash"],
+               html_url: commit.dig("links", "html", "href")
+             }
           end
         rescue Dependabot::Clients::Bitbucket::NotFound,
                Dependabot::Clients::Bitbucket::Unauthorized,
@@ -330,11 +330,11 @@ module Dependabot
            .compare(T.must(source).repo, previous_tag, new_tag)
            .commits
            .map do |commit|
-            {
-              message: commit["message"],
-              sha: commit["id"],
-              html_url: "#{T.must(source).url}/commit/#{commit['id']}"
-            }
+             {
+               message: commit["message"],
+               sha: commit["id"],
+               html_url: "#{T.must(source).url}/commit/#{commit['id']}"
+             }
           end
         rescue Gitlab::Error::NotFound
           []
@@ -346,11 +346,11 @@ module Dependabot
           azure_client
             .compare(previous_tag, new_tag, type)
             .map do |commit|
-            {
-              message: commit["comment"],
-              sha: commit["commitId"],
-              html_url: commit["remoteUrl"]
-            }
+              {
+                message: commit["comment"],
+                sha: commit["commitId"],
+                html_url: commit["remoteUrl"]
+              }
           end
         rescue Dependabot::Clients::Azure::NotFound,
                Dependabot::Clients::Azure::Unauthorized,

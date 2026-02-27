@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/aspect-build/rules_lint
+    rev: v1.0.0
+    hooks:
+      - id: dart-format
+        language: dart
+        additional_dependencies:
+          - "intl:0.18.0"
+          - "http:1.2.0"
+          - "path:1.9.0"
+  - repo: https://github.com/nickmeinhold/pre-commit-dart
+    rev: v0.1.0
+    hooks:
+      - id: dart-analyze
+        language: dart
+        additional_dependencies:
+          - "json_annotation:^4.8.0"
+          - "collection:>=1.17.0"
+  - repo: https://github.com/example/dart-hooks
+    rev: v2.0.0
+    hooks:
+      - id: custom-dart-hook
+        language: dart
+        additional_dependencies:
+          - "yaml:~3.1.0"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace

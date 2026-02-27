@@ -295,9 +295,13 @@ module Dependabot
 
         if all_versions_ignored?(dependency, checker)
           record_security_update_ignored_if_applicable(dependency, checker, group)
+          mark_handled_for_group_by_name(dependency, group, "all versions ignored")
           return []
         end
-        return [] unless semver_rules_allow_grouping?(group, dependency, checker)
+        unless semver_rules_allow_grouping?(group, dependency, checker)
+          mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
+          return []
+        end
 
         # Consider the dependency handled so no individual PR is raised since it is in this group.
         # Even if update is not possible, etc.
@@ -344,6 +348,17 @@ module Dependabot
         [] # return an empty set
       end
 
+      sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup, reason: String).void }
+      def mark_handled_for_group_by_name(dependency, group, reason)
+        return unless group.group_by_dependency_name?
+
+        Dependabot.logger.info(
+          "Marking #{dependency.name} as handled (#{reason}) " \
+          "within group-by-name group '#{group.name}'"
+        )
+        dependency_snapshot.add_handled_dependencies(dependency.name)
+      end
+
       sig { params(dependency: Dependabot::Dependency).void }
       def log_up_to_date(dependency)
         Dependabot.logger.info(
@@ -376,7 +391,7 @@ module Dependabot
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
           dependency_group: dependency_group,
-          update_cooldown: job.cooldown,
+          update_cooldown: job.security_updates_only? ? nil : job.cooldown,
           options: job.experiments
         )
       end
@@ -534,7 +549,34 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def pr_exists_for_dependency_group?(group)
-        job.existing_group_pull_requests.any? { |pr| pr["dependency-group-name"] == group.name }
+        !find_existing_group_pr(group).nil?
+      end
+
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def find_existing_group_pr(group)
+        job.existing_group_pull_requests.find do |pr|
+          next false unless pr["dependency-group-name"] == group.name
+
+          existing_pr_covers_job_directories?(pr)
+        end
+      end
+
+      sig { params(pull_request: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def existing_pr_covers_job_directories?(pull_request)
+        dependencies = pull_request["dependencies"]
+
+        # Old PRs without directory info — treat as match (backward compat).
+        # Only enforce directory matching when ALL dependencies include a directory,
+        # consistent with DependencyChange#matches_existing_pr? and PullRequest#using_directory?.
+        return true if dependencies.nil? || !dependencies.all? { |dep| dep["directory"] }
+
+        pr_directories = dependencies.filter_map { |dep| dep["directory"] }
+        job_directories = job.source.directories || [job.source.directory || "/"]
+        normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
+        normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
+
+        # Match only when the PR directories exactly match the job directories
+        normalized_job_dirs.sort == normalized_pr_dirs.sort
       end
 
       sig do

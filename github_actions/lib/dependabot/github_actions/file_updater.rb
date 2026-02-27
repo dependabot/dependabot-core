@@ -55,9 +55,9 @@ module Dependabot
         updated_requirement_pairs =
           dependency.requirements.zip(T.must(dependency.previous_requirements))
                     .reject do |new_req, old_req|
-            next true if new_req[:file] != file.name
+                      next true if new_req[:file] != file.name
 
-            new_req[:source] == T.must(old_req)[:source]
+                      new_req[:source] == T.must(old_req)[:source]
           end
 
         updated_content = T.must(file.content)
@@ -107,11 +107,12 @@ module Dependabot
         git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
         return unless git_checker.ref_looks_like_commit_sha?(old_ref)
 
-        previous_version_tag = git_checker.most_specific_version_tag_for_sha(old_ref)
-        return unless previous_version_tag # There's no tag for this commit
+        previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
+        return unless previous_version_tags.any? # There's no tag for this commit
 
-        previous_version = version_class.new(previous_version_tag).to_s
-        return unless comment.end_with? previous_version
+        previous_version = previous_version_tags.map { |tag| version_class.new(tag).to_s }
+                                                .find { |version| comment.end_with? version }
+        return unless previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag

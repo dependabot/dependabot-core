@@ -19,10 +19,10 @@ module Dependabot
           cred =
             credentials.select { |c| c["type"] == "maven_repository" }
                        .find do |c|
-              cred_url = c.fetch("url").gsub(%r{/+$}, "")
-              next false unless cred_url == maven_repo_url
+                         cred_url = c.fetch("url").gsub(%r{/+$}, "")
+                         next false unless cred_url == maven_repo_url
 
-              c.fetch("username", nil)
+                         c.fetch("username", nil)
             end
 
           return gitlab_auth_headers(maven_repo_url) unless cred
@@ -44,10 +44,10 @@ module Dependabot
           cred =
             credentials.select { |c| c["type"] == "git_source" }
                        .find do |c|
-              cred_host = c.fetch("host").gsub(%r{/+$}, "")
-              next false unless URI(maven_repo_url).host == cred_host
+                         cred_host = c.fetch("host").gsub(%r{/+$}, "")
+                         next false unless URI(maven_repo_url).host == cred_host
 
-              c.fetch("password", nil)
+                         c.fetch("password", nil)
             end
 
           return {} unless cred

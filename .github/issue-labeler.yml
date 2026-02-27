@@ -53,7 +53,7 @@
     - '(dotnet(?:[-_]sdk)?|\.NET)'
 
 "L: dart:pub":
-    - '(dart|pub)'
+    - '\b(?:dart|pub)\b'
 
 "L: python":
     - '(python|pip|poetry|uv|conda)'
@@ -81,3 +81,6 @@
 
 "L: julia":
     - '(julia)'
+
+"L: pre:commit":
+    - '(pre_commit)'

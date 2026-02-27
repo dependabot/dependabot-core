@@ -454,6 +454,59 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "with repo_contents_path" do
+    let(:repo_contents_path) { "/tmp/test_repo" }
+    let(:updater) do
+      described_class.new(
+        dependencies: dependencies,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        index_urls: index_urls,
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    it "stores the repo_contents_path" do
+      expect(updater.repo_contents_path).to eq(repo_contents_path)
+    end
+
+    it "uses in_a_temporary_repo_directory with repo_contents_path" do
+      allow(updater).to receive(:updated_pyproject_content).and_return("updated content")
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory)
+        .and_yield
+      allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+      allow(updater).to receive(:write_temporary_dependency_files)
+      allow(updater).to receive(:setup_python_environment)
+      allow(updater).to receive(:run_update_command)
+      allow(File).to receive(:read).with("uv.lock").and_return("updated lockfile")
+
+      updater.send(:updated_lockfile_content_for, "test content")
+
+      expect(Dependabot::SharedHelpers).to have_received(:in_a_temporary_repo_directory)
+        .with("/", repo_contents_path)
+    end
+
+    context "when repo_contents_path is nil" do
+      let(:repo_contents_path) { nil }
+
+      it "passes nil to in_a_temporary_repo_directory" do
+        allow(updater).to receive(:updated_pyproject_content).and_return("updated content")
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory)
+          .and_yield
+        allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+        allow(updater).to receive(:write_temporary_dependency_files)
+        allow(updater).to receive(:setup_python_environment)
+        allow(updater).to receive(:run_update_command)
+        allow(File).to receive(:read).with("uv.lock").and_return("updated lockfile")
+
+        updater.send(:updated_lockfile_content_for, "test content")
+
+        expect(Dependabot::SharedHelpers).to have_received(:in_a_temporary_repo_directory)
+          .with("/", nil)
+      end
+    end
+  end
+
   describe "#lock_index_options" do
     subject(:lock_index_options) { updater.send(:lock_index_options) }
 
@@ -1347,7 +1400,34 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
 
   describe "#handle_uv_error" do
-    subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
+    subject(:handle_uv_error) { updater.send(:error_handler).handle_uv_error(error) }
+
+    context "when error contains a dependency conflict pattern" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: dependency_conflict_error,
+          error_context: {}
+        )
+      end
+
+      let(:dependency_conflict_error) do
+        <<~ERROR
+          × No solution found when resolving dependencies:
+            ╰─▶ Because pandas==2.3.3 depends on numpy>=1.26.0 and your project depends
+                on numpy==1.24.4, we can conclude that pandas==2.3.3 and your project
+                are incompatible.
+                And because your project depends on pandas==2.3.3, we can conclude that
+                your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "raises UpdateNotPossible with the conflicting dependencies" do
+        expect { handle_uv_error }.to raise_error(Dependabot::UpdateNotPossible) do |raised_error|
+          expect(raised_error.dependencies).to include("pandas")
+          expect(raised_error.dependencies).to include("numpy")
+        end
+      end
+    end
 
     context "when error contains 'No solution found when resolving dependencies'" do
       let(:error) do
@@ -1416,6 +1496,24 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           expect(raised_error.message).to include("Failed to build")
           expect(raised_error.message).to include("setuptools-scm was unable to detect version")
           expect(raised_error.message).to include("Make sure you're either building from a fully intact git repository")
+        end
+      end
+    end
+
+    context "when error contains a uv required-version mismatch" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "error: Required uv version `==0.9.11` does not match the running version `0.9.18`. " \
+                   "Update `uv` by running `uv self update 0.9.11`.",
+          error_context: {}
+        )
+      end
+
+      it "raises ToolVersionNotSupported with the required and running versions" do
+        expect { handle_uv_error }.to raise_error(Dependabot::ToolVersionNotSupported) do |raised_error|
+          expect(raised_error.tool_name).to eq("uv")
+          expect(raised_error.detected_version).to eq("==0.9.11")
+          expect(raised_error.supported_versions).to eq("0.9.18")
         end
       end
     end

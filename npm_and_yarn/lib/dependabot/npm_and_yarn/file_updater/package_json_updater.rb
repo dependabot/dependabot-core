@@ -126,10 +126,10 @@ module Dependabot
           updated_requirement_pairs =
             dependency.requirements.zip(T.must(dependency.previous_requirements))
                       .reject do |new_req, old_req|
-              next true if new_req == old_req
-              next false unless old_req&.fetch(:source).nil?
+                        next true if new_req == old_req
+                        next false unless old_req&.fetch(:source).nil?
 
-              new_req[:requirement] == old_req&.fetch(:requirement)
+                        new_req[:requirement] == old_req&.fetch(:requirement)
             end
 
           updated_requirement_pairs
