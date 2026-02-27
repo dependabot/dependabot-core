@@ -10,6 +10,7 @@ require "open3"
 require "shellwords"
 require "sorbet-runtime"
 require "tmpdir"
+require "uri"
 require "securerandom"
 
 require "dependabot/credential"
@@ -450,6 +451,8 @@ module Dependabot
     # Keep in sync with go_modules/helpers/importresolver/main.go
     # (azureDevOpsPattern). This pattern matches bare module paths (no scheme);
     # the Go pattern matches full https:// URLs.
+    AZURE_DEVOPS_HOST = T.let("dev.azure.com", String)
+
     AZURE_DEVOPS_MODULE_PATTERN = T.let(
       %r{^dev\.azure\.com/(?<org>[a-zA-Z0-9_.-]+)/(?<project>[a-zA-Z0-9_.-]+)/(?<repo>[a-zA-Z0-9_-]+)(?:\.git)?(?:/|$)},
       Regexp
@@ -464,8 +467,17 @@ module Dependabot
       project = T.must(match[:project])
       repo = T.must(match[:repo])
 
-      azure_git_url = Shellwords.escape("https://dev.azure.com/#{org}/#{project}/_git/#{repo}")
-      flat_url = Shellwords.escape("https://dev.azure.com/#{org}/#{project}/#{repo}")
+      azure_git_url_raw = "https://dev.azure.com/#{org}/#{project}/_git/#{repo}"
+      flat_url_raw = "https://dev.azure.com/#{org}/#{project}/#{repo}"
+
+      # Verify constructed URLs resolve to the expected host to prevent
+      # request forgery via crafted module paths.
+      return unless [azure_git_url_raw, flat_url_raw].all? do |u|
+        URI.parse(u).host == AZURE_DEVOPS_HOST
+      end
+
+      azure_git_url = Shellwords.escape(azure_git_url_raw)
+      flat_url = Shellwords.escape(flat_url_raw)
 
       # --replace-all with a BRE value pattern so each rule replaces only its
       # own entry without clobbering siblings under the same key.

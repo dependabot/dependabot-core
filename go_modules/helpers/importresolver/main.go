@@ -1,6 +1,7 @@
 package importresolver
 
 import (
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -28,7 +29,15 @@ func rewriteAzureDevOpsURL(remote string) string {
 	if m == nil {
 		return remote
 	}
-	return "https://dev.azure.com/" + m[1] + "/" + m[2] + "/_git/" + m[3]
+	rewritten := "https://dev.azure.com/" + m[1] + "/" + m[2] + "/_git/" + m[3]
+
+	// Verify the constructed URL resolves to the expected host to prevent
+	// request forgery via crafted module paths.
+	parsed, err := url.Parse(rewritten)
+	if err != nil || parsed.Host != "dev.azure.com" {
+		return remote
+	}
+	return rewritten
 }
 
 func VCSRemoteForImport(args *Args) (interface{}, error) {
