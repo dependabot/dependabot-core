@@ -75,9 +75,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         allow(Dependabot::SharedHelpers).to receive(:configure_go_for_azure_devops)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
 
-        # Stub the actual Go commands to avoid needing the real module
+        # Stub the actual Go commands to avoid needing the real module.
+        # parse_manifest calls `go mod edit -json` and parses stdout as JSON,
+        # so we must return valid JSON to avoid a JSON::ParserError.
+        valid_manifest = '{"Module":{"Path":"dev.azure.com/MyOrg/MyProject/myrepo.git"},"Go":"1.21"}'
         allow(Open3).to receive_messages(
-          capture3: ["", "", instance_double(Process::Status, success?: true)],
+          capture3: [valid_manifest, "", instance_double(Process::Status, success?: true)],
           capture2e: ["", instance_double(Process::Status, success?: true)]
         )
 
@@ -86,7 +89,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         begin
           updater.updated_go_mod_content
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed,
-               Dependabot::DependabotError
+               Dependabot::DependabotError,
+               JSON::ParserError
           nil
         end
 
