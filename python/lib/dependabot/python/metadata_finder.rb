@@ -37,6 +37,34 @@ module Dependabot
           super
       end
 
+      sig { override.returns(T.nilable(String)) }
+      def maintainer_changes
+        return unless dependency.previous_version
+        return unless dependency.version
+
+        previous_ownership = ownership_for_version(T.must(dependency.previous_version))
+        current_ownership = ownership_for_version(T.must(dependency.version))
+
+        return if previous_ownership.nil? || current_ownership.nil?
+
+        previous_org = previous_ownership["organization"]
+        current_org = current_ownership["organization"]
+
+        if previous_org != current_org
+          return "The organization that maintains #{dependency.name} on PyPI has " \
+                 "changed since your current version."
+        end
+
+        previous_users = ownership_users(previous_ownership)
+        current_users = ownership_users(current_ownership)
+
+        # Warn only when there were previous maintainers and none of them remain
+        return unless previous_users.any? && !previous_users.intersect?(current_users)
+
+        "None of the maintainers for your current version of #{dependency.name} are " \
+          "listed as maintainers for the new version on PyPI."
+      end
+
       private
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
@@ -204,6 +232,40 @@ module Dependabot
           json_base_url = base_url.sub(%r{/simple/?$}i, "/pypi")
           json_base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
+      end
+
+      sig { params(version: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def ownership_for_version(version)
+        return nil if version.include?("+")
+
+        possible_version_listing_urls(version).each do |url|
+          response = fetch_authed_url(url)
+          next unless response.status == 200
+
+          data = JSON.parse(response.body)
+          return data["ownership"]
+        rescue JSON::ParserError
+          next
+        rescue Excon::Error::Timeout
+          next
+        end
+
+        nil
+      end
+
+      sig { params(version: String).returns(T::Array[String]) }
+      def possible_version_listing_urls(version)
+        possible_listing_urls.map do |url|
+          url.sub(%r{/json$}, "/#{URI::DEFAULT_PARSER.escape(version)}/json")
+        end
+      end
+
+      sig { params(ownership: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+      def ownership_users(ownership)
+        roles = ownership["roles"]
+        return [] unless roles.is_a?(Array)
+
+        roles.filter_map { |role| role["user"] if role.is_a?(Hash) }
       end
 
       # Strip [extras] from name (dependency_name[extra_dep,other_extra])
