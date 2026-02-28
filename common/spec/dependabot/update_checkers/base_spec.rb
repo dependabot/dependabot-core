@@ -203,6 +203,47 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         it { is_expected.to be_falsey }
       end
     end
+
+    context "when all versions are being ignored" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:latest_version) { Gem::Version.new("1.6.0") }
+
+      it { is_expected.to be_truthy }
+
+      it "doesn't attempt to query for the latest version" do
+        expect(updater_instance).not_to receive(:latest_version)
+        up_to_date
+      end
+
+      it "logs that all versions are ignored" do
+        expect(Dependabot.logger).to receive(:info).with(
+          "All versions of business are being ignored"
+        )
+        up_to_date
+      end
+    end
+  end
+
+  describe "#all_versions_ignored?" do
+    subject(:all_versions_ignored) { updater_instance.all_versions_ignored? }
+
+    context "when no versions are ignored" do
+      let(:ignored_versions) { [] }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when all versions are ignored" do
+      let(:ignored_versions) { [">= 0"] }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when only some versions are ignored" do
+      let(:ignored_versions) { ["> 1.0"] }
+
+      it { is_expected.to be(false) }
+    end
   end
 
   describe "#can_update?" do
