@@ -139,8 +139,6 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
     before do
       allow(Time).to receive(:now).and_return(Time.parse("2024-01-01T17:30:00.000Z"))
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_shared_helpers_command_timeout).and_return(true)
 
       # stubbing the token request and devcontainer metadata
       stub_request(:get, "https://ghcr.io/token?scope=repository:codspace/versioning/foo:pull&service=ghcr.io")

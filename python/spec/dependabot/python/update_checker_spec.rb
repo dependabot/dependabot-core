@@ -82,9 +82,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
   end
 
   it_behaves_like "an update checker"
