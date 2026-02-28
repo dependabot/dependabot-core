@@ -15,19 +15,19 @@ module HTTParty
   mixes_in_class_methods ::HTTParty::ModuleInheritableAttributes::ClassMethods
 
   class << self
-    # source://httparty//lib/httparty.rb#679
+    # source://httparty//lib/httparty.rb#689
     def build_request(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#667
+    # source://httparty//lib/httparty.rb#677
     def copy(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#659
+    # source://httparty//lib/httparty.rb#669
     def delete(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#643
+    # source://httparty//lib/httparty.rb#653
     def get(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#671
+    # source://httparty//lib/httparty.rb#681
     def head(*args, &block); end
 
     # @private
@@ -35,27 +35,27 @@ module HTTParty
     # source://httparty//lib/httparty.rb#21
     def included(base); end
 
-    # source://httparty//lib/httparty.rb#663
+    # source://httparty//lib/httparty.rb#673
     def move(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#628
+    # source://httparty//lib/httparty.rb#638
     def normalize_base_uri(url); end
 
-    # source://httparty//lib/httparty.rb#675
+    # source://httparty//lib/httparty.rb#685
     def options(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#651
+    # source://httparty//lib/httparty.rb#661
     def patch(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#647
+    # source://httparty//lib/httparty.rb#657
     def post(*args, &block); end
 
-    # source://httparty//lib/httparty.rb#655
+    # source://httparty//lib/httparty.rb#665
     def put(*args, &block); end
   end
 end
 
-# source://httparty//lib/httparty.rb#639
+# source://httparty//lib/httparty.rb#649
 class HTTParty::Basement
   include ::HTTParty
   include ::HTTParty::ModuleInheritableAttributes
@@ -77,6 +77,9 @@ class HTTParty::Basement
   end
 end
 
+# source://httparty//lib/httparty/exceptions.rb#4
+HTTParty::COMMON_NETWORK_ERRORS = T.let(T.unsafe(nil), Array)
+
 # == Common Request Options
 # Request methods (get, post, patch, put, delete, head, options) all take a common set of options. These are:
 #
@@ -91,7 +94,7 @@ end
 # [:+local_host+:] Local address to bind to before connecting.
 # [:+local_port+:] Local port to bind to before connecting.
 # [:+body_stream+:] Allow streaming to a REST server to specify a body_stream.
-# [:+stream_body+:] Allow for streaming large files without loading them into memory.
+# [:+stream_body+:] When downloading with a block, avoids accumulating the response in memory. When uploading files, streams the request body to reduce memory usage (opt-in).
 # [:+multipart+:] Force content-type to be multipart
 #
 # There are also another set of options with names corresponding to various class methods. The methods in question are those that let you set a class-wide default, and the options override the defaults on a request-by-request basis. Those options are:
@@ -121,7 +124,7 @@ module HTTParty::ClassMethods
   #     base_uri 'twitter.com'
   #   end
   #
-  # source://httparty//lib/httparty.rb#107
+  # source://httparty//lib/httparty.rb#117
   def base_uri(uri = T.unsafe(nil)); end
 
   # Allows setting basic authentication username and password.
@@ -131,10 +134,10 @@ module HTTParty::ClassMethods
   #     basic_auth 'username', 'password'
   #   end
   #
-  # source://httparty//lib/httparty.rb#118
+  # source://httparty//lib/httparty.rb#128
   def basic_auth(u, p); end
 
-  # source://httparty//lib/httparty.rb#589
+  # source://httparty//lib/httparty.rb#599
   def build_request(http_method, path, options = T.unsafe(nil)); end
 
   # Allows setting of SSL ciphers to use.  This only works in Ruby 1.9+.
@@ -147,7 +150,7 @@ module HTTParty::ClassMethods
   #     ciphers "RC4-SHA"
   #   end
   #
-  # source://httparty//lib/httparty.rb#424
+  # source://httparty//lib/httparty.rb#434
   def ciphers(cipher_names); end
 
   # Allows setting a custom connection_adapter for the http connections
@@ -164,17 +167,17 @@ module HTTParty::ClassMethods
   #   end
   # @see HTTParty::ConnectionAdapter
   #
-  # source://httparty//lib/httparty.rb#499
+  # source://httparty//lib/httparty.rb#509
   def connection_adapter(custom_adapter = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @raise [ArgumentError]
   #
-  # source://httparty//lib/httparty.rb#241
+  # source://httparty//lib/httparty.rb#251
   def cookies(h = T.unsafe(nil)); end
 
   # Perform a COPY request to a path
   #
-  # source://httparty//lib/httparty.rb#561
+  # source://httparty//lib/httparty.rb#571
   def copy(path, options = T.unsafe(nil), &block); end
 
   # Set an output stream for debugging, defaults to $stderr.
@@ -185,12 +188,12 @@ module HTTParty::ClassMethods
   #     debug_output $stderr
   #   end
   #
-  # source://httparty//lib/httparty.rb#221
+  # source://httparty//lib/httparty.rb#231
   def debug_output(stream = T.unsafe(nil)); end
 
   # Returns the value of attribute default_options.
   #
-  # source://httparty//lib/httparty.rb#596
+  # source://httparty//lib/httparty.rb#606
   def default_options; end
 
   # Allows setting default parameters to be appended to each request.
@@ -203,7 +206,7 @@ module HTTParty::ClassMethods
   #
   # @raise [ArgumentError]
   #
-  # source://httparty//lib/httparty.rb#161
+  # source://httparty//lib/httparty.rb#171
   def default_params(h = T.unsafe(nil)); end
 
   # Allows setting a default timeout for all HTTP calls
@@ -214,12 +217,12 @@ module HTTParty::ClassMethods
   #     default_timeout 10
   #   end
   #
-  # source://httparty//lib/httparty.rb#174
+  # source://httparty//lib/httparty.rb#184
   def default_timeout(value); end
 
   # Perform a DELETE request to a path
   #
-  # source://httparty//lib/httparty.rb#551
+  # source://httparty//lib/httparty.rb#561
   def delete(path, options = T.unsafe(nil), &block); end
 
   # Allows setting digest authentication username and password.
@@ -229,7 +232,7 @@ module HTTParty::ClassMethods
   #     digest_auth 'username', 'password'
   #   end
   #
-  # source://httparty//lib/httparty.rb#128
+  # source://httparty//lib/httparty.rb#138
   def digest_auth(u, p); end
 
   # Do not send rails style query strings.
@@ -251,7 +254,7 @@ module HTTParty::ClassMethods
   #   disable_rails_query_string_format
   #   end
   #
-  # source://httparty//lib/httparty.rb#150
+  # source://httparty//lib/httparty.rb#160
   def disable_rails_query_string_format; end
 
   # Proceed to the location header when an HTTP response dictates a redirect.
@@ -264,7 +267,7 @@ module HTTParty::ClassMethods
   #   follow_redirects true
   #   end
   #
-  # source://httparty//lib/httparty.rb#255
+  # source://httparty//lib/httparty.rb#265
   def follow_redirects(value = T.unsafe(nil)); end
 
   # Allows setting the format with which to parse.
@@ -275,8 +278,18 @@ module HTTParty::ClassMethods
   #     format :json
   #   end
   #
-  # source://httparty//lib/httparty.rb#266
+  # source://httparty//lib/httparty.rb#276
   def format(f = T.unsafe(nil)); end
+
+  # Turns on or off the foul option.
+  #
+  #   class Foo
+  #     include HTTParty
+  #     foul true
+  #   end
+  #
+  # source://httparty//lib/httparty.rb#71
+  def foul(bool); end
 
   # Allows making a get request to a url.
   #
@@ -291,12 +304,12 @@ module HTTParty::ClassMethods
   #   # ie: http://foo.com/resource.json?limit=10
   #   Foo.get('http://foo.com/resource.json', query: {limit: 10})
   #
-  # source://httparty//lib/httparty.rb#520
+  # source://httparty//lib/httparty.rb#530
   def get(path, options = T.unsafe(nil), &block); end
 
   # Perform a HEAD request to a path
   #
-  # source://httparty//lib/httparty.rb#566
+  # source://httparty//lib/httparty.rb#576
   def head(path, options = T.unsafe(nil), &block); end
 
   # Allows setting HTTP headers to be used for each request.
@@ -306,7 +319,7 @@ module HTTParty::ClassMethods
   #     headers 'Accept' => 'text/html'
   #   end
   #
-  # source://httparty//lib/httparty.rb#231
+  # source://httparty//lib/httparty.rb#241
   def headers(h = T.unsafe(nil)); end
 
   # Allows setting http proxy information to be used
@@ -316,10 +329,10 @@ module HTTParty::ClassMethods
   #     http_proxy 'http://foo.com', 80, 'user', 'pass'
   #   end
   #
-  # source://httparty//lib/httparty.rb#93
+  # source://httparty//lib/httparty.rb#103
   def http_proxy(addr = T.unsafe(nil), port = T.unsafe(nil), user = T.unsafe(nil), pass = T.unsafe(nil)); end
 
-  # source://httparty//lib/httparty.rb#581
+  # source://httparty//lib/httparty.rb#591
   def lock(path, options = T.unsafe(nil), &block); end
 
   # Turns on logging
@@ -329,7 +342,7 @@ module HTTParty::ClassMethods
   #     logger Logger.new('http_logger'), :info, :apache
   #   end
   #
-  # source://httparty//lib/httparty.rb#71
+  # source://httparty//lib/httparty.rb#81
   def logger(logger, level = T.unsafe(nil), format = T.unsafe(nil)); end
 
   # Declare that you wish to maintain the chosen HTTP method across redirects.
@@ -345,17 +358,17 @@ module HTTParty::ClassMethods
   #   maintain_method_across_redirects true
   #   end
   #
-  # source://httparty//lib/httparty.rb#312
+  # source://httparty//lib/httparty.rb#322
   def maintain_method_across_redirects(value = T.unsafe(nil)); end
 
   # Perform a MKCOL request to a path
   #
-  # source://httparty//lib/httparty.rb#577
+  # source://httparty//lib/httparty.rb#587
   def mkcol(path, options = T.unsafe(nil), &block); end
 
   # Perform a MOVE request to a path
   #
-  # source://httparty//lib/httparty.rb#556
+  # source://httparty//lib/httparty.rb#566
   def move(path, options = T.unsafe(nil), &block); end
 
   # Declare whether or not to follow redirects.  When true, an
@@ -377,7 +390,7 @@ module HTTParty::ClassMethods
   #   end
   # @see HTTParty::ResponseError#response
   #
-  # source://httparty//lib/httparty.rb#295
+  # source://httparty//lib/httparty.rb#305
   def no_follow(value = T.unsafe(nil)); end
 
   # Allows setting a default open_timeout for all HTTP calls in seconds
@@ -387,12 +400,12 @@ module HTTParty::ClassMethods
   #     open_timeout 10
   #   end
   #
-  # source://httparty//lib/httparty.rb#185
+  # source://httparty//lib/httparty.rb#195
   def open_timeout(value); end
 
   # Perform an OPTIONS request to a path
   #
-  # source://httparty//lib/httparty.rb#572
+  # source://httparty//lib/httparty.rb#582
   def options(path, options = T.unsafe(nil), &block); end
 
   # Allows setting a custom parser for the response.
@@ -402,12 +415,12 @@ module HTTParty::ClassMethods
   #     parser Proc.new {|data| ...}
   #   end
   #
-  # source://httparty//lib/httparty.rb#464
+  # source://httparty//lib/httparty.rb#474
   def parser(custom_parser = T.unsafe(nil)); end
 
   # Perform a PATCH request to a path
   #
-  # source://httparty//lib/httparty.rb#541
+  # source://httparty//lib/httparty.rb#551
   def patch(path, options = T.unsafe(nil), &block); end
 
   # Allows setting a PEM file to be used
@@ -417,7 +430,7 @@ module HTTParty::ClassMethods
   #     pem File.read('/home/user/my.pem'), "optional password"
   #   end
   #
-  # source://httparty//lib/httparty.rb#340
+  # source://httparty//lib/httparty.rb#350
   def pem(pem_contents, password = T.unsafe(nil)); end
 
   # Allows setting a PKCS12 file to be used
@@ -427,7 +440,7 @@ module HTTParty::ClassMethods
   #     pkcs12 File.read('/home/user/my.p12'), "password"
   #   end
   #
-  # source://httparty//lib/httparty.rb#351
+  # source://httparty//lib/httparty.rb#361
   def pkcs12(p12_contents, password); end
 
   # Allows making a post request to a url.
@@ -443,12 +456,12 @@ module HTTParty::ClassMethods
   #   # which appends the parameters to the URI.
   #   Foo.post('http://foo.com/resources', query: {bar: 'baz'})
   #
-  # source://httparty//lib/httparty.rb#536
+  # source://httparty//lib/httparty.rb#546
   def post(path, options = T.unsafe(nil), &block); end
 
   # Perform a PUT request to a path
   #
-  # source://httparty//lib/httparty.rb#546
+  # source://httparty//lib/httparty.rb#556
   def put(path, options = T.unsafe(nil), &block); end
 
   # Override the way query strings are normalized.
@@ -479,7 +492,7 @@ module HTTParty::ClassMethods
   # @yield [Hash, String] query string
   # @yieldreturn [Array] an array that will later be joined with '&'
   #
-  # source://httparty//lib/httparty.rb#384
+  # source://httparty//lib/httparty.rb#394
   def query_string_normalizer(normalizer); end
 
   # Raises HTTParty::ResponseError if response's code matches this statuses
@@ -489,7 +502,7 @@ module HTTParty::ClassMethods
   #     raise_on [404, 500, '5[0-9]*']
   #   end
   #
-  # source://httparty//lib/httparty.rb#83
+  # source://httparty//lib/httparty.rb#93
   def raise_on(codes = T.unsafe(nil)); end
 
   # Allows setting a default read_timeout for all HTTP calls in seconds
@@ -499,7 +512,7 @@ module HTTParty::ClassMethods
   #     read_timeout 10
   #   end
   #
-  # source://httparty//lib/httparty.rb#196
+  # source://httparty//lib/httparty.rb#206
   def read_timeout(value); end
 
   # Declare that you wish to resend the full HTTP request across redirects,
@@ -516,7 +529,7 @@ module HTTParty::ClassMethods
   #   resend_on_redirect
   #   end
   #
-  # source://httparty//lib/httparty.rb#330
+  # source://httparty//lib/httparty.rb#340
   def resend_on_redirect(value = T.unsafe(nil)); end
 
   # Deactivate automatic decompression of the response body.
@@ -532,7 +545,7 @@ module HTTParty::ClassMethods
   #   skip_decompression
   #   end
   #
-  # source://httparty//lib/httparty.rb#411
+  # source://httparty//lib/httparty.rb#421
   def skip_decompression(value = T.unsafe(nil)); end
 
   # Allows setting an OpenSSL certificate authority file.  The file
@@ -548,7 +561,7 @@ module HTTParty::ClassMethods
   #     ssl_ca_file '/etc/ssl/certs/ca-certificates.crt'
   #   end
   #
-  # source://httparty//lib/httparty.rb#440
+  # source://httparty//lib/httparty.rb#450
   def ssl_ca_file(path); end
 
   # Allows setting an OpenSSL certificate authority path (directory).
@@ -562,7 +575,7 @@ module HTTParty::ClassMethods
   #     ssl_ca_path '/etc/ssl/certs/'
   #   end
   #
-  # source://httparty//lib/httparty.rb#454
+  # source://httparty//lib/httparty.rb#464
   def ssl_ca_path(path); end
 
   # Allows setting of SSL version to use. This only works in Ruby 1.9+.
@@ -573,10 +586,10 @@ module HTTParty::ClassMethods
   #     ssl_version :SSLv3
   #   end
   #
-  # source://httparty//lib/httparty.rb#395
+  # source://httparty//lib/httparty.rb#405
   def ssl_version(version); end
 
-  # source://httparty//lib/httparty.rb#585
+  # source://httparty//lib/httparty.rb#595
   def unlock(path, options = T.unsafe(nil), &block); end
 
   # Allows setting a custom URI adapter.
@@ -588,7 +601,7 @@ module HTTParty::ClassMethods
   #
   # @raise [ArgumentError]
   #
-  # source://httparty//lib/httparty.rb#479
+  # source://httparty//lib/httparty.rb#489
   def uri_adapter(uri_adapter); end
 
   # Allows setting a default write_timeout for all HTTP calls in seconds
@@ -599,26 +612,26 @@ module HTTParty::ClassMethods
   #     write_timeout 10
   #   end
   #
-  # source://httparty//lib/httparty.rb#208
+  # source://httparty//lib/httparty.rb#218
   def write_timeout(value); end
 
   private
 
-  # source://httparty//lib/httparty.rb#604
+  # source://httparty//lib/httparty.rb#614
   def ensure_method_maintained_across_redirects(options); end
 
-  # source://httparty//lib/httparty.rb#610
+  # source://httparty//lib/httparty.rb#620
   def perform_request(http_method, path, options, &block); end
 
-  # source://httparty//lib/httparty.rb#614
+  # source://httparty//lib/httparty.rb#624
   def process_cookies(options); end
 
-  # source://httparty//lib/httparty.rb#620
+  # source://httparty//lib/httparty.rb#630
   def validate_format; end
 
   # @raise [ArgumentError]
   #
-  # source://httparty//lib/httparty.rb#600
+  # source://httparty//lib/httparty.rb#610
   def validate_timeout_argument(timeout_type, value); end
 end
 
@@ -664,14 +677,6 @@ end
 # === Inherited methods
 # * :+clean_host+: Method used to sanitize host names
 #
-# @example log the uri and options
-#   class LoggingConnectionAdapter < HTTParty::ConnectionAdapter
-#   def connection
-#   puts uri
-#   puts options
-#   Net::HTTP.new(uri)
-#   end
-#   end
 # @example count number of http calls
 #   class CountingConnectionAdapter < HTTParty::ConnectionAdapter
 #   @@count = 0
@@ -683,6 +688,14 @@ end
 #   def connection
 #   self.count += 1
 #   super
+#   end
+#   end
+# @example log the uri and options
+#   class LoggingConnectionAdapter < HTTParty::ConnectionAdapter
+#   def connection
+#   puts uri
+#   puts options
+#   Net::HTTP.new(uri)
 #   end
 #   end
 #
@@ -840,13 +853,20 @@ HTTParty::Decompressor::SupportedEncodings = T.let(T.unsafe(nil), Hash)
 
 # Exception that is raised when request redirects and location header is present more than once
 #
-# source://httparty//lib/httparty/exceptions.rb#34
+# source://httparty//lib/httparty/exceptions.rb#58
 class HTTParty::DuplicateLocationHeader < ::HTTParty::ResponseError; end
 
 # @abstract Exceptions raised by HTTParty inherit from Error
 #
-# source://httparty//lib/httparty/exceptions.rb#5
+# source://httparty//lib/httparty/exceptions.rb#25
 class HTTParty::Error < ::StandardError; end
+
+# and if you don't like fun you should be using a different library.
+#
+# @abstract Exceptions raised by HTTParty inherit from this because it is funny
+#
+# source://httparty//lib/httparty/exceptions.rb#29
+class HTTParty::Foul < ::HTTParty::Error; end
 
 # source://httparty//lib/httparty/hash_conversions.rb#6
 module HTTParty::HashConversions
@@ -1174,6 +1194,11 @@ module HTTParty::ModuleInheritableAttributes::ClassMethods
   def mattr_inheritable(*args); end
 end
 
+# Exception that is raised when common network errors occur.
+#
+# source://httparty//lib/httparty/exceptions.rb#61
+class HTTParty::NetworkError < ::HTTParty::Foul; end
+
 # The default parser used by HTTParty, supports xml, json, html, csv and
 # plain text.
 #
@@ -1184,12 +1209,6 @@ end
 # utilize HTTParty::Parser as a superclass.
 #
 # @abstract Read the Custom Parsers section for more information.
-# @example Intercept the parsing for all formats
-#   class SimpleParser < HTTParty::Parser
-#   def parse
-#   perform_parsing
-#   end
-#   end
 # @example Add the atom format and parsing method to the default parser
 #   class AtomParsingIncluded < HTTParty::Parser
 #   SupportedFormats.merge!(
@@ -1198,6 +1217,12 @@ end
 #
 #   def atom
 #   perform_atom_parsing
+#   end
+#   end
+# @example Intercept the parsing for all formats
+#   class SimpleParser < HTTParty::Parser
+#   def parse
+#   perform_parsing
 #   end
 #   end
 # @example Only support the atom format
@@ -1305,7 +1330,7 @@ HTTParty::Parser::UTF8_BOM = T.let(T.unsafe(nil), String)
 # Exception that is raised when request has redirected too many times.
 # Calling {#response} returns the Net:HTTP response object.
 #
-# source://httparty//lib/httparty/exceptions.rb#31
+# source://httparty//lib/httparty/exceptions.rb#55
 class HTTParty::RedirectionTooDeep < ::HTTParty::ResponseError; end
 
 # source://httparty//lib/httparty/request/multipart_boundary.rb#6
@@ -1315,19 +1340,19 @@ class HTTParty::Request
   # source://httparty//lib/httparty/request.rb#61
   def initialize(http_method, path, o = T.unsafe(nil)); end
 
-  # source://httparty//lib/httparty/request.rb#187
+  # source://httparty//lib/httparty/request.rb#193
   def _dump(_level); end
 
-  # source://httparty//lib/httparty/request.rb#128
+  # source://httparty//lib/httparty/request.rb#130
   def base_uri; end
 
-  # source://httparty//lib/httparty/request.rb#146
+  # source://httparty//lib/httparty/request.rb#148
   def connection_adapter; end
 
-  # source://httparty//lib/httparty/request.rb#138
+  # source://httparty//lib/httparty/request.rb#140
   def format; end
 
-  # source://httparty//lib/httparty/request.rb#176
+  # source://httparty//lib/httparty/request.rb#182
   def handle_unauthorized(&block); end
 
   # Returns the value of attribute http_method.
@@ -1378,7 +1403,7 @@ class HTTParty::Request
   # source://httparty//lib/httparty/request.rb#58
   def options=(_arg0); end
 
-  # source://httparty//lib/httparty/request.rb#142
+  # source://httparty//lib/httparty/request.rb#144
   def parser; end
 
   # Returns the value of attribute path.
@@ -1389,10 +1414,10 @@ class HTTParty::Request
   # source://httparty//lib/httparty/request.rb#79
   def path=(uri); end
 
-  # source://httparty//lib/httparty/request.rb#150
+  # source://httparty//lib/httparty/request.rb#152
   def perform(&block); end
 
-  # source://httparty//lib/httparty/request.rb#183
+  # source://httparty//lib/httparty/request.rb#189
   def raw_body; end
 
   # Returns the value of attribute redirect.
@@ -1415,116 +1440,121 @@ class HTTParty::Request
 
   private
 
-  # source://httparty//lib/httparty/request.rb#292
+  # source://httparty//lib/httparty/request.rb#307
   def assume_utf16_is_big_endian; end
 
-  # source://httparty//lib/httparty/request.rb#380
+  # source://httparty//lib/httparty/request.rb#395
   def capture_cookies(response); end
 
-  # source://httparty//lib/httparty/request.rb#348
+  # source://httparty//lib/httparty/request.rb#363
   def check_duplicate_location_header; end
 
   # Some Web Application Firewalls reject incoming GET requests that have a body
   # if we redirect, and the resulting verb is GET then we will clear the body that
   # may be left behind from the initiating request
   #
-  # source://httparty//lib/httparty/request.rb#375
+  # source://httparty//lib/httparty/request.rb#390
   def clear_body; end
 
-  # source://httparty//lib/httparty/request.rb#200
+  # source://httparty//lib/httparty/request.rb#206
   def credentials; end
 
-  # source://httparty//lib/httparty/request.rb#421
+  # source://httparty//lib/httparty/request.rb#436
   def decompress(body, encoding); end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#261
+  # source://httparty//lib/httparty/request.rb#276
   def decompress_content?; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#257
+  # source://httparty//lib/httparty/request.rb#272
   def digest_auth?; end
 
-  # source://httparty//lib/httparty/request.rb#425
+  # source://httparty//lib/httparty/request.rb#440
   def encode_text(text, content_type); end
 
   # Uses the HTTP Content-Type header to determine the format of the
   # response It compares the MIME type returned to the types stored in the
   # SupportedFormats hash
   #
-  # source://httparty//lib/httparty/request.rb#393
+  # source://httparty//lib/httparty/request.rb#408
   def format_from_mimetype(mimetype); end
 
-  # source://httparty//lib/httparty/request.rb#341
+  # source://httparty//lib/httparty/request.rb#356
   def handle_host_redirection; end
 
-  # source://httparty//lib/httparty/request.rb#317
+  # source://httparty//lib/httparty/request.rb#332
   def handle_redirection(&block); end
 
-  # source://httparty//lib/httparty/request.rb#296
+  # source://httparty//lib/httparty/request.rb#311
   def handle_response(raw_body, &block); end
 
-  # source://httparty//lib/httparty/request.rb#196
+  # source://httparty//lib/httparty/request.rb#202
   def http; end
 
-  # source://httparty//lib/httparty/request.rb#212
+  # source://httparty//lib/httparty/request.rb#218
   def normalize_query(query); end
 
-  # source://httparty//lib/httparty/request.rb#368
+  # source://httparty//lib/httparty/request.rb#383
   def parse_response(body); end
 
-  # source://httparty//lib/httparty/request.rb#208
+  # source://httparty//lib/httparty/request.rb#214
   def password; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#409
+  # source://httparty//lib/httparty/request.rb#424
   def post?; end
 
-  # source://httparty//lib/httparty/request.rb#277
+  # source://httparty//lib/httparty/request.rb#292
   def query_string(uri); end
 
-  # source://httparty//lib/httparty/request.rb#220
+  # source://httparty//lib/httparty/request.rb#226
   def query_string_normalizer; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#269
+  # source://httparty//lib/httparty/request.rb#284
   def response_has_digest_auth_challenge?; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#359
+  # source://httparty//lib/httparty/request.rb#374
   def response_redirects?; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#265
+  # source://httparty//lib/httparty/request.rb#280
   def response_unauthorized?; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request.rb#355
+  # source://httparty//lib/httparty/request.rb#370
   def send_authorization_header?; end
 
-  # source://httparty//lib/httparty/request.rb#413
+  # source://httparty//lib/httparty/request.rb#428
   def set_basic_auth_from_uri; end
 
-  # source://httparty//lib/httparty/request.rb#273
+  # source://httparty//lib/httparty/request.rb#288
   def setup_digest_auth; end
 
-  # source://httparty//lib/httparty/request.rb#224
+  # source://httparty//lib/httparty/request.rb#230
   def setup_raw_request; end
 
-  # source://httparty//lib/httparty/request.rb#204
+  # source://httparty//lib/httparty/request.rb#210
   def username; end
 
   # @raise [HTTParty::RedirectionTooDeep.new(last_response)]
   #
-  # source://httparty//lib/httparty/request.rb#399
+  # source://httparty//lib/httparty/request.rb#414
   def validate; end
+
+  # @raise [UnsafeURIError]
+  #
+  # source://httparty//lib/httparty/request.rb#448
+  def validate_uri_safety!(new_uri); end
 
   class << self
     # source://httparty//lib/httparty/request.rb#49
@@ -1532,73 +1562,84 @@ class HTTParty::Request
   end
 end
 
-# source://httparty//lib/httparty/request/body.rb#7
+# source://httparty//lib/httparty/request/body.rb#8
 class HTTParty::Request::Body
   # @return [Body] a new instance of Body
   #
-  # source://httparty//lib/httparty/request/body.rb#11
+  # source://httparty//lib/httparty/request/body.rb#12
   def initialize(params, query_string_normalizer: T.unsafe(nil), force_multipart: T.unsafe(nil)); end
 
-  # source://httparty//lib/httparty/request/body.rb#25
+  # source://httparty//lib/httparty/request/body.rb#26
   def boundary; end
 
-  # source://httparty//lib/httparty/request/body.rb#17
+  # source://httparty//lib/httparty/request/body.rb#18
   def call; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request/body.rb#29
+  # source://httparty//lib/httparty/request/body.rb#30
   def multipart?; end
+
+  # source://httparty//lib/httparty/request/body.rb#43
+  def prepared_parts; end
+
+  # @return [Boolean]
+  #
+  # source://httparty//lib/httparty/request/body.rb#34
+  def streaming?; end
+
+  # source://httparty//lib/httparty/request/body.rb#38
+  def to_stream; end
 
   private
 
-  # source://httparty//lib/httparty/request/body.rb#83
+  # source://httparty//lib/httparty/request/body.rb#100
   def content_body(object); end
 
-  # source://httparty//lib/httparty/request/body.rb#92
+  # source://httparty//lib/httparty/request/body.rb#111
   def content_type(object); end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request/body.rb#71
+  # source://httparty//lib/httparty/request/body.rb#88
   def file?(object); end
 
-  # source://httparty//lib/httparty/request/body.rb#99
+  # source://httparty//lib/httparty/request/body.rb#118
   def file_name(object); end
 
   # Returns the value of attribute force_multipart.
   #
-  # source://httparty//lib/httparty/request/body.rb#103
+  # source://httparty//lib/httparty/request/body.rb#122
   def force_multipart; end
 
-  # source://httparty//lib/httparty/request/body.rb#42
+  # source://httparty//lib/httparty/request/body.rb#59
   def generate_multipart; end
 
   # @return [Boolean]
   #
-  # source://httparty//lib/httparty/request/body.rb#61
+  # source://httparty//lib/httparty/request/body.rb#78
   def has_file?(value); end
 
-  # source://httparty//lib/httparty/request/body.rb#75
+  # source://httparty//lib/httparty/request/body.rb#92
   def normalize_query(query); end
 
   # Returns the value of attribute params.
   #
-  # source://httparty//lib/httparty/request/body.rb#103
+  # source://httparty//lib/httparty/request/body.rb#122
   def params; end
 
   # Returns the value of attribute query_string_normalizer.
   #
-  # source://httparty//lib/httparty/request/body.rb#103
+  # source://httparty//lib/httparty/request/body.rb#122
   def query_string_normalizer; end
 end
 
 # https://html.spec.whatwg.org/#multipart-form-data
 #
-# source://httparty//lib/httparty/request/body.rb#36
+# source://httparty//lib/httparty/request/body.rb#53
 HTTParty::Request::Body::MULTIPART_FORM_DATA_REPLACEMENT_TABLE = T.let(T.unsafe(nil), Hash)
 
-# source://httparty//lib/httparty/request/body.rb#8
+# source://httparty//lib/httparty/request/body.rb#9
 HTTParty::Request::Body::NEWLINE = T.let(T.unsafe(nil), String)
 
 # source://httparty//lib/httparty/request.rb#36
@@ -1614,6 +1655,66 @@ end
 
 # source://httparty//lib/httparty/request.rb#24
 HTTParty::Request::NON_RAILS_QUERY_STRING_NORMALIZER = T.let(T.unsafe(nil), Proc)
+
+# source://httparty//lib/httparty/request/streaming_multipart_body.rb#5
+class HTTParty::Request::StreamingMultipartBody
+  # @return [StreamingMultipartBody] a new instance of StreamingMultipartBody
+  #
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#9
+  def initialize(parts, boundary); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#24
+  def read(length = T.unsafe(nil), outbuf = T.unsafe(nil)); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#38
+  def rewind; end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#20
+  def size; end
+
+  private
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#131
+  def build_part_header(key, value, is_file); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#145
+  def calculate_size; end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#156
+  def content_size(value, is_file); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#170
+  def content_type(object); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#177
+  def file_name(object); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#52
+  def read_all(outbuf); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#107
+  def read_body_chunk(value, is_file, max_length); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#59
+  def read_chunk(max_length); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#123
+  def read_file_chunk(file, max_length); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#87
+  def read_header_chunk(key, value, is_file, max_length); end
+
+  # source://httparty//lib/httparty/request/streaming_multipart_body.rb#181
+  def replacement_table; end
+end
+
+# 64 KB chunks
+#
+# source://httparty//lib/httparty/request/streaming_multipart_body.rb#7
+HTTParty::Request::StreamingMultipartBody::CHUNK_SIZE = T.let(T.unsafe(nil), Integer)
+
+# source://httparty//lib/httparty/request/streaming_multipart_body.rb#6
+HTTParty::Request::StreamingMultipartBody::NEWLINE = T.let(T.unsafe(nil), String)
 
 # source://httparty//lib/httparty/request.rb#7
 HTTParty::Request::SupportedHTTPMethods = T.let(T.unsafe(nil), Array)
@@ -1943,14 +2044,14 @@ end
 #
 # @abstract Exceptions which inherit from ResponseError contain the Net::HTTP
 #
-# source://httparty//lib/httparty/exceptions.rb#15
-class HTTParty::ResponseError < ::HTTParty::Error
+# source://httparty//lib/httparty/exceptions.rb#39
+class HTTParty::ResponseError < ::HTTParty::Foul
   # Instantiate an instance of ResponseError with a Net::HTTPResponse object
   #
   # @param [Net::HTTPResponse]
   # @return [ResponseError] a new instance of ResponseError
   #
-  # source://httparty//lib/httparty/exceptions.rb#23
+  # source://httparty//lib/httparty/exceptions.rb#47
   def initialize(response); end
 
   # Returns the response of the last request
@@ -1958,7 +2059,7 @@ class HTTParty::ResponseError < ::HTTParty::Error
   #
   # @return [Net::HTTPResponse] A subclass of Net::HTTPResponse, e.g.
   #
-  # source://httparty//lib/httparty/exceptions.rb#19
+  # source://httparty//lib/httparty/exceptions.rb#43
   def response; end
 end
 
@@ -2030,15 +2131,21 @@ class HTTParty::TextEncoder
   def encoded_text; end
 end
 
+# Exception that is raised when an absolute URI is used that doesn't match
+# the configured base_uri, which could indicate an SSRF attempt.
+#
+# source://httparty//lib/httparty/exceptions.rb#65
+class HTTParty::UnsafeURIError < ::HTTParty::Foul; end
+
 # Exception raised when you attempt to set a non-existent format
 #
-# source://httparty//lib/httparty/exceptions.rb#8
-class HTTParty::UnsupportedFormat < ::HTTParty::Error; end
+# source://httparty//lib/httparty/exceptions.rb#32
+class HTTParty::UnsupportedFormat < ::HTTParty::Foul; end
 
 # Exception raised when using a URI scheme other than HTTP or HTTPS
 #
-# source://httparty//lib/httparty/exceptions.rb#11
-class HTTParty::UnsupportedURIScheme < ::HTTParty::Error; end
+# source://httparty//lib/httparty/exceptions.rb#35
+class HTTParty::UnsupportedURIScheme < ::HTTParty::Foul; end
 
 # source://httparty//lib/httparty/utils.rb#4
 module HTTParty::Utils
