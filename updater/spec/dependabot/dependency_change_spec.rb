@@ -102,7 +102,8 @@ RSpec.describe Dependabot::DependencyChange do
       allow(job).to receive_messages(
         source: github_source,
         credentials: job_credentials,
-        commit_message_options: commit_message_options
+        commit_message_options: commit_message_options,
+        security_fix?: false
       )
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
@@ -115,6 +116,7 @@ RSpec.describe Dependabot::DependencyChange do
           dependencies: updated_dependencies,
           credentials: job_credentials,
           commit_message_options: commit_message_options,
+          vulnerabilities_fixed: {},
           dependency_group: nil,
           pr_message_encoding: nil,
           pr_message_max_length: 65_535,
@@ -143,6 +145,7 @@ RSpec.describe Dependabot::DependencyChange do
             dependencies: updated_dependencies,
             credentials: job_credentials,
             commit_message_options: commit_message_options,
+            vulnerabilities_fixed: {},
             dependency_group: group,
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
@@ -151,6 +154,33 @@ RSpec.describe Dependabot::DependencyChange do
           )
 
         expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")
+      end
+    end
+
+    context "when a dependency is a security fix" do
+      before do
+        allow(job).to receive(:security_fix?) do |dep|
+          dep.name == "business"
+        end
+      end
+
+      it "includes the dependency in vulnerabilities_fixed hash" do
+        expect(Dependabot::PullRequestCreator::MessageBuilder)
+          .to receive(:new).with(
+            source: github_source,
+            files: updated_dependency_files,
+            dependencies: updated_dependencies,
+            credentials: job_credentials,
+            commit_message_options: commit_message_options,
+            vulnerabilities_fixed: { "business" => [Dependabot::DependencyChange::SECURITY_FIX_PLACEHOLDER] },
+            dependency_group: nil,
+            pr_message_encoding: nil,
+            pr_message_max_length: 65_535,
+            ignore_conditions: [],
+            notices: []
+          )
+
+        expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
       end
     end
   end
