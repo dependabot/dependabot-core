@@ -449,5 +449,152 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         )
       end
     end
+
+    context "when registry does not serve a public key and none is provided" do
+      let(:mixfile_fixture_name) { "private_repo" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jason",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+      let(:lockfile_fixture_name) { "private_repo" }
+
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_repository",
+            "repo" => "my-jfrog-1",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => "https://example.com"
+          }
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "get_updated_lockfile"))
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: 'Registry "my-jfrog-1" does not serve a public key and none was provided in credentials',
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises a helpful error" do
+        error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+        expect { updated_lockfile_content }
+          .to raise_error(error_class) do |error|
+            expect(error.source).to eq("my-jfrog-1")
+          end
+      end
+    end
+
+    context "when embedded public key fingerprint does not match" do
+      let(:mixfile_fixture_name) { "private_repo" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jason",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+      let(:lockfile_fixture_name) { "private_repo" }
+
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_repository",
+            "repo" => "dependabot",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => "https://example.com",
+            "public_key" => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----",
+            "public_key_fingerprint" => "SHA256:wrong"
+          }
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "get_updated_lockfile"))
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: 'Embedded public key fingerprint mismatch for repo "dependabot"',
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises a helpful error" do
+        error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+        expect { updated_lockfile_content }
+          .to raise_error(error_class) do |error|
+            expect(error.source).to eq("dependabot")
+          end
+      end
+    end
+
+    context "when embedded public key PEM is invalid" do
+      let(:mixfile_fixture_name) { "private_repo" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jason",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+      let(:lockfile_fixture_name) { "private_repo" }
+
+      let(:credentials) do
+        Dependabot::Credential.new(
+          {
+            "type" => "hex_repository",
+            "repo" => "my-repo-2",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => "https://example.com",
+            "public_key" => "not-valid-pem-data"
+          }
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .with(hash_including(function: "get_updated_lockfile"))
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: 'Invalid PEM public key for repo "my-repo-2"',
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises a helpful error" do
+        error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+        expect { updated_lockfile_content }
+          .to raise_error(error_class) do |error|
+            expect(error.source).to eq("my-repo-2")
+          end
+      end
+    end
   end
 end

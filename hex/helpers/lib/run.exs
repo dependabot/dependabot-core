@@ -96,12 +96,30 @@ defmodule DependencyHelper do
     set_credentials(tail)
   end
 
-  defp set_credentials(["hex_repository", repo, url, auth_key, fingerprint | tail]) do
+  defp set_credentials(["hex_repository", repo, url, auth_key, fingerprint, public_key_pem | tail]) do
     case fetch_public_key(repo, url, auth_key, fingerprint) do
       {:ok, public_key} ->
         update_repos(repo, %{auth_key: auth_key, public_key: public_key, url: url})
 
         set_credentials(tail)
+
+      {:error, :no_public_key} ->
+        # Public key endpoint not available (e.g. JFrog Artifactory returns 501).
+        # Use embedded public key from credential if provided, otherwise error.
+        cond do
+          public_key_pem == "" ->
+            handle_result({:error, "Registry \"#{repo}\" does not serve a public key and none was provided in credentials"})
+
+          not valid_pem?(public_key_pem) ->
+            handle_result({:error, "Invalid PEM public key for repo \"#{repo}\""})
+
+          not public_key_matches?(public_key_pem, fingerprint) ->
+            handle_result({:error, "Embedded public key fingerprint mismatch for repo \"#{repo}\""})
+
+          true ->
+            update_repos(repo, %{auth_key: auth_key, public_key: public_key_pem, url: url})
+            set_credentials(tail)
+        end
 
       error ->
         handle_result(error)
@@ -128,6 +146,17 @@ defmodule DependencyHelper do
           {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
         end
 
+      {:ok, {401, _, _}} ->
+        {:error, "Downloading public key for repo \"#{repo}\" failed with code: 401"}
+
+      {:ok, {403, _, _}} ->
+        {:error, "Downloading public key for repo \"#{repo}\" failed with code: 403"}
+
+      {:ok, {code, _, _}} when code in [404, 501] ->
+        # Some registries (e.g. JFrog Artifactory) return 404 or 501 for the public_key endpoint.
+        # Signal caller to use embedded public key if available.
+        {:error, :no_public_key}
+
       {:ok, {code, _, _}} ->
         {:error, "Downloading public key for repo \"#{repo}\" failed with code: #{inspect(code)}"}
 
@@ -136,6 +165,21 @@ defmodule DependencyHelper do
     end
   end
 
+  defp valid_pem?(pem) do
+    try do
+      case :public_key.pem_decode(pem) do
+        [_ | _] -> true
+        _ -> false
+      end
+    rescue
+      _ -> false
+    end
+  end
+
+  # When no fingerprint is provided, any key is accepted. This is intentional:
+  # some registries (e.g. JFrog) don't expose a fingerprint, so operators may
+  # supply only the public key. Verification still happens at the Hex protocol
+  # layer when packages are fetched.
   defp public_key_matches?(_public_key, _fingerprint = ""), do: true
 
   defp public_key_matches?(public_key, fingerprint) do

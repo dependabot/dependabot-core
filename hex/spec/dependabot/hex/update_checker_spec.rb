@@ -707,6 +707,132 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
         end
       end
+
+      context "when registry does not serve a public key and none is provided" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "my-jfrog-1",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Registry "my-jfrog-1" does not serve a public key and none was provided in credentials',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+          expect { latest_resolvable_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("my-jfrog-1")
+            end
+        end
+      end
+
+      context "when embedded public key fingerprint does not match" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url,
+              "public_key" => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----",
+              "public_key_fingerprint" => "SHA256:wrong"
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Embedded public key fingerprint mismatch for repo "dependabot"',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+          expect { latest_resolvable_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
+      context "when embedded public key PEM is invalid" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "my-repo-2",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url,
+              "public_key" => "not-valid-pem-data"
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Invalid PEM public key for repo "my-repo-2"',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+
+          expect { latest_resolvable_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("my-repo-2")
+            end
+        end
+      end
+
+      context "when registry does not serve a public key but one is embedded in credentials" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url,
+              "public_key" => "-----BEGIN PUBLIC KEY-----\nMIIBIjAN...\n-----END PUBLIC KEY-----"
+            }
+          )]
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_return("1.1.0")
+        end
+
+        it "returns the expected version using the embedded public key" do
+          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
+      end
     end
 
     context "with a dependency with a git source" do
