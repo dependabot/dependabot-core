@@ -495,4 +495,156 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       end
     end
   end
+
+  describe "#attestation_changes" do
+    subject(:attestation_changes) { finder.attestation_changes }
+
+    let(:dependency_name) { "luigi" }
+    let(:version) { "2.6.0" }
+    let(:previous_version) { "2.5.0" }
+    let(:version_url) { "https://pypi.org/pypi/#{dependency_name}/#{version}/json" }
+    let(:previous_version_url) { "https://pypi.org/pypi/#{dependency_name}/#{previous_version}/json" }
+    let(:provenance_response) { fixture("pypi", "pypi_provenance_response.json") }
+    let(:provenance_url) do
+      "https://pypi.org/integrity/#{dependency_name}/#{version}/luigi-#{version}.tar.gz/provenance"
+    end
+    let(:previous_provenance_url) do
+      "https://pypi.org/integrity/#{dependency_name}/#{previous_version}/luigi-#{previous_version}.tar.gz/provenance"
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: version,
+        previous_version: previous_version,
+        requirements: [{
+          file: "requirements.txt",
+          requirement: "==#{version}",
+          groups: [],
+          source: nil
+        }],
+        previous_requirements: [{
+          file: "requirements.txt",
+          requirement: "==#{previous_version}",
+          groups: [],
+          source: nil
+        }],
+        package_manager: "pip"
+      )
+    end
+
+    before do
+      stub_request(:get, version_url).to_return(
+        status: 200,
+        body: { "info" => { "name" => dependency_name, "version" => version },
+                "urls" => [{ "filename" => "luigi-#{version}.tar.gz", "packagetype" => "sdist" }] }.to_json
+      )
+      stub_request(:get, previous_version_url).to_return(
+        status: 200,
+        body: { "info" => { "name" => dependency_name, "version" => previous_version },
+                "urls" => [{ "filename" => "luigi-#{previous_version}.tar.gz", "packagetype" => "sdist" }] }.to_json
+      )
+    end
+
+    context "when there is no previous version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            file: "requirements.txt",
+            requirement: "==#{version}",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when attestation is lost between versions" do
+      before do
+        stub_request(:get, provenance_url)
+          .to_return(status: 404, body: '{"message":"No provenance available for luigi-2.6.0.tar.gz"}')
+        stub_request(:get, previous_provenance_url)
+          .to_return(status: 200, body: provenance_response)
+      end
+
+      it "returns a warning about lost attestation" do
+        expect(attestation_changes).to eq(
+          "This version has no provenance attestation, while the previous version " \
+          "(2.5.0) was attested. Review the " \
+          "[package versions](https://pypi.org/project/luigi/#history) " \
+          "before updating."
+        )
+      end
+    end
+
+    context "when both versions have attestation" do
+      before do
+        stub_request(:get, provenance_url)
+          .to_return(status: 200, body: provenance_response)
+        stub_request(:get, previous_provenance_url)
+          .to_return(status: 200, body: provenance_response)
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when neither version has attestation" do
+      before do
+        stub_request(:get, provenance_url)
+          .to_return(status: 404, body: '{"message":"No provenance available for luigi-2.6.0.tar.gz"}')
+        stub_request(:get, previous_provenance_url)
+          .to_return(status: 404, body: '{"message":"No provenance available for luigi-2.5.0.tar.gz"}')
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when attestation is gained" do
+      before do
+        stub_request(:get, provenance_url)
+          .to_return(status: 200, body: provenance_response)
+        stub_request(:get, previous_provenance_url)
+          .to_return(status: 404, body: '{"message":"No provenance available for luigi-2.5.0.tar.gz"}')
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when using a private index that replaces the base" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "python_index",
+            "index-url" => "https://private.registry.com/pypi/",
+            "replaces-base" => true
+          }
+        )]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the version listing has no sdist entry" do
+      before do
+        stub_request(:get, version_url).to_return(
+          status: 200,
+          body: { "info" => { "name" => dependency_name, "version" => version },
+                  "urls" => [{ "filename" => "luigi-#{version}-py3-none-any.whl",
+                               "packagetype" => "bdist_wheel" }] }.to_json
+        )
+        stub_request(:get, previous_version_url).to_return(
+          status: 200,
+          body: { "info" => { "name" => dependency_name, "version" => previous_version },
+                  "urls" => [{ "filename" => "luigi-#{previous_version}-py3-none-any.whl",
+                               "packagetype" => "bdist_wheel" }] }.to_json
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+  end
 end
