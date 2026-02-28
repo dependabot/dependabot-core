@@ -47,7 +47,7 @@ gem "opentelemetry-instrumentation-net_http", "~> 0.23"
 gem "opentelemetry-logs-sdk", "~> 0.4"
 gem "opentelemetry-metrics-sdk", "~> 0.12"
 gem "opentelemetry-sdk", "~> 1.8"
-gem "sentry-opentelemetry", "~> 5.23"
+gem "sentry-opentelemetry", "~> 5.28"
 gem "sentry-ruby", "~> 5.23"
 gem "terminal-table", "~> 3.0"
 
