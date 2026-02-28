@@ -24,6 +24,7 @@ module Dependabot
       require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
       require_relative "message_builder/link_and_mention_sanitizer"
+      require_relative "message_builder/message_builder_utils"
       require_relative "pr_name_prefixer"
 
       sig { returns(Dependabot::Source) }
@@ -130,8 +131,11 @@ module Dependabot
       sig { returns(String) }
       def pr_name
         name = dependency_group ? group_pr_name : solo_pr_name
-        name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
-        "#{pr_name_prefix}#{name}"
+        MessageBuilderUtils.build_pr_title(
+          title: name,
+          prefix: pr_name_prefix,
+          capitalize_first_word: pr_name_prefixer.capitalize_first_word?
+        )
       end
 
       sig { returns(String) }
