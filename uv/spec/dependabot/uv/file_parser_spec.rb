@@ -946,5 +946,34 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
+
+    context "with local path dependencies" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_path_dependencies.toml")
+        )
+      end
+
+      it "excludes dependencies with local path sources" do
+        dependencies = parser.parse
+        dependency_names = dependencies.map(&:name)
+
+        # protos has a path source and should be excluded
+        expect(dependency_names).not_to include("protos")
+
+        # requests is a normal dependency and should be included
+        expect(dependency_names).to include("requests")
+      end
+
+      it "only includes non-path dependencies" do
+        dependencies = parser.parse.select(&:top_level?)
+
+        # Should only have requests, not the local path dependency
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.name).to eq("requests")
+      end
+    end
   end
 end
