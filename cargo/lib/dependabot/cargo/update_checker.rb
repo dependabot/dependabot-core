@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "toml-rb"
 
 require "dependabot/git_commit_checker"
 require "dependabot/requirements_update_strategy"
@@ -137,8 +138,34 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def library?
-        # If it has a lockfile, treat it as an application. Otherwise treat it
-        # as a library.
+        @library = T.let(@library, T.nilable(T::Boolean))
+        return @library unless @library.nil?
+
+        manifest_result = library_from_manifest
+        @library = manifest_result.nil? ? no_lockfile? : manifest_result
+      end
+
+      sig { returns(T.nilable(T::Boolean)) }
+      def library_from_manifest
+        cargo_toml = dependency_files.find { |f| f.name.end_with?("Cargo.toml") && !f.support_file }
+        return unless cargo_toml&.content
+
+        parsed = TomlRB.parse(T.must(cargo_toml.content))
+
+        # Virtual workspace (no [package]) is not a library
+        return false if parsed.key?("workspace") && !parsed.key?("package")
+
+        # Explicit targets take priority over the lockfile heuristic
+        return true if parsed.key?("lib")
+        return false if parsed.key?("bin")
+
+        nil # No explicit targets, fall back to lockfile heuristic
+      rescue TomlRB::ParseError
+        nil
+      end
+
+      sig { returns(T::Boolean) }
+      def no_lockfile?
         dependency_files.none? { |f| f.name == "Cargo.lock" }
       end
 

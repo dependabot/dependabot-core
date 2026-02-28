@@ -511,6 +511,71 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     end
   end
 
+  describe "#requirements_update_strategy" do
+    subject(:strategy) { checker.requirements_update_strategy }
+
+    context "with no explicit strategy and a lockfile present" do
+      it "defaults to BumpVersions for implicit applications" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+      end
+    end
+
+    context "with no explicit strategy and no lockfile" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("manifests", manifest_fixture_name)
+          )
+        ]
+      end
+
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "with an explicit [lib] section and a lockfile" do
+      let(:manifest_fixture_name) { "library" }
+
+      it "detects as library and uses BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "with an explicit [[bin]] section and a lockfile" do
+      let(:manifest_fixture_name) { "binary" }
+
+      it "detects as application and uses BumpVersions" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+      end
+    end
+
+    context "with both [lib] and [[bin]] sections and a lockfile" do
+      let(:manifest_fixture_name) { "library_and_binary" }
+
+      it "detects as library and uses BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "with a virtual workspace root" do
+      let(:manifest_fixture_name) { "virtual_workspace_root" }
+
+      it "detects as application and uses BumpVersions" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersions)
+      end
+    end
+
+    context "when an explicit strategy is passed" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+      it "honours the explicit strategy" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
+      end
+    end
+  end
+
   describe "with cooldown options" do
     let(:update_cooldown) do
       Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
