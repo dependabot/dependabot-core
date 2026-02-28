@@ -8,7 +8,7 @@
     // Use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon.
     "args": {
       "VARIANT": "ubuntu-22.04"
-    }
+    },"ghcr.io/devcontainers-contrib/features/amplify-cli:2": {},
   },
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
