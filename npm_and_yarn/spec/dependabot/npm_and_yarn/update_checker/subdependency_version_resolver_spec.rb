@@ -124,6 +124,42 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       # NOTE: The latest version is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+
+      context "when outside a pnpm workspace" do
+        it "passes --ignore-workspace to the pnpm update command" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+            pnpm_outside_workspace?: true,
+            run_pnpm_command: ""
+          )
+
+          Dir.mktmpdir do |dir|
+            FileUtils.touch(File.join(dir, "pnpm-lock.yaml"))
+            resolver.send(:run_pnpm_updater, dir, "pnpm-lock.yaml")
+          end
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+            .with("update acorn --lockfile-only --ignore-workspace",
+                  fingerprint: "update <dependency_name> --lockfile-only --ignore-workspace")
+        end
+      end
+
+      context "when inside a pnpm workspace" do
+        it "does not pass --ignore-workspace to the pnpm update command" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+            pnpm_outside_workspace?: false,
+            run_pnpm_command: ""
+          )
+
+          Dir.mktmpdir do |dir|
+            FileUtils.touch(File.join(dir, "pnpm-lock.yaml"))
+            resolver.send(:run_pnpm_updater, dir, "pnpm-lock.yaml")
+          end
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command)
+            .with("update acorn --lockfile-only",
+                  fingerprint: "update <dependency_name> --lockfile-only")
+        end
+      end
     end
 
     context "with a npm8 package-lock.json" do

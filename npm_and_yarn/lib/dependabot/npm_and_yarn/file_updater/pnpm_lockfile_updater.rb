@@ -175,17 +175,30 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          Helpers.run_pnpm_command(
-            "update #{dependency_updates}  --lockfile-only --no-save -r",
-            fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
-          )
+          if outside_workspace?
+            Helpers.run_pnpm_command(
+              "update #{dependency_updates} --lockfile-only --no-save --ignore-workspace",
+              fingerprint: "update <dependency_updates> --lockfile-only --no-save --ignore-workspace"
+            )
+          else
+            Helpers.run_pnpm_command(
+              "update #{dependency_updates} --lockfile-only --no-save -r",
+              fingerprint: "update <dependency_updates> --lockfile-only --no-save -r"
+            )
+          end
         end
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          Helpers.run_pnpm_command(
-            "install --lockfile-only"
-          )
+          if outside_workspace?
+            Helpers.run_pnpm_command(
+              "install --lockfile-only --ignore-workspace"
+            )
+          else
+            Helpers.run_pnpm_command(
+              "install --lockfile-only"
+            )
+          end
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -496,6 +509,11 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def npmrc_file
           dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        sig { returns(T::Boolean) }
+        def outside_workspace?
+          Helpers.pnpm_outside_workspace?(dependency_files)
         end
 
         sig { params(message: String).returns(String) }

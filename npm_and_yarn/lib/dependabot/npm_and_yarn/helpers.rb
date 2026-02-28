@@ -7,7 +7,9 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/experiments"
+require "pathname"
 require "sorbet-runtime"
+require "yaml"
 
 module Dependabot
   module NpmAndYarn
@@ -569,6 +571,57 @@ module Dependabot
       end
 
       private_class_method :run_single_yarn_command
+
+      sig { params(dependency_files: T::Array[DependencyFile]).returns(T::Boolean) }
+      def self.pnpm_outside_workspace?(dependency_files)
+        ws_file = dependency_files.find { |f| f.name.end_with?("pnpm-workspace.yaml") }
+        return false unless ws_file
+
+        ws_root = (Pathname.new(ws_file.directory) / ws_file.name).dirname.cleanpath
+        current_dir = Pathname.new(ws_file.directory).cleanpath
+
+        # If we're at the workspace root, we're not outside it
+        return false if ws_root == current_dir
+
+        relative_path = current_dir.relative_path_from(ws_root).to_s
+        !pnpm_workspace_includes?(ws_file, relative_path)
+      end
+
+      sig { params(ws_file: DependencyFile, relative_path: String).returns(T::Boolean) }
+      def self.pnpm_workspace_includes?(ws_file, relative_path)
+        workspace_config = YAML.safe_load(T.must(ws_file.content), aliases: true) || {}
+        patterns = workspace_config["packages"] || []
+
+        includes = patterns.reject { |p| p.start_with?("!") }
+        # pnpm supports "!" negation patterns (e.g. "!docs") to exclude directories
+        # that would otherwise match a broader include like "*". We need to check
+        # these separately so that e.g. ["*", "!docs"] correctly excludes "docs".
+        excludes = patterns.select { |p| p.start_with?("!") }
+                           .map { |p| p.delete_prefix("!").gsub(%r{^\./}, "") }
+
+        matched_by_include = includes.any? { |p| pnpm_glob_match?(p.gsub(%r{^\./}, ""), relative_path) }
+        matched_by_exclude = excludes.any? { |p| pnpm_glob_match?(p, relative_path) }
+
+        matched_by_include && !matched_by_exclude
+      rescue Psych::SyntaxError, Psych::BadAlias, Psych::DisallowedClass
+        # If we can't parse the workspace file, assume the directory is included
+        true
+      end
+
+      private_class_method :pnpm_workspace_includes?
+
+      # Ruby's File.fnmatch? with FNM_PATHNAME treats ** as recursive only when
+      # followed by / (e.g. **/foo, **/*). A trailing ** like "packages/**" only
+      # matches one level deep. pnpm's glob (via node) treats trailing ** as
+      # matching zero or more path segments, so we also try appending /* to
+      # handle the recursive case.
+      sig { params(pattern: String, path: String).returns(T::Boolean) }
+      def self.pnpm_glob_match?(pattern, path)
+        File.fnmatch?(pattern, path, File::FNM_PATHNAME) ||
+          (pattern.end_with?("**") && File.fnmatch?("#{pattern}/*", path, File::FNM_PATHNAME))
+      end
+
+      private_class_method :pnpm_glob_match?
 
       sig { params(pnpm_lock: DependencyFile).returns(T.nilable(String)) }
       def self.pnpm_lockfile_version(pnpm_lock)
