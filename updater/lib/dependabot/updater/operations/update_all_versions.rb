@@ -182,10 +182,6 @@ module Dependabot
             notices: @notices
           )
 
-          if dependency_change.updated_dependency_files.empty?
-            raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
-          end
-
           # Send warning alerts to the API if any warning notices are present.
           # Note that only notices with notice.show_alert set to true will be sent.
           record_warning_notices(notices) if notices.any?
