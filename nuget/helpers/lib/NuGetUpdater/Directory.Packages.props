@@ -21,7 +21,7 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.14.2075" />
     <PackageVersion Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
-    <PackageVersion Include="Microsoft.Web.Xdt" Version="3.2.0" />
+    <PackageVersion Include="Microsoft.Web.Xdt" Version="3.2.3" />
     <PackageVersion Include="MSBuild.StructuredLogger" Version="2.3.17" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="NuGet.Core" Version="2.14.0" Aliases="CoreV2" />
