@@ -5,6 +5,7 @@ require "time"
 require "pathname"
 require "sorbet-runtime"
 
+require "dependabot/experiments"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/dependency_group"
@@ -24,6 +25,10 @@ module Dependabot
       require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
       require_relative "message_builder/link_and_mention_sanitizer"
+      require_relative "message_builder/components/title_builder"
+      require_relative "message_builder/strategies/single_update"
+      require_relative "message_builder/strategies/group_update"
+      require_relative "message_builder/strategies/multi_ecosystem"
       require_relative "pr_name_prefixer"
 
       sig { returns(Dependabot::Source) }
@@ -129,9 +134,17 @@ module Dependabot
 
       sig { returns(String) }
       def pr_name
-        name = dependency_group ? group_pr_name : solo_pr_name
-        name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
-        "#{pr_name_prefix}#{name}"
+        if Dependabot::Experiments.enabled?(:dependabot_refactor_pr_gen)
+          strategy = dependency_group ? build_group_strategy : build_single_strategy
+          Components::TitleBuilder.new(
+            base_title: strategy.base_title,
+            prefixer: pr_name_prefixer
+          ).build
+        else
+          name = dependency_group ? group_pr_name : solo_pr_name
+          name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
+          "#{pr_name_prefix}#{name}"
+        end
       end
 
       sig { returns(String) }
@@ -895,6 +908,21 @@ module Dependabot
             ),
             T.nilable(Dependabot::PullRequestCreator::PrNamePrefixer)
           )
+      end
+
+      sig { returns(Strategies::SingleUpdate) }
+      def build_single_strategy
+        Strategies::SingleUpdate.new(dependencies: dependencies, files: files)
+      end
+
+      sig { returns(Strategies::GroupUpdate) }
+      def build_group_strategy
+        Strategies::GroupUpdate.new(
+          dependencies: dependencies,
+          files: files,
+          dependency_group: T.must(dependency_group),
+          source: source
+        )
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
