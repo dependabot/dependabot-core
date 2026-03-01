@@ -57,6 +57,7 @@ module Dependabot
       private
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_opentofu_files(dependency_set)
         opentofu_files.each do |file|
@@ -93,12 +94,20 @@ module Dependabot
             required_providers = opentofu.fetch("required_providers", {})
             required_providers.each do |provider|
               provider.each do |name, details|
-                dependency_set << build_provider_dependency(file, name, details)
+                Dependabot.logger.info("Building provider dependency for #{name} in #{file.name}")
+                dep = build_provider_dependency(file, name, details)
+                if dep.name == "builtin/terraform"
+                  Dependabot.logger.info("Skipping builtin/terraform provider as it's not possible to update it")
+                  next
+                end
+
+                dependency_set << dep
               end
             end
           end
         end
       end
+      # rubocop:enable Metrics/MethodLength
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
