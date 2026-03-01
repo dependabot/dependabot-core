@@ -1,0 +1,9 @@
+on: [push]
+
+name: Test Workflow
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: example/action@1111111111111111111111111111111111111111 # v0.58.1
