@@ -13,15 +13,10 @@ ARG PNPM_VERSION=10.16.0
 ARG YARN_VERSION=4.9.2
 
 # See https://github.com/nodesource/distributions#installation-instructions
-# Always update NODEJS_VERSION with a compatible NPM_VERSION
 # See https://nodejs.org/en/about/previous-releases#looking-for-the-latest-release-of-a-version-branch for more information
 # Note : Always use the Active LTS version
+# npm will use the default version that ships with Node.js
 ARG NODEJS_VERSION=24
-
-# Check for updates at https://github.com/npm/cli/releases
-# This version should be compatible with the NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
-# With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
-ARG NPM_VERSION=11.7.0
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \
@@ -39,8 +34,8 @@ USER dependabot
 RUN <<EOF
   corepack install pnpm@$PNPM_VERSION --global
   corepack install yarn@$YARN_VERSION --global
-  corepack install npm@$NPM_VERSION --global
-  # Pre-cache popular older versions of npm for on-demand activation
+  # npm will use the default version that ships with Node.js
+  # Pre-cache popular older versions of npm for on-demand activation if needed
   corepack install -g --cache-only npm@10 npm@9 npm@8
 EOF
 
