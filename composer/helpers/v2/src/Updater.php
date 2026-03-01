@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dependabot\Composer;
 
+use Composer\Advisory\AuditConfig;
+use Composer\Advisory\Auditor;
 use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
@@ -88,7 +90,8 @@ final class Updater
             ->setExecuteOperations(true)
             ->setDumpAutoloader(false)
             ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false))
-            ->setAudit(false);
+            ->setAudit(false)
+            ->setAuditConfig(new AuditConfig(false, Auditor::FORMAT_SUMMARY, Auditor::ABANDONED_IGNORE, false, false, true, [], [], [], [], [], []));
 
         $install->run();
 

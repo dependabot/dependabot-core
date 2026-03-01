@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dependabot\Composer;
 
+use Composer\Advisory\AuditConfig;
+use Composer\Advisory\Auditor;
 use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
@@ -70,7 +72,8 @@ final class UpdateChecker
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setDumpAutoloader(false)
             ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false))
-            ->setAudit(false);
+            ->setAudit(false)
+            ->setAuditConfig(new AuditConfig(false, Auditor::FORMAT_SUMMARY, Auditor::ABANDONED_IGNORE, false, false, true, [], [], [], [], [], []));
 
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
