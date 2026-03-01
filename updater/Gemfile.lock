@@ -533,12 +533,13 @@ GEM
     sawyer (0.9.3)
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
-    sentry-opentelemetry (5.28.1)
+    sentry-opentelemetry (6.4.0)
       opentelemetry-sdk (~> 1.0)
-      sentry-ruby (~> 5.28.1)
-    sentry-ruby (5.28.1)
+      sentry-ruby (~> 6.4.0)
+    sentry-ruby (6.4.0)
       bigdecimal
       concurrent-ruby (~> 1.0, >= 1.0.2)
+      logger
     simplecov (0.22.0)
       docile (~> 1.1)
       simplecov-html (~> 0.11)
@@ -638,8 +639,8 @@ DEPENDENCIES
   rubocop-performance (~> 1.26)
   rubocop-rspec (~> 3.7)
   rubocop-sorbet (~> 0.10)
-  sentry-opentelemetry (~> 5.23)
-  sentry-ruby (~> 5.28)
+  sentry-opentelemetry (~> 6.4)
+  sentry-ruby (~> 6.4)
   simplecov (~> 0.22)
   terminal-table (~> 3.0)
   turbo_tests (~> 2.2.5)
@@ -819,8 +820,8 @@ CHECKSUMS
   rubocop-sorbet (0.12.0) sha256=195521e132500555819313df5accaaf56bf721a63de3e5b7b1d0b25f696b1f39
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   sawyer (0.9.3) sha256=0d0f19298408047037638639fe62f4794483fb04320269169bd41af2bdcf5e41
-  sentry-opentelemetry (5.28.1) sha256=7c04cd80675330480a3c48920c814baaf041464f86d0e6688aeaf7270c1673b3
-  sentry-ruby (5.28.1) sha256=1162d474271e8b82202c984b1116db234007a084c5b73293e921468898d07e99
+  sentry-opentelemetry (6.4.0) sha256=e0f54eda8bf2b8941fcadad23a72ecc706f7350fa1991ba754790bf3738643bf
+  sentry-ruby (6.4.0) sha256=562bee79aea8f92825ac9df3ea01cc7788f9170d382f8d38947895280dc3be06
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
