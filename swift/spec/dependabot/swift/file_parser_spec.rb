@@ -290,6 +290,27 @@ RSpec.describe Dependabot::Swift::FileParser do
     it_behaves_like "parse"
   end
 
+  context "with dependency using trait specification" do
+    let(:project_name) { "dependency_with_trait" }
+
+    let(:expectations) do
+      [
+        {
+          identity: "swift-otel",
+          name: "github.com/swift-otel/swift-otel",
+          url: "https://github.com/swift-otel/swift-otel.git",
+          version: "1.0.3",
+          requirement: ">= 1.0.0, < 2.0.0",
+          declaration_string:
+            ".package(url: \"https://github.com/swift-otel/swift-otel.git\", from: \"1.0.0\", traits: [\"OTLPHTTP\"])",
+          requirement_string: "from: \"1.0.0\""
+        }
+      ]
+    end
+
+    it_behaves_like "parse"
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
