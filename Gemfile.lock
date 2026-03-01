@@ -35,7 +35,7 @@ PATH
       excon (~> 1.2)
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
-      gitlab (~> 5.0)
+      gitlab (~> 6.0)
       json (< 2.19)
       nokogiri (~> 1.8)
       octokit (~> 10.0)
@@ -277,8 +277,8 @@ GEM
       net-http (~> 0.5)
     faraday-retry (2.4.0)
       faraday (~> 2.0)
-    gitlab (5.1.0)
-      base64 (~> 0.2.0)
+    gitlab (6.1.0)
+      base64
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
     gpgme (2.0.26)
@@ -587,7 +587,7 @@ CHECKSUMS
   faraday (2.14.1) sha256=a43cceedc1e39d188f4d2cdd360a8aaa6a11da0c407052e426ba8d3fb42ef61c
   faraday-net_http (3.4.2) sha256=f147758260d3526939bf57ecf911682f94926a3666502e24c69992765875906c
   faraday-retry (2.4.0) sha256=7b79c48fb7e56526faf247b12d94a680071ff40c9fda7cf1ec1549439ad11ebe
-  gitlab (5.1.0) sha256=021c27807a98f379c0cfeda459327c026d3756dbd6531dc1479f0e3df03572c7
+  gitlab (6.1.0) sha256=4ae1f866a1f5ae07aa1125e86c0a656b2ad0fe1d78d5ad91b8bc3b67d66063a5
   gpgme (2.0.26) sha256=1aebfd2eb83b745341e6f416f318597568af5ad4d7d1f55bfab4f1078123abaa
   hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
   http-accept (1.7.0) sha256=c626860682bfbb3b46462f8c39cd470fd7b0584f61b3cc9df5b2e9eb9972a126
