@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <PropertyGroup>
-    <MSBuildPackageVersion>17.14.8</MSBuildPackageVersion>
+    <MSBuildPackageVersion>18.3.3</MSBuildPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DiffPlex" Version="1.8.0" />
@@ -34,10 +34,10 @@
     <PackageVersion Include="System.Net.Http" Version="4.3.4" />
     <PackageVersion Include="System.Formats.Asn1" Version="8.0.1" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.7" />
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.7" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.7" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.11" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.11" />
     <PackageVersion Include="System.Text.RegularExpressions" Version="4.3.1" />
-    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="9.0.7" />
+    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="9.0.11" />
     <PackageVersion Include="xunit.v3" Version="3.0.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
