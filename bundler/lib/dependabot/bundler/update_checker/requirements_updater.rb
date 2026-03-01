@@ -128,7 +128,7 @@ module Dependabot
               tw_req = requirements.find { |r| r.to_s.start_with?("~>") }
               update_twiddle_version(tw_req, T.must(latest_resolvable_version)).to_s
             else
-              update_gemfile_range(requirements).map(&:to_s).join(", ")
+              update_gemfile_range(requirements).join(", ")
             end
 
           req.merge(requirement: new_requirement)
@@ -202,7 +202,7 @@ module Dependabot
             end
 
           updated_requirements = binding_requirements(updated_requirements)
-          req.merge(requirement: updated_requirements.map(&:to_s).join(", "))
+          req.merge(requirement: updated_requirements.join(", "))
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
         end

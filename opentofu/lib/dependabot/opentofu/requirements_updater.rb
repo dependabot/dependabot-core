@@ -121,7 +121,7 @@ module Dependabot
           elsif string_req.start_with?("~>")
             update_twiddle_version(string_req).to_s
           else
-            update_range(string_req).map(&:to_s).join(", ")
+            update_range(string_req).join(", ")
           end
 
         req.merge(requirement: new_req)

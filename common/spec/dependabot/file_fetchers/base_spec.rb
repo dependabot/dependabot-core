@@ -1329,7 +1329,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "raises a custom error" do
           expect { file_fetcher_instance.files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.file_path).to eq("/requirements.txt")
+            expect(error.file_path).to eq("/requirements.txt")
           end
         end
       end
@@ -1504,7 +1504,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "raises DependencyFileNotFound" do
           expect { files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.file_path).to eq("/requirements.txt")
+            expect(error.file_path).to eq("/requirements.txt")
           end
         end
       end
@@ -1552,7 +1552,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "raises DependencyFileNotFound" do
             expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-                expect(error.file_path).to eq("/nested/requirements.txt")
+              expect(error.file_path).to eq("/nested/requirements.txt")
             end
           end
         end
@@ -1585,7 +1585,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "raises DependencyFileNotFound" do
             expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-                expect(error.file_path).to eq("/nested/requirements.txt")
+              expect(error.file_path).to eq("/nested/requirements.txt")
             end
           end
         end

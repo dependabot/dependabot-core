@@ -50,7 +50,7 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(Integer, String)])) }
       attr_reader :local_parts
 
-      VersionParts = T.let(Struct.new(:epoch, :main, :local, keyword_init: true), T.untyped)
+      VersionParts = T.let(Struct.new(:epoch, :main, :local), T.untyped)
       private_constant :VersionParts
 
       sig { override.params(version: VersionParameter).void }

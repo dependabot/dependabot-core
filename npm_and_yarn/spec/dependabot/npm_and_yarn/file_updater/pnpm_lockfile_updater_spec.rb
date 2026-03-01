@@ -419,12 +419,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls)
-              .to eq(
-                [
-                  "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
-                ]
-              )
+          expect(error.dependency_urls)
+            .to eq(
+              [
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
+              ]
+            )
         end
       end
     end
@@ -467,12 +467,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls)
-              .to eq(
-                [
-                  "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
-                ]
-              )
+          expect(error.dependency_urls)
+            .to eq(
+              [
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
+              ]
+            )
         end
       end
     end

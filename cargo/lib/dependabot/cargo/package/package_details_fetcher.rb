@@ -137,10 +137,10 @@ module Dependabot
                                       .map(&:strip)
                                       .reject(&:empty?)
                                       .filter_map do |line|
-                                        JSON.parse(line)
-                                      rescue JSON::ParserError => e
-                                        Dependabot.logger.warn("Failed to parse line in sparse index: #{e.message}")
-                                        nil
+              JSON.parse(line)
+            rescue JSON::ParserError => e
+              Dependabot.logger.warn("Failed to parse line in sparse index: #{e.message}")
+              nil
             end
 
             { "versions" => parsed_response }
