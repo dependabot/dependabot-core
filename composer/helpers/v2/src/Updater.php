@@ -33,33 +33,50 @@ final class Updater
         $composer = Factory::create($io);
         $config = $composer->getConfig();
         $httpBasicCredentials = [];
+        $bearerCredentials = [];
 
         $pm = new DependabotPluginManager($io, $composer, null, false);
         $composer->setPluginManager($pm);
         $pm->loadInstalledPlugins();
 
         foreach ($gitCredentials as &$cred) {
-            $httpBasicCredentials[$cred['host']] = [
-                'username' => $cred['username'],
-                'password' => $cred['password'],
-            ];
+            if (isset($cred['host']) && isset($cred['username']) && isset($cred['password'])) {
+                $httpBasicCredentials[$cred['host']] = [
+                    'username' => $cred['username'],
+                    'password' => $cred['password'],
+                ];
+            }
         }
 
         foreach ($registryCredentials as &$cred) {
-            $httpBasicCredentials[$cred['registry']] = [
-                'username' => $cred['username'],
-                'password' => $cred['password'],
-            ];
+            $host = $cred['registry'] ?? null;
+            if (!$host) {
+                continue;
+            }
+
+            if (isset($cred['username']) && isset($cred['password'])) {
+                $httpBasicCredentials[$host] = [
+                    'username' => $cred['username'],
+                    'password' => $cred['password'],
+                ];
+            }
+
+            // token (bearer) without auth_type distinction
+            if (isset($cred['token'])) {
+                $bearerCredentials[$host] = $cred['token'];
+            }
         }
 
-        if ($httpBasicCredentials) {
-            $config->merge(
-                [
-                    'config' => [
-                        'http-basic' => $httpBasicCredentials,
-                    ],
-                ]
-            );
+        $mergeConfig = ['config' => []];
+        if (!empty($httpBasicCredentials)) {
+            $mergeConfig['config']['http-basic'] = $httpBasicCredentials;
+        }
+        if (!empty($bearerCredentials)) {
+            $mergeConfig['config']['bearer'] = $bearerCredentials;
+        }
+
+        if (!empty($mergeConfig['config'])) {
+            $config->merge($mergeConfig);
             $io->loadConfiguration($config);
         }
 
