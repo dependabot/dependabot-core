@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "excon", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-retry", "~> 2.2"
-  spec.add_dependency "gitlab", "~> 5.0"
+  spec.add_dependency "gitlab", "~> 6.0"
   spec.add_dependency "json", "< 2.19"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", "~> 10.0"
