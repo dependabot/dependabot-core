@@ -91,8 +91,8 @@ module Dependabot
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
       def dependencies_by_name
         @dependencies_by_name ||= T.let(
-          @dependencies.each_with_object({}) do |dep, hash|
-            hash[dep.name] = dep
+          @dependencies.to_h do |dep|
+            [dep.name, dep]
           end,
           T.nilable(T::Hash[String, Dependabot::Dependency])
         )

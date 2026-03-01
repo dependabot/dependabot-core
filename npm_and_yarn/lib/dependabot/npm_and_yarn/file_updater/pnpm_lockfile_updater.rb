@@ -240,10 +240,10 @@ module Dependabot
           [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE, ERR_PNPM_FETCH_401,
            ERR_PNPM_FETCH_403, ERR_PNPM_FETCH_404, ERR_PNPM_FETCH_500, ERR_PNPM_FETCH_502, ERR_PNPM_FETCH_503]
             .each do |regexp|
-              next unless error_message.match?(regexp)
+            next unless error_message.match?(regexp)
 
-              dependency_url = T.must(error_message.match(regexp)&.named_captures&.[]("dependency_url"))
-              raise_package_access_error(error_message, dependency_url, pnpm_lock)
+            dependency_url = T.must(error_message.match(regexp)&.named_captures&.[]("dependency_url"))
+            raise_package_access_error(error_message, dependency_url, pnpm_lock)
           end
 
           # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
@@ -293,12 +293,12 @@ module Dependabot
 
           [ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE, ERR_PNPM_OUTDATED_LOCKFILE]
             .each do |regexp|
-              next unless error_message.match?(regexp)
+            next unless error_message.match?(regexp)
 
-              error_msg = T.let("Error while resolving pnpm-lock.yaml file.", String)
+            error_msg = T.let("Error while resolving pnpm-lock.yaml file.", String)
 
-              Dependabot.logger.warn(error_message)
-              raise Dependabot::DependencyFileNotResolvable, error_msg
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
           end
 
           if error_message.match?(ERR_PNPM_PEER_DEP_ISSUES)

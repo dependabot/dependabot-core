@@ -157,6 +157,11 @@ Style/SpecialGlobalVars:
   Enabled: false
 Style/SelectByRegexp:
   Enabled: false
+Style/OneClassPerFile:
+  Exclude:
+    - "bundler/helpers/v2/monkey_patches/git_source_patch.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_workspace_updater.rb"
+    - "rakelib/support/helpers.rb"
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
 # in order to keep the upgrade diff small, they will be enabled/fixed in
