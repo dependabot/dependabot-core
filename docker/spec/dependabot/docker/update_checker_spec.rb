@@ -1751,11 +1751,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       after { Dependabot::Experiments.reset! }
 
       it "rejects the older dated tag despite higher semver" do
-        # Among dated tags, 4.8-20250909 has Gem::Version("4.8.20250909") which appears
-        # higher than 4.8.1-20251014's Gem::Version("4.8.1.20251014") because the date
-        # inflates the version number. But the timestamp validation catches this:
-        # 4.8-20250909 was created 2025-09-09 which is OLDER than 4.8.1-20251014 (2026-02-10).
-        # So no upgrade is suggested.
+        # With the experiment flag enabled, numeric_version strips the date component
+        # from dated tags. 4.8-20250909 therefore compares as "4.8", while
+        # 4.8.1-20251014 compares as "4.8.1". remove_version_downgrades rejects
+        # 4.8-20250909 as a downgrade from 4.8.1, so even though its raw tag looks
+        # "higher" when the date is included, no upgrade is suggested.
         expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
       end
     end
