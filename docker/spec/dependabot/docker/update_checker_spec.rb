@@ -1553,6 +1553,130 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the dependency has an architecture-specific suffix" do
+      let(:dependency_name) { "nginx" }
+      let(:tags_fixture_name) { "architecture.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/nginx/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      context "when using arm64 architecture" do
+        let(:version) { "1.25.3-alpine-arm64" }
+
+        it "updates to the latest version with the same arm64 suffix" do
+          expect(checker.latest_version).to eq("1.25.4-alpine-arm64")
+        end
+      end
+
+      context "when using amd64 architecture" do
+        let(:version) { "1.25.3-alpine-amd64" }
+
+        it "updates to the latest version with the same amd64 suffix" do
+          expect(checker.latest_version).to eq("1.25.4-alpine-amd64")
+        end
+      end
+
+      context "when using the multi-arch tag (no architecture suffix)" do
+        let(:version) { "1.25.3-alpine" }
+
+        it "updates to the latest version without an architecture suffix" do
+          expect(checker.latest_version).to eq("1.25.4-alpine")
+        end
+      end
+
+      context "when docker_created_timestamp_validation is enabled" do
+        before do
+          Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        end
+
+        after { Dependabot::Experiments.reset! }
+
+        context "when using arm64 architecture with newer timestamps on other architectures" do
+          let(:version) { "1.25.3-alpine-arm64" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+              case tag_name
+              when "1.25.3-alpine-arm64"
+                Time.parse("2024-01-01T10:00:00Z")
+              when "1.25.4-alpine-arm64"
+                Time.parse("2024-03-01T10:00:00Z")
+              when "1.25.4-alpine-amd64"
+                Time.parse("2024-04-01T10:00:00Z")
+              when "1.25.4-alpine"
+                Time.parse("2024-05-01T10:00:00Z")
+              end
+            end
+          end
+
+          it "updates to the latest arm64 tag, not a different architecture" do
+            expect(checker.latest_version).to eq("1.25.4-alpine-arm64")
+          end
+        end
+
+        context "when using amd64 architecture with newer timestamps on other architectures" do
+          let(:version) { "1.25.3-alpine-amd64" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+              case tag_name
+              when "1.25.3-alpine-amd64"
+                Time.parse("2024-01-01T10:00:00Z")
+              when "1.25.4-alpine-amd64"
+                Time.parse("2024-03-01T10:00:00Z")
+              when "1.25.4-alpine-arm64"
+                Time.parse("2024-06-01T10:00:00Z")
+              when "1.25.4-alpine"
+                Time.parse("2024-05-01T10:00:00Z")
+              end
+            end
+          end
+
+          it "updates to the latest amd64 tag, not a different architecture" do
+            expect(checker.latest_version).to eq("1.25.4-alpine-amd64")
+          end
+        end
+
+        context "when using multi-arch tag with newer timestamps on arch-specific tags" do
+          let(:version) { "1.25.3-alpine" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+              case tag_name
+              when "1.25.3-alpine"
+                Time.parse("2024-01-01T10:00:00Z")
+              when "1.25.4-alpine"
+                Time.parse("2024-03-01T10:00:00Z")
+              when "1.25.4-alpine-arm64"
+                Time.parse("2024-06-01T10:00:00Z")
+              when "1.25.4-alpine-amd64"
+                Time.parse("2024-06-01T10:00:00Z")
+              end
+            end
+          end
+
+          it "updates to the latest multi-arch tag, not an arch-specific tag" do
+            expect(checker.latest_version).to eq("1.25.4-alpine")
+          end
+        end
+
+        context "when timestamp fetch fails for architecture-specific tags" do
+          let(:version) { "1.25.3-alpine-arm64" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created).and_return(nil)
+          end
+
+          it "still updates to the correct architecture tag" do
+            expect(checker.latest_version).to eq("1.25.4-alpine-arm64")
+          end
+        end
+      end
+    end
+
     context "when a date-embedded tag has a higher semver but is actually older (timestamp validation)" do
       let(:dependency_name) { "dotnet/framework/aspnet" }
       let(:version) { "4.8.1-windowsservercore-ltsc2022" }
