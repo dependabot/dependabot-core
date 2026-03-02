@@ -14,24 +14,11 @@ module Dependabot
 
         segments = name.split("/")
         return name if segments.length < 4
+        return name if segments[3] == "_git"
 
-        normalized_segments = T.let([], T::Array[String])
-        if segments[3] == "_git"
-          normalized_segments.concat(segments)
-        else
-          normalized_segments.concat(segments[0, 3] || [])
-          normalized_segments << "_git"
-          normalized_segments.concat(segments[3..] || [])
-        end
-
-        git_index = normalized_segments.index("_git")
-        return name unless git_index
-
-        repo_index = git_index + 1
-        repo_name = normalized_segments[repo_index]
-        return name unless repo_name
-
-        normalized_segments[repo_index] = repo_name.delete_suffix(".git")
+        normalized_segments = segments.dup
+        normalized_segments.insert(3, "_git")
+        normalized_segments[4] = normalized_segments.fetch(4).delete_suffix(".git")
 
         normalized_segments.join("/")
       end

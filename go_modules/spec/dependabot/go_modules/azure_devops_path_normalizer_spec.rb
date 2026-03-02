@@ -20,11 +20,11 @@ RSpec.describe Dependabot::GoModules::AzureDevopsPathNormalizer do
         .to eq("dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/submodule")
     end
 
-    it "removes .git suffix when _git already exists" do
+    it "does not remove .git suffix when _git already exists" do
       name = "dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git"
 
       expect(described_class.normalize(name))
-        .to eq("dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf")
+        .to eq("dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git")
     end
 
     it "does not modify non-Azure names" do
