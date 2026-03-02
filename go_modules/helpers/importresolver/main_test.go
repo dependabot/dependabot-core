@@ -21,14 +21,24 @@ func TestNormalizeAzureDevOpsURL(t *testing.T) {
 		want  string
 	}{
 		{
-			name:  "adds _git segment when missing",
+			name:  "adds _git segment when missing and removes .git suffix",
 			input: "https://dev.azure.com/VaronisIO/da-cloud/be-protobuf.git",
-			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
 		},
 		{
 			name:  "preserves existing _git segment",
 			input: "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
 			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
+		},
+		{
+			name:  "removes .git suffix when _git already exists",
+			input: "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
+		},
+		{
+			name:  "preserves subdirectory while removing .git suffix",
+			input: "https://dev.azure.com/VaronisIO/da-cloud/be-protobuf.git/submodule",
+			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/submodule",
 		},
 		{
 			name:  "ignores non azure hosts",

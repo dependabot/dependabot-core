@@ -92,7 +92,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
       let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git" }
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with("go mod edit -json")
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(
-            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
           .and_return('{"Versions":["v1.0.0"]}')
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         expect(Dependabot::SharedHelpers)
           .to have_received(:run_shell_command)
           .with(
-            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
       end
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
       let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git/submodule" }
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with("go mod edit -json")
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(
-            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/submodule",
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
           .and_return('{"Versions":["v1.0.0"]}')
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         expect(Dependabot::SharedHelpers)
           .to have_received(:run_shell_command)
           .with(
-            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/submodule",
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
       end
