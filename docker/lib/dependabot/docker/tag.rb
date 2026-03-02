@@ -103,9 +103,8 @@ module Dependabot
         # When timestamp validation is enabled, dated and non-dated versions are
         # not comparable — prevents updating from 4.8-windowsservercore-ltsc2022
         # to 4.8-20250909-windowsservercore-ltsc2022 and vice versa
-        if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
-          return false if dated_version? != other.dated_version?
-        end
+        return false if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
+                        dated_version? != other.dated_version?
 
         equal_suffix = suffix == other_suffix
         (equal_prefix && equal_format && equal_suffix) || comparable_format
