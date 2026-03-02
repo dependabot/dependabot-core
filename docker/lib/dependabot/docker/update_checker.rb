@@ -30,9 +30,19 @@ module Dependabot
         T::Array[String]
       )
 
+      # Tolerance window for platform timestamp comparison.
+      # Multi-arch CI builds may finish platforms at slightly different times.
+      PLATFORM_TIMESTAMP_TOLERANCE_SECONDS = T.let(3 * 60 * 60, Integer)
+
       # Patterns that identify structurally obvious version components in tag
       # names. Matching parts are excluded from the common-component system
       # because they represent version data, not platform/variant identifiers.
+      #
+      # Everything that does NOT match these patterns is treated as a
+      # platform/variant component (e.g., "alpine3", "ltsc2022", "bookworm",
+      # "rc1", "jre"). This is intentionally broad — the primary tag filtering
+      # in comparable_to? already handles prerelease and suffix isolation via
+      # exact suffix matching, so component matching is a secondary safety net.
       #
       # To exclude a new structural pattern, add a regex here.
       VERSION_RELATED_PATTERNS = T.let(
@@ -40,8 +50,7 @@ module Dependabot
           /^\d+$/,                          # pure numbers: "123", "8"
           /^\d+\.\d+$/,                     # semver-like: "1.2"
           /^v\d+/,                          # v-prefixed: "v2", "v10"
-          /^(?=.*\d)(?=.*[a-z])[a-z\d]+$/i, # match any mixed alphanumeric string ("rc1", "beta2", "alpine3", "ltsc2022")
-          /^(rc|jre)$/,                     # common Docker tag components that are actually part of versioning: "rc", "jre"
+          /^\d+[a-z]+\d+$/i,                # digit-letters-digit version parts: "0a1", "0b1", "0rc1"
           /^kb\d+$/i,                       # Microsoft KB numbers: "KB4505057"
           /^g[0-9a-f]{5,}$/,                # git SHAs: "g1a2b3c4"
           /^\d{8,14}$/,                     # timestamps: "20250909"
@@ -192,39 +201,54 @@ module Dependabot
         candidate_tags = sort_tags(candidate_tags, version_tag)
         candidate_tags = apply_cooldown(candidate_tags)
 
-        latest_tag = candidate_tags.last
-        return version_tag unless latest_tag
+        select_best_candidate(candidate_tags, version_tag)
+      end
 
-        if latest_tag.same_precision?(version_tag)
-          return validate_tag_with_timestamp(latest_tag, version_tag)
+      sig do
+        params(
+          candidate_tags: T::Array[Dependabot::Docker::Tag],
+          version_tag: Dependabot::Docker::Tag
+        ).returns(Dependabot::Docker::Tag)
+      end
+      def select_best_candidate(candidate_tags, version_tag)
+        same_precision_tags = remove_precision_changes(candidate_tags, version_tag)
+
+        # Iterate from highest to lowest, trying each candidate until one passes validation
+        candidate_tags.reverse_each do |candidate|
+          selected = select_tag_with_precision(candidate, same_precision_tags, version_tag)
+          validated = validate_tag_with_timestamp(selected, version_tag)
+          return validated unless validated.name == version_tag.name && selected.name != version_tag.name
         end
 
-        latest_same_precision_tag = remove_precision_changes(candidate_tags, version_tag).last
-        return validate_tag_with_timestamp(latest_tag, version_tag) unless latest_same_precision_tag
+        version_tag
+      end
 
-        latest_same_precision_digest = digest_of(latest_same_precision_tag.name)
-        latest_digest = digest_of(latest_tag.name)
+      sig do
+        params(
+          candidate: Dependabot::Docker::Tag,
+          same_precision_tags: T::Array[Dependabot::Docker::Tag],
+          version_tag: Dependabot::Docker::Tag
+        ).returns(Dependabot::Docker::Tag)
+      end
+      def select_tag_with_precision(candidate, same_precision_tags, version_tag)
+        return candidate if candidate.same_precision?(version_tag)
 
-        # NOTE: Some registries don't provide digests (the API documents them as
-        # optional: https://docs.docker.com/registry/spec/api/#content-digests).
-        #
-        # In that case we can't know for sure whether the latest tag keeping
-        # existing precision is the same as the absolute latest tag.
-        #
-        # We can however, make a best-effort to avoid unwanted changes by
-        # directly looking at version numbers and checking whether the absolute
-        # latest tag is just a more precise version of the latest tag that keeps
-        # existing precision.
+        # Find the highest same-precision tag that is <= this candidate
+        best_same_precision = same_precision_tags.reverse.find do |t|
+          comparable_version_from(t) <= comparable_version_from(candidate)
+        end
 
-        selected_tag =
-          if latest_same_precision_digest == latest_digest &&
-             latest_same_precision_tag.same_but_less_precise?(latest_tag)
-            latest_same_precision_tag
-          else
-            latest_tag
-          end
+        return candidate unless best_same_precision
 
-        validate_tag_with_timestamp(selected_tag, version_tag)
+        same_precision_digest = digest_of(best_same_precision.name)
+        candidate_digest = digest_of(candidate.name)
+
+        if same_precision_digest == candidate_digest &&
+           best_same_precision.same_but_less_precise?(candidate)
+          best_same_precision
+        else
+          candidate
+        end
       end
 
       sig do
@@ -237,16 +261,16 @@ module Dependabot
         return selected_tag unless Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
         return selected_tag if selected_tag.name == current_tag.name
 
-        if candidate_newer_by_created_date?(selected_tag, current_tag)
+        if validate_candidate_platforms(selected_tag, current_tag)
           Dependabot.logger.info(
-            "Timestamp validation: #{selected_tag.name} confirmed newer than #{current_tag.name}"
+            "Platform validation: #{selected_tag.name} confirmed valid update from #{current_tag.name}"
           )
           return selected_tag
         end
 
         Dependabot.logger.info(
-          "Timestamp validation: skipping #{selected_tag.name} — image created date " \
-          "is not newer than #{current_tag.name}"
+          "Platform validation: skipping #{selected_tag.name} — " \
+          "platform check failed against #{current_tag.name}"
         )
 
         current_tag
@@ -856,6 +880,75 @@ module Dependabot
         end
       end
 
+      # Validates that all platforms from the current tag are present in the
+      # candidate tag and that each platform's image was built at the same time
+      # (within tolerance) or newer. For single-platform current tags, falls
+      # back to simple timestamp comparison.
+      sig do
+        params(
+          candidate_tag: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag
+        ).returns(T::Boolean)
+      end
+      def validate_candidate_platforms(candidate_tag, current_tag)
+        current_platforms = fetch_manifest_platforms(current_tag.name)
+
+        # Single-platform current tag — fall back to simple timestamp comparison
+        return candidate_newer_by_created_date?(candidate_tag, current_tag) if current_platforms.nil?
+
+        candidate_platforms = fetch_manifest_platforms(candidate_tag.name)
+
+        # Candidate is single-platform but current is multi-platform
+        if candidate_platforms.nil?
+          Dependabot.logger.info(
+            "Platform validation: #{candidate_tag.name} is single-platform " \
+            "but #{current_tag.name} is multi-platform"
+          )
+          return false
+        end
+
+        # Check all current platforms exist in candidate
+        current_keys = current_platforms.to_set { |p| platform_key(p) }
+        candidate_keys = candidate_platforms.to_set { |p| platform_key(p) }
+        missing = current_keys - candidate_keys
+
+        unless missing.empty?
+          Dependabot.logger.info(
+            "Platform validation: #{candidate_tag.name} missing platforms: #{missing.to_a.join(', ')}"
+          )
+          return false
+        end
+
+        # Validate timestamps for each platform
+        validate_platform_timestamps(candidate_tag, current_tag, current_keys)
+      end
+
+      sig do
+        params(
+          candidate_tag: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag,
+          platform_keys: T::Set[String]
+        ).returns(T::Boolean)
+      end
+      def validate_platform_timestamps(candidate_tag, current_tag, platform_keys)
+        candidate_timestamps = fetch_all_platform_timestamps(candidate_tag.name)
+        current_timestamps = fetch_all_platform_timestamps(current_tag.name)
+
+        platform_keys.all? do |key|
+          candidate_time = candidate_timestamps[key]
+          current_time = current_timestamps[key]
+
+          # Both nil → trust semver
+          next true if candidate_time.nil? && current_time.nil?
+          # Only candidate nil → can't confirm, conservative fail
+          next false if candidate_time.nil?
+          # Only current nil → trust semver
+          next true if current_time.nil?
+
+          candidate_time >= (current_time - PLATFORM_TIMESTAMP_TOLERANCE_SECONDS)
+        end
+      end
+
       sig do
         params(
           candidate_tag: Dependabot::Docker::Tag,
@@ -876,6 +969,154 @@ module Dependabot
         return true if current_created.nil?
 
         candidate_created > current_created
+      end
+
+      # Fetches the platform entries from a manifest list for a given tag.
+      # Returns nil if the tag is a single-platform image (not a manifest list).
+      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      def fetch_manifest_platforms(tag_name)
+        return manifest_platforms_cache[tag_name] if manifest_platforms_cache.key?(tag_name)
+
+        platforms = fetch_manifest_platforms_from_registry(tag_name)
+        manifest_platforms_cache[tag_name] = platforms
+        platforms
+      rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden, JSON::ParserError => e
+        Dependabot.logger.info(
+          "Failed to fetch manifest platforms for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        manifest_platforms_cache[tag_name] = nil
+        nil
+      end
+
+      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      def fetch_manifest_platforms_from_registry(tag_name)
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, tag_name)
+        end
+
+        media_type = manifest["mediaType"] || manifest[:mediaType]
+        return nil unless MANIFEST_LIST_TYPES.include?(media_type)
+
+        manifests = manifest["manifests"] || manifest[:manifests] || []
+
+        # Filter to actual image manifests (exclude attestations/signatures)
+        manifests.filter_map { |m| extract_platform(m) }
+      end
+
+      sig { params(manifest_entry: T.untyped).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def extract_platform(manifest_entry)
+        platform = manifest_entry["platform"] || manifest_entry[:platform]
+        return unless platform
+
+        os = platform["os"] || platform[:os]
+        arch = platform["architecture"] || platform[:architecture]
+        return unless os && arch
+
+        platform
+      end
+
+      # Builds a normalized string key from a platform hash, e.g. "linux/amd64" or "linux/arm64/v8"
+      sig { params(platform: T::Hash[T.any(String, Symbol), T.untyped]).returns(String) }
+      def platform_key(platform)
+        os = platform["os"] || platform[:os]
+        arch = platform["architecture"] || platform[:architecture]
+        variant = platform["variant"] || platform[:variant]
+
+        key = "#{os}/#{arch}"
+        key = "#{key}/#{variant}" if variant
+        key
+      end
+
+      # Fetches the created timestamp for every platform in a tag's manifest list.
+      # Returns a Hash mapping platform key (e.g. "linux/amd64") to Time.
+      sig { params(tag_name: String).returns(T::Hash[String, T.nilable(Time)]) }
+      def fetch_all_platform_timestamps(tag_name)
+        return T.must(platform_timestamps_cache[tag_name]) if platform_timestamps_cache.key?(tag_name)
+
+        timestamps = fetch_all_platform_timestamps_from_registry(tag_name)
+        platform_timestamps_cache[tag_name] = timestamps
+        timestamps
+      rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden, JSON::ParserError => e
+        Dependabot.logger.info(
+          "Failed to fetch platform timestamps for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        platform_timestamps_cache[tag_name] = {}
+        {}
+      end
+
+      sig { params(tag_name: String).returns(T::Hash[String, T.nilable(Time)]) }
+      def fetch_all_platform_timestamps_from_registry(tag_name)
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, tag_name)
+        end
+
+        media_type = manifest["mediaType"] || manifest[:mediaType]
+        return {} unless MANIFEST_LIST_TYPES.include?(media_type)
+
+        manifests = manifest["manifests"] || manifest[:manifests] || []
+        collect_platform_timestamps(manifests)
+      end
+
+      sig { params(manifests: T.untyped).returns(T::Hash[String, T.nilable(Time)]) }
+      def collect_platform_timestamps(manifests)
+        timestamps = {}
+
+        manifests.each do |m|
+          platform = extract_platform(m)
+          next unless platform
+
+          digest = m["digest"] || m[:digest]
+          next unless digest
+
+          key = platform_key(platform)
+          timestamps[key] = fetch_platform_created_timestamp(digest)
+        end
+
+        timestamps
+      end
+
+      sig { params(platform_digest: String).returns(T.nilable(Time)) }
+      def fetch_platform_created_timestamp(platform_digest)
+        platform_manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.doget("v2/#{docker_repo_name}/manifests/#{platform_digest}")
+        end
+
+        parsed = JSON.parse(platform_manifest.body)
+        config_digest = parsed.dig("config", "digest")
+        return nil unless config_digest
+
+        config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.doget("v2/#{docker_repo_name}/blobs/#{config_digest}")
+        end
+
+        config_data = JSON.parse(config_blob.body)
+        created_str = config_data["created"]
+        return nil unless created_str
+
+        Time.parse(created_str)
+      rescue ArgumentError => e
+        Dependabot.logger.info(
+          "Failed to parse platform timestamp for #{docker_repo_name} digest #{platform_digest}: #{e.message}"
+        )
+        nil
+      end
+
+      sig { returns(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])]) }
+      def manifest_platforms_cache
+        @manifest_platforms_cache ||= T.let(
+          {},
+          T.nilable(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])])
+        )
+      end
+
+      sig { returns(T::Hash[String, T::Hash[String, T.nilable(Time)]]) }
+      def platform_timestamps_cache
+        @platform_timestamps_cache ||= T.let(
+          {},
+          T.nilable(T::Hash[String, T::Hash[String, T.nilable(Time)]])
+        )
       end
 
       sig { returns(T::Hash[String, T.nilable(Time)]) }
