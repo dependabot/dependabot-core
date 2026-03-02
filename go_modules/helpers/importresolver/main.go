@@ -66,20 +66,20 @@ func normalizeAzureDevOpsURL(remote string) string {
 		normalizedSegments = append(normalizedSegments, segments[:2]...)
 		normalizedSegments = append(normalizedSegments, "_git")
 		normalizedSegments = append(normalizedSegments, segments[2:]...)
-	}
 
-	for i := range normalizedSegments {
-		if normalizedSegments[i] != "_git" {
-			continue
+		for i := range normalizedSegments {
+			if normalizedSegments[i] != "_git" {
+				continue
+			}
+
+			repoIndex := i + 1
+			if repoIndex >= len(normalizedSegments) {
+				return remote
+			}
+
+			normalizedSegments[repoIndex] = strings.TrimSuffix(normalizedSegments[repoIndex], ".git")
+			break
 		}
-
-		repoIndex := i + 1
-		if repoIndex >= len(normalizedSegments) {
-			return remote
-		}
-
-		normalizedSegments[repoIndex] = strings.TrimSuffix(normalizedSegments[repoIndex], ".git")
-		break
 	}
 
 	uri.Path = "/" + strings.Join(normalizedSegments, "/")
