@@ -119,6 +119,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         specify { expect { updated_files }.to raise_error(/No files/) }
       end
+
+      context "when non-pnpm updated files are marked as support files" do
+        before do
+          files.each { |file| file.support_file = true }
+        end
+
+        it "updates package.json" do
+          expect(updated_files.map(&:name)).to include("package.json")
+        end
+      end
     end
 
     context "with multiple dependencies" do
