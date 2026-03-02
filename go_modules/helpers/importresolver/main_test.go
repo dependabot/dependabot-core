@@ -31,9 +31,14 @@ func TestNormalizeAzureDevOpsURL(t *testing.T) {
 			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
 		},
 		{
-			name:  "removes .git suffix when _git already exists",
+			name:  "retains .git suffix when _git already exists",
 			input: "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
-			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
+			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+		},
+		{
+			name:  "retains .git suffix and subdirectory when _git already exists",
+			input: "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+			want:  "https://dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
 		},
 		{
 			name:  "preserves subdirectory while removing .git suffix",

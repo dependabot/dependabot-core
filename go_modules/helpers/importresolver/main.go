@@ -55,6 +55,7 @@ func normalizeAzureDevOpsURL(remote string) string {
 	}
 
 	normalizedSegments := segments
+	removeGitSuffix := false
 	if !strings.Contains(uri.Path, "/_git/") {
 		if len(segments) < 3 {
 			return remote
@@ -66,6 +67,13 @@ func normalizeAzureDevOpsURL(remote string) string {
 		normalizedSegments = append(normalizedSegments, segments[:2]...)
 		normalizedSegments = append(normalizedSegments, "_git")
 		normalizedSegments = append(normalizedSegments, segments[2:]...)
+		removeGitSuffix = true
+	}
+
+	if !removeGitSuffix {
+		uri.Path = "/" + strings.Join(normalizedSegments, "/")
+
+		return uri.String()
 	}
 
 	for i := range normalizedSegments {
