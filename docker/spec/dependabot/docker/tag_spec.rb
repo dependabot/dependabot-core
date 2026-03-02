@@ -146,6 +146,22 @@ RSpec.describe Dependabot::Docker::Tag do
         expect(dated.comparable_to?(non_dated)).to be true
         expect(non_dated.comparable_to?(dated)).to be true
       end
+
+      it "treats two dated versions with the same suffix as comparable" do
+        tag1 = described_class.new("4.8-20250909-windowsservercore-ltsc2022")
+        tag2 = described_class.new("4.8.1-20251014-windowsservercore-ltsc2022")
+
+        expect(tag1.comparable_to?(tag2)).to be true
+        expect(tag2.comparable_to?(tag1)).to be true
+      end
+
+      it "treats two non-dated versions with the same suffix as comparable" do
+        tag1 = described_class.new("4.8-windowsservercore-ltsc2022")
+        tag2 = described_class.new("4.8.1-windowsservercore-ltsc2022")
+
+        expect(tag1.comparable_to?(tag2)).to be true
+        expect(tag2.comparable_to?(tag1)).to be true
+      end
     end
 
     context "when timestamp validation is enabled" do
@@ -159,22 +175,22 @@ RSpec.describe Dependabot::Docker::Tag do
         expect(dated.comparable_to?(non_dated)).to be false
         expect(non_dated.comparable_to?(dated)).to be false
       end
-    end
 
-    it "treats two dated versions with the same suffix as comparable" do
-      tag1 = described_class.new("4.8-20250909-windowsservercore-ltsc2022")
-      tag2 = described_class.new("4.8.1-20251014-windowsservercore-ltsc2022")
+      it "treats two dated versions with the same suffix as comparable" do
+        tag1 = described_class.new("4.8-20250909-windowsservercore-ltsc2022")
+        tag2 = described_class.new("4.8.1-20251014-windowsservercore-ltsc2022")
 
-      expect(tag1.comparable_to?(tag2)).to be true
-      expect(tag2.comparable_to?(tag1)).to be true
-    end
+        expect(tag1.comparable_to?(tag2)).to be true
+        expect(tag2.comparable_to?(tag1)).to be true
+      end
 
-    it "treats two non-dated versions with the same suffix as comparable" do
-      tag1 = described_class.new("4.8-windowsservercore-ltsc2022")
-      tag2 = described_class.new("4.8.1-windowsservercore-ltsc2022")
+      it "treats two non-dated versions with the same suffix as comparable" do
+        tag1 = described_class.new("4.8-windowsservercore-ltsc2022")
+        tag2 = described_class.new("4.8.1-windowsservercore-ltsc2022")
 
-      expect(tag1.comparable_to?(tag2)).to be true
-      expect(tag2.comparable_to?(tag1)).to be true
+        expect(tag1.comparable_to?(tag2)).to be true
+        expect(tag2.comparable_to?(tag1)).to be true
+      end
     end
   end
 
