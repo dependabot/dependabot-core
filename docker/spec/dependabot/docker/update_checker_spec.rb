@@ -1829,7 +1829,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
-        stub_request(:head, repo_url + "manifests/4.8.1-20260301-windowsservercore-ltsc2022")
+        stub_request(:head, repo_url + "manifests/4.8.1-20990301-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
         stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
@@ -1838,8 +1838,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           case tag_name
           when "4.8.1-20251014-windowsservercore-ltsc2022"
             Time.parse("2025-10-14T18:06:45Z")
-          when "4.8.1-20260301-windowsservercore-ltsc2022"
-            Time.parse("2026-03-01T20:17:06Z")
+          when "4.8.1-20990301-windowsservercore-ltsc2022"
+            Time.parse("2099-03-01T20:17:06Z")
           when "4.8-20250909-windowsservercore-ltsc2022"
             Time.parse("2025-09-09T18:06:45Z")
           when "4.8.1-windowsservercore-ltsc2022"
@@ -1854,7 +1854,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "updates to the newer dated tag with the same base version" do
         # Both are dated, same base version, and timestamp confirms it's newer.
         # Non-dated 4.8.1-windowsservercore-ltsc2022 is excluded from comparison.
-        expect(checker.latest_version).to eq("4.8.1-20260301-windowsservercore-ltsc2022")
+        expect(checker.latest_version).to eq("4.8.1-20990301-windowsservercore-ltsc2022")
       end
     end
 
@@ -1883,16 +1883,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             Time.parse("2026-02-10T20:17:06Z")
           when "4.8.2-windowsservercore-ltsc2022"
             Time.parse("2026-03-01T10:00:00Z")
-          when "4.8.2-20260301-windowsservercore-ltsc2022"
+          when "4.8.2-20990301-windowsservercore-ltsc2022"
             # Dated tag has an even newer timestamp — but should NOT be picked
-            Time.parse("2026-03-15T12:00:00Z")
+            Time.parse("2099-03-01T12:00:00Z")
           end
         end
       end
 
       after { Dependabot::Experiments.reset! }
 
-      it "picks the non-dated 4.8.2, not the dated 4.8.2-20260301" do
+      it "picks the non-dated 4.8.2, not the dated 4.8.2-20990301" do
         expect(checker.latest_version).to eq("4.8.2-windowsservercore-ltsc2022")
       end
     end
@@ -1913,9 +1913,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
-        stub_request(:head, repo_url + "manifests/4.8.2-20260301-windowsservercore-ltsc2022")
+        stub_request(:head, repo_url + "manifests/4.8.2-20990301-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "9jf26f6")))
-        stub_request(:head, repo_url + "manifests/4.8.1-20260301-windowsservercore-ltsc2022")
+        stub_request(:head, repo_url + "manifests/4.8.1-20990301-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
         stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
@@ -1924,23 +1924,23 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           case tag_name
           when "4.8.1-20251014-windowsservercore-ltsc2022"
             Time.parse("2025-10-14T18:06:45Z")
-          when "4.8.1-20260301-windowsservercore-ltsc2022"
-            Time.parse("2026-03-01T10:00:00Z")
-          when "4.8.2-20260301-windowsservercore-ltsc2022"
-            Time.parse("2026-03-01T10:00:00Z")
+          when "4.8.1-20990301-windowsservercore-ltsc2022"
+            Time.parse("2099-03-01T10:00:00Z")
+          when "4.8.2-20990301-windowsservercore-ltsc2022"
+            Time.parse("2099-03-01T10:00:00Z")
           when "4.8-20250909-windowsservercore-ltsc2022"
             Time.parse("2025-09-09T18:06:45Z")
           when "4.8.2-windowsservercore-ltsc2022"
             # Non-dated tag has an even newer timestamp — but should NOT be picked
-            Time.parse("2026-03-15T12:00:00Z")
+            Time.parse("2099-03-15T12:00:00Z")
           end
         end
       end
 
       after { Dependabot::Experiments.reset! }
 
-      it "picks the dated 4.8.2-20260301, not the non-dated 4.8.2" do
-        expect(checker.latest_version).to eq("4.8.2-20260301-windowsservercore-ltsc2022")
+      it "picks the dated 4.8.2-20990301, not the non-dated 4.8.2" do
+        expect(checker.latest_version).to eq("4.8.2-20990301-windowsservercore-ltsc2022")
       end
     end
   end
