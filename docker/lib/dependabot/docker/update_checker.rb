@@ -127,6 +127,16 @@ module Dependabot
 
         latest_tag = latest_tag_from(version)
 
+        # When timestamp validation is enabled, comparable_version_from strips
+        # date components (e.g. 4.8.1-20251014 -> 4.8.1), so two dated tags
+        # with different dates but the same base version compare as equal.
+        # Detect this case by checking the tag names directly.
+        if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
+           version_tag.dated_version? && latest_tag.dated_version? &&
+           latest_tag.name != version_tag.name
+          return false
+        end
+
         comparable_version_from(latest_tag) <= comparable_version_from(version_tag)
       end
 

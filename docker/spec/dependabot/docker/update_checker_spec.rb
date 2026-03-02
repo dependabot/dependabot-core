@@ -1933,6 +1933,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         # 4.8.1-20251014-windowsservercore-ltsc2022 is already the highest semver among dated tags
         # No upgrade available.
         expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.up_to_date?).to be(true)
       end
     end
 
@@ -1979,6 +1981,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         # Both are dated, same base version, and timestamp confirms it's newer.
         # Non-dated 4.8.1-windowsservercore-ltsc2022 is excluded from comparison.
         expect(checker.latest_version).to eq("4.8.1-20990301-windowsservercore-ltsc2022")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.up_to_date?).to be(false)
       end
     end
 
