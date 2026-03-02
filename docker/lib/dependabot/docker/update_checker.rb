@@ -174,7 +174,7 @@ module Dependabot
       # NOTE: It's important that this *always* returns a tag (even if
       # it's the existing one) as it is what we later check the digest of.
       sig { params(version_tag: Dependabot::Docker::Tag).returns(Dependabot::Docker::Tag) }
-      def fetch_latest_tag(version_tag) # rubocop:disable Metrics/PerceivedComplexity
+      def fetch_latest_tag(version_tag)
         return Tag.new(T.must(latest_digest)) if version_tag.digest? && latest_digest
         return version_tag unless version_tag.comparable?
 
@@ -195,9 +195,7 @@ module Dependabot
         end
 
         latest_same_precision_tag = remove_precision_changes(candidate_tags, version_tag).last
-        unless latest_same_precision_tag
-          return validate_tag_with_timestamp(latest_tag, version_tag, candidate_tags)
-        end
+        return validate_tag_with_timestamp(latest_tag, version_tag, candidate_tags) unless latest_same_precision_tag
 
         latest_same_precision_digest = digest_of(latest_same_precision_tag.name)
         latest_digest = digest_of(latest_tag.name)
@@ -662,20 +660,42 @@ module Dependabot
           .returns(T::Array[Dependabot::Docker::Tag])
       end
       def sort_tags(candidate_tags, version_tag)
-        candidate_tags.sort do |tag_a, tag_b|
-          version_cmp = comparable_version_from(tag_a) <=> comparable_version_from(tag_b)
-          if version_cmp != 0
-            version_cmp
-          elsif tag_a.same_precision?(version_tag) && !tag_b.same_precision?(version_tag)
-            1
-          elsif tag_b.same_precision?(version_tag) && !tag_a.same_precision?(version_tag)
-            -1
-          else
-            # When versions and precision are equal (e.g., dated tags with same base version),
-            # use the raw version string as tiebreaker so newer dates sort higher
-            (tag_a.version || "") <=> (tag_b.version || "")
-          end
-        end
+        candidate_tags.sort { |tag_a, tag_b| compare_tags(tag_a, tag_b, version_tag) }
+      end
+
+      sig do
+        params(
+          tag_a: Dependabot::Docker::Tag,
+          tag_b: Dependabot::Docker::Tag,
+          version_tag: Dependabot::Docker::Tag
+        ).returns(Integer)
+      end
+      def compare_tags(tag_a, tag_b, version_tag)
+        version_cmp = comparable_version_from(tag_a) <=> comparable_version_from(tag_b)
+        return version_cmp if version_cmp && version_cmp != 0
+
+        precision_cmp = compare_precision(tag_a, tag_b, version_tag)
+        return precision_cmp unless precision_cmp.zero?
+
+        # When versions and precision are equal (e.g., dated tags with same base version),
+        # use the raw version string as tiebreaker so newer dates sort higher
+        ((tag_a.version || "") <=> (tag_b.version || "")) || 0
+      end
+
+      sig do
+        params(
+          tag_a: Dependabot::Docker::Tag,
+          tag_b: Dependabot::Docker::Tag,
+          version_tag: Dependabot::Docker::Tag
+        ).returns(Integer)
+      end
+      def compare_precision(tag_a, tag_b, version_tag)
+        a_match = tag_a.same_precision?(version_tag)
+        b_match = tag_b.same_precision?(version_tag)
+        return 1 if a_match && !b_match
+        return -1 if b_match && !a_match
+
+        0
       end
 
       sig { params(candidate_tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[Dependabot::Docker::Tag]) }
@@ -798,22 +818,10 @@ module Dependabot
         media_type = manifest["mediaType"] || manifest[:mediaType]
 
         unless MANIFEST_LIST_TYPES.include?(media_type)
-          # Already a single-platform manifest
           return manifest.is_a?(Hash) ? manifest : manifest.to_h
         end
 
-        manifests = manifest["manifests"] || manifest[:manifests] || []
-        return nil if manifests.empty?
-
-        # Prefer linux/amd64, fall back to first available
-        selected = manifests.find do |m|
-          platform = m["platform"] || m[:platform] || {}
-          (platform["architecture"] || platform[:architecture]) == "amd64"
-        end
-        selected ||= manifests.first
-
-        # Fetch the platform-specific manifest to get the config digest
-        platform_digest = selected&.dig("digest") || selected&.dig(:digest)
+        platform_digest = select_platform_digest(manifest)
         return nil unless platform_digest
 
         platform_manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
@@ -821,6 +829,25 @@ module Dependabot
         end
 
         JSON.parse(platform_manifest.body)
+      end
+
+      # Selects the digest of the best platform-specific manifest from a manifest list,
+      # preferring linux/amd64.
+      sig { params(manifest: T.untyped).returns(T.nilable(String)) }
+      def select_platform_digest(manifest)
+        manifests = manifest["manifests"] || manifest[:manifests] || []
+        return nil if manifests.empty?
+
+        selected = find_amd64_manifest(manifests) || manifests.first
+        selected&.dig("digest") || selected&.dig(:digest)
+      end
+
+      sig { params(manifests: T.untyped).returns(T.untyped) }
+      def find_amd64_manifest(manifests)
+        manifests.find do |m|
+          platform = m["platform"] || m[:platform] || {}
+          (platform["architecture"] || platform[:architecture]) == "amd64"
+        end
       end
 
       sig do
