@@ -28,9 +28,10 @@ module Dependabot
         return name unless git_index
 
         repo_index = git_index + 1
-        return name unless normalized_segments[repo_index]
+        repo_name = normalized_segments[repo_index]
+        return name unless repo_name
 
-        normalized_segments[repo_index] = normalized_segments[repo_index].delete_suffix(".git")
+        normalized_segments[repo_index] = repo_name.delete_suffix(".git")
 
         normalized_segments.join("/")
       end
