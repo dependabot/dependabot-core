@@ -2427,6 +2427,51 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(checker.latest_version).to eq("1.25.2")
       end
     end
+
+    context "when more candidates fail than MAX_PLATFORM_VALIDATION_ATTEMPTS" do
+      let(:tags_fixture_name) { "multi_platform_many_tags.json" }
+      let(:version) { "1.24.0" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+        # All candidates missing s390x — every validation will fail
+        candidate_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(current_platforms)
+        # Stub all candidates to fail validation
+        %w(1.25.7 1.25.6 1.25.5 1.25.4 1.25.3 1.25.2 1.25.1 1.25.0).each do |tag|
+          allow(checker).to receive(:fetch_manifest_platforms).with(tag).and_return(candidate_platforms)
+        end
+      end
+
+      it "stops validating after MAX_PLATFORM_VALIDATION_ATTEMPTS and accepts the next candidate" do
+        # With 8 candidates above 1.24.0 and a cap of 5, the 6th candidate (1.25.2)
+        # is accepted without timestamp validation
+        expect(checker.latest_version).to eq("1.25.2")
+      end
+
+      it "does not call fetch_manifest_platforms more than MAX_PLATFORM_VALIDATION_ATTEMPTS times for candidates" do
+        checker.latest_version
+
+        # The cap should prevent validation of candidates beyond the limit.
+        # 5 candidates validated (1.25.7..1.25.3) + 1 current tag fetch = at most 6 calls
+        # for unique tags, but the 6th candidate (1.25.2) is accepted without validation.
+        failed_candidate_tags = %w(1.25.7 1.25.6 1.25.5 1.25.4 1.25.3)
+        failed_candidate_tags.each do |tag|
+          expect(checker).to have_received(:fetch_manifest_platforms).with(tag)
+        end
+        # Tags beyond the cap should NOT have been validated
+        expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.1")
+        expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.0")
+      end
+    end
   end
 
   describe "#version_related_pattern?" do

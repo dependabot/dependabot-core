@@ -34,6 +34,11 @@ module Dependabot
       # Multi-arch CI builds may finish platforms at slightly different times.
       PLATFORM_TIMESTAMP_TOLERANCE_SECONDS = T.let(3 * 60 * 60, Integer)
 
+      # Maximum number of candidates to run platform timestamp validation against.
+      # Each validation can require 1 + 1 + N*2 registry API calls for N platforms,
+      # so we cap the attempts to avoid rate limiting or excessive latency.
+      MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
+
       # Patterns that identify structurally obvious version components in tag
       # names. Matching parts are excluded from the common-component system
       # because they represent version data, not platform/variant identifiers.
@@ -212,12 +217,33 @@ module Dependabot
       end
       def select_best_candidate(candidate_tags, version_tag)
         same_precision_tags = remove_precision_changes(candidate_tags, version_tag)
+        validation_attempts = 0
 
         # Iterate from highest to lowest, trying each candidate until one passes validation
         candidate_tags.reverse_each do |candidate|
           selected = select_tag_with_precision(candidate, same_precision_tags, version_tag)
+
+          if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
+             selected.name != version_tag.name
+            if validation_attempts >= MAX_PLATFORM_VALIDATION_ATTEMPTS
+              Dependabot.logger.info(
+                "Platform validation: reached max attempts (#{MAX_PLATFORM_VALIDATION_ATTEMPTS}), " \
+                "accepting #{selected.name} without timestamp check"
+              )
+              return selected
+            end
+            validation_attempts += 1
+          end
+
           validated = validate_tag_with_timestamp(selected, version_tag)
           return validated unless validated.name == version_tag.name && selected.name != version_tag.name
+        end
+
+        if validation_attempts.positive?
+          Dependabot.logger.info(
+            "Platform validation: exhausted all #{validation_attempts} candidate(s) " \
+            "for #{version_tag.name}, staying on current version"
+          )
         end
 
         version_tag
@@ -835,12 +861,12 @@ module Dependabot
         created_str = config_data["created"]
         return nil unless created_str
 
-          Time.parse(created_str)
-        rescue ArgumentError => e
-          Dependabot.logger.info(
+        Time.parse(created_str)
+      rescue ArgumentError => e
+        Dependabot.logger.info(
           "Failed to parse config created timestamp for #{docker_repo_name} blob #{config_digest}: #{e.message}"
-          )
-          nil
+        )
+        nil
       end
 
       # Resolves a manifest to a single platform-specific manifest.
