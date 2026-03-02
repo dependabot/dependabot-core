@@ -1648,10 +1648,31 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       after { Dependabot::Experiments.reset! }
 
-      it "stays on current version since dated tags are not comparable" do
-        # With dated/non-dated split, 4.8-20250909 (dated) is not comparable
-        # to 4.8.1 (non-dated), so no false upgrade is suggested even without
-        # timestamp validation
+      it "falls back to semver-based ordering (existing behavior with date inflation)" do
+        # Without timestamp validation, dated/non-dated split is inactive and
+        # dates inflate semver: Gem::Version("4.8.20250909") > Gem::Version("4.8.1")
+        # This is the broken behavior that the experiment flag fixes.
+        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation is enabled (flag on) for the same scenario" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "stays on current version because dated tags are excluded" do
+        # With timestamp validation enabled, the dated/non-dated split is active:
+        # 4.8-20250909 (dated) is not comparable to 4.8.1 (non-dated).
+        # No false upgrade is suggested.
         expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
       end
     end
