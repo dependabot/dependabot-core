@@ -74,7 +74,8 @@ module Dependabot
       updated_files = generate_dependency_files
 
       unless updated_files.any?
-        raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
+        raise DependencyFileContentNotChanged,
+              "FileUpdater failed to update any files for: #{dependency_info_for_error}"
       end
 
       # Remove any unchanged dependencies from the updated list

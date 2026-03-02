@@ -178,6 +178,8 @@ module Dependabot
             # The existing PR is for a previous version. Supersede it.
             create_pull_request(dependency_change)
           end
+        rescue Dependabot::DependencyFileContentNotChanged
+          close_pull_request(reason: :update_no_longer_possible)
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity

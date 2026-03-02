@@ -402,5 +402,34 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
       end
     end
+
+    context "when the file updater produces no changes" do
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true,
+          updated_dependencies: [dependency]
+        )
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+        )
+        allow(Dependabot::DependencyChangeBuilder)
+          .to receive(:create_from)
+          .and_raise(Dependabot::DependencyFileContentNotChanged)
+      end
+
+      it "closes the pull request with reason :update_no_longer_possible" do
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-a"], :update_no_longer_possible)
+        refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+      end
+
+      it "does not create or update a pull request" do
+        expect(mock_service).not_to receive(:create_pull_request)
+        expect(mock_service).not_to receive(:update_pull_request)
+        refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+      end
+    end
   end
 end
