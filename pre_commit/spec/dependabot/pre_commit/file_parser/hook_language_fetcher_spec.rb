@@ -8,7 +8,7 @@ require "dependabot/pre_commit/file_parser"
 require "dependabot/pre_commit/file_parser/hook_language_fetcher"
 
 # Struct to mock GitHub API content response (Sawyer::Resource uses dynamic attributes)
-GithubContentResponse = Struct.new(:content, keyword_init: true)
+GithubContentResponse = Struct.new(:content)
 
 RSpec.describe Dependabot::PreCommit::FileParser::HookLanguageFetcher do
   let(:credentials) { [] }
