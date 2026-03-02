@@ -34,23 +34,18 @@ module Dependabot
       # names. Matching parts are excluded from the common-component system
       # because they represent version data, not platform/variant identifiers.
       #
-      # Everything that does NOT match these patterns is treated as a
-      # platform/variant component (e.g., "alpine3", "ltsc2022", "bookworm",
-      # "rc1", "jre"). This is intentionally broad — the primary tag filtering
-      # in comparable_to? already handles prerelease and suffix isolation via
-      # exact suffix matching, so component matching is a secondary safety net.
-      #
       # To exclude a new structural pattern, add a regex here.
       VERSION_RELATED_PATTERNS = T.let(
         [
-          /^\d+$/,           # pure numbers: "123", "8"
-          /^\d+\.\d+$/,      # semver-like: "1.2"
-          /^v\d+/,            # v-prefixed: "v2", "v10"
-          /^\d+[a-z]/i,       # digit-leading mixed: PEP 440 prereleases "0a1", "0b1", "0rc1"
-          /^kb\d+$/i,         # Microsoft KB numbers: "KB4505057"
-          /^g[0-9a-f]{5,}$/,  # git SHAs: "g1a2b3c4"
-          /^\d{8,14}$/,       # timestamps: "20250909"
-          /\d+_\d+/           # underscore-separated version parts: "12_8"
+          /^\d+$/,                          # pure numbers: "123", "8"
+          /^\d+\.\d+$/,                     # semver-like: "1.2"
+          /^v\d+/,                          # v-prefixed: "v2", "v10"
+          /^(?=.*\d)(?=.*[a-z])[a-z\d]+$/i, # match any mixed alphanumeric string ("rc1", "beta2", "alpine3", "ltsc2022")
+          /^(rc|jre)$/,                     # common Docker tag components that are actually part of versioning: "rc", "jre"
+          /^kb\d+$/i,                       # Microsoft KB numbers: "KB4505057"
+          /^g[0-9a-f]{5,}$/,                # git SHAs: "g1a2b3c4"
+          /^\d{8,14}$/,                     # timestamps: "20250909"
+          /\d+_\d+/                         # underscore-separated version parts: "12_8"
         ].freeze,
         T::Array[Regexp]
       )
