@@ -13,19 +13,19 @@ RSpec.describe Dependabot::Python::RequirementParser do
     requirements = requirement[:requirements].to_s
                                              .to_enum(:scan, described_class::REQUIREMENT)
                                              .map do
-                                               {
-                                                 comparison: Regexp.last_match[:comparison],
-                                                 version: Regexp.last_match[:version]
-                                               }
+      {
+        comparison: Regexp.last_match[:comparison],
+        version: Regexp.last_match[:version]
+      }
     end
 
     hashes = requirement[:hashes].to_s
                                  .to_enum(:scan, described_class::HASH)
                                  .map do
-                                   {
-                                     algorithm: Regexp.last_match[:algorithm],
-                                     hash: Regexp.last_match[:hash]
-                                   }
+      {
+        algorithm: Regexp.last_match[:algorithm],
+        hash: Regexp.last_match[:hash]
+      }
     end
 
     {

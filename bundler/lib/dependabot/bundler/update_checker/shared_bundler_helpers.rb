@@ -75,9 +75,9 @@ module Dependabot
           SharedHelpers
             .in_a_temporary_repo_directory(base_directory,
                                            repo_contents_path) do |tmp_dir|
-              write_temporary_dependency_files
+            write_temporary_dependency_files
 
-              yield(tmp_dir.to_s)
+            yield(tmp_dir.to_s)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           retry_count ||= 0

@@ -17,7 +17,7 @@ class Faraday::RetriableResponse < ::Faraday::Error; end
 
 # Middleware main module.
 #
-# source://faraday-retry//lib/faraday/retry/middleware.rb#4
+# source://faraday-retry//lib/faraday/retry/middleware.rb#6
 module Faraday::Retry; end
 
 # This class provides the main implementation for your middleware.
@@ -33,8 +33,11 @@ module Faraday::Retry; end
 #   (see "retry" middleware: https://github.com/lostisland/faraday/blob/main/lib/faraday/request/retry.rb#L142).
 #   IMPORTANT: Remember to call `@app.call(env)` or `super` to not interrupt the middleware chain!
 #
-# source://faraday-retry//lib/faraday/retry/middleware.rb#17
+# source://faraday-retry//lib/faraday/retry/middleware.rb#19
 class Faraday::Retry::Middleware < ::Faraday::Middleware
+  include ::Faraday::Retryable
+
+  # @option options
   # @option options
   # @option options
   # @option options
@@ -50,7 +53,7 @@ class Faraday::Retry::Middleware < ::Faraday::Middleware
   # @param options [Hash]
   # @return [Middleware] a new instance of Middleware
   #
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#127
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#143
   def initialize(app, options = T.unsafe(nil)); end
 
   # An exception matcher for the rescue clause can usually be any object
@@ -60,15 +63,15 @@ class Faraday::Retry::Middleware < ::Faraday::Middleware
   # @param exceptions [Array]
   # @return [Module] an exception matcher
   #
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#185
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#183
   def build_exception_matcher(exceptions); end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#133
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#149
   def calculate_sleep_amount(retries, env); end
 
   # @param env [Faraday::Env]
   #
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#147
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#163
   def call(env); end
 
   private
@@ -76,78 +79,99 @@ class Faraday::Retry::Middleware < ::Faraday::Middleware
   # RFC for RateLimit Header Fields for HTTP:
   # https://www.ietf.org/archive/id/draft-ietf-httpapi-ratelimit-headers-05.html#name-fields-definition
   #
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#222
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#220
   def calculate_rate_limit_reset(env); end
 
   # MDN spec for Retry-After header:
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
   #
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#229
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#227
   def calculate_retry_after(env); end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#234
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#232
   def calculate_retry_interval(retries); end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#245
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#243
   def parse_retry_header(env, header); end
 
   # @return [Boolean]
   #
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#206
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#204
   def retry_request?(env, exception); end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#211
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#209
   def rewind_files(body); end
 end
 
-# source://faraday-retry//lib/faraday/retry/middleware.rb#18
+# source://faraday-retry//lib/faraday/retry/middleware.rb#22
 Faraday::Retry::Middleware::DEFAULT_EXCEPTIONS = T.let(T.unsafe(nil), Array)
 
-# source://faraday-retry//lib/faraday/retry/middleware.rb#22
+# source://faraday-retry//lib/faraday/retry/middleware.rb#26
 Faraday::Retry::Middleware::IDEMPOTENT_METHODS = T.let(T.unsafe(nil), Array)
 
 # Options contains the configurable parameters for the Retry middleware.
 #
-# source://faraday-retry//lib/faraday/retry/middleware.rb#30
+# source://faraday-retry//lib/faraday/retry/middleware.rb#35
 class Faraday::Retry::Middleware::Options < ::Faraday::Options
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#58
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#63
   def backoff_factor; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#62
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#67
   def exceptions; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#46
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#87
+  def exhausted_retries_block; end
+
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#51
   def interval; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#54
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#59
   def interval_randomness; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#42
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#47
   def max; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#50
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#55
   def max_interval; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#66
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#71
   def methods; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#74
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#79
   def retry_block; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#70
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#75
   def retry_if; end
 
-  # source://faraday-retry//lib/faraday/retry/middleware.rb#78
+  # source://faraday-retry//lib/faraday/retry/middleware.rb#83
   def retry_statuses; end
 
   class << self
-    # source://faraday-retry//lib/faraday/retry/middleware.rb#34
+    # source://faraday-retry//lib/faraday/retry/middleware.rb#39
     def from(value); end
   end
 end
 
-# source://faraday-retry//lib/faraday/retry/middleware.rb#32
+# source://faraday-retry//lib/faraday/retry/middleware.rb#37
 Faraday::Retry::Middleware::Options::DEFAULT_CHECK = T.let(T.unsafe(nil), Proc)
 
 # source://faraday-retry//lib/faraday/retry/version.rb#5
 Faraday::Retry::VERSION = T.let(T.unsafe(nil), String)
+
+# Adds the ability to retry a request based on settings and errors that have occurred.
+#
+# source://faraday-retry//lib/faraday/retry/retryable.rb#5
+module Faraday::Retryable
+  # source://faraday-retry//lib/faraday/retry/retryable.rb#6
+  def with_retries(env:, options:, retries:, body:, errmatch:); end
+
+  private
+
+  # source://faraday-retry//lib/faraday/retry/retryable.rb#38
+  def exhausted_retries(options, env, exception); end
+
+  # @return [Boolean]
+  #
+  # source://faraday-retry//lib/faraday/retry/retryable.rb#34
+  def retries_zero?(retries, env, exception); end
+end

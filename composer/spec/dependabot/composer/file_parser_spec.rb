@@ -403,7 +403,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
-      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.8.10"))
+      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.9.5"))
     end
 
     it "returns language with version" do

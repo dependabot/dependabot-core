@@ -198,8 +198,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(5)
         expect(additional_deps.length).to eq(12)
@@ -245,8 +246,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(4)
         expect(additional_deps.length).to eq(8)
@@ -296,8 +298,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(2)
         expect(additional_deps.length).to eq(2)
@@ -375,8 +378,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(3)
         expect(additional_deps.length).to eq(5)
@@ -425,8 +429,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(4)
         expect(additional_deps.length).to eq(6)

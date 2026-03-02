@@ -157,8 +157,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }
           .to raise_error do |error|
-            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("yewtil")
+          expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+          expect(error.message).to include("yewtil")
         end
       end
     end

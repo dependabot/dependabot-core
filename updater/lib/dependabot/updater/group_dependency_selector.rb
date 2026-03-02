@@ -151,7 +151,25 @@ module Dependabot
 
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_by_name_only(changes_by_dir)
-        deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+        directories_by_name = T.let({}, T::Hash[String, T::Array[String]])
+
+        # Collect all directories per dependency name before deduplication
+        changes_by_dir.each do |change|
+          directory = change.job.source.directory || "."
+          Array(change.updated_dependencies).each do |dep|
+            directories_by_name[dep.name] ||= []
+            T.must(directories_by_name[dep.name]) << directory
+          end
+        end
+
+        merged = deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+
+        # Annotate each surviving dependency with all directories where it was updated
+        merged.each do |dep|
+          dep.metadata[:updated_directories] = T.must(directories_by_name[dep.name]).uniq
+        end
+
+        merged
       end
 
       sig do

@@ -458,9 +458,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         log_requirements_for_update: nil
       )
       allow(checker).to receive(:up_to_date?).and_return(false)
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:group_by_dependency_name)
-        .and_return(true)
     end
 
     context "when semver rules reject grouping for a group-by-name subgroup" do

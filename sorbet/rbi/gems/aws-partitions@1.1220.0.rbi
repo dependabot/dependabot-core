@@ -132,41 +132,41 @@ module Aws::Partitions
     # @api private For internal use only.
     # @param new_partitions [Hash]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#191
+    # source://aws-partitions//lib/aws-partitions.rb#192
     def add(new_partitions); end
 
     # @api private For internal use only.
     #
-    # source://aws-partitions//lib/aws-partitions.rb#205
+    # source://aws-partitions//lib/aws-partitions.rb#206
     def clear; end
 
     # @api private
     # @return [Hash]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#232
+    # source://aws-partitions//lib/aws-partitions.rb#233
     def default_metadata; end
 
     # @api private
     # @return [PartitionList]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#212
+    # source://aws-partitions//lib/aws-partitions.rb#213
     def default_partition_list; end
 
     # @api private
     # @return [Hash]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#222
+    # source://aws-partitions//lib/aws-partitions.rb#223
     def defaults; end
 
     # @return [Enumerable<Partition>]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#136
+    # source://aws-partitions//lib/aws-partitions.rb#137
     def each(&block); end
 
     # @api private For Internal use only
     # @param partition_metadata [Hash]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#200
+    # source://aws-partitions//lib/aws-partitions.rb#201
     def merge_metadata(partition_metadata); end
 
     # Return the partition with the given name. A partition describes
@@ -191,7 +191,7 @@ module Aws::Partitions
     #   of valid partition names.
     # @return [Partition]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#163
+    # source://aws-partitions//lib/aws-partitions.rb#164
     def partition(name); end
 
     # Returns an array with every partitions. A partition describes
@@ -213,14 +213,14 @@ module Aws::Partitions
     # @return [Enumerable<Partition>] Returns an enumerable of all
     #   known partitions.
     #
-    # source://aws-partitions//lib/aws-partitions.rb#185
+    # source://aws-partitions//lib/aws-partitions.rb#186
     def partitions; end
 
     # @api private For internal use only.
     # @return [Hash<String,String>] Returns a map of service module names
     #   to their id as used in the endpoints.json document.
     #
-    # source://aws-partitions//lib/aws-partitions.rb#243
+    # source://aws-partitions//lib/aws-partitions.rb#244
     def service_ids; end
   end
 end
@@ -391,6 +391,30 @@ end
 #
 # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#9
 Aws::Partitions::EndpointProvider::STS_LEGACY_REGIONS = T.let(T.unsafe(nil), Array)
+
+# @api private
+#
+# source://aws-partitions//lib/aws-partitions/metadata.rb#6
+module Aws::Partitions::Metadata
+  class << self
+    # @api private
+    #
+    # source://aws-partitions//lib/aws-partitions/metadata.rb#25
+    def default_partition_metadata; end
+
+    # aws.partition(region: string) Option<Partition>
+    #
+    # @api private
+    #
+    # source://aws-partitions//lib/aws-partitions/metadata.rb#10
+    def partition(region); end
+
+    # @api private
+    #
+    # source://aws-partitions//lib/aws-partitions/metadata.rb#21
+    def partitions; end
+  end
+end
 
 # source://aws-partitions//lib/aws-partitions/partition.rb#5
 class Aws::Partitions::Partition

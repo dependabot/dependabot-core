@@ -7,5 +7,10 @@
   ],
   "require": {
       "laravel/nova": "*"
+  },
+  "config": {
+    "audit": {
+      "block-insecure": false
+    }
   }
 }

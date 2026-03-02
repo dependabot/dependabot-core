@@ -135,13 +135,14 @@ class DomainName
   def uri_host; end
 
   class << self
-    # source://domain_name//lib/domain_name/etld_data.rb#9575
+    # source://domain_name//lib/domain_name/etld_data.rb#9572
     def etld_data; end
 
     # Normalizes a _domain_ using the Punycode algorithm as necessary.
+    # Input must be strictly ASCII-only or unicode.
     # The result will be a downcased, ASCII-only string.
     #
-    # source://domain_name//lib/domain_name.rb#287
+    # source://domain_name//lib/domain_name.rb#288
     def normalize(domain); end
   end
 end
@@ -256,6 +257,6 @@ class Object < ::BasicObject
 
   private
 
-  # source://domain_name//lib/domain_name.rb#294
+  # source://domain_name//lib/domain_name.rb#298
   def DomainName(hostname); end
 end
