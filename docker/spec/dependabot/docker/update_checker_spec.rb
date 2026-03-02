@@ -1563,13 +1563,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
 
+        # Timestamps based on actual MCR values:
+        # 4.8.1 and 4.8.1-20251014 are the same build (2026-02-10)
+        # 4.8-20250909 and 4.8 are the same build (2025-09-09)
         created_timestamps = {
-          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T10:00:00Z"),
-          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2025-10-14T15:30:00Z"),
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
           "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
-          "4.8-windowsservercore-ltsc2022" => Time.parse("2024-06-01T00:00:00Z"),
+          "4.8-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
           "4.8.1-windowsservercore-ltsc2019" => Time.parse("2026-02-10T20:17:06Z"),
-          "4.8-windowsservercore-ltsc2019" => Time.parse("2024-06-01T00:00:00Z")
+          "4.8-windowsservercore-ltsc2019" => Time.parse("2025-09-09T18:06:45Z")
         }
 
         allow(checker).to receive(:fetch_image_config_created) do |tag_name|
@@ -1608,9 +1611,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "4ea71a1")))
 
+        # Timestamps based on actual MCR values
         created_timestamps = {
-          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T10:00:00Z"),
-          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2025-10-14T15:30:00Z"),
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
           "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z")
         }
 
@@ -1621,11 +1625,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       after { Dependabot::Experiments.reset! }
 
-      it "correctly identifies no newer version is available" do
-        # All comparable tags have lower semver than 4.8.1.20251014, so no upgrade is found.
-        # The timestamp validation only applies when semver identifies a candidate "upgrade" —
-        # it rejects false upgrades, it doesn't re-rank downgrades as upgrades.
-        # Users on date-tagged versions should use the non-date tag (4.8.1) directly.
+      it "rejects the older dated tag despite higher semver" do
+        # Among dated tags, 4.8-20250909 has Gem::Version("4.8.20250909") which appears
+        # higher than 4.8.1-20251014's Gem::Version("4.8.1.20251014") because the date
+        # inflates the version number. But the timestamp validation catches this:
+        # 4.8-20250909 was created 2025-09-09 which is OLDER than 4.8.1-20251014 (2026-02-10).
+        # So no upgrade is suggested.
         expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
       end
     end
@@ -1643,10 +1648,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       after { Dependabot::Experiments.reset! }
 
-      it "falls back to semver-based ordering (existing behavior)" do
-        # Without timestamp validation, 4.8-20250909 appears "higher" than 4.8.1
-        # because Gem::Version("4.8.20250909") > Gem::Version("4.8.1")
-        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      it "stays on current version since dated tags are not comparable" do
+        # With dated/non-dated split, 4.8-20250909 (dated) is not comparable
+        # to 4.8.1 (non-dated), so no false upgrade is suggested even without
+        # timestamp validation
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
       end
     end
 
@@ -1665,8 +1671,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       after { Dependabot::Experiments.reset! }
 
-      it "falls back to semver ordering when config blob cannot be fetched" do
-        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      it "stays on current version since dated tags are not comparable" do
+        # Even when timestamp fetch fails, the dated/non-dated split prevents
+        # 4.8-20250909 (dated) from being considered as an upgrade for 4.8.1 (non-dated)
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
       end
     end
 
@@ -1681,9 +1689,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
 
         # Stub at the fetch_image_config_created level to avoid interfering with tag listing
+        # Timestamps based on actual MCR values
         created_timestamps = {
-          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T10:00:00Z"),
-          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2025-10-14T15:30:00Z"),
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
           "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z")
         }
 
@@ -1699,7 +1708,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when all candidate tags are genuinely newer by timestamp" do
+    context "when all non-dated candidate tags are genuinely newer by timestamp" do
       let(:dependency_name) { "dotnet/framework/aspnet" }
       let(:version) { "4.8-windowsservercore-ltsc2022" }
       let(:tags_fixture_name) { "aspnet.json" }
@@ -1716,26 +1725,201 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
-        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
-          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
         stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "6gc93c3")))
-        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
-          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
 
         allow(checker).to receive(:fetch_image_config_created) do |tag_name|
           if tag_name == "4.8-windowsservercore-ltsc2022"
-            Time.parse("2024-06-01T00:00:00Z")
+            Time.parse("2025-09-09T18:06:45Z")
           else
-            Time.parse("2026-01-01T00:00:00Z")
+            Time.parse("2026-02-10T20:17:06Z")
           end
         end
       end
 
       after { Dependabot::Experiments.reset! }
 
-      it "returns the highest semver tag since all are genuinely newer" do
-        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      it "returns the highest non-dated tag since dated tags are excluded" do
+        # 4.8-20250909 is excluded because it's a dated tag and 4.8 is non-dated.
+        # The only comparable non-dated upgrade is 4.8.1.
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when a dated tag has no newer dated tag available" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub manifest digest requests
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+
+        # Timestamps: non-dated tag has the newest timestamp, but should still
+        # be excluded because the current tag is dated
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8-20250909-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          when "4.8.1-20251014-windowsservercore-ltsc2022"
+            Time.parse("2026-02-10T20:17:06Z")
+          when "4.8.1-windowsservercore-ltsc2022"
+            # Non-dated tag has the newest timestamp — but it should NOT be picked
+            Time.parse("2026-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "stays on current version, ignoring non-dated tags even with newer timestamps" do
+        # 4.8.1-windowsservercore-ltsc2022 (non-dated, newest timestamp) is excluded.
+        # 4.8.1-20251014-windowsservercore-ltsc2022 is already the highest semver among dated tags
+        # No upgrade available.
+        expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when a dated tag updates to a newer dated tag with the same base version" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet_with_future_dates.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub manifest digest requests needed by precision comparison
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-20260301-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8.1-20251014-windowsservercore-ltsc2022"
+            Time.parse("2025-10-14T18:06:45Z")
+          when "4.8.1-20260301-windowsservercore-ltsc2022"
+            Time.parse("2026-03-01T20:17:06Z")
+          when "4.8-20250909-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          when "4.8.1-windowsservercore-ltsc2022"
+            # Non-dated tag — should NOT be picked even though it exists
+            Time.parse("2026-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "updates to the newer dated tag with the same base version" do
+        # Both are dated, same base version, and timestamp confirms it's newer.
+        # Non-dated 4.8.1-windowsservercore-ltsc2022 is excluded from comparison.
+        expect(checker.latest_version).to eq("4.8.1-20260301-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when a non-dated tag updates to a newer non-dated version, ignoring dated tags" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet_with_future_tags.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.2-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "8ie15e5")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8.1-windowsservercore-ltsc2022"
+            Time.parse("2026-02-10T20:17:06Z")
+          when "4.8.2-windowsservercore-ltsc2022"
+            Time.parse("2026-03-01T10:00:00Z")
+          when "4.8.2-20260301-windowsservercore-ltsc2022"
+            # Dated tag has an even newer timestamp — but should NOT be picked
+            Time.parse("2026-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "picks the non-dated 4.8.2, not the dated 4.8.2-20260301" do
+        expect(checker.latest_version).to eq("4.8.2-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when a dated tag updates to a newer dated version, ignoring non-dated tags" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet_with_future_tags.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.2-20260301-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "9jf26f6")))
+        stub_request(:head, repo_url + "manifests/4.8.1-20260301-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8.1-20251014-windowsservercore-ltsc2022"
+            Time.parse("2025-10-14T18:06:45Z")
+          when "4.8.1-20260301-windowsservercore-ltsc2022"
+            Time.parse("2026-03-01T10:00:00Z")
+          when "4.8.2-20260301-windowsservercore-ltsc2022"
+            Time.parse("2026-03-01T10:00:00Z")
+          when "4.8-20250909-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          when "4.8.2-windowsservercore-ltsc2022"
+            # Non-dated tag has an even newer timestamp — but should NOT be picked
+            Time.parse("2026-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "picks the dated 4.8.2-20260301, not the non-dated 4.8.2" do
+        expect(checker.latest_version).to eq("4.8.2-20260301-windowsservercore-ltsc2022")
       end
     end
   end

@@ -237,7 +237,8 @@ module Dependabot
 
         # Walk backwards through candidates to find one actually newer by build date
         candidate_tags.reverse_each do |tag|
-          next if comparable_version_from(tag) <= comparable_version_from(current_tag)
+          next if tag.name == current_tag.name
+          next if comparable_version_from(tag) < comparable_version_from(current_tag)
 
           if candidate_newer_by_created_date?(tag, current_tag)
             Dependabot.logger.info(
@@ -662,16 +663,17 @@ module Dependabot
       end
       def sort_tags(candidate_tags, version_tag)
         candidate_tags.sort do |tag_a, tag_b|
-          if comparable_version_from(tag_a) > comparable_version_from(tag_b)
+          version_cmp = comparable_version_from(tag_a) <=> comparable_version_from(tag_b)
+          if version_cmp != 0
+            version_cmp
+          elsif tag_a.same_precision?(version_tag) && !tag_b.same_precision?(version_tag)
             1
-          elsif comparable_version_from(tag_a) < comparable_version_from(tag_b)
-            -1
-          elsif tag_a.same_precision?(version_tag)
-            1
-          elsif tag_b.same_precision?(version_tag)
+          elsif tag_b.same_precision?(version_tag) && !tag_a.same_precision?(version_tag)
             -1
           else
-            0
+            # When versions and precision are equal (e.g., dated tags with same base version),
+            # use the raw version string as tiebreaker so newer dates sort higher
+            (tag_a.version || "") <=> (tag_b.version || "")
           end
         end
       end
