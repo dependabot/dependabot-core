@@ -191,11 +191,11 @@ module Dependabot
         return version_tag unless latest_tag
 
         if latest_tag.same_precision?(version_tag)
-          return validate_tag_with_timestamp(latest_tag, version_tag, candidate_tags)
+          return validate_tag_with_timestamp(latest_tag, version_tag)
         end
 
         latest_same_precision_tag = remove_precision_changes(candidate_tags, version_tag).last
-        return validate_tag_with_timestamp(latest_tag, version_tag, candidate_tags) unless latest_same_precision_tag
+        return validate_tag_with_timestamp(latest_tag, version_tag) unless latest_same_precision_tag
 
         latest_same_precision_digest = digest_of(latest_same_precision_tag.name)
         latest_digest = digest_of(latest_tag.name)
@@ -219,37 +219,30 @@ module Dependabot
             latest_tag
           end
 
-        validate_tag_with_timestamp(selected_tag, version_tag, candidate_tags)
+        validate_tag_with_timestamp(selected_tag, version_tag)
       end
 
       sig do
         params(
           selected_tag: Dependabot::Docker::Tag,
-          current_tag: Dependabot::Docker::Tag,
-          candidate_tags: T::Array[Dependabot::Docker::Tag]
+          current_tag: Dependabot::Docker::Tag
         ).returns(Dependabot::Docker::Tag)
       end
-      def validate_tag_with_timestamp(selected_tag, current_tag, candidate_tags)
+      def validate_tag_with_timestamp(selected_tag, current_tag)
         return selected_tag unless Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
         return selected_tag if selected_tag.name == current_tag.name
 
-        # Walk backwards through candidates to find one actually newer by build date
-        candidate_tags.reverse_each do |tag|
-          next if tag.name == current_tag.name
-          next if comparable_version_from(tag) < comparable_version_from(current_tag)
-
-          if candidate_newer_by_created_date?(tag, current_tag)
-            Dependabot.logger.info(
-              "Timestamp validation: #{tag.name} confirmed newer than #{current_tag.name}"
-            )
-            return tag
-          end
-
+        if candidate_newer_by_created_date?(selected_tag, current_tag)
           Dependabot.logger.info(
-            "Timestamp validation: skipping #{tag.name} — image created date " \
-            "is not newer than #{current_tag.name}"
+            "Timestamp validation: #{selected_tag.name} confirmed newer than #{current_tag.name}"
           )
+          return selected_tag
         end
+
+        Dependabot.logger.info(
+          "Timestamp validation: skipping #{selected_tag.name} — image created date " \
+          "is not newer than #{current_tag.name}"
+        )
 
         current_tag
       end
@@ -807,7 +800,15 @@ module Dependabot
         created_str = config_data["created"]
         return nil unless created_str
 
-        Time.parse(created_str)
+        begin
+          Time.parse(created_str)
+        rescue ArgumentError => e
+          Dependabot.logger.info(
+            "Failed to parse config created timestamp for " \
+            "#{docker_repo_name}:#{tag_name}: #{e.message}"
+          )
+          nil
+        end
       end
 
       # Resolves a manifest to a single platform-specific manifest.
@@ -860,8 +861,14 @@ module Dependabot
         candidate_created = fetch_image_config_created(candidate_tag.name)
         current_created = fetch_image_config_created(current_tag.name)
 
-        # If we can't determine either timestamp, trust semver ordering
-        return true unless candidate_created && current_created
+        # If both timestamps are unavailable, trust semver ordering
+        return true if candidate_created.nil? && current_created.nil?
+
+        # If only the candidate's timestamp is unavailable, we can't confirm it's newer
+        return false if candidate_created.nil?
+
+        # If only the current tag's timestamp is unavailable, trust semver ordering
+        return true if current_created.nil?
 
         candidate_created > current_created
       end
