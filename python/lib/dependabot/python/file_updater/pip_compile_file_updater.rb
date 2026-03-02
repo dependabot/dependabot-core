@@ -26,7 +26,11 @@ module Dependabot
 
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
         INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          /not supported between instances of 'InstallationCandidate'.*\z/m,
+          Regexp.new(
+            "(?:not supported between instances of 'InstallationCandidate'" \
+            "|There are incompatible versions in the resolved dependencies).*\\z",
+            Regexp::MULTILINE
+          ),
           Regexp
         )
         WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
