@@ -72,12 +72,16 @@ RUN apt-get update \
     # apt-transport-https is a temporary dependency to install the git-lfs apt source
     && apt-get install -y --no-install-recommends apt-transport-https \
     && mkdir -p /etc/apt/keyrings \
-           && curl -fsSL 'https://packagecloud.io/github/git-lfs/gpgkey' | gpg --dearmor > /etc/apt/keyrings/github_git-lfs-archive-keyring.gpg \
-           && release=$( . /etc/os-release && echo "$VERSION_CODENAME" ) \
-           && echo "deb [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
-              > /etc/apt/sources.list.d/github_git-lfs.list \
-           && echo "deb-src [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
-              >> /etc/apt/sources.list.d/github_git-lfs.list \
+    && if curl -fsSL 'https://packagecloud.io/github/git-lfs/gpgkey' | gpg --dearmor > /etc/apt/keyrings/github_git-lfs-archive-keyring.gpg; then \
+         release=$( . /etc/os-release && echo "$VERSION_CODENAME" ); \
+         echo "deb [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
+           > /etc/apt/sources.list.d/github_git-lfs.list; \
+         echo "deb-src [signed-by=/etc/apt/keyrings/github_git-lfs-archive-keyring.gpg] https://packagecloud.io/github/git-lfs/ubuntu/ $release main" \
+           >> /etc/apt/sources.list.d/github_git-lfs.list; \
+       else \
+         echo "WARN: packagecloud git-lfs key unavailable, falling back to distro git-lfs package"; \
+         rm -f /etc/apt/keyrings/github_git-lfs-archive-keyring.gpg /etc/apt/sources.list.d/github_git-lfs.list; \
+       fi \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
     # dev dependencies for CI

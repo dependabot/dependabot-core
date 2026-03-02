@@ -11,7 +11,6 @@ require "dependabot/dependency"
 require "dependabot/update_checkers/base"
 require "dependabot/experiments"
 require "dependabot/service"
-require "dependabot/npm_and_yarn/file_updater"
 
 RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   # Create a test class that includes the module to test it
@@ -662,16 +661,14 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   end
 
   describe "#create_change_for" do
+    let(:no_change_error_class) { Class.new(StandardError) }
     let(:lead_dependency) do
       instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.1")
     end
     let(:updated_dependencies) { [lead_dependency] }
 
-    it "handles npm_and_yarn no-change errors from DependencyChangeBuilder" do
-      no_change_error = Dependabot::NpmAndYarn::FileUpdater::NoChangeError.new(
-        message: "No files were updated!",
-        error_context: {}
-      )
+    it "handles file updater no-change errors from DependencyChangeBuilder" do
+      no_change_error = no_change_error_class.new("No files were updated!")
 
       allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_raise(no_change_error)
 
