@@ -821,6 +821,12 @@ module Dependabot
         config_digest = resolved.dig("config", "digest")
         return nil unless config_digest
 
+        parse_created_from_config_blob(config_digest)
+      end
+
+      # Fetches and parses the "created" timestamp from a config blob identified by its digest.
+      sig { params(config_digest: String).returns(T.nilable(Time)) }
+      def parse_created_from_config_blob(config_digest)
         config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           docker_registry_client.doget("v2/#{docker_repo_name}/blobs/#{config_digest}")
         end
@@ -829,15 +835,12 @@ module Dependabot
         created_str = config_data["created"]
         return nil unless created_str
 
-        begin
           Time.parse(created_str)
         rescue ArgumentError => e
           Dependabot.logger.info(
-            "Failed to parse config created timestamp for " \
-            "#{docker_repo_name}:#{tag_name}: #{e.message}"
+          "Failed to parse config created timestamp for #{docker_repo_name} blob #{config_digest}: #{e.message}"
           )
           nil
-        end
       end
 
       # Resolves a manifest to a single platform-specific manifest.
@@ -1087,20 +1090,7 @@ module Dependabot
         config_digest = parsed.dig("config", "digest")
         return nil unless config_digest
 
-        config_blob = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          docker_registry_client.doget("v2/#{docker_repo_name}/blobs/#{config_digest}")
-        end
-
-        config_data = JSON.parse(config_blob.body)
-        created_str = config_data["created"]
-        return nil unless created_str
-
-        Time.parse(created_str)
-      rescue ArgumentError => e
-        Dependabot.logger.info(
-          "Failed to parse platform timestamp for #{docker_repo_name} digest #{platform_digest}: #{e.message}"
-        )
-        nil
+        parse_created_from_config_blob(config_digest)
       end
 
       sig { returns(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])]) }
