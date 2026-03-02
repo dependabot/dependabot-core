@@ -1590,6 +1590,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when docker_created_timestamp_validation is enabled" do
         before do
           Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+          allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
         end
 
         after { Dependabot::Experiments.reset! }
@@ -1866,6 +1867,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
 
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
@@ -1951,6 +1953,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
 
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
@@ -1999,6 +2002,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
 
         stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
@@ -2038,6 +2042,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
 
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
@@ -2069,6 +2074,357 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "picks the dated 4.8.2-20990301, not the non-dated 4.8.2" do
         expect(checker.latest_version).to eq("4.8.2-20990301-windowsservercore-ltsc2022")
+      end
+    end
+  end
+
+  describe "multi-platform validation" do
+    let(:dependency_name) { "nginx" }
+    let(:repo_url) { "https://registry.hub.docker.com/v2/library/nginx/" }
+    let(:tags_fixture_name) { "multi_platform.json" }
+    let(:source) { { tag: version } }
+
+    before do
+      Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+    end
+
+    after { Dependabot::Experiments.reset! }
+
+    context "when candidate has all platforms with valid timestamps" do
+      let(:version) { "1.25.3" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+        candidate_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(candidate_platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "updates to the candidate tag" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when candidate is missing a platform from current" do
+      let(:version) { "1.25.3" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+        # 1.25.4 missing s390x
+        candidate_1254_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+        # 1.25.2 has all platforms
+        candidate_1252_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(candidate_1254_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(candidate_1252_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.1").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.0").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(current_platforms)
+
+        all_timestamps = {
+          "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+          "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z"),
+          "linux/s390x" => Time.parse("2024-03-01T11:00:00Z")
+        }
+        allow(checker).to receive(:fetch_all_platform_timestamps).and_return(all_timestamps)
+      end
+
+      it "skips the candidate missing a platform and falls back to current" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when candidate platform was built before current (beyond 3h tolerance)" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+        # candidate arm64 is older than current arm64 by more than 3 hours
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-02T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T05:00:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.2").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.1").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-02-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-02-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.24.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-12-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-12-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "skips the stale candidate and falls back to current" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when candidate platform timestamps are within 3h tolerance" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+        # candidate arm64 is 2h older than current arm64 — within 3h tolerance
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-02T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T08:30:00Z")
+          }
+        )
+      end
+
+      it "accepts the candidate since timestamps are within tolerance" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when current tag is single-platform (not a manifest list)" do
+      let(:version) { "1.25.3" }
+
+      before do
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(nil)
+
+        # Falls back to simple timestamp comparison
+        allow(checker).to receive(:fetch_image_config_created).with("1.25.3")
+                                                              .and_return(Time.parse("2024-01-01T10:00:00Z"))
+        allow(checker).to receive(:fetch_image_config_created).with("1.25.4")
+                                                              .and_return(Time.parse("2024-03-01T10:00:00Z"))
+      end
+
+      it "skips multi-platform validation and uses simple timestamp comparison" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when candidate is single-platform but current is multi-platform" do
+      let(:version) { "1.25.3" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.1").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.0").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(nil)
+      end
+
+      it "rejects the single-platform candidate" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when timestamps are unavailable for all platforms" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive_messages(
+          fetch_manifest_platforms: platforms,
+          fetch_all_platform_timestamps: {
+            "linux/amd64" => nil,
+            "linux/arm64/v8" => nil
+          }
+        )
+      end
+
+      it "trusts semver ordering (both timestamps nil)" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when only candidate timestamp is unavailable for a platform" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => nil
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.2").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.1").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-12-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-12-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-11-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-11-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.24.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-10-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-10-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "conservatively rejects the candidate and falls back" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when first candidate fails validation but second passes" do
+      let(:version) { "1.25.2" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+        missing_platform = [
+          { "os" => "linux", "architecture" => "amd64" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(platforms)
+        # 1.25.4 missing arm64
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(missing_platform)
+        # 1.25.3 has all platforms
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(platforms)
+
+        all_timestamps = {
+          "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+          "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+        }
+        allow(checker).to receive(:fetch_all_platform_timestamps).and_return(all_timestamps)
+      end
+
+      it "skips the first candidate and returns the second" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when all candidates fail validation" do
+      let(:version) { "1.25.2" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+        # All candidates missing s390x
+        candidate_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.1").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.0").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(candidate_platforms)
+      end
+
+      it "returns the current tag" do
+        expect(checker.latest_version).to eq("1.25.2")
       end
     end
   end
