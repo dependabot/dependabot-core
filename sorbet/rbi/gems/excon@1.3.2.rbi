@@ -53,8 +53,8 @@ module Excon
 
     # Initializes a new keep-alive session for a given remote host
     #
-    # @param url [String] The destination URL
     # @param params [Hash<Symbol, >] One or more option params to set on the Connection instance
+    # @param url [String] The destination URL
     # @raise [ArgumentError]
     # @return [Connection] A new Excon::Connection instance
     # @see Connection#initialize
@@ -311,9 +311,7 @@ class Excon::Connection
   def validate_params(validation, params, middlewares); end
 end
 
-# these come last as they rely on the above
-#
-# source://excon//lib/excon/constants.rb#141
+# source://excon//lib/excon/constants.rb#186
 Excon::DEFAULTS = T.let(T.unsafe(nil), Hash)
 
 # source://excon//lib/excon/constants.rb#5
@@ -333,7 +331,7 @@ Excon::DEFAULT_RETRY_ERRORS = T.let(T.unsafe(nil), Array)
 # source://excon//lib/excon/constants.rb#14
 Excon::DEFAULT_RETRY_LIMIT = T.let(T.unsafe(nil), Integer)
 
-# source://excon//lib/excon/constants.rb#116
+# source://excon//lib/excon/constants.rb#118
 Excon::DEPRECATED_VALID_REQUEST_KEYS = T.let(T.unsafe(nil), Hash)
 
 # Excon exception classes
@@ -1526,10 +1524,14 @@ Excon::Utils::UNESCAPED = T.let(T.unsafe(nil), Regexp)
 # source://excon//lib/excon/utils.rb#9
 Excon::Utils::UNWISE = T.let(T.unsafe(nil), String)
 
-# source://excon//lib/excon/constants.rb#70
+# FIXME: should be frozen, but with a way to change them, similar to defaults
+#
+# source://excon//lib/excon/constants.rb#72
 Excon::VALID_CONNECTION_KEYS = T.let(T.unsafe(nil), Array)
 
-# source://excon//lib/excon/constants.rb#42
+# FIXME: should be frozen, but with a way to change them, similar to defaults
+#
+# source://excon//lib/excon/constants.rb#43
 Excon::VALID_REQUEST_KEYS = T.let(T.unsafe(nil), Array)
 
 # source://excon//lib/excon/version.rb#4

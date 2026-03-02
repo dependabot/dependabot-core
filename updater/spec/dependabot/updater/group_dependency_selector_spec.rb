@@ -136,6 +136,19 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           expect(dependency_names).to contain_exactly("rails", "pg", "redis")
         end
 
+        it "populates updated_directories metadata with all directories for each dependency" do
+          result = selector.merge_per_directory!([change1, change2])
+
+          rails = result.updated_dependencies.find { |d| d.name == "rails" }
+          expect(rails.metadata[:updated_directories]).to contain_exactly("/api", "/web")
+
+          pg = result.updated_dependencies.find { |d| d.name == "pg" }
+          expect(pg.metadata[:updated_directories]).to eq(["/api"])
+
+          redis = result.updated_dependencies.find { |d| d.name == "redis" }
+          expect(redis.metadata[:updated_directories]).to eq(["/web"])
+        end
+
         it "still merges all updated files from all directories" do
           result = selector.merge_per_directory!([change1, change2])
 
@@ -166,6 +179,14 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           expect(result.updated_dependencies.length).to eq(4)
           dependency_names = result.updated_dependencies.map(&:name)
           expect(dependency_names).to contain_exactly("rails", "pg", "redis", "rails")
+        end
+
+        it "does not set updated_directories metadata" do
+          result = selector.merge_per_directory!([change1, change2])
+
+          result.updated_dependencies.each do |dep|
+            expect(dep.metadata[:updated_directories]).to be_nil
+          end
         end
       end
     end

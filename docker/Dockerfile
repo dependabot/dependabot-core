@@ -2,7 +2,7 @@
 # From https://github.com/sigstore/cosign/releases
 FROM ghcr.io/sigstore/cosign/cosign:v3.0.5 AS cosign
 # From https://github.com/regclient/regclient/releases
-FROM ghcr.io/regclient/regctl:v0.11.1 AS regctl
+FROM ghcr.io/regclient/regctl:v0.11.2 AS regctl
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 

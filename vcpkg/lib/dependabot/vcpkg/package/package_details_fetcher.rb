@@ -66,10 +66,10 @@ module Dependabot
             .reverse
             .uniq(&:version)
             .then do |releases|
-              Dependabot::Package::PackageDetails.new(
-                dependency: dependency,
-                releases: releases
-              )
+            Dependabot::Package::PackageDetails.new(
+              dependency: dependency,
+              releases: releases
+            )
           end
         end
 
@@ -80,10 +80,10 @@ module Dependabot
             .reverse
             .uniq(&:version)
             .then do |releases|
-              Dependabot::Package::PackageDetails.new(
-                dependency: dependency,
-                releases: releases
-              )
+            Dependabot::Package::PackageDetails.new(
+              dependency: dependency,
+              releases: releases
+            )
           end
         end
 

@@ -279,9 +279,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement)
           .and_return(experiment_enabled)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name)
-          .and_return(false)
       end
 
       context "when experiment is enabled" do
@@ -500,9 +497,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     end
 
     before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:group_by_dependency_name)
-        .and_return(true)
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:group_membership_enforcement)
         .and_return(false)
@@ -818,9 +812,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     before do
       allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
       allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:group_by_dependency_name)
-        .and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:group_membership_enforcement)
         .and_return(false)
     end
@@ -923,41 +914,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
-    context "when the feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name)
-          .and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement)
-          .and_return(false)
-      end
-
-      describe "#assign_to_groups!" do
-        let(:dependencies) { [dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1] }
-
-        before do
-          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
-        end
-
-        it "treats the group as a regular group and assigns dependencies directly" do
-          parent_group = dependency_group_engine.find_group(name: "monorepo-deps")
-
-          # When flag is disabled, group_by_dependency_name? returns false
-          # so the group is treated as a regular group
-          expect(parent_group.dependencies).to contain_exactly(
-            dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1
-          )
-        end
-
-        it "does not create subgroups" do
-          subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
-          expect(subgroup_a).to be_nil
-        end
-      end
-    end
-
     context "when there are mixed regular groups and group-by groups" do
       let(:dependency_groups_config) do
         [
@@ -979,9 +935,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name)
-          .and_return(true)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement)
           .and_return(false)

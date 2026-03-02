@@ -628,7 +628,7 @@ public class MSBuildHelperTests : TestBase
             // output
             """
             Output:
-            Using Msbuild from '/usr/local/dotnet/current/sdk/9.0.307'.
+            Using Msbuild from '/usr/local/dotnet/current/sdk/9.0.311'.
             Found multiple project files for '/home/dependabot/dependabot-updater/repo/path/to/packages.config'.
             """,
             // expectedError
