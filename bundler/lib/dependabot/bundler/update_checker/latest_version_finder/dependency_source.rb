@@ -143,7 +143,10 @@ module Dependabot
             credential = credentials.find do |cred|
               cred["type"] == "rubygems_server" && cred.replaces_base?
             end
-            credential&.fetch("host", nil)
+            host = credential&.fetch("host", nil)
+            return nil unless host.is_a?(String) && !host.empty?
+
+            host
           end
 
           sig { returns(T::Array[Dependabot::Bundler::Version]) }

@@ -223,7 +223,9 @@ module Dependabot
           end
           return nil unless credential
 
-          host = credential["host"]
+          host = credential.fetch("host", nil)
+          return nil unless host.is_a?(String) && !host.empty?
+
           url = "https://#{host}"
           url.end_with?("/") ? url.chop : url
         end
