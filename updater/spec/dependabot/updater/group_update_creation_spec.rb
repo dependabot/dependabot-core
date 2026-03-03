@@ -458,9 +458,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         log_requirements_for_update: nil
       )
       allow(checker).to receive(:up_to_date?).and_return(false)
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:group_by_dependency_name)
-        .and_return(true)
     end
 
     context "when semver rules reject grouping for a group-by-name subgroup" do
@@ -660,6 +657,36 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           test_instance.compile_updates_for(dependency, dependency_files, group)
         end
       end
+    end
+  end
+
+  describe "#create_change_for" do
+    let(:no_change_error_class) { Class.new(StandardError) }
+    let(:lead_dependency) do
+      instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.1")
+    end
+    let(:updated_dependencies) { [lead_dependency] }
+
+    it "handles file updater no-change errors from DependencyChangeBuilder" do
+      no_change_error = no_change_error_class.new("No files were updated!")
+
+      allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_raise(no_change_error)
+
+      expect(error_handler).to receive(:handle_dependency_error).with(
+        error: no_change_error,
+        dependency: lead_dependency,
+        dependency_group: group
+      )
+
+      result = test_instance.send(
+        :create_change_for,
+        lead_dependency,
+        updated_dependencies,
+        dependency_files,
+        group
+      )
+
+      expect(result).to be(false)
     end
   end
 end

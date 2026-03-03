@@ -103,7 +103,7 @@ module Functions
 
     git_specs = Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).dependencies
                                    .select do |spec|
-                                     spec.source.is_a?(Bundler::Source::Git)
+      spec.source.is_a?(Bundler::Source::Git)
     end
     git_specs.map do |spec|
       # Piggy-back off some private Bundler methods to configure the

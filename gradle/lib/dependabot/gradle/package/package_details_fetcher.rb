@@ -74,7 +74,7 @@ module Dependabot
                                                      .select { |node| version_class.correct?(node.content) }
                                                      .map { |node| version_class.new(node.content) }
                                                      .map do |version|
-                                                       { version: version, source_url: url }
+                { version: version, source_url: url }
               end
             end.flatten.compact
 
@@ -247,10 +247,10 @@ module Dependabot
           credentials
             .select { |cred| cred["type"] == "maven_repository" }
             .map do |cred|
-              {
-                "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
-              }
+            {
+              "url" => cred.fetch("url").gsub(%r{/+$}, ""),
+              "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
+            }
           end
         end
 
@@ -268,7 +268,7 @@ module Dependabot
                 target_dependency_file: target_file
               ).repository_urls
                                                     .map do |url|
-                                                      { "url" => url, "auth_headers" => {} }
+                { "url" => url, "auth_headers" => {} }
               end
             end.uniq
         end
@@ -297,14 +297,14 @@ module Dependabot
                           .gsub("native-mt", "native_mt")
                           .split(/[.\-]/)
                           .find do |type|
-                            Dependabot::Gradle::UpdateChecker::VersionFinder::TYPE_SUFFICES.find { |s| type.include?(s) }
+            Dependabot::Gradle::UpdateChecker::VersionFinder::TYPE_SUFFICES.find { |s| type.include?(s) }
           end
 
           version_type = comparison_version.to_s
                                            .gsub("native-mt", "native_mt")
                                            .split(/[.\-]/)
                                            .find do |type|
-                                             Dependabot::Gradle::UpdateChecker::VersionFinder::TYPE_SUFFICES.find { |s| type.include?(s) }
+            Dependabot::Gradle::UpdateChecker::VersionFinder::TYPE_SUFFICES.find { |s| type.include?(s) }
           end
 
           current_type == version_type

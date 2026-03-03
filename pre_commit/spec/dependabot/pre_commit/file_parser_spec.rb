@@ -198,8 +198,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(5)
         expect(additional_deps.length).to eq(12)
@@ -245,8 +246,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(4)
         expect(additional_deps.length).to eq(8)
@@ -296,8 +298,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(2)
         expect(additional_deps.length).to eq(2)
@@ -375,8 +378,9 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
 
       it "parses both repo and additional dependencies" do
-        repo_deps = dependencies.reject { |d| d.requirements.first[:groups].include?("additional_dependencies") }
-        additional_deps = dependencies.select { |d| d.requirements.first[:groups].include?("additional_dependencies") }
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
 
         expect(repo_deps.length).to eq(3)
         expect(additional_deps.length).to eq(5)
@@ -413,6 +417,131 @@ RSpec.describe Dependabot::PreCommit::FileParser do
         expect(dep).not_to be_nil
         expect(dep.version).to eq("1.17.0")
         expect(dep.requirements.first[:requirement]).to eq(">= 1.17.0")
+      end
+    end
+
+    context "with dart additional_dependencies" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_dart_additional_dependencies.yaml")
+        )
+      end
+
+      it "parses both repo and additional dependencies" do
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
+
+        expect(repo_deps.length).to eq(4)
+        expect(additional_deps.length).to eq(6)
+      end
+
+      it "parses a simple dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "intl" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("0.18.0")
+        expect(dep.requirements.first[:requirement]).to eq("0.18.0")
+        expect(dep.requirements.first[:source][:language]).to eq("dart")
+        expect(dep.requirements.first[:source][:package_name]).to eq("intl")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("dart-format")
+        expect(dep.requirements.first[:source][:original_string]).to eq("intl:0.18.0")
+      end
+
+      it "parses a caret-range dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "json_annotation" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("4.8.0")
+        expect(dep.requirements.first[:requirement]).to eq("^4.8.0")
+        expect(dep.requirements.first[:source][:language]).to eq("dart")
+      end
+
+      it "parses a >= constraint dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "collection" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("1.17.0")
+        expect(dep.requirements.first[:requirement]).to eq(">=1.17.0")
+      end
+
+      it "parses a tilde-range dart additional dependency" do
+        dep = dependencies.find { |d| d.name == "yaml" }
+        expect(dep).not_to be_nil
+        expect(dep.version).to eq("3.1.0")
+        expect(dep.requirements.first[:requirement]).to eq("~3.1.0")
+      end
+    end
+
+    context "when language is not specified locally but exists in hook source repo" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "without_language_field.yaml")
+        )
+      end
+      let(:hook_language_fetcher) { instance_double(described_class::HookLanguageFetcher) }
+
+      before do
+        allow(described_class::HookLanguageFetcher).to receive(:new).and_return(hook_language_fetcher)
+
+        # Mock the language fetcher for black hook
+        allow(hook_language_fetcher).to receive(:fetch_language)
+          .with(repo_url: "https://github.com/psf/black", revision: "24.1.1", hook_id: "black")
+          .and_return("python")
+
+        # Mock the language fetcher for eslint hook
+        allow(hook_language_fetcher).to receive(:fetch_language)
+          .with(repo_url: "https://github.com/pre-commit/mirrors-eslint", revision: "v8.56.0", hook_id: "eslint")
+          .and_return("node")
+      end
+
+      it "fetches language from hook source repository" do
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
+
+        expect(repo_deps.length).to eq(2)
+        expect(additional_deps.length).to eq(5)
+      end
+
+      it "parses python additional dependencies using fetched language" do
+        dep = dependencies.find { |d| d.name == "black" }
+        expect(dep).not_to be_nil
+        expect(dep.requirements.first[:source][:language]).to eq("python")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("black")
+        expect(dep.requirements.first[:source][:extras]).to eq("d")
+      end
+
+      it "parses node additional dependencies using fetched language" do
+        dep = dependencies.find { |d| d.name == "eslint" }
+        expect(dep).not_to be_nil
+        expect(dep.requirements.first[:source][:language]).to eq("node")
+        expect(dep.requirements.first[:source][:hook_id]).to eq("eslint")
+      end
+    end
+
+    context "when language cannot be determined from local config or source repo" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "without_language_field.yaml")
+        )
+      end
+      let(:hook_language_fetcher) { instance_double(described_class::HookLanguageFetcher) }
+
+      before do
+        allow(described_class::HookLanguageFetcher).to receive(:new).and_return(hook_language_fetcher)
+
+        # Mock the language fetcher to return nil (language not found)
+        allow(hook_language_fetcher).to receive(:fetch_language).and_return(nil)
+      end
+
+      it "skips additional dependencies when language is unknown" do
+        additional_deps, repo_deps = dependencies.partition do |d|
+          d.requirements.first[:groups].include?("additional_dependencies")
+        end
+
+        expect(repo_deps.length).to eq(2)
+        expect(additional_deps.length).to eq(0)
       end
     end
   end
