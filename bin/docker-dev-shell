@@ -267,6 +267,11 @@ docker run --rm -ti \
   -v "$(pwd)/pub/lib:$CODE_DIR/pub/lib" \
   -v "$(pwd)/pub/script:$CODE_DIR/pub/script" \
   -v "$(pwd)/pub/spec:$CODE_DIR/pub/spec" \
+  -v "$(pwd)/pre_commit/.rubocop.yml:$CODE_DIR/pre_commit/.rubocop.yml" \
+  -v "$(pwd)/pre_commit/dependabot-pre_commit.gemspec:$CODE_DIR/pre_commit/dependabot-pre_commit.gemspec" \
+  -v "$(pwd)/pre_commit/lib:$CODE_DIR/pre_commit/lib" \
+  -v "$(pwd)/pre_commit/script:$CODE_DIR/pre_commit/script" \
+  -v "$(pwd)/pre_commit/spec:$CODE_DIR/pre_commit/spec" \
   -v "$(pwd)/python/.rubocop.yml:$CODE_DIR/python/.rubocop.yml" \
   -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
   -v "$(pwd)/python/helpers:$CODE_DIR/python/helpers" \

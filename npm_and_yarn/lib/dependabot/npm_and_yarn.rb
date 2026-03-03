@@ -405,7 +405,7 @@ module Dependabot
       }.freeze,
       T::Hash[String,
               {
-                message: T.any(String, NilClass),
+                message: T.nilable(String),
                 handler: ErrorHandler
               }]
     )
@@ -556,10 +556,10 @@ module Dependabot
             error_message = message.gsub(/[[:space:]]+/, " ").strip
 
             filename = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
-                                      .named_captures["filename"]
+                       .named_captures["filename"]
 
             env_var = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
-                                  .named_captures["token"]
+                      .named_captures["token"]
 
             msg = "Environment variable \"#{env_var}\" not found in \"#{filename.split('/').last}\"."
             Dependabot::MissingEnvironmentVariable.new(env_var, msg)

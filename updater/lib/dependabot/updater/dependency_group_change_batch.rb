@@ -19,8 +19,8 @@ module Dependabot
         @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         @dependency_file_batch = T.let(
-          initial_dependency_files.each_with_object({}) do |file, hsh|
-            hsh[file.path] = { file: file, changed: false, changes: 0 }
+          initial_dependency_files.to_h do |file|
+            [file.path, { file: file, changed: false, changes: 0 }]
           end,
           T::Hash[String, T::Hash[Symbol, T.untyped]]
         )

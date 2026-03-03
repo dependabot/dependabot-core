@@ -156,7 +156,7 @@ module Dependabot
         content.match(declaration_regex).to_s
                .match(hashes_object_regex).to_s
                .split("\n").map { |hash| hash.match(hashes_string_regex).to_s }
-               .select { |h| h.match?(/^h1:/) }
+                           .select { |h| h.match?(/^h1:/) }
       end
 
       sig { params(content: String, declaration_regex: Regexp).returns(String) }

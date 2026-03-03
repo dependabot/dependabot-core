@@ -317,11 +317,11 @@ module Dependabot
           new_segments
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
-            .join(".")
+                .join(".")
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
-        def update_requirements_range(requirement_strings) # rubocop:disable Metrics/AbcSize
+        def update_requirements_range(requirement_strings)
           ruby_requirements =
             requirement_strings.map { |r| requirement_class.new(r) }
 
@@ -341,8 +341,7 @@ module Dependabot
           end.compact
 
           updated_requirement_strings
-            .sort_by { |r| requirement_class.new(r).requirements.first.last }
-            .map(&:to_s).join(",").delete(" ")
+            .sort_by { |r| requirement_class.new(r).requirements.first.last }.join(",").delete(" ")
         end
 
         # Updates the version in a constraint to be the given version

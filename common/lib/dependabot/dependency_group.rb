@@ -55,8 +55,6 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def group_by_dependency_name?
-      return false unless Dependabot::Experiments.enabled?(:group_by_dependency_name)
-
       @group_by == "dependency-name"
     end
 

@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/job"
 
 require "github_api/dependency_submission"
+require "github_api/ecosystem_mapper"
 
 RSpec.shared_examples "dependency_submission" do |empty|
   subject(:dependency_submission) do
@@ -164,6 +165,9 @@ RSpec.shared_examples "dependency_submission" do |empty|
       lockfile = payload[:manifests].fetch("/Gemfile.lock")
       expect(lockfile[:name]).to eq("/Gemfile.lock")
       expect(lockfile[:file][:source_location]).to eq("Gemfile.lock")
+
+      # Ecosystem is mapped from the package manager
+      expect(lockfile[:metadata][:ecosystem]).to eq("rubygems")
 
       # Resolved dependencies are correct
       expect(lockfile[:resolved].length).to eq(2)

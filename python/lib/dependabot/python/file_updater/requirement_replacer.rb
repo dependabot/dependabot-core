@@ -108,7 +108,7 @@ module Dependabot
             else
               original_dependency_declaration_string(old_req)
                 .sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
-                  (nm + (updated_requirement_string || ""))
+                  nm + (updated_requirement_string || "")
                 end
             end
 
