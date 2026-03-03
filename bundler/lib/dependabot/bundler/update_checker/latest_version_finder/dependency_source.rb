@@ -134,7 +134,16 @@ module Dependabot
 
           sig { returns(String) }
           def dependency_rubygems_uri
-            "https://rubygems.org/api/v1/versions/#{dependency.name}.json"
+            host = replaces_base_host || "rubygems.org"
+            "https://#{host}/api/v1/versions/#{dependency.name}.json"
+          end
+
+          sig { returns(T.nilable(String)) }
+          def replaces_base_host
+            credential = credentials.find do |cred|
+              cred["type"] == "rubygems_server" && cred.replaces_base?
+            end
+            credential&.fetch("host", nil)
           end
 
           sig { returns(T::Array[Dependabot::Bundler::Version]) }
