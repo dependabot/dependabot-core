@@ -1,28 +1,20 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "yaml"
-
 module Dependabot
   module Cargo
     module Helpers
       extend T::Sig
 
-      sig { params(credentials: T::Array[Dependabot::Credential]).void }
-      def self.setup_credentials_in_environment(credentials)
-        credentials.each do |cred|
-          next if cred["type"] != "cargo_registry"
-          next if cred["registry"].nil? # this will not be present for org-level registries
-          next if cred["token"].nil?
-
-          # If there is a 'token' property, then apply it.
-          # In production Dependabot-Action or Dependabot-CLI will inject the real token via the Proxy.
-          token_env_var = "CARGO_REGISTRIES_#{T.must(cred['registry']).upcase.tr('-', '_')}_TOKEN"
-          ENV[token_env_var] ||= cred["token"]
-        end
-
-        # And set CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS here as well, so Cargo will expect tokens
-        ENV["CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS"] ||= "cargo:token"
+      sig { void }
+      def self.bypass_cargo_credential_providers
+        # Disable Cargo's built-in credential providers entirely so that Cargo does not attempt to look up registry
+        # tokens on its own. The dependabot proxy (https://github.com/dependabot/proxy/) handles all registry
+        # authentication transparently by intercepting HTTP requests and injecting the appropriate credentials.
+        #
+        # Uses ||= so developers can override by setting CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS=cargo:token in their
+        # shell (along with the appropriate CARGO_REGISTRIES_{NAME}_TOKEN vars) for local development without the proxy.
+        ENV["CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS"] ||= ""
       end
     end
   end
