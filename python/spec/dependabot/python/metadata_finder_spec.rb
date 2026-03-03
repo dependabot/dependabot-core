@@ -645,7 +645,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       before do
         allow(Dependabot.logger).to receive(:warn)
         stub_request(:get, pypi_previous_version_url)
-          .to_raise(Excon::Error::Socket.new("socket error"))
+          .to_raise(Excon::Error::Socket.new(IOError.new("socket error")))
         stub_request(:get, pypi_version_url)
           .to_raise(OpenSSL::SSL::SSLError.new("ssl error"))
       end
