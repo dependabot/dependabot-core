@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "openssl"
 require "uri"
 
 require "dependabot/metadata_finders"
@@ -50,7 +51,7 @@ module Dependabot
         previous_org = previous_ownership["organization"]
         current_org = current_ownership["organization"]
 
-        if previous_org != current_org
+        if previous_org != current_org && !(previous_org.nil? && current_org)
           return "The organization that maintains #{dependency.name} on PyPI has " \
                  "changed since your current version."
         end
@@ -171,7 +172,8 @@ module Dependabot
           begin
             Dependabot::RegistryClient.get(url: homepage_url)
           rescue Excon::Error::Timeout, Excon::Error::Socket,
-                 Excon::Error::TooManyRedirects, ArgumentError
+                 Excon::Error::TooManyRedirects, OpenSSL::SSL::SSLError, ArgumentError => e
+            Dependabot.logger.warn("Error fetching Python homepage URL #{homepage_url}: #{e.class}: #{e.message}")
             nil
           end,
           T.nilable(Excon::Response)
@@ -193,9 +195,8 @@ module Dependabot
 
           @pypi_listing = JSON.parse(response.body)
           return @pypi_listing
-        rescue JSON::ParserError
-          next
-        rescue Excon::Error::Timeout
+        rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, OpenSSL::SSL::SSLError => e
+          Dependabot.logger.warn("Error fetching Python package listing from #{url}: #{e.class}: #{e.message}")
           next
         end
 
@@ -244,9 +245,10 @@ module Dependabot
 
           data = JSON.parse(response.body)
           return data["ownership"]
-        rescue JSON::ParserError
-          next
-        rescue Excon::Error::Timeout
+        rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, OpenSSL::SSL::SSLError => e
+          Dependabot.logger.warn(
+            "Error fetching Python package ownership from #{url} for version #{version}: #{e.class}: #{e.message}"
+          )
           next
         end
 

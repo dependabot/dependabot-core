@@ -582,7 +582,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     context "when the organization changes" do
       before do
         stub_request(:get, pypi_previous_version_url)
-          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_org_old.json"))
         stub_request(:get, pypi_version_url)
           .to_return(
             status: 200,
@@ -595,6 +595,43 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           "The organization that maintains luigi on PyPI has " \
           "changed since your current version."
         )
+      end
+    end
+
+    context "when the organization is added" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(
+            status: 200,
+            body: fixture("pypi", "pypi_response_ownership_org_changed.json")
+          )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the dependency uses a local version" do
+      let(:version) { "2.1.0+build1" }
+      let(:previous_version) { "2.0.0+build1" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when fetching ownership data times out" do
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+        stub_request(:get, pypi_previous_version_url)
+          .to_raise(Excon::Error::Socket.new("socket error"))
+        stub_request(:get, pypi_version_url)
+          .to_raise(OpenSSL::SSL::SSLError.new("ssl error"))
+      end
+
+      it "returns nil and logs the request failures" do
+        expect(maintainer_changes).to be_nil
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(/Error fetching Python package ownership/).at_least(:once)
       end
     end
 
