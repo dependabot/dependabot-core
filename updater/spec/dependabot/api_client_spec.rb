@@ -678,6 +678,11 @@ RSpec.describe Dependabot::ApiClient do
     end
     let(:record_ecosystem_meta_url) { "http://example.com/update_jobs/1/record_ecosystem_meta" }
 
+    before do
+      stub_request(:post, record_ecosystem_meta_url)
+        .to_return(status: 204, headers: headers)
+    end
+
     it "hits the correct endpoint" do
       client.record_ecosystem_meta(ecosystem)
 
@@ -721,7 +726,6 @@ RSpec.describe Dependabot::ApiClient do
         expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
       end
     end
-
   end
 
   describe "record_cooldown_meta" do

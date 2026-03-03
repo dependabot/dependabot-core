@@ -9,4 +9,3 @@ require (
 
 // valid on a checkout, but invalid to Dependabot
 replace github.com/dependabot/vgotest/common => ../monorepo/common
-
