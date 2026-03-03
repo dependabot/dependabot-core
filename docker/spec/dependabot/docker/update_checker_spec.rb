@@ -2475,50 +2475,106 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   end
 
   describe "#version_related_pattern?" do
-    it "does not filter platform identifiers that contain digits" do
-      expect(checker.send(:version_related_pattern?, "alpine3")).to be false
-      expect(checker.send(:version_related_pattern?, "ltsc2022")).to be false
-      expect(checker.send(:version_related_pattern?, "ltsc2019")).to be false
-      expect(checker.send(:version_related_pattern?, "nanoserver1809")).to be false
+    context "when docker_created_timestamp_validation is disabled (legacy patterns)" do
+      it "filters mixed alphanumeric identifiers with digits via broad regex" do
+        expect(checker.send(:version_related_pattern?, "alpine3")).to be true
+        expect(checker.send(:version_related_pattern?, "ltsc2022")).to be true
+        expect(checker.send(:version_related_pattern?, "ltsc2019")).to be true
+        expect(checker.send(:version_related_pattern?, "nanoserver1809")).to be true
+        expect(checker.send(:version_related_pattern?, "rc1")).to be true
+        expect(checker.send(:version_related_pattern?, "beta2")).to be true
+        expect(checker.send(:version_related_pattern?, "alpha3")).to be true
+      end
+
+      it "filters rc and jre as known versioning tokens" do
+        expect(checker.send(:version_related_pattern?, "rc")).to be true
+        expect(checker.send(:version_related_pattern?, "jre")).to be true
+      end
+
+      it "does not filter pure-letter identifiers without digits" do
+        expect(checker.send(:version_related_pattern?, "alpha")).to be false
+        expect(checker.send(:version_related_pattern?, "dev")).to be false
+        expect(checker.send(:version_related_pattern?, "preview")).to be false
+        expect(checker.send(:version_related_pattern?, "nightly")).to be false
+        expect(checker.send(:version_related_pattern?, "snapshot")).to be false
+        expect(checker.send(:version_related_pattern?, "canary")).to be false
+        expect(checker.send(:version_related_pattern?, "ea")).to be false
+      end
+
+      it "filters purely numeric parts" do
+        expect(checker.send(:version_related_pattern?, "123")).to be true
+        expect(checker.send(:version_related_pattern?, "20250909")).to be true
+      end
+
+      it "filters structural version patterns" do
+        expect(checker.send(:version_related_pattern?, "1.2")).to be true
+        expect(checker.send(:version_related_pattern?, "v2")).to be true
+        expect(checker.send(:version_related_pattern?, "KB4505057")).to be true
+        expect(checker.send(:version_related_pattern?, "kb4487017")).to be true
+        expect(checker.send(:version_related_pattern?, "0a1")).to be true
+        expect(checker.send(:version_related_pattern?, "0b1")).to be true
+        expect(checker.send(:version_related_pattern?, "0rc1")).to be true
+      end
+
+      it "does not filter pure-letter platform names" do
+        expect(checker.send(:version_related_pattern?, "bookworm")).to be false
+        expect(checker.send(:version_related_pattern?, "bullseye")).to be false
+        expect(checker.send(:version_related_pattern?, "windowsservercore")).to be false
+        expect(checker.send(:version_related_pattern?, "alpine")).to be false
+        expect(checker.send(:version_related_pattern?, "slim")).to be false
+        expect(checker.send(:version_related_pattern?, "nanoserver")).to be false
+      end
     end
 
-    it "does not filter non-structural identifiers (handled by suffix matching instead)" do
-      expect(checker.send(:version_related_pattern?, "rc1")).to be false
-      expect(checker.send(:version_related_pattern?, "beta2")).to be false
-      expect(checker.send(:version_related_pattern?, "alpha")).to be false
-      expect(checker.send(:version_related_pattern?, "alpha3")).to be false
-      expect(checker.send(:version_related_pattern?, "dev")).to be false
-      expect(checker.send(:version_related_pattern?, "preview")).to be false
-      expect(checker.send(:version_related_pattern?, "nightly")).to be false
-      expect(checker.send(:version_related_pattern?, "snapshot")).to be false
-      expect(checker.send(:version_related_pattern?, "canary")).to be false
-      expect(checker.send(:version_related_pattern?, "ea")).to be false
-      expect(checker.send(:version_related_pattern?, "rc")).to be false
-      expect(checker.send(:version_related_pattern?, "jre")).to be false
-    end
+    context "when docker_created_timestamp_validation is enabled" do
+      before { Dependabot::Experiments.register(:docker_created_timestamp_validation, true) }
+      after { Dependabot::Experiments.reset! }
 
-    it "filters purely numeric parts" do
-      expect(checker.send(:version_related_pattern?, "123")).to be true
-      expect(checker.send(:version_related_pattern?, "20250909")).to be true
-    end
+      it "does not filter platform identifiers that contain digits" do
+        expect(checker.send(:version_related_pattern?, "alpine3")).to be false
+        expect(checker.send(:version_related_pattern?, "ltsc2022")).to be false
+        expect(checker.send(:version_related_pattern?, "ltsc2019")).to be false
+        expect(checker.send(:version_related_pattern?, "nanoserver1809")).to be false
+      end
 
-    it "filters structural version patterns" do
-      expect(checker.send(:version_related_pattern?, "1.2")).to be true
-      expect(checker.send(:version_related_pattern?, "v2")).to be true
-      expect(checker.send(:version_related_pattern?, "KB4505057")).to be true
-      expect(checker.send(:version_related_pattern?, "kb4487017")).to be true
-      expect(checker.send(:version_related_pattern?, "0a1")).to be true
-      expect(checker.send(:version_related_pattern?, "0b1")).to be true
-      expect(checker.send(:version_related_pattern?, "0rc1")).to be true
-    end
+      it "does not filter non-structural identifiers (handled by suffix matching instead)" do
+        expect(checker.send(:version_related_pattern?, "rc1")).to be false
+        expect(checker.send(:version_related_pattern?, "beta2")).to be false
+        expect(checker.send(:version_related_pattern?, "alpha")).to be false
+        expect(checker.send(:version_related_pattern?, "alpha3")).to be false
+        expect(checker.send(:version_related_pattern?, "dev")).to be false
+        expect(checker.send(:version_related_pattern?, "preview")).to be false
+        expect(checker.send(:version_related_pattern?, "nightly")).to be false
+        expect(checker.send(:version_related_pattern?, "snapshot")).to be false
+        expect(checker.send(:version_related_pattern?, "canary")).to be false
+        expect(checker.send(:version_related_pattern?, "ea")).to be false
+        expect(checker.send(:version_related_pattern?, "rc")).to be false
+        expect(checker.send(:version_related_pattern?, "jre")).to be false
+      end
 
-    it "does not filter pure-letter platform names" do
-      expect(checker.send(:version_related_pattern?, "bookworm")).to be false
-      expect(checker.send(:version_related_pattern?, "bullseye")).to be false
-      expect(checker.send(:version_related_pattern?, "windowsservercore")).to be false
-      expect(checker.send(:version_related_pattern?, "alpine")).to be false
-      expect(checker.send(:version_related_pattern?, "slim")).to be false
-      expect(checker.send(:version_related_pattern?, "nanoserver")).to be false
+      it "filters purely numeric parts" do
+        expect(checker.send(:version_related_pattern?, "123")).to be true
+        expect(checker.send(:version_related_pattern?, "20250909")).to be true
+      end
+
+      it "filters structural version patterns" do
+        expect(checker.send(:version_related_pattern?, "1.2")).to be true
+        expect(checker.send(:version_related_pattern?, "v2")).to be true
+        expect(checker.send(:version_related_pattern?, "KB4505057")).to be true
+        expect(checker.send(:version_related_pattern?, "kb4487017")).to be true
+        expect(checker.send(:version_related_pattern?, "0a1")).to be true
+        expect(checker.send(:version_related_pattern?, "0b1")).to be true
+        expect(checker.send(:version_related_pattern?, "0rc1")).to be true
+      end
+
+      it "does not filter pure-letter platform names" do
+        expect(checker.send(:version_related_pattern?, "bookworm")).to be false
+        expect(checker.send(:version_related_pattern?, "bullseye")).to be false
+        expect(checker.send(:version_related_pattern?, "windowsservercore")).to be false
+        expect(checker.send(:version_related_pattern?, "alpine")).to be false
+        expect(checker.send(:version_related_pattern?, "slim")).to be false
+        expect(checker.send(:version_related_pattern?, "nanoserver")).to be false
+      end
     end
   end
 
