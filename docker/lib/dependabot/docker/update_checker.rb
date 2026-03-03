@@ -39,6 +39,24 @@ module Dependabot
       # so we cap the attempts to avoid rate limiting or excessive latency.
       MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
 
+      # Legacy patterns used when docker_created_timestamp_validation experiment is disabled.
+      # The broad alphanumeric regex matches tokens like "alpine3", "ltsc2022", "rc1"
+      # and classifies them as version-related, preserving pre-experiment behavior.
+      LEGACY_VERSION_RELATED_PATTERNS = T.let(
+        [
+          /^\d+$/,                          # pure numbers: "123", "8"
+          /^\d+\.\d+$/,                     # semver-like: "1.2"
+          /^v\d+/,                          # v-prefixed: "v2", "v10"
+          /^(?=.*\d)(?=.*[a-z])[a-z\d]+$/i, # broad mixed alphanumeric: "rc1", "beta2", "alpine3", "ltsc2022"
+          /^(rc|jre)$/,                     # common Docker tag components that are part of versioning
+          /^kb\d+$/i,                       # Microsoft KB numbers: "KB4505057"
+          /^g[0-9a-f]{5,}$/,                # git SHAs: "g1a2b3c4"
+          /^\d{8,14}$/,                     # timestamps: "20250909"
+          /\d+_\d+/                         # underscore-separated version parts: "12_8"
+        ].freeze,
+        T::Array[Regexp]
+      )
+
       # Patterns that identify structurally obvious version components in tag
       # names. Matching parts are excluded from the common-component system
       # because they represent version data, not platform/variant identifiers.
@@ -50,6 +68,7 @@ module Dependabot
       # exact suffix matching, so component matching is a secondary safety net.
       #
       # To exclude a new structural pattern, add a regex here.
+      # Only used when docker_created_timestamp_validation experiment is enabled.
       VERSION_RELATED_PATTERNS = T.let(
         [
           /^\d+$/,                          # pure numbers: "123", "8"
@@ -451,7 +470,12 @@ module Dependabot
 
       sig { params(part: String).returns(T::Boolean) }
       def version_related_pattern?(part)
-        VERSION_RELATED_PATTERNS.any? { |pattern| part.match?(pattern) }
+        patterns = if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
+                     VERSION_RELATED_PATTERNS
+                   else
+                     LEGACY_VERSION_RELATED_PATTERNS
+                   end
+        patterns.any? { |pattern| part.match?(pattern) }
       end
 
       sig { params(tag_name: String, common_components: T::Array[String]).returns(T::Array[String]) }
