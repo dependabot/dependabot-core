@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.reproducer</groupId>
+  <artifactId>test</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <!-- Property intentionally left unresolved in this fixture:
+         ${nisse.os.classifier} is undefined in the test environment.
+         Dependabot should not fail the entire job if this happens
+    -->
+    <os.detected.classifier>${nisse.os.classifier}</os.detected.classifier>
+  </properties>
+
+
+</project>
