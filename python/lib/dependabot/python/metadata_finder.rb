@@ -46,7 +46,10 @@ module Dependabot
         previous_ownership = ownership_for_version(T.must(dependency.previous_version))
         current_ownership = ownership_for_version(T.must(dependency.version))
 
-        return if previous_ownership.nil? || current_ownership.nil?
+        if previous_ownership.nil? || current_ownership.nil?
+          Dependabot.logger.info("Unable to determine ownership changes for #{dependency.name}")
+          return
+        end
 
         previous_org = previous_ownership["organization"]
         current_org = current_ownership["organization"]
@@ -116,7 +119,10 @@ module Dependabot
             next unless full_url
 
             response = Dependabot::RegistryClient.get(url: full_url)
-            next unless response.status == 200
+            unless response.status == 200
+              Dependabot.logger.warn("Error fetching source URL #{full_url}: HTTP #{response.status}")
+              next
+            end
 
             response.body.include?(normalised_dependency_name)
           end,
@@ -237,14 +243,25 @@ module Dependabot
 
       sig { params(version: String).returns(T.nilable(T::Hash[String, T.untyped])) }
       def ownership_for_version(version)
-        return nil if version.include?("+")
+        if version.include?("+")
+          Dependabot.logger.info("Version #{version} includes a local version identifier, skipping ownership check")
+          return nil
+        end
 
         possible_version_listing_urls(version).each do |url|
           response = fetch_authed_url(url)
-          next unless response.status == 200
+          unless response.status == 200
+            Dependabot.logger.warn(
+              "Error fetching Python package ownership from #{url} for version #{version}: " \
+              "HTTP #{response.status}"
+            )
+            next
+          end
 
           data = JSON.parse(response.body)
-          return data["ownership"]
+          ownership = data["ownership"]
+          Dependabot.logger.info("Found ownership for #{dependency.name} version #{version}")
+          return ownership
         rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, OpenSSL::SSL::SSLError => e
           Dependabot.logger.warn(
             "Error fetching Python package ownership from #{url} for version #{version}: #{e.class}: #{e.message}"
