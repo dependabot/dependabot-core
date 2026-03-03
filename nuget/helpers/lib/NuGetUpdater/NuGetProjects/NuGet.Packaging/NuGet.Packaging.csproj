@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" VersionOverride="10.0.3" />
     <EmbeddedResource Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.resx" />
   </ItemGroup>
 
