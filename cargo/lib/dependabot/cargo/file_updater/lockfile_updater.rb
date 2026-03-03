@@ -217,7 +217,7 @@ module Dependabot
         def run_cargo_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.bypass_cargo_credential_providers
+          Helpers.disable_cargo_credential_providers(credentials, cargo_config_content: config&.content)
           # Pass through any cargo registry configuration via environment variables
           # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
           env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
