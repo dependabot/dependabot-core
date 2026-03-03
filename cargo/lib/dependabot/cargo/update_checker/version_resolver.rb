@@ -215,10 +215,11 @@ module Dependabot
 
           File.write(T.must(lockfile).name, T.must(lockfile).content) if lockfile
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          return unless config
+          config_file = config
+          return unless config_file
 
-          FileUtils.mkdir_p(File.dirname(T.must(config).name))
-          File.write(T.must(config).name, T.must(config).content)
+          FileUtils.mkdir_p(File.dirname(config_file.name))
+          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
         end
 
         sig { void }
