@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/docker/file_parser"
+require "dependabot/experiments"
 require "sorbet-runtime"
 
 module Dependabot
@@ -99,6 +100,12 @@ module Dependabot
         comparable_format = comparable_formats(other.format, other.prefix, other.suffix)
         return equal_prefix && equal_format if other_format == :sha_suffixed
 
+        # When timestamp validation is enabled, dated and non-dated versions are
+        # not comparable — prevents updating from 4.8-windowsservercore-ltsc2022
+        # to 4.8-20250909-windowsservercore-ltsc2022 and vice versa
+        return false if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
+                        dated_version? != other.dated_version?
+
         equal_suffix = suffix == other_suffix
         (equal_prefix && equal_format && equal_suffix) || comparable_format
       end
@@ -171,7 +178,29 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
+        result = version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
+        # When timestamp validation is enabled, strip date components from the
+        # version so they don't inflate semver comparison. "4.8-20250909" should
+        # compare as "4.8", not "4.8.20250909". The date is metadata — actual
+        # recency is determined by config blob timestamps.
+        if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
+          result = result&.gsub(/-\d{8}(?:\b|$)/, "")
+        end
+        result
+      end
+
+      # Detects whether the version part contains a date-like component (YYYYMMDD).
+      # For example, "4.8-20250909" has a dated version, "4.8.1" does not.
+      # This is used to prevent cross-updates between dated and non-dated tags.
+      # NOTE: This method only checks for the presence of an 8-digit date-like segment in the version part.
+      # It does not attempt to validate the date itself. Nor does it check for other date formats
+      # (e.g., YYYY.MM.DD, YYYY-MM-DD, MM.DD.YYYY)
+      sig { returns(T::Boolean) }
+      def dated_version?
+        return false unless version
+
+        # Match 8-digit date-like segments (YYYYMMDD) within the version part
+        !!T.must(version).match?(/-\d{8}(?:\b|$)/)
       end
 
       sig { returns(Integer) }
