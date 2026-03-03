@@ -172,22 +172,6 @@ module Dependabot
       stderr = T.let(raw_stderr || "", String)
       time_taken = Time.now - start
 
-      if process.nil?
-        error_context = {
-          command: command,
-          function: function,
-          args: args,
-          time_taken: time_taken,
-          stderr_output: stderr[0..50_000], # Truncate to ~100kb
-          process_exit_value: "process failed to start",
-          process_termsig: nil
-        }
-
-        raise error_class.new(
-          message: "Helper subprocess failed to start",
-          error_context: error_context
-        )
-      end
       if ENV["DEBUG_HELPERS"] == "true"
         sanitized_env_cmd = [sanitize_env_for_logging(env), cmd].compact
         puts sanitized_env_cmd
