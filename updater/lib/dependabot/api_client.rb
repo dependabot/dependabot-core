@@ -308,8 +308,6 @@ module Dependabot
 
     sig { params(ecosystem: T.nilable(Ecosystem)).void }
     def record_ecosystem_meta(ecosystem)
-      return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
-
       return if ecosystem.nil?
 
       begin
