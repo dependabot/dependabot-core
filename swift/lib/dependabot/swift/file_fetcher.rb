@@ -15,27 +15,17 @@ module Dependabot
       XCODE_SPM_PACKAGE_RESOLVED_PATH = "project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
       # Skip directories that are unlikely to contain Xcode projects and may be very large
       SKIP_DIRECTORIES = T.let(%w(.git .build Pods node_modules vendor .swiftpm).freeze, T::Array[String])
-      MAX_SCAN_DEPTH = 10
+      MAX_SCAN_DEPTH = 3
+      MAX_XCODEPROJ_RESULTS = 5
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        return true if filenames.include?("Package.swift")
-
-        if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return filenames.any? { |f| f.end_with?("Package.resolved") }
-        end
-
-        false
+        filenames.include?("Package.swift")
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          "Repo must contain a Package.swift configuration file or " \
-            "an .xcodeproj directory with a Package.resolved file."
-        else
-          "Repo must contain a Package.swift configuration file."
-        end
+        "Repo must contain a Package.swift configuration file."
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -101,8 +91,10 @@ module Dependabot
 
           if entry.name.end_with?(".xcodeproj")
             results << entry_path
+            break if results.length >= MAX_XCODEPROJ_RESULTS
           elsif !SKIP_DIRECTORIES.include?(entry.name)
             results.concat(scan_for_xcodeproj_dirs(entry_path, depth + 1))
+            break if results.length >= MAX_XCODEPROJ_RESULTS
           end
         end
 
