@@ -279,9 +279,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement)
           .and_return(experiment_enabled)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name)
-          .and_return(false)
       end
 
       context "when experiment is enabled" do
@@ -481,6 +478,100 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         it "lists all dependencies as ungrouped" do
           expect(dependency_group_engine.ungrouped_dependencies).to eql(dependencies)
         end
+      end
+    end
+  end
+
+  context "when a job has group-by: dependency-name configured" do
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "per-dependency",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+            "group-by" => "dependency-name",
+            "update-types" => %w(minor patch)
+          }
+        }
+      ]
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:group_membership_enforcement)
+        .and_return(false)
+    end
+
+    describe "#assign_to_groups!" do
+      let(:dependencies) { [dummy_pkg_a, dummy_pkg_b] }
+
+      before do
+        dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+      end
+
+      it "creates subgroups for each dependency name" do
+        subgroup_a = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        subgroup_b = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-b")
+        expect(subgroup_a).not_to be_nil
+        expect(subgroup_b).not_to be_nil
+        expect(subgroup_a.dependencies).to eql([dummy_pkg_a])
+        expect(subgroup_b.dependencies).to eql([dummy_pkg_b])
+      end
+
+      it "clears parent group dependencies" do
+        parent = dependency_group_engine.find_group(name: "per-dependency")
+        expect(parent.dependencies).to be_empty
+      end
+
+      it "preserves group-by in subgroup rules" do
+        subgroup = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        expect(subgroup.rules["group-by"]).to eql("dependency-name")
+      end
+
+      it "subgroups return true for group_by_dependency_name?" do
+        subgroup = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        expect(subgroup.group_by_dependency_name?).to be(true)
+      end
+
+      it "preserves update-types in subgroup rules" do
+        subgroup = dependency_group_engine.find_group(name: "per-dependency/dummy-pkg-a")
+        expect(subgroup.rules["update-types"]).to eql(%w(minor patch))
+      end
+
+      it "does not treat subgroups as parents on subsequent calls" do
+        # Simulate second directory by calling assign_to_groups! again
+        new_pkg_a = Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ],
+          directory: "/app-b"
+        )
+        dependency_group_engine.assign_to_groups!(dependencies: [new_pkg_a])
+
+        # Should reuse the existing subgroup rather than creating a duplicate
+        subgroups_a = dependency_group_engine.dependency_groups.select do |g|
+          g.name == "per-dependency/dummy-pkg-a"
+        end
+        expect(subgroups_a.length).to be(1)
+        expect(subgroups_a.first.dependencies).to contain_exactly(dummy_pkg_a, new_pkg_a)
+
+        # Should have no sub-sub-groups
+        nested = dependency_group_engine.dependency_groups.select do |g|
+          g.name.start_with?("per-dependency/dummy-pkg-a/")
+        end
+        expect(nested).to be_empty
+      end
+
+      it "does not mark subgroup dependencies as ungrouped" do
+        expect(dependency_group_engine.ungrouped_dependencies).to be_empty
       end
     end
   end
@@ -721,9 +812,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     before do
       allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
       allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:group_by_dependency_name)
-        .and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:group_membership_enforcement)
         .and_return(false)
     end
@@ -785,46 +873,44 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         expect(subgroup_a.applies_to).to eq("version-updates")
       end
 
-      it "does not set group_by on subgroups to prevent infinite recursion" do
+      it "preserves group_by in subgroups for correct handled-dependency tracking" do
         subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
 
-        expect(subgroup_a.group_by).to be_nil
-        expect(subgroup_a.group_by_dependency_name?).to be(false)
-      end
-    end
-
-    context "when the feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name)
-          .and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement)
-          .and_return(false)
+        expect(subgroup_a.group_by).to eq("dependency-name")
+        expect(subgroup_a.group_by_dependency_name?).to be(true)
       end
 
-      describe "#assign_to_groups!" do
-        let(:dependencies) { [dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1] }
+      it "does not treat subgroups as parents on subsequent calls despite having group_by set" do
+        # Simulate a third directory by calling assign_to_groups! again with a new dep.
+        dummy_pkg_a_dir3 = Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ],
+          directory: "/dir3"
+        )
+        dependency_group_engine.assign_to_groups!(dependencies: [dummy_pkg_a_dir3])
 
-        before do
-          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        # Should reuse the existing subgroup rather than creating a duplicate
+        subgroups_a = dependency_group_engine.dependency_groups.select do |g|
+          g.name == "monorepo-deps/dummy-pkg-a"
         end
+        expect(subgroups_a.length).to eq(1)
 
-        it "treats the group as a regular group and assigns dependencies directly" do
-          parent_group = dependency_group_engine.find_group(name: "monorepo-deps")
+        # The existing subgroup should now contain deps from both calls
+        expect(subgroups_a.first.dependencies.count { |d| d.name == "dummy-pkg-a" }).to eq(3)
 
-          # When flag is disabled, group_by_dependency_name? returns false
-          # so the group is treated as a regular group
-          expect(parent_group.dependencies).to contain_exactly(
-            dummy_pkg_a_dir1, dummy_pkg_a_dir2, dummy_pkg_b_dir1
-          )
+        nested = dependency_group_engine.dependency_groups.select do |g|
+          g.name.start_with?("monorepo-deps/dummy-pkg-a/")
         end
-
-        it "does not create subgroups" do
-          subgroup_a = dependency_group_engine.find_group(name: "monorepo-deps/dummy-pkg-a")
-          expect(subgroup_a).to be_nil
-        end
+        expect(nested).to be_empty
       end
     end
 
@@ -849,9 +935,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_by_dependency_name)
-          .and_return(true)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:group_membership_enforcement)
           .and_return(false)

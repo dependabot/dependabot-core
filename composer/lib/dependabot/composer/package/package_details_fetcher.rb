@@ -69,8 +69,8 @@ module Dependabot
         def fetch_releases
           available_version_details = registry_version_details
                                       .select do |version_details|
-                                        version = version_details.fetch("version")
-                                        version && version_class.correct?(version.gsub(/^v/, ""))
+            version = version_details.fetch("version")
+            version && version_class.correct?(version.gsub(/^v/, ""))
           end
 
           releases = available_version_details.map do |version_details|
@@ -83,8 +83,8 @@ module Dependabot
         def fetch
           available_version_details = registry_version_details
                                       .select do |version_details|
-                                        version = version_details.fetch("version")
-                                        version && version_class.correct?(version.gsub(/^v/, ""))
+            version = version_details.fetch("version")
+            version && version_class.correct?(version.gsub(/^v/, ""))
           end
 
           releases = available_version_details.map do |version_details|

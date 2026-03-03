@@ -295,9 +295,13 @@ module Dependabot
 
         if all_versions_ignored?(dependency, checker)
           record_security_update_ignored_if_applicable(dependency, checker, group)
+          mark_handled_for_group_by_name(dependency, group, "all versions ignored")
           return []
         end
-        return [] unless semver_rules_allow_grouping?(group, dependency, checker)
+        unless semver_rules_allow_grouping?(group, dependency, checker)
+          mark_handled_for_group_by_name(dependency, group, "semver rules reject grouping")
+          return []
+        end
 
         # Consider the dependency handled so no individual PR is raised since it is in this group.
         # Even if update is not possible, etc.
@@ -342,6 +346,17 @@ module Dependabot
         dependency_snapshot.add_handled_dependencies(dependency.name)
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
+      end
+
+      sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup, reason: String).void }
+      def mark_handled_for_group_by_name(dependency, group, reason)
+        return unless group.group_by_dependency_name?
+
+        Dependabot.logger.info(
+          "Marking #{dependency.name} as handled (#{reason}) " \
+          "within group-by-name group '#{group.name}'"
+        )
+        dependency_snapshot.add_handled_dependencies(dependency.name)
       end
 
       sig { params(dependency: Dependabot::Dependency).void }

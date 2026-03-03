@@ -19,7 +19,7 @@ end
 # rubocop:disable Metrics/BlockLength
 Sentry.init do |config|
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
-  config.logger = Dependabot.logger
+  config.sdk_logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(

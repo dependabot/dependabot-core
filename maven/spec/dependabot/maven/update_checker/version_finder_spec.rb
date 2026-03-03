@@ -510,7 +510,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
             expect { latest_version_details }
               .to raise_error(error_class) do |error|
-                expect(error.source).to eq("https://private.registry.org/repo")
+              expect(error.source).to eq("https://private.registry.org/repo")
             end
           end
         end

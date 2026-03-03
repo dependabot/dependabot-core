@@ -4,6 +4,12 @@
 require "spec_helper"
 require "dependabot/pre_commit/additional_dependency_checkers"
 require "dependabot/pre_commit/additional_dependency_checkers/base"
+require "dependabot/pre_commit/additional_dependency_checkers/dart"
+require "dependabot/pre_commit/additional_dependency_checkers/go"
+require "dependabot/pre_commit/additional_dependency_checkers/node"
+require "dependabot/pre_commit/additional_dependency_checkers/python"
+require "dependabot/pre_commit/additional_dependency_checkers/ruby"
+require "dependabot/pre_commit/additional_dependency_checkers/rust"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers do
   describe ".register and .for_language" do
@@ -91,6 +97,28 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers do
       languages = described_class.supported_languages
       expect(languages).to include("language_a")
       expect(languages).to include("language_b")
+    end
+  end
+
+  describe "built-in language support" do
+    it "supports python" do
+      expect(described_class.supported?("python")).to be true
+    end
+
+    it "supports node" do
+      expect(described_class.supported?("node")).to be true
+    end
+
+    it "supports golang" do
+      expect(described_class.supported?("golang")).to be true
+    end
+
+    it "supports rust" do
+      expect(described_class.supported?("rust")).to be true
+    end
+
+    it "supports dart" do
+      expect(described_class.supported?("dart")).to be true
     end
   end
 end

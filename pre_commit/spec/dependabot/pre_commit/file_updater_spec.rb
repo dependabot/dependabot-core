@@ -125,15 +125,7 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
       end
 
       context "with inline comments" do
-        let(:config_file_body) do
-          <<~YAML
-            repos:
-              - repo: https://github.com/pre-commit/pre-commit-hooks
-                rev: v4.4.0  # This is a comment
-                hooks:
-                  - id: trailing-whitespace
-          YAML
-        end
+        let(:config_file_body) { fixture("pre_commit_configs", "with_inline_comment.yaml") }
 
         its(:content) do
           is_expected.to include "rev: v4.5.0  # This is a comment"
@@ -141,20 +133,94 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
         end
       end
 
-      context "with multiple repos using the same ref value" do
-        let(:config_file_body) do
-          <<~YAML
-            repos:
-              - repo: https://github.com/pre-commit/pre-commit-hooks
-                rev: v4.4.0
-                hooks:
-                  - id: trailing-whitespace
-              - repo: https://github.com/psf/black
-                rev: v4.4.0
-                hooks:
-                  - id: black
-          YAML
+      context "with SHA ref and frozen version comment" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/pre-commit/pre-commit-hooks",
+            version: "def456abc789def456abc789def456abc789def456",
+            previous_version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/pre-commit/pre-commit-hooks",
+                ref: "def456abc789def456abc789def456abc789def456",
+                branch: nil
+              },
+              metadata: { comment_version: "v4.4.0", new_comment_version: "v6.0.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/pre-commit/pre-commit-hooks",
+                ref: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+                branch: nil
+              },
+              metadata: { comment: "# frozen: v4.4.0" }
+            }],
+            package_manager: "pre_commit"
+          )
         end
+        let(:config_file_body) { fixture("pre_commit_configs", "with_frozen_version_comment.yaml") }
+
+        it "updates both the SHA and the version in the comment" do
+          expect(updated_config_file.content)
+            .to include "rev: def456abc789def456abc789def456abc789def456  # frozen: v6.0.0"
+          expect(updated_config_file.content)
+            .not_to include "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e"
+          expect(updated_config_file.content)
+            .not_to include "v4.4.0"
+        end
+      end
+
+      context "with SHA ref and plain version comment" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/pre-commit/pre-commit-hooks",
+            version: "def456abc789def456abc789def456abc789def456",
+            previous_version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/pre-commit/pre-commit-hooks",
+                ref: "def456abc789def456abc789def456abc789def456",
+                branch: nil
+              },
+              metadata: { comment_version: "v4.4.0", new_comment_version: "v6.0.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/pre-commit/pre-commit-hooks",
+                ref: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+                branch: nil
+              },
+              metadata: { comment: "# v4.4.0" }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+        let(:config_file_body) { fixture("pre_commit_configs", "with_plain_version_comment.yaml") }
+
+        it "updates both the SHA and the version in the comment" do
+          expect(updated_config_file.content)
+            .to include "rev: def456abc789def456abc789def456abc789def456  # v6.0.0"
+        end
+      end
+
+      context "with multiple repos using the same ref value" do
+        let(:config_file_body) { fixture("pre_commit_configs", "with_multiple_repos_same_ref.yaml") }
 
         its(:content) do
           is_expected.to include "- repo: https://github.com/pre-commit/pre-commit-hooks"

@@ -87,11 +87,62 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       end
     end
 
-    context "when the dependency is pinned to a commit SHA" do
+    context "when the dependency is pinned to a commit SHA with a known tag" do
       let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
       let(:dependency_version) { nil }
 
-      it "returns the latest tagged version (prioritizing tags over commits)" do
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
+      end
+
+      it "returns the latest tagged version" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s).to eq("6.0.0")
+      end
+    end
+
+    context "when the dependency is pinned to a commit SHA without a known tag" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency_version) { nil }
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
+      end
+
+      it "falls back to latest commit SHA" do
+        expect(latest_version).to be_a(String)
+        expect(latest_version).to eq("abc123def456")
+      end
+    end
+
+    context "when SHA-pinned with a frozen version comment" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency_version) { nil }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: reference,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source,
+            metadata: { comment: "# frozen: v4.4.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+      end
+
+      it "returns the latest tagged version using the comment version" do
         expect(latest_version).to be_a(Dependabot::PreCommit::Version)
         expect(latest_version.to_s).to eq("6.0.0")
       end

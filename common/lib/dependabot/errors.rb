@@ -52,6 +52,13 @@ module Dependabot
           message: error.message
         }
       }
+    when Dependabot::RefNamespaceConflictError
+      {
+        "error-type": "file_fetcher_error",
+        "error-detail": {
+          message: error.message
+        }
+      }
     when Dependabot::DirectoryNotFound
       {
         "error-type": "directory_not_found",
@@ -468,6 +475,8 @@ module Dependabot
   class NotImplemented < DependabotError; end
 
   class InvalidGitAuthToken < DependabotError; end
+
+  class RefNamespaceConflictError < DependabotError; end
 
   #####################
   # Repo level errors #
