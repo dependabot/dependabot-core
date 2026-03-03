@@ -218,7 +218,7 @@ module Dependabot
           return unless config
 
           FileUtils.mkdir_p(File.dirname(T.must(config).name))
-          File.write(T.must(config).name, T.must(config).content)
+          File.write(T.must(config).name, Helpers.sanitize_cargo_config(T.must(T.must(config).content)))
         end
 
         sig { void }

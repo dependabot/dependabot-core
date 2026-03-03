@@ -16,6 +16,21 @@ module Dependabot
         # shell (along with the appropriate CARGO_REGISTRIES_{NAME}_TOKEN vars) for local development without the proxy.
         ENV["CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS"] ||= ""
       end
+
+      sig { params(config_content: String).returns(String) }
+      def self.sanitize_cargo_config(config_content)
+        # Remove per-registry `credential-provider` settings from .cargo/config.toml.
+        #
+        # Users may configure their repos with lines like:
+        #   [registries.my-registry]
+        #   credential-provider = "cargo:token"
+        #
+        # These per-registry settings override the global CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS env var,
+        # causing Cargo to look up tokens via CARGO_REGISTRIES_{NAME}_TOKEN env vars. Since the dependabot proxy
+        # handles authentication by intercepting HTTP requests, we need to strip these so Cargo makes plain
+        # requests that the proxy can decorate with credentials.
+        config_content.gsub(/^\s*credential-provider\s*=.*$/, "")
+      end
     end
   end
 end
