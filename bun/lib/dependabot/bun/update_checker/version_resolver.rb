@@ -229,7 +229,7 @@ module Dependabot
                                 .possible_previous_versions_with_details
                                 .map(&:first)
             reqs = dep.requirements.filter_map { |r| r[:requirement] }
-                      .map { |r| requirement_class.requirements_array(r) }
+                                   .map { |r| requirement_class.requirements_array(r) }
 
             # Pick the lowest version from the max possible version from all
             # requirements. This matches the logic when combining the same
@@ -720,12 +720,12 @@ module Dependabot
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
           dep.requirements.filter_map { |r| r[:requirement] }
-             .reject { |req_string| req_string.start_with?("<") }
-             .select { |req_string| req_string.match?(version_regex) }
-             .map { |req_string| req_string.match(version_regex) }
-             .select { |version| version_class.correct?(version.to_s) }
-             .map { |version| version_class.new(version.to_s) }
-             .max
+                          .reject { |req_string| req_string.start_with?("<") }
+                          .select { |req_string| req_string.match?(version_regex) }
+                          .map { |req_string| req_string.match(version_regex) }
+                          .select { |version| version_class.correct?(version.to_s) }
+                          .map { |version| version_class.new(version.to_s) }
+                          .max
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

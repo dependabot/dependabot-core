@@ -1,0 +1,13 @@
+repos:
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.62.2
+    hooks:
+      - id: golangci-lint
+        language: golang
+        additional_dependencies:
+          - golang.org/x/tools@v0.28.0
+          - github.com/stretchr/testify@v1.9.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace

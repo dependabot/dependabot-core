@@ -3,6 +3,7 @@
 
 require "dependabot/dependency_graphers"
 require "dependabot/environment"
+require "github_api/ecosystem_mapper"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
@@ -165,7 +166,7 @@ module GithubApi
             source_location: manifest_file.path.gsub(%r{^/}, "")
           },
           metadata: {
-            ecosystem: package_manager
+            ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager)
           },
           resolved: resolved_dependencies.transform_values do |resolved|
             {

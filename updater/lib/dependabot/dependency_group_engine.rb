@@ -145,7 +145,7 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def matches_group_by_parent_group?(dependency)
       @dependency_groups.any? do |group|
-        group.group_by_dependency_name? && group.contains?(dependency)
+        @group_by_name_parent_names.include?(group.name) && group.contains?(dependency)
       end
     end
 
@@ -153,6 +153,10 @@ module Dependabot
     def initialize(dependency_groups:)
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = T.let([], T::Array[Dependabot::Dependency])
+      @group_by_name_parent_names = T.let(
+        dependency_groups.select(&:group_by_dependency_name?).to_set(&:name),
+        T::Set[String]
+      )
     end
 
     sig { void }
@@ -212,21 +216,28 @@ module Dependabot
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
     def create_dynamic_subgroups_for_dependency_name_groups(dependencies)
-      parent_groups = @dependency_groups.select(&:group_by_dependency_name?)
+      parent_groups = @dependency_groups.select { |g| @group_by_name_parent_names.include?(g.name) }
 
       parent_groups.each do |parent_group|
         matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
 
         matching_deps.group_by(&:name).each do |dep_name, deps|
-          # Exclude "group-by" from subgroup rules to prevent infinite recursion
-          subgroup_rules = parent_group.rules.except("group-by").merge("patterns" => [dep_name])
-          subgroup = Dependabot::DependencyGroup.new(
-            name: "#{parent_group.name}/#{dep_name}",
-            rules: subgroup_rules,
-            applies_to: parent_group.applies_to
-          )
-          subgroup.dependencies.concat(deps)
-          @dependency_groups << subgroup
+          subgroup_name = "#{parent_group.name}/#{dep_name}"
+          existing_subgroup = @dependency_groups.find { |g| g.name == subgroup_name }
+
+          if existing_subgroup
+            new_deps = deps.reject { |d| existing_subgroup.dependencies.include?(d) }
+            existing_subgroup.dependencies.concat(new_deps)
+          else
+            subgroup_rules = parent_group.rules.merge("patterns" => [dep_name])
+            subgroup = Dependabot::DependencyGroup.new(
+              name: subgroup_name,
+              rules: subgroup_rules,
+              applies_to: parent_group.applies_to
+            )
+            subgroup.dependencies.concat(deps)
+            @dependency_groups << subgroup
+          end
         end
 
         parent_group.dependencies.clear

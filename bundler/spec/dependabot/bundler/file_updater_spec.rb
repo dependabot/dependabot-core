@@ -1571,8 +1571,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           }]
         end
 
-        removed = "vendor/cache/dependabot-test-ruby-package-81073f9462f2"
-        added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
+        let(:removed) { "vendor/cache/dependabot-test-ruby-package-81073f9462f2" }
+        let(:added) { "vendor/cache/dependabot-test-ruby-package-1c6331732c41" }
 
         it "vendors the new dependency" do
           expect(updater.updated_dependency_files.map(&:name))

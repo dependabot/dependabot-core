@@ -11,6 +11,7 @@ require "dependabot/errors"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/package/package_details_fetcher"
+require "dependabot/go_modules/azure_devops_path_normalizer"
 require "dependabot/package/package_latest_version_finder"
 
 module Dependabot
@@ -198,8 +199,9 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           begin
+            dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
             release_info = SharedHelpers.run_shell_command(
-              "go list -m -json #{dependency.name}@#{release.details.[]('version_string')}",
+              "go list -m -json #{dependency_name}@#{release.details.[]('version_string')}",
               fingerprint: "go list -m -json <dependency_name>"
             )
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e

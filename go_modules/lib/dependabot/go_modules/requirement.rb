@@ -156,7 +156,7 @@ module Dependabot
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^?v?/, "")
         parts = version.split(".")
-        upper_bound = [parts.first.to_i + 1, 0, 0, "a"].map(&:to_s).join(".")
+        upper_bound = [parts.first.to_i + 1, 0, 0, "a"].join(".")
 
         [">= #{version}", "< #{upper_bound}"]
       end
