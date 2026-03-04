@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
-    context "when poetry.lock is missing" do
+    context "when poetry.lock is missing but project uses Poetry" do
       before do
         allow(parser).to receive(:run_in_parsed_context)
           .with("pyenv exec poetry show --tree --no-ansi --no-interaction")
@@ -115,6 +115,26 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(parser).to have_received(:run_in_parsed_context)
           .with("pyenv exec poetry show --tree --no-ansi --no-interaction")
         expect(resolved_dependencies.keys).to include("pkg:pypi/flask")
+      end
+    end
+
+    context "when this is not a Poetry project" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "pep621_exact_requirement.toml"),
+          directory: "/"
+        )
+      end
+
+      it "returns dependencies without relationship data and does not call poetry show --tree" do
+        expect(parser).not_to receive(:run_in_parsed_context)
+
+        resolved_dependencies = grapher.resolved_dependencies
+
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
       end
     end
 
