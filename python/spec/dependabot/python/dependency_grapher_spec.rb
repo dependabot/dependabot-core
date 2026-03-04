@@ -30,6 +30,8 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     )
   end
 
+  let(:poetry_tree_output) { fixture("dependency_grapher", "poetry_show_tree_output.txt") }
+
   describe "#relevant_dependency_file" do
     it "specifies the pyproject.toml as the relevant dependency file" do
       expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
@@ -50,7 +52,9 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       let(:poetry_lock_content) { fixture("dependency_grapher", "poetry_lock_with_relationships.lock") }
 
-      it "parses lockfile relationships for flask" do
+      it "prefers lockfile relationships and does not call poetry show --tree" do
+        expect(parser).not_to receive(:run_in_parsed_context)
+
         resolved_dependencies = grapher.resolved_dependencies
 
         expect(resolved_dependencies.fetch("pkg:pypi/flask@3.1.3").dependencies).to eq(
@@ -99,13 +103,44 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
 
     context "when poetry.lock is missing" do
-      it "returns dependencies without relationship data" do
+      before do
+        allow(parser).to receive(:run_in_parsed_context)
+          .with("pyenv exec poetry show --tree --no-ansi --no-interaction")
+          .and_return(poetry_tree_output)
+      end
+
+      it "falls back to parsing poetry show --tree output" do
         resolved_dependencies = grapher.resolved_dependencies
 
+        expect(parser).to have_received(:run_in_parsed_context)
+          .with("pyenv exec poetry show --tree --no-ansi --no-interaction")
         expect(resolved_dependencies.keys).to include("pkg:pypi/flask")
-        flask = resolved_dependencies.fetch("pkg:pypi/flask")
-        expect(flask.direct).to be(true)
-        expect(flask.dependencies).to eq([])
+      end
+    end
+
+    context "when lockfile graph extraction fails" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: "invalid toml content {{{",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      before do
+        allow(parser).to receive(:run_in_parsed_context)
+          .with("pyenv exec poetry show --tree --no-ansi --no-interaction")
+          .and_return(poetry_tree_output)
+      end
+
+      it "falls back to parsing poetry show --tree output" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(parser).to have_received(:run_in_parsed_context)
+          .with("pyenv exec poetry show --tree --no-ansi --no-interaction")
+        expect(resolved_dependencies.keys).to include("pkg:pypi/flask")
       end
     end
   end

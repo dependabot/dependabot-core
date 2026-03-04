@@ -1,0 +1,17 @@
+flask 3.1.3 A simple framework for building complex web applications.
+├── blinker >=1.9
+├── click >=8.1.3
+├── itsdangerous >=2.2
+├── jinja2 >=3.1.2
+│   └── markupsafe >=2.0
+├── markupsafe >=2.1.1
+└── werkzeug >=3.1
+    └── markupsafe >=2.1.1
+
+requests 2.32.5 Python HTTP for Humans.
+├── certifi >=2017.4.17
+├── charset-normalizer >=2,<4
+├── idna >=2.5,<4
+└── urllib3 >=1.21.1,<3
+
+ruff 0.15.4 An extremely fast Python linter and code formatter, written in Rust.
