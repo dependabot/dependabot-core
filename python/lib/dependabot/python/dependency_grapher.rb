@@ -41,6 +41,9 @@ module Dependabot
         Regexp
       )
 
+      # Matches a single tree-depth segment used to calculate nesting depth.
+      TREE_DEPTH_SEGMENT = T.let(/(?:│   |    )/, Regexp)
+
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
         raise DependabotError, "No pyproject.toml present in dependency files." unless pyproject_toml
@@ -165,10 +168,10 @@ module Dependabot
       end
       def process_tree_child(match, relationship_stack, rels)
         package = normalised_dependency_name(T.must(match[:package]))
-        depth = T.must(match[:prefix]).scan(/(?:│   |    )/).length + 1
+        depth = T.must(match[:prefix]).scan(TREE_DEPTH_SEGMENT).length + 1
 
         relationship_stack[depth] = package
-        relationship_stack.slice!(depth + 1, relationship_stack.length)
+        relationship_stack.slice!((depth + 1)..)
 
         parent = relationship_stack[depth - 1]
         rels[package] ||= []
