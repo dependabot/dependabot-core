@@ -50,7 +50,7 @@ module Dependabot
         sig { params(group_name: String, update_count: Integer).returns(String) }
         def self.multi_ecosystem_base_title(group_name:, update_count:)
           "bump the \"#{group_name}\" group with " \
-            "#{update_count} update#{'s' if update_count > 1} across multiple ecosystems"
+            "#{update_count} update#{'s' unless update_count == 1} across multiple ecosystems"
         end
 
         sig { returns(String) }
