@@ -21,6 +21,10 @@ module Dependabot
 
       require_relative "update_checker/latest_version_resolver"
 
+      # Matches git-describe style version strings (e.g., 2.0.4.117.gfc3fee5, 3.26.3-5.g87159cd).
+      # These intermediate build artifact tags are rejected by Helm's native semver parser.
+      GIT_DESCRIBE_TAG_REGEX = /\.g[0-9a-f]{7,}$/
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(fetch_latest_version, T.nilable(T.any(String, Gem::Version)))
@@ -247,6 +251,10 @@ module Dependabot
         release_tags = release_tags.select do |tag|
           # Skip tags that start with "sha256-" or end with .sig, .att, or .metadata
           next false if tag.start_with?("sha256-") || tag.end_with?(".sig", ".att", ".metadata")
+
+          # Skip git-describe style versions (e.g., 2.0.4.117.gfc3fee5, 3.26.3-5.g87159cd).
+          # These are intermediate build artifacts rejected by Helm's native semver parser.
+          next false if GIT_DESCRIBE_TAG_REGEX.match?(tag)
 
           # Use Version.correct? to check if the tag is a valid version
           version_class.correct?(tag)
