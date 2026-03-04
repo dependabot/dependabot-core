@@ -62,8 +62,12 @@ module Dependabot
         T.let(
           LatestVersionFinder.new(
             dependency: dependency,
+            dependency_files: dependency_files,
             credentials: credentials,
-            cooldown_options: update_cooldown
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown,
+            raise_on_ignored: raise_on_ignored
           ).latest_tag,
           T.nilable(String)
         )
