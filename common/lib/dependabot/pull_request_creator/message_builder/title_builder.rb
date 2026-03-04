@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/logger"
+require "dependabot/pull_request_creator/pr_name_prefixer"
 
 module Dependabot
   class PullRequestCreator

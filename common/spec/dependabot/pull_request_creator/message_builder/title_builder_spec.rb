@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/pull_request_creator/message_builder/title_builder"
 require "dependabot/pull_request_creator/pr_name_prefixer"
+require "dependabot/pull_request_creator/message_builder/title_builder"
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
   before do
