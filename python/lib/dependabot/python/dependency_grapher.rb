@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/python/file_parser"
+require "dependabot/python/name_normaliser"
 require "toml-rb"
 
 module Dependabot
