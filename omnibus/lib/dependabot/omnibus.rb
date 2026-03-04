@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/bazel"
+require "dependabot/deno"
 require "dependabot/nix"
 require "dependabot/pre_commit"
 require "dependabot/python"
