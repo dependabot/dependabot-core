@@ -310,42 +310,32 @@ module Dependabot
     def record_ecosystem_meta(ecosystem)
       return if ecosystem.nil?
 
-      begin
-        ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
-          api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_meta"
+      ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_meta"
 
-          body = {
-            data: [
-              {
-                ecosystem: {
-                  name: ecosystem.name,
-                  package_manager: version_manager_json(ecosystem.package_manager),
-                  language: version_manager_json(ecosystem.language)
-                }
+        body = {
+          data: [
+            {
+              ecosystem: {
+                name: ecosystem.name,
+                package_manager: version_manager_json(ecosystem.package_manager),
+                language: version_manager_json(ecosystem.language)
               }
-            ]
-          }
+            }
+          ]
+        }
 
-          retry_count = 0
-
-          begin
-            response = http_client.post(path: api_url, body: body.to_json)
-            raise ApiError, response.body if response.status >= 400
-          rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
-            retry_count += 1
-            if retry_count <= MAX_REQUEST_RETRIES
-              sleep(rand(3.0..10.0))
-              retry
-            else
-              Dependabot.logger.error(
-                "Failed to record ecosystem meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
-              )
-            end
-          end
+        response = http_client.post(path: api_url, body: body.to_json)
+        if response.status >= 400
+          Dependabot.logger.error(
+            "Failed to record ecosystem meta. Status: #{response.status}, body: #{response.body}"
+          )
         end
-      rescue StandardError => e
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
         Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
       end
+    rescue StandardError => e
+      Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
     end
 
     # rubocop:disable Metrics/MethodLength
