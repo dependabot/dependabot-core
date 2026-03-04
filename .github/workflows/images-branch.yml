@@ -64,6 +64,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: conda, ecosystem: conda }
           - { name: composer, ecosystem: composer }
+          - { name: deno, ecosystem: deno }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
           - { name: docker, ecosystem: docker }

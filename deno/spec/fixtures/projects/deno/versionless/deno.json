@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@std/path": "jsr:@std/path",
+    "chalk": "npm:chalk",
+    "@sentry/deno": "npm:@sentry/deno",
+    "lodash": "npm:lodash@^4.17.21"
+  }
+}

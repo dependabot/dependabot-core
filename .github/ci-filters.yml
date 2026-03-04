@@ -34,6 +34,9 @@ composer:
 conda:
   - *shared
   - 'conda/**'
+deno:
+  - *shared
+  - 'deno/**'
 devcontainers:
   - *shared
   - 'devcontainers/**'
