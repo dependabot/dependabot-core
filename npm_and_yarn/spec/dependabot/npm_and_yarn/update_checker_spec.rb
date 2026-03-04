@@ -58,7 +58,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
-
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)

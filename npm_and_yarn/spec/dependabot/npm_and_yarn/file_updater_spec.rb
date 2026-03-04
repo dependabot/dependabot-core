@@ -59,7 +59,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     )
   end
 
-
   before do
     FileUtils.mkdir_p(tmp_path)
     allow(Dependabot::Experiments).to receive(:enabled?)

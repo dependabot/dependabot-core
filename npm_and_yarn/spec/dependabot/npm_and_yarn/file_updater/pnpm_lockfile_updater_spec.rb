@@ -67,7 +67,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
 
-
   before do
     FileUtils.mkdir_p(tmp_path)
     allow(Dependabot::Experiments).to receive(:enabled?)

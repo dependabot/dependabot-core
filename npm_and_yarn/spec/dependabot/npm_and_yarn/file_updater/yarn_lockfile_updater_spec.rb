@@ -60,7 +60,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-
   before do
     FileUtils.mkdir_p(tmp_path)
     allow(Dependabot::Experiments).to receive(:enabled?)

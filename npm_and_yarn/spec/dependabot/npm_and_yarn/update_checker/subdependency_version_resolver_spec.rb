@@ -32,7 +32,6 @@ RSpec.describe namespace::SubdependencyVersionResolver do
   end
   let(:ignored_versions) { [] }
 
-
   before do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)

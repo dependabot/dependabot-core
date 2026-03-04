@@ -216,9 +216,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/MethodLength
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
@@ -261,9 +259,7 @@ module Dependabot
         version
       end
       # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/MethodLength
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)

@@ -62,7 +62,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     fixture("npm_responses", "opentelemetry-context-async-hooks.json")
   end
 
-
   before do
     stub_request(:get, react_dom_registry_listing_url)
       .to_return(status: 200, body: react_dom_registry_response)
