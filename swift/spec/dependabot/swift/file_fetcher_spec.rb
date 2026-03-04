@@ -58,9 +58,25 @@ RSpec.describe Dependabot::Swift::FileFetcher do
       let(:project_name) { "xcode_project" }
       let(:directory) { "/" }
 
-      it "raises a DependencyFileNotFound error because Package.swift is required" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound)
+      it "fetches project.pbxproj as support file and Package.resolved" do
+        files = file_fetcher_instance.files
+        names = files.map(&:name)
+        expect(names).to match_array(
+          %w(
+            MyApp.xcodeproj/project.pbxproj
+            MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          )
+        )
+      end
+
+      it "marks project.pbxproj as a support file" do
+        pbxproj = file_fetcher_instance.files.find { |f| f.name.end_with?("project.pbxproj") }
+        expect(pbxproj.support_file).to be true
+      end
+
+      it "does not mark Package.resolved as a support file" do
+        resolved = file_fetcher_instance.files.find { |f| f.name.end_with?("Package.resolved") }
+        expect(resolved.support_file).to be false
       end
     end
 
@@ -68,19 +84,16 @@ RSpec.describe Dependabot::Swift::FileFetcher do
       let(:project_name) { "xcode_project_multiple" }
       let(:directory) { "/" }
 
-      it "raises a DependencyFileNotFound error because Package.swift is required" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound)
-      end
-    end
-
-    context "with a nested .xcodeproj in a subdirectory" do
-      let(:project_name) { "xcode_project_nested" }
-      let(:directory) { "/" }
-
-      it "raises a DependencyFileNotFound error because Package.swift is required" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound)
+      it "fetches files from all discovered projects" do
+        files = file_fetcher_instance.files
+        names = files.map(&:name)
+        expect(names).to include(
+          "AppA.xcodeproj/project.pbxproj",
+          "AppA.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          "AppB.xcodeproj/project.pbxproj",
+          "AppB.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+        )
+        expect(names.length).to eq(4)
       end
     end
 
