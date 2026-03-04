@@ -331,8 +331,6 @@ module Dependabot
             "Failed to record ecosystem meta. Status: #{response.status}, body: #{response.body}"
           )
         end
-      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
-        Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
       end
     rescue StandardError => e
       Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
