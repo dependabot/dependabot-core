@@ -63,6 +63,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
   end

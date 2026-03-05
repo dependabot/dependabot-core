@@ -75,6 +75,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .to_return(status: 200, body: opentelemetry_api_registry_response)
     stub_request(:get, opentelemetry_context_async_hooks_registry_listing_url)
       .to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
   end

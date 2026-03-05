@@ -34,6 +34,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
   end
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
   end
