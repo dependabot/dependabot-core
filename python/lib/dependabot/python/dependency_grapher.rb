@@ -46,7 +46,9 @@ module Dependabot
           next unless pkg.is_a?(Hash) && pkg["name"].is_a?(String)
 
           parent = NameNormaliser.normalise(pkg["name"])
-          children = (pkg["dependencies"] || {}).keys.map { |name| NameNormaliser.normalise(name) }
+          deps = pkg["dependencies"]
+          deps = {} unless deps.is_a?(Hash)
+          children = deps.keys.map { |name| NameNormaliser.normalise(name) }
           rels[parent] = children
         end
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
