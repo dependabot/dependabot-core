@@ -23,6 +23,7 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
+      require_relative "file_parser/hook_language_fetcher"
 
       CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
       ECOSYSTEM = "pre_commit"
@@ -134,6 +135,7 @@ module Dependabot
       def parse_additional_dependencies(repo, file)
         dependencies = []
         repo_url = repo["repo"]
+        revision = repo["rev"]
 
         return dependencies if repo_url.nil? || %w(local meta).include?(repo_url)
 
@@ -141,7 +143,7 @@ module Dependabot
         hooks.each do |hook|
           next unless hook.is_a?(Hash)
 
-          hook_deps = parse_hook_additional_dependencies(hook, repo_url, file)
+          hook_deps = parse_hook_additional_dependencies(hook, repo_url, revision, file)
           dependencies.concat(hook_deps)
         end
 
@@ -152,18 +154,24 @@ module Dependabot
         params(
           hook: T::Hash[String, T.untyped],
           repo_url: String,
+          revision: T.nilable(String),
           file: Dependabot::DependencyFile
         ).returns(T::Array[Dependabot::Dependency])
       end
-      def parse_hook_additional_dependencies(hook, repo_url, file)
+      def parse_hook_additional_dependencies(hook, repo_url, revision, file)
         dependencies = []
+        hook_id = hook["id"]
 
-        return dependencies unless hook["id"]
+        return dependencies unless hook_id
 
         additional_deps = hook.fetch("additional_dependencies", [])
         return dependencies if additional_deps.empty?
 
-        parser = LANGUAGE_PARSERS[hook["language"]]
+        # Get language from local config first, then try fetching from hook source repo
+        language = resolve_hook_language(hook, repo_url, revision, hook_id)
+        return dependencies unless language
+
+        parser = LANGUAGE_PARSERS[language]
         return dependencies unless parser
 
         additional_deps.each do |dep_string|
@@ -181,10 +189,10 @@ module Dependabot
               file: file.name,
               source: {
                 type: "additional_dependency",
-                language: hook["language"],
+                language: language,
                 package_name: parsed[:normalised_name],
                 original_name: parsed[:name],
-                hook_id: hook["id"],
+                hook_id: hook_id,
                 hook_repo: repo_url,
                 extras: parsed[:extras],
                 original_string: dep_string
@@ -195,6 +203,37 @@ module Dependabot
         end
 
         dependencies
+      end
+
+      sig do
+        params(
+          hook: T::Hash[String, T.untyped],
+          repo_url: String,
+          revision: T.nilable(String),
+          hook_id: String
+        ).returns(T.nilable(String))
+      end
+      def resolve_hook_language(hook, repo_url, revision, hook_id)
+        # Use local language if explicitly specified
+        local_language = hook["language"]
+        return local_language if local_language
+
+        # Otherwise fetch from the hook source repository
+        return nil unless revision
+
+        hook_language_fetcher.fetch_language(
+          repo_url: repo_url,
+          revision: revision,
+          hook_id: hook_id
+        )
+      end
+
+      sig { returns(HookLanguageFetcher) }
+      def hook_language_fetcher
+        @hook_language_fetcher ||= T.let(
+          HookLanguageFetcher.new(credentials: credentials),
+          T.nilable(HookLanguageFetcher)
+        )
       end
 
       sig do
