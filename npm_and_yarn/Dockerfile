@@ -2,7 +2,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.33.0
+ARG COREPACK_VERSION=0.34.6
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
