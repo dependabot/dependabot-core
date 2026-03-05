@@ -7,7 +7,6 @@ require "dependabot/dependency"
 require "dependabot/dependency_group"
 require "dependabot/errors"
 require "dependabot/job"
-require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/service"
 require "dependabot/shared_helpers"
 require "dependabot/updater/error_handler"
@@ -60,11 +59,15 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
     end
 
     context "with npm file updater no-change error" do
+      let(:no_change_error_class) { Class.new(StandardError) }
+
       let(:error) do
-        Dependabot::NpmAndYarn::FileUpdater::NoChangeError.new(
-          message: "No files were updated!",
-          error_context: {}
-        )
+        no_change_error_class.new("No files were updated!")
+      end
+
+      before do
+        allow(no_change_error_class).to receive(:name)
+          .and_return("Dependabot::NpmAndYarn::FileUpdater::NoChangeError")
       end
 
       it "records a handled error without capturing an unknown exception" do
