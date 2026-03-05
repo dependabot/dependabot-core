@@ -75,21 +75,6 @@ module Dependabot
         )
       end
 
-      sig { override.params(command: String).returns(String) }
-      def run_in_parsed_context(command)
-        SharedHelpers.in_a_temporary_directory do
-          dependency_files.each do |file|
-            path = File.join(file.directory, file.name).delete_prefix("/")
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
-          end
-
-          setup_python_environment
-
-          SharedHelpers.run_shell_command(command)
-        end
-      end
-
       private
 
       sig { returns(Dependabot::Python::LanguageVersionManager) }
