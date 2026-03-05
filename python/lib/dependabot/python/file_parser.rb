@@ -79,7 +79,7 @@ module Dependabot
       def run_in_parsed_context(command)
         SharedHelpers.in_a_temporary_directory do
           dependency_files.each do |file|
-            path = file.name
+            path = File.join(file.directory, file.name).delete_prefix("/")
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, file.content)
           end

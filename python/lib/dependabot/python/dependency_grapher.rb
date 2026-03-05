@@ -22,8 +22,7 @@ module Dependabot
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        dependency_names = @dependencies.map(&:name)
-        package_relationships.fetch(dependency.name, []).select { |child| dependency_names.include?(child) }
+        package_relationships.fetch(dependency.name, []).select { |child| dependency_name_set.include?(child) }
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
@@ -50,9 +49,16 @@ module Dependabot
           children = (pkg["dependencies"] || {}).keys.map { |name| NameNormaliser.normalise(name) }
           rels[parent] = children
         end
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to build dependency graph: #{e.message}")
-        {}
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+        raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).name
+      end
+
+      sig { returns(T::Set[String]) }
+      def dependency_name_set
+        @dependency_name_set ||= T.let(
+          Set.new(@dependencies.map(&:name)),
+          T.nilable(T::Set[String])
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
