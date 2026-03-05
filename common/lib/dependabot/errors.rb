@@ -8,6 +8,14 @@ require "dependabot/utils"
 module Dependabot
   extend T::Sig
 
+  NO_CHANGE_FILE_UPDATER_ERROR_CLASS_NAMES = T.let(
+    [
+      "Dependabot::NpmAndYarn::FileUpdater::NoChangeError",
+      "Dependabot::Bun::FileUpdater::NoChangeError"
+    ].freeze,
+    T::Array[String]
+  )
+
   module ErrorAttributes
     BACKTRACE         = "error-backtrace"
     CLASS             = "error-class"
@@ -223,6 +231,13 @@ module Dependabot
   # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
+    if no_change_file_updater_error?(error)
+      return {
+        "error-type": "dependency_file_content_not_changed",
+        "error-detail": { message: error.message }
+      }
+    end
+
     case error
     when Dependabot::ToolFeatureNotSupported
       {
@@ -386,6 +401,11 @@ module Dependabot
         }
       }
     end
+  end
+
+  sig { params(error: StandardError).returns(T::Boolean) }
+  def self.no_change_file_updater_error?(error)
+    NO_CHANGE_FILE_UPDATER_ERROR_CLASS_NAMES.include?(error.class.name)
   end
 
   # rubocop:enable Metrics/MethodLength

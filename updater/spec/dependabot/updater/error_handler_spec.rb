@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_group"
 require "dependabot/errors"
 require "dependabot/job"
+require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/service"
 require "dependabot/shared_helpers"
 require "dependabot/updater/error_handler"
@@ -49,6 +50,30 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
           error_details: { message: "The file is full of bees" },
           dependency: dependency
         )
+
+        expect(Dependabot.logger).to receive(:info).with(
+          a_string_starting_with("Handled error whilst updating broken-biscuits:")
+        )
+
+        handle_dependency_error
+      end
+    end
+
+    context "with npm file updater no-change error" do
+      let(:error) do
+        Dependabot::NpmAndYarn::FileUpdater::NoChangeError.new(
+          message: "No files were updated!",
+          error_context: {}
+        )
+      end
+
+      it "records a handled error without capturing an unknown exception" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "dependency_file_content_not_changed",
+          error_details: { message: "No files were updated!" },
+          dependency: dependency
+        )
+        expect(mock_service).not_to receive(:capture_exception)
 
         expect(Dependabot.logger).to receive(:info).with(
           a_string_starting_with("Handled error whilst updating broken-biscuits:")
