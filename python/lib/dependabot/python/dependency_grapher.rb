@@ -43,7 +43,7 @@ module Dependabot
       def fetch_package_relationships
         return {} unless poetry_lock
 
-        TomlRB.parse(T.must(poetry_lock.content)).fetch("package", []).each_with_object({}) do |pkg, rels|
+        TomlRB.parse(T.must(poetry_lock).content).fetch("package", []).each_with_object({}) do |pkg, rels|
           next unless pkg.is_a?(Hash) && pkg["name"].is_a?(String)
 
           parent = NameNormaliser.normalise(pkg["name"])

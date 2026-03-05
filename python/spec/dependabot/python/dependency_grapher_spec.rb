@@ -117,12 +117,8 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
 
-      it "returns dependencies without relationship data" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        resolved_dependencies.each_value do |dep|
-          expect(dep.dependencies).to eq([])
-        end
+      it "raises a DependencyFileNotParseable error" do
+        expect { grapher.resolved_dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end
