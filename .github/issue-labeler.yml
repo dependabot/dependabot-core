@@ -84,3 +84,6 @@
 
 "L: pre:commit":
     - '(pre_commit)'
+
+"L: deno":
+    - '(deno)'
