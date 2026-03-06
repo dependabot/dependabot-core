@@ -575,9 +575,9 @@ RSpec.describe Dependabot::Swift::FileParser do
         nio = deps.find { |d| d.name == "github.com/apple/swift-nio" }
         collections = deps.find { |d| d.name == "github.com/apple/swift-collections" }
 
-        expect(nio.requirements.first[:file]).to include("AppA.xcodeproj/project.pbxproj")
-          .or include("AppB.xcodeproj/project.pbxproj")
-        expect(collections.requirements.first[:file]).to include("AppB.xcodeproj/project.pbxproj")
+        # With scoped requirements, nio comes from AppA and collections from AppB
+        expect(nio.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(collections.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
       end
     end
 
@@ -816,6 +816,34 @@ RSpec.describe Dependabot::Swift::FileParser do
       it "raises an error about missing Package.swift" do
         expect { parser }.to raise_error("No Package.swift!")
       end
+    end
+  end
+
+  describe "#extract_xcodeproj_dir (private)" do
+    let(:project_name) { "ReactiveCocoa" }
+    let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+    it "extracts xcodeproj dir from a resolved file path" do
+      result = parser.send(
+        :extract_xcodeproj_dir,
+        "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+      )
+      expect(result).to eq("MyApp.xcodeproj")
+    end
+
+    it "extracts xcodeproj dir from a pbxproj path" do
+      result = parser.send(:extract_xcodeproj_dir, "MyApp.xcodeproj/project.pbxproj")
+      expect(result).to eq("MyApp.xcodeproj")
+    end
+
+    it "handles nested directory paths" do
+      result = parser.send(:extract_xcodeproj_dir, "sub/dir/App.xcodeproj/project.pbxproj")
+      expect(result).to eq("sub/dir/App.xcodeproj")
+    end
+
+    it "returns nil for paths without xcodeproj" do
+      result = parser.send(:extract_xcodeproj_dir, "Package.resolved")
+      expect(result).to be_nil
     end
   end
 end

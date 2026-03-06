@@ -78,14 +78,15 @@ module Dependabot
       def parse_xcode_spm
         dependency_set = DependencySet.new
 
-        pbxproj_requirements = aggregate_pbxproj_requirements
+        scoped_requirements = aggregate_pbxproj_requirements
 
         xcode_resolved_files.each do |resolved_file|
           resolved_deps = PackageResolvedParser.new(resolved_file).parse
           xcodeproj_dir = extract_xcodeproj_dir(resolved_file.name)
+          pbxproj_requirements = scoped_requirements.fetch(xcodeproj_dir, {})
 
           resolved_deps.each do |dep|
-            enriched = enrich_with_pbxproj_requirements(dep, pbxproj_requirements, xcodeproj_dir)
+            enriched = enrich_with_pbxproj_requirements(dep, pbxproj_requirements)
             dependency_set << enriched
           end
         end
@@ -99,18 +100,23 @@ module Dependabot
           xcode_resolved_files.any?
       end
 
-      # Collects requirement info from all project.pbxproj support files
-      sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+      # Collects requirement info from all project.pbxproj support files,
+      # keyed by xcodeproj directory so each resolved file only sees
+      # requirements from its own Xcode project.
+      sig { returns(T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, T.untyped]]]) }
       def aggregate_pbxproj_requirements
-        requirements = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+        scoped = T.let({}, T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, T.untyped]]])
 
         pbxproj_files.each do |pbxproj_file|
+          xcodeproj_dir = extract_xcodeproj_dir(pbxproj_file.name)
+          scoped[xcodeproj_dir] ||= {}
+
           PbxprojParser.new(pbxproj_file).parse.each do |name, req_info|
-            requirements[name] = req_info
+            T.must(scoped[xcodeproj_dir])[name] = req_info
           end
         end
 
-        requirements
+        scoped
       end
 
       # Enriches a dependency parsed from Package.resolved with requirement
@@ -118,11 +124,10 @@ module Dependabot
       sig do
         params(
           dep: Dependabot::Dependency,
-          pbxproj_requirements: T::Hash[String, T::Hash[Symbol, T.untyped]],
-          xcodeproj_dir: T.nilable(String)
+          pbxproj_requirements: T::Hash[String, T::Hash[Symbol, T.untyped]]
         ).returns(Dependabot::Dependency)
       end
-      def enrich_with_pbxproj_requirements(dep, pbxproj_requirements, xcodeproj_dir) # rubocop:disable Lint/UnusedMethodArgument
+      def enrich_with_pbxproj_requirements(dep, pbxproj_requirements)
         req_info = pbxproj_requirements[dep.name]
         return dep unless req_info
 
@@ -150,11 +155,12 @@ module Dependabot
         )
       end
 
-      # Extracts the .xcodeproj directory name from a Package.resolved path.
+      # Extracts the .xcodeproj directory name from a file path.
       # e.g. "MyApp.xcodeproj/project.xcworkspace/.../Package.resolved" -> "MyApp.xcodeproj"
-      sig { params(resolved_path: String).returns(T.nilable(String)) }
-      def extract_xcodeproj_dir(resolved_path)
-        match = resolved_path.match(%r{^([^/]+\.xcodeproj)/})
+      # e.g. "sub/dir/App.xcodeproj/project.pbxproj" -> "sub/dir/App.xcodeproj"
+      sig { params(path: String).returns(T.nilable(String)) }
+      def extract_xcodeproj_dir(path)
+        match = path.match(%r{^(.*?\.xcodeproj)/})
         match&.captures&.first
       end
 

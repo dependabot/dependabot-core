@@ -6,6 +6,7 @@ require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/swift/file_parser"
 require "dependabot/swift/native_requirement"
+require "dependabot/swift/url_helpers"
 
 module Dependabot
   module Swift
@@ -19,7 +20,9 @@ module Dependabot
       class PbxprojParser
         extend T::Sig
 
-        # Regex to extract XCRemoteSwiftPackageReference blocks from pbxproj
+        # Regex to extract XCRemoteSwiftPackageReference blocks from pbxproj.
+        # Uses [^}]* to match the requirement block content — this is safe because
+        # Xcode requirement blocks are always flat dictionaries with no nested braces.
         PACKAGE_REF_BLOCK = T.let(
           /
             isa\s*=\s*XCRemoteSwiftPackageReference;\s*
@@ -56,9 +59,9 @@ module Dependabot
             url = T.cast(url, String)
             requirement_block = T.cast(requirement_block, String)
             normalized_url = SharedHelpers.scp_to_standard(url)
-            name = normalize_name(normalized_url)
+            name = UrlHelpers.normalize_name(normalized_url)
 
-            req_info = parse_requirement_block(requirement_block, url)
+            req_info = parse_requirement_block(requirement_block)
             next unless req_info
 
             requirements[name] = req_info.merge(
@@ -76,31 +79,31 @@ module Dependabot
         attr_reader :pbxproj_file
 
         sig do
-          params(block: String, url: String)
+          params(block: String)
             .returns(T.nilable(T::Hash[Symbol, T.untyped]))
         end
-        def parse_requirement_block(block, url)
+        def parse_requirement_block(block)
           kind = block.match(KIND_PATTERN)&.captures&.first
           return nil unless kind
 
           case kind
           when "upToNextMajorVersion"
-            build_up_to_next_major(block, url)
+            build_up_to_next_major(block)
           when "upToNextMinorVersion"
-            build_up_to_next_minor(block, url)
+            build_up_to_next_minor(block)
           when "exactVersion"
-            build_exact(block, url)
+            build_exact(block)
           when "versionRange"
-            build_range(block, url)
+            build_range(block)
           when "branch"
-            build_branch(block, url)
+            build_branch(block)
           when "revision"
-            build_revision(block, url)
+            build_revision(block)
           end
         end
 
-        sig { params(block: String, _url: String).returns(T::Hash[Symbol, T.untyped]) }
-        def build_up_to_next_major(block, _url)
+        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        def build_up_to_next_major(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = "from: \"#{min_version}\""
           native_req = NativeRequirement.new(requirement_string)
@@ -112,8 +115,8 @@ module Dependabot
           }
         end
 
-        sig { params(block: String, _url: String).returns(T::Hash[Symbol, T.untyped]) }
-        def build_up_to_next_minor(block, _url)
+        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        def build_up_to_next_minor(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = ".upToNextMinor(from: \"#{min_version}\")"
           native_req = NativeRequirement.new(requirement_string)
@@ -125,8 +128,8 @@ module Dependabot
           }
         end
 
-        sig { params(block: String, _url: String).returns(T::Hash[Symbol, T.untyped]) }
-        def build_exact(block, _url)
+        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        def build_exact(block)
           version = extract_version(block, MIN_VERSION_PATTERN) || extract_version(block, VERSION_PATTERN)
           requirement_string = "exact: \"#{version}\""
           native_req = NativeRequirement.new(requirement_string)
@@ -138,8 +141,8 @@ module Dependabot
           }
         end
 
-        sig { params(block: String, _url: String).returns(T::Hash[Symbol, T.untyped]) }
-        def build_range(block, _url)
+        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        def build_range(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           max_version = extract_version(block, MAX_VERSION_PATTERN)
           requirement_string = "\"#{min_version}\"..<\"#{max_version}\""
@@ -152,8 +155,8 @@ module Dependabot
           }
         end
 
-        sig { params(block: String, _url: String).returns(T::Hash[Symbol, T.untyped]) }
-        def build_branch(block, _url)
+        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        def build_branch(block)
           branch = block.match(BRANCH_PATTERN)&.captures&.first
 
           {
@@ -164,8 +167,8 @@ module Dependabot
           }
         end
 
-        sig { params(block: String, _url: String).returns(T::Hash[Symbol, T.untyped]) }
-        def build_revision(block, _url)
+        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        def build_revision(block)
           revision = block.match(REVISION_PATTERN)&.captures&.first
 
           {
@@ -179,12 +182,6 @@ module Dependabot
         sig { params(block: String, pattern: Regexp).returns(T.nilable(String)) }
         def extract_version(block, pattern)
           block.match(pattern)&.captures&.first
-        end
-
-        sig { params(source: String).returns(String) }
-        def normalize_name(source)
-          uri = URI.parse(source.downcase)
-          "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix(".git")
         end
       end
     end

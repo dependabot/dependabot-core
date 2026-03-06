@@ -2,12 +2,12 @@
 # frozen_string_literal: true
 
 require "json"
-require "uri"
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/swift/file_parser"
+require "dependabot/swift/url_helpers"
 
 module Dependabot
   module Swift
@@ -16,6 +16,16 @@ module Dependabot
         extend T::Sig
 
         SUPPORTED_VERSIONS = T.let([1, 2, 3].freeze, T::Array[Integer])
+
+        # Maps schema version to the JSON keys used for each pin field
+        PIN_KEYS = T.let(
+          {
+            1 => { url: "repositoryURL", identity: "package", state: "state" },
+            2 => { url: "location", identity: "identity", state: "state" },
+            3 => { url: "location", identity: "identity", state: "state" }
+          }.freeze,
+          T::Hash[Integer, T::Hash[Symbol, String]]
+        )
 
         sig { params(resolved_file: Dependabot::DependencyFile).void }
         def initialize(resolved_file)
@@ -93,50 +103,21 @@ module Dependabot
           ).returns(T.nilable(Dependabot::Dependency))
         end
         def build_dependency(pin, schema_version)
-          if schema_version == 1
-            build_v1_dependency(pin)
-          else
-            build_v2_dependency(pin)
-          end
-        end
-
-        sig { params(pin: T::Hash[String, T.untyped]).returns(T.nilable(Dependabot::Dependency)) }
-        def build_v1_dependency(pin)
-          url = pin["repositoryURL"]
+          keys = T.must(PIN_KEYS[schema_version])
+          url = pin[keys[:url]]
           return nil unless url.is_a?(String) && !url.empty?
 
-          state = pin["state"] || {}
-          version = state["version"]
-          revision = state["revision"]
-          branch = state["branch"]
-          identity = pin["package"]&.downcase
+          state = pin[keys[:state]] || {}
+          identity = pin[keys[:identity]]
+          # v1 uses a display name for "package"; normalize to lowercase like v2/v3 "identity"
+          identity = identity&.downcase if schema_version == 1
 
           build_dependency_object(
             identity: identity,
             url: url,
-            version: version,
-            revision: revision,
-            branch: branch
-          )
-        end
-
-        sig { params(pin: T::Hash[String, T.untyped]).returns(T.nilable(Dependabot::Dependency)) }
-        def build_v2_dependency(pin)
-          url = pin["location"]
-          return nil unless url.is_a?(String) && !url.empty?
-
-          state = pin["state"] || {}
-          version = state["version"]
-          revision = state["revision"]
-          branch = state["branch"]
-          identity = pin["identity"]
-
-          build_dependency_object(
-            identity: identity,
-            url: url,
-            version: version,
-            revision: revision,
-            branch: branch
+            version: state["version"],
+            revision: state["revision"],
+            branch: state["branch"]
           )
         end
 
@@ -151,7 +132,7 @@ module Dependabot
         end
         def build_dependency_object(identity:, url:, version:, revision:, branch:)
           normalized_url = SharedHelpers.scp_to_standard(url)
-          name = normalize_name(normalized_url)
+          name = UrlHelpers.normalize_name(normalized_url)
           ref = version || revision
 
           source = { type: "git", url: normalized_url, ref: ref, branch: branch }
@@ -168,12 +149,6 @@ module Dependabot
             }],
             metadata: { identity: identity }
           )
-        end
-
-        sig { params(source: String).returns(String) }
-        def normalize_name(source)
-          uri = URI.parse(source.downcase)
-          "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix(".git")
         end
       end
     end
