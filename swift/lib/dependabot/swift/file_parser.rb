@@ -26,7 +26,7 @@ module Dependabot
         elsif xcode_spm_mode?
           parse_xcode_spm
         else
-          raise "No Package.swift!"
+          raise "No Package.swift or Xcode Package.resolved found!"
         end
       end
 
@@ -140,6 +140,8 @@ module Dependabot
             requirement: requirement_str || req[:requirement],
             file: pbxproj_file,
             metadata: {
+              # declaration_string is not applicable for Xcode-managed SPM
+              # (no Package.swift manifest to extract it from)
               declaration_string: nil,
               requirement_string: requirement_string
             }.compact
@@ -178,7 +180,7 @@ module Dependabot
         return if package_manifest_file
 
         if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return if dependency_files.any? { |f| f.name.end_with?("Package.resolved") }
+          return if dependency_files.any? { |f| f.name.end_with?("Package.resolved") && f.name.include?(".xcodeproj/") }
 
           raise "No Package.swift or Xcode Package.resolved found!"
         end

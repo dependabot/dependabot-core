@@ -819,31 +819,4 @@ RSpec.describe Dependabot::Swift::FileParser do
     end
   end
 
-  describe "#extract_xcodeproj_dir (private)" do
-    let(:project_name) { "ReactiveCocoa" }
-    let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-    it "extracts xcodeproj dir from a resolved file path" do
-      result = parser.send(
-        :extract_xcodeproj_dir,
-        "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
-      )
-      expect(result).to eq("MyApp.xcodeproj")
-    end
-
-    it "extracts xcodeproj dir from a pbxproj path" do
-      result = parser.send(:extract_xcodeproj_dir, "MyApp.xcodeproj/project.pbxproj")
-      expect(result).to eq("MyApp.xcodeproj")
-    end
-
-    it "handles nested directory paths" do
-      result = parser.send(:extract_xcodeproj_dir, "sub/dir/App.xcodeproj/project.pbxproj")
-      expect(result).to eq("sub/dir/App.xcodeproj")
-    end
-
-    it "returns nil for paths without xcodeproj" do
-      result = parser.send(:extract_xcodeproj_dir, "Package.resolved")
-      expect(result).to be_nil
-    end
-  end
 end

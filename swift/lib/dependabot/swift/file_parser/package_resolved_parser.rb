@@ -117,7 +117,8 @@ module Dependabot
 
           state = pin[T.must(keys[:state])] || {}
           identity = pin[T.must(keys[:identity])]
-          # v1 uses a display name for "package"; normalize to lowercase like v2/v3 "identity"
+          # v1 uses a display name for "package"; normalize to lowercase like v2/v3 "identity".
+          # v2/v3 identity is always lowercase per spec, so only v1 needs downcasing.
           identity = identity&.downcase if schema_version == 1
 
           build_dependency_object(
