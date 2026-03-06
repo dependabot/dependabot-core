@@ -488,6 +488,75 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .to eq(Gem::Version.new("2.5.0"))
         end
       end
+
+      context "when urllib3 is pinned via constraints and botocore is incompatible" do
+        let(:dependency_name) { "urllib3" }
+        let(:dependency_version) { "1.26.0" }
+        let(:pypi_url) { "https://pypi.org/simple/urllib3/" }
+        let(:pypi_response) do
+          <<~HTML
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <a href="https://files.pythonhosted.org/packages/source/u/urllib3/urllib3-1.26.0.tar.gz">urllib3-1.26.0.tar.gz</a>
+                <a href="https://files.pythonhosted.org/packages/source/u/urllib3/urllib3-2.6.3.tar.gz">urllib3-2.6.3.tar.gz</a>
+              </body>
+            </html>
+          HTML
+        end
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: <<~TOML
+              [project]
+              name = "dependabot-test"
+              version = "0.1.0"
+
+              dependencies = [
+                  "requests==2.31.0",
+                  "botocore==1.29.0",
+              ]
+
+              [tool.pip]
+              constraints = "constraints.txt"
+            TOML
+          )
+        end
+        let(:constraints_file) do
+          Dependabot::DependencyFile.new(
+            name: "constraints.txt",
+            content: "urllib3==1.26.0\n"
+          )
+        end
+        let(:dependency_files) { [pyproject, constraints_file] }
+        let(:dependency_requirements) do
+          [{
+            file: "constraints.txt",
+            requirement: "==1.26.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        before do
+          stub_request(:get, "https://pypi.org/pypi/botocore/1.29.0/json/")
+            .to_return(
+              status: 200,
+              body: {
+                info: {
+                  requires_dist: [
+                    "urllib3 (<1.27,>=1.25.4)",
+                    "jmespath (<2.0.0,>=0.7.1)"
+                  ]
+                }
+              }.to_json
+            )
+        end
+
+        it "does not propose an update that is incompatible with pinned botocore" do
+          expect(latest_resolvable_version).to be_nil
+        end
+      end
     end
   end
 
