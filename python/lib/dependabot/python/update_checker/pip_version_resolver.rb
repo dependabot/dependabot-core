@@ -205,6 +205,7 @@ module Dependabot
             response = Dependabot::RegistryClient.get(url: url)
             return response if response.status == 200
           rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
+            Dependabot.logger.warn("Failed to fetch python dependency metadata for #{name}@#{version}")
             next
           end
 
@@ -243,6 +244,7 @@ module Dependabot
 
           nil
         rescue JSON::ParserError
+          Dependabot.logger.warn("Failed to parse python dependency metadata JSON response")
           nil
         end
 

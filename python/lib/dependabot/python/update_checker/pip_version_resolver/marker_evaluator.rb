@@ -50,13 +50,6 @@ module Dependabot
           def evaluate_marker_expression(expression, python_version)
             expr = strip_wrapping_parentheses(expression.strip)
 
-            not_expression = strip_top_level_not(expr)
-            if not_expression
-              return false unless python_marker?(not_expression)
-
-              return !evaluate_marker_expression(not_expression, python_version)
-            end
-
             or_parts = split_top_level(expr, "or")
             return or_parts.any? { |part| evaluate_marker_expression(part, python_version) } if or_parts.length > 1
 
@@ -65,6 +58,13 @@ module Dependabot
               return and_parts.all? do |part|
                 evaluate_marker_expression(part, python_version) || !python_marker?(part)
               end
+            end
+
+            not_expression = strip_top_level_not(expr)
+            if not_expression
+              return false unless python_marker?(not_expression)
+
+              return !evaluate_marker_expression(not_expression, python_version)
             end
 
             evaluate_python_version_condition(expr, python_version, default: python_marker?(expr))
