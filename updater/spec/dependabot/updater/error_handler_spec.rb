@@ -58,6 +58,34 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
+    context "with npm file updater no-change error" do
+      let(:no_change_error_class) { Class.new(StandardError) }
+
+      let(:error) do
+        no_change_error_class.new("No files were updated!")
+      end
+
+      before do
+        allow(no_change_error_class).to receive(:name)
+          .and_return("Dependabot::NpmAndYarn::FileUpdater::NoChangeError")
+      end
+
+      it "records a handled error without capturing an unknown exception" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "dependency_file_content_not_changed",
+          error_details: { message: "No files were updated!" },
+          dependency: dependency
+        )
+        expect(mock_service).not_to receive(:capture_exception)
+
+        expect(Dependabot.logger).to receive(:info).with(
+          a_string_starting_with("Handled error whilst updating broken-biscuits:")
+        )
+
+        handle_dependency_error
+      end
+    end
+
     context "with a handled unknown error (cloud)" do
       let(:error) do
         StandardError.new("There are bees everywhere").tap do |err|
