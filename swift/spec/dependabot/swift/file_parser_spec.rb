@@ -818,5 +818,4 @@ RSpec.describe Dependabot::Swift::FileParser do
       end
     end
   end
-
 end
