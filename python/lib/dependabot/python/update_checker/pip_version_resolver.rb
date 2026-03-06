@@ -19,6 +19,8 @@ module Dependabot
       class PipVersionResolver
         extend T::Sig
 
+        require_relative "pip_version_resolver/marker_evaluator"
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -49,6 +51,7 @@ module Dependabot
           @latest_version_finder = T.let(nil, T.nilable(LatestVersionFinder))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
+          @marker_evaluator = T.let(nil, T.nilable(MarkerEvaluator))
           @pyproject_content = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           @registry_json_urls = T.let(nil, T.nilable(T::Array[String]))
           @transitive_requirement_cache = T.let({}, T::Hash[String, T.nilable(String)])
@@ -126,6 +129,11 @@ module Dependabot
             )
         end
 
+        sig { returns(MarkerEvaluator) }
+        def marker_evaluator
+          @marker_evaluator ||= MarkerEvaluator.new
+        end
+
         sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
         def compatible_with_pinned_pyproject_dependencies?(candidate)
           return true unless constraints_dependency?
@@ -167,7 +175,9 @@ module Dependabot
             next unless marker_satisfied_for_python?(marker)
             next if requirement_string.nil? || requirement_string.empty?
 
-            parsed = requirement_string.match(/\A(?<name>[A-Za-z0-9][A-Za-z0-9._\-]*)\s*==\s*(?<version>[^\s]+)\z/)
+            parsed = requirement_string.match(
+              /\A(?<name>[A-Za-z0-9][A-Za-z0-9._\-]*)(?:\[[^\]]+\])?\s*==\s*(?<version>[^\s]+)\z/
+            )
             next unless parsed
 
             dep_name = NameNormaliser.normalise(T.must(parsed[:name]))
@@ -269,60 +279,20 @@ module Dependabot
 
         sig { params(requirement_string: String).returns([T.nilable(String), T.nilable(String)]) }
         def split_requirement_and_marker(requirement_string)
-          requirement_part, marker_part = requirement_string.split(";", 2)
-
-          [requirement_part&.strip, marker_part&.strip]
+          marker_evaluator.split_requirement_and_marker(requirement_string)
         end
 
         sig { params(marker: T.nilable(String)).returns(T::Boolean) }
         def marker_satisfied_for_python?(marker)
           return true if marker.nil? || marker.empty?
-          return false unless marker.match?(/\bpython_version\b/)
+          return false unless marker.match?(/\bpython(?:_full)?_version\b/)
 
           marker_satisfied?(marker, language_version_manager.python_version)
         end
 
         sig { params(marker: String, python_version: String).returns(T::Boolean) }
         def marker_satisfied?(marker, python_version)
-          conditions = marker.split(/\s+(and|or)\s+/)
-          return false if conditions.empty?
-
-          result = T.let(evaluate_python_version_condition(conditions.shift, python_version), T::Boolean)
-
-          until conditions.empty?
-            operator = T.must(conditions.shift)
-            next_condition = T.must(conditions.shift)
-            next_result = evaluate_python_version_condition(next_condition, python_version)
-
-            result = operator == "and" ? result && next_result : result || next_result
-          end
-
-          result
-        end
-
-        sig { params(condition: T.nilable(String), python_version: String).returns(T::Boolean) }
-        def evaluate_python_version_condition(condition, python_version)
-          return false if condition.nil?
-
-          match = condition.match(/python_version\s*(<=|>=|<|>|==|!=)\s*['\"]([^'\"]+)['\"]/)
-          return false unless match
-
-          operator = T.must(match[1])
-          version = T.must(match[2])
-          lhs = Dependabot::Python::Version.new(python_version)
-          rhs = Dependabot::Python::Version.new(version)
-
-          case operator
-          when "<" then lhs < rhs
-          when "<=" then lhs <= rhs
-          when ">" then lhs > rhs
-          when ">=" then lhs >= rhs
-          when "==" then lhs == rhs
-          when "!=" then lhs != rhs
-          else false
-          end
-        rescue ArgumentError
-          false
+          marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)
         end
 
         sig { returns(T::Hash[String, T.untyped]) }

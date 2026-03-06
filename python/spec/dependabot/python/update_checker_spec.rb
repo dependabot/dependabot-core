@@ -523,6 +523,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           )
         end
         let(:dependency_files) { [pyproject, constraints_file] }
+        let(:botocore_requires_dist) do
+          [
+            "urllib3 (<1.27,>=1.25.4)",
+            "jmespath (<2.0.0,>=0.7.1)"
+          ]
+        end
         let(:dependency_requirements) do
           [{
             file: "constraints.txt",
@@ -538,10 +544,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               status: 200,
               body: {
                 info: {
-                  requires_dist: [
-                    "urllib3 (<1.27,>=1.25.4)",
-                    "jmespath (<2.0.0,>=0.7.1)"
-                  ]
+                  requires_dist: botocore_requires_dist
                 }
               }.to_json
             )
@@ -562,6 +565,178 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
         it "does not propose an update that is incompatible with pinned botocore" do
           expect(latest_resolvable_version).to be_nil
+        end
+
+        context "when pinned direct dependency includes extras" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore[crt]==1.29.0",
+                ]
+
+                [tool.pip]
+                constraints = "constraints.txt"
+              TOML
+            )
+          end
+
+          it "still blocks incompatible update candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist uses a python_full_version marker" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_full_version >= '3.0.0'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "evaluates marker and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker is parenthesized" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; (python_version >= '3.0')",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "evaluates the marker expression and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker has nested boolean expression" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; " \
+              "(python_version < '3.0' or python_full_version >= '3.11.0') and extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "evaluates nested python marker terms and still applies the python constraint" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker mixes python and non-python terms with or" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version < '3.0' or extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "does not treat non-python markers as satisfying python marker checks" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when requires_dist marker mixes python and non-python terms with and" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version >= '3.0' and extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "still applies the python constraint" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist has an unsupported python marker operator" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version ~= '3.0'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "treats the python marker as applicable and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist has malformed python marker syntax" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version >= '3.0",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "fails open for python markers and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker uses unary not for python condition" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; not python_version < '3.0'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "applies the inverted python condition and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker combines unary not with non-python terms" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; not python_version < '3.0' and not extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "still uses only python marker semantics for compatibility checks" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker has unary not on non-python term in or expression" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version < '3.0' or not extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "does not treat non-python unary not term as satisfying python marker checks" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when selecting lowest resolvable security fix" do
+          let(:security_advisories) do
+            [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: dependency_name,
+                package_manager: "pip",
+                vulnerable_versions: ["<= 2.6.2"]
+              )
+            ]
+          end
+
+          it "does not return an incompatible security fix version" do
+            expect(checker.lowest_resolvable_security_fix_version).to be_nil
+          end
         end
       end
     end
