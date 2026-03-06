@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "pathname"
 require "toml-rb"
 require "sorbet-runtime"
 require "excon"
@@ -16,6 +17,9 @@ require "dependabot/python/file_parser/python_requirement_parser"
 module Dependabot
   module Python
     class UpdateChecker
+      # This resolver intentionally co-locates resolution, marker handling, and
+      # constraints matching to keep compatibility decisions in one place.
+      # rubocop:disable Metrics/ClassLength
       class PipVersionResolver
         extend T::Sig
 
@@ -52,9 +56,9 @@ module Dependabot
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @marker_evaluator = T.let(nil, T.nilable(MarkerEvaluator))
-          @pyproject_content = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           @registry_json_urls = T.let(nil, T.nilable(T::Array[String]))
-          @transitive_requirement_cache = T.let({}, T::Hash[String, T.nilable(String)])
+
+          initialize_caches
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -134,13 +138,27 @@ module Dependabot
           @marker_evaluator ||= MarkerEvaluator.new
         end
 
+        sig { void }
+        def initialize_caches
+          @transitive_requirement_cache = T.let({}, T::Hash[String, T.nilable(String)])
+          @transitive_requirement_available_cache = T.let({}, T::Hash[String, T::Boolean])
+          @constraints_files = T.let(nil, T.nilable(T::Array[String]))
+          @constraints_file_basenames = T.let(nil, T.nilable(T::Array[String]))
+          @requirement_file_directories = T.let(nil, T.nilable(T::Array[String]))
+          @pyproject_content_cache = T.let({}, T::Hash[String, T::Hash[String, T.untyped]])
+        end
+
         sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
         def compatible_with_pinned_pyproject_dependencies?(candidate)
           return true unless constraints_dependency?
-          return true if pinned_pyproject_dependencies.none?
 
-          pinned_pyproject_dependencies.all? do |name, version|
-            requirement = transitive_requirement_for(name: name, version: version)
+          pinned_dependencies = pinned_pyproject_dependencies
+          return false if pinned_dependencies.none? && pyproject_scope_ambiguous_for_constraints?
+          return true if pinned_dependencies.none?
+
+          pinned_dependencies.all? do |name, version|
+            requirement, metadata_available = transitive_requirement_for(name: name, version: version)
+            next false unless metadata_available
             next true unless requirement
 
             Python::Requirement.new(requirement).satisfied_by?(candidate)
@@ -151,15 +169,40 @@ module Dependabot
         end
 
         sig { returns(T::Boolean) }
+        def pyproject_scope_ambiguous_for_constraints?
+          pyproject_files.length > 1 && relevant_pyproject_files_for_dependency.empty?
+        end
+
+        sig { returns(T::Boolean) }
         def constraints_dependency?
-          dependency.requirements.any? do |req|
-            file = T.cast(req.fetch(:file), String)
-            File.basename(file).start_with?("constraints")
+          normalized_requirement_files.any? do |raw_file, normalized_file|
+            constraints_files.include?(normalized_file) ||
+              (File.dirname(raw_file) == "." && constraints_file_basenames.include?(File.basename(normalized_file))) ||
+              File.basename(normalized_file).start_with?("constraints")
+          end
+        end
+
+        sig { returns(T::Array[[String, String]]) }
+        def normalized_requirement_files
+          dependency.requirements.filter_map do |req|
+            raw_file = T.cast(req.fetch(:file), String)
+            [raw_file, normalize_path(raw_file)]
           end
         end
 
         sig { returns(T::Array[[String, String]]) }
         def pinned_pyproject_dependencies
+          pyprojects = relevant_pyproject_files_for_dependency
+          return [] if pyprojects.empty?
+
+          pyprojects.flat_map do |pyproject|
+            pinned_pyproject_dependencies_for(pyproject)
+          end.uniq
+        end
+
+        sig { params(pyproject: Dependabot::DependencyFile).returns(T::Array[[String, String]]) }
+        def pinned_pyproject_dependencies_for(pyproject)
+          pyproject_content = pyproject_content_for(pyproject)
           project_obj = T.cast(pyproject_content["project"], T.nilable(Object))
           return [] unless project_obj.is_a?(Hash)
 
@@ -187,29 +230,99 @@ module Dependabot
           end
         end
 
-        sig { params(name: String, version: String).returns(T.nilable(String)) }
-        def transitive_requirement_for(name:, version:)
-          cache_key = "#{name}@#{version}"
-          return @transitive_requirement_cache[cache_key] if @transitive_requirement_cache.key?(cache_key)
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def relevant_pyproject_files_for_dependency
+          requirement_files = requirement_files_for_dependency
+          relevant_pyprojects = pyproject_files.select do |pyproject|
+            pyproject_matches_requirement_files?(pyproject: pyproject, requirement_files: requirement_files)
+          end
 
-          response = dependency_metadata_response(name: name, version: version)
-          requirement = requirement_for_target_dependency(response)
+          return relevant_pyprojects unless relevant_pyprojects.empty?
 
-          @transitive_requirement_cache[cache_key] = requirement
+          fallback_pyproject_for_dependency
         end
 
-        sig { params(name: String, version: String).returns(T.nilable(Excon::Response)) }
+        sig { returns(T::Array[String]) }
+        def requirement_files_for_dependency
+          normalized_requirement_files.map(&:last).uniq
+        end
+
+        sig { params(pyproject: Dependabot::DependencyFile, requirement_files: T::Array[String]).returns(T::Boolean) }
+        def pyproject_matches_requirement_files?(pyproject:, requirement_files:)
+          declared_constraints = constraints_for_pyproject(pyproject)
+          declared_constraints.any? do |declared_constraint|
+            declared_constraint_matches_requirement_files?(
+              declared_constraint: declared_constraint,
+              requirement_files: requirement_files
+            )
+          end
+        end
+
+        sig { params(declared_constraint: String, requirement_files: T::Array[String]).returns(T::Boolean) }
+        def declared_constraint_matches_requirement_files?(declared_constraint:, requirement_files:)
+          return true if requirement_files.include?(declared_constraint)
+
+          !url_path?(declared_constraint) &&
+            File.dirname(declared_constraint) == "." &&
+            constraints_file_basenames.include?(File.basename(declared_constraint)) &&
+            requirement_files.include?(File.basename(declared_constraint))
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def fallback_pyproject_for_dependency
+          return [T.must(pyproject_files.first)] if pyproject_files.length == 1
+
+          []
+        end
+
+        sig { params(name: String, version: String).returns([T.nilable(String), T::Boolean]) }
+        def transitive_requirement_for(name:, version:)
+          cache_key = "#{name}@#{version}"
+          if @transitive_requirement_cache.key?(cache_key)
+            requirement = @transitive_requirement_cache[cache_key]
+            available = T.must(@transitive_requirement_available_cache[cache_key])
+            return [requirement, available]
+          end
+
+          response, metadata_available = dependency_metadata_response(name: name, version: version)
+          unless response
+            @transitive_requirement_cache[cache_key] = nil
+            @transitive_requirement_available_cache[cache_key] = metadata_available
+            return [nil, metadata_available]
+          end
+
+          requirement, metadata_available = requirement_for_target_dependency(response)
+
+          @transitive_requirement_cache[cache_key] = requirement
+          @transitive_requirement_available_cache[cache_key] = metadata_available
+          [requirement, metadata_available]
+        end
+
+        sig { params(name: String, version: String).returns([T.nilable(Excon::Response), T::Boolean]) }
         def dependency_metadata_response(name:, version:)
+          had_transport_error = false
+          saw_not_found = false
+
           registry_json_urls.each do |registry_url|
             url = "#{registry_url}#{name}/#{version}/json/"
             response = Dependabot::RegistryClient.get(url: url)
-            return response if response.status == 200
+            return [response, true] if response.status == 200
+
+            if response.status == 404
+              saw_not_found = true
+            else
+              had_transport_error = true
+              Dependabot.logger.warn(
+                "Unexpected python dependency metadata response #{response.status} for #{name}@#{version}"
+              )
+            end
           rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
+            had_transport_error = true
             Dependabot.logger.warn("Failed to fetch python dependency metadata for #{name}@#{version}")
             next
           end
 
-          nil
+          [nil, saw_not_found && !had_transport_error]
         end
 
         sig { returns(T::Array[String]) }
@@ -230,22 +343,170 @@ module Dependabot
           @registry_json_urls
         end
 
-        sig { params(response: T.nilable(Excon::Response)).returns(T.nilable(String)) }
+        sig { params(response: Excon::Response).returns([T.nilable(String), T::Boolean]) }
         def requirement_for_target_dependency(response)
-          return nil unless response
-
           requires_dist = requires_dist_from_response(response)
-          return nil unless requires_dist
+          return [nil, true] unless requires_dist
 
           requires_dist.each do |requirement_string|
             requirement = parse_target_requirement(requirement_string)
-            return requirement if requirement
+            return [requirement, true] if requirement
           end
 
-          nil
+          [nil, true]
         rescue JSON::ParserError
           Dependabot.logger.warn("Failed to parse python dependency metadata JSON response")
-          nil
+          [nil, false]
+        end
+
+        sig { returns(T::Array[String]) }
+        def constraints_files
+          return @constraints_files if @constraints_files
+
+          pyproject_constraints = pyproject_constraints_files
+          requirement_constraints = requirement_constraint_declaration_files.flat_map do |file|
+            requirement_constraints_from_file(file)
+          end
+
+          @constraints_files = (pyproject_constraints + requirement_constraints).map do |path|
+            normalize_path(path)
+          end.uniq
+          @constraints_files
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def requirement_constraint_declaration_files
+          requirement_paths = requirement_files_for_dependency
+          directories = requirement_file_directories
+
+          dependency_files.select do |file|
+            next false unless requirements_manifest_file?(file)
+
+            normalized_name = normalize_path(file.name)
+
+            requirement_paths.include?(normalized_name) ||
+              directories.include?(File.dirname(normalized_name))
+          end
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def requirements_manifest_file?(file)
+          basename = File.basename(normalize_path(file.name))
+          return true if basename.start_with?("requirements")
+
+          false
+        end
+
+        sig { returns(T::Array[String]) }
+        def requirement_file_directories
+          return @requirement_file_directories if @requirement_file_directories
+
+          @requirement_file_directories = requirement_files_for_dependency.filter_map do |path|
+            next if url_path?(path)
+
+            File.dirname(path)
+          end.uniq
+          @requirement_file_directories
+        end
+
+        sig { returns(T::Array[String]) }
+        def constraints_file_basenames
+          return @constraints_file_basenames if @constraints_file_basenames
+
+          counts = T.let(Hash.new(0), T::Hash[String, Integer])
+          constraints_files.each do |path|
+            next if url_path?(path)
+
+            counts[File.basename(path)] += 1
+          end
+          @constraints_file_basenames = counts.filter_map do |basename, count|
+            basename if count == 1
+          end
+          @constraints_file_basenames
+        end
+
+        sig { returns(T::Array[String]) }
+        def pyproject_constraints_files
+          pyproject_files.flat_map do |pyproject|
+            constraints_for_pyproject(pyproject)
+          end
+        end
+
+        sig { params(pyproject: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def constraints_for_pyproject(pyproject)
+          pyproject_content = pyproject_content_for(pyproject)
+          tool_obj = T.cast(pyproject_content["tool"], T.nilable(Object))
+          return [] unless tool_obj.is_a?(Hash)
+
+          pip_obj = T.cast(tool_obj["pip"], T.nilable(Object))
+          return [] unless pip_obj.is_a?(Hash)
+
+          constraints_obj = T.cast(pip_obj["constraints"], T.nilable(Object))
+          case constraints_obj
+          when String
+            [resolve_constraint_path(path: constraints_obj, declaring_file: pyproject)]
+          when Array
+            constraints_obj.grep(String).map do |path|
+              resolve_constraint_path(path: path, declaring_file: pyproject)
+            end
+          else
+            []
+          end
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def pyproject_files
+          dependency_files.select do |file|
+            File.basename(file.name) == "pyproject.toml"
+          end
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def requirement_constraints_from_file(file)
+          content = file.content
+          return [] unless content
+
+          content.each_line.filter_map do |line|
+            path = constraint_path_from_line(line)
+            next unless path
+
+            resolve_constraint_path(path: path.strip, declaring_file: file)
+          end
+        end
+
+        sig { params(line: String).returns(T.nilable(String)) }
+        def constraint_path_from_line(line)
+          match = line.match(
+            /^\s*(?:-c|--constraint)(?:\s+|=)(?:"(?<double>[^"]+)"|'(?<single>[^']+)'|(?<plain>[^\s'\"]+))/
+          )
+          return nil unless match
+
+          T.must(match[:double] || match[:single] || match[:plain])
+        end
+
+        sig { params(path: String, declaring_file: Dependabot::DependencyFile).returns(String) }
+        def resolve_constraint_path(path:, declaring_file:)
+          return path if url_path?(path)
+          return normalize_path(path) if Pathname.new(path).absolute?
+
+          base_dir = File.dirname(declaring_file.name)
+          return normalize_path(path) if base_dir == "."
+
+          normalize_path(File.join(base_dir, path))
+        end
+
+        sig { params(path: String).returns(String) }
+        def normalize_path(path)
+          return path if url_path?(path)
+
+          Pathname.new(path).cleanpath.to_s
+        rescue ArgumentError
+          path
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def url_path?(path)
+          path.match?(%r{\A[a-z][a-z0-9+.-]*://}i)
         end
 
         sig { params(response: Excon::Response).returns(T.nilable(T::Array[String])) }
@@ -297,24 +558,26 @@ module Dependabot
           marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
-        def pyproject_content
-          return @pyproject_content if @pyproject_content
+        sig { params(pyproject: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
+        def pyproject_content_for(pyproject)
+          cache_key = pyproject.name
+          return @pyproject_content_cache[cache_key] if @pyproject_content_cache.key?(cache_key)
 
-          pyproject = dependency_files.find { |file| file.name == "pyproject.toml" }
-          @pyproject_content =
-            if pyproject
-              T.let(TomlRB.parse(pyproject.content), T.nilable(T::Hash[String, T.untyped]))
+          content =
+            if pyproject.content
+              T.let(TomlRB.parse(pyproject.content), T::Hash[String, T.untyped])
             else
-              T.let({}, T.nilable(T::Hash[String, T.untyped]))
+              T.let({}, T::Hash[String, T.untyped])
             end
 
-          T.must(@pyproject_content)
+          @pyproject_content_cache[cache_key] = content
+          content
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          @pyproject_content = T.let({}, T.nilable(T::Hash[String, T.untyped]))
-          T.must(@pyproject_content)
+          @pyproject_content_cache[cache_key] = {}
+          @pyproject_content_cache[cache_key]
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
