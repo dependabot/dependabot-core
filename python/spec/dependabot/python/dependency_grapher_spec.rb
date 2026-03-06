@@ -31,8 +31,26 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
   end
 
   describe "#relevant_dependency_file" do
-    it "specifies the pyproject.toml as the relevant dependency file" do
-      expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+    context "when poetry.lock is not present" do
+      it "falls back to pyproject.toml" do
+        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+      end
+    end
+
+    context "when poetry.lock is present" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "specifies the poetry.lock as the relevant dependency file" do
+        expect(grapher.relevant_dependency_file).to eql(poetry_lock_file)
+      end
     end
   end
 
