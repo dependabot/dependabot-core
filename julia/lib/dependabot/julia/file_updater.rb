@@ -52,19 +52,19 @@ module Dependabot
         updated_files = []
 
         SharedHelpers.in_a_temporary_repo_directory(T.must(dependency_files.first).directory, repo_contents_path) do
-          updated_project = updated_project_content
+          # Update all project files (main + workspace members)
+          updated_project_files = update_all_project_files
           actual_manifest = find_manifest_file
 
-          return project_only_update(updated_project) if actual_manifest.nil?
+          return all_projects_only_update(updated_project_files) if actual_manifest.nil?
 
-          # Work directly in the repo directory - no need for another temp directory
-          # This ensures all workspace packages are accessible to Julia's Pkg
-          write_temporary_files(updated_project, actual_manifest)
+          # Write all updated project files to disk for Julia's Pkg
+          write_all_temporary_files(updated_project_files, actual_manifest)
           result = call_julia_helper
 
-          return handle_julia_helper_error(result, actual_manifest, updated_project) if result["error"]
+          return handle_julia_helper_error_multi(result, actual_manifest, updated_project_files) if result["error"]
 
-          build_updated_files(updated_files, updated_project, actual_manifest, result)
+          build_updated_files_multi(updated_files, updated_project_files, actual_manifest, result)
         end
 
         raise "No files changed!" if updated_files.empty?
@@ -72,22 +72,68 @@ module Dependabot
         updated_files
       end
 
-      sig { params(updated_project: String).returns(T::Array[Dependabot::DependencyFile]) }
-      def project_only_update(updated_project)
-        [updated_file(file: T.must(project_file), content: updated_project)]
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def update_all_project_files
+        all_project_files.map do |proj_file|
+          {
+            file: proj_file,
+            content: updated_project_content_for_file(proj_file)
+          }
+        end
+      end
+
+      sig { params(proj_file: Dependabot::DependencyFile).returns(String) }
+      def updated_project_content_for_file(proj_file)
+        content = T.must(proj_file.content)
+
+        dependencies.each do |dependency|
+          # Find the new requirement for this dependency in this file
+          new_requirement = dependency.requirements
+                                      .find { |req| T.cast(req[:file], String) == proj_file.name }
+                                      &.fetch(:requirement)
+
+          next unless new_requirement
+
+          content = update_dependency_requirement_in_content(content, dependency.name, new_requirement)
+        end
+
+        content
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def all_project_files
+        dependency_files.select { |f| f.name.match?(/Project\.toml$/i) }
+      end
+
+      sig { params(updated_project_files: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[Dependabot::DependencyFile]) }
+      def all_projects_only_update(updated_project_files)
+        updated_project_files.filter_map do |update_info|
+          file = T.cast(update_info[:file], Dependabot::DependencyFile)
+          content = T.cast(update_info[:content], String)
+          next if content == file.content
+
+          updated_file(file: file, content: content)
+        end
       end
 
       sig do
         params(
-          updated_project: String,
+          updated_project_files: T::Array[T::Hash[Symbol, T.untyped]],
           actual_manifest: Dependabot::DependencyFile
         ).void
       end
-      def write_temporary_files(updated_project, actual_manifest)
-        File.write(T.must(project_file).name, updated_project)
+      def write_all_temporary_files(updated_project_files, actual_manifest)
+        # Write all updated project files
+        updated_project_files.each do |update_info|
+          file = T.cast(update_info[:file], Dependabot::DependencyFile)
+          content = T.cast(update_info[:content], String)
 
-        # Preserve relative paths (e.g., ../Manifest.toml for workspace packages)
-        # so Julia's Pkg can find and update the correct shared manifest
+          file_path = file.name
+          FileUtils.mkdir_p(File.dirname(file_path)) if file_path.include?("/")
+          File.write(file_path, content)
+        end
+
+        # Write manifest file
         manifest_path = actual_manifest.name
         FileUtils.mkdir_p(File.dirname(manifest_path)) if manifest_path.include?("/")
         File.write(manifest_path, actual_manifest.content)
@@ -105,10 +151,10 @@ module Dependabot
         params(
           result: T::Hash[String, T.untyped],
           actual_manifest: Dependabot::DependencyFile,
-          updated_project: String
+          updated_project_files: T::Array[T::Hash[Symbol, T.untyped]]
         ).returns(T::Array[Dependabot::DependencyFile])
       end
-      def handle_julia_helper_error(result, actual_manifest, updated_project)
+      def handle_julia_helper_error_multi(result, actual_manifest, updated_project_files)
         error_message = result["error"]
         manifest_path = actual_manifest.name
 
@@ -117,8 +163,8 @@ module Dependabot
 
         add_manifest_update_notice(manifest_path, error_message)
 
-        # Return only the updated Project.toml
-        [updated_file(file: T.must(project_file), content: updated_project)]
+        # Return all updated Project.toml files
+        all_projects_only_update(updated_project_files)
       end
 
       sig { params(error_message: String).returns(T::Boolean) }
@@ -156,13 +202,20 @@ module Dependabot
       sig do
         params(
           updated_files: T::Array[Dependabot::DependencyFile],
-          updated_project: String,
+          updated_project_files: T::Array[T::Hash[Symbol, T.untyped]],
           actual_manifest: Dependabot::DependencyFile,
           result: T::Hash[String, T.untyped]
         ).void
       end
-      def build_updated_files(updated_files, updated_project, actual_manifest, result)
-        updated_files << updated_file(file: T.must(project_file), content: updated_project)
+      def build_updated_files_multi(updated_files, updated_project_files, actual_manifest, result)
+        # Add all updated project files
+        updated_project_files.each do |update_info|
+          file = T.cast(update_info[:file], Dependabot::DependencyFile)
+          content = T.cast(update_info[:content], String)
+          next if content == file.content
+
+          updated_files << updated_file(file: file, content: content)
+        end
 
         return unless result["manifest_content"]
 
@@ -275,30 +328,11 @@ module Dependabot
         )
       end
 
-      sig { returns(String) }
-      def updated_project_content
-        return T.must(T.must(project_file).content) unless project_file
-
-        content = T.must(T.must(project_file).content)
-
-        dependencies.each do |dependency|
-          # Find the new requirement for this dependency
-          new_requirement = dependency.requirements
-                                      .find { |req| T.cast(req[:file], String) == T.must(project_file).name }
-                                      &.fetch(:requirement)
-
-          next unless new_requirement
-
-          content = update_dependency_requirement_in_content(content, dependency.name, new_requirement)
-        end
-
-        content
-      end
-
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
         # Extract the [compat] section to update it specifically
-        compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
+        # The regex handles files with or without trailing newlines
+        compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*(?:\n|\z))*?)(?=^\[|\z)/m)
 
         if compat_section_match
           compat_section = T.must(compat_section_match[1])
@@ -322,7 +356,7 @@ module Dependabot
       sig { params(content: String, dependency_name: String, requirement: String).returns(String) }
       def add_compat_entry_to_content(content, dependency_name, requirement)
         if content.match?(/^\s*\[compat\]\s*$/m)
-          compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*\n)*?)(?=^\[|\z)/m)
+          compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*(?:\n|\z))*?)(?=^\[|\z)/m)
           return content unless compat_section_match
 
           compat_section = T.must(compat_section_match[1])

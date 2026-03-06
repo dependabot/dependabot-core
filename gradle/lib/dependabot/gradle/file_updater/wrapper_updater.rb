@@ -64,19 +64,24 @@ module Dependabot
             cwd = File.join(temp_dir, base_path(build_file))
 
             has_local_script = File.exist?(File.join(cwd, "./gradlew"))
-            command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements)
-            command = Shellwords.join([has_local_script ? "./gradlew" : "gradle"] + command_parts)
 
             Dir.chdir(cwd) do
               FileUtils.chmod("+x", "./gradlew") if has_local_script
 
               properties_file = File.join(cwd, "gradle/wrapper/gradle-wrapper.properties")
-              validate_option = get_validate_distribution_url_option(properties_file)
+              validate_distribution, network_timeout = read_wrapper_options(properties_file)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
+              command_parts = %w(--no-daemon --stacktrace) + command_args(target_requirements, network_timeout)
+
+              # There is no guarantee that the `gradlew` script is present on the project,
+              # if it's not, we fall back to system Gradle
+              command = Shellwords.join([has_local_script ? "./gradlew" : "gradle"] + command_parts)
+
               begin
-                # first attempt: run the wrapper task via the local gradle wrapper (if present)
-                # `gradle-wrapper.jar` might be too old to run on host's Java version
+                # first attempt: run the wrapper task via the local Gradle wrapper (if present)
+                # `gradle-wrapper.jar` might not be compatible with the host's Java version or
+                # the `gradlew` script may be corrupted, so we try and fall back to system Gradle before giving up
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env)
               rescue SharedHelpers::HelperSubprocessFailed => e
                 raise e unless has_local_script # already field with system one, there is no point to retry
@@ -90,7 +95,7 @@ module Dependabot
               end
 
               # Restore previous validateDistributionUrl option if it existed
-              override_validate_distribution_url_option(properties_file, validate_option)
+              override_validate_distribution_url_option(properties_file, validate_distribution)
 
               update_files_content(temp_dir, local_files, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -111,19 +116,47 @@ module Dependabot
           @target_files.any? { |r| "/#{file.name}".end_with?(r) }
         end
 
-        sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[String]) }
-        def command_args(requirements)
+        # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]], network_timeout: T.nilable(String)).returns(T::Array[String]) }
+        def command_args(requirements, network_timeout)
           version = T.let(requirements[0]&.[](:requirement), String)
           checksum = T.let(requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
           distribution_url = T.let(requirements[0]&.[](:source), T::Hash[Symbol, String])[:url]
           distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
-          # --no-validate-url is required to bypass HTTP proxy issues when running ./gradlew
-          # This prevents validation failures during the wrapper update process
-          # Note: This temporarily sets validateDistributionUrl=false in gradle-wrapper.properties
-          # The original value is restored after the wrapper task completes
-          # see method `get_validate_distribution_url_option` for more details
-          args = %W(wrapper --gradle-version #{version} --no-validate-url) # see
+          args = %W(wrapper --gradle-version #{version})
+
+          # Executing the wrapper task with `validateDistributionUrl=true`,
+          # issues a HEAD request to ensure that the file exists and is reachable.
+          # Example: HEAD https://services.gradle.org/distributions/gradle-9.3.0-bin.zip
+          # Unfortunately, Dependabot's proxy does not seem to support something about this request
+          # This causes the validation to fail and the wrapper task to error out
+          # To work around this, we pass `--no-validate-url` to skip the url validation step,
+          # Note: this temporarily sets `validateDistributionUrl=false` in `gradle-wrapper.properties`.
+          # After the wrapper task completes, we restore the original value, since `--no-validate-url` would otherwise
+          # persist the change in the properties file, which is not the behavior we want for users.
+          # TODO: Investigate and fix the root cause of the proxy issue and remove this workaround
+          # See https://github.com/dependabot/dependabot-core/issues/14036
+          args += %w(--no-validate-url)
+
+          # Gradle builds can be very complex, and our current Gradle parsing is limited.
+          # To keep `./gradlew wrapper` running reliably, we generate a minimal build that omits the
+          # project’s build scripts and customizations. As a result, any `tasks.wrapper {}` DSL configuration
+          # defined in the original project is not applied.
+          #
+          # This approach, combined with https://github.com/gradle/gradle/issues/36172 where the wrapper task
+          # relies on hardcoded defaults instead of reading from `gradle-wrapper.properties`, causes
+          # `networkTimeout` customizations to be reset to the default value on every Dependabot pull request.
+          #
+          # This change mitigates the issue by reading the existing value and passing it explicitly to the
+          # `wrapper` command, ensuring any custom `networkTimeout` setting is preserved.
+          #
+          # In future iterations, we may consider parsing the full Gradle build and extracting only the
+          # wrapper-related customizations so the project-specific `tasks.wrapper {}` behavior is retained.
+          # Alternatively, if Gradle addresses the upstream issue, we can revert to using the default minimal
+          # build without needing explicit configuration.
+          args += %W(--network-timeout #{network_timeout}) if network_timeout
+
           args += %W(--distribution-type #{distribution_type}) if distribution_type
           args += %W(--gradle-distribution-sha256-sum #{checksum}) if checksum
           args
@@ -174,18 +207,15 @@ module Dependabot
           end
         end
 
-        # This is a consequence of the lack of proper proxy support in Gradle Wrapper
-        # During the update process, Gradle Wrapper logic will try to validate the distribution URL
-        # by performing an HTTP request. If the environment requires a proxy, this validation will fail
-        # We need to add the `--no-validate-url` the commandline args to disable this validation
-        # However, this change is persistent in the `gradle-wrapper.properties` file
-        # To avoid side effects, we read the existing value before the update and restore it afterward
-        sig { params(properties_file: T.any(Pathname, String)).returns(T.nilable(String)) }
-        def get_validate_distribution_url_option(properties_file)
-          return nil unless File.exist?(properties_file)
+        sig { params(properties_file: T.any(Pathname, String)).returns(T::Array[T.nilable(String)]) }
+        def read_wrapper_options(properties_file)
+          return [nil, nil] unless File.exist?(properties_file)
 
           properties_content = File.read(properties_file)
-          properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
+          validate_distribution = properties_content.match(/^validateDistributionUrl=(.*)$/)&.captures&.first
+          network_timeout = properties_content.match(/^networkTimeout=(.*)$/)&.captures&.first
+
+          [validate_distribution, network_timeout]
         end
 
         sig { params(properties_file: T.any(Pathname, String), value: T.nilable(String)).void }
@@ -200,7 +230,6 @@ module Dependabot
           File.write(properties_file, updated_content)
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T::Array[String]) }
         def proxy_args
           http_proxy = ENV.fetch("HTTP_PROXY", nil)

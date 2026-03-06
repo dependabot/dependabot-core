@@ -97,6 +97,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       .to_return(status: 200)
   end
 
+  describe "class extension behavior" do
+    it "inherits from SharedVersionFinder" do
+      expect(described_class < Dependabot::Maven::Shared::SharedVersionFinder).to be true
+    end
+
+    it "matches_dependency_version_type? is reused from the shared class" do
+      method_owner = described_class.instance_method(:matches_dependency_version_type?).owner
+      expect(method_owner).to eq(Dependabot::Maven::Shared::SharedVersionFinder)
+    end
+  end
+
   describe "#latest_version_details when the dependency has a classifier" do
     subject { finder.latest_version_details }
 
@@ -378,7 +389,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
       its([:source_url]) do
-        is_expected.to eq("https://private.registry.org/repo")
+        is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
 
       context "when gitlab maven repository is used" do
@@ -423,6 +434,49 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
       end
 
+      context "when the dependency exists in more than one repository, it should check all the repositories" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "maven_repository",
+                "url" => "https://repo.jenkins-ci.org/releases/"
+              }
+            )
+          ]
+        end
+
+        let(:jenkins_releases) do
+          fixture("maven_central_metadata", "with_release_older_version.xml")
+        end
+
+        let(:maven_central_releases) do
+          fixture("maven_central_metadata", "with_release.xml")
+        end
+
+        before do
+          # The Jenkins repo returns an older version
+          stub_request(:get, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/maven-metadata.xml")
+            .to_return(status: 200, body: jenkins_releases)
+          stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/10.0/guava-10.0-jre.jar")
+            .to_return(status: 200)
+          stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+            .to_return(status: 404)
+
+          # In central, we have a newer version
+          stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml")
+            .to_return(status: 200, body: maven_central_releases)
+          stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+            .to_return(status: 200)
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
+        its([:source_url]) do
+          is_expected.to eq("https://repo.maven.apache.org/maven2")
+        end
+      end
+
       context "when there is no auth details" do
         let(:credentials) do
           [Dependabot::Credential.new(
@@ -441,7 +495,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
         its([:source_url]) do
-          is_expected.to eq("https://private.registry.org/repo")
+          is_expected.to eq("https://repo.maven.apache.org/maven2")
         end
 
         context "when credentials are required" do

@@ -445,8 +445,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Time).to receive(:now).and_return(Time.parse("2019-08-06 18:29:44 -0400"))
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_shared_helpers_command_timeout).and_return(true)
         end
 
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
@@ -471,8 +469,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       before do
         allow(Time).to receive(:now).and_return(Time.parse("2022-09-07 23:33:35 +0100"))
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(true)
       end
 
       context "when pinned to an up to date commit in the default branch" do
@@ -565,7 +561,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when a git commit SHA not pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
-      let(:exit_status) { double(success?: true) }
 
       before do
         checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
@@ -576,16 +571,18 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         allow(Dir).to receive(:chdir).and_yield
 
-        allow(Open3).to receive(:capture2e)
-          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}, anything)
-          .and_return(["", exit_status])
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
       end
 
       context "when it's in the current (default) branch" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/HEAD -> origin/master\n  origin/master")
         end
 
         it "can update to the latest version" do
@@ -597,9 +594,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:tip_of_releases_v1) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/releases/v1\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/releases/v1\n")
         end
 
         it "can update to the latest version" do
@@ -609,9 +607,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when multiple branches include it and the current (default) branch among them" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n")
         end
 
         it "can update to the latest version" do
@@ -621,9 +620,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when multiple branches include it and the current (default) branch NOT among them" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/3.3-stable\n  origin/production\n")
         end
 
         it "raises an error" do
@@ -1189,6 +1189,94 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "updates all source refs to the target ref" do
+        expect(updated_requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with mixed tag and SHA requirements across files" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          version: "2",
+          package_manager: "github_actions",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow1.yml",
+            metadata: { declaration_string: "actions/checkout@v2" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v2",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow2.yml",
+            metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow3.yml",
+            metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
+              branch: nil
+            }
+          }]
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow1.yml",
+          metadata: { declaration_string: "actions/checkout@v2" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v3",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow2.yml",
+          metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow3.yml",
+          metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }]
+      end
+
+      it "updates tag ref to latest version and SHA refs to latest version SHA" do
         expect(updated_requirements).to eq(expected_requirements)
       end
     end

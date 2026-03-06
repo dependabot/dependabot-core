@@ -1577,4 +1577,396 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
     end
   end
+
+  describe "#tag_is_prerelease?" do
+    subject { checker.send(:tag_is_prerelease?, tag) }
+
+    let(:tag) { Dependabot::GitRef.new(name: "v1.2.3", commit_sha: "abc123") }
+
+    context "when tag has prerelease suffix" do
+      let(:tag) { Dependabot::GitRef.new(name: "v1.2.3-beta", commit_sha: "abc123") }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when tag has no prerelease suffix but is marked as prerelease on GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: true,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when tag has no prerelease suffix and is not marked as prerelease on GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: false,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when tag is not found on GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is not from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://gitlab.com/some/repo",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#github_release_prerelease?" do
+    subject { checker.send(:github_release_prerelease?, tag_name) }
+
+    let(:tag_name) { "v1.2.3" }
+
+    context "when dependency is from GitHub and release is marked as prerelease" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: true,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when dependency is from GitHub and release is not marked as prerelease" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: false,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is from GitHub but release is not found" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.0.0",
+                prerelease: false,
+                draft: false
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is from GitHub and release is a draft" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              {
+                tag_name: "v1.2.3",
+                prerelease: false,
+                draft: true
+              }
+            ].to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when dependency is not from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://gitlab.com/some/repo",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when GitHub API returns an error" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 500, body: "Internal Server Error")
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when GitHub API rate limit is exceeded" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 403,
+            body: { message: "API rate limit exceeded" }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#github_releases" do
+    subject { checker.send(:github_releases) }
+
+    context "when dependency is from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      context "when API call succeeds" do
+        before do
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: [
+                { tag_name: "v1.0.0", prerelease: false, draft: false },
+                { tag_name: "v2.0.0-beta", prerelease: true, draft: false }
+              ].to_json,
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "returns the releases" do
+          releases = checker.send(:github_releases)
+          expect(releases.length).to eq(2)
+          expect(releases.first[:tag_name]).to eq("v1.0.0")
+          expect(releases.first[:prerelease]).to be(false)
+          expect(releases.last[:tag_name]).to eq("v2.0.0-beta")
+          expect(releases.last[:prerelease]).to be(true)
+        end
+
+        it "caches the result" do
+          # First call
+          checker.send(:github_releases)
+          # Second call should not trigger another API request
+          checker.send(:github_releases)
+
+          expect(WebMock).to have_requested(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+            .with(headers: { "Authorization" => "token token" })
+            .once
+        end
+      end
+
+      context "when API call fails" do
+        before do
+          stub_request(:get, "https://api.github.com/repos/gocardless/business/releases?per_page=100")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404, body: { message: "Not Found" }.to_json)
+        end
+
+        it "returns an empty array" do
+          expect(checker.send(:github_releases)).to eq([])
+        end
+      end
+
+      context "when Octokit raises an error" do
+        before do
+          mock_client = double("GithubWithRetries")
+          allow(Dependabot::Clients::GithubWithRetries)
+            .to receive(:for_source)
+            .and_return(mock_client)
+          allow(mock_client)
+            .to receive(:releases)
+            .and_raise(Octokit::Forbidden.new)
+        end
+
+        it "returns an empty array" do
+          expect(checker.send(:github_releases)).to eq([])
+        end
+      end
+    end
+
+    context "when dependency is not from GitHub" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://gitlab.com/some/repo",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      before do
+        allow(checker).to receive(:listing_source_url).and_return("https://gitlab.com/some/repo")
+      end
+
+      it "returns an empty array" do
+        expect(checker.send(:github_releases)).to eq([])
+      end
+    end
+
+    context "when dependency has no source" do
+      let(:source) { nil }
+
+      before do
+        allow(checker).to receive(:listing_source_url).and_return(nil)
+      end
+
+      it "returns an empty array" do
+        expect(checker.send(:github_releases)).to eq([])
+      end
+    end
+  end
 end

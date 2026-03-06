@@ -130,7 +130,7 @@ module Dependabot
         # ]
         sig { returns(Dependabot::Package::PackageDetails) }
         def rubygems_versions
-          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org"
+          registry_url = get_url_from_dependency(dependency) || replaces_base_registry_url || "https://rubygems.org"
 
           # TODO: Github private registry support
           # registry_url = "https://rubygems.pkg.github.com/#{OWNER_NAME}"
@@ -214,6 +214,20 @@ module Dependabot
         sig { params(message: String).void }
         def log_error(message)
           Dependabot.logger.info(message)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def replaces_base_registry_url
+          credential = credentials.find do |cred|
+            cred["type"] == "rubygems_server" && cred.replaces_base?
+          end
+          return nil unless credential
+
+          host = credential.fetch("host", nil)
+          return nil unless host.is_a?(String) && !host.empty?
+
+          url = "https://#{host}"
+          url.end_with?("/") ? url.chop : url
         end
 
         sig { params(dependency: T.untyped).returns(T.nilable(String)) }

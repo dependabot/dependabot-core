@@ -67,8 +67,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
@@ -118,6 +116,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { previous_requirements }
 
         specify { expect { updated_files }.to raise_error(/No files/) }
+      end
+
+      context "when non-pnpm updated files are marked as support files" do
+        before do
+          files.each { |file| file.support_file = true }
+        end
+
+        it "updates package.json" do
+          expect(updated_files.map(&:name)).to include("package.json")
+        end
       end
     end
 
@@ -3822,6 +3830,60 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(updated_pnpm_workspace.content).to include("prettier: ^3.4.2")
             expect(updated_pnpm_lock.content).to include("specifier: ^3.4.2")
             expect(updated_pnpm_lock.content).to include("prettier:\n      specifier: ^3.4.2\n      version: 3.4.2")
+          end
+        end
+
+        context "when updating a scoped package dependency in a catalog" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "@tanstack/react-query" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "@tanstack/react-query",
+                version: "5.59.15",
+                required_version: "^5.62.0",
+                previous_required_version: "^5.59.15"
+              )
+            ]
+          end
+
+          it "updates the scoped package in the workspace" do
+            expect(updated_files.map(&:name)).to include("pnpm-workspace.yaml")
+            expect(updated_pnpm_workspace.content).to include('"@tanstack/react-query": ^5.62.0')
+          end
+        end
+
+        context "when all dependency files are support files (e.g. fetched from parent directory)" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "^3.4.2",
+                previous_required_version: "^3.3.3"
+              )
+            ]
+          end
+
+          before do
+            # Simulate pnpm-workspace.yaml and pnpm-lock.yaml fetched from a parent
+            # directory via fetch_file_from_parent_directories: names get a "../"
+            # prefix and directory is set to the subdirectory (not "/").
+            files.each do |f|
+              next unless f.name.end_with?("pnpm-workspace.yaml", "pnpm-lock.yaml")
+
+              f.name = "../#{f.name}"
+              f.directory = "/packages/app"
+              f.support_file = true
+            end
+          end
+
+          it "raises MisconfiguredTooling instead of DependabotError" do
+            expect { updated_files }.to raise_error(Dependabot::MisconfiguredTooling)
           end
         end
 

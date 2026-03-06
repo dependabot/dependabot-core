@@ -30,7 +30,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var directory in job.GetAllDirectories())
+        foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);
@@ -81,7 +81,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 var dependencyName = dependencyUpdatesToPerform.Key;
                 var dependencyInfosToUpdate = dependencyUpdatesToPerform.Value
                     .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: true)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, groupMatchers: [], allowCooldown: true)))
                     .ToArray();
 
                 foreach (var (projectPath, dependency, dependencyInfo) in dependencyInfosToUpdate)

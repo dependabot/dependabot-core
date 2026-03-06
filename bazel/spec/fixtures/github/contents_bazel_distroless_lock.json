@@ -1,0 +1,13 @@
+{
+  "name": "base.lock.json",
+  "path": "containers/distroless/base.lock.json",
+  "sha": "distlock123",
+  "size": 50,
+  "url": "https://api.github.com/repos/example/repo/contents/containers/distroless/base.lock.json?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/containers/distroless/base.lock.json",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/distlock123",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/containers/distroless/base.lock.json",
+  "type": "file",
+  "content": "eyAibG9ja2VkIjogdHJ1ZSB9Cg==\n",
+  "encoding": "base64"
+}

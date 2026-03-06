@@ -321,7 +321,7 @@ module Dependabot
 
             old_req =
               dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
-                 &.fetch(:requirement)
+                              &.fetch(:requirement)
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req
@@ -349,10 +349,14 @@ module Dependabot
               next unless req.start_with?("dev-")
               next if req.include?("#")
 
-              commit_sha = parsed_lockfile
-                           .fetch(T.must(keys[:lockfile]), [])
-                           .find { |d| d["name"] == name }
-                           &.dig("source", "reference")
+              package = parsed_lockfile
+                        .fetch(T.must(keys[:lockfile]), [])
+                        .find { |d| d["name"] == name }
+
+              commit_sha = package&.dig("source", "reference") || package&.dig("dist", "reference")
+
+              next unless commit_sha
+
               updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")

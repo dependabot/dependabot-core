@@ -207,7 +207,7 @@ module Dependabot
 
             {
               path: file.realpath,
-              mode: Dependabot::DependencyFile::Mode::FILE,
+              mode: file.mode || Dependabot::DependencyFile::Mode::FILE,
               type: "blob"
             }.merge(content)
           end

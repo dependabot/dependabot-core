@@ -75,8 +75,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
@@ -320,6 +318,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when pnpm returns ERR_PNPM_TRUST_DOWNGRADE" do
+      let(:project_name) { "pnpm/simple" }
+
+      let(:trust_downgrade_error_message) do
+        "ERR_PNPM_TRUST_DOWNGRADE  High-risk trust downgrade for " \
+          "\"fetch-factory@0.0.2\" (possible package takeover)\n\n" \
+          "This error happened while installing a direct dependency\n\n" \
+          "Trust checks are based solely on publish date, not semver."
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: trust_downgrade_error_message,
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises an InconsistentRegistryResponse error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(
+            Dependabot::InconsistentRegistryResponse,
+            /pnpm trust downgrade detected for "fetch-factory@0.0.2"/
+          )
       end
     end
 

@@ -26,7 +26,11 @@ module Dependabot
 
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
         INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          /not supported between instances of 'InstallationCandidate'.*\z/m,
+          Regexp.new(
+            "(?:not supported between instances of 'InstallationCandidate'" \
+            "|There are incompatible versions in the resolved dependencies).*\\z",
+            Regexp::MULTILINE
+          ),
           Regexp
         )
         WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
@@ -663,7 +667,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Python::FileFetcher::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||=
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = T.must(file.content).scan(child_req_regex).flatten

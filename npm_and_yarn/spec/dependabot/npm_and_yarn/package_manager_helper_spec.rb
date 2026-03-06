@@ -69,15 +69,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   let(:package_json) { { "packageManager" => "npm@7" } }
   let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_engine_version_detection)
-      .and_return(true)
-  end
-
   describe "#package_manager" do
     context "when npm lockfile exists" do
       it "returns an NpmPackageManager instance" do
@@ -206,12 +197,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         )
       end
 
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
-      end
-
       it "returns the unsupported package manager" do
         expect(package_manager.detected_version.to_s).to eq "6"
         expect(package_manager.unsupported?).to be true
@@ -245,12 +230,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
             }
           LOCKFILE
         )
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
       end
 
       it "returns the deprecated version" do

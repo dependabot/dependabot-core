@@ -3,6 +3,7 @@
 
 require "dependabot/dependency_graphers"
 require "dependabot/environment"
+require "github_api/ecosystem_mapper"
 
 # This class provides a data object that can be submitted to a repository's dependency submission
 # REST API.
@@ -16,6 +17,19 @@ module GithubApi
     SNAPSHOT_VERSION = 1
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
+
+    # Expected reasons for empty or degraded snapshots
+    DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
+    EMPTY_REASON_NO_MANIFESTS = "missing manifest files"
+
+    class SnapshotStatus < T::Enum
+      enums do
+        SUCCESS = new("ok")
+        DEGRADED = new("degraded")
+        SKIPPED = new("skipped")
+        FAILED = new("failed")
+      end
+    end
 
     sig { returns(String) }
     attr_reader :job_id
@@ -35,6 +49,12 @@ module GithubApi
     sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
     attr_reader :resolved_dependencies
 
+    sig { returns(SnapshotStatus) }
+    attr_reader :status
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason
+
     sig do
       params(
         job_id: String,
@@ -42,10 +62,21 @@ module GithubApi
         sha: String,
         package_manager: String,
         manifest_file: Dependabot::DependencyFile,
-        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]
+        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency],
+        status: SnapshotStatus,
+        reason: T.nilable(String)
       ).void
     end
-    def initialize(job_id:, branch:, sha:, package_manager:, manifest_file:, resolved_dependencies:)
+    def initialize(
+      job_id:,
+      branch:,
+      sha:,
+      package_manager:,
+      manifest_file:,
+      resolved_dependencies:,
+      status: SnapshotStatus::SUCCESS,
+      reason: nil
+    )
       @job_id = job_id
       @branch = branch
       @sha = sha
@@ -53,6 +84,9 @@ module GithubApi
 
       @manifest_file = manifest_file
       @resolved_dependencies = resolved_dependencies
+
+      @status = status
+      @reason = reason
     end
 
     # TODO: Change to a typed structure?
@@ -73,7 +107,11 @@ module GithubApi
           version: detector_version,
           url: SNAPSHOT_DETECTOR_URL
         },
-        manifests: manifests
+        manifests: manifests,
+        metadata: {
+          status: status.serialize,
+          reason: reason
+        }.compact
       }
     end
 
@@ -128,7 +166,7 @@ module GithubApi
             source_location: manifest_file.path.gsub(%r{^/}, "")
           },
           metadata: {
-            ecosystem: package_manager
+            ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager)
           },
           resolved: resolved_dependencies.transform_values do |resolved|
             {

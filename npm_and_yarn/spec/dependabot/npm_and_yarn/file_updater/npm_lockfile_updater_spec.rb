@@ -70,8 +70,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
@@ -253,8 +251,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "when dealing with workspace with nested optional peer dependencies" do
+    let(:dependency_name) { "semver" }
+    let(:version) { "7.7.1" }
+    let(:previous_version) { "7.6.3" }
+    let(:requirements) do
+      [{
+        file: "packages/app/package.json",
+        requirement: "7.7.1",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "packages/app/package.json",
+        requirement: "7.6.3",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+
+    let(:files) { project_dependency_files("npm8/workspace_with_nested_optional_peer_deps") }
+
+    it "preserves nested optional peer dependencies during workspace cleanup" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+      packages = parsed_lockfile["packages"]
+
+      # Verify the updated dependency
+      expect(packages["node_modules/semver"]["version"]).to eq("7.7.1")
+
+      # Verify nested optional peer dependency (chokidar@3.6.0 under @nestjs/schematics)
+      # is still present - this is the exact scenario from the reported issue where npm's
+      # --package-lock-only removes nested optional peer deps during workspace cleanup
+      nested_chokidar = packages["node_modules/@nestjs/schematics/node_modules/chokidar"]
+      expect(nested_chokidar).not_to be_nil
+      expect(nested_chokidar["version"]).to eq("3.6.0")
+      expect(nested_chokidar["optional"]).to be(true)
+      expect(nested_chokidar["peer"]).to be(true)
+    end
+  end
+
   context "with a registry that times out" do
-    registry_source = "https://registry.npm.com"
+    let(:registry_source) { "https://registry.npm.com" }
     let(:files) { project_dependency_files("npm/simple_with_registry_that_times_out") }
     let(:error) { Dependabot::PrivateSourceTimedOut.new(registry_source) }
 
@@ -1388,7 +1427,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry"
+                "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
+                "npm_config_registry" => "https://npm.private.registry",
+                "COREPACK_NPM_TOKEN" => "secret_token",
+                "registry" => "https://npm.private.registry"
               }
             )
           end
@@ -1450,7 +1492,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com"
+                "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
+                "npm_config_registry" => "https://custom.registry.com",
+                "COREPACK_NPM_TOKEN" => "custom_token",
+                "registry" => "https://custom.registry.com"
               }
             )
           end
@@ -1475,7 +1520,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com"
+                "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
+                "npm_config_registry" => "https://yarn.registry.com",
+                "COREPACK_NPM_TOKEN" => "yarn_token",
+                "registry" => "https://yarn.registry.com"
               }
             )
           end
@@ -1500,7 +1548,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com"
+                "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
+                "npm_config_registry" => "https://yarn2.registry.com",
+                "COREPACK_NPM_TOKEN" => "yarn2_token",
+                "registry" => "https://yarn2.registry.com"
               }
             )
           end
@@ -1538,7 +1589,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             env_vars = Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)
             expect(env_vars).to eq(
               {
-                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com"
+                "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",
+                "npm_config_registry" => "https://creds.registry.com",
+                "COREPACK_NPM_TOKEN" => "creds_token",
+                "registry" => "https://creds.registry.com"
               }
             )
           end

@@ -500,7 +500,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Python::FileFetcher::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||= T.let(
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = T.must(file.content).scan(child_req_regex).flatten

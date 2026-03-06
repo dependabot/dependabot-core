@@ -268,22 +268,28 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Fact]
-    public async Task DiscoverWithMultipleTargetFrameworks()
+    [Theory]
+    [InlineData("net7.0")] // under the safe limit for parallel processing
+    [InlineData("net7.0", "net8.0")] // at the safe limit for parallel processing
+    [InlineData("net7.0", "net8.0", "net9.0")] // above the safe limit for parallel processing
+    [InlineData("netstandard2.0", "netstandard2.1", "net6.0", "net7.0", "net8.0", "net9.0", "net10.0")] // well above the safe limit for parallel processing
+    public async Task DiscoverWithMultipleTargetFrameworks(params string[] targetFrameworks)
     {
+        // tfms are sorted for reporting purposes
+        var sortedTargetFrameworks = targetFrameworks.OrderBy(t => t, StringComparer.Ordinal).ToArray();
         await TestDiscoverAsync(
             packages:
             [
-                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "net7.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.2.3", "netstandard2.0"), // the lowest TFM this test uses
             ],
             startingDirectory: "src",
             projectPath: "src/library.csproj",
             files:
             [
-                ("src/library.csproj", """
+                ("src/library.csproj", $"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                        <TargetFrameworks>{string.Join(";", targetFrameworks)}</TargetFrameworks>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Dependency" Version="1.2.3" />
@@ -298,14 +304,14 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     FilePath = "library.csproj",
                     Dependencies =
                     [
-                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                        new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: [.. sortedTargetFrameworks], IsDirect: true),
                     ],
                     ImportedFiles = [],
                     Properties =
                     [
-                        new("TargetFrameworks", "net7.0;net8.0", "src/library.csproj"),
+                        new("TargetFrameworks", string.Join(";", targetFrameworks), "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net7.0", "net8.0"],
+                    TargetFrameworks = [.. sortedTargetFrameworks],
                     ReferencedProjectPaths = [],
                     AdditionalFiles = [],
                 },
@@ -581,62 +587,11 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
-    public async Task ExistingPackageIncompatibilityShouldNotPreventRestore()
-    {
-        // Package.A tries to pull in a transitive dependency of Transitive.Package/2.0.0 but that package is explicitly pinned at 1.0.0
-        // Normally this would cause a restore failure which means discovery would also fail
-        // This test ensures we can still run discovery
-        await TestDiscoverAsync(
-            useSingleRestore: false,
-            packages: [
-                MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0", [(null, [("Transitive.Package", "2.0.0")])]),
-                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net8.0"),
-            ],
-            startingDirectory: "src",
-            projectPath: "src/library.csproj",
-            files: [
-                ("src/library.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Package.A" Version="1.0.0" />
-                        <PackageReference Include="Transitive.Package" Version="1.0.0" />
-                      </ItemGroup>
-                    </Project>
-                    """)
-            ],
-            expectedProjects: [
-                new()
-                {
-                    FilePath = "library.csproj",
-                    Dependencies =
-                    [
-                        new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        new("Transitive.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                    ],
-                    ImportedFiles = [],
-                    Properties =
-                    [
-                        new("TargetFramework", "net8.0", "src/library.csproj"),
-                    ],
-                    TargetFrameworks = ["net8.0"],
-                    ReferencedProjectPaths = [],
-                    AdditionalFiles = [],
-                }
-            ]
-        );
-    }
-
-    [Fact]
     public async Task DependenciesCanBeDiscoveredWithoutCompiling_FromProjectWithSingleTfm()
     {
         using var tempDir = new TemporaryDirectory();
         var errorSentinelPath = Path.Combine(tempDir.DirectoryPath, "error-sentinel.txt");
         await TestDiscoverAsync(
-            useSingleRestore: true,
             startingDirectory: "src",
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
@@ -691,7 +646,6 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         using var tempDir = new TemporaryDirectory();
         var errorSentinelPath = Path.Combine(tempDir.DirectoryPath, "error-sentinel.txt");
         await TestDiscoverAsync(
-            useSingleRestore: true,
             startingDirectory: "src",
             packages: [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
@@ -748,26 +702,13 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         MockNuGetPackage[]? packages = null
     )
     {
-        await TestDiscoverAsync(useSingleRestore: true, startingDirectory, projectPath, files, expectedProjects, packages);
-        await TestDiscoverAsync(useSingleRestore: false, startingDirectory, projectPath, files, expectedProjects, packages);
-    }
-
-    private static async Task TestDiscoverAsync(
-        bool useSingleRestore,
-        string startingDirectory,
-        string projectPath,
-        TestFile[] files,
-        ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
-        MockNuGetPackage[]? packages = null
-    )
-    {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
 
         await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, testDirectory.DirectoryPath);
 
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
-        var experimentsManager = new ExperimentsManager() { UseSingleRestore = useSingleRestore };
+        var experimentsManager = new ExperimentsManager();
         var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
         ValidateProjectResults(expectedProjects, projectDiscovery);
     }

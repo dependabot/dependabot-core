@@ -61,13 +61,10 @@ public partial class DiscoveryWorkerTests
             );
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DiscoveryIsMergedWithPackageReferences(bool useSingleRestore)
+        [Fact]
+        public async Task DiscoveryIsMergedWithPackageReferences()
         {
             await TestDiscoveryAsync(
-                experimentsManager: new ExperimentsManager() { UseSingleRestore = useSingleRestore },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net46"),

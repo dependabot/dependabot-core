@@ -6,15 +6,14 @@ require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/maven/package/package_details_fetcher"
 require "dependabot/maven/update_checker"
+require "dependabot/maven/shared/shared_version_finder"
 require "sorbet-runtime"
 
 module Dependabot
   module Maven
     class UpdateChecker
-      class VersionFinder < Dependabot::Package::PackageLatestVersionFinder
+      class VersionFinder < Dependabot::Maven::Shared::SharedVersionFinder
         extend T::Sig
-
-        TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         sig do
           params(
@@ -190,27 +189,6 @@ module Dependabot
           return false unless dependency.numeric_version
 
           T.must(dependency.numeric_version) >= version_class.new(100)
-        end
-
-        sig { params(comparison_version: Dependabot::Version).returns(T::Boolean) }
-        def matches_dependency_version_type?(comparison_version)
-          return true unless dependency.version
-
-          current_type = dependency.version
-                                   &.gsub("native-mt", "native_mt")
-                                   &.split(/[.\-]/)
-                                   &.find do |type|
-            TYPE_SUFFICES.find { |s| type.include?(s) }
-          end
-
-          version_type = comparison_version.to_s
-                                           .gsub("native-mt", "native_mt")
-                                           .split(/[.\-]/)
-                                           .find do |type|
-            TYPE_SUFFICES.find { |s| type.include?(s) }
-          end
-
-          current_type == version_type
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

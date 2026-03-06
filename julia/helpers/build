@@ -19,6 +19,10 @@ cp -r "$helpers_dir"/* "$install_dir"
 # Trailing : is intentional. It automatically includes the bundled stdlibs
 export JULIA_DEPOT_PATH="${HOME:?}/.julia:"
 
+# Use the eager registry flavor for more up-to-date package information
+# See: https://pkgdocs.julialang.org/v1/registries/#Registry-flavors
+export JULIA_PKG_SERVER_REGISTRY_PREFERENCE="eager"
+
 # Set up Julia package environment
 julia --project="$install_dir" -e 'import Pkg; Pkg.instantiate()'
 

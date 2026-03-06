@@ -1,8 +1,6 @@
 # typed: false
 # frozen_string_literal: true
 
-require "ostruct"
-
 require "spec_helper"
 require "dependabot/api_client"
 require "dependabot/dependency"
@@ -239,11 +237,6 @@ RSpec.describe Dependabot::Service do
 
   describe "#create_pull_request" do
     include_context "with a created pr"
-
-    before do
-      Dependabot::Experiments.register("dependency_change_validation", true)
-    end
-
     it "delegates to @client" do
       service.create_pull_request(dependency_change, base_sha)
 
@@ -393,7 +386,16 @@ RSpec.describe Dependabot::Service do
     end
 
     it "extracts information from a job if provided" do
-      job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false, repo_owner: "foo")
+      job = instance_double(
+        Dependabot::Job,
+        id: 1234,
+        package_manager: "bundler",
+        repo_private?: false,
+        repo_owner: "foo",
+        dependencies: nil,
+        dependency_groups: nil,
+        security_updates_only?: false
+      )
       service.capture_exception(error: error, job: job)
 
       expect(mock_client)
@@ -426,11 +428,14 @@ RSpec.describe Dependabot::Service do
     end
 
     it "extracts information from a security job if provided" do
-      job = OpenStruct.new(
+      job = instance_double(
+        Dependabot::Job,
         id: 1234,
         package_manager: "npm_and_yarn",
         repo_private?: false,
         repo_owner: "foo",
+        dependencies: nil,
+        dependency_groups: nil,
         security_updates_only?: true
       )
       service.capture_exception(error: error, job: job)
@@ -450,8 +455,7 @@ RSpec.describe Dependabot::Service do
     end
 
     it "extracts information from a dependency_group if provided" do
-      dependency_group = OpenStruct.new(name: "all-the-things")
-      allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
+      dependency_group = instance_double(Dependabot::DependencyGroup, name: "all-the-things")
       service.capture_exception(error: error, dependency_group: dependency_group)
 
       expect(mock_client)

@@ -201,11 +201,9 @@ module Dependabot
         true
       end
 
-      sig { params(version: String).returns(T::Array[Integer]) }
+      sig { params(version: String).returns(Dependabot::Bazel::Version) }
       def version_sort_key(version)
-        cleaned = version.gsub(/^v/, "")
-        parts = cleaned.split(".")
-        parts.map { |part| part.match?(/^\d+$/) ? part.to_i : 0 }
+        T.cast(version_class.new(version), Dependabot::Bazel::Version)
       end
     end
   end

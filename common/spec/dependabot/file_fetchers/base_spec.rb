@@ -1471,6 +1471,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
+      context "with a file containing UTF-8 BOM" do
+        let(:bom) { "\xEF\xBB\xBF" }
+        let(:fill_repo) do
+          # Write file with UTF-8 BOM prefix
+          File.binwrite("requirements.txt", "#{bom}#{contents}")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to eq(contents) }
+        end
+      end
+
       context "with an invalid source" do
         before do
           allow(source)

@@ -39,7 +39,6 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
     {
       loglevel: "silent",
       force: true,
-      audit: false,
       "prefer-offline": true,
       "ignore-scripts": true,
     },

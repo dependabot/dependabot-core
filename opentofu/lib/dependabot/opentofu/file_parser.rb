@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "nokogiri"
 require "open3"
@@ -146,10 +145,10 @@ module Dependabot
           version: version,
           package_manager: "opentofu",
           requirements: [
-            requirement: version_req,
-            groups: [],
-            file: file.name,
-            source: source
+            { requirement: version_req,
+              groups: [],
+              file: file.name,
+              source: source }
           ]
         )
       end
@@ -175,14 +174,14 @@ module Dependabot
           version: determine_version_for(T.must(hostname), T.must(namespace), T.must(name), version_req),
           package_manager: "opentofu",
           requirements: [
-            requirement: version_req,
-            groups: [],
-            file: file.name,
-            source: {
-              type: "provider",
-              registry_hostname: hostname,
-              module_identifier: "#{namespace}/#{name}"
-            }
+            { requirement: version_req,
+              groups: [],
+              file: file.name,
+              source: {
+                type: "provider",
+                registry_hostname: hostname,
+                module_identifier: "#{namespace}/#{name}"
+              } }
           ]
         )
       end
@@ -214,10 +213,10 @@ module Dependabot
           version: version,
           package_manager: "opentofu",
           requirements: [
-            requirement: nil,
-            groups: [],
-            file: file.name,
-            source: source
+            { requirement: nil,
+              groups: [],
+              file: file.name,
+              source: source }
           ]
         )
       end
@@ -314,7 +313,7 @@ module Dependabot
           type: "git",
           url: git_url,
           branch: nil,
-          ref: CGI.parse(querystr.to_s)["ref"].first&.split(%r{(?<!:)//})&.first
+          ref: URI.decode_www_form(querystr.to_s).to_h["ref"]&.split(%r{(?<!:)//})&.first
         }
       end
 

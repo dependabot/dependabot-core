@@ -148,6 +148,84 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a config file at repository root and Cargo.toml in subdirectory" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "my_dir"
+      )
+    end
+
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
+    end
+
+    before do
+      # Mock the subdirectory listing (includes Cargo.toml and Cargo.lock)
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/my_dir?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_lockfile.json"),
+          headers: json_header
+        )
+
+      # Mock Cargo.toml in subdirectory
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_manifest.json"),
+          headers: json_header
+        )
+
+      # Mock Cargo.lock in subdirectory
+      stub_request(:get, url + "Cargo.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_lockfile.json"),
+          headers: json_header
+        )
+
+      # No config in subdirectory's .cargo directory
+      stub_request(:get, url + ".cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      stub_request(:get, url + ".cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      stub_request(:get, url + ".cargo/config?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # Config at repository root
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_dir.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_config.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the Cargo.toml, Cargo.lock, and config.toml from root" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(Cargo.lock Cargo.toml .cargo/config.toml))
+    end
+  end
+
   context "without a lockfile" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -825,6 +903,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       stub_request(:get, %r{#{Regexp.escape(url)}\w+/\.cargo\?ref=sha})
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404, headers: json_header)
+      stub_request(:get, %r{#{Regexp.escape(url)}.*\.cargo/config\.toml\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+      stub_request(:get, %r{#{Regexp.escape(url)}.*\.cargo/config\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
 
       # All the manifest requests
       stub_request(:get, url + "detached_crate_fail_1/Cargo.toml?ref=sha")
@@ -1024,9 +1108,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "packages/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "packages/crate1"),
-            OpenStruct.new(type: "dir", path: "packages/crate2"),
-            OpenStruct.new(type: "file", path: "packages/README.md")
+            Data.define(:type, :path).new("dir", "packages/crate1"),
+            Data.define(:type, :path).new("dir", "packages/crate2"),
+            Data.define(:type, :path).new("file", "packages/README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "packages/*")
@@ -1039,9 +1123,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "crate1"),
-            OpenStruct.new(type: "dir", path: "crate2"),
-            OpenStruct.new(type: "file", path: "README.md")
+            Data.define(:type, :path).new("dir", "crate1"),
+            Data.define(:type, :path).new("dir", "crate2"),
+            Data.define(:type, :path).new("file", "README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "*")
@@ -1054,9 +1138,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "test-crate"),
-            OpenStruct.new(type: "dir", path: "prod-crate"),
-            OpenStruct.new(type: "file", path: "README.md")
+            Data.define(:type, :path).new("dir", "test-crate"),
+            Data.define(:type, :path).new("dir", "prod-crate"),
+            Data.define(:type, :path).new("file", "README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "*-crate")
@@ -1069,9 +1153,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "src/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "src/bin-crate-v1"),
-            OpenStruct.new(type: "dir", path: "src/lib-crate-v2"),
-            OpenStruct.new(type: "dir", path: "src/other")
+            Data.define(:type, :path).new("dir", "src/bin-crate-v1"),
+            Data.define(:type, :path).new("dir", "src/lib-crate-v2"),
+            Data.define(:type, :path).new("dir", "src/other")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "src/*-crate-*")
@@ -1095,9 +1179,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "apps/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "apps/web/frontend"),
-            OpenStruct.new(type: "dir", path: "apps/api/backend"),
-            OpenStruct.new(type: "file", path: "apps/config.json")
+            Data.define(:type, :path).new("dir", "apps/web/frontend"),
+            Data.define(:type, :path).new("dir", "apps/api/backend"),
+            Data.define(:type, :path).new("file", "apps/config.json")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "apps/*/frontend")

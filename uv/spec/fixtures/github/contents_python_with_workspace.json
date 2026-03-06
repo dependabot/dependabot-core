@@ -1,0 +1,34 @@
+[
+  {
+    "name": "pyproject.toml",
+    "path": "pyproject.toml",
+    "sha": "abc123",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/pyproject.toml?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/pyproject.toml",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/pyproject.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/pyproject.toml?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+      "html": "https://github.com/gocardless/bump/blob/sha/pyproject.toml"
+    }
+  },
+  {
+    "name": "packages",
+    "path": "packages",
+    "sha": "def456",
+    "size": 0,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/packages?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/tree/sha/packages",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/def456",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/packages?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/trees/def456",
+      "html": "https://github.com/gocardless/bump/tree/sha/packages"
+    }
+  }
+]

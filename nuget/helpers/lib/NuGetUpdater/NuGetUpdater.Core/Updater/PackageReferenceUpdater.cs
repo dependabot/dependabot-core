@@ -108,7 +108,7 @@ internal static class PackageReferenceUpdater
         return [.. updateOperations];
     }
 
-    private static async Task<(Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions)> GetPackageGraphForDependencies(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> topLevelDependencies, ILogger logger)
+    internal static async Task<(Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions)> GetPackageGraphForDependencies(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> topLevelDependencies, ILogger logger)
     {
         var packageParents = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         var packageVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
@@ -117,37 +117,34 @@ internal static class PackageReferenceUpdater
         {
             // generate project.assets.json
             var parsedTargetFramework = NuGetFramework.Parse(targetFramework);
-            var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, logger, importDependencyTargets: false);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["build", tempProject, "/t:_ReportDependencies"], tempDir.FullName);
+            var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, logger, importDependencyTargets: true);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["msbuild", tempProject, "/t:Restore,GenerateBuildDependencyFile"], tempDir.FullName);
             var assetsJsonPath = Path.Join(tempDir.FullName, "obj", "project.assets.json");
             var assetsJsonContent = await File.ReadAllTextAsync(assetsJsonPath);
 
             // build reverse dependency graph
             var assets = JsonDocument.Parse(assetsJsonContent).RootElement;
-            foreach (var tfmObject in assets.GetProperty("targets").EnumerateObject())
+            var tfmObjects = assets.GetProperty("targets").EnumerateObject().ToImmutableArray();
+            if (tfmObjects.Length != 1)
             {
-                var reportedTargetFramework = NuGetFramework.Parse(tfmObject.Name);
-                if (reportedTargetFramework != parsedTargetFramework)
-                {
-                    // not interested in this target framework
-                    continue;
-                }
+                logger.Error($"Expected exactly one target framework group compatible with {targetFramework} but found {tfmObjects.Length}.  Values: {tfmObjects.Select(t => t.Name)}");
+                return (packageParents, packageVersions);
+            }
 
-                foreach (var parentObject in tfmObject.Value.EnumerateObject())
-                {
-                    var parts = parentObject.Name.Split('/');
-                    var parentName = parts[0];
-                    var parentVersion = parts[1];
-                    packageVersions[parentName] = NuGetVersion.Parse(parentVersion);
+            foreach (var parentObject in tfmObjects[0].Value.EnumerateObject())
+            {
+                var parts = parentObject.Name.Split('/');
+                var parentName = parts[0];
+                var parentVersion = parts[1];
+                packageVersions[parentName] = NuGetVersion.Parse(parentVersion);
 
-                    if (parentObject.Value.TryGetProperty("dependencies", out var dependencies))
+                if (parentObject.Value.TryGetProperty("dependencies", out var dependencies))
+                {
+                    foreach (var childObject in dependencies.EnumerateObject())
                     {
-                        foreach (var childObject in dependencies.EnumerateObject())
-                        {
-                            var childName = childObject.Name;
-                            var parentSet = packageParents.GetOrAdd(childName, () => new(StringComparer.OrdinalIgnoreCase));
-                            parentSet.Add(parentName);
-                        }
+                        var childName = childObject.Name;
+                        var parentSet = packageParents.GetOrAdd(childName, () => new(StringComparer.OrdinalIgnoreCase));
+                        parentSet.Add(parentName);
                     }
                 }
             }

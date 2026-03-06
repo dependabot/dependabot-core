@@ -897,23 +897,32 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         sort_key_one_two_zero = checker.send(:version_sort_key, "1.2.0")
         sort_key_one_ten_zero = checker.send(:version_sort_key, "1.10.0")
 
-        expect(sort_key_one_zero_zero).to eq([1, 0, 0])
-        expect(sort_key_one_two_zero).to eq([1, 2, 0])
-        expect(sort_key_one_ten_zero).to eq([1, 10, 0])
+        # Verify the sort keys return Version objects with correct values
+        expect(sort_key_one_zero_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_zero_zero.to_s).to eq("1.0.0")
 
-        # Verify correct ordering
+        expect(sort_key_one_two_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_two_zero.to_s).to eq("1.2.0")
+
+        expect(sort_key_one_ten_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_ten_zero.to_s).to eq("1.10.0")
+
+        # Verify correct semantic version ordering (1.0.0 < 1.2.0 < 1.10.0)
         expect(sort_key_one_zero_zero <=> sort_key_one_two_zero).to eq(-1)
         expect(sort_key_one_two_zero <=> sort_key_one_ten_zero).to eq(-1)
+        expect(sort_key_one_zero_zero <=> sort_key_one_ten_zero).to eq(-1)
       end
 
       it "handles version prefixes" do
         sort_key = checker.send(:version_sort_key, "v1.2.3")
-        expect(sort_key).to eq([1, 2, 3])
+        expect(sort_key).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key.to_s).to eq("v1.2.3")
       end
 
       it "handles non-numeric version parts" do
         sort_key = checker.send(:version_sort_key, "1.2.beta")
-        expect(sort_key).to eq([1, 2, 0])
+        expect(sort_key).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key.to_s).to eq("1.2.beta")
       end
     end
   end

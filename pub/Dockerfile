@@ -7,7 +7,7 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
 # https://dart.dev/get-dart/archive
-ARG DART_VERSION=3.5.0
+ARG DART_VERSION=3.10.0
 
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
