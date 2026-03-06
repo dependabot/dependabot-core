@@ -545,6 +545,19 @@ RSpec.describe Dependabot::Python::UpdateChecker do
                 }
               }.to_json
             )
+
+          stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+            .to_return(
+              status: 200,
+              body: {
+                info: {
+                  requires_dist: [
+                    "urllib3 (<3,>=1.21.1)",
+                    "idna (<4,>=2.5)"
+                  ]
+                }
+              }.to_json
+            )
         end
 
         it "does not propose an update that is incompatible with pinned botocore" do

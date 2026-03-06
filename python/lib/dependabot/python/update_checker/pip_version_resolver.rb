@@ -4,9 +4,11 @@
 require "json"
 require "toml-rb"
 require "sorbet-runtime"
+require "excon"
 require "dependabot/registry_client"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/package/package_registry_finder"
 require "dependabot/python/update_checker"
 require "dependabot/python/update_checker/latest_version_finder"
 require "dependabot/python/file_parser/python_requirement_parser"
@@ -48,6 +50,8 @@ module Dependabot
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @pyproject_content = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          @registry_json_urls = T.let(nil, T.nilable(T::Array[String]))
+          @transitive_requirement_cache = T.let({}, T::Hash[String, T.nilable(String)])
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -67,8 +71,12 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Version)) }
         def lowest_resolvable_security_fix_version
-          latest_version_finder
-            .lowest_security_fix_version(language_version: language_version_manager.python_version)
+          candidate = latest_version_finder
+                      .lowest_security_fix_version(language_version: language_version_manager.python_version)
+          return candidate if candidate.nil?
+          return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
+
+          nil
         end
 
         private
@@ -155,8 +163,8 @@ module Dependabot
             entry_obj = T.cast(entry, T.nilable(Object))
             next unless entry_obj.is_a?(String)
 
-            # Strip environment markers, e.g. '; python_version > "3.10"'
-            requirement_string = entry_obj.split(";").first&.strip
+            requirement_string, marker = split_requirement_and_marker(entry_obj)
+            next unless marker_satisfied_for_python?(marker)
             next if requirement_string.nil? || requirement_string.empty?
 
             parsed = requirement_string.match(/\A(?<name>[A-Za-z0-9][A-Za-z0-9._\-]*)\s*==\s*(?<version>[^\s]+)\z/)
@@ -171,37 +179,150 @@ module Dependabot
 
         sig { params(name: String, version: String).returns(T.nilable(String)) }
         def transitive_requirement_for(name:, version:)
-          url = "https://pypi.org/pypi/#{name}/#{version}/json/"
-          response = Dependabot::RegistryClient.get(url: url)
-          return nil unless response.status == 200
+          cache_key = "#{name}@#{version}"
+          return @transitive_requirement_cache[cache_key] if @transitive_requirement_cache.key?(cache_key)
 
+          response = dependency_metadata_response(name: name, version: version)
+          requirement = requirement_for_target_dependency(response)
+
+          @transitive_requirement_cache[cache_key] = requirement
+        end
+
+        sig { params(name: String, version: String).returns(T.nilable(Excon::Response)) }
+        def dependency_metadata_response(name:, version:)
+          registry_json_urls.each do |registry_url|
+            url = "#{registry_url}#{name}/#{version}/json/"
+            response = Dependabot::RegistryClient.get(url: url)
+            return response if response.status == 200
+          rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
+            next
+          end
+
+          nil
+        end
+
+        sig { returns(T::Array[String]) }
+        def registry_json_urls
+          return @registry_json_urls if @registry_json_urls
+
+          package_registry_urls = Package::PackageRegistryFinder.new(
+            dependency_files: dependency_files,
+            credentials: credentials,
+            dependency: dependency
+          ).registry_urls
+
+          @registry_json_urls =
+            package_registry_urls
+            .map { |url| url.sub(%r{/simple/?$}i, "/pypi/") }
+            .uniq
+
+          @registry_json_urls
+        end
+
+        sig { params(response: T.nilable(Excon::Response)).returns(T.nilable(String)) }
+        def requirement_for_target_dependency(response)
+          return nil unless response
+
+          requires_dist = requires_dist_from_response(response)
+          return nil unless requires_dist
+
+          requires_dist.each do |requirement_string|
+            requirement = parse_target_requirement(requirement_string)
+            return requirement if requirement
+          end
+
+          nil
+        rescue JSON::ParserError
+          nil
+        end
+
+        sig { params(response: Excon::Response).returns(T.nilable(T::Array[String])) }
+        def requires_dist_from_response(response)
           body = T.cast(JSON.parse(response.body), T::Hash[String, T.untyped])
           info_obj = T.cast(body["info"], T.nilable(Object))
           return nil unless info_obj.is_a?(Hash)
 
-          info_hash = info_obj
-          requires_dist_obj = T.cast(info_hash["requires_dist"], T.nilable(Object))
+          requires_dist_obj = T.cast(info_obj["requires_dist"], T.nilable(Object))
           return nil unless requires_dist_obj.is_a?(Array)
 
-          requires_dist_obj.each do |dist_requirement|
-            dist_requirement_obj = T.cast(dist_requirement, T.nilable(Object))
-            next unless dist_requirement_obj.is_a?(String)
+          requires_dist_obj.filter_map do |entry|
+            entry_obj = T.cast(entry, T.nilable(Object))
+            entry_obj if entry_obj.is_a?(String)
+          end
+        end
 
-            # Example: "urllib3 (<1.27,>=1.25.4); python_version >= '3.10'"
-            normalized = dist_requirement_obj.split(";").first&.strip
-            next if normalized.nil?
+        sig { params(requirement_string: String).returns(T.nilable(String)) }
+        def parse_target_requirement(requirement_string)
+          package_requirement, marker = split_requirement_and_marker(requirement_string)
+          return nil unless marker_satisfied_for_python?(marker)
+          return nil if package_requirement.nil?
 
-            match = normalized.match(/\A(?<name>[A-Za-z0-9][A-Za-z0-9._\-]*)\s*(?:\((?<requirement>[^)]*)\))?\z/)
-            next unless match
+          match = package_requirement.match(
+            /\A(?<name>[A-Za-z0-9][A-Za-z0-9._\-]*)(?:\[[^\]]+\])?\s*(?:\((?<requirement>[^)]*)\))?\z/
+          )
+          return nil unless match
 
-            next unless NameNormaliser.normalise(T.must(match[:name])) == NameNormaliser.normalise(dependency.name)
+          return nil unless NameNormaliser.normalise(T.must(match[:name])) == NameNormaliser.normalise(dependency.name)
 
-            return match[:requirement]&.strip
+          match[:requirement]&.strip
+        end
+
+        sig { params(requirement_string: String).returns([T.nilable(String), T.nilable(String)]) }
+        def split_requirement_and_marker(requirement_string)
+          requirement_part, marker_part = requirement_string.split(";", 2)
+
+          [requirement_part&.strip, marker_part&.strip]
+        end
+
+        sig { params(marker: T.nilable(String)).returns(T::Boolean) }
+        def marker_satisfied_for_python?(marker)
+          return true if marker.nil? || marker.empty?
+          return false unless marker.match?(/\bpython_version\b/)
+
+          marker_satisfied?(marker, language_version_manager.python_version)
+        end
+
+        sig { params(marker: String, python_version: String).returns(T::Boolean) }
+        def marker_satisfied?(marker, python_version)
+          conditions = marker.split(/\s+(and|or)\s+/)
+          return false if conditions.empty?
+
+          result = T.let(evaluate_python_version_condition(conditions.shift, python_version), T::Boolean)
+
+          until conditions.empty?
+            operator = T.must(conditions.shift)
+            next_condition = T.must(conditions.shift)
+            next_result = evaluate_python_version_condition(next_condition, python_version)
+
+            result = operator == "and" ? result && next_result : result || next_result
           end
 
-          nil
-        rescue StandardError
-          nil
+          result
+        end
+
+        sig { params(condition: T.nilable(String), python_version: String).returns(T::Boolean) }
+        def evaluate_python_version_condition(condition, python_version)
+          return false if condition.nil?
+
+          match = condition.match(/python_version\s*(<=|>=|<|>|==|!=)\s*['\"]([^'\"]+)['\"]/)
+          return false unless match
+
+          operator = T.must(match[1])
+          version = T.must(match[2])
+          lhs = Dependabot::Python::Version.new(python_version)
+          rhs = Dependabot::Python::Version.new(version)
+
+          case operator
+          when "<" then lhs < rhs
+          when "<=" then lhs <= rhs
+          when ">" then lhs > rhs
+          when ">=" then lhs >= rhs
+          when "==" then lhs == rhs
+          when "!=" then lhs != rhs
+          else false
+          end
+        rescue ArgumentError
+          false
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
@@ -218,7 +339,8 @@ module Dependabot
 
           T.must(@pyproject_content)
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          {}
+          @pyproject_content = T.let({}, T.nilable(T::Hash[String, T.untyped]))
+          T.must(@pyproject_content)
         end
       end
     end
