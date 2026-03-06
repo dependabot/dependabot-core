@@ -297,21 +297,13 @@ module Dependabot
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
         merged_env = merge_corepack_env(env)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(
-            NpmPackageManager::NAME,
-            command,
-            fingerprint: fingerprint,
-            output_observer: ->(output) { command_observer(output) },
-            env: merged_env
-          )
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "npm #{command}",
-            fingerprint: "npm #{fingerprint}",
-            output_observer: ->(output) { command_observer(output) }
-          )
-        end
+        package_manager_run_command(
+          NpmPackageManager::NAME,
+          command,
+          fingerprint: fingerprint,
+          output_observer: ->(output) { command_observer(output) },
+          env: merged_env
+        )
       end
 
       sig do
@@ -369,27 +361,13 @@ module Dependabot
       # Run single pnpm command returning stdout/stderr
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_pnpm_command(command, fingerprint: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "pnpm #{command}",
-            fingerprint: "pnpm #{fingerprint || command}"
-          )
-        end
+        package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
       end
 
       # Run single yarn command returning stdout/stderr
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_single_yarn_command(command, fingerprint: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "yarn #{command}",
-            fingerprint: "yarn #{fingerprint || command}"
-          )
-        end
+        package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
       end
 
       # Activate the package manager for specified version by using corepack
