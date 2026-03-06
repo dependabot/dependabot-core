@@ -139,9 +139,14 @@ module Dependabot
           # unlock requirements are `none`. Just return the current version.
           return current_version if unlock_requirement == :none
 
+          current = current_version
           # Run the solver first so errors (unsupported deps, invalid layouts) propagate
           resolved = fetch_latest_resolvable_version(unlock_requirement)
-          return current_version unless resolved && resolved > T.must(current_version)
+          return current unless resolved
+          # If there is no current version (e.g., only a range in elm.json), treat any
+          # successfully resolved version as the candidate update.
+          return cap_at_max_allowed_version(resolved) unless current
+          return current unless resolved > current
 
           # Cap the solver result at the highest non-ignored, non-cooldown version
           cap_at_max_allowed_version(resolved)
@@ -191,12 +196,14 @@ module Dependabot
 
         sig { params(resolved: Dependabot::Elm::Version).returns(Dependabot::Elm::Version) }
         def cap_at_max_allowed_version(resolved)
+          current = current_version
           releases = package_releases
           releases = filter_ignored_versions(T.must(releases))
           releases = filter_by_cooldown(releases)
           max_allowed = releases.max_by(&:version)&.version
 
-          return T.must(current_version) unless max_allowed && max_allowed > T.must(current_version)
+          return resolved unless current
+          return current unless max_allowed && max_allowed > current
 
           if resolved > max_allowed
             T.cast(max_allowed, Dependabot::Elm::Version)
