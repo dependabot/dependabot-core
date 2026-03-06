@@ -117,12 +117,14 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
+            ignored_versions: T::Array[String],
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, cooldown_options: nil)
+        def initialize(dependency:, dependency_files:, ignored_versions: [], cooldown_options: nil)
           @dependency = dependency
           @dependency_files = dependency_files
+          @ignored_versions = ignored_versions
           @cooldown_options = cooldown_options
 
           @install_metadata = T.let(nil, T.nilable(T::Hash[String, Dependabot::Elm::Version]))
@@ -137,9 +139,12 @@ module Dependabot
           # unlock requirements are `none`. Just return the current version.
           return current_version if unlock_requirement == :none
 
-          # Otherwise, we gotta check a few conditions to see if bumping
-          # wouldn't also bump other deps in elm.json
-          fetch_latest_resolvable_version(unlock_requirement)
+          # Run the solver first so errors (unsupported deps, invalid layouts) propagate
+          resolved = fetch_latest_resolvable_version(unlock_requirement)
+          return current_version unless resolved && resolved > T.must(current_version)
+
+          # Cap the solver result at the highest non-ignored, non-cooldown version
+          cap_at_max_allowed_version(resolved)
         end
 
         sig { returns(T::Array[Dependabot::Dependency]) }
@@ -181,6 +186,25 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+
+        sig { params(resolved: Dependabot::Elm::Version).returns(Dependabot::Elm::Version) }
+        def cap_at_max_allowed_version(resolved)
+          releases = package_releases
+          releases = filter_ignored_versions(T.must(releases))
+          releases = filter_by_cooldown(releases)
+          max_allowed = releases.max_by(&:version)&.version
+
+          return T.must(current_version) unless max_allowed && max_allowed > T.must(current_version)
+
+          if resolved > max_allowed
+            T.cast(max_allowed, Dependabot::Elm::Version)
+          else
+            resolved
+          end
+        end
+
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def package_releases
           T.let(
@@ -196,17 +220,6 @@ module Dependabot
           changed_deps = install_metadata
           result = check_install_result(changed_deps)
           version_after_install = changed_deps.fetch(dependency.name)
-
-          # returns current version if new proposed version is in cooldown period
-          new_release = package_releases&.find { |release| release.version == version_after_install }
-
-          if cooldown_options && in_cooldown_period?(T.must(new_release))
-            Dependabot.logger.info(
-              "#{dependency.name} #{new_release} is in cooldown period," \
-              " returning current version #{current_version}"
-            )
-            return current_version
-          end
 
           # If the install was clean then we can definitely update
           return version_after_install if result == :clean_bump
