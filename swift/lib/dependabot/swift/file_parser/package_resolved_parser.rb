@@ -48,7 +48,15 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def parse_json
-          JSON.parse(T.must(resolved_file.content))
+          content = resolved_file.content
+          unless content
+            raise Dependabot::DependencyFileNotParseable.new(
+              resolved_file.name,
+              "#{resolved_file.name} has no content"
+            )
+          end
+
+          JSON.parse(content)
         rescue JSON::ParserError => e
           raise Dependabot::DependencyFileNotParseable.new(
             resolved_file.name,
@@ -104,11 +112,11 @@ module Dependabot
         end
         def build_dependency(pin, schema_version)
           keys = T.must(PIN_KEYS[schema_version])
-          url = pin[keys[:url]]
+          url = pin[T.must(keys[:url])]
           return nil unless url.is_a?(String) && !url.empty?
 
-          state = pin[keys[:state]] || {}
-          identity = pin[keys[:identity]]
+          state = pin[T.must(keys[:state])] || {}
+          identity = pin[T.must(keys[:identity])]
           # v1 uses a display name for "package"; normalize to lowercase like v2/v3 "identity"
           identity = identity&.downcase if schema_version == 1
 

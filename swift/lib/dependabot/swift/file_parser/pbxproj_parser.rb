@@ -106,10 +106,10 @@ module Dependabot
         def build_up_to_next_major(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = "from: \"#{min_version}\""
-          native_req = NativeRequirement.new(requirement_string)
+          requirement = parse_native_requirement(requirement_string)
 
           {
-            requirement: native_req.to_s,
+            requirement: requirement,
             requirement_string: requirement_string,
             kind: "upToNextMajorVersion"
           }
@@ -119,10 +119,10 @@ module Dependabot
         def build_up_to_next_minor(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = ".upToNextMinor(from: \"#{min_version}\")"
-          native_req = NativeRequirement.new(requirement_string)
+          requirement = parse_native_requirement(requirement_string)
 
           {
-            requirement: native_req.to_s,
+            requirement: requirement,
             requirement_string: requirement_string,
             kind: "upToNextMinorVersion"
           }
@@ -132,10 +132,10 @@ module Dependabot
         def build_exact(block)
           version = extract_version(block, MIN_VERSION_PATTERN) || extract_version(block, VERSION_PATTERN)
           requirement_string = "exact: \"#{version}\""
-          native_req = NativeRequirement.new(requirement_string)
+          requirement = parse_native_requirement(requirement_string)
 
           {
-            requirement: native_req.to_s,
+            requirement: requirement,
             requirement_string: requirement_string,
             kind: "exactVersion"
           }
@@ -146,10 +146,10 @@ module Dependabot
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           max_version = extract_version(block, MAX_VERSION_PATTERN)
           requirement_string = "\"#{min_version}\"..<\"#{max_version}\""
-          native_req = NativeRequirement.new(requirement_string)
+          requirement = parse_native_requirement(requirement_string)
 
           {
-            requirement: native_req.to_s,
+            requirement: requirement,
             requirement_string: requirement_string,
             kind: "versionRange"
           }
@@ -182,6 +182,16 @@ module Dependabot
         sig { params(block: String, pattern: Regexp).returns(T.nilable(String)) }
         def extract_version(block, pattern)
           block.match(pattern)&.captures&.first
+        end
+
+        # Parses a requirement string into a Dependabot requirement via
+        # NativeRequirement. Returns nil if the string is malformed rather
+        # than raising, so a single bad entry doesn't stop parsing.
+        sig { params(requirement_string: String).returns(T.nilable(String)) }
+        def parse_native_requirement(requirement_string)
+          NativeRequirement.new(requirement_string).to_s
+        rescue StandardError
+          nil
         end
       end
     end

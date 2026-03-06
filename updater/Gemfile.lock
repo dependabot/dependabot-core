@@ -202,7 +202,6 @@ PATH
   specs:
     dependabot-swift (0.364.0)
       dependabot-common (= 0.364.0)
-      xcodeproj (~> 1.27)
 
 PATH
   remote: ../terraform
