@@ -16,7 +16,7 @@ module Dependabot
         raise DependabotError, "No pyproject.toml present in dependency files." unless pyproject_toml
 
         # Prefer lockfile if present, otherwise use pyproject.toml
-        poetry_lock || T.must(pyproject_toml)
+        T.must(poetry_lock || pyproject_toml)
       end
 
       private
