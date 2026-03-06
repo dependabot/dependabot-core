@@ -45,20 +45,24 @@ module Dependabot
           update_cooldown: nil,
           raise_on_ignored: false
         )
-          @dependency          = T.let(dependency, Dependabot::Dependency)
-          @dependency_files    = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials         = T.let(credentials, T::Array[Dependabot::Credential])
-          @ignored_versions    = T.let(ignored_versions, T::Array[String])
-          @security_advisories = T.let(security_advisories, T::Array[Dependabot::SecurityAdvisory])
-          @update_cooldown = T.let(update_cooldown, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
-          @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
+          @ignored_versions = ignored_versions
+          @security_advisories = security_advisories
+          @update_cooldown = update_cooldown
+          @raise_on_ignored = raise_on_ignored
           @latest_version_finder = T.let(nil, T.nilable(LatestVersionFinder))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @marker_evaluator = T.let(nil, T.nilable(MarkerEvaluator))
           @registry_json_urls = T.let(nil, T.nilable(T::Array[String]))
-
-          initialize_caches
+          @transitive_requirements_cache = T.let({}, T::Hash[String, T::Array[String]])
+          @transitive_requirement_available_cache = T.let({}, T::Hash[String, T::Boolean])
+          @constraints_files = T.let(nil, T.nilable(T::Array[String]))
+          @constraints_file_basenames = T.let(nil, T.nilable(T::Array[String]))
+          @requirement_file_directories = T.let(nil, T.nilable(T::Array[String]))
+          @pyproject_content_cache = T.let({}, T::Hash[String, T::Hash[String, T.untyped]])
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -138,16 +142,6 @@ module Dependabot
           @marker_evaluator ||= MarkerEvaluator.new
         end
 
-        sig { void }
-        def initialize_caches
-          @transitive_requirement_cache = T.let({}, T::Hash[String, T.nilable(String)])
-          @transitive_requirement_available_cache = T.let({}, T::Hash[String, T::Boolean])
-          @constraints_files = T.let(nil, T.nilable(T::Array[String]))
-          @constraints_file_basenames = T.let(nil, T.nilable(T::Array[String]))
-          @requirement_file_directories = T.let(nil, T.nilable(T::Array[String]))
-          @pyproject_content_cache = T.let({}, T::Hash[String, T::Hash[String, T.untyped]])
-        end
-
         sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
         def compatible_with_pinned_pyproject_dependencies?(candidate)
           return true unless constraints_dependency?
@@ -157,14 +151,17 @@ module Dependabot
           return true if pinned_dependencies.none?
 
           pinned_dependencies.all? do |name, version|
-            requirement, metadata_available = transitive_requirement_for(name: name, version: version)
+            requirements, metadata_available = transitive_requirement_for(name: name, version: version)
             next false unless metadata_available
-            next true unless requirement
+            next true if requirements.empty?
 
-            Python::Requirement.new(requirement).satisfied_by?(candidate)
-          rescue Gem::Requirement::BadRequirementError
-            # If metadata has an unsupported requirement format, don't block updates.
-            true
+            requirements.all? do |requirement|
+              Python::Requirement.new(requirement).satisfied_by?(candidate)
+            rescue Gem::Requirement::BadRequirementError
+              # If one metadata requirement is unsupported, ignore it but still
+              # enforce any other valid constraints for this dependency.
+              true
+            end
           end
         end
 
@@ -275,33 +272,33 @@ module Dependabot
           []
         end
 
-        sig { params(name: String, version: String).returns([T.nilable(String), T::Boolean]) }
+        sig { params(name: String, version: String).returns([T::Array[String], T::Boolean]) }
         def transitive_requirement_for(name:, version:)
           cache_key = "#{name}@#{version}"
-          if @transitive_requirement_cache.key?(cache_key)
-            requirement = @transitive_requirement_cache[cache_key]
+          if @transitive_requirements_cache.key?(cache_key)
+            requirements = T.must(@transitive_requirements_cache[cache_key])
             available = T.must(@transitive_requirement_available_cache[cache_key])
-            return [requirement, available]
+            return [requirements, available]
           end
 
           response, metadata_available = dependency_metadata_response(name: name, version: version)
           unless response
-            @transitive_requirement_cache[cache_key] = nil
+            @transitive_requirements_cache[cache_key] = []
             @transitive_requirement_available_cache[cache_key] = metadata_available
-            return [nil, metadata_available]
+            return [[], metadata_available]
           end
 
-          requirement, metadata_available = requirement_for_target_dependency(response)
+          requirements, metadata_available = requirements_for_target_dependency(response)
 
-          @transitive_requirement_cache[cache_key] = requirement
+          @transitive_requirements_cache[cache_key] = requirements
           @transitive_requirement_available_cache[cache_key] = metadata_available
-          [requirement, metadata_available]
+          [requirements, metadata_available]
         end
 
         sig { params(name: String, version: String).returns([T.nilable(Excon::Response), T::Boolean]) }
         def dependency_metadata_response(name:, version:)
-          had_transport_error = false
-          saw_not_found = false
+          had_transport_error = T.let(false, T::Boolean)
+          saw_not_found = T.let(false, T::Boolean)
 
           registry_json_urls.each do |registry_url|
             url = "#{registry_url}#{name}/#{version}/json/"
@@ -343,20 +340,19 @@ module Dependabot
           @registry_json_urls
         end
 
-        sig { params(response: Excon::Response).returns([T.nilable(String), T::Boolean]) }
-        def requirement_for_target_dependency(response)
+        sig { params(response: Excon::Response).returns([T::Array[String], T::Boolean]) }
+        def requirements_for_target_dependency(response)
           requires_dist = requires_dist_from_response(response)
-          return [nil, true] unless requires_dist
+          return [[], true] unless requires_dist
 
-          requires_dist.each do |requirement_string|
-            requirement = parse_target_requirement(requirement_string)
-            return [requirement, true] if requirement
-          end
+          parsed_requirements = requires_dist.filter_map do |requirement_string|
+            parse_target_requirement(requirement_string)
+          end.uniq
 
-          [nil, true]
+          [parsed_requirements, true]
         rescue JSON::ParserError
           Dependabot.logger.warn("Failed to parse python dependency metadata JSON response")
-          [nil, false]
+          [[], false]
         end
 
         sig { returns(T::Array[String]) }
@@ -417,7 +413,7 @@ module Dependabot
           constraints_files.each do |path|
             next if url_path?(path)
 
-            counts[File.basename(path)] += 1
+            counts[File.basename(path)] = T.must(counts[File.basename(path)]) + 1
           end
           @constraints_file_basenames = counts.filter_map do |basename, count|
             basename if count == 1
@@ -561,7 +557,7 @@ module Dependabot
         sig { params(pyproject: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
         def pyproject_content_for(pyproject)
           cache_key = pyproject.name
-          return @pyproject_content_cache[cache_key] if @pyproject_content_cache.key?(cache_key)
+          return T.must(@pyproject_content_cache[cache_key]) if @pyproject_content_cache.key?(cache_key)
 
           content =
             if pyproject.content
@@ -573,8 +569,8 @@ module Dependabot
           @pyproject_content_cache[cache_key] = content
           content
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          @pyproject_content_cache[cache_key] = {}
-          @pyproject_content_cache[cache_key]
+          @pyproject_content_cache[pyproject.name] = {}
+          T.must(@pyproject_content_cache[pyproject.name])
         end
       end
       # rubocop:enable Metrics/ClassLength

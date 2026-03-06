@@ -485,6 +485,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       context "when urllib3 is pinned via constraints and botocore is incompatible" do
         let(:dependency_name) { "urllib3" }
+        let(:constraints_pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: <<~TOML
+              [project]
+              name = "dependabot-test"
+              version = "0.1.0"
+
+              dependencies = [
+                  "requests==2.31.0",
+              ]
+
+              [tool.pip]
+              constraints = "constraints.txt"
+            TOML
+          )
+        end
         let(:dependency_version) { "1.26.0" }
         let(:pypi_url) { "https://pypi.org/simple/urllib3/" }
         let(:pypi_response) do
@@ -1073,23 +1090,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when metadata endpoint is unavailable but request succeeds" do
-          let(:pyproject) do
-            Dependabot::DependencyFile.new(
-              name: "pyproject.toml",
-              content: <<~TOML
-                [project]
-                name = "dependabot-test"
-                version = "0.1.0"
-
-                dependencies = [
-                    "requests==2.31.0",
-                ]
-
-                [tool.pip]
-                constraints = "constraints.txt"
-              TOML
-            )
-          end
+          let(:pyproject) { constraints_pyproject }
 
           before do
             stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
@@ -1098,6 +1099,66 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           it "does not block candidates when endpoint response indicates metadata is unsupported" do
             expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when metadata returns multiple requirements for the same target dependency" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(
+                status: 200,
+                body: {
+                  info: {
+                    requires_dist: [
+                      "urllib3 (<3,>=1.21.1)",
+                      "urllib3 (<2)",
+                      "idna (<4,>=2.5)"
+                    ]
+                  }
+                }.to_json
+              )
+          end
+
+          it "applies all matching requirements before allowing the candidate" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata includes an invalid requirement with a valid one" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(
+                status: 200,
+                body: {
+                  info: {
+                    requires_dist: [
+                      "urllib3 (<2)",
+                      "urllib3 (this is not valid)"
+                    ]
+                  }
+                }.to_json
+              )
+          end
+
+          it "still enforces valid requirements" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata response body is malformed JSON" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(status: 200, body: "{\"info\":")
+          end
+
+          it "blocks update candidates when compatibility cannot be fully evaluated" do
+            expect(latest_resolvable_version).to be_nil
           end
         end
 
@@ -1112,23 +1173,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             )
           end
           let(:dependency_files) { [pyproject, constraints_file, requirements_file] }
-          let(:pyproject) do
-            Dependabot::DependencyFile.new(
-              name: "pyproject.toml",
-              content: <<~TOML
-                [project]
-                name = "dependabot-test"
-                version = "0.1.0"
-
-                dependencies = [
-                    "requests==2.31.0",
-                ]
-
-                [tool.pip]
-                constraints = "constraints.txt"
-              TOML
-            )
-          end
+          let(:pyproject) { constraints_pyproject }
 
           before do
             stub_request(:get, "https://mirror.example.com/simple/urllib3/")
