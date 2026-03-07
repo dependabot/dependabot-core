@@ -3,6 +3,7 @@
 
 require "toml-rb"
 require "open3"
+require "uri"
 require "dependabot/dependency"
 require "dependabot/shared_helpers"
 require "dependabot/uv/language_version_manager"
@@ -285,7 +286,7 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
+          env_vars = pyproject_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
 
           run_command(command, fingerprint: fingerprint, env: env_vars)
         end
@@ -357,7 +358,7 @@ module Dependabot
         def lock_index_options
           credentials
             .select { |cred| cred["type"] == "python_index" }
-            .reject { |cred| explicit_index?(cred) }
+            .reject { |cred| pyproject_index?(cred) }
             .map do |cred|
             authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
@@ -370,17 +371,22 @@ module Dependabot
         end
 
         sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
-        def explicit_index?(credential)
+        def pyproject_index?(credential)
           return false if credential.replaces_base?
 
           cred_url = normalize_index_url(credential["index-url"].to_s)
           uv_indices.any? do |_name, config|
-            config["explicit"] == true && normalize_index_url(config["url"].to_s) == cred_url
+            normalize_index_url(config["url"].to_s) == cred_url
           end
         end
 
         sig { params(url: String).returns(String) }
         def normalize_index_url(url)
+          uri = URI.parse(url.chomp("/"))
+          uri.user = nil
+          uri.password = nil
+          uri.to_s
+        rescue URI::InvalidURIError
           url.chomp("/")
         end
 
@@ -402,8 +408,7 @@ module Dependabot
             next unless name
 
             result[name] = {
-              "url" => index["url"],
-              "explicit" => index["explicit"] == true
+              "url" => index["url"]
             }
           end
         rescue TomlRB::ParseError
@@ -414,12 +419,12 @@ module Dependabot
         # (the proxy handles authentication). This is for those running Dependabot
         # themselves and for dry-run.
         sig { returns(T::Hash[String, String]) }
-        def explicit_index_env_vars
+        def pyproject_index_env_vars
           env_vars = {}
 
           credentials
             .select { |cred| cred["type"] == "python_index" }
-            .select { |cred| explicit_index?(cred) }
+            .select { |cred| pyproject_index?(cred) }
             .each do |cred|
             index_name = find_index_name_for_credential(cred)
             next unless index_name
