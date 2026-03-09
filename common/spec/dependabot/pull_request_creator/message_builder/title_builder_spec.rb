@@ -24,8 +24,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
         described_class.new(base_title: "bump lodash from 4.0.0 to 5.0.0")
       end
 
-      it "returns the base title unchanged" do
-        expect(builder.build).to eq("bump lodash from 4.0.0 to 5.0.0")
+      it "capitalizes the first letter by default" do
+        expect(builder.build).to eq("Bump lodash from 4.0.0 to 5.0.0")
       end
     end
 
@@ -52,7 +52,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
       end
 
       it "applies the prefix" do
-        expect(builder.build).to eq("[ci]: bump lodash from 4.0.0 to 5.0.0")
+        expect(builder.build).to eq("[ci]: Bump lodash from 4.0.0 to 5.0.0")
       end
     end
 
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
       end
 
       it "does not double-space" do
-        expect(builder.build).to eq("[ci] bump lodash from 4.0.0 to 5.0.0")
+        expect(builder.build).to eq("[ci] Bump lodash from 4.0.0 to 5.0.0")
       end
     end
 
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
       end
 
       it "includes scope in the prefix" do
-        expect(builder.build).to eq("chore(deps): bump lodash from 4.0.0 to 5.0.0")
+        expect(builder.build).to eq("chore(deps): Bump lodash from 4.0.0 to 5.0.0")
       end
     end
 
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
       end
 
       it "uses the development prefix" do
-        expect(builder.build).to eq("chore: bump eslint from 7.0.0 to 8.0.0")
+        expect(builder.build).to eq("chore: Bump eslint from 7.0.0 to 8.0.0")
       end
     end
 
@@ -198,8 +198,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::TitleBuilder do
         ]
       end
 
-      it "returns the base title without prefix" do
-        expect(builder.build).to eq("bump lodash from 4.0.0 to 5.0.0")
+      it "capitalizes the base title without prefix" do
+        expect(builder.build).to eq("Bump lodash from 4.0.0 to 5.0.0")
       end
     end
   end

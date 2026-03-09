@@ -77,7 +77,7 @@ module Dependabot
         def capitalize?
           return T.must(prefixer).capitalize_first_word? if prefixer
 
-          false
+          true
         end
 
         # Builds prefix from explicit commit_message_options only.
