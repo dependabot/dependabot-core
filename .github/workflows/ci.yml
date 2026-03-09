@@ -13,13 +13,6 @@ concurrency:
 
 jobs:
   ci:
-    # Use a custom name so that the runner dimension doesn't change the required check names.
-    # ubuntu-latest jobs keep the original names (e.g. "ci (bun, bun, bun)"),
-    # ARM64 jobs get a distinct prefix (e.g. "ci-arm64 (bun, bun, bun)").
-    name: >-
-      ${{ matrix.runner == 'ubuntu-latest'
-          && format('ci ({0}, {1}, {2})', matrix.suite.path, matrix.suite.name, matrix.suite.ecosystem)
-          || format('ci-arm64 ({0}, {1}, {2})', matrix.suite.path, matrix.suite.name, matrix.suite.ecosystem) }}
     runs-on: ${{ matrix.runner }}
     if: github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core'
     strategy:
@@ -63,7 +56,8 @@ jobs:
           - { path: uv, name: uv, ecosystem: uv }
           - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
         exclude:
-          # These suites are test-only variations, skip them on ARM64 build-only runs
+          # dry_run has no ecosystem image to build and python_slow is a duplicate
+          # build of the python suite, so both are skipped on ARM64 build-only runs
           - runner: ubuntu-24.04-arm
             suite: { path: bin, name: dry_run, ecosystem: common }
           - runner: ubuntu-24.04-arm
