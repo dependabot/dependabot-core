@@ -4,23 +4,17 @@ on:  # yamllint disable-line rule:truthy
   schedule:
     - cron: "0 0 * * *"
 
-permissions:
-  contents: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   ci:
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
     if: github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core'
     strategy:
       fail-fast: false
       matrix:
-        runner:
-          - ubuntu-latest
-          - ubuntu-24.04-arm
         suite:
           - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
@@ -55,13 +49,6 @@ jobs:
           - { path: opentofu, name: opentofu, ecosystem: opentofu }
           - { path: uv, name: uv, ecosystem: uv }
           - { path: vcpkg, name: vcpkg, ecosystem: vcpkg }
-        exclude:
-          # dry_run has no ecosystem image to build and python_slow is a duplicate
-          # build of the python suite, so both are skipped on ARM64 build-only runs
-          - runner: ubuntu-24.04-arm
-            suite: { path: bin, name: dry_run, ecosystem: common }
-          - runner: ubuntu-24.04-arm
-            suite: { path: python, name: python_slow, ecosystem: pip }
 
     steps:
       - name: Checkout code
@@ -81,7 +68,7 @@ jobs:
         run: script/build ${{ matrix.suite.path }}
 
       - name: Run ${{ matrix.suite.name }} tests
-        if: matrix.runner == 'ubuntu-latest' && steps.changes.outputs[matrix.suite.path] == 'true'
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
             --pull never \
