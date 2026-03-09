@@ -120,7 +120,7 @@ module Dependabot
         sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]], network_timeout: T.nilable(String)).returns(T::Array[String]) }
         def command_args(requirements, network_timeout)
           version = T.let(requirements[0]&.[](:requirement), String)
-          checksum = T.let(requirements[1]&.[](:requirement), String) if dependency.requirements.size > 1
+          checksum = T.let(requirements[1]&.[](:requirement), T.nilable(String)) if requirements.size > 1
           distribution_url = T.let(requirements[0]&.[](:source), T::Hash[Symbol, String])[:url]
           distribution_type = distribution_url&.match(/\b(bin|all)\b/)&.captures&.first
 
