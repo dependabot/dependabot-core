@@ -18,7 +18,7 @@ const fs = require("fs");
 const path = require("path");
 const npm = require("npm");
 const installer = require("npm/lib/install");
-const detectIndent = require("detect-indent");
+const detectIndent = require("detect-indent").default;
 const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFiles(directory, lockfileName, dependencies) {
