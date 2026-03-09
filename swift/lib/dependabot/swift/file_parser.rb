@@ -180,7 +180,7 @@ module Dependabot
         return if package_manifest_file
 
         if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return if dependency_files.any? { |f| f.name.end_with?("Package.resolved") && f.name.include?(".xcodeproj/") }
+          return if xcode_resolved_files.any?
 
           raise "No Package.swift or Xcode Package.resolved found!"
         end

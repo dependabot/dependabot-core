@@ -14,9 +14,9 @@ module Dependabot
       # Parses XCRemoteSwiftPackageReference entries from a project.pbxproj file
       # to extract dependency requirement constraints declared in Xcode.
       #
-      # Returns a hash keyed by normalized URL mapping to requirement metadata,
-      # so the main parser can enrich Package.resolved dependencies with
-      # requirement info from the Xcode project.
+      # Returns a hash keyed by normalized dependency name (e.g. "github.com/owner/repo")
+      # mapping to requirement metadata, so the main parser can enrich
+      # Package.resolved dependencies with requirement info from the Xcode project.
       class PbxprojParser
         extend T::Sig
 
@@ -190,7 +190,7 @@ module Dependabot
         sig { params(requirement_string: String).returns(T.nilable(String)) }
         def parse_native_requirement(requirement_string)
           NativeRequirement.new(requirement_string).to_s
-        rescue StandardError
+        rescue RuntimeError, Gem::Requirement::BadRequirementError
           nil
         end
       end
