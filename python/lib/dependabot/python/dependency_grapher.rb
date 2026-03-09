@@ -13,9 +13,12 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        raise DependabotError, "No pyproject.toml present in dependency files." unless pyproject_toml
+        # For Pipenv projects, prefer Pipfile.lock over Pipfile
+        return pipfile_lock || T.must(pipfile) if pipfile
 
-        # Prefer lockfile if present, otherwise use pyproject.toml
+        raise DependabotError, "No pyproject.toml or Pipfile present in dependency files." unless pyproject_toml
+
+        # For Poetry projects, prefer poetry.lock over pyproject.toml
         T.must(poetry_lock || pyproject_toml)
       end
 
@@ -41,6 +44,9 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
+        # Pipfile.lock does not contain dependency relationship data
+        return {} if pipfile
+
         return {} unless poetry_lock
 
         TomlRB.parse(T.must(poetry_lock).content).fetch("package", []).each_with_object({}) do |pkg, rels|
@@ -80,6 +86,26 @@ module Dependabot
 
         @poetry_lock = T.let(
           dependency_files.find { |f| f.name == "poetry.lock" },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pipfile
+        return @pipfile if defined?(@pipfile)
+
+        @pipfile = T.let(
+          dependency_files.find { |f| f.name == "Pipfile" },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pipfile_lock
+        return @pipfile_lock if defined?(@pipfile_lock)
+
+        @pipfile_lock = T.let(
+          dependency_files.find { |f| f.name == "Pipfile.lock" },
           T.nilable(Dependabot::DependencyFile)
         )
       end

@@ -19,6 +19,14 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     )
   end
 
+  let(:pipfile) do
+    Dependabot::DependencyFile.new(
+      name: "Pipfile",
+      content: fixture("pyproject_files", "pipenv_dependency_grapher.toml"),
+      directory: "/"
+    )
+  end
+
   let(:dependency_files) { [pyproject_toml] }
 
   let(:parser) do
@@ -50,6 +58,30 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       it "specifies the poetry.lock as the relevant dependency file" do
         expect(grapher.relevant_dependency_file).to eql(poetry_lock_file)
+      end
+    end
+
+    context "when Pipfile is present without Pipfile.lock" do
+      let(:dependency_files) { [pipfile] }
+
+      it "falls back to Pipfile" do
+        expect(grapher.relevant_dependency_file).to eql(pipfile)
+      end
+    end
+
+    context "when Pipfile and Pipfile.lock are present" do
+      let(:pipfile_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("dependency_grapher", "pipfile_lock_with_dependencies.json"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pipfile, pipfile_lock_file] }
+
+      it "specifies the Pipfile.lock as the relevant dependency file" do
+        expect(grapher.relevant_dependency_file).to eql(pipfile_lock_file)
       end
     end
   end
@@ -134,6 +166,66 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
 
       let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { grapher.resolved_dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    context "when Pipfile and Pipfile.lock are present" do
+      let(:pipfile_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("dependency_grapher", "pipfile_lock_with_dependencies.json"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pipfile, pipfile_lock_file] }
+
+      it "returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).to include(
+          "pkg:pypi/requests@2.32.5",
+          "pkg:pypi/certifi@2024.2.2",
+          "pkg:pypi/ruff@0.15.4"
+        )
+
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+
+    context "when Pipfile is present without Pipfile.lock" do
+      let(:dependency_files) { [pipfile] }
+
+      it "returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).to include(
+          "pkg:pypi/requests@2.32.5",
+          "pkg:pypi/certifi@2024.2.2",
+          "pkg:pypi/ruff@0.15.4"
+        )
+
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+
+    context "when Pipfile.lock is corrupt" do
+      let(:pipfile_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: "{ invalid json content",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pipfile, pipfile_lock_file] }
 
       it "raises a DependencyFileNotParseable error" do
         expect { grapher.resolved_dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
