@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
-    context "when Pipfile and Pipfile.lock are present without relationship data" do
+    context "when Pipfile and Pipfile.lock are present" do
       let(:pipfile_lock_file) do
         Dependabot::DependencyFile.new(
           name: "Pipfile.lock",
@@ -191,54 +191,82 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       let(:dependency_files) { [pipfile, pipfile_lock_file] }
 
-      it "returns dependencies without relationship data" do
-        resolved_dependencies = grapher.resolved_dependencies
+      context "when pipenv graph returns relationship data" do
+        before do
+          allow(parser).to receive(:run_pipenv_graph).and_call_original
+          allow(parser).to receive(:run_pipenv_graph)
+            .and_return(fixture("dependency_grapher", "pipenv_graph_output.json"))
+        end
 
-        expect(resolved_dependencies.keys).to include(
-          "pkg:pypi/requests@2.32.5",
-          "pkg:pypi/certifi@2024.2.2",
-          "pkg:pypi/ruff@0.15.4"
-        )
+        it "extracts dependency relationships from pipenv graph output" do
+          resolved_dependencies = grapher.resolved_dependencies
 
-        resolved_dependencies.each_value do |dep|
-          expect(dep.dependencies).to eq([])
+          expect(resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies).to eq(
+            [
+              "pkg:pypi/certifi@2024.2.2",
+              "pkg:pypi/charset-normalizer@3.3.2",
+              "pkg:pypi/idna@3.6",
+              "pkg:pypi/urllib3@2.2.1"
+            ]
+          )
+        end
+
+        it "marks direct and transitive dependencies correctly" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          requests = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
+          expect(requests.direct).to be(true)
+
+          charset_normalizer = resolved_dependencies.fetch("pkg:pypi/charset-normalizer@3.3.2")
+          expect(charset_normalizer.direct).to be(false)
+          expect(charset_normalizer.dependencies).to eq([])
         end
       end
-    end
 
-    context "when Pipfile.lock has dependency relationship data" do
-      let(:pipfile_lock_with_relationships_file) do
-        Dependabot::DependencyFile.new(
-          name: "Pipfile.lock",
-          content: fixture("dependency_grapher", "pipfile_lock_with_relationships.json"),
-          directory: "/"
-        )
+      context "when pipenv graph fails" do
+        let(:pipenv_graph_error) { StandardError.new("pipenv sync failed: could not install packages") }
+
+        before do
+          allow(parser).to receive(:run_pipenv_graph).and_call_original
+          allow(parser).to receive(:run_pipenv_graph).and_raise(pipenv_graph_error)
+        end
+
+        it "sets the error flag without raising" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
+        it "assigns the original error to the grapher" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to eql(pipenv_graph_error)
+        end
+
+        it "returns empty dependencies for all resolved packages" do
+          depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
+
+          expect(depends_on_values).to all(be_empty)
+        end
       end
 
-      let(:dependency_files) { [pipfile, pipfile_lock_with_relationships_file] }
+      context "when pipenv graph returns malformed JSON" do
+        before do
+          allow(parser).to receive(:run_pipenv_graph).and_call_original
+          allow(parser).to receive(:run_pipenv_graph).and_return("not valid json {{{")
+        end
 
-      it "extracts dependency relationships from Pipfile.lock" do
-        resolved_dependencies = grapher.resolved_dependencies
+        it "returns empty dependencies for all resolved packages without raising" do
+          depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
 
-        expect(resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies).to eq(
-          [
-            "pkg:pypi/certifi@2024.2.2",
-            "pkg:pypi/charset-normalizer@3.3.2",
-            "pkg:pypi/idna@3.6",
-            "pkg:pypi/urllib3@2.2.1"
-          ]
-        )
-      end
+          expect(depends_on_values).to all(be_empty)
+        end
 
-      it "marks direct and transitive dependencies correctly" do
-        resolved_dependencies = grapher.resolved_dependencies
+        it "does not set the error flag" do
+          grapher.resolved_dependencies
 
-        requests = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
-        expect(requests.direct).to be(true)
-
-        charset_normalizer = resolved_dependencies.fetch("pkg:pypi/charset-normalizer@3.3.2")
-        expect(charset_normalizer.direct).to be(false)
-        expect(charset_normalizer.dependencies).to eq([])
+          expect(grapher.errored_fetching_subdependencies).to be(false)
+        end
       end
     end
 
@@ -257,22 +285,6 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         resolved_dependencies.each_value do |dep|
           expect(dep.dependencies).to eq([])
         end
-      end
-    end
-
-    context "when Pipfile.lock is corrupt" do
-      let(:pipfile_lock_file) do
-        Dependabot::DependencyFile.new(
-          name: "Pipfile.lock",
-          content: "{ invalid json content",
-          directory: "/"
-        )
-      end
-
-      let(:dependency_files) { [pipfile, pipfile_lock_file] }
-
-      it "raises a DependencyFileNotParseable error" do
-        expect { grapher.resolved_dependencies }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end

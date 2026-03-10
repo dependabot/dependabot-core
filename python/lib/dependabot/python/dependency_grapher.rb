@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
+require "dependabot/python/file_parser"
 require "dependabot/python/name_normaliser"
 require "toml-rb"
 
@@ -73,29 +74,44 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_pipfile_lock_relationships
-        %w[default develop].each_with_object({}) do |section, rels|
-          section_data = parsed_pipfile_lock[section]
-          next unless section_data.is_a?(Hash)
-
-          section_data.each do |name, details|
-            next unless details.is_a?(Hash)
-
-            parent = NameNormaliser.normalise(name)
-            depends = details["depends"]
-            depends = [] unless depends.is_a?(Array)
-            rels[parent] = depends.map { |dep| NameNormaliser.normalise(dep) }
-          end
-        end
+        json_output = T.cast(file_parser, Python::FileParser).run_pipenv_graph
+        parse_pipenv_graph_output(json_output)
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_pipfile_lock
-        @parsed_pipfile_lock ||= T.let(
-          JSON.parse(T.must(pipfile_lock).content),
-          T.nilable(T::Hash[String, T.untyped])
-        )
+      # Parses the JSON output from `pipenv graph --json`.
+      #
+      # The format is a flat list where each entry has a "package" object and a "dependencies" array:
+      #   [
+      #     {
+      #       "package": { "package_name": "requests", "installed_version": "2.32.5", ... },
+      #       "dependencies": [
+      #         { "package_name": "certifi", "installed_version": "2024.2.2", ... },
+      #         ...
+      #       ]
+      #     },
+      #     ...
+      #   ]
+      sig { params(json_output: String).returns(T::Hash[String, T::Array[String]]) }
+      def parse_pipenv_graph_output(json_output)
+        JSON.parse(json_output).each_with_object({}) do |entry, rels|
+          next unless entry.is_a?(Hash)
+
+          pkg = entry["package"]
+          next unless pkg.is_a?(Hash) && pkg["package_name"].is_a?(String)
+
+          parent = NameNormaliser.normalise(pkg["package_name"])
+          deps = entry["dependencies"]
+          deps = [] unless deps.is_a?(Array)
+          children = deps.filter_map do |dep|
+            next unless dep.is_a?(Hash) && dep["package_name"].is_a?(String)
+
+            NameNormaliser.normalise(dep["package_name"])
+          end
+          rels[parent] = children
+        end
       rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, T.must(pipfile_lock).name
+        Dependabot.logger.warn("Unexpected output from 'pipenv graph --json': could not parse as JSON")
+        {}
       end
 
       sig { returns(T::Set[String]) }
