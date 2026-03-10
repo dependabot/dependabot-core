@@ -110,7 +110,8 @@ module GithubApi
         manifests: manifests,
         metadata: {
           status: status.serialize,
-          reason: reason
+          reason: reason,
+          scanned_manifest_paths: scanned_manifest_paths
         }.compact
       }
     end
@@ -178,6 +179,25 @@ module GithubApi
           end
         }
       }
+    end
+
+    # Returns the manifest paths this snapshot scanned.
+    #
+    # This allows the snapshot service to check the snapshot against those requested
+    # even if the `manifests` property is empty.
+    #
+    # Note: We currently submit each manifest path separately, but we use an array
+    #       to align with the `manifests` property and allow flexibility in future.
+    sig do
+      returns(T::Array[T::Hash[Symbol, String]])
+    end
+    def scanned_manifest_paths
+      [
+        {
+          ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager),
+          manifest_path: File.dirname(manifest_file.path)
+        }
+      ]
     end
   end
 end
