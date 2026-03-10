@@ -61,6 +61,14 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
+    context "when both pyproject.toml and Pipfile are present" do
+      let(:dependency_files) { [pyproject_toml, pipfile] }
+
+      it "prefers pyproject.toml over Pipfile" do
+        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+      end
+    end
+
     context "when Pipfile is present without Pipfile.lock" do
       let(:dependency_files) { [pipfile] }
 

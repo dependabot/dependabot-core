@@ -13,13 +13,15 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        # For Pipenv projects, prefer Pipfile.lock over Pipfile
-        return pipfile_lock || T.must(pipfile) if pipfile
-
-        raise DependabotError, "No pyproject.toml or Pipfile present in dependency files." unless pyproject_toml
-
-        # For Poetry projects, prefer poetry.lock over pyproject.toml
-        T.must(poetry_lock || pyproject_toml)
+        if pyproject_toml
+          # Poetry/pyproject.toml project: prefer poetry.lock lockfile when available
+          T.must(poetry_lock || pyproject_toml)
+        elsif pipfile
+          # Pipenv project: prefer Pipfile.lock lockfile when available
+          T.must(pipfile_lock || pipfile)
+        else
+          raise DependabotError, "No pyproject.toml or Pipfile present in dependency files."
+        end
       end
 
       private
@@ -44,9 +46,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
-        # Pipfile.lock does not contain dependency relationship data
-        return {} if pipfile
-
+        # Only poetry.lock provides dependency relationship data; Pipfile.lock does not
         return {} unless poetry_lock
 
         TomlRB.parse(T.must(poetry_lock).content).fetch("package", []).each_with_object({}) do |pkg, rels|
