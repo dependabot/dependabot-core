@@ -354,56 +354,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     let(:empty_lockfile) { Dependabot::DependencyFile.new(name: "package-lock.json", content: "") }
     let(:nil_lockfile) { nil }
 
-    context "when the feature flag :enable_corepack_for_npm_and_yarn is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(true)
-      end
-
-      it "returns true if lockfileVersion is 3 or higher" do
-        expect(described_class.parse_npm8?(lockfile_with_v3)).to be true
-      end
-
-      it "returns true if lockfileVersion is 2" do
-        expect(described_class.parse_npm8?(lockfile_with_v2)).to be true
-      end
-
-      it "returns true if lockfileVersion is 1" do
-        expect(described_class.parse_npm8?(lockfile_with_v1)).to be false
-      end
-
-      it "returns true if lockfile is empty" do
-        expect(described_class.parse_npm8?(empty_lockfile)).to be true
-      end
-
-      it "returns true if lockfile is nil" do
-        expect(described_class.parse_npm8?(nil_lockfile)).to be true
-      end
+    it "returns true if lockfileVersion is 3 or higher" do
+      expect(described_class.parse_npm8?(lockfile_with_v3)).to be true
     end
 
-    context "when the feature flag :enable_corepack_for_npm_and_yarn is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(false)
-      end
+    it "returns true if lockfileVersion is 2" do
+      expect(described_class.parse_npm8?(lockfile_with_v2)).to be true
+    end
 
-      it "returns true if 3=< lockfileVersion" do
-        expect(described_class.parse_npm8?(lockfile_with_v3)).to be true
-      end
+    it "returns true if lockfileVersion is 1" do
+      expect(described_class.parse_npm8?(lockfile_with_v1)).to be false
+    end
 
-      it "returns true if 2=< lockfileVersion <3" do
-        expect(described_class.parse_npm8?(lockfile_with_v2)).to be true
-      end
+    it "returns true if lockfile is empty" do
+      expect(described_class.parse_npm8?(empty_lockfile)).to be true
+    end
 
-      it "returns false if 1=< lockfileVersion <2" do
-        expect(described_class.parse_npm8?(lockfile_with_v1)).to be false
-      end
-
-      it "returns true if lockfile is empty" do
-        expect(described_class.parse_npm8?(empty_lockfile)).to be true
-      end
-
-      it "returns true if lockfile is nil" do
-        expect(described_class.parse_npm8?(nil_lockfile)).to be true
-      end
+    it "returns true if lockfile is nil" do
+      expect(described_class.parse_npm8?(nil_lockfile)).to be true
     end
   end
 
@@ -506,10 +474,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     before do
       described_class.dependency_files = dependency_files
       described_class.credentials = credentials
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_private_registry_for_corepack).and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+      Dependabot::Experiments.register(:enable_private_registry_for_corepack, true)
     end
 
     after do
@@ -530,8 +495,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       context "when experiment flag is disabled" do
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(false)
+          Dependabot::Experiments.register(:enable_private_registry_for_corepack, false)
         end
 
         it "returns nil" do

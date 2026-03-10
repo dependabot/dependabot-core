@@ -33,14 +33,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     )
   end
 
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
+    Dependabot::Experiments.register(:enable_private_registry_for_corepack, true)
   end
 
   after do

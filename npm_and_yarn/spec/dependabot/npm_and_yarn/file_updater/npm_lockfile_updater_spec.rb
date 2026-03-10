@@ -62,19 +62,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   before do
     FileUtils.mkdir_p(tmp_path)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:avoid_duplicate_updates_package_json).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(false)
+    Dependabot::Experiments.register(:enable_private_registry_for_corepack, false)
+    Dependabot::Experiments.register(:avoid_duplicate_updates_package_json, false)
   end
 
   after do
@@ -1387,8 +1378,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         let(:test_credentials) { credentials }
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(false)
+          Dependabot::Experiments.register(:enable_private_registry_for_corepack, false)
           Dependabot::NpmAndYarn::Helpers.dependency_files = files
           Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
         end
@@ -1400,8 +1390,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
       context "when experiment flag is enabled" do
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(true)
+          Dependabot::Experiments.register(:enable_private_registry_for_corepack, true)
         end
 
         context "with npm_registry credentials" do
