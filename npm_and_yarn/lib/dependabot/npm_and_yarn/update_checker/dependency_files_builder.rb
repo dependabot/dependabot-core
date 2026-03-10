@@ -31,16 +31,19 @@ module Dependabot
           write_lockfiles
 
           if Helpers.yarn_berry?(yarn_locks.first)
-            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
+            if yarnrc_yml_file
+              write_dependency_file(
+                file: T.must(yarnrc_yml_file),
+                content: T.must(yarnrc_yml_content)
+              )
+            end
           else
             File.write(".npmrc", npmrc_content)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
           end
 
-          package_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(file.name, prepared_package_json_content(file))
+          write_dependency_files(package_files) do |file|
+            prepared_package_json_content(file)
           end
         end
 
@@ -125,15 +128,78 @@ module Dependabot
 
         sig { void }
         def write_lockfiles
-          yarn_locks.each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, prepared_yarn_lockfile_content(T.must(f.content)))
+          write_dependency_files(yarn_locks) do |file|
+            prepared_yarn_lockfile_content(T.must(file.content))
           end
 
-          [*package_locks, *shrinkwraps, *pnpm_locks].each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, f.content)
+          write_dependency_files([*package_locks, *shrinkwraps, *pnpm_locks]) do |file|
+            T.must(file.content)
           end
+        end
+
+        sig do
+          params(
+            files: T::Array[Dependabot::DependencyFile],
+            blk: T.proc.params(file: Dependabot::DependencyFile).returns(String)
+          ).void
+        end
+        def write_dependency_files(files, &blk)
+          sorted_dependency_files(files).each do |file|
+            write_dependency_file(file: file, content: yield(file))
+          end
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
+        def sorted_dependency_files(files)
+          files.sort_by do |file|
+            [temporary_path_for(file), file.path, file.name]
+          end
+        end
+
+        sig { params(file: Dependabot::DependencyFile, content: String).void }
+        def write_dependency_file(file:, content:)
+          path = temporary_path_for(file)
+          raise Dependabot::DependabotError, "Invalid dependency file path: #{file.name}" if path.empty?
+
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, content)
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def temporary_path_for(file)
+          base_directory = job_directory
+          normalized_path = Pathname.new(file.path).cleanpath
+          relative_path = begin
+            normalized_path.relative_path_from(base_directory).to_path
+          rescue ArgumentError
+            # Mixed absolute/relative path types can raise here; fall back to a
+            # normalized local path and rely on segment clamping below.
+            normalized_path.to_path.sub(%r{^/+}, "")
+          end
+
+          segments = relative_path.split("/").each_with_object([]) do |segment, memo|
+            next if segment.empty? || segment == "."
+
+            if segment == ".."
+              memo.pop
+              next
+            end
+
+            memo << segment
+          end
+
+          segments.join("/")
+        end
+
+        sig { returns(Pathname) }
+        def job_directory
+          base_file = package_files.min_by(&:path) || dependency_files.min_by(&:path)
+          unless base_file
+            raise Dependabot::DependabotError,
+                  "Dependency files contain no source directories"
+          end
+
+          Pathname.new(base_file.directory).cleanpath
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
