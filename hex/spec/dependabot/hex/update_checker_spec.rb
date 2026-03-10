@@ -707,7 +707,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "raises an error indicating the helper subprocess failed" do
           expect { latest_resolvable_version }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+              expect(error.message).to include("FunctionClauseError")
+              expect(error.message).to include(":public_key.pem_decode/1")
+            end
         end
       end
 
