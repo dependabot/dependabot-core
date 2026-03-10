@@ -90,9 +90,9 @@ module Dependabot
             fingerprint: "pyenv local <python_major_minor>"
           )
           SharedHelpers.run_shell_command(
-            "pyenv exec pipenv sync",
+            "pyenv exec pipenv sync --dev",
             env: pipenv_env_variables,
-            fingerprint: "pyenv exec pipenv sync"
+            fingerprint: "pyenv exec pipenv sync --dev"
           )
           SharedHelpers.run_shell_command(
             "pyenv exec pipenv graph --json",
