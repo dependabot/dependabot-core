@@ -223,7 +223,7 @@ module Dependabot
             T.nilable(Pathname)
           )
 
-          T.must(@job_directory)
+          @job_directory
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
