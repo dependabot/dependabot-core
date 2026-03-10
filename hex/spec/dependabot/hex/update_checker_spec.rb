@@ -678,6 +678,39 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
+      context "when the helper receives headers instead of a PEM key (tuple order regression)" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url
+            }
+          )]
+        end
+
+        before do
+          # Simulate the error that occurs when the Elixir helper destructures
+          # the Hex.Repo.get_public_key/1 response in the wrong tuple order,
+          # causing `key` to be a headers map instead of a PEM binary.
+          # This triggers a FunctionClauseError in :public_key.pem_decode/1.
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "** (FunctionClauseError) no function clause matching in :public_key.pem_decode/1",
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises an error indicating the helper subprocess failed" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+      end
+
       context "with dependencies on both a private organization and private repo" do
         let(:credentials) do
           [Dependabot::Credential.new(
