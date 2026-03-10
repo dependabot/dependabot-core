@@ -458,4 +458,73 @@ public class VersionFinderTests : TestBase
         var actual = versions.Select(v => v.ToString()).ToArray();
         AssertEx.Equal(expected, actual);
     }
+
+    [Fact]
+    public async Task MisbehavingNuGetFeedDoesNotPreventFindingVersions()
+    {
+        using var http = TestHttpServer.CreateTestStringServer(url =>
+        {
+            var uri = new Uri(url, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // registration index returns a range with @id but no inlined items;
+                // this causes the URL specified in @id to be queried but if that isn't present, the NuGet libraries will eventually throw
+                "/registrations/some.package/index.json" => (200, $$"""
+                    {
+                        "count": 1,
+                        "items": [
+                            {
+                                "@id": "{{baseUrl}}/registrations/some.package/page1.json",
+                                "lower": "1.0.0",
+                                "upper": "2.0.0"
+                            }
+                        ]
+                    }
+                    """),
+                _ => (404, "")
+            };
+        });
+        var feedUrl = $"{http.BaseUrl.TrimEnd('/')}/index.json";
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", $"""
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="private_feed" value="{feedUrl}" allowInsecureConnections="true" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+
+        var context = new NuGetContext(tempDir.DirectoryPath);
+
+        var projectTfm = NuGetFramework.Parse("net9.0");
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = "Some.Package",
+            Version = "1.0.0",
+            IsVulnerable = false,
+        };
+        var currentVersion = NuGetVersion.Parse(dependencyInfo.Version);
+        var versionsResult = await VersionFinder.GetVersionsAsync([projectTfm], dependencyInfo, currentVersion, DateTime.Now, context, new TestLogger(), CancellationToken.None);
+        Assert.NotNull(versionsResult);
+        var versions = versionsResult.GetVersions();
+        Assert.Empty(versions);
+    }
 }

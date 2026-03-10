@@ -141,6 +141,11 @@ internal static class VersionFinder
                 // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
+            catch (InvalidDataException)
+            {
+                // this usually means the feed returns an unexpected 404 when paging results; nothing we can do about it here
+                continue;
+            }
             catch (JsonReaderException ex)
             {
                 // unable to parse server response
