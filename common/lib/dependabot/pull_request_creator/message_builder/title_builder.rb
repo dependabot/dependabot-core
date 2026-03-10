@@ -56,7 +56,7 @@ module Dependabot
         sig { returns(String) }
         def build
           name = base_title.dup
-          name[0] = T.must(name[0]).capitalize if capitalize?
+          name[0] = T.must(name[0]).capitalize if !name.empty? && capitalize?
           "#{prefix}#{name}"
         end
 
