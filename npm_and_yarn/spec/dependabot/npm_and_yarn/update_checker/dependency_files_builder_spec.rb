@@ -287,6 +287,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     it "normalizes paths relative to the job directory" do
       with_written_temporary_dependency_files do
         expect(File.exist?("../pnpm-lock.yaml")).to be(false)
+        expect(Dir.children(".")).to match_array(%w(package.json pnpm-lock.yaml .npmrc))
         expect(File.exist?("pnpm-lock.yaml")).to be(true)
         expect(File.exist?("package.json")).to be(true)
       end
@@ -296,12 +297,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   describe "with different source directories sharing a base" do
     let(:dependency_files) do
       [
-        Dependabot::DependencyFile.new(
+        dependency_file(
           name: "package.json",
           content: '{"name":"app","version":"1.0.0"}',
           directory: "/repo/packages/a"
         ),
-        Dependabot::DependencyFile.new(
+        dependency_file(
           name: "pnpm-lock.yaml",
           content: "lockfileVersion: '9.0'",
           directory: "/repo/packages/b"
@@ -320,12 +321,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   describe "with source directories that only share root" do
     let(:dependency_files) do
       [
-        Dependabot::DependencyFile.new(
+        dependency_file(
           name: "package.json",
           content: '{"name":"app","version":"1.0.0"}',
           directory: "/repo/packages/a"
         ),
-        Dependabot::DependencyFile.new(
+        dependency_file(
           name: "pnpm-lock.yaml",
           content: "lockfileVersion: '9.0'",
           directory: "/other/workspaces/b"
@@ -369,13 +370,13 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     context "when package.json is first" do
       let(:dependency_files) { base_dependency_files }
 
-      include_examples "deterministic mixed-directory writes"
+      it_behaves_like "deterministic mixed-directory writes"
     end
 
     context "when lockfile is first" do
       let(:dependency_files) { base_dependency_files.reverse }
 
-      include_examples "deterministic mixed-directory writes"
+      it_behaves_like "deterministic mixed-directory writes"
     end
   end
 

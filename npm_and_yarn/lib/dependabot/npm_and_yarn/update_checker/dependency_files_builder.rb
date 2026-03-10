@@ -144,22 +144,39 @@ module Dependabot
           ).void
         end
         def write_dependency_files(files, &blk)
-          sorted_dependency_files(files).each do |file|
-            write_dependency_file(file: file, content: yield(file))
+          dependency_file_entries_with_temp_paths(files).each do |path, file|
+            write_dependency_file_at_path(path: path, original_file_name: file.name, content: yield(file))
           end
         end
 
-        sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
-        def sorted_dependency_files(files)
-          files.sort_by do |file|
-            [temporary_path_for(file), file.path, file.name]
-          end
+        sig do
+          params(
+            files: T::Array[Dependabot::DependencyFile]
+          ).returns(T::Array[[String, Dependabot::DependencyFile]])
+        end
+        def dependency_file_entries_with_temp_paths(files)
+          files
+            .map { |file| [temporary_path_for(file), file] }
+            .sort_by do |path, file|
+              [path, file.path, file.name]
+            end
         end
 
         sig { params(file: Dependabot::DependencyFile, content: String).void }
         def write_dependency_file(file:, content:)
-          path = temporary_path_for(file)
-          raise Dependabot::DependabotError, "Invalid dependency file path: #{file.name}" if path.empty?
+          write_dependency_file_at_path(
+            path: temporary_path_for(file),
+            original_file_name: file.name,
+            content: content
+          )
+        end
+
+        sig { params(path: String, original_file_name: String, content: String).void }
+        def write_dependency_file_at_path(path:, original_file_name:, content:)
+          if path.empty?
+            raise Dependabot::DependabotError,
+                  "Invalid dependency file path: #{original_file_name}"
+          end
 
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, content)
@@ -193,13 +210,20 @@ module Dependabot
 
         sig { returns(Pathname) }
         def job_directory
-          base_file = package_files.min_by(&:path) || dependency_files.min_by(&:path)
-          unless base_file
-            raise Dependabot::DependabotError,
-                  "Dependency files contain no source directories"
-          end
+          @job_directory ||= T.let(
+            begin
+              base_file = package_files.min_by(&:path) || dependency_files.min_by(&:path)
+              unless base_file
+                raise Dependabot::DependabotError,
+                      "Dependency files contain no source directories"
+              end
 
-          Pathname.new(base_file.directory).cleanpath
+              Pathname.new(base_file.directory).cleanpath
+            end,
+            T.nilable(Pathname)
+          )
+
+          T.must(@job_directory)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
