@@ -203,16 +203,18 @@ RSpec.describe Dependabot::Helm::FileParser do
 
         it "is able to parse environment-specific values files" do
           expect(dependencies.length).to eq(3)
-          
+
           mdsd_dependency = dependencies.find { |d| d.name == "linuxgeneva-microsoft.azurecr.io/distroless/genevamdsd" }
           expect(mdsd_dependency).to be_a(Dependabot::Dependency)
           expect(mdsd_dependency.version).to eq("1.35.9-20250722-2")
-          
+
           mdm_dependency = dependencies.find { |d| d.name == "linuxgeneva-microsoft.azurecr.io/distroless/genevamdm" }
           expect(mdm_dependency).to be_a(Dependabot::Dependency)
           expect(mdm_dependency.version).to eq("2.202507220956.0-20250722-1")
-          
-          fluentd_dependency = dependencies.find { |d| d.name == "linuxgeneva-microsoft.azurecr.io/distroless/genevafluentd" }
+
+          fluentd_dependency = dependencies.find do |d|
+            d.name == "linuxgeneva-microsoft.azurecr.io/distroless/genevafluentd"
+          end
           expect(fluentd_dependency).to be_a(Dependabot::Dependency)
           expect(fluentd_dependency.version).to eq("1.18.0-20250722-2")
         end
