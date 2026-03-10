@@ -160,17 +160,10 @@ jobs:
         with:
           go-version-file: 'silent/tests/go.mod'
 
-      - name: Download Dependabot CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
-          tar xzvf *.tar.gz >/dev/null 2>&1
-          ./dependabot --version
+      - name: Install Dependabot CLI
+        run: go install github.com/dependabot/cli/cmd/dependabot@latest
 
       - name: Run integration tests
-        env:
-          PATH: ${{ github.workspace }}:$PATH
         run: |
           cd silent/tests
           go test ./...
