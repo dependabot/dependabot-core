@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
@@ -46,9 +47,17 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
-        # Only poetry.lock provides dependency relationship data; Pipfile.lock does not
-        return {} unless poetry_lock
+        if poetry_lock
+          fetch_poetry_lock_relationships
+        elsif pipfile_lock
+          fetch_pipfile_lock_relationships
+        else
+          {}
+        end
+      end
 
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_poetry_lock_relationships
         TomlRB.parse(T.must(poetry_lock).content).fetch("package", []).each_with_object({}) do |pkg, rels|
           next unless pkg.is_a?(Hash) && pkg["name"].is_a?(String)
 
@@ -60,6 +69,33 @@ module Dependabot
         end
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).name
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_pipfile_lock_relationships
+        %w[default develop].each_with_object({}) do |section, rels|
+          section_data = parsed_pipfile_lock[section]
+          next unless section_data.is_a?(Hash)
+
+          section_data.each do |name, details|
+            next unless details.is_a?(Hash)
+
+            parent = NameNormaliser.normalise(name)
+            depends = details["depends"]
+            depends = [] unless depends.is_a?(Array)
+            rels[parent] = depends.map { |dep| NameNormaliser.normalise(dep) }
+          end
+        end
+      end
+
+      sig { returns(T::Hash[String, T.untyped]) }
+      def parsed_pipfile_lock
+        @parsed_pipfile_lock ||= T.let(
+          JSON.parse(T.must(pipfile_lock).content),
+          T.nilable(T::Hash[String, T.untyped])
+        )
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, T.must(pipfile_lock).name
       end
 
       sig { returns(T::Set[String]) }

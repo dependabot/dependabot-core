@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
-    context "when Pipfile and Pipfile.lock are present" do
+    context "when Pipfile and Pipfile.lock are present without relationship data" do
       let(:pipfile_lock_file) do
         Dependabot::DependencyFile.new(
           name: "Pipfile.lock",
@@ -203,6 +203,42 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         resolved_dependencies.each_value do |dep|
           expect(dep.dependencies).to eq([])
         end
+      end
+    end
+
+    context "when Pipfile.lock has dependency relationship data" do
+      let(:pipfile_lock_with_relationships_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("dependency_grapher", "pipfile_lock_with_relationships.json"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pipfile, pipfile_lock_with_relationships_file] }
+
+      it "extracts dependency relationships from Pipfile.lock" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies).to eq(
+          [
+            "pkg:pypi/certifi@2024.2.2",
+            "pkg:pypi/charset-normalizer@3.3.2",
+            "pkg:pypi/idna@3.6",
+            "pkg:pypi/urllib3@2.2.1"
+          ]
+        )
+      end
+
+      it "marks direct and transitive dependencies correctly" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        requests = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
+        expect(requests.direct).to be(true)
+
+        charset_normalizer = resolved_dependencies.fetch("pkg:pypi/charset-normalizer@3.3.2")
+        expect(charset_normalizer.direct).to be(false)
+        expect(charset_normalizer.dependencies).to eq([])
       end
     end
 
