@@ -140,10 +140,10 @@ module Dependabot
         sig do
           params(
             files: T::Array[Dependabot::DependencyFile],
-            blk: T.proc.params(file: Dependabot::DependencyFile).returns(String)
+            _blk: T.proc.params(file: Dependabot::DependencyFile).returns(String)
           ).void
         end
-        def write_dependency_files(files, &blk)
+        def write_dependency_files(files, &_blk)
           dependency_file_entries_with_temp_paths(files).each do |path, file|
             write_dependency_file_at_path(path: path, original_file_name: file.name, content: yield(file))
           end
