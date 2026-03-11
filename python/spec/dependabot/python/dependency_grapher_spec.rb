@@ -92,6 +92,30 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(pipfile_lock_file)
       end
     end
+
+    context "when both poetry and pipenv lockfiles are present" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:pipfile_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("dependency_grapher", "pipfile_lock_with_dependencies.json"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file, pipfile, pipfile_lock_file] }
+
+      it "uses parser package manager detection precedence" do
+        expect(grapher.relevant_dependency_file).to eql(pipfile_lock_file)
+      end
+    end
   end
 
   describe "#resolved_dependencies" do
@@ -192,9 +216,11 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       let(:dependency_files) { [pipfile, pipfile_lock_file] }
 
       context "when pipenv graph returns relationship data" do
+        let(:pipenv_runner) { instance_double(Dependabot::Python::PipenvRunner) }
+
         before do
-          allow(parser).to receive(:run_pipenv_graph).and_call_original
-          allow(parser).to receive(:run_pipenv_graph)
+          allow(Dependabot::Python::PipenvRunner).to receive(:new).and_return(pipenv_runner)
+          allow(pipenv_runner).to receive(:run_pipenv_graph)
             .and_return(fixture("dependency_grapher", "pipenv_graph_output.json"))
         end
 
@@ -225,10 +251,11 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
       context "when pipenv graph fails" do
         let(:pipenv_graph_error) { StandardError.new("pipenv sync failed: could not install packages") }
+        let(:pipenv_runner) { instance_double(Dependabot::Python::PipenvRunner) }
 
         before do
-          allow(parser).to receive(:run_pipenv_graph).and_call_original
-          allow(parser).to receive(:run_pipenv_graph).and_raise(pipenv_graph_error)
+          allow(Dependabot::Python::PipenvRunner).to receive(:new).and_return(pipenv_runner)
+          allow(pipenv_runner).to receive(:run_pipenv_graph).and_raise(pipenv_graph_error)
         end
 
         it "sets the error flag without raising" do
@@ -251,9 +278,11 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
 
       context "when pipenv graph returns malformed JSON" do
+        let(:pipenv_runner) { instance_double(Dependabot::Python::PipenvRunner) }
+
         before do
-          allow(parser).to receive(:run_pipenv_graph).and_call_original
-          allow(parser).to receive(:run_pipenv_graph).and_return("not valid json {{{")
+          allow(Dependabot::Python::PipenvRunner).to receive(:new).and_return(pipenv_runner)
+          allow(pipenv_runner).to receive(:run_pipenv_graph).and_return("not valid json {{{")
         end
 
         it "returns empty dependencies for all resolved packages without raising" do

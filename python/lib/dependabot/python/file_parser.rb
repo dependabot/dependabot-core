@@ -75,33 +75,6 @@ module Dependabot
         )
       end
 
-      # Installs the packages listed in Pipfile.lock into a temporary virtual environment,
-      # then runs `pipenv graph --json` to obtain the dependency relationship graph.
-      #
-      # Returns the raw JSON string output from `pipenv graph --json`.
-      # This method is public so that it can be called by Python::DependencyGrapher.
-      sig { returns(String) }
-      def run_pipenv_graph
-        SharedHelpers.in_a_temporary_directory do
-          write_temporary_dependency_files
-          language_version_manager.install_required_python
-          SharedHelpers.run_shell_command(
-            "pyenv local #{language_version_manager.python_major_minor}",
-            fingerprint: "pyenv local <python_major_minor>"
-          )
-          SharedHelpers.run_shell_command(
-            "pyenv exec pipenv sync --dev",
-            env: pipenv_env_variables,
-            fingerprint: "pyenv exec pipenv sync --dev"
-          )
-          SharedHelpers.run_shell_command(
-            "pyenv exec pipenv graph --json",
-            env: pipenv_env_variables,
-            fingerprint: "pyenv exec pipenv graph --json"
-          )
-        end
-      end
-
       private
 
       sig { returns(Dependabot::Python::LanguageVersionManager) }
@@ -547,18 +520,6 @@ module Dependabot
           PipCompileFileMatcher.new(pip_compile_files),
           T.nilable(Dependabot::Python::PipCompileFileMatcher)
         )
-      end
-
-      sig { returns(T::Hash[String, String]) }
-      def pipenv_env_variables
-        {
-          "PIPENV_YES" => "true",
-          "PIPENV_MAX_RETRIES" => "3",
-          "PIPENV_NOSPIN" => "1",
-          "PIPENV_TIMEOUT" => "600",
-          "PIP_DEFAULT_TIMEOUT" => "60",
-          "COLUMNS" => "250"
-        }
       end
     end
   end

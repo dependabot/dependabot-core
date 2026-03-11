@@ -7,7 +7,9 @@ require "sorbet-runtime"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/python/file_parser"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pipenv_runner"
 require "toml-rb"
 
 module Dependabot
@@ -15,18 +17,31 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        if pyproject_toml
-          # Poetry/pyproject.toml project: prefer poetry.lock lockfile when available
-          T.must(poetry_lock || pyproject_toml)
-        elsif pipfile
-          # Pipenv project: prefer Pipfile.lock lockfile when available
-          T.must(pipfile_lock || pipfile)
-        else
-          raise DependabotError, "No pyproject.toml or Pipfile present in dependency files."
-        end
+        dependency_files_by_package_manager = T.let(
+          {
+            PipenvPackageManager::NAME => [pipfile_lock, pipfile],
+            PoetryPackageManager::NAME => [poetry_lock, pyproject_toml],
+            PipCompilePackageManager::NAME => [pyproject_toml, pipfile_lock, pipfile],
+            PipPackageManager::NAME => [pyproject_toml, pipfile_lock, pipfile]
+          },
+          T::Hash[String, T::Array[T.nilable(Dependabot::DependencyFile)]]
+        )
+
+        candidates = dependency_files_by_package_manager[python_package_manager]
+        raise DependabotError, "No pyproject.toml or Pipfile present in dependency files." unless candidates
+
+        relevant_file = candidates.compact.first
+        return relevant_file if relevant_file
+
+        raise DependabotError, "No pyproject.toml or Pipfile present in dependency files."
       end
 
       private
+
+      sig { returns(String) }
+      def python_package_manager
+        T.must(file_parser.ecosystem).package_manager.name
+      end
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
@@ -74,7 +89,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_pipfile_lock_relationships
-        json_output = T.cast(file_parser, Python::FileParser).run_pipenv_graph
+        json_output = pipenv_runner.run_pipenv_graph
         parse_pipenv_graph_output(json_output)
       end
 
@@ -119,6 +134,39 @@ module Dependabot
         @dependency_name_set ||= T.let(
           Set.new(@dependencies.map(&:name)),
           T.nilable(T::Set[String])
+        )
+      end
+
+      sig { returns(PipenvRunner) }
+      def pipenv_runner
+        @pipenv_runner ||= T.let(
+          PipenvRunner.new(
+            dependency: nil,
+            lockfile: pipfile_lock,
+            language_version_manager: language_version_manager,
+            dependency_files: dependency_files
+          ),
+          T.nilable(PipenvRunner)
+        )
+      end
+
+      sig { returns(LanguageVersionManager) }
+      def language_version_manager
+        @language_version_manager ||= T.let(
+          LanguageVersionManager.new(
+            python_requirement_parser: python_requirement_parser
+          ),
+          T.nilable(LanguageVersionManager)
+        )
+      end
+
+      sig { returns(FileParser::PythonRequirementParser) }
+      def python_requirement_parser
+        @python_requirement_parser ||= T.let(
+          FileParser::PythonRequirementParser.new(
+            dependency_files: dependency_files
+          ),
+          T.nilable(FileParser::PythonRequirementParser)
         )
       end
 
