@@ -115,7 +115,7 @@ RSpec.shared_examples "dependency_submission" do |empty|
       # Check dependabot-specific metadata keys
       expect(payload[:metadata][:status]).to eql("ok")
       expect(payload[:metadata][:reason]).to be_nil
-      expect(payload[:metadata][:scanned_manifest_paths]).to eql([{ ecosystem: "rubygems", manifest_path: "/" }])
+      expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
     end
 
     it "affixes to use the updater sha if available" do

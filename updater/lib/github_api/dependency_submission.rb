@@ -108,10 +108,17 @@ module GithubApi
           url: SNAPSHOT_DETECTOR_URL
         },
         manifests: manifests,
+        # TODO: Move use of metadata to a Dependabot-specific object
+        #
+        # We are using the existing job metadata as a bag-of-values for error handling
+        # and job tracking that is specific to Dependabot-created submissions.
+        #
+        # In future, we should extend the public API schema with a validated object to
+        # harden this contract.
         metadata: {
           status: status.serialize,
           reason: reason,
-          scanned_manifest_paths: scanned_manifest_paths
+          scanned_manifest_path: scanned_manifest_path
         }.compact
       }
     end
@@ -181,23 +188,15 @@ module GithubApi
       }
     end
 
-    # Returns the manifest paths this snapshot scanned.
+    # Returns a synopsis of the scan performed in the format `ecosystem::manifest_path`, e.g.
+    # - `golang::/`
+    # - `rubygems::rails_app/`
     #
-    # This allows the snapshot service to check the snapshot against those requested
-    # even if the `manifests` property is empty.
-    #
-    # Note: We currently submit each manifest path separately, but we use an array
-    #       to align with the `manifests` property and allow flexibility in future.
     sig do
-      returns(T::Array[T::Hash[Symbol, String]])
+      returns(String)
     end
-    def scanned_manifest_paths
-      [
-        {
-          ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager),
-          manifest_path: File.dirname(manifest_file.path)
-        }
-      ]
+    def scanned_manifest_path
+      "#{GithubApi::EcosystemMapper.ecosystem_for(package_manager)}::#{File.dirname(manifest_file.path)}"
     end
   end
 end

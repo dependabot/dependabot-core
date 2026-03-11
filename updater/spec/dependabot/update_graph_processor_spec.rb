@@ -388,7 +388,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           # It should contain the expected metadata
           expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::FAILED.serialize)
           expect(payload[:metadata][:reason]).to eql("dependency_file_not_evaluatable")
-          expect(payload[:metadata][:scanned_manifest_paths]).to eql([{ ecosystem: "rubygems", manifest_path: "/" }])
+          expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
         end
 
         it "correctly snapshots the second directory" do
@@ -419,10 +419,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           # We should have metadata indicating a successful snapshot
           expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
           expect(payload[:metadata][:reason]).to be_nil
-          expect(payload[:metadata][:scanned_manifest_paths]).to eql(
-            [{ ecosystem: "rubygems",
-               manifest_path: "/subproject" }]
-          )
+          expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/subproject")
         end
       end
     end
@@ -562,7 +559,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         # It should contain the expected metadata
         expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
         expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
-        expect(payload[:metadata][:scanned_manifest_paths]).to eql([{ ecosystem: "rubygems", manifest_path: "/" }])
+        expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
       end
 
       update_graph_processor.run
@@ -671,7 +668,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           # We should have metadata indicating a successful snapshot
           expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize)
           expect(payload[:metadata][:reason]).to eql(GithubApi::DependencySubmission::DEGRADED_REASON_SUBDEPENDENCY_ERR)
-          expect(payload[:metadata][:scanned_manifest_paths]).to eql([{ ecosystem: "rubygems", manifest_path: "/" }])
+          expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
         end
 
         expect(service).to receive(:record_update_job_warning) do |args|
