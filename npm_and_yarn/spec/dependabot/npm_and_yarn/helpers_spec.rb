@@ -398,6 +398,51 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
         expect(result).to eq("11.9.0")
       end
+
+      it "passes private registry env vars to fallback on unexpected output" do
+        # First call returns unexpected output (no exception, but missing "immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_return("Some unexpected corepack output")
+
+        # Fallback: npm -v returns the container's installed version
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).and_return("11.9.0")
+
+        # Fallback must use the same private registry env vars
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_return("Preparing npm@11.9.0 for immediate activation...")
+
+        # package_manager_version after fallback
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v"
+        ).and_return("11.9.0")
+
+        # Log expectations
+        expect(Dependabot.logger).to receive(:info).with("Installing \"npm@10.0.0\"")
+        expect(Dependabot.logger).to receive(:error).with(
+          "Corepack installation output unexpected: Some unexpected corepack output"
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of npm."
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of npm: 11.9.0"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 11.9.0")
+
+        result = described_class.install("npm", "10.0.0", env: private_registry_env)
+        expect(result).to eq("11.9.0")
+      end
     end
   end
 
