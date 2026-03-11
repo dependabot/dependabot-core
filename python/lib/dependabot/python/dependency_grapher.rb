@@ -109,30 +109,53 @@ module Dependabot
       sig { params(json_output: String).returns(T::Hash[String, T::Array[String]]) }
       def parse_pipenv_graph_output(json_output)
         graph = JSON.parse(json_output)
-        unless graph.is_a?(Array)
-          Dependabot.logger.warn("Unexpected output from 'pipenv graph --json': expected a JSON array")
-          return {}
-        end
+        return {} unless valid_pipenv_graph_array?(graph)
 
         graph.each_with_object({}) do |entry, rels|
-          next unless entry.is_a?(Hash)
+          parent = pipenv_parent_name(entry)
+          next unless parent
 
-          pkg = entry["package"]
-          next unless pkg.is_a?(Hash) && pkg["package_name"].is_a?(String)
-
-          parent = NameNormaliser.normalise(pkg["package_name"])
-          deps = entry["dependencies"]
-          deps = [] unless deps.is_a?(Array)
-          children = deps.filter_map do |dep|
-            next unless dep.is_a?(Hash) && dep["package_name"].is_a?(String)
-
-            NameNormaliser.normalise(dep["package_name"])
-          end
-          rels[parent] = children
+          rels[parent] = pipenv_child_names(entry)
         end
       rescue JSON::ParserError
         Dependabot.logger.warn("Unexpected output from 'pipenv graph --json': could not parse as JSON")
         {}
+      end
+
+      sig { params(graph: T.untyped).returns(T::Boolean) }
+      def valid_pipenv_graph_array?(graph)
+        return true if graph.is_a?(Array)
+
+        Dependabot.logger.warn("Unexpected output from 'pipenv graph --json': expected a JSON array")
+        false
+      end
+
+      sig { params(entry: T.untyped).returns(T.nilable(String)) }
+      def pipenv_parent_name(entry)
+        return nil unless entry.is_a?(Hash)
+
+        pkg = entry["package"]
+        return nil unless pkg.is_a?(Hash)
+
+        package_name = pkg["package_name"]
+        return nil unless package_name.is_a?(String)
+
+        NameNormaliser.normalise(package_name)
+      end
+
+      sig { params(entry: T.untyped).returns(T::Array[String]) }
+      def pipenv_child_names(entry)
+        deps = entry.is_a?(Hash) ? entry["dependencies"] : nil
+        return [] unless deps.is_a?(Array)
+
+        deps.filter_map do |dep|
+          next unless dep.is_a?(Hash)
+
+          package_name = dep["package_name"]
+          next unless package_name.is_a?(String)
+
+          NameNormaliser.normalise(package_name)
+        end
       end
 
       sig { returns(T::Set[String]) }
