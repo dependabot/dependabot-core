@@ -429,7 +429,7 @@ module Dependabot
       end
 
       # Attempt to activate the local version of the package manager
-      sig { params(name: String, env: T.nilable(T::Hash[String, String])).void }
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
       def self.fallback_to_local_version(name, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
