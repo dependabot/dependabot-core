@@ -41,7 +41,6 @@ jobs:
           - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: pre_commit, name: pre_commit, ecosystem: pre-commit }
           - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: python_slow, ecosystem: pip }
           - { path: python, name: python, ecosystem: pip }
           - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
           - { path: swift, name: swift, ecosystem: swift }

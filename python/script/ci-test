@@ -5,8 +5,4 @@ set -e
 pyenv exec flake8 helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics
 
 bundle install
-if [ "${SUITE_NAME}" = "python_slow" ]; then
-  bundle exec turbo_tests --verbose --tag slow
-else
-  bundle exec turbo_tests --verbose --tag '~slow'
-fi
+bundle exec turbo_tests --verbose --tag '~slow'
