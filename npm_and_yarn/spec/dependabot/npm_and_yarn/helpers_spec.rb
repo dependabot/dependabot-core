@@ -369,7 +369,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         ).and_return("11.9.0")
 
         # Fallback must use the same private registry env vars
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@11.9.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: private_registry_env
@@ -397,6 +397,13 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
         expect(result).to eq("11.9.0")
+
+        # Verify the fallback call received the private registry env
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        )
       end
 
       it "passes private registry env vars to fallback on unexpected output" do
@@ -414,7 +421,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         ).and_return("11.9.0")
 
         # Fallback must use the same private registry env vars
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@11.9.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: private_registry_env
@@ -442,6 +449,13 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
         expect(result).to eq("11.9.0")
+
+        # Verify the fallback call received the private registry env
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        )
       end
     end
   end
