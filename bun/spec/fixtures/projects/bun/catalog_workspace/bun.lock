@@ -1,0 +1,35 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "my-monorepo",
+    },
+    "packages/app": {
+      "name": "app",
+      "dependencies": {
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "jest": "catalog:testing",
+      },
+    },
+  },
+  "catalog": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+  },
+  "catalogs": {
+    "testing": {
+      "jest": "^29.6.2",
+      "testing-library": "^14.0.0",
+    },
+  },
+  "packages": {
+    "jest": ["jest@29.6.2", "", {}, "sha512-GOn61gOjEMhFhEx0V6rqfHJPmYNbMkduUOBW06n1In1zsCH/AOxAnFGfpmwzVlSJiFdPmI3HFQiLG5aEMOBiVQ=="],
+
+    "react": ["react@18.2.0", "", {}, "sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ=="],
+
+    "react-dom": ["react-dom@18.2.0", "", { "dependencies": { "react": "^18.2.0" } }, "sha512-6IMTriUmvsjHUjNtEDudZfuDQUoWXVxKHhlEGSk81n4YFS+r/Kl99wXiwlVXtPBtJenozv2P+hxDsw9eA7Xo6g=="],
+
+    "testing-library": ["testing-library@14.0.0", "", {}, "sha512-fakehash=="],
+  }
+}
