@@ -415,11 +415,11 @@ module Dependabot
             Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
-            fallback_to_local_version(name)
+            fallback_to_local_version(name, env: env)
           end
         rescue StandardError => e
           Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
-          fallback_to_local_version(name)
+          fallback_to_local_version(name, env: env)
         end
 
         # Verify the installed version
@@ -429,8 +429,8 @@ module Dependabot
       end
 
       # Attempt to activate the local version of the package manager
-      sig { params(name: String).void }
-      def self.fallback_to_local_version(name)
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).void }
+      def self.fallback_to_local_version(name, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
@@ -440,7 +440,7 @@ module Dependabot
         Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
 
         # Prepare the existing version
-        package_manager_activate(name, current_version)
+        package_manager_activate(name, current_version, env: env)
       end
 
       # Install the package manager for specified version by using corepack
