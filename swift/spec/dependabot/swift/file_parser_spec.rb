@@ -572,12 +572,12 @@ RSpec.describe Dependabot::Swift::FileParser do
 
       it "associates requirements with correct pbxproj files" do
         deps = parser.parse
-        nio = deps.find { |d| d.name == "github.com/apple/swift-nio" }
-        collections = deps.find { |d| d.name == "github.com/apple/swift-collections" }
+        nio_dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
+        collections_dep = deps.find { |d| d.name == "github.com/apple/swift-collections" }
 
-        # With scoped requirements, nio comes from AppA and collections from AppB
-        expect(nio.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
-        expect(collections.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
+        # With scoped requirements, swift-nio comes from AppA and swift-collections from AppB
+        expect(nio_dep.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(collections_dep.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
       end
     end
 
