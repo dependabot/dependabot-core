@@ -929,8 +929,6 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[String, String])) }
         def corepack_registry_override_env
-          return nil unless Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-
           replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           registry_url = replaces_base_cred&.[]("registry")
           return nil unless registry_url
