@@ -108,7 +108,13 @@ module Dependabot
       #   ]
       sig { params(json_output: String).returns(T::Hash[String, T::Array[String]]) }
       def parse_pipenv_graph_output(json_output)
-        JSON.parse(json_output).each_with_object({}) do |entry, rels|
+        graph = JSON.parse(json_output)
+        unless graph.is_a?(Array)
+          Dependabot.logger.warn("Unexpected output from 'pipenv graph --json': expected a JSON array")
+          return {}
+        end
+
+        graph.each_with_object({}) do |entry, rels|
           next unless entry.is_a?(Hash)
 
           pkg = entry["package"]
