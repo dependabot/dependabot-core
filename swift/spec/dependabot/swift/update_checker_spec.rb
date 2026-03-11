@@ -325,12 +325,6 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
       before { stub_xcode_upload_pack }
 
-      describe "#xcode_spm_mode?" do
-        subject { checker.send(:xcode_spm_mode?) }
-
-        it { is_expected.to be true }
-      end
-
       describe "#can_update?" do
         subject { checker.can_update?(requirements_to_unlock: :own) }
 
@@ -462,12 +456,6 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
       before { stub_xcode_upload_pack }
 
-      describe "#xcode_spm_mode?" do
-        subject { checker.send(:xcode_spm_mode?) }
-
-        it { is_expected.to be true }
-      end
-
       describe "#can_update?" do
         subject { checker.can_update?(requirements_to_unlock: :own) }
 
@@ -492,60 +480,6 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
           # Revision-pinned dependencies don't have a semver version
           expect(subject).to be_nil
         end
-      end
-    end
-
-    context "with classic SPM (Package.swift present)" do
-      # Test that xcode_spm_mode? returns false when Package.swift is present
-      # We mock the dependencies directly since parsing Package.swift requires Swift toolchain
-      let(:project_name) { "xcode_project_needs_update" }
-      let(:name) { "github.com/quick/quick" }
-      let(:url) { "https://github.com/Quick/Quick" }
-      let(:upload_pack_fixture) { "quick" }
-
-      # Override dependency_files to include a Package.swift
-      let(:dependency_files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "Package.swift",
-            content: "// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: \"App\")"
-          ),
-          Dependabot::DependencyFile.new(
-            name: "MyApp.xcodeproj/project.pbxproj",
-            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
-            support_file: true
-          ),
-          Dependabot::DependencyFile.new(
-            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
-            content: fixture(
-              "projects",
-              project_name,
-              "MyApp.xcodeproj",
-              "project.xcworkspace",
-              "xcshareddata",
-              "swiftpm",
-              "Package.resolved"
-            )
-          )
-        ]
-      end
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: name,
-          version: "7.0.0",
-          requirements: [{ file: "Package.swift", requirement: ">= 7.0.0, < 8.0.0", groups: [],
-                           source: { type: "git", url: url } }],
-          package_manager: "swift"
-        )
-      end
-
-      before { stub_xcode_upload_pack }
-
-      describe "#xcode_spm_mode?" do
-        subject { checker.send(:xcode_spm_mode?) }
-
-        it { is_expected.to be false }
       end
     end
   end

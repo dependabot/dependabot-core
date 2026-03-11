@@ -65,7 +65,7 @@ module Dependabot
           kind = metadata[:kind]
 
           new_requirement_string = build_xcode_requirement_string(requirement_string, kind)
-          new_requirement = build_xcode_requirement(kind)
+          new_requirement = build_xcode_requirement(requirement_string, kind)
 
           requirement.merge(
             requirement: new_requirement,
@@ -92,9 +92,8 @@ module Dependabot
           when "exactVersion"
             "exact: \"#{target_version}\""
           when "versionRange"
-            min = target_version.to_s
-            max = bump_version(min, :major)
-            "\"#{min}\"..<\"#{max}\""
+            max = extract_version_range_max(requirement_string)
+            "\"#{target_version}\"..<\"#{max}\""
           else
             # Default: update to exact version for unknown kinds
             "exact: \"#{target_version}\""
@@ -103,10 +102,11 @@ module Dependabot
 
         sig do
           params(
+            requirement_string: T.nilable(String),
             kind: T.nilable(String)
           ).returns(T.nilable(String))
         end
-        def build_xcode_requirement(kind)
+        def build_xcode_requirement(requirement_string, kind)
           return nil unless target_version
 
           case kind
@@ -119,12 +119,25 @@ module Dependabot
           when "exactVersion"
             "= #{target_version}"
           when "versionRange"
-            max = bump_version(target_version.to_s, :major)
+            max = extract_version_range_max(requirement_string)
             ">= #{target_version}, < #{max}"
           else
             # Default: exact version
             "= #{target_version}"
           end
+        end
+
+        # Extracts the upper bound from a versionRange requirement string.
+        # Format: "min"..<"max" or "min"..."max"
+        sig { params(requirement_string: T.nilable(String)).returns(String) }
+        def extract_version_range_max(requirement_string)
+          return bump_version(target_version.to_s, :major) unless requirement_string
+
+          # Match patterns like "1.0.0"..<"2.0.0" or "1.0.0"..."2.0.0"
+          match = requirement_string.match(/\.{2,3}<?"(\d+\.\d+\.\d+)"/)
+          return bump_version(target_version.to_s, :major) unless match
+
+          match[1].to_s
         end
 
         sig { params(version_str: String, bump_type: Symbol).returns(String) }

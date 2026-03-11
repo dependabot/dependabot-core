@@ -60,6 +60,8 @@ module Dependabot
         ).updated_requirements
       end
 
+      private
+
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_xcode_requirements
         RequirementsUpdater.new(
@@ -68,8 +70,6 @@ module Dependabot
           xcode_mode: true
         ).updated_requirements
       end
-
-      private
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def old_requirements
@@ -274,9 +274,7 @@ module Dependabot
         @xcode_version_resolver ||= T.let(
           XcodeVersionResolver.new(
             dependency: dependency,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
+            git_commit_checker: git_commit_checker,
             security_advisories: security_advisories
           ),
           T.nilable(XcodeVersionResolver)
