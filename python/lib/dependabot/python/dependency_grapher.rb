@@ -9,6 +9,7 @@ require "dependabot/dependency_graphers/base"
 require "dependabot/python/file_parser"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/pipenv_runner"
 require "toml-rb"
 
@@ -21,19 +22,18 @@ module Dependabot
           {
             PipenvPackageManager::NAME => [pipfile_lock, pipfile],
             PoetryPackageManager::NAME => [poetry_lock, pyproject_toml],
-            PipCompilePackageManager::NAME => [pyproject_toml, pipfile_lock, pipfile],
-            PipPackageManager::NAME => [pyproject_toml, pipfile_lock, pipfile]
+            PipCompilePackageManager::NAME => [pip_compile_lockfile, pip_compile_manifest, pyproject_toml],
+            PipPackageManager::NAME => [pip_requirements_file, pyproject_toml, pipfile_lock, pipfile, setup_file,
+                                        setup_cfg_file]
           },
           T::Hash[String, T::Array[T.nilable(Dependabot::DependencyFile)]]
         )
 
-        candidates = dependency_files_by_package_manager[python_package_manager]
-        raise DependabotError, "No pyproject.toml or Pipfile present in dependency files." unless candidates
-
+        candidates = dependency_files_by_package_manager.fetch(python_package_manager, [])
         relevant_file = candidates.compact.first
         return relevant_file if relevant_file
 
-        raise DependabotError, "No pyproject.toml or Pipfile present in dependency files."
+        raise DependabotError, "No supported dependency file present."
       end
 
       private
@@ -63,10 +63,11 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
-        if poetry_lock
-          fetch_poetry_lock_relationships
-        elsif pipfile_lock
-          fetch_pipfile_lock_relationships
+        case python_package_manager
+        when PoetryPackageManager::NAME
+          poetry_lock ? fetch_poetry_lock_relationships : {}
+        when PipenvPackageManager::NAME
+          pipfile_lock ? fetch_pipfile_lock_relationships : {}
         else
           {}
         end
@@ -201,41 +202,88 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pyproject_toml
-        return @pyproject_toml if defined?(@pyproject_toml)
-
-        @pyproject_toml = T.let(
-          dependency_files.find { |f| f.name == "pyproject.toml" },
-          T.nilable(Dependabot::DependencyFile)
-        )
+        dependency_file("pyproject.toml")
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def poetry_lock
-        return @poetry_lock if defined?(@poetry_lock)
-
-        @poetry_lock = T.let(
-          dependency_files.find { |f| f.name == "poetry.lock" },
-          T.nilable(Dependabot::DependencyFile)
-        )
+        dependency_file(PoetryPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pipfile
-        return @pipfile if defined?(@pipfile)
+        dependency_file(PipenvPackageManager::MANIFEST_FILENAME)
+      end
 
-        @pipfile = T.let(
-          dependency_files.find { |f| f.name == "Pipfile" },
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pipfile_lock
+        dependency_file(PipenvPackageManager::LOCKFILE_FILENAME)
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def setup_file
+        dependency_file("setup.py")
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def setup_cfg_file
+        dependency_file("setup.cfg")
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def requirements_in_files
+        @requirements_in_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?(".in") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pip_compile_lockfile
+        return @pip_compile_lockfile if defined?(@pip_compile_lockfile)
+
+        @pip_compile_lockfile = T.let(
+          dependency_files.find { |f| pip_compile_file_matcher.lockfile_for_pip_compile_file?(f) },
           T.nilable(Dependabot::DependencyFile)
         )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pipfile_lock
-        return @pipfile_lock if defined?(@pipfile_lock)
+      def pip_compile_manifest
+        return @pip_compile_manifest if defined?(@pip_compile_manifest)
 
-        @pipfile_lock = T.let(
-          dependency_files.find { |f| f.name == "Pipfile.lock" },
+        lockfile = pip_compile_lockfile
+        @pip_compile_manifest = T.let(
+          if lockfile
+            pip_compile_file_matcher.manifest_for_pip_compile_lockfile(lockfile)
+          else
+            requirements_in_files.first
+          end,
           T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pip_requirements_file
+        return @pip_requirements_file if defined?(@pip_requirements_file)
+
+        @pip_requirements_file = T.let(
+          dependency_files.find { |f| f.name == "requirements.txt" } ||
+            dependency_files.find { |f| f.name.end_with?(".txt") },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
+      def dependency_file(filename)
+        dependency_files.find { |file| file.name == filename }
+      end
+
+      sig { returns(PipCompileFileMatcher) }
+      def pip_compile_file_matcher
+        @pip_compile_file_matcher ||= T.let(
+          PipCompileFileMatcher.new(requirements_in_files),
+          T.nilable(PipCompileFileMatcher)
         )
       end
     end

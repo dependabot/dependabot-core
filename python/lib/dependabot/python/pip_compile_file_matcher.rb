@@ -20,8 +20,14 @@ module Dependabot
 
         return true if file.content&.match?(output_file_regex(name))
 
-        basename = name.gsub(/\.txt$/, "")
-        requirements_in_files.any? { |f| f.instance_variable_get(:@name) == basename + ".in" }
+        !!manifest_for_lockfile_name(name)
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+      def manifest_for_pip_compile_lockfile(file)
+        return nil unless lockfile_for_pip_compile_file?(file)
+
+        manifest_for_lockfile_name(file.name) || requirements_in_files.first
       end
 
       private
@@ -32,6 +38,12 @@ module Dependabot
       sig { params(filename: T.any(String, Symbol)).returns(String) }
       def output_file_regex(filename)
         "--output-file[=\s]+#{Regexp.escape(filename)}(?:\s|$)"
+      end
+
+      sig { params(lockfile_name: String).returns(T.nilable(Dependabot::DependencyFile)) }
+      def manifest_for_lockfile_name(lockfile_name)
+        basename = lockfile_name.gsub(/\.txt$/, "")
+        requirements_in_files.find { |f| f.name == basename + ".in" }
       end
     end
   end
