@@ -626,8 +626,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       described_class.dependency_files = dependency_files
       described_class.credentials = credentials
       allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_private_registry_for_corepack).and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     end
 
@@ -645,18 +643,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(env["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
         expect(env["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-      end
-
-      context "when experiment flag is disabled" do
-        before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(false)
-        end
-
-        it "returns nil" do
-          env = described_class.send(:build_corepack_env_variables)
-          expect(env).to be_nil
-        end
       end
 
       context "when dependency_files is empty" do
