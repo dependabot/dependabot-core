@@ -84,8 +84,20 @@ module Dependabot
 
           groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
           return false if groups.empty?
+          return false unless groups.all?("build-system")
 
-          groups.all?("build-system")
+          # A build-system dependency that also appears in the lockfile as a
+          # transitive/runtime package still needs lockfile updates
+          !dependency_in_lockfile?
+        end
+
+        sig { returns(T::Boolean) }
+        def dependency_in_lockfile?
+          lockfile_content = lockfile&.content
+          return false unless lockfile_content
+
+          dep_name = normalise(T.must(dependency).name)
+          lockfile_content.match?(/^name = "#{Regexp.escape(dep_name)}"$/m)
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
