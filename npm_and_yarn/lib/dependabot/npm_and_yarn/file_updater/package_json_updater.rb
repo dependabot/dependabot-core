@@ -61,8 +61,9 @@ module Dependabot
               # "dependencies" list. For example, the dependencies object can contain same name dependency
               # "dep" => "1.0.0" and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0".
               # The other dependency is not present in package.json so we don't have to update it — this is
-              # most likely a transitive dependency which only needs an update in the lockfile. We avoid
-              # throwing an exception and let the update continue.
+              # most likely a transitive dependency which only needs an update in the lockfile. For a batch
+              # with a single unique dependency name we tolerate this no-op update, but when multiple unique
+              # dependencies are being updated and none change the content we treat that as unexpected and raise.
               raise "Expected content to change!" if content == new_content && unique_deps_count > 1
 
               content = new_content
