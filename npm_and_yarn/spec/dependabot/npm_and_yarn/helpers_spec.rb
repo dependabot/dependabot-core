@@ -234,7 +234,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: nil
         ).and_return("8.0.0")
 
         # Log expectations
@@ -275,7 +276,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: nil
         ).and_return("10.8.2")
 
         # Log expectations
@@ -321,7 +323,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: nil
         ).and_return("10.8.2")
 
         # Log expectations
@@ -378,7 +381,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: nil
         ).and_return("11.9.0")
 
         # Log expectations
@@ -430,7 +434,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: nil
         ).and_return("11.9.0")
 
         # Log expectations
