@@ -13,12 +13,6 @@ require "dependabot/swift/url_helpers"
 module Dependabot
   module Swift
     class FileUpdater < Dependabot::FileUpdaters::Base
-      # Updates Xcode-managed Package.resolved files in-place without running
-      # the Swift CLI. This is used for Xcode SPM projects that don't have a
-      # Package.swift manifest file.
-      #
-      # Preserves the original schema version (v1/v2/v3) and minimizes changes
-      # to the file structure to produce clean diffs.
       class XcodeLockfileUpdater
         extend T::Sig
 
@@ -74,7 +68,6 @@ module Dependabot
           ) + "\n"
         end
 
-        # Returns true if any dependency in the given file needs updating
         sig { returns(T::Boolean) }
         def lockfile_changed?
           dependencies_for_file.any?
@@ -174,7 +167,6 @@ module Dependabot
           new_version = dependency.version
           new_ref = source&.dig(:ref)
 
-          # Update version if we have a new one
           if new_version
             state["version"] = new_version
             # When updating to a new version, update revision if provided in source
@@ -187,7 +179,6 @@ module Dependabot
           end
         end
 
-        # Checks if a string looks like a git SHA (40 hex characters)
         sig { params(str: String).returns(T::Boolean) }
         def looks_like_sha?(str)
           str.match?(/\A[0-9a-f]{40}\z/i)
@@ -208,7 +199,6 @@ module Dependabot
 
           pins.find do |pin|
             pin_identity = pin[identity_key]
-            # v1 uses display name which may be mixed case
             pin_identity = pin_identity&.downcase if schema_version == 1
 
             if identity && pin_identity == identity
@@ -226,14 +216,11 @@ module Dependabot
           end
         end
 
-        # Returns only the dependencies that are relevant to this resolved file
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies_for_file
           @dependencies_for_file ||= T.let(
             dependencies.select do |dep|
               dep.requirements.any? do |req|
-                # Match if the requirement file is the resolved file itself
-                # or if the requirement file is a pbxproj in the same xcodeproj
                 req_file = req[:file]
                 if req_file == resolved_file.name
                   true

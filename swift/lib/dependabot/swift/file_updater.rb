@@ -96,7 +96,6 @@ module Dependabot
         manifest.nil? && xcode_resolved_files.any?
       end
 
-      # All Package.resolved files under .xcodeproj directories
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
