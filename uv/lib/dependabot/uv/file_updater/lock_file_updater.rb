@@ -145,7 +145,7 @@ module Dependabot
           old_req = old_r[:requirement]
           escaped_name = escape_package_name(dep.name)
 
-          regex = /(["']#{escaped_name})([^"']+)(["'])/x
+          regex = /(["']#{escaped_name})([^"']+)(["'])/ix
 
           replaced = T.let(false, T::Boolean)
 
