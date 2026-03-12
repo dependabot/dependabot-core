@@ -332,20 +332,20 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       end
 
       describe "#latest_version" do
-        subject { checker.latest_version }
+        subject(:latest_version) { checker.latest_version }
 
         it "returns latest version from git tags" do
-          expect(subject).to be_a(Dependabot::Swift::Version)
-          expect(subject.to_s).to eq("7.0.2")
+          expect(latest_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_version.to_s).to eq("7.0.2")
         end
       end
 
       describe "#latest_resolvable_version" do
-        subject { checker.latest_resolvable_version }
+        subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
         it "returns the latest version that satisfies requirements" do
-          expect(subject).to be_a(Dependabot::Swift::Version)
-          expect(subject.to_s).to eq("7.0.2")
+          expect(latest_resolvable_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_resolvable_version.to_s).to eq("7.0.2")
         end
       end
 
@@ -397,10 +397,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       describe "#latest_version" do
         subject { checker.latest_version }
 
-        it "returns nil for branch-pinned dependencies" do
-          # Branch-pinned dependencies don't have a semver version
-          expect(subject).to be_nil
-        end
+        # Branch-pinned dependencies don't have a semver version
+        it { is_expected.to be_nil }
       end
     end
 
@@ -459,27 +457,23 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       describe "#can_update?" do
         subject { checker.can_update?(requirements_to_unlock: :own) }
 
-        it "returns true when dependency has updates available" do
-          expect(subject).to be_truthy
-        end
+        it { is_expected.to be_truthy }
       end
     end
 
     context "with revision-only pinned dependency" do
       let(:project_name) { "xcode_project_revision_only" }
-      let(:name) { "github.com/quick/quick" }
-      let(:url) { "https://github.com/Quick/Quick" }
-      let(:upload_pack_fixture) { "quick" }
+      let(:name) { "github.com/apple/swift-nio" }
+      let(:url) { "https://github.com/apple/swift-nio" }
 
-      before { stub_xcode_upload_pack }
+      # No upload pack stub needed - revision-only dependencies return nil immediately
+      # without making git requests
 
       describe "#latest_version" do
         subject { checker.latest_version }
 
-        it "returns nil for revision-pinned dependencies" do
-          # Revision-pinned dependencies don't have a semver version
-          expect(subject).to be_nil
-        end
+        # Revision-pinned dependencies don't have a semver version
+        it { is_expected.to be_nil }
       end
     end
   end

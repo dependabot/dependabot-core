@@ -1,9 +1,9 @@
 {
   "pins" : [
     {
-      "identity" : "quick",
+      "identity" : "swift-nio",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Quick/Quick.git",
+      "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
         "revision" : "6213ba7a06febe8fef60563a4a7d26a4085783cf"
       }
