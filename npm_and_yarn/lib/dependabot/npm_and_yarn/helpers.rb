@@ -352,22 +352,52 @@ module Dependabot
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_yarn_command(command, fingerprint: nil, env: {})
         setup_yarn_berry
-        run_single_yarn_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint, env: env)
       end
 
       # Run single pnpm command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_pnpm_command(command, fingerprint: nil)
-        package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_pnpm_command(command, fingerprint: nil, env: {})
+        merged_env = merge_corepack_env(env || {})
+        package_manager_run_command(
+          PNPMPackageManager::NAME,
+          command,
+          fingerprint: fingerprint,
+          env: merged_env
+        )
       end
 
       # Run single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_single_yarn_command(command, fingerprint: nil)
-        package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_single_yarn_command(command, fingerprint: nil, env: {})
+        merged_env = merge_corepack_env(env || {})
+        package_manager_run_command(
+          YarnPackageManager::NAME,
+          command,
+          fingerprint: fingerprint,
+          env: merged_env
+        )
       end
 
       # Activate the package manager for specified version by using corepack
@@ -505,7 +535,7 @@ module Dependabot
             env: env
           ).strip
         else
-          Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint)
+          Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint, env: env)
         end.strip
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
