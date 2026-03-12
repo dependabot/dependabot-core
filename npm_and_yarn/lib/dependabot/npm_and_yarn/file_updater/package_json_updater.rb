@@ -59,25 +59,13 @@ module Dependabot
                 new_req: new_req
               )
 
-              if Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) &&
-                 content == new_content && unique_deps_count > 1
-
-                # (we observed that) package.json does not always contains the same dependencies compared to
-                # "dependencies" list, for example, dependencies object can contain same name dependency "dep"=> "1.0.0"
-                # and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0",the other dependency is
-                # not present in package.json so we don't have to update it, this is most likely (as observed)
-                # a transitive dependency which only needs update in lockfile, So we avoid throwing exception and let
-                # the update continue.
-
-                Dependabot.logger.info(
-                  "experiment: avoid_duplicate_updates_package_json.
-                Updating package.json for #{dep.name} "
-                )
-
-                raise "Expected content to change!"
-              end
-
-              if !Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) && (content == new_content)
+              # package.json does not always contain the same dependencies compared to the
+              # "dependencies" list. For example, the dependencies object can contain same name dependency
+              # "dep" => "1.0.0" and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0".
+              # The other dependency is not present in package.json so we don't have to update it — this is
+              # most likely a transitive dependency which only needs an update in the lockfile. We avoid
+              # throwing an exception and let the update continue.
+              if content == new_content && unique_deps_count > 1
                 raise "Expected content to change!"
               end
 
