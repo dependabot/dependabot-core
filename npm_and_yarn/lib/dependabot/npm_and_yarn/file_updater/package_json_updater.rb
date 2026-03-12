@@ -41,8 +41,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
 
-        # rubocop:disable Metrics/PerceivedComplexity
-
         sig { returns(T.nilable(String)) }
         def updated_package_json_content
           # checks if we are updating single dependency in package.json
@@ -65,9 +63,7 @@ module Dependabot
               # The other dependency is not present in package.json so we don't have to update it — this is
               # most likely a transitive dependency which only needs an update in the lockfile. We avoid
               # throwing an exception and let the update continue.
-              if content == new_content && unique_deps_count > 1
-                raise "Expected content to change!"
-              end
+              raise "Expected content to change!" if content == new_content && unique_deps_count > 1
 
               content = new_content
             end
@@ -86,7 +82,6 @@ module Dependabot
             content
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
         sig do
           params(
             dependency: Dependabot::Dependency,

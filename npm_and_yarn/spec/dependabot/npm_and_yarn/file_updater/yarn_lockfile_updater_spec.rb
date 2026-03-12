@@ -142,7 +142,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }
-          .to raise_error("Expected content to change!")
+          .to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
