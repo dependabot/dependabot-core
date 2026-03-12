@@ -18,6 +18,9 @@ Welcome to the public home of Dependabot :dependabot:.
   - [New Ecosystems](#new-ecosystems)
 - [Development Guide](#development-guide)
   - [Getting a Development Environment Running](#getting-a-development-environment-running)
+    - [Mac Setup: Installing Ruby with rbenv](#mac-setup-installing-ruby-with-rbenv)
+    - [Quickstart](#quickstart)
+    - [Building Images from Scratch](#building-images-from-scratch)
   - [Debugging Problems](#debugging-problems)
   - [Running Tests](#running-tests)
   - [Profiling](#profiling)
@@ -127,6 +130,74 @@ The developer shell uses volume mounts to incorporate your local changes to Depe
 edit locally using your favorite editor and the changes are immediately reflected within the docker container for performing
 [dry-runs](#debugging-problems) or executing [tests](#running-tests).
 Note: See caveat about [editing the native package manager helper scripts](#making-changes-to-native-package-manager-helpers).
+
+### Mac Setup: Installing Ruby with rbenv
+
+Although nearly all Dependabot development happens inside Docker containers, the host Mac still needs the right Ruby
+version for tools like `rubocop`, `bundle exec`, and IDE integrations. We recommend [rbenv](https://github.com/rbenv/rbenv)
+to manage Ruby versions, because it respects the `.ruby-version` file that pins the exact version this project uses.
+
+#### Prerequisites
+
+[Homebrew](https://brew.sh) is required. If it is not already installed, follow the instructions on the Homebrew site,
+or run the one-liner from the Homebrew homepage in your terminal.
+
+#### 1. Install rbenv and ruby-build
+
+[ruby-build](https://github.com/rbenv/ruby-build) is the plugin that lets rbenv compile and install Ruby versions.
+
+```shell
+brew install rbenv ruby-build
+```
+
+#### 2. Wire rbenv into your shell
+
+Add rbenv's shell integration to your rc file. For **Zsh** (the default shell since macOS Catalina):
+
+```shell
+echo 'eval "$(rbenv init - zsh)"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+For **Bash**, replace `~/.zshrc` with `~/.bash_profile` (or `~/.bashrc`) and change `zsh` to `bash`.
+
+Confirm rbenv is active:
+
+```shell
+rbenv --version
+# e.g. rbenv 1.3.2
+which ruby
+# should point to something like ~/.rbenv/shims/ruby
+```
+
+#### 3. Install the pinned Ruby version
+
+The repository root contains a `.ruby-version` file that specifies the exact Ruby version required. Running `rbenv install`
+from the repo root will read that file automatically:
+
+```shell
+cd /path/to/dependabot-core
+rbenv install           # installs the version specified in .ruby-version (currently 3.4.8)
+rbenv local 3.4.8       # only needed if .ruby-version was not written yet; it is already committed
+ruby --version
+# => ruby 3.4.8 (...)
+```
+
+#### 4. Install Bundler and project dependencies
+
+```shell
+gem install bundler
+bundle install
+```
+
+#### 5. Smoke-test the setup
+
+```shell
+bundle exec rubocop --version   # prints the RuboCop version; any error here signals a setup problem
+```
+
+At this point your Mac host is ready. Proceed to the [Quickstart](#quickstart) to pull or build the Docker images used for
+running tests and dry-runs.
 
 ### Quickstart
 
