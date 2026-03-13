@@ -525,9 +525,21 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
     end
 
+    let(:ignored_update_config) do
+      Dependabot::Config::UpdateConfig.new(
+        ignore_conditions: [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "bump-core"
+          )
+        ]
+      )
+    end
+    let(:path_dependency_directory) { "plugins/bump-core" }
+    let(:path_dependency_gemspec) { "#{path_dependency_directory}/bump-core.gemspec" }
+
     context "when that has an unfetchable directory path" do
       before do
-        stub_request(:get, url + "plugins/bump-core?ref=sha")
+        stub_request(:get, url + "#{path_dependency_directory}?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
         stub_request(:get, url + "plugins?ref=sha")
@@ -545,53 +557,51 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
 
       context "when the path dependency is in the ignore list" do
-        let(:update_config) do
-          Dependabot::Config::UpdateConfig.new(
-            ignore_conditions: [
-              Dependabot::Config::IgnoreCondition.new(
-                dependency_name: "bump-core"
-              )
-            ]
-          )
-        end
         let(:file_fetcher_instance) do
           described_class.new(
             source: source,
             credentials: credentials,
-            update_config: update_config
+            update_config: ignored_update_config
           )
         end
 
         it "skips the ignored path dependency without raising an error" do
-          expect { file_fetcher_instance.files }.not_to raise_error
-          expect(file_fetcher_instance.files.map(&:name))
-            .not_to include("plugins/bump-core/bump-core.gemspec")
+          filenames = file_fetcher_instance.files.map(&:name)
+          expect(filenames)
+            .not_to include(path_dependency_gemspec)
         end
       end
     end
 
     context "when the path dependency is reachable and ignored" do
-      let(:update_config) do
-        Dependabot::Config::UpdateConfig.new(
-          ignore_conditions: [
-            Dependabot::Config::IgnoreCondition.new(
-              dependency_name: "bump-core"
-            )
-          ]
-        )
+      before do
+        stub_request(:get, url + "#{path_dependency_directory}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_ruby_path_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "#{path_dependency_gemspec}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "gemspec_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
       end
 
       let(:file_fetcher_instance) do
         described_class.new(
           source: source,
           credentials: credentials,
-          update_config: update_config
+          update_config: ignored_update_config
         )
       end
 
       it "still fetches required gemspec files for the ignored path dependency" do
         filenames = file_fetcher_instance.files.map(&:name)
-        expect(filenames).to include("plugins/bump-core/bump-core.gemspec")
+        expect(filenames).to include(path_dependency_gemspec)
       end
     end
 
