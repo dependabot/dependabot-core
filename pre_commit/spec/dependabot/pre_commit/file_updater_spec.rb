@@ -298,6 +298,20 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
           expect(second_rev_line).to include("v4.5.0")
         end
       end
+
+      context "with quoted repo URLs" do
+        let(:config_file_body) { fixture("pre_commit_configs", "with_quoted_urls.yaml") }
+
+        its(:content) do
+          is_expected.to include "rev: v4.5.0"
+          is_expected.not_to include "rev: v4.4.0"
+        end
+
+        it "updates the rev even when repo URL is double-quoted" do
+          expect(updated_config_file.content).to include('- repo: "https://github.com/pre-commit/pre-commit-hooks"')
+          expect(updated_config_file.content).to include("rev: v4.5.0")
+        end
+      end
     end
   end
 end
