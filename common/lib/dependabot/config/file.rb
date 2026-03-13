@@ -119,8 +119,28 @@ module Dependabot
         UpdateConfig::CommitMessageOptions.new(
           prefix: commit_message[:prefix],
           prefix_development: commit_message[:"prefix-development"] || commit_message[:prefix],
-          include: commit_message[:include]
+          include: commit_message[:include],
+          substitutions: normalize_commit_message_substitutions(commit_message[:substitutions])
         )
+      end
+
+      sig do
+        params(substitutions: T.untyped)
+          .returns(T.nilable(T::Array[T::Hash[String, String]]))
+      end
+      def normalize_commit_message_substitutions(substitutions)
+        return nil if substitutions.nil?
+        return nil unless substitutions.is_a?(Array)
+
+        substitutions.filter_map do |sub|
+          next unless sub.is_a?(Hash)
+
+          from = sub[:from] || sub["from"]
+          to = sub[:to] || sub["to"]
+          next unless from.is_a?(String) && to.is_a?(String)
+
+          { "from" => from, "to" => to }
+        end
       end
 
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
