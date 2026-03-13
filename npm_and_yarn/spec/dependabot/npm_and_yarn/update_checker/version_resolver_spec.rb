@@ -62,9 +62,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     fixture("npm_responses", "opentelemetry-context-async-hooks.json")
   end
 
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   before do
     stub_request(:get, react_dom_registry_listing_url)
       .to_return(status: 200, body: react_dom_registry_response)
@@ -78,10 +75,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .to_return(status: 200, body: opentelemetry_api_registry_response)
     stub_request(:get, opentelemetry_context_async_hooks_registry_listing_url)
       .to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
+    Dependabot::Experiments.register(:enable_private_registry_for_corepack, true)
   end
 
   after do
@@ -2301,7 +2295,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         }]
       )
     end
-    let(:enable_corepack_for_npm_and_yarn) { true }
 
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("npm install successful")
