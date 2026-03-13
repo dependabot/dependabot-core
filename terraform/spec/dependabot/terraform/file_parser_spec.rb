@@ -999,6 +999,24 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a provider declared with mixed case in multiple files" do
+      let(:files) { project_dependency_files("provider_with_mixed_case") }
+
+      it "normalizes provider source identifiers to lowercase" do
+        dependency = dependencies.find { |d| d.name == "mongey/confluentcloud" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.requirements.length).to eq(2)
+        dependency.requirements.each do |req|
+          expect(req[:source][:module_identifier]).to eq("mongey/confluentcloud")
+        end
+      end
+
+      it "does not raise a multiple sources error" do
+        expect { dependencies }.not_to raise_error
+      end
+    end
+
     context "with a private module with directory suffix" do
       let(:files) { project_dependency_files("private_module_with_dir_suffix") }
 
