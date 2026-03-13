@@ -455,6 +455,53 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
       end
 
+      context "with dependencies sharing the same group ID and version" do
+        let(:buildfile_fixture_name) { "shared_group_id.gradle.kts" }
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "build.gradle.kts",
+            content: fixture("buildfiles", buildfile_fixture_name)
+          )
+        end
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "com.adevinta.motor:feign-error-handler",
+              version: "4.0.0",
+              previous_version: "4.0.0-RC1",
+              requirements: [{
+                file: "build.gradle.kts",
+                requirement: "4.0.0",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                }
+              }],
+              previous_requirements: [{
+                file: "build.gradle.kts",
+                requirement: "4.0.0-RC1",
+                groups: [],
+                source: nil
+              }],
+              package_manager: "gradle"
+            )
+          ]
+        end
+
+        it "updates only the target dependency version" do
+          expect(updated_buildfile.content)
+            .to include('implementation("com.adevinta.motor:feign-error-handler:4.0.0")')
+        end
+
+        it "does not update other dependencies with the same group ID" do
+          expect(updated_buildfile.content)
+            .to include('implementation("com.adevinta.motor:backend-common--lib-instrumentation:4.0.0-RC1")')
+            .and include('testImplementation(testFixtures("com.adevinta.motor:backend-common--lib-instrumentation:4.0.0-RC1"))')
+        end
+      end
+
       context "with a dependency version defined by a property" do
         let(:dependency_files) { [buildfile, subproject_buildfile] }
         let(:subproject_buildfile) do

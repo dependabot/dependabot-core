@@ -232,7 +232,7 @@ module Dependabot
 
           if dependency.name.include?(":")
             dep_parts = dependency.name.split(":")
-            next false unless line.include?(T.must(dep_parts.first)) || line.include?(T.must(dep_parts.last))
+            next false unless line.include?(T.must(dep_parts.first)) && line.include?(T.must(dep_parts.last))
           elsif T.let(requirement.fetch(:file), String).end_with?(".properties")
             property = T.let(requirement, T::Hash[Symbol, T.nilable(T::Hash[Symbol, T.nilable(String)])])
                         .dig(:source, :property)
