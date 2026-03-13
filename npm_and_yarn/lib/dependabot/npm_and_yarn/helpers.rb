@@ -233,6 +233,20 @@ module Dependabot
         end
       end
 
+      # Returns the mode args for `yarn up -R` commands. Unlike yarn_berry_args,
+      # this always uses --mode=skip-build for Yarn v3+ because
+      # --mode=update-lockfile only fetches packages missing from the lockfile
+      # and can prevent `yarn up -R` from re-resolving existing packages to
+      # newer versions within the same range.
+      sig { returns(String) }
+      def self.yarn_berry_upgrade_args
+        if yarn_major_version == 2
+          ""
+        else
+          "--mode=skip-build"
+        end
+      end
+
       sig { returns(T::Boolean) }
       def self.yarn_berry_skip_build?
         yarn_major_version >= YARN_V3 && (yarn_zero_install? || yarn_offline_cache?)
