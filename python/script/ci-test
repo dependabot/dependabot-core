@@ -5,4 +5,11 @@ set -e
 pyenv exec flake8 helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics
 
 bundle install
-bundle exec turbo_tests --verbose
+if [ "${SUITE_NAME}" = "python_slow" ]; then
+  bundle exec rspec --tag slow \
+    spec/dependabot/python/update_checker/pip_compile_version_resolver_spec.rb \
+    spec/dependabot/python/update_checker/poetry_version_resolver_spec.rb \
+    spec/dependabot/python/file_updater/pip_compile_file_updater_spec.rb
+else
+  bundle exec turbo_tests --verbose --tag '~slow'
+fi
