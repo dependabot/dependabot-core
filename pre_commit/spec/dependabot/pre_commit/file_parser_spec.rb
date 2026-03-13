@@ -149,6 +149,33 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       end
     end
 
+    context "with quoted repo URLs" do
+      let(:pre_commit_config) do
+        Dependabot::DependencyFile.new(
+          name: ".pre-commit-config.yaml",
+          content: fixture("pre_commit_configs", "with_quoted_urls.yaml")
+        )
+      end
+
+      it "returns the correct number of dependencies" do
+        expect(dependencies.length).to eq(2)
+      end
+
+      it "parses double-quoted repo URL correctly" do
+        dep = dependencies.find { |d| d.name.include?("pre-commit-hooks") }
+        expect(dep).not_to be_nil
+        expect(dep.name).to eq("https://github.com/pre-commit/pre-commit-hooks")
+        expect(dep.version).to eq("v4.4.0")
+      end
+
+      it "parses single-quoted repo URL correctly" do
+        dep = dependencies.find { |d| d.name.include?("black") }
+        expect(dep).not_to be_nil
+        expect(dep.name).to eq("https://github.com/psf/black")
+        expect(dep.version).to eq("23.12.1")
+      end
+    end
+
     context "with invalid YAML" do
       let(:pre_commit_config) do
         Dependabot::DependencyFile.new(
