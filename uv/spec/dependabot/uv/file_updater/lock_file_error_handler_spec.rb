@@ -472,7 +472,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
-    context "when error contains 'Failed to resolve dependencies' with conflicting URLs" do
+    context "when unhandled uv error starts with 'Using CPython' (conflicting URLs)" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
           message: conflicting_urls_error,
@@ -501,22 +501,31 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
         expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
           expect(raised_error.message).to include("Failed to resolve dependencies")
           expect(raised_error.message).to include("conflicting URLs")
+          expect(raised_error.message).not_to include("Using CPython")
         end
       end
     end
 
-    context "when error contains 'Failed to resolve dependencies' without conflicting URLs" do
+    context "when unhandled uv error starts with 'Using CPython' (uv.lock parse failure)" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-          message: "× Failed to resolve dependencies for `some-package` (v1.0.0)\n" \
-                   "╰─▶ Some other resolution failure reason",
+          message: uv_lock_parse_error,
           error_context: {}
         )
       end
 
-      it "raises DependencyFileNotResolvable" do
+      let(:uv_lock_parse_error) do
+        <<~ERROR
+          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+          error: Failed to parse `uv.lock`
+            Caused by: Dependency `soupsieve` has missing `source` field but has more than one matching package
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable and strips the CPython prefix" do
         expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
-          expect(raised_error.message).to include("Failed to resolve dependencies")
+          expect(raised_error.message).to include("Failed to parse `uv.lock`")
+          expect(raised_error.message).not_to include("Using CPython")
         end
       end
     end

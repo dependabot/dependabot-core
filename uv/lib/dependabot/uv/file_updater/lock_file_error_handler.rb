@@ -12,7 +12,6 @@ module Dependabot
         extend T::Sig
 
         UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
-        UV_RESOLVE_FAILED_REGEX = T.let(/× Failed to resolve dependencies.*[\s\S]*$/, Regexp)
         UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
 
@@ -65,6 +64,11 @@ module Dependabot
           /Failed to parse:?\s*`?(?<file>[^`\n]+\.toml)`?|TOML parse error/i,
           Regexp
         )
+        # uv prefixes errors with interpreter info that should be stripped
+        USING_CPYTHON_REGEX = T.let(
+          /Using CPython \S+ interpreter at: /,
+          Regexp
+        )
         PYPROJECT_SCHEMA_ERROR_REGEX = T.let(
           /missing field `project`|missing.*\[project\].*table|Field `project\.name` is required/i,
           Regexp
@@ -111,6 +115,7 @@ module Dependabot
           handle_python_version_errors(message)
           handle_resource_errors(message)
           handle_package_not_found_errors(message)
+          handle_uv_fallback_error(message)
 
           raise error
         end
@@ -178,12 +183,10 @@ module Dependabot
         sig { params(message: String).void }
         def handle_resolution_errors(message)
           return unless message.include?("No solution found when resolving dependencies") ||
-                        message.include?("Failed to resolve dependencies") ||
                         message.include?("Failed to build") ||
                         message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
 
           match_unresolvable = message.scan(UV_UNRESOLVABLE_REGEX).last
-          match_resolve_failed = message.scan(UV_RESOLVE_FAILED_REGEX).last
           match_build_failed = message.scan(UV_BUILD_FAILED_REGEX).last
 
           if match_unresolvable
@@ -191,11 +194,6 @@ module Dependabot
             conflicting_deps = extract_conflicting_dependencies(formatted_error)
             raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
 
-            raise Dependabot::DependencyFileNotResolvable, formatted_error
-          end
-
-          if match_resolve_failed
-            formatted_error = extract_match_string(match_resolve_failed) || message
             raise Dependabot::DependencyFileNotResolvable, formatted_error
           end
 
@@ -301,6 +299,13 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
         end
 
+        sig { params(message: String).void }
+        def handle_uv_fallback_error(message)
+          return unless message.match?(USING_CPYTHON_REGEX)
+
+          raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
+        end
+
         sig { params(match: T.untyped).returns(T.nilable(String)) }
         def extract_match_string(match)
           return nil unless match
@@ -319,6 +324,7 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
           message
+            .gsub(/Using CPython \S+ interpreter at: [^\n]+\n?/, "")
             .gsub(/#{Regexp.escape(Utils::BUMP_TMP_DIR_PATH)}[^\s]*/o, "")
             .lines
             .reject { |line| line.strip.empty? }
