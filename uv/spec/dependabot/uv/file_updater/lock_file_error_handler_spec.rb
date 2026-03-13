@@ -472,6 +472,55 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when error contains 'Failed to resolve dependencies' with conflicting URLs" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: conflicting_urls_error,
+          error_context: {}
+        )
+      end
+
+      let(:conflicting_urls_error) do
+        <<~ERROR
+          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+             Updating https://github.com/org/repo-a (HEAD)
+             Updating https://github.com/org/repo-b (HEAD)
+              Updated https://github.com/org/repo-a (c153cf38a632381e617475adff6f71cc9fe8087d)
+              Updated https://github.com/org/repo-b (0fd65b7f549ed22c154e2e64c20b88a73a1a9e56)
+            × Failed to resolve dependencies for `my-cli` (v0.2.1)
+            ╰─▶ Requirements contain conflicting URLs for package `my-services`
+                in split `python_full_version >= '3.14' and sys_platform == 'win32'`:
+                - git+https://github.com/org/repo-a@v0.x
+                - git+https://github.com/org/repo-b
+            help: `my-cli` (v0.2.1) was included because
+                  `my-project:dev` (v2.0.0) depends on `my-cli`
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable with the error details" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("Failed to resolve dependencies")
+          expect(raised_error.message).to include("conflicting URLs")
+        end
+      end
+    end
+
+    context "when error contains 'Failed to resolve dependencies' without conflicting URLs" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "× Failed to resolve dependencies for `some-package` (v1.0.0)\n" \
+                   "╰─▶ Some other resolution failure reason",
+          error_context: {}
+        )
+      end
+
+      it "raises DependencyFileNotResolvable" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("Failed to resolve dependencies")
+        end
+      end
+    end
+
     context "when error is unknown" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(

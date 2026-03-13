@@ -12,6 +12,7 @@ module Dependabot
         extend T::Sig
 
         UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
+        UV_RESOLVE_FAILED_REGEX = T.let(/× Failed to resolve dependencies.*[\s\S]*$/, Regexp)
         UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
 
@@ -177,10 +178,12 @@ module Dependabot
         sig { params(message: String).void }
         def handle_resolution_errors(message)
           return unless message.include?("No solution found when resolving dependencies") ||
+                        message.include?("Failed to resolve dependencies") ||
                         message.include?("Failed to build") ||
                         message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
 
           match_unresolvable = message.scan(UV_UNRESOLVABLE_REGEX).last
+          match_resolve_failed = message.scan(UV_RESOLVE_FAILED_REGEX).last
           match_build_failed = message.scan(UV_BUILD_FAILED_REGEX).last
 
           if match_unresolvable
@@ -188,6 +191,11 @@ module Dependabot
             conflicting_deps = extract_conflicting_dependencies(formatted_error)
             raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
 
+            raise Dependabot::DependencyFileNotResolvable, formatted_error
+          end
+
+          if match_resolve_failed
+            formatted_error = extract_match_string(match_resolve_failed) || message
             raise Dependabot::DependencyFileNotResolvable, formatted_error
           end
 
