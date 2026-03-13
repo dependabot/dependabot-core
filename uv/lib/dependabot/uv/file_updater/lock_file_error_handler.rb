@@ -301,7 +301,9 @@ module Dependabot
 
         sig { params(message: String).void }
         def handle_uv_fallback_error(message)
-          return unless message.match?(USING_CPYTHON_REGEX)
+          anchored_using_cpython_regex =
+            Regexp.new("\\A#{USING_CPYTHON_REGEX.source}", USING_CPYTHON_REGEX.options)
+          return unless message.match?(anchored_using_cpython_regex)
 
           raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
         end
@@ -324,7 +326,7 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
           message
-            .gsub(/Using CPython \S+ interpreter at: [^\n]+\n?/, "")
+            .gsub(/\AUsing CPython \S+ interpreter at: [^\n]+\n?/, "")
             .gsub(/#{Regexp.escape(Utils::BUMP_TMP_DIR_PATH)}[^\s]*/o, "")
             .lines
             .reject { |line| line.strip.empty? }
