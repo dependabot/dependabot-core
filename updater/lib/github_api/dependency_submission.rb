@@ -196,7 +196,7 @@ module GithubApi
       returns(String)
     end
     def scanned_manifest_path
-      "#{GithubApi::EcosystemMapper.ecosystem_for(package_manager)}::#{File.dirname(manifest_file.path)}"
+      "#{GithubApi::EcosystemMapper.ecosystem_for(package_manager)}::#{manifest_file.directory}"
     end
   end
 end
