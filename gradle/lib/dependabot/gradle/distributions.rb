@@ -28,9 +28,10 @@ module Dependabot
       sig { params(credentials: T::Array[Dependabot::Credential]).returns(String) }
       def self.distribution_url(credentials)
         credential = find_credential(credentials)
-        return DISTRIBUTION_REPOSITORY_URL unless credential
+        url = credential&.[]("url")
+        return DISTRIBUTION_REPOSITORY_URL unless url
 
-        T.must(credential["url"]).gsub(%r{/+$}, "")
+        url.gsub(%r{/+$}, "")
       end
 
       sig { params(credentials: T::Array[Dependabot::Credential]).returns(T::Hash[String, String]) }
