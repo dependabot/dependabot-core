@@ -1,4 +1,31 @@
 #!/usr/bin/env bash
+#
+# docker-dev-shell — Start an interactive Docker development shell for a Dependabot ecosystem.
+#
+# This script builds (or reuses) a Docker development image for the specified ecosystem
+# and launches an interactive shell with all ecosystem source directories bind-mounted
+# into the container. This lets you edit source files on the host and have those changes
+# reflected immediately inside the container without rebuilding the image.
+#
+# The development image extends the per-ecosystem updater image (e.g.
+# ghcr.io/dependabot/dependabot-updater-bundler) with extra debugging tools (vim, gdb,
+# strace, etc.) and is tagged locally as:
+#   dependabot/dependabot-core-development-<ecosystem>
+#
+# If a container with the same name is already running, the script will exec into it
+# (reusing the existing session) rather than starting a new one — unless the image was
+# just rebuilt, in which case the old container is stopped first.
+#
+# SSH agent forwarding is set up automatically on macOS so that git operations that
+# require your SSH key work inside the container.
+#
+# Usage: bin/docker-dev-shell <ecosystem> [--rebuild] [ARGS...]
+#
+# Examples:
+#   bin/docker-dev-shell bundler                # Open a bash shell in the bundler dev container
+#   bin/docker-dev-shell go_modules --rebuild   # Force-rebuild the image first, then open shell
+#   bin/docker-dev-shell npm_and_yarn rspec spec/dependabot/npm_and_yarn/file_parser_spec.rb
+#   bin/docker-dev-shell updater               # 'updater' maps to the bundler image
 
 set -e
 cd "$(dirname "$0")/.."
@@ -44,7 +71,36 @@ CONTAINER_NAME="dependabot-core-development-$ECOSYSTEM"
 DOCKERFILE="Dockerfile.development"
 
 if [ "$HELP" = "true" ]; then
-  echo "usage: $0 <ecosystem> [--rebuild] [ARGS]"
+  echo "usage: $0 <ecosystem> [--rebuild] [ARGS...]"
+  echo ""
+  echo "Start an interactive Docker development shell for a Dependabot ecosystem."
+  echo ""
+  echo "The script builds (or reuses) a Docker development image for the specified"
+  echo "ecosystem and launches a shell with all ecosystem source directories"
+  echo "bind-mounted into the container. Edits made on the host are reflected"
+  echo "immediately inside the container without rebuilding the image."
+  echo ""
+  echo "If a container for the ecosystem is already running, the script execs into"
+  echo "it (reusing the existing session) rather than starting a new one — unless"
+  echo "the image was just rebuilt, in which case the old container is stopped first."
+  echo ""
+  echo "Arguments:"
+  echo "  ecosystem   The package manager ecosystem to develop."
+  echo "              Examples: bundler, go_modules, npm_and_yarn, python, ..."
+  echo "              Use 'updater' to work on the updater service (uses bundler image)."
+  echo ""
+  echo "Options:"
+  echo "  -r, --rebuild   Force a rebuild of the Docker image before starting the shell."
+  echo "  -h, --help      Show this help message."
+  echo ""
+  echo "Extra arguments after the ecosystem name are passed directly to the container"
+  echo "as the command to run (default: bash)."
+  echo ""
+  echo "Examples:"
+  echo "  $0 bundler"
+  echo "  $0 go_modules --rebuild"
+  echo "  $0 npm_and_yarn rspec spec/dependabot/npm_and_yarn/file_parser_spec.rb"
+  echo "  $0 updater"
   exit 0
 fi
 
