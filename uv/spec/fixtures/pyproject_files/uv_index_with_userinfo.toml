@@ -1,0 +1,17 @@
+[project]
+name = "userinfo-index-project"
+version = "0.1.0"
+description = "Test UV index with embedded username in URL"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "private-package>=1.0.0",
+]
+
+[[tool.uv.index]]
+name = "company_pypi"
+url = "https://oauth2accesstoken@private-pypi.example.com/simple"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
