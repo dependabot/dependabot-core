@@ -32,7 +32,8 @@ module Dependabot
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
             latest_version: T.nilable(T.any(Version, String)),
             source_url: T.nilable(String),
-            properties_to_update: T::Array[String]
+            properties_to_update: T::Array[String],
+            credentials: T::Array[Dependabot::Credential]
           )
             .void
         end
@@ -40,11 +41,13 @@ module Dependabot
           requirements:,
           latest_version:,
           source_url:,
-          properties_to_update:
+          properties_to_update:,
+          credentials: []
         )
           @requirements = requirements
           @source_url = source_url
           @properties_to_update = properties_to_update
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
           return unless latest_version
 
           @latest_version = T.let(version_class.new(latest_version), Version)
@@ -85,6 +88,9 @@ module Dependabot
         sig { returns(T::Array[String]) }
         attr_reader :properties_to_update
 
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
+
         sig { params(req_string: String).returns(String) }
         def update_requirement(req_string)
           if req_string.include?("+")
@@ -121,6 +127,7 @@ module Dependabot
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_distribution_requirements
           distribution_url = T.let(nil, T.nilable(String))
+          dist_auth_headers = Distributions.auth_headers_for(credentials)
 
           requirements.map do |req|
             source = req[:source]
@@ -137,7 +144,10 @@ module Dependabot
                 source: source.merge(url: distribution_url)
               )
             when "distributionSha256Sum"
-              checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(T.must(distribution_url))
+              checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(
+                T.must(distribution_url),
+                auth_headers: dist_auth_headers
+              )
               req.merge(
                 requirement: checksum,
                 source: source.merge(url: checksum_url)

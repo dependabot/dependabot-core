@@ -72,7 +72,8 @@ module Dependabot
           requirements: dependency.requirements,
           latest_version: preferred_resolvable_version&.to_s,
           source_url: preferred_version_details&.fetch(:source_url),
-          properties_to_update: property_names
+          properties_to_update: property_names,
+          credentials: credentials
         ).updated_requirements
       end
 

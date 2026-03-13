@@ -11,14 +11,25 @@ module Dependabot
       class DistributionsFetcher
         extend T::Sig
 
-        @available_versions = T.let([], T::Array[T::Hash[String, T.untyped]])
+        @available_versions_cache = T.let({}, T::Hash[String, T::Array[T::Hash[String, T.untyped]]])
         @distributions_checksums = T.let({}, T::Hash[String, T::Array[String]])
 
-        sig { returns(T.any(T::Array[T::Hash[String, T.untyped]], T::Array[T::Hash[Symbol, T.untyped]])) }
-        def self.available_versions
-          return @available_versions if @available_versions.any?
+        sig do
+          params(
+            base_url: String,
+            auth_headers: T::Hash[String, String]
+          ).returns(T.any(T::Array[T::Hash[String, T.untyped]], T::Array[T::Hash[Symbol, T.untyped]]))
+        end
+        def self.available_versions(
+          base_url: Distributions::DISTRIBUTION_REPOSITORY_URL,
+          auth_headers: {}
+        )
+          return T.must(@available_versions_cache[base_url]) if @available_versions_cache[base_url]&.any?
 
-          response = Dependabot::RegistryClient.get(url: "https://services.gradle.org/versions/all")
+          response = Dependabot::RegistryClient.get(
+            url: "#{base_url}/versions/all",
+            headers: auth_headers
+          )
           versions = T.let(
             JSON.parse(
               T.let(response.body, String),
@@ -26,7 +37,7 @@ module Dependabot
             ),
             T::Array[T::Hash[Symbol, T.untyped]]
           )
-          @available_versions +=
+          @available_versions_cache[base_url] =
             versions
             .select { |v| release_version?(version: v) }
             .uniq { |v| v[:version] }
@@ -48,13 +59,21 @@ module Dependabot
             /.*-(rc|milestone)-.*/.match?(T.let(version[:version], String)) == false
         end
 
-        sig { params(distribution_url: String).returns(T.nilable(T::Array[String])) }
-        def self.resolve_checksum(distribution_url)
+        sig do
+          params(
+            distribution_url: String,
+            auth_headers: T::Hash[String, String]
+          ).returns(T.nilable(T::Array[String]))
+        end
+        def self.resolve_checksum(distribution_url, auth_headers: {})
           cached = @distributions_checksums[distribution_url]
           return cached if cached
 
           checksum_url = "#{distribution_url}.sha256"
-          checksum = T.let(Dependabot::RegistryClient.get(url: checksum_url).body, String).strip
+          checksum = T.let(
+            Dependabot::RegistryClient.get(url: checksum_url, headers: auth_headers).body,
+            String
+          ).strip
           return nil unless checksum.match?(/\A[a-f0-9]{64}\z/)
 
           @distributions_checksums[distribution_url] = [checksum_url, checksum]

@@ -309,6 +309,83 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
           )
         end
       end
+
+      context "with a private registry credential" do
+        let(:updater) do
+          described_class.new(
+            requirements: requirements,
+            latest_version: latest_version,
+            source_url: "new_url",
+            properties_to_update: [],
+            credentials: [
+              Dependabot::Credential.new({
+                "type" => "gradle-distribution",
+                "url" => "https://mycompany.example.com/gradle",
+                "username" => "user",
+                "password" => "pass"
+              })
+            ]
+          )
+        end
+
+        let(:requirements) do
+          [{
+            requirement: "8.14.2",
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            source: {
+              type: "gradle-distribution",
+              url: "https://mycompany.example.com/gradle/distributions/gradle-8.14.2-all.zip",
+              property: "distributionUrl"
+            },
+            groups: []
+          }, {
+            requirement: "443c9c8ee2ac1ee0e11881a40f2376d79c66386264a44b24a9f8ca67e633375f",
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            source: {
+              type: "gradle-distribution",
+              url: "https://mycompany.example.com/gradle/distributions/gradle-8.14.2-all.zip.sha256",
+              property: "distributionSha256Sum"
+            },
+            groups: []
+          }]
+        end
+
+        before do
+          Dependabot::Gradle::Package::DistributionsFetcher
+            .instance_variable_set(:@distributions_checksums, {})
+
+          stub_request(:get, "https://mycompany.example.com/gradle/distributions/gradle-9.0.0-all.zip.sha256")
+            .with(headers: { "Authorization" => "Basic #{Base64.strict_encode64('user:pass')}" })
+            .to_return(status: 200, body: "abc123def456abc123def456abc123def456abc123def456abc123def456abc12345")
+        end
+
+        it "updates URL and checksum using the private registry with auth" do
+          expect(updater.updated_requirements).to eq(
+            [
+              {
+                requirement: "9.0.0",
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://mycompany.example.com/gradle/distributions/gradle-9.0.0-all.zip",
+                  property: "distributionUrl"
+                },
+                groups: []
+              },
+              {
+                requirement: "abc123def456abc123def456abc123def456abc123def456abc123def456abc12345",
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://mycompany.example.com/gradle/distributions/gradle-9.0.0-all.zip.sha256",
+                  property: "distributionSha256Sum"
+                },
+                groups: []
+              }
+            ]
+          )
+        end
+      end
     end
   end
 end

@@ -321,6 +321,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
       context "when the details come from gradle distributions" do
         before do
+          Dependabot::Gradle::Package::DistributionsFetcher
+            .instance_variable_set(:@available_versions_cache, {})
+          Dependabot::Gradle::Package::DistributionsFetcher
+            .instance_variable_set(:@distributions_checksums, {})
+
           stub_request(:get, "https://services.gradle.org/versions/all")
             .to_return(
               status: 200,
@@ -355,6 +360,54 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
           its([:source_url]) do
             is_expected.to eq("https://services.gradle.org")
+          end
+        end
+
+        context "with a private registry credential" do
+          let(:credentials) do
+            [
+              Dependabot::Credential.new({
+                "type" => "gradle-distribution",
+                "url" => "https://mycompany.example.com/gradle",
+                "username" => "user",
+                "password" => "pass"
+              })
+            ]
+          end
+
+          before do
+            stub_request(:get, "https://mycompany.example.com/gradle/versions/all")
+              .with(headers: { "Authorization" => "Basic #{Base64.strict_encode64('user:pass')}" })
+              .to_return(
+                status: 200,
+                body: fixture("gradle_distributions_metadata", "versions_all.json")
+              )
+          end
+
+          describe "the last version" do
+            subject { versions.last }
+
+            let(:dependency_name) { "gradle-distribution" }
+            let(:dependency_version) { "8.5-rc-3" }
+            let(:dependency_requirements) do
+              [{
+                requirement: "8.5-rc-3",
+                file: "gradle/wrapper/gradle-wrapper.properties",
+                source: {
+                  type: "gradle-distribution",
+                  url: "https://mycompany.example.com/gradle/distributions/gradle-8.5-rc-3-bin.zip"
+                },
+                groups: []
+              }]
+            end
+
+            its([:version]) do
+              is_expected.to eq(version_class.new("9.0.0"))
+            end
+
+            its([:source_url]) do
+              is_expected.to eq("https://mycompany.example.com/gradle")
+            end
           end
         end
       end

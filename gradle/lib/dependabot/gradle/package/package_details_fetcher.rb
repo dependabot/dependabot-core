@@ -67,7 +67,7 @@ module Dependabot
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
 
-              next distribution_version_details if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
+              next distribution_version_details if url == Distributions.distribution_url(credentials)
               next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
 
               dependency_metadata(repository_details).css("versions > version")
@@ -137,7 +137,13 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
         def distribution_version_details
-          DistributionsFetcher.available_versions.map do |info|
+          base_url = Distributions.distribution_url(credentials)
+          dist_auth_headers = Distributions.auth_headers_for(credentials)
+
+          DistributionsFetcher.available_versions(
+            base_url: base_url,
+            auth_headers: dist_auth_headers
+          ).map do |info|
             release_date = begin
               Time.parse(info[:build_time])
             rescue StandardError
@@ -147,7 +153,7 @@ module Dependabot
             {
               version: info[:version],
               released_at: release_date,
-              source_url: Distributions::DISTRIBUTION_REPOSITORY_URL
+              source_url: base_url
             }
           end
         rescue StandardError
@@ -283,9 +289,12 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def distribution_repository_details
+          base_url = Distributions.distribution_url(credentials)
+          dist_auth_headers = Distributions.auth_headers_for(credentials)
+
           [{
-            "url" => Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL,
-            "auth_headers" => {}
+            "url" => base_url,
+            "auth_headers" => dist_auth_headers
           }]
         end
 
