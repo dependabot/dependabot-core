@@ -110,15 +110,18 @@ module Dependabot
         previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
         return unless previous_version_tags.any? # There's no tag for this commit
 
+        # Find the longest version that the comment ends with to avoid matching partial versions
         previous_version = previous_version_tags.map { |tag| version_class.new(tag).to_s }
-                                                .find { |version| comment.end_with? version }
+                                                .select { |version| comment.end_with? version }
+                                                .max_by(&:length)
         return unless previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag
 
         new_version = version_class.new(new_version_tag).to_s
-        comment.gsub(previous_version, new_version)
+        # Only replace the version at the end of the comment to avoid replacing substrings
+        comment.sub(/#{Regexp.escape(previous_version)}\z/, new_version)
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
