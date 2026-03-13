@@ -250,10 +250,13 @@ module Dependabot
         matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
         matches = {} if matches.nil?
 
+        # OpenTofu provider source addresses are case-insensitive, so we normalize
+        # to lowercase to avoid treating e.g. "Azure/azapi" and "azure/azapi" as
+        # different sources when merging dependencies across multiple files.
         [
-          matches[:hostname] || DEFAULT_REGISTRY,
-          matches[:namespace] || DEFAULT_NAMESPACE,
-          matches[:name] || name
+          (matches[:hostname] || DEFAULT_REGISTRY).downcase,
+          (matches[:namespace] || DEFAULT_NAMESPACE).downcase,
+          (matches[:name] || name).downcase
         ]
       end
 
