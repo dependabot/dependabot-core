@@ -543,6 +543,31 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
             "bump-core"
           )
       end
+
+      context "when the path dependency is in the ignore list" do
+        let(:update_config) do
+          Dependabot::Config::UpdateConfig.new(
+            ignore_conditions: [
+              Dependabot::Config::IgnoreCondition.new(
+                dependency_name: "bump-core"
+              )
+            ]
+          )
+        end
+        let(:file_fetcher_instance) do
+          described_class.new(
+            source: source,
+            credentials: credentials,
+            update_config: update_config
+          )
+        end
+
+        it "skips the ignored path dependency without raising an error" do
+          expect { file_fetcher_instance.files }.not_to raise_error
+          expect(file_fetcher_instance.files.map(&:name))
+            .not_to include("plugins/bump-core/bump-core.gemspec")
+        end
+      end
     end
 
     context "when that has a merge conflict" do

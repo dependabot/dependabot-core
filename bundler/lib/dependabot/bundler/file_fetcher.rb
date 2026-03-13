@@ -144,6 +144,14 @@ module Dependabot
         unfetchable_gems = []
 
         path_gemspec_paths.each do |path|
+          gem_name = path.basename.to_s
+
+          # Skip path dependencies that are in the ignore list
+          if dependency_ignored?(gem_name)
+            Dependabot.logger.info("Ignored path dependency '#{gem_name}' as it matches the ignore list.")
+            next
+          end
+
           # Get any gemspecs at the path itself
           gemspecs_at_path = fetch_gemspecs_from_directory(path)
 
@@ -160,7 +168,7 @@ module Dependabot
           # Add the fetched gemspecs to the main array, and note an error if
           # none were found for this path
           gemspec_files += gemspecs_at_path
-          unfetchable_gems << path.basename.to_s if gemspecs_at_path.empty?
+          unfetchable_gems << gem_name if gemspecs_at_path.empty?
         rescue Octokit::NotFound, Gitlab::Error::NotFound
           unfetchable_gems << path.basename.to_s
         end
