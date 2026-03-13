@@ -550,7 +550,6 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[String, String])) }
       def self.build_corepack_env_variables
-        return nil unless Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
         return nil if dependency_files.nil? || credentials.nil?
 
         files = T.must(dependency_files)
