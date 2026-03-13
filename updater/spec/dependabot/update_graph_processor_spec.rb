@@ -419,7 +419,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           # We should have metadata indicating a successful snapshot
           expect(payload[:metadata][:status]).to eql(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
           expect(payload[:metadata][:reason]).to be_nil
-          expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/subproject")
+          expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/subproject/")
         end
       end
     end
@@ -560,6 +560,32 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
         expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
         expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
+      end
+
+      update_graph_processor.run
+    end
+  end
+
+  context "with non-existent dependency files in a subpath" do
+    let(:directories) { [directory] }
+    let(:directory) { "/subproject/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      []
+    end
+
+    it "generates an empty snapshot with metadata" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+
+        expect(payload[:job][:correlator]).to eq("dependabot-bundler-subproject")
+        expect(payload[:manifests]).to be_empty
+
+        # It should contain the expected metadata
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
+        expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
+        expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/subproject/")
       end
 
       update_graph_processor.run
