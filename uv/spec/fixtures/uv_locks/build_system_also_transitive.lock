@@ -1,0 +1,35 @@
+version = 1
+requires-python = ">=3.9"
+
+[[package]]
+name = "certifi"
+version = "2025.1.31"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/certifi-2025.1.31.tar.gz", hash = "sha256:abc123" }
+
+[[package]]
+name = "dummy-project"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "requests" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "requests", specifier = ">=2.31.0" }]
+
+[[package]]
+name = "requests"
+version = "2.32.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/requests-2.32.3.tar.gz", hash = "sha256:abc123" }
+
+[[package]]
+name = "setuptools"
+version = "80.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/setuptools-80.9.0.tar.gz", hash = "sha256:abc123" }
