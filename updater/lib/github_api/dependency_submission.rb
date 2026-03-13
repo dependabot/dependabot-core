@@ -190,7 +190,7 @@ module GithubApi
 
     # Returns a synopsis of the scan performed in the format `ecosystem::manifest_path`, e.g.
     # - `golang::/`
-    # - `rubygems::rails_app/`
+    # - `rubygems::/rails_app/`
     #
     sig do
       returns(String)
