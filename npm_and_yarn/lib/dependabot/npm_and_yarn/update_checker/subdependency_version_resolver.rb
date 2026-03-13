@@ -173,9 +173,10 @@ module Dependabot
         def run_pnpm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              ignore_ws = Helpers.pnpm_outside_workspace?(dependency_files) ? " --ignore-workspace" : ""
               Helpers.run_pnpm_command(
-                "update #{dependency.name} --lockfile-only",
-                fingerprint: "update <dependency_name> --lockfile-only"
+                "update #{dependency.name} --lockfile-only#{ignore_ws}",
+                fingerprint: "update <dependency_name> --lockfile-only#{ignore_ws}"
               )
               { lockfile_name => File.read(lockfile_name) }
             end
