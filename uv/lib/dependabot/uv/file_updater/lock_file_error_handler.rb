@@ -65,8 +65,8 @@ module Dependabot
           Regexp
         )
         # uv prefixes errors with interpreter info that should be stripped
-        USING_CPYTHON_REGEX = T.let(
-          /Using CPython \S+ interpreter at: /,
+        USING_CPYTHON_LINE_REGEX = T.let(
+          /\AUsing CPython \S+ interpreter at: [^\n]+\n?/,
           Regexp
         )
         PYPROJECT_SCHEMA_ERROR_REGEX = T.let(
@@ -301,9 +301,7 @@ module Dependabot
 
         sig { params(message: String).void }
         def handle_uv_fallback_error(message)
-          anchored_using_cpython_regex =
-            Regexp.new("\\A#{USING_CPYTHON_REGEX.source}", USING_CPYTHON_REGEX.options)
-          return unless message.match?(anchored_using_cpython_regex)
+          return unless message.match?(USING_CPYTHON_LINE_REGEX)
 
           raise Dependabot::DependencyFileNotResolvable, clean_error_message(message)
         end
@@ -326,7 +324,7 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
           message
-            .gsub(/\AUsing CPython \S+ interpreter at: [^\n]+\n?/, "")
+            .sub(USING_CPYTHON_LINE_REGEX, "")
             .gsub(/#{Regexp.escape(Utils::BUMP_TMP_DIR_PATH)}[^\s]*/o, "")
             .lines
             .reject { |line| line.strip.empty? }

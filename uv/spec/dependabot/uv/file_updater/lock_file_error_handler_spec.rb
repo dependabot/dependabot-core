@@ -530,6 +530,19 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when error contains 'Using CPython' mid-message (not at start)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "some other error\nUsing CPython 3.11.14 interpreter at: /usr/bin/python3.11\ndetails",
+          error_context: {}
+        )
+      end
+
+      it "re-raises the original error" do
+        expect { handle_uv_error }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
+
     context "when error is unknown" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
