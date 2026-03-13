@@ -296,6 +296,18 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   end
 
   context "with a path dependency" do
+    let(:ignored_update_config) do
+      Dependabot::Config::UpdateConfig.new(
+        ignore_conditions: [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "bump-core"
+          )
+        ]
+      )
+    end
+    let(:path_dependency_directory) { "plugins/bump-core" }
+    let(:path_dependency_gemspec) { "#{path_dependency_directory}/bump-core.gemspec" }
+
     before do
       stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
@@ -524,18 +536,6 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
       end
     end
-
-    let(:ignored_update_config) do
-      Dependabot::Config::UpdateConfig.new(
-        ignore_conditions: [
-          Dependabot::Config::IgnoreCondition.new(
-            dependency_name: "bump-core"
-          )
-        ]
-      )
-    end
-    let(:path_dependency_directory) { "plugins/bump-core" }
-    let(:path_dependency_gemspec) { "#{path_dependency_directory}/bump-core.gemspec" }
 
     context "when that has an unfetchable directory path" do
       before do
