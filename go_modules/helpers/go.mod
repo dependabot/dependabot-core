@@ -4,5 +4,5 @@ go 1.26.0
 
 require (
 	github.com/Masterminds/vcs v1.13.3
-	golang.org/x/mod v0.33.0
+	golang.org/x/mod v0.34.0
 )
