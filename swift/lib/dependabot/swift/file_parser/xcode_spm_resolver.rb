@@ -92,6 +92,7 @@ module Dependabot
           pbxproj_file = req_info[:file]
           requirement_str = req_info[:requirement]
           requirement_string = req_info[:requirement_string]
+          kind = req_info[:kind]
 
           new_requirements = dep.requirements.map do |req|
             req.merge(
@@ -101,7 +102,8 @@ module Dependabot
                 # declaration_string is not applicable for Xcode-managed SPM
                 # (no Package.swift manifest to extract it from)
                 declaration_string: nil,
-                requirement_string: requirement_string
+                requirement_string: requirement_string,
+                kind: kind
               }.compact
             )
           end
