@@ -284,7 +284,7 @@ module Dependabot
           file = workspace_files.find { |workspace_file| workspace_file.name == workspace_data_path }
           return Set.new unless file&.content
 
-          project_refs = file.content.scan(/location\s*=\s*"(?:group:)?([^"\n]+\.xcodeproj)"/).flatten
+          project_refs = T.must(file.content).scan(/location\s*=\s*"(?:group:)?([^"\n]+\.xcodeproj)"/).flatten
           workspace_root = File.dirname(workspace_scope)
 
           Set.new(
