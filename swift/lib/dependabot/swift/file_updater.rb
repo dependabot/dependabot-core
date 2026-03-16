@@ -7,6 +7,7 @@ require "dependabot/file_updaters/base"
 require "dependabot/swift/file_updater/lockfile_updater"
 require "dependabot/swift/file_updater/manifest_updater"
 require "dependabot/swift/file_updater/xcode_lockfile_updater"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -53,7 +54,8 @@ module Dependabot
         xcode_resolved_files.each do |resolved_file|
           updater = XcodeLockfileUpdater.new(
             resolved_file: resolved_file,
-            dependencies: dependencies
+            dependencies: dependencies,
+            workspace_files: xcode_workspace_files
           )
 
           next unless updater.lockfile_changed?
@@ -100,9 +102,18 @@ module Dependabot
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("Package.resolved") &&
-              (f.name.include?(".xcodeproj/") || f.name.include?(".xcworkspace/")) &&
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
               !f.support_file?
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def xcode_workspace_files
+        @xcode_workspace_files ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?("contents.xcworkspacedata") && f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )

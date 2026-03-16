@@ -261,6 +261,11 @@ RSpec.describe Dependabot::Swift::FileUpdater do
         let(:files) do
           [
             Dependabot::DependencyFile.new(
+              name: "MyApp.xcworkspace/contents.xcworkspacedata",
+              content: fixture("projects", project_name, "MyApp.xcworkspace", "contents.xcworkspacedata"),
+              support_file: true
+            ),
+            Dependabot::DependencyFile.new(
               name: "AppA.xcodeproj/project.pbxproj",
               content: fixture("projects", project_name, "AppA.xcodeproj", "project.pbxproj"),
               support_file: true

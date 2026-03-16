@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -21,7 +22,7 @@ module Dependabot
         return true if filenames.include?("Package.swift")
 
         if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return filenames.any? { |f| f.end_with?("Package.resolved") }
+          return filenames.any? { |f| XcodeFileHelpers.xcode_resolved_path?(f) }
         end
 
         false

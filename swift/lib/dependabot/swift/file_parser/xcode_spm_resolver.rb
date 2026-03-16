@@ -7,6 +7,7 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/swift/file_parser"
 require "dependabot/swift/file_parser/package_resolved_parser"
 require "dependabot/swift/file_parser/pbxproj_parser"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -35,12 +36,13 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           scoped_requirements = aggregate_pbxproj_requirements
-          all_requirements = merge_all_requirements(scoped_requirements)
 
           xcode_resolved_files.each do |resolved_file|
             resolved_deps = PackageResolvedParser.new(resolved_file).parse
-            xcode_scope_dir = extract_xcode_scope_dir(resolved_file.name)
-            pbxproj_requirements = scoped_requirements.fetch(xcode_scope_dir, all_requirements)
+            pbxproj_requirements = requirements_for_resolved_file(
+              scoped_requirements: scoped_requirements,
+              resolved_file_name: resolved_file.name
+            )
 
             resolved_deps.each do |dep|
               enriched = enrich_with_pbxproj_requirements(dep, pbxproj_requirements)
@@ -83,9 +85,41 @@ module Dependabot
             scoped_requirements: T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, T.untyped]]]
           ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
         end
-        def merge_all_requirements(scoped_requirements)
+        def merge_scopes(scoped_requirements)
           scoped_requirements.values.each_with_object({}) do |requirements, merged|
             requirements.each { |name, req_info| merged[name] = req_info }
+          end
+        end
+
+        sig do
+          params(
+            scoped_requirements: T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, T.untyped]]],
+            resolved_file_name: String
+          ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+        end
+        def requirements_for_resolved_file(scoped_requirements:, resolved_file_name:)
+          scope_dir = extract_xcode_scope_dir(resolved_file_name)
+          return T.must(scoped_requirements[scope_dir]) if scoped_requirements.key?(scope_dir)
+
+          workspace_root = workspace_root_for_scope(scope_dir)
+          return {} unless workspace_root
+
+          local_scopes = scoped_requirements.select do |candidate_scope, _|
+            scope_in_workspace_root?(candidate_scope, workspace_root)
+          end
+          return {} if local_scopes.empty?
+
+          merge_scopes(local_scopes)
+        end
+
+        sig { params(candidate_scope: T.nilable(String), workspace_root: String).returns(T::Boolean) }
+        def scope_in_workspace_root?(candidate_scope, workspace_root)
+          return false unless candidate_scope
+
+          if workspace_root == "."
+            !candidate_scope.include?("/")
+          else
+            candidate_scope.start_with?("#{workspace_root}/")
           end
         end
 
@@ -133,8 +167,14 @@ module Dependabot
         # from a file path.
         sig { params(path: String).returns(T.nilable(String)) }
         def extract_xcode_scope_dir(path)
-          match = path.match(%r{^(.*?\.(?:xcodeproj|xcworkspace))/})
-          match&.captures&.first
+          XcodeFileHelpers.extract_xcode_scope_dir(path)
+        end
+
+        sig { params(scope_dir: T.nilable(String)).returns(T.nilable(String)) }
+        def workspace_root_for_scope(scope_dir)
+          return nil unless scope_dir&.end_with?(".xcworkspace")
+
+          File.dirname(scope_dir)
         end
       end
     end

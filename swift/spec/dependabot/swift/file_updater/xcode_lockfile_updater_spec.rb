@@ -11,9 +11,12 @@ RSpec.describe Dependabot::Swift::FileUpdater::XcodeLockfileUpdater do
   subject(:updater) do
     described_class.new(
       resolved_file: resolved_file,
-      dependencies: dependencies
+      dependencies: dependencies,
+      workspace_files: workspace_files
     )
   end
+
+  let(:workspace_files) { [] }
 
   describe "#updated_lockfile_content" do
     subject(:updated_content) { updater.updated_lockfile_content }
@@ -337,6 +340,16 @@ RSpec.describe Dependabot::Swift::FileUpdater::XcodeLockfileUpdater do
         )
       end
 
+      let(:workspace_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcworkspace/contents.xcworkspacedata",
+            content: fixture("projects", "xcode_workspace", "MyApp.xcworkspace", "contents.xcworkspacedata"),
+            support_file: true
+          )
+        ]
+      end
+
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -355,6 +368,51 @@ RSpec.describe Dependabot::Swift::FileUpdater::XcodeLockfileUpdater do
       end
 
       it { is_expected.to be(true) }
+    end
+
+    context "when workspace data does not reference the dependency project" do
+      let(:resolved_file) do
+        Dependabot::DependencyFile.new(
+          name: "MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          content: fixture(
+            "projects",
+            "xcode_workspace",
+            "MyApp.xcworkspace",
+            "xcshareddata",
+            "swiftpm",
+            "Package.resolved"
+          )
+        )
+      end
+
+      let(:workspace_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcworkspace/contents.xcworkspacedata",
+            content: fixture("projects", "xcode_workspace", "MyApp.xcworkspace", "contents.xcworkspacedata"),
+            support_file: true
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "github.com/apple/swift-nio",
+            version: "2.55.0",
+            requirements: [{
+              requirement: ">= 2.55.0, < 3.0.0",
+              groups: ["dependencies"],
+              file: "OtherApp.xcodeproj/project.pbxproj",
+              source: { type: "git", url: "https://github.com/apple/swift-nio.git", ref: "2.55.0" }
+            }],
+            package_manager: "swift",
+            metadata: { identity: "swift-nio" }
+          )
+        ]
+      end
+
+      it { is_expected.to be(false) }
     end
   end
 end

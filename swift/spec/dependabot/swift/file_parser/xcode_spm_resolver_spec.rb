@@ -173,6 +173,42 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
       end
     end
 
+    context "with workspace-scoped Package.resolved and unrelated project scope" do
+      let(:project_name) { "xcode_workspace" }
+      let(:xcode_resolved_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:pbxproj_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "other/OtherApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", "xcode_project_multiple", "AppA.xcodeproj", "project.pbxproj"),
+            support_file: true
+          )
+        ]
+      end
+
+      it "does not enrich requirements from unrelated scopes" do
+        dep = resolver.parse.first
+        req = dep.requirements.first
+
+        expect(req[:requirement]).to eq("= 2.54.0")
+        expect(req[:file]).to eq("MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved")
+      end
+    end
+
     context "with multiple dependencies and requirement types" do
       let(:project_name) { "xcode_project_multi_req" }
       let(:xcode_resolved_files) do

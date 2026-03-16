@@ -9,6 +9,7 @@ require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/swift/file_updater"
 require "dependabot/swift/url_helpers"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -31,12 +32,14 @@ module Dependabot
         sig do
           params(
             resolved_file: Dependabot::DependencyFile,
-            dependencies: T::Array[Dependabot::Dependency]
+            dependencies: T::Array[Dependabot::Dependency],
+            workspace_files: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def initialize(resolved_file:, dependencies:)
+        def initialize(resolved_file:, dependencies:, workspace_files: [])
           @resolved_file = resolved_file
           @dependencies = dependencies
+          @workspace_files = workspace_files
         end
 
         sig { returns(String) }
@@ -80,6 +83,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :workspace_files
 
         sig { params(content: String).returns(T::Hash[String, T.untyped]) }
         def parse_json(content)
@@ -246,8 +252,7 @@ module Dependabot
         # from a file path.
         sig { params(path: String).returns(T.nilable(String)) }
         def extract_xcode_scope_dir(path)
-          match = path.match(%r{^(.*?\.(?:xcodeproj|xcworkspace))/})
-          match&.captures&.first
+          XcodeFileHelpers.extract_xcode_scope_dir(path)
         end
 
         sig { params(req_file: T.nilable(String)).returns(T::Boolean) }
@@ -258,15 +263,39 @@ module Dependabot
           return false unless workspace_scope&.end_with?(".xcworkspace")
           return false unless req_file.include?(".xcodeproj/")
 
-          workspace_root = File.dirname(workspace_scope)
           req_scope = extract_xcode_scope_dir(req_file)
           return false unless req_scope
+
+          referenced = referenced_project_scopes_for_workspace(workspace_scope)
+          return referenced.include?(req_scope) if referenced.any?
+
+          workspace_root = File.dirname(workspace_scope)
 
           if workspace_root == "."
             !req_scope.include?("/")
           else
             req_scope.start_with?("#{workspace_root}/")
           end
+        end
+
+        sig { params(workspace_scope: String).returns(T::Set[String]) }
+        def referenced_project_scopes_for_workspace(workspace_scope)
+          workspace_data_path = "#{workspace_scope}/contents.xcworkspacedata"
+          file = workspace_files.find { |workspace_file| workspace_file.name == workspace_data_path }
+          return Set.new unless file&.content
+
+          project_refs = file.content.scan(/location\s*=\s*"(?:group:)?([^"\n]+\.xcodeproj)"/).flatten
+          workspace_root = File.dirname(workspace_scope)
+
+          Set.new(
+            project_refs.map do |project_ref|
+              if workspace_root == "."
+                project_ref
+              else
+                File.join(workspace_root, project_ref)
+              end
+            end
+          )
         end
       end
     end
