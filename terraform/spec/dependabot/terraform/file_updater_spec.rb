@@ -1495,6 +1495,13 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           DEP
         )
       end
+
+      it "updates the manifest version constraint" do
+        manifest = updated_dependency_files.find { |file| file.name == "providers.tf" }
+
+        expect(manifest.content).to include(">= 0.0.11, < 0.0.12")
+        expect(manifest.content).not_to include(">= 0.0.6, < 0.0.12")
+      end
     end
 
     describe "when updating a provider with multiple local path modules" do

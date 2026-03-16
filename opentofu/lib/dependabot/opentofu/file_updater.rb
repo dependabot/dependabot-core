@@ -372,11 +372,11 @@ module Dependabot
         regex_version_preceeds = %r{
           (((?<!required_)version\s=\s*["'].*["'])
           (\s*source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*))
-        }mx
+        }mxi
         regex_source_preceeds = %r{
           ((source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
           (?:(?!^\}).)+)
-        }mx
+        }mxi
 
         if updated_content.match(regex_version_preceeds)
           regex_version_preceeds
@@ -396,7 +396,7 @@ module Dependabot
             (//modules/\S+)?
             ["']
           (?:(?!^\}).)*
-        }mx
+        }mxi
       end
 
       sig { params(filename: String).returns(Regexp) }
