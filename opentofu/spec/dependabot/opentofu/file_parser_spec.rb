@@ -969,7 +969,7 @@ RSpec.describe Dependabot::Opentofu::FileParser do
     end
 
     context "with a provider declared with mixed case in multiple files" do
-      let(:files) { project_dependency_files("provider_with_mixed_case") }
+      let(:files) { project_dependency_files("provider_with_mixed_case_sources") }
 
       it "normalizes provider source identifiers to lowercase" do
         dependency = dependencies.find { |d| d.name == "mongey/confluentcloud" }
