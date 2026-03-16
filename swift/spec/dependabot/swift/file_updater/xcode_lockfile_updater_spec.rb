@@ -321,5 +321,40 @@ RSpec.describe Dependabot::Swift::FileUpdater::XcodeLockfileUpdater do
 
       it { is_expected.to be(false) }
     end
+
+    context "when resolved file is workspace-scoped and dependency comes from sibling project" do
+      let(:resolved_file) do
+        Dependabot::DependencyFile.new(
+          name: "MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          content: fixture(
+            "projects",
+            "xcode_workspace",
+            "MyApp.xcworkspace",
+            "xcshareddata",
+            "swiftpm",
+            "Package.resolved"
+          )
+        )
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "github.com/apple/swift-nio",
+            version: "2.55.0",
+            requirements: [{
+              requirement: ">= 2.55.0, < 3.0.0",
+              groups: ["dependencies"],
+              file: "AppA.xcodeproj/project.pbxproj",
+              source: { type: "git", url: "https://github.com/apple/swift-nio.git", ref: "2.55.0" }
+            }],
+            package_manager: "swift",
+            metadata: { identity: "swift-nio" }
+          )
+        ]
+      end
+
+      it { is_expected.to be(true) }
+    end
   end
 end

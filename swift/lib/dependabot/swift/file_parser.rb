@@ -121,7 +121,7 @@ module Dependabot
         @xcode_resolved_files ||= T.let(
           dependency_files.select do |f|
             f.name.end_with?("Package.resolved") &&
-              f.name.include?(".xcodeproj/") &&
+              (f.name.include?(".xcodeproj/") || f.name.include?(".xcworkspace/")) &&
               !f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])

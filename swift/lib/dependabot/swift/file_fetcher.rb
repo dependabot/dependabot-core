@@ -11,7 +11,10 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
+      XCODEPROJ_SUFFIX = ".xcodeproj"
+      XCWORKSPACE_SUFFIX = ".xcworkspace"
       XCODE_SPM_PACKAGE_RESOLVED_PATH = "project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+      XCWORKSPACE_PACKAGE_RESOLVED_PATH = "xcshareddata/swiftpm/Package.resolved"
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -28,7 +31,7 @@ module Dependabot
       def self.required_files_message
         if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
           "Repo must contain a Package.swift configuration file or " \
-            "an .xcodeproj directory with a Package.resolved file."
+            "an .xcodeproj/.xcworkspace directory with a Package.resolved file."
         else
           "Repo must contain a Package.swift configuration file."
         end
@@ -74,16 +77,60 @@ module Dependabot
           resolved = fetch_file_if_present(File.join(xcodeproj_path, XCODE_SPM_PACKAGE_RESOLVED_PATH))
           fetched_files << resolved if resolved
         end
+
+        xcworkspace_dirs.each do |workspace_path|
+          workspace_data = fetch_support_file(File.join(workspace_path, "contents.xcworkspacedata"))
+          fetched_files << workspace_data if workspace_data
+
+          resolved = fetch_file_if_present(File.join(workspace_path, XCWORKSPACE_PACKAGE_RESOLVED_PATH))
+          fetched_files << resolved if resolved
+        end
       end
 
       sig { returns(T::Array[String]) }
       def xcodeproj_dirs
         @xcodeproj_dirs ||= T.let(
-          repo_contents(dir: ".", raise_errors: false)
-            .select { |entry| entry.type == "dir" && entry.name.end_with?(".xcodeproj") }
-            .map(&:name),
+          discover_dirs_with_suffix(XCODEPROJ_SUFFIX),
           T.nilable(T::Array[String])
         )
+      end
+
+      sig { returns(T::Array[String]) }
+      def xcworkspace_dirs
+        @xcworkspace_dirs ||= T.let(
+          discover_dirs_with_suffix(XCWORKSPACE_SUFFIX)
+            .reject { |path| path.include?("#{XCODEPROJ_SUFFIX}/") },
+          T.nilable(T::Array[String])
+        )
+      end
+
+      sig { params(suffix: String).returns(T::Array[String]) }
+      def discover_dirs_with_suffix(suffix)
+        discovered = T.let([], T::Array[String])
+        queue = T.let(["."], T::Array[String])
+        visited = T.let({}, T::Hash[String, T::Boolean])
+
+        until queue.empty?
+          dir = queue.shift
+          next unless dir
+          next if visited[dir]
+
+          visited[dir] = true
+
+          entries = repo_contents(dir: dir, raise_errors: false)
+          entries.each do |entry|
+            next unless entry.type == "dir"
+
+            next_dir = dir == "." ? entry.name : File.join(dir, entry.name)
+            if entry.name.end_with?(suffix)
+              discovered << next_dir
+            elsif !entry.name.start_with?(".")
+              queue << next_dir
+            end
+          end
+        end
+
+        discovered.sort
       end
     end
   end

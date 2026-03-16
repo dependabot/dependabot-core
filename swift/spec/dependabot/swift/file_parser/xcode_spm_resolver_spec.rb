@@ -137,6 +137,42 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
       end
     end
 
+    context "with workspace-scoped Package.resolved and sibling project" do
+      let(:project_name) { "xcode_workspace" }
+      let(:xcode_resolved_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:pbxproj_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "AppA.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "AppA.xcodeproj", "project.pbxproj"),
+            support_file: true
+          )
+        ]
+      end
+
+      it "parses and enriches dependencies using available pbxproj requirements" do
+        dep = resolver.parse.first
+
+        expect(dep.name).to eq("github.com/apple/swift-nio")
+        expect(dep.requirements.first[:requirement]).to eq(">= 2.54.0, < 3.0.0")
+        expect(dep.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
+      end
+    end
+
     context "with multiple dependencies and requirement types" do
       let(:project_name) { "xcode_project_multi_req" }
       let(:xcode_resolved_files) do
