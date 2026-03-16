@@ -228,9 +228,9 @@ module Dependabot
           )
         end
 
-        sig { params(req_file: T.untyped).returns(T::Boolean) }
+        sig { params(req_file: T.nilable(String)).returns(T::Boolean) }
         def req_file_matches_resolved_scope?(req_file)
-          return false unless req_file.is_a?(String)
+          return false unless req_file
           return true if req_file == resolved_file.name
           return false unless req_file.include?(".xcodeproj/") || req_file.include?(".xcworkspace/")
 
@@ -250,9 +250,9 @@ module Dependabot
           match&.captures&.first
         end
 
-        sig { params(req_file: T.untyped).returns(T::Boolean) }
+        sig { params(req_file: T.nilable(String)).returns(T::Boolean) }
         def workspace_related_dependency?(req_file)
-          return false unless req_file.is_a?(String)
+          return false unless req_file
 
           workspace_scope = extract_xcode_scope_dir(resolved_file.name)
           return false unless workspace_scope&.end_with?(".xcworkspace")
