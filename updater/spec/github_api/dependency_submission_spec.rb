@@ -111,6 +111,11 @@ RSpec.shared_examples "dependency_submission" do |empty|
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
       expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
+
+      # Check dependabot-specific metadata keys
+      expect(payload[:metadata][:status]).to eql("ok")
+      expect(payload[:metadata][:reason]).to be_nil
+      expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
     end
 
     it "affixes to use the updater sha if available" do
