@@ -3,6 +3,17 @@ export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
 
+function ensure_compatible_docker_api_version() {
+  # When the CLI is newer than the daemon, pin to the server API version.
+  if [ -z "$DOCKER_API_VERSION" ]; then
+    local server_api_version
+    server_api_version=$(docker version --format '{{.Server.APIVersion}}' 2>/dev/null || true)
+    if [ -n "$server_api_version" ]; then
+      export DOCKER_API_VERSION="$server_api_version"
+    fi
+  fi
+}
+
 function set_tag() {
     case $ECOSYSTEM in
       docker_compose)
@@ -43,6 +54,7 @@ function set_tag() {
 
 function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
+  ensure_compatible_docker_api_version
   ECOSYSTEM="$1"
   set_tag
 

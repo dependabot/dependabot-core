@@ -207,14 +207,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "when updating multiple dependencies that results in 'package.json' update only once" do
-      before do
-        Dependabot::Experiments.register(:avoid_duplicate_updates_package_json, true)
-      end
-
-      after do
-        Dependabot::Experiments.register(:avoid_duplicate_updates_package_json, false)
-      end
-
       let(:project_name) { "npm8/simple_with_multiple_deps" }
       let(:dependencies) do
         [
