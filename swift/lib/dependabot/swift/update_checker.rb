@@ -54,9 +54,13 @@ module Dependabot
       def updated_requirements
         return updated_xcode_requirements if xcode_spm_mode?
 
+        # If no target version is available, return old requirements unchanged
+        target = preferred_resolvable_version
+        return old_requirements unless target
+
         RequirementsUpdater.new(
           requirements: old_requirements,
-          target_version: T.must(preferred_resolvable_version)
+          target_version: target
         ).updated_requirements
       end
 
@@ -64,9 +68,14 @@ module Dependabot
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_xcode_requirements
+        # If no target version is available (e.g., revision-only or branch-pinned
+        # dependency), return old requirements unchanged
+        target = preferred_resolvable_version
+        return old_requirements unless target
+
         RequirementsUpdater.new(
           requirements: old_requirements,
-          target_version: T.must(preferred_resolvable_version),
+          target_version: target,
           xcode_mode: true
         ).updated_requirements
       end
