@@ -110,10 +110,14 @@ jobs:
 
       - name: Check skip
         id: skip-check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CACHE_HIT: ${{ steps.cache-proxy.outputs.cache-hit }}
+          SUITE_NAME: ${{ matrix.suite.name }}
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" && "${{ steps.cache-proxy.outputs.cache-hit }}" != "true" ]]; then
+          if [[ "$EVENT_NAME" == "pull_request" && "$CACHE_HIT" != "true" ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "⏭️ Skipped ${{ matrix.suite.name }}: no proxy cache available. Run workflow_dispatch on main to prime the cache." >> $GITHUB_STEP_SUMMARY
+            echo "⏭️ Skipped $SUITE_NAME: no proxy cache available. Run workflow_dispatch on main to prime the cache." >> $GITHUB_STEP_SUMMARY
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
