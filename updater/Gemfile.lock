@@ -153,6 +153,12 @@ PATH
       rexml (~> 3.4.1)
 
 PATH
+  remote: ../mise
+  specs:
+    dependabot-mise (0.402.0)
+      dependabot-common (= 0.402.0)
+
+PATH
   remote: ../nix
   specs:
     dependabot-nix (0.402.0)
@@ -619,6 +625,7 @@ DEPENDENCIES
   dependabot-hex!
   dependabot-julia!
   dependabot-maven!
+  dependabot-mise!
   dependabot-nix!
   dependabot-npm_and_yarn!
   dependabot-nuget!
@@ -711,6 +718,7 @@ CHECKSUMS
   dependabot-hex (0.402.0)
   dependabot-julia (0.402.0)
   dependabot-maven (0.402.0)
+  dependabot-mise (0.402.0)
   dependabot-nix (0.402.0)
   dependabot-npm_and_yarn (0.402.0)
   dependabot-nuget (0.402.0)

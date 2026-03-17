@@ -107,3 +107,7 @@
 "L: cpp:vcpkg":
 - changed-files:
   - any-glob-to-any-file: vcpkg/**
+
+"L: mise":
+- changed-files:
+  - any-glob-to-any-file: mise/**
