@@ -27,10 +27,8 @@ Gem::Specification.new do |spec|
   spec.files        = []
 
   spec.add_dependency "aws-sdk-codecommit", "~> 1.28"
-  spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
   spec.add_dependency "commonmarker", "~> 2.3"
-  spec.add_dependency "docker_registry2", "~> 1.18"
   spec.add_dependency "excon", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-retry", "~> 2.2"

@@ -27,7 +27,9 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = Dir["lib/**/*"]
 
+  spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "dependabot-common", Dependabot::VERSION
+  spec.add_dependency "docker_registry2", "~> 1.18"
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list

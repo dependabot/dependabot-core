@@ -28,10 +28,8 @@ PATH
   specs:
     dependabot-common (0.365.0)
       aws-sdk-codecommit (~> 1.28)
-      aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
       commonmarker (~> 2.3)
-      docker_registry2 (~> 1.18)
       excon (~> 1.2)
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
@@ -78,7 +76,9 @@ PATH
   remote: docker
   specs:
     dependabot-docker (0.365.0)
+      aws-sdk-ecr (~> 1.5)
       dependabot-common (= 0.365.0)
+      docker_registry2 (~> 1.18)
 
 PATH
   remote: dotnet_sdk
