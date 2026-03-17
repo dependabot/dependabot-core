@@ -366,9 +366,12 @@ module Dependabot
           .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n]*))/)
           .filter_map do |match_array|
             n, p = match_array
-            unless p.to_s.include?("://") || p.to_s.include?("git@")
-              { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name }
-            end
+            path = p.to_s.strip
+            # Skip self-referencing editable installs (e.g. "-e ." or "-e file:.")
+            # and URL-based dependencies
+            next if path == "." || path.include?("://") || path.include?("git@")
+
+            { name: n.to_s.strip, path: path, file: req_file.name }
           end
 
         uneditable_reqs + editable_reqs

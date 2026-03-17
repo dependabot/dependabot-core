@@ -836,7 +836,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
-    context "with a path-based dependency that it's not fetchable" do
+    context "with a self-referencing editable install (-e file:.) in a subdirectory" do
       let(:directory) { "/requirements" }
 
       let(:repo_contents) do
@@ -865,20 +865,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "contents_directory_with_outside_reference_txt_file.json"),
             headers: { "content-type" => "application/json" }
           )
-        stub_request(:get, File.join(url_with_directory, "setup.py?ref=sha"))
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(status: 404)
-        stub_request(:get, File.join(url_with_directory, "pyproject.toml?ref=sha"))
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(status: 404)
       end
 
-      it "raises DependencyFileNotFound error with details" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(
-            Dependabot::PathDependenciesNotReachable,
-            "The following path based dependencies could not be retrieved: \"-e file:.\" at /requirements/base.in"
-          )
+      it "skips the self-referencing editable install without raising an error" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(base.in base.txt))
       end
     end
 
@@ -1199,6 +1190,27 @@ RSpec.describe Dependabot::Python::FileFetcher do
               )
           end
         end
+      end
+    end
+
+    context "with a self-referencing editable install (-e .) and no setup.py" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_self_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "skips the self-reference and does not raise a path dependency error" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
       end
     end
 
