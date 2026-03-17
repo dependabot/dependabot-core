@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/uv/file_parser"
+require "dependabot/uv/name_normaliser"
 require "toml-rb"
 
 module Dependabot
@@ -168,6 +169,13 @@ module Dependabot
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "pypi"
+      end
+
+      # Strip extras (e.g. "[filecache]") from the dependency name for PURLs,
+      # since the PURL should reference the base package only.
+      sig { override.params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_name_for(dependency)
+        NameNormaliser.normalise(dependency.name)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
