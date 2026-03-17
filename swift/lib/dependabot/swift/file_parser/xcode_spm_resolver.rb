@@ -14,8 +14,9 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       # Orchestrates Xcode-managed SwiftPM dependency parsing.
       #
-      # Parses Package.resolved JSON files found inside .xcodeproj directories,
-      # then enriches each dependency with requirement info extracted from the
+      # Parses Package.resolved JSON files found inside Xcode project and
+      # workspace directories (e.g., .xcodeproj and .xcworkspace), then
+      # enriches each dependency with requirement info extracted from the
       # corresponding project.pbxproj files.
       class XcodeSpmResolver
         extend T::Sig
