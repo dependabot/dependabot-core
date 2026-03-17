@@ -116,7 +116,7 @@ module Dependabot
         @package_manifest_file ||= T.let(get_original_file("Package.swift"), T.nilable(Dependabot::DependencyFile))
       end
 
-      # All non-support Package.resolved files from Xcode project directories
+      # All non-support Package.resolved files from Xcode project and workspace directories (.xcodeproj, .xcworkspace)
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
