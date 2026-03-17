@@ -110,10 +110,11 @@ module Dependabot
         discovered = T.let([], T::Array[String])
         queue = T.let(["."], T::Array[String])
         visited = T.let({}, T::Hash[String, T::Boolean])
+        index = T.let(0, Integer)
 
-        until queue.empty?
-          dir = queue.shift
-          next unless dir
+        while index < queue.length
+          dir = queue[index]
+          index += 1
           next if visited[dir]
 
           visited[dir] = true
@@ -129,7 +130,6 @@ module Dependabot
               queue << next_dir
             end
           end
-        end
 
         discovered.sort
       end
