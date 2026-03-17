@@ -157,7 +157,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
-            if (updatedDependencyFiles.Length > 0)
+            if (updateOperationsPerformed.Count > 0 && updatedDependencyFiles.Length > 0)
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
