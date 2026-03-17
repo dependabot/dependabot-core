@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+echo "No native helpers to build for mise"

@@ -135,3 +135,7 @@
 "L: deno":
 - changed-files:
   - any-glob-to-any-file: deno/**
+
+"L: mise":
+- changed-files:
+  - any-glob-to-any-file: mise/**
