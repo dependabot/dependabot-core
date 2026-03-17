@@ -184,6 +184,7 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         resolved_dependencies = grapher.resolved_dependencies
 
         purl_keys = resolved_dependencies.keys
+        expect(purl_keys).to include(a_string_matching(%r{^pkg:pypi/cachecontrol}))
         expect(purl_keys).not_to include(a_string_matching(/\[/))
       end
     end
