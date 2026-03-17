@@ -113,7 +113,7 @@ module Dependabot
         index = T.let(0, Integer)
 
         while index < queue.length
-          dir = queue[index]
+          dir = T.must(queue[index])
           index += 1
           next if visited[dir]
 
@@ -130,6 +130,7 @@ module Dependabot
               queue << next_dir
             end
           end
+        end
 
         discovered.sort
       end
