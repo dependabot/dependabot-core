@@ -45,6 +45,7 @@ Sentry.init do |config|
     hex|
     julia|
     maven|
+    mise|
     nix|
     npm_and_yarn|
     nuget|
@@ -89,6 +90,7 @@ require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
 require "dependabot/maven"
+require "dependabot/mise"
 require "dependabot/nix"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"

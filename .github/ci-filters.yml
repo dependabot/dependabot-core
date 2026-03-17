@@ -71,6 +71,9 @@ julia:
 maven:
   - *shared
   - 'maven/**'
+mise:
+  - *shared
+  - 'mise/**'
 nix:
   - *shared
   - 'nix/**'

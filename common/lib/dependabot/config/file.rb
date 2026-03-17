@@ -78,6 +78,7 @@ module Dependabot
           "helm" => "helm",
           "julia" => "julia",
           "maven" => "maven",
+          "mise" => "mise",
           "mix" => "hex",
           "nix" => "nix",
           "npm" => "npm_and_yarn",
