@@ -1051,7 +1051,10 @@ module Dependabot
             workspace_key = workspace_lockfile_key(workspace_file)
             next unless parsed_updated_lockfile_content.dig("packages", workspace_key)
 
-            parsed_workspace_pkg = JSON.parse(T.must(updated_package_json_content(workspace_file)))
+            workspace_content = updated_package_json_content(workspace_file)
+            next unless workspace_content
+
+            parsed_workspace_pkg = JSON.parse(workspace_content)
             NpmAndYarn::FileParser.each_dependency(parsed_workspace_pkg) do |dependency_name, original_requirement, type|
               next unless dependency_names_to_restore.include?(dependency_name)
 

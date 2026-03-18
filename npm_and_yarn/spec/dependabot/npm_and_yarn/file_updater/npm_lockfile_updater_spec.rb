@@ -241,7 +241,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     let(:files) { project_dependency_files("npm8/workspace_outdated_deps_not_in_root_package_json") }
 
-    it "updates the resolved version but preserves the workspace package.json requirement range" do
+    it "updates node_modules version while preserving workspace requirement range" do
       parsed_lockfile = JSON.parse(updated_npm_lock_content)
 
       # The installed version in node_modules should be updated
