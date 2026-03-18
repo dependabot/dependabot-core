@@ -17,7 +17,7 @@
     "@pnpm/lockfile-file": "^9.1.3",
     "@pnpm/dependency-path": "^1001.1.10",
     "semver": "^7.7.4",
-    "patch-package": "^8.0.0"
+    "patch-package": "^8.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
