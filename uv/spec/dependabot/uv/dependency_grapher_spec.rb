@@ -160,5 +160,33 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         expect(markupsafe.dependencies).to eq([])
       end
     end
+
+    context "when dependencies have extras in their names" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_dependency_grapher_extras.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml] }
+
+      let(:generated_uv_lock) { fixture("dependency_grapher", "generated_uv.lock") }
+
+      before do
+        allow(parser).to receive(:run_in_parsed_context)
+          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+          .and_return(generated_uv_lock)
+      end
+
+      it "strips extras from PURL names" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        purl_keys = resolved_dependencies.keys
+        expect(purl_keys).to include(a_string_matching(%r{^pkg:pypi/cachecontrol}))
+        expect(purl_keys).not_to include(a_string_matching(/\[/))
+      end
+    end
   end
 end

@@ -53,6 +53,13 @@ module Dependabot
         "pypi"
       end
 
+      # Strip extras (e.g. "[filecache]") from the dependency name for PURLs,
+      # since the PURL should reference the base package only.
+      sig { override.params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_name_for(dependency)
+        NameNormaliser.normalise(dependency.name)
+      end
+
       sig { returns(T::Hash[String, T::Array[String]]) }
       def package_relationships
         @package_relationships ||= T.let(

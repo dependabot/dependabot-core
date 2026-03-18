@@ -1,10 +1,13 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/swift/file_updater/lockfile_updater"
 require "dependabot/swift/file_updater/manifest_updater"
+require "dependabot/swift/file_updater/xcode_lockfile_updater"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -13,6 +16,18 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
+        if xcode_spm_mode?
+          updated_xcode_spm_files
+        else
+          updated_classic_spm_files
+        end
+      end
+
+      private
+
+      # Classic SPM update: uses swift CLI to resolve and update
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_classic_spm_files
         updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         SharedHelpers.in_a_temporary_repo_directory(T.must(manifest).directory, repo_contents_path) do
@@ -31,7 +46,35 @@ module Dependabot
         updated_files
       end
 
-      private
+      # Xcode SPM update: updates Package.resolved files in-place without CLI
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_xcode_spm_files
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
+
+        xcode_resolved_files.each do |resolved_file|
+          updater = XcodeLockfileUpdater.new(
+            resolved_file: resolved_file,
+            dependencies: dependencies,
+            workspace_files: xcode_workspace_files
+          )
+
+          next unless updater.lockfile_changed?
+
+          updated_content = updater.updated_lockfile_content
+          next if updated_content == resolved_file.content
+
+          updated_files << updated_file(file: resolved_file, content: updated_content)
+        end
+
+        if updated_files.empty?
+          raise Dependabot::DependencyFileNotFound.new(
+            nil,
+            "No Package.resolved files needed updating for the specified dependencies"
+          )
+        end
+
+        updated_files
+      end
 
       sig { returns(Dependabot::Dependency) }
       def dependency
@@ -42,7 +85,38 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "A Package.swift file must be provided!" unless manifest
+        return if manifest
+        return if xcode_spm_mode? && xcode_resolved_files.any?
+
+        raise "A Package.swift file or Xcode Package.resolved must be provided!"
+      end
+
+      sig { returns(T::Boolean) }
+      def xcode_spm_mode?
+        return false unless Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
+
+        manifest.nil? && xcode_resolved_files.any?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def xcode_resolved_files
+        @xcode_resolved_files ||= T.let(
+          dependency_files.select do |f|
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
+              !f.support_file?
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def xcode_workspace_files
+        @xcode_workspace_files ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?("contents.xcworkspacedata") && f.support_file?
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig { returns(String) }

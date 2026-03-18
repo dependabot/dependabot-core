@@ -174,6 +174,22 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(setup_py)
       end
     end
+
+    context "when a requirements.txt contains dependencies with extras" do
+      let(:requirements_txt_with_extras) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "cachecontrol[filecache]==0.14.2\nrequests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt_with_extras] }
+
+      it "falls back to requirements.txt" do
+        expect(grapher.relevant_dependency_file).to eql(requirements_txt_with_extras)
+      end
+    end
   end
 
   describe "#resolved_dependencies" do
@@ -412,6 +428,26 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
             "pkg:pypi/urllib3@2.2.1"
           ]
         )
+      end
+    end
+
+    context "when dependencies have extras in their names" do
+      let(:requirements_txt_with_extras) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "cachecontrol[filecache]==0.14.2\nrequests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt_with_extras] }
+
+      it "strips extras from PURL names" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        purl_keys = resolved_dependencies.keys
+        expect(purl_keys).to include("pkg:pypi/cachecontrol@0.14.2")
+        expect(purl_keys).not_to include("pkg:pypi/cachecontrol[filecache]@0.14.2")
       end
     end
   end

@@ -1,0 +1,7 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d # v1.0.1

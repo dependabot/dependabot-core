@@ -9,6 +9,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/git_commit_checker"
 require "dependabot/swift/native_requirement"
 require "dependabot/swift/file_updater/manifest_updater"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -54,9 +55,13 @@ module Dependabot
       def updated_requirements
         return updated_xcode_requirements if xcode_spm_mode?
 
+        # If no target version is available, return old requirements unchanged
+        target = preferred_resolvable_version
+        return old_requirements unless target
+
         RequirementsUpdater.new(
           requirements: old_requirements,
-          target_version: T.must(preferred_resolvable_version)
+          target_version: target
         ).updated_requirements
       end
 
@@ -64,9 +69,14 @@ module Dependabot
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_xcode_requirements
+        # If no target version is available (e.g., revision-only or branch-pinned
+        # dependency), return old requirements unchanged
+        target = preferred_resolvable_version
+        return old_requirements unless target
+
         RequirementsUpdater.new(
           requirements: old_requirements,
-          target_version: T.must(preferred_resolvable_version),
+          target_version: target,
           xcode_mode: true
         ).updated_requirements
       end
@@ -285,8 +295,7 @@ module Dependabot
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("Package.resolved") &&
-              f.name.include?(".xcodeproj/") &&
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
               !f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
