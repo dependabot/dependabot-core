@@ -9,6 +9,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/git_commit_checker"
 require "dependabot/swift/native_requirement"
 require "dependabot/swift/file_updater/manifest_updater"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -294,8 +295,7 @@ module Dependabot
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("Package.resolved") &&
-              f.name.include?(".xcodeproj/") &&
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
               !f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])

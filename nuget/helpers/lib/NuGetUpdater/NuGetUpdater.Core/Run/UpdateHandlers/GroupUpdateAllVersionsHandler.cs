@@ -1,5 +1,8 @@
 using System.Collections.Immutable;
 
+using NuGet.Versioning;
+
+using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
@@ -106,6 +109,13 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
+                    var isUpdateAllowed = groupMatcher.IsAllowedByVersion(NuGetVersion.Parse(dependency.Version!), NuGetVersion.Parse(analysisResult.UpdatedVersion));
+                    if (!isUpdateAllowed)
+                    {
+                        logger.Info($"Dependency {dependency.Name} skipped for group {group.Name} because update type was not allowed.");
+                        continue;
+                    }
+
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
                     var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
                     if (updaterResult.Error is not null)
@@ -204,15 +214,6 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var matchingGroups = job.DependencyGroups
-                        .Where(group => group.GetGroupMatcher().IsMatch(dependency.Name))
-                        .ToImmutableArray();
-                    if (matchingGroups.Length > 0)
-                    {
-                        logger.Info($"Dependency {dependency.Name} skipped for ungrouped updates because it's a member of the following groups: {string.Join(", ", matchingGroups.Select(group => group.Name))}");
-                        continue;
-                    }
-
                     var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: true);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
@@ -225,6 +226,12 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
+                        continue;
+                    }
+
+                    var isSkipped = IsUngroupedDependencySkipped(dependency, analysisResult, job.DependencyGroups, logger);
+                    if (isSkipped)
+                    {
                         continue;
                     }
 
@@ -292,5 +299,30 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             .GroupBy(o => $"{o.Dependency.Name}/{o.Dependency.Version}".ToLowerInvariant())
             .ToImmutableArray();
         return updateOperationsToPerformByDependency;
+    }
+
+    internal static bool IsUngroupedDependencySkipped(Dependency dependency, AnalysisResult dependencyAnalysis, ImmutableArray<DependencyGroup> dependencyGroups, ILogger logger)
+    {
+        var matcherGroups = dependencyGroups
+            .Select(group => (group.Name, Matcher: group.GetGroupMatcher()))
+            .Where(pair => pair.Matcher.IsMatch(dependency.Name))
+            .ToImmutableArray();
+        if (matcherGroups.Length > 0)
+        {
+            // update matches a group by name
+            // if any group allows the proposed version range, then it's not allowed in an ungrouped update
+            var oldVersion = NuGetVersion.Parse(dependency.Version!);
+            var newVersion = NuGetVersion.Parse(dependencyAnalysis.UpdatedVersion);
+            var matcherGroupsAllowingVersionRange = matcherGroups
+                .Where(pair => pair.Matcher.IsAllowedByVersion(oldVersion, newVersion))
+                .ToImmutableArray();
+            if (matcherGroupsAllowingVersionRange.Length > 0)
+            {
+                logger.Info($"Dependency {dependency.Name} skipped for ungrouped updates because it's a member of the following groups: {string.Join(", ", matcherGroupsAllowingVersionRange.Select(pair => pair.Name))}");
+                return true;
+            }
+        }
+
+        return false;
     }
 }
