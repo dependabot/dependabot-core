@@ -1046,8 +1046,6 @@ module Dependabot
         def restore_root_package_locked_dependencies(
           updated_lockfile_content, parsed_updated_lockfile_content, dependency_names_to_restore
         )
-          # Scope replacements to the root package entry (key "") to avoid
-          # overwriting workspace entries that may have different ranges.
           root_marker = '""'
 
           NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
@@ -1059,6 +1057,10 @@ module Dependabot
 
             updated_lockfile_content = replace_in_lockfile_section(
               updated_lockfile_content, root_marker, dependency_name, locked_requirement, original_requirement
+            )
+
+            updated_lockfile_content = replace_in_v1_dependencies(
+              updated_lockfile_content, dependency_name, locked_requirement, original_requirement
             )
           end
 
@@ -1086,18 +1088,16 @@ module Dependabot
             next unless workspace_content
 
             parsed_workspace_pkg = JSON.parse(workspace_content)
-            NpmAndYarn::FileParser.each_dependency(parsed_workspace_pkg) do |dep_name, original_req, type|
+            NpmAndYarn::FileParser.each_dependency(parsed_workspace_pkg) do |dep_name, updated_req, type|
               next unless dependency_names_to_restore.include?(dep_name)
 
               locked_requirement = parsed_updated_lockfile_content.dig("packages", workspace_key, type, dep_name)
               next unless locked_requirement
-              next if locked_requirement == original_req
+              next if locked_requirement == updated_req
 
-              # Scope the replacement to the workspace section to avoid
-              # cross-contaminating entries in other workspace packages.
               workspace_marker = %("#{workspace_key}": {)
               updated_lockfile_content = replace_in_lockfile_section(
-                updated_lockfile_content, workspace_marker, dep_name, locked_requirement, original_req
+                updated_lockfile_content, workspace_marker, dep_name, locked_requirement, updated_req
               )
             end
           end
@@ -1121,9 +1121,46 @@ module Dependabot
 
           locked_fragment = %("#{dep_name}": "#{locked_req}")
           original_fragment = %("#{dep_name}": "#{original_req}")
+
+          v1_boundary = v1_dependencies_start(content)
+
           prefix = T.must(content[0...section_start])
-          remainder = T.must(content[section_start..])
-          prefix + remainder.sub(locked_fragment, original_fragment)
+          if v1_boundary && v1_boundary > section_start
+            mid = T.must(content[section_start...v1_boundary])
+            suffix = T.must(content[v1_boundary..])
+            prefix + mid.sub(locked_fragment, original_fragment) + suffix
+          else
+            remainder = T.must(content[section_start..])
+            prefix + remainder.sub(locked_fragment, original_fragment)
+          end
+        end
+
+        # lockfileVersion 2 lockfiles have a top-level "dependencies" key with
+        # v1-format entries that use exact versions in "requires".
+        sig { params(content: String).returns(T.nilable(Integer)) }
+        def v1_dependencies_start(content)
+          match = content.match(/^\s{2}\},\n\s{2}"dependencies":\s*\{/m)
+          match&.begin(0)
+        end
+
+        sig do
+          params(
+            content: String,
+            dep_name: String,
+            locked_req: String,
+            original_req: String
+          )
+            .returns(String)
+        end
+        def replace_in_v1_dependencies(content, dep_name, locked_req, original_req)
+          v1_start = v1_dependencies_start(content)
+          return content unless v1_start
+
+          locked_fragment = %("#{dep_name}": "#{locked_req}")
+          original_fragment = %("#{dep_name}": "#{original_req}")
+          prefix = T.must(content[0...v1_start])
+          remainder = T.must(content[v1_start..])
+          prefix + remainder.gsub(locked_fragment, original_fragment)
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
