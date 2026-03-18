@@ -231,7 +231,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     let(:previous_version) { "1.3.40" }
     let(:requirements) do
       [{
-        file: "packages/bump-version-for-cron/package.json",
+        file: "bump-version-for-cron/package.json",
         requirement: "^1.3.37",
         groups: ["devDependencies"],
         source: nil
