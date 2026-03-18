@@ -241,9 +241,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     let(:files) { project_dependency_files("npm8/workspace_outdated_deps_not_in_root_package_json") }
 
-    it "updates" do
-      expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"])
+    it "updates the resolved version but preserves the workspace package.json requirement range" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+      # The installed version in node_modules should be updated
+      expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
         .to eq("1.3.44")
+
+      # The workspace package entry should mirror the workspace package.json (^1.3.37),
+      # not reflect the exact installed version - this prevents spurious lockfile changes
+      # when the versioning strategy does not require updating package.json
+      expect(parsed_lockfile["packages"]["bump-version-for-cron"]["devDependencies"]["@swc/core"])
+        .to eq("^1.3.37")
     end
   end
 

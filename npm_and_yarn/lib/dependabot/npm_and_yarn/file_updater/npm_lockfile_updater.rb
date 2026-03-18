@@ -1017,6 +1017,11 @@ module Dependabot
         # `package.json` requirement for eslint at `^1.0.0`, in which case we
         # need to copy this from the manifest to the lockfile after the update
         # has finished.
+        #
+        # The same issue applies to workspace package entries (packages["cli"]):
+        # when installing a specific version for a workspace dep, npm may update
+        # the workspace entry in the lockfile to the exact installed version even
+        # though the workspace's package.json still has the original range.
         sig do
           params(
             updated_lockfile_content: String,
@@ -1027,6 +1032,7 @@ module Dependabot
         def restore_locked_package_dependencies(updated_lockfile_content, parsed_updated_lockfile_content)
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
+          # Restore root package (packages[""]) dependencies
           NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
             next unless dependency_names_to_restore.include?(dependency_name)
 
@@ -1038,7 +1044,43 @@ module Dependabot
             updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
           end
 
+          # Restore workspace package (packages["<workspace>"]) dependencies so
+          # that the lockfile entry mirrors the workspace package.json rather than
+          # reflecting the exact version that npm installed.
+          workspace_package_files.each do |workspace_file|
+            workspace_key = workspace_lockfile_key(workspace_file)
+            next unless parsed_updated_lockfile_content.dig("packages", workspace_key)
+
+            parsed_workspace_pkg = JSON.parse(T.must(updated_package_json_content(workspace_file)))
+            NpmAndYarn::FileParser.each_dependency(parsed_workspace_pkg) do |dependency_name, original_requirement, type|
+              next unless dependency_names_to_restore.include?(dependency_name)
+
+              locked_requirement = parsed_updated_lockfile_content.dig("packages", workspace_key, type, dependency_name)
+              next unless locked_requirement
+              next if locked_requirement == original_requirement
+
+              locked_req = %("#{dependency_name}": "#{locked_requirement}")
+              original_req = %("#{dependency_name}": "#{original_requirement}")
+              updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
+            end
+          end
+
           updated_lockfile_content
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def workspace_package_files
+          pkg = package_json
+          return [] unless pkg
+
+          package_files.reject { |f| f.name == pkg.name }
+        end
+
+        sig { params(workspace_file: Dependabot::DependencyFile).returns(String) }
+        def workspace_lockfile_key(workspace_file)
+          lockfile_dir = Pathname.new(lockfile.name).dirname
+          workspace_dir = Pathname.new(workspace_file.name).dirname
+          workspace_dir.relative_path_from(lockfile_dir).to_s
         end
 
         sig { params(updated_lockfile_content: String).returns(String) }
