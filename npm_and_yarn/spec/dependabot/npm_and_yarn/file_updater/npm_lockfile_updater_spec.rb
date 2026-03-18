@@ -233,7 +233,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       [{
         file: "packages/bump-version-for-cron/package.json",
         requirement: "^1.3.37",
-        groups: ["dependencies"],
+        groups: ["devDependencies"],
         source: nil
       }]
     end
@@ -244,15 +244,128 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     it "updates node_modules version while preserving workspace requirement range" do
       parsed_lockfile = JSON.parse(updated_npm_lock_content)
 
-      # The installed version in node_modules should be updated
       expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
         .to eq("1.3.44")
-
-      # The workspace package entry should mirror the workspace package.json (^1.3.37),
-      # not reflect the exact installed version - this prevents spurious lockfile changes
-      # when the versioning strategy does not require updating package.json
       expect(parsed_lockfile["packages"]["bump-version-for-cron"]["devDependencies"]["@swc/core"])
         .to eq("^1.3.37")
+    end
+  end
+
+  context "when workspace requirement was bumped" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "app/package.json",
+        requirement: "^1.3.40",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "app/package.json",
+        requirement: "^1.3.37",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+
+    let(:files) { project_dependency_files("npm8/workspace_outdated_deps_requirement_changed") }
+
+    it "does not restore the workspace lockfile entry when requirement was updated" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+      expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
+        .to eq("1.3.44")
+      # The workspace entry should reflect the new requirement, not the old one
+      expect(parsed_lockfile["packages"]["app"]["devDependencies"]["@swc/core"])
+        .to eq("^1.3.40")
+    end
+  end
+
+  context "when multiple workspaces share the same dependency with unchanged requirements" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "app-a/package.json",
+        requirement: "^1.3.37",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    let(:files) { project_dependency_files("npm8/workspace_multiple_packages_same_dep") }
+
+    it "preserves requirement ranges in both workspace lockfile entries" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+      expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
+        .to eq("1.3.44")
+      expect(parsed_lockfile["packages"]["app-a"]["devDependencies"]["@swc/core"])
+        .to eq("^1.3.37")
+      expect(parsed_lockfile["packages"]["app-b"]["dependencies"]["@swc/core"])
+        .to eq("^1.3.37")
+    end
+  end
+
+  context "when workspaces declare different ranges for the same dependency" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "app-a/package.json",
+        requirement: "^1.3.37",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    let(:files) { project_dependency_files("npm8/workspace_multiple_packages_different_ranges") }
+
+    it "preserves each workspace's own requirement range independently" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+      expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
+        .to eq("1.3.44")
+      expect(parsed_lockfile["packages"]["app-a"]["devDependencies"]["@swc/core"])
+        .to eq("^1.3.37")
+      expect(parsed_lockfile["packages"]["app-b"]["dependencies"]["@swc/core"])
+        .to eq("^1.3.40")
+    end
+  end
+
+  context "when dependency exists in both root and workspace with different ranges" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^1.3.37",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    let(:files) { project_dependency_files("npm8/workspace_dep_in_root_and_workspace") }
+
+    it "preserves root range without clobbering workspace range" do
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+      expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
+        .to eq("1.3.44")
+      expect(parsed_lockfile["packages"][""]["dependencies"]["@swc/core"])
+        .to eq("^1.3.37")
+      expect(parsed_lockfile["packages"]["app"]["devDependencies"]["@swc/core"])
+        .to eq("^1.3.40")
     end
   end
 

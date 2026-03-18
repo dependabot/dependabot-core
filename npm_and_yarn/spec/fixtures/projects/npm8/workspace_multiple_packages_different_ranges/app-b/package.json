@@ -1,0 +1,8 @@
+{
+  "name": "@test/app-b",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@swc/core": "^1.3.40"
+  }
+}

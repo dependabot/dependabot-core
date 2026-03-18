@@ -1,0 +1,8 @@
+{
+  "name": "multi-workspace-monorepo",
+  "private": true,
+  "workspaces": [
+    "app-a",
+    "app-b"
+  ]
+}
