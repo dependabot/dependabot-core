@@ -1046,7 +1046,7 @@ module Dependabot
         def restore_root_package_locked_dependencies(
           updated_lockfile_content, parsed_updated_lockfile_content, dependency_names_to_restore
         )
-          root_marker = '""'
+          root_marker = '"": {'
 
           NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
             next unless dependency_names_to_restore.include?(dependency_name)
@@ -1084,6 +1084,7 @@ module Dependabot
             workspace_key = workspace_lockfile_key(workspace_file)
             next unless parsed_updated_lockfile_content.dig("packages", workspace_key)
 
+            # Uses updated content so that intentionally bumped requirements are not reverted.
             workspace_content = updated_package_json_content(workspace_file)
             next unless workspace_content
 
@@ -1116,6 +1117,8 @@ module Dependabot
             .returns(String)
         end
         def replace_in_lockfile_section(content, section_marker, dep_name, locked_req, original_req)
+          # index returns the first occurrence, which is correct because npm
+          # lockfile section markers (e.g. '"app-a": {') are unique top-level keys.
           section_start = content.index(section_marker)
           return content unless section_start
 
@@ -1123,16 +1126,42 @@ module Dependabot
           original_fragment = %("#{dep_name}": "#{original_req}")
 
           v1_boundary = v1_dependencies_start(content)
+          # Find the end of this section's JSON object so we don't replace
+          # in a neighbouring section that happens to contain the same key.
+          section_end = find_section_end(content, section_start)
+
+          upper_bound = [v1_boundary, section_end].compact.select { |b| b > section_start }.min
 
           prefix = T.must(content[0...section_start])
-          if v1_boundary && v1_boundary > section_start
-            mid = T.must(content[section_start...v1_boundary])
-            suffix = T.must(content[v1_boundary..])
+          if upper_bound
+            mid = T.must(content[section_start...upper_bound])
+            suffix = T.must(content[upper_bound..])
             prefix + mid.sub(locked_fragment, original_fragment) + suffix
           else
             remainder = T.must(content[section_start..])
             prefix + remainder.sub(locked_fragment, original_fragment)
           end
+        end
+
+        # Finds the closing brace of the JSON object that starts at section_start.
+        # NOTE: This naively counts braces and does not skip characters inside
+        # quoted strings. This is acceptable for npm lockfiles where string values
+        # do not contain unescaped braces.
+        sig { params(content: String, section_start: Integer).returns(T.nilable(Integer)) }
+        def find_section_end(content, section_start)
+          brace_start = content.index("{", section_start)
+          return nil unless brace_start
+
+          depth = 0
+          (brace_start...content.length).each do |i|
+            case content[i]
+            when "{" then depth += 1
+            when "}"
+              depth -= 1
+              return i + 1 if depth.zero?
+            end
+          end
+          nil
         end
 
         # lockfileVersion 2 lockfiles have a top-level "dependencies" key with
@@ -1159,6 +1188,8 @@ module Dependabot
           locked_fragment = %("#{dep_name}": "#{locked_req}")
           original_fragment = %("#{dep_name}": "#{original_req}")
           prefix = T.must(content[0...v1_start])
+          # gsub: v1 "requires" blocks repeat the same dependency across nested
+          # node_modules sub-trees, and all occurrences should be restored.
           remainder = T.must(content[v1_start..])
           prefix + remainder.gsub(locked_fragment, original_fragment)
         end

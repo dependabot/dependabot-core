@@ -272,6 +272,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       }]
     end
 
+    # The fixture lockfile has "1.3.44" for the workspace entry even though
+    # the workspace package.json declares "^1.3.40". This simulates npm pinning
+    # the exact installed version in the lockfile workspace metadata.
     let(:files) { project_dependency_files("npm8/workspace_outdated_deps_requirement_changed") }
 
     it "does not restore the workspace lockfile entry when requirement was updated" do
