@@ -111,13 +111,6 @@ module Dependabot
         }
       end
 
-      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
-      def registry_config_files
-        {
-          npmrc: npmrc
-        }
-      end
-
       sig { returns(T.untyped) }
       def parsed_package_json
         JSON.parse(T.must(package_json.content))
@@ -139,16 +132,6 @@ module Dependabot
         @bun_lock ||= T.let(
           dependency_files.find do |f|
             f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
-          end,
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def npmrc
-        @npmrc ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(BunPackageManager::RC_FILENAME)
           end,
           T.nilable(Dependabot::DependencyFile)
         )

@@ -130,15 +130,6 @@ module Dependabot
         }
       end
 
-      # Returns the .npmrc, and .yarnrc files for the repository.
-      # @return [Hash{Symbol => Dependabot::DependencyFile}]
-      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
-      def registry_config_files
-        {
-          npmrc: npmrc
-        }
-      end
-
       sig { returns(DependencyFile) }
       def package_json
         @package_json ||= T.let(fetch_file_from_host(MANIFEST_FILENAME), T.nilable(DependencyFile))
