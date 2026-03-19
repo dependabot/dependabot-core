@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/ecosystem"
 require "dependabot/bun/requirement"
 require "dependabot/bun/version_selector"
+require "dependabot/bun/registry_helper"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/language"
 require "dependabot/bun/constraint_helper"
@@ -59,12 +60,19 @@ module Dependabot
       sig do
         params(
           package_json: T.nilable(T::Hash[String, T.untyped]),
-          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
+          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          credentials: T.nilable(T::Array[Dependabot::Credential])
         ).void
       end
-      def initialize(package_json, lockfiles)
+      def initialize(package_json, lockfiles, registry_config_files, credentials)
         @package_json = package_json
         @lockfiles = lockfiles
+        @registry_helper = T.let(
+          RegistryHelper.new(registry_config_files, credentials),
+          Dependabot::Bun::RegistryHelper
+        )
+
         @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
         @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
 

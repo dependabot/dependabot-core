@@ -117,7 +117,9 @@ module Dependabot
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
             parsed_package_json,
-            lockfiles
+            lockfiles,
+            registry_config_files,
+            credentials
           ),
           T.nilable(PackageManagerHelper)
         )
@@ -127,6 +129,15 @@ module Dependabot
       def lockfiles
         {
           bun: bun_lock
+        }
+      end
+
+      # Returns the .npmrc, and .yarnrc files for the repository.
+      # @return [Hash{Symbol => Dependabot::DependencyFile}]
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def registry_config_files
+        {
+          npmrc: npmrc
         }
       end
 

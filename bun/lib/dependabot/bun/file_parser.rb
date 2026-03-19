@@ -98,7 +98,9 @@ module Dependabot
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
             parsed_package_json,
-            lockfiles
+            lockfiles,
+            registry_config_files,
+            credentials
           ),
           T.nilable(PackageManagerHelper)
         )
@@ -108,6 +110,13 @@ module Dependabot
       def lockfiles
         {
           bun: bun_lock
+        }
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def registry_config_files
+        {
+          npmrc: npmrc
         }
       end
 
@@ -132,6 +141,16 @@ module Dependabot
         @bun_lock ||= T.let(
           dependency_files.find do |f|
             f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
+          end,
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def npmrc
+        @npmrc ||= T.let(
+          dependency_files.find do |f|
+            f.name.end_with?(BunPackageManager::RC_FILENAME)
           end,
           T.nilable(Dependabot::DependencyFile)
         )
