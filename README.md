@@ -92,7 +92,7 @@ However, please do not leave comments that contribute nothing new to the discuss
 
 The issue-tracker is meant solely for issues related to Dependabot's updating logic. Issues about [security alerts](https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts) or [Dependency Graph](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph) should instead be filed as a [Code Security discussion](https://github.com/orgs/community/discussions/categories/code-security).
 
-A good rule of thumb is that if you have questions about the _diff_ in a PR, it belongs here.
+A good rule of thumb is that if you have questions about the *diff* in a PR, it belongs here.
 
 ### Disclosing Security Issues
 
@@ -103,6 +103,7 @@ If you believe you have found a security vulnerability in Dependabot, please rev
 Want to contribute to Dependabot? That's great - thank you so much!
 
 Contribution workflow:
+
 1. Fork the project.
 2. Get the [development environment running](#getting-a-development-environment-running).
 3. Make your feature addition or bug fix.
@@ -128,6 +129,9 @@ edit locally using your favorite editor and the changes are immediately reflecte
 [dry-runs](#debugging-problems) or executing [tests](#running-tests).
 Note: See caveat about [editing the native package manager helper scripts](#making-changes-to-native-package-manager-helpers).
 
+> **Nix alternative:** Container images can also be built with [Nix](https://nixos.org/) for reproducible, version-pinned builds.
+> Set `USE_NIX=1` before running `script/build` or `bin/docker-dev-shell`. See [CONTRIBUTING.md](CONTRIBUTING.md#building-with-nix) for details.
+
 ### Quickstart
 
 The script to launch the developer shell builds the docker images from scratch if it can't find them locally. This can take a while.
@@ -136,12 +140,12 @@ Skip the wait by pulling the pre-built image for the ecosystem you want to work 
 to specify the ecosystem.  For example, for Go Modules, the YAML name is `gomod`:
 
 ```shell
-$ docker pull ghcr.io/dependabot/dependabot-updater-gomod
+docker pull ghcr.io/dependabot/dependabot-updater-gomod
 ```
 
->**Note:** Pre-built images are currently only available for AMD64 / Intel architecture. They _will_ run on ARM, but 2x-3x slower than if you [manually build ARM-specific images](#building-images-from-scratch).
+>**Note:** Pre-built images are currently only available for AMD64 / Intel architecture. They *will* run on ARM, but 2x-3x slower than if you [manually build ARM-specific images](#building-images-from-scratch).
 
-Next, run the developer shell, specifying the desired ecosystem _using the top-level directory name of the ecosystem in this project_. For example, for Go Modules, the top-level directory is named `go_modules`:
+Next, run the developer shell, specifying the desired ecosystem *using the top-level directory name of the ecosystem in this project*. For example, for Go Modules, the top-level directory is named `go_modules`:
 
 ```shell
 $ bin/docker-dev-shell go_modules
@@ -153,7 +157,7 @@ $ bin/docker-dev-shell go_modules
 
 Normally the [Quickstart](#quickstart) is all you need, but occasionally you'll need to rebuild the underlying images.
 
-For example, while we don't yet publish ARM-specific images, if you _are_ working on an ARM-based platform, we recommend
+For example, while we don't yet publish ARM-specific images, if you *are* working on an ARM-based platform, we recommend
 manually building the images because the resulting containers run much faster.
 
 The developer shell runs within a Dependabot Development docker image, which is built on top of an ecosystem image.
@@ -176,8 +180,8 @@ To (re)build a specific one:
 - The Updater core image:
 
   ```shell
-  $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
-  $ docker build -f Dockerfile.updater-core . --tag=dependabot-manual-build/updater-core # recommended on ARM
+  docker pull ghcr.io/dependabot/dependabot-updater-core # OR
+  docker build -f Dockerfile.updater-core . --tag=dependabot-manual-build/updater-core # recommended on ARM
   ```
 
 Each language/ecosystem sits on top of the core image. You need to rebuild whichever one you’re working on so it picks up your new core bits. For instance, if you’re working on **Go Modules**:
@@ -185,11 +189,12 @@ Each language/ecosystem sits on top of the core image. You need to rebuild which
 - The Updater ecosystem image:
 
   ```shell
-  $ docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
-  $ script/build go_modules # recommended on ARM
+  docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
+  script/build go_modules # recommended on ARM
   ```
 
   Or explicitly:
+
   ```shell
   $ docker build \
   --platform linux/amd64 \
@@ -202,7 +207,7 @@ Each language/ecosystem sits on top of the core image. You need to rebuild which
 - Spin-up the development container using the `--rebuild` flag:
 
   ```shell
-  $ bin/docker-dev-shell go_modules --rebuild
+  bin/docker-dev-shell go_modules --rebuild
   ```
 
   If successful, you should be inside the shell:
@@ -385,8 +390,8 @@ bin/dry-run.rb docker test_org/test-dependabot`
 
 Many of the ecosystems in Dependabot-Core support [security updates](https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/about-dependabot-security-updates). These are a special form of version update where a
 dependency name and range of vulnerable versions are passed in. Dependabot-Core will try to upgrade any instance of that
-dependency to the _minimum_ non-vulnerable version. This is in contrast to a normal version update which tries to update
-to the _latest_ version.
+dependency to the *minimum* non-vulnerable version. This is in contrast to a normal version update which tries to update
+to the *latest* version.
 
 The env var `SECURITY_ADVISORIES` allows passing one or more security alert notifications to the [dry-run script](#dry-run-script) in order to simulate a security update:
 
@@ -421,22 +426,22 @@ Once you get the [development environment for a particular ecosystem](#getting-a
 execute the tests for that ecosystem by running `rspec spec` inside that ecosystem's folder, e.g.
 
 ```bash
-$ cd go_modules
-$ rspec spec
+cd go_modules
+rspec spec
 ```
 
 You can also limit the tests to only the file you're working on, or only tests that previously failed, for example:
 
 ```bash
-$ rspec spec/dependabot/file_updaters/elixir --only-failures
+rspec spec/dependabot/file_updaters/elixir --only-failures
 ```
 
 Style is enforced by [RuboCop](https://rubocop.org/). To check for style violations, simply run `rubocop` in
 each of the packages, e.g.
 
 ```bash
-$ cd go_modules
-$ rubocop
+cd go_modules
+rubocop
 ```
 
 ## Profiling
@@ -518,7 +523,6 @@ sequenceDiagram
 ```
 
 This also means if Dependabot-Core ever has a security vulnerability, those creds are still not at risk of being exposed.
-
 
 # Trademarks
 

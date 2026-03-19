@@ -7,6 +7,7 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 #### Overview
 
 - [Contribution workflow](#contribution-workflow)
+- [Building with Nix](#building-with-nix)
 - [Project layout](#project-layout)
 - [How to structure your Git Commits](#how-to-structure-your-git-commits)
 - [Contributing new ecosystems](#contributing-new-ecosystems)
@@ -25,6 +26,56 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 
 There's a good description of the project's layout in our [README's Architecture section](README.md#architecture-and-code-layout), but if you're
 struggling to understand how anything works please don't hesitate to create an issue.
+
+## Building with Nix
+
+Dependabot container images can be built using [Nix](https://nixos.org/) and [nix2container](https://github.com/nlewo/nix2container) as an alternative to Docker. Nix builds are reproducible, pin every dependency to an exact version, and avoid the need to manage PPAs or manually-installed packages.
+
+### Prerequisites
+
+Install Nix with flakes support:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh
+```
+
+Docker is still required to run the built images locally.
+
+### Building images
+
+```bash
+# Build and load the core image
+cd nix && nix build .#packages.x86_64-linux.core --no-link
+nix run .#packages.x86_64-linux.core.copyToDockerDaemon
+
+# Build and load an ecosystem image (e.g., go_modules)
+nix build .#packages.x86_64-linux.ecosystems.go_modules --no-link
+nix run .#packages.x86_64-linux.ecosystems.go_modules.copyToDockerDaemon
+```
+
+Or use the build script with the `USE_NIX` flag:
+
+```bash
+USE_NIX=1 script/build go_modules
+```
+
+### Development shell
+
+```bash
+USE_NIX=1 bin/docker-dev-shell go_modules
+```
+
+### macOS contributors
+
+Nix on macOS cannot build Linux container images natively. macOS contributors should either:
+
+1. **Pull pre-built images** from GHCR (recommended): `docker pull ghcr.io/dependabot/dependabot-updater-gomod`
+2. **Set up a Linux builder**: Use a Linux VM or remote builder for Nix builds. See the [Nix remote builds documentation](https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html).
+
+### Bumping dependency versions
+
+- **Single tool** (e.g., Go): Edit `nix/ecosystems/go_modules.nix` and change `pkgs.go_1_26` to the new version attribute.
+- **All system packages**: Run `cd nix && nix flake update nixpkgs` and commit the updated `flake.lock`.
 
 ## How to structure your Git Commits
 

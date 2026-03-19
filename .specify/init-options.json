@@ -1,0 +1,9 @@
+{
+  "ai": "copilot",
+  "ai_commands_dir": null,
+  "ai_skills": false,
+  "here": true,
+  "preset": null,
+  "script": "sh",
+  "speckit_version": "0.3.1"
+}

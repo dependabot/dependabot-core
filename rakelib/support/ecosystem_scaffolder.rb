@@ -170,6 +170,55 @@ class EcosystemScaffolder
     # Make scripts executable
     FileUtils.chmod(0o755, "#{ecosystem_name}/script/build")
     FileUtils.chmod(0o755, "#{ecosystem_name}/script/ci-test")
+
+    # Create Nix ecosystem expression
+    create_nix_ecosystem_file
+  end
+
+  sig { void }
+  def create_nix_ecosystem_file
+    nix_path = "nix/ecosystems/#{ecosystem_name}.nix"
+
+    if File.exist?(nix_path)
+      case current_overwrite_mode
+      when "skip"
+        puts "  ⊘ Skipped #{nix_path} (already exists)"
+        return
+      when "ask"
+        print "  ? File #{nix_path} exists. Overwrite? [y/N]: "
+        response = $stdin.gets.to_s.strip.downcase
+        return unless %w(y yes).include?(response)
+      end
+    end
+
+    FileUtils.mkdir_p("nix/ecosystems")
+
+    content = <<~NIX
+      # #{ecosystem_name}.nix: #{ecosystem_name} ecosystem image.
+      # TODO: Add ecosystem-specific toolchain packages and helpers.
+      {
+        pkgs,
+        n2c,
+        coreImage,
+        mkEcosystemImage,
+        src,
+      }:
+
+      mkEcosystemImage {
+        inherit
+          pkgs
+          n2c
+          coreImage
+          src
+          ;
+        name = "#{ecosystem_name}";
+        tag = "#{ecosystem_name}";
+        # TODO: Add toolchainPackages, helperDerivation, envVars as needed
+      }
+    NIX
+
+    File.write(nix_path, content)
+    puts "  ✓ Created #{nix_path}"
   end
 
   sig { params(template_name: String, output_path: String).void }

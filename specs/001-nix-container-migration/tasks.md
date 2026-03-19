@@ -26,13 +26,13 @@
 
 **Purpose**: Nix flake initialization and shared library creation
 
-- [ ] T001 Create `nix/` directory structure per plan (`nix/`, `nix/lib/`, `nix/packages/`, `nix/ecosystems/`)
-- [ ] T002 Initialize Nix flake with nixpkgs and nix2container inputs in `nix/flake.nix`
-- [ ] T003 Pin nixpkgs unstable and nix2container revisions via `nix flake lock` generating `nix/flake.lock`
-- [ ] T004 [P] Implement `mkUser` helper function in `nix/lib/mkUser.nix` (creates /etc/passwd, /etc/group, /etc/shadow for dependabot:1000:1000)
-- [ ] T005 [P] Implement `fetchGitShim` fixed-output derivation in `nix/packages/git-shim.nix` (downloads git-shim tarball for amd64 and arm64)
-- [ ] T006 [P] Implement `mkEcosystemImage` shared builder in `nix/lib/mkEcosystemImage.nix` (accepts name, fromImage, toolchainPackages, helperBuildScript, envVars, sourceGlob)
-- [ ] T007 [P] Implement `mkDevImage` shared builder in `nix/lib/mkDevImage.nix` (overlays dev tools onto any ecosystem image)
+- [x] T001 Create `nix/` directory structure per plan (`nix/`, `nix/lib/`, `nix/packages/`, `nix/ecosystems/`)
+- [x] T002 Initialize Nix flake with nixpkgs and nix2container inputs in `nix/flake.nix`
+- [x] T003 Pin nixpkgs unstable and nix2container revisions via `nix flake lock` generating `nix/flake.lock`
+- [x] T004 [P] Implement `mkUser` helper function in `nix/lib/mkUser.nix` (creates /etc/passwd, /etc/group, /etc/shadow for dependabot:1000:1000)
+- [x] T005 [P] Implement `fetchGitShim` fixed-output derivation in `nix/packages/git-shim.nix` (downloads git-shim tarball for amd64 and arm64)
+- [x] T006 [P] Implement `mkEcosystemImage` shared builder in `nix/lib/mkEcosystemImage.nix` (accepts name, fromImage, toolchainPackages, helperBuildScript, envVars, sourceGlob)
+- [x] T007 [P] Implement `mkDevImage` shared builder in `nix/lib/mkDevImage.nix` (overlays dev tools onto any ecosystem image)
 
 **Checkpoint**: Nix scaffolding complete. Shared library ready for use by core and ecosystem image definitions.
 
@@ -44,17 +44,17 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete. The core image is the `fromImage` for every ecosystem.
 
-- [ ] T008 Implement core image system layer in `nix/core.nix` (git, git-lfs, breezy, mercurial, gnupg, openssh, ca-certificates, gcc, make, gmp, zlib, unzip, zstd, file, libyaml, glibcLocales)
-- [ ] T009 Implement core image Ruby layer in `nix/core.nix` (Ruby 3.4.x, RubyGems, Bundler via pkgs.ruby)
-- [ ] T010 Implement core image git-shim layer in `nix/core.nix` (uses fetchGitShim from T005, places binary in ~/bin/)
-- [ ] T011 Implement core image user setup in `nix/core.nix` (uses mkUser from T004, creates dependabot user with home directory)
-- [ ] T012 Implement core image gem bundle layer in `nix/core.nix` (copies updater/Gemfile + Gemfile.lock, runs bundle install as Nix derivation)
-- [ ] T013 Implement core image source layer in `nix/core.nix` (copies common/, omnibus/, ecosystem stubs, updater/ source code)
-- [ ] T014 Implement core image environment variables in `nix/core.nix` (DEPENDABOT=true, DEPENDABOT_HOME, DEPENDABOT_NATIVE_HELPERS_PATH, GIT_LFS_SKIP_SMUDGE, LC_ALL, LANG, PATH per contracts/build-interface.md)
-- [ ] T015 Implement core image OCI config in `nix/core.nix` (User=dependabot, WorkingDir=/home/dependabot/dependabot-updater, Cmd=bin/run)
-- [ ] T016 Wire core image into flake outputs in `nix/flake.nix` (packages.x86_64-linux.core and packages.aarch64-linux.core)
-- [ ] T017 Validate core image builds successfully via `nix build .#packages.x86_64-linux.core`
-- [ ] T018 Validate core image loads into Docker via `nix run .#packages.x86_64-linux.core.copyToDockerDaemon` and smoke-test all binaries (ruby, git, git-lfs, bzr, hg, gpg2, ssh, gcc, make, locale)
+- [x] T008 Implement core image system layer in `nix/core.nix` (git, git-lfs, breezy, mercurial, gnupg, openssh, ca-certificates, gcc, make, gmp, zlib, unzip, zstd, file, libyaml, glibcLocales)
+- [x] T009 Implement core image Ruby layer in `nix/core.nix` (Ruby 3.4.x, RubyGems, Bundler via pkgs.ruby)
+- [x] T010 Implement core image git-shim layer in `nix/core.nix` (uses fetchGitShim from T005, places binary in ~/bin/)
+- [x] T011 Implement core image user setup in `nix/core.nix` (uses mkUser from T004, creates dependabot user with home directory)
+- [x] T012 Implement core image gem bundle layer in `nix/core.nix` (copies updater/Gemfile + Gemfile.lock, runs bundle install as Nix derivation)
+- [x] T013 Implement core image source layer in `nix/core.nix` (copies common/, omnibus/, ecosystem stubs, updater/ source code)
+- [x] T014 Implement core image environment variables in `nix/core.nix` (DEPENDABOT=true, DEPENDABOT_HOME, DEPENDABOT_NATIVE_HELPERS_PATH, GIT_LFS_SKIP_SMUDGE, LC_ALL, LANG, PATH per contracts/build-interface.md)
+- [x] T015 Implement core image OCI config in `nix/core.nix` (User=dependabot, WorkingDir=/home/dependabot/dependabot-updater, Cmd=bin/run)
+- [x] T016 Wire core image into flake outputs in `nix/flake.nix` (packages.x86_64-linux.core and packages.aarch64-linux.core)
+- [x] T017 Validate core image builds successfully via `nix build .#packages.x86_64-linux.core`
+- [x] T018 Validate core image loads into Docker via `nix run .#packages.x86_64-linux.core.copyToDockerDaemon` and smoke-test all binaries (ruby, git, git-lfs, bzr, hg, gpg2, ssh, gcc, make, locale)
 
 **Checkpoint**: Core image fully functional. Ecosystem images can now layer on top of it.
 
@@ -68,13 +68,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T019 [US1] Update `script/_common` to add a `nix_build()` function alongside existing `docker_build()` in `script/_common`
-- [ ] T020 [US1] Update `script/build` to detect Nix availability and call `nix_build()` when `USE_NIX=1` is set, falling back to `docker_build()` in `script/build`
-- [ ] T021 [US1] Verify ecosystem Dockerfile backward compatibility by building `silent/Dockerfile` with `FROM` pointing at the Nix-built core image
+- [x] T019 [US1] Update `script/_common` to add a `nix_build()` function alongside existing `docker_build()` in `script/_common`
+- [x] T020 [US1] Update `script/build` to detect Nix availability and call `nix_build()` when `USE_NIX=1` is set, falling back to `docker_build()` in `script/build`
+- [x] T021 [US1] Verify ecosystem Dockerfile backward compatibility by building `silent/Dockerfile` with `FROM` pointing at the Nix-built core image
 - [ ] T022 [US1] Run the updater RSpec suite (`cd dependabot-updater && rspec spec`) inside the Nix-built core image and verify 100% pass rate
-- [ ] T023 [US1] Verify environment variable contract by running `docker run --rm <core-image> env` and checking all variables from contracts/build-interface.md Section 3
-- [ ] T024 [US1] Verify filesystem contract by running `docker run --rm <core-image> id dependabot` and checking UID/GID/home from contracts/build-interface.md Section 4
-- [ ] T025 [US1] Verify tool versions are equal-or-newer than current Ubuntu image by comparing `docker run` output of version commands across both images
+- [x] T023 [US1] Verify environment variable contract by running `docker run --rm <core-image> env` and checking all variables from contracts/build-interface.md Section 3
+- [x] T024 [US1] Verify filesystem contract by running `docker run --rm <core-image> id dependabot` and checking UID/GID/home from contracts/build-interface.md Section 4
+- [x] T025 [US1] Verify tool versions are equal-or-newer than current Ubuntu image by comparing `docker run` output of version commands across both images
 
 **Checkpoint**: Core image is a validated drop-in replacement. Build scripts support both Nix and Docker paths.
 
@@ -88,60 +88,60 @@
 
 ### Pilot ecosystems (simple → complex)
 
-- [ ] T026 [P] [US2] Implement silent ecosystem image in `nix/ecosystems/silent.nix` (minimal: core + gem source copy only)
-- [ ] T027 [P] [US2] Implement docker ecosystem image in `nix/ecosystems/docker.nix` (core + cosign + regctl binaries at /opt/bin)
-- [ ] T028 [P] [US2] Implement bundler ecosystem image in `nix/ecosystems/bundler.nix` (core + bundler helpers build via runCommand)
-- [ ] T029 [US2] Implement go_modules ecosystem image in `nix/ecosystems/go_modules.nix` (core + pkgs.go_1_26 at /opt/go + native helpers build)
-- [ ] T030 [US2] Implement npm_and_yarn ecosystem image in `nix/ecosystems/npm_and_yarn.nix` (core + pkgs.nodejs_24 + corepack + pnpm + yarn-berry + npm + native helpers build + ecosystem env vars)
+- [x] T026 [P] [US2] Implement silent ecosystem image in `nix/ecosystems/silent.nix` (minimal: core + gem source copy only)
+- [x] T027 [P] [US2] Implement docker ecosystem image in `nix/ecosystems/docker.nix` (core + cosign + regctl binaries at /opt/bin)
+- [x] T028 [P] [US2] Implement bundler ecosystem image in `nix/ecosystems/bundler.nix` (core + bundler helpers build via runCommand)
+- [x] T029 [US2] Implement go_modules ecosystem image in `nix/ecosystems/go_modules.nix` (core + pkgs.go_1_26 at /opt/go + native helpers build)
+- [x] T030 [US2] Implement npm_and_yarn ecosystem image in `nix/ecosystems/npm_and_yarn.nix` (core + pkgs.nodejs_24 + corepack + pnpm + yarn-berry + npm + native helpers build + ecosystem env vars)
 
 ### Pilot validation
 
-- [ ] T031 [US2] Wire pilot ecosystem images into flake outputs in `nix/flake.nix` (packages.{system}.ecosystems.{silent,docker,bundler,go_modules,npm_and_yarn})
-- [ ] T032 [US2] Validate silent ecosystem: build, load, run `rspec spec` inside container
-- [ ] T033 [P] [US2] Validate docker ecosystem: build, load, verify `cosign` and `regctl` on PATH, run `rspec spec`
-- [ ] T034 [P] [US2] Validate bundler ecosystem: build, load, verify helper binaries at /opt/bundler, run `rspec spec`
-- [ ] T035 [US2] Validate go_modules ecosystem: build, load, verify `go version`, run `rspec spec`
-- [ ] T036 [US2] Validate npm_and_yarn ecosystem: build, load, verify `node --version`, `npm --version`, `pnpm --version`, `yarn --version`, run `rspec spec`
+- [x] T031 [US2] Wire pilot ecosystem images into flake outputs in `nix/flake.nix` (packages.{system}.ecosystems.{silent,docker,bundler,go_modules,npm_and_yarn})
+- [x] T032 [US2] Validate silent ecosystem: build, load, run `rspec spec` inside container
+- [x] T033 [P] [US2] Validate docker ecosystem: build, load, verify `cosign` and `regctl` on PATH, run `rspec spec`
+- [x] T034 [P] [US2] Validate bundler ecosystem: build, load, verify helper binaries at /opt/bundler, run `rspec spec`
+- [x] T035 [US2] Validate go_modules ecosystem: build, load, verify `go version`, run `rspec spec`
+- [x] T036 [US2] Validate npm_and_yarn ecosystem: build, load, verify `node --version`, `npm --version`, `pnpm --version`, `yarn --version`, run `rspec spec`
 
 ### Complex ecosystems
 
-- [ ] T037 [US2] Implement python ecosystem image in `nix/ecosystems/python.nix` (core + pkgs.python311 through pkgs.python314 + pyenv symlink shim at $PYENV_ROOT/versions/ + older nixpkgs pin for Python 3.9/3.10 + native helpers build per version)
-- [ ] T038 [US2] Implement cargo ecosystem image in `nix/ecosystems/cargo.nix` (core + pkgs.rustc + pkgs.cargo at /opt/rust + cargo config for git CLI)
-- [ ] T039 [US2] Implement hex ecosystem image in `nix/ecosystems/hex.nix` (core + pkgs.beam26Packages.erlang + pkgs.elixir + mix dependencies)
-- [ ] T040 [US2] Implement maven ecosystem image in `nix/ecosystems/maven.nix` (core + pkgs.jdk21 + pkgs.maven at /usr/share/maven + mvn symlink)
-- [ ] T041 [US2] Implement swift ecosystem image in `nix/ecosystems/swift.nix` (core + Swift 6.2.x via fixed-output derivation downloading official tarball at /opt/swift)
-- [ ] T042 [P] [US2] Implement composer ecosystem image in `nix/ecosystems/composer.nix` (core + PHP + Composer)
-- [ ] T043 [P] [US2] Implement pub ecosystem image in `nix/ecosystems/pub.nix` (core + pkgs.flutter/dart)
-- [ ] T044 [P] [US2] Implement terraform ecosystem image in `nix/ecosystems/terraform.nix` (core + terraform binary)
-- [ ] T045 [P] [US2] Implement opentofu ecosystem image in `nix/ecosystems/opentofu.nix` (core + opentofu binary)
-- [ ] T046 [P] [US2] Implement gradle ecosystem image in `nix/ecosystems/gradle.nix` (core + pkgs.jdk21 + pkgs.gradle)
-- [ ] T047 [P] [US2] Implement nuget ecosystem image in `nix/ecosystems/nuget.nix` (core + .NET SDK)
+- [x] T037 [US2] Implement python ecosystem image in `nix/ecosystems/python.nix` (core + pkgs.python311 through pkgs.python314 + pyenv symlink shim at $PYENV_ROOT/versions/ + older nixpkgs pin for Python 3.9/3.10 + native helpers build per version)
+- [x] T038 [US2] Implement cargo ecosystem image in `nix/ecosystems/cargo.nix` (core + pkgs.rustc + pkgs.cargo at /opt/rust + cargo config for git CLI)
+- [x] T039 [US2] Implement hex ecosystem image in `nix/ecosystems/hex.nix` (core + pkgs.beam26Packages.erlang + pkgs.elixir + mix dependencies)
+- [x] T040 [US2] Implement maven ecosystem image in `nix/ecosystems/maven.nix` (core + pkgs.jdk21 + pkgs.maven at /usr/share/maven + mvn symlink)
+- [x] T041 [US2] Implement swift ecosystem image in `nix/ecosystems/swift.nix` (core + Swift 6.2.x via fixed-output derivation downloading official tarball at /opt/swift)
+- [x] T042 [P] [US2] Implement composer ecosystem image in `nix/ecosystems/composer.nix` (core + PHP + Composer)
+- [x] T043 [P] [US2] Implement pub ecosystem image in `nix/ecosystems/pub.nix` (core + pkgs.flutter/dart)
+- [x] T044 [P] [US2] Implement terraform ecosystem image in `nix/ecosystems/terraform.nix` (core + terraform binary)
+- [x] T045 [P] [US2] Implement opentofu ecosystem image in `nix/ecosystems/opentofu.nix` (core + opentofu binary)
+- [x] T046 [P] [US2] Implement gradle ecosystem image in `nix/ecosystems/gradle.nix` (core + pkgs.jdk21 + pkgs.gradle)
+- [x] T047 [P] [US2] Implement nuget ecosystem image in `nix/ecosystems/nuget.nix` (core + .NET SDK)
 
 ### Remaining ecosystems (minimal or single-binary)
 
-- [ ] T048 [P] [US2] Implement bazel ecosystem image in `nix/ecosystems/bazel.nix`
-- [ ] T049 [P] [US2] Implement bun ecosystem image in `nix/ecosystems/bun.nix` (core + bun runtime)
-- [ ] T050 [P] [US2] Implement conda ecosystem image in `nix/ecosystems/conda.nix`
-- [ ] T051 [P] [US2] Implement devcontainers ecosystem image in `nix/ecosystems/devcontainers.nix`
-- [ ] T052 [P] [US2] Implement docker_compose ecosystem image in `nix/ecosystems/docker_compose.nix`
-- [ ] T053 [P] [US2] Implement dotnet_sdk ecosystem image in `nix/ecosystems/dotnet_sdk.nix` (core + .NET SDK)
-- [ ] T054 [P] [US2] Implement elm ecosystem image in `nix/ecosystems/elm.nix` (core + pkgs.elmPackages.elm)
-- [ ] T055 [P] [US2] Implement git_submodules ecosystem image in `nix/ecosystems/git_submodules.nix`
-- [ ] T056 [P] [US2] Implement github_actions ecosystem image in `nix/ecosystems/github_actions.nix`
-- [ ] T057 [P] [US2] Implement helm ecosystem image in `nix/ecosystems/helm.nix` (core + pkgs.kubernetes-helm)
-- [ ] T058 [P] [US2] Implement julia ecosystem image in `nix/ecosystems/julia.nix` (core + pkgs.julia)
-- [ ] T059 [P] [US2] Implement pre_commit ecosystem image in `nix/ecosystems/pre_commit.nix` (core + depends on go_modules + bundler images)
-- [ ] T060 [P] [US2] Implement rust_toolchain ecosystem image in `nix/ecosystems/rust_toolchain.nix`
-- [ ] T061 [P] [US2] Implement uv ecosystem image in `nix/ecosystems/uv.nix` (core + Python versions + uv binary)
-- [ ] T062 [P] [US2] Implement vcpkg ecosystem image in `nix/ecosystems/vcpkg.nix`
+- [x] T048 [P] [US2] Implement bazel ecosystem image in `nix/ecosystems/bazel.nix`
+- [x] T049 [P] [US2] Implement bun ecosystem image in `nix/ecosystems/bun.nix` (core + bun runtime)
+- [x] T050 [P] [US2] Implement conda ecosystem image in `nix/ecosystems/conda.nix`
+- [x] T051 [P] [US2] Implement devcontainers ecosystem image in `nix/ecosystems/devcontainers.nix`
+- [x] T052 [P] [US2] Implement docker_compose ecosystem image in `nix/ecosystems/docker_compose.nix`
+- [x] T053 [P] [US2] Implement dotnet_sdk ecosystem image in `nix/ecosystems/dotnet_sdk.nix` (core + .NET SDK)
+- [x] T054 [P] [US2] Implement elm ecosystem image in `nix/ecosystems/elm.nix` (core + pkgs.elmPackages.elm)
+- [x] T055 [P] [US2] Implement git_submodules ecosystem image in `nix/ecosystems/git_submodules.nix`
+- [x] T056 [P] [US2] Implement github_actions ecosystem image in `nix/ecosystems/github_actions.nix`
+- [x] T057 [P] [US2] Implement helm ecosystem image in `nix/ecosystems/helm.nix` (core + pkgs.kubernetes-helm)
+- [x] T058 [P] [US2] Implement julia ecosystem image in `nix/ecosystems/julia.nix` (core + pkgs.julia)
+- [x] T059 [P] [US2] Implement pre_commit ecosystem image in `nix/ecosystems/pre_commit.nix` (core + depends on go_modules + bundler images)
+- [x] T060 [P] [US2] Implement rust_toolchain ecosystem image in `nix/ecosystems/rust_toolchain.nix`
+- [x] T061 [P] [US2] Implement uv ecosystem image in `nix/ecosystems/uv.nix` (core + Python versions + uv binary)
+- [x] T062 [P] [US2] Implement vcpkg ecosystem image in `nix/ecosystems/vcpkg.nix`
 
 ### Wire remaining ecosystems + batch validation
 
-- [ ] T063 [US2] Wire all remaining ecosystem images into flake outputs in `nix/flake.nix`
-- [ ] T064 [US2] Validate python ecosystem: build, load, verify all Python versions via pyenv (explicitly run `pyenv exec python3.11 --version`, `pyenv exec python3.12 --version`, etc. for each installed version), run `rspec spec`
-- [ ] T065 [P] [US2] Validate cargo ecosystem: build, load, verify `rustc --version`, `cargo --version`, run `rspec spec`
-- [ ] T066 [P] [US2] Validate hex ecosystem: build, load, verify `erl` + `elixir --version`, run `rspec spec`
-- [ ] T067 [P] [US2] Validate maven ecosystem: build, load, verify `java --version`, `mvn --version`, run `rspec spec`
+- [x] T063 [US2] Wire all remaining ecosystem images into flake outputs in `nix/flake.nix`
+- [x] T064 [US2] Validate python ecosystem: build, load, verify all Python versions via pyenv (explicitly run `pyenv exec python3.11 --version`, `pyenv exec python3.12 --version`, etc. for each installed version), run `rspec spec`
+- [x] T065 [P] [US2] Validate cargo ecosystem: build, load, verify `rustc --version`, `cargo --version`, run `rspec spec`
+- [x] T066 [P] [US2] Validate hex ecosystem: build, load, verify `erl` + `elixir --version`, run `rspec spec`
+- [x] T067 [P] [US2] Validate maven ecosystem: build, load, verify `java --version`, `mvn --version`, run `rspec spec`
 - [ ] T068 [P] [US2] Validate swift ecosystem: build, load, verify `swift --version`, run `rspec spec`
 - [ ] T069 [US2] Batch-validate all remaining ecosystems by building each image and running its `rspec spec`
 
@@ -157,10 +157,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T070 [US3] Implement development image definition in `nix/development.nix` (overlays vim, strace, ltrace, gdb, shellcheck, libgit2, cmake, pkg-config + .vimrc + PS1 prompt + development gems)
-- [ ] T071 [US3] Wire development image outputs into flake in `nix/flake.nix` (packages.{system}.dev.{ecosystem} for each ecosystem)
-- [ ] T072 [US3] Update `bin/docker-dev-shell` to load Nix-built dev images when `USE_NIX=1` is set (call `nix run .#dev.{ecosystem}.copyToDockerDaemon`, then `docker run` as before)
-- [ ] T073 [US3] Preserve `--rebuild` flag behavior in `bin/docker-dev-shell` to trigger fresh `nix build` + reload
+- [x] T070 [US3] Implement development image definition in `nix/development.nix` (overlays vim, strace, ltrace, gdb, shellcheck, libgit2, cmake, pkg-config + .vimrc + PS1 prompt + development gems)
+- [x] T071 [US3] Wire development image outputs into flake in `nix/flake.nix` (packages.{system}.dev.{ecosystem} for each ecosystem)
+- [x] T072 [US3] Update `bin/docker-dev-shell` to load Nix-built dev images when `USE_NIX=1` is set (call `nix run .#dev.{ecosystem}.copyToDockerDaemon`, then `docker run` as before)
+- [x] T073 [US3] Preserve `--rebuild` flag behavior in `bin/docker-dev-shell` to trigger fresh `nix build` + reload
 - [ ] T074 [US3] Validate dev shell for go_modules: run `bin/docker-dev-shell go_modules`, verify prompt, run `rspec spec` and `bin/dry-run.rb go_modules rsc/quote` inside container
 - [ ] T075 [P] [US3] Validate dev shell for npm_and_yarn: run `bin/docker-dev-shell npm_and_yarn`, verify tools, run `rspec spec`
 - [ ] T076 [P] [US3] Validate dev shell for python: run `bin/docker-dev-shell python`, verify tools, run `rspec spec`
@@ -178,11 +178,11 @@
 
 ### Implementation for User Story 4
 
-- [ ] T078 [US4] Update `.github/workflows/images-updater-core.yml` to install Nix (DeterminateSystems/nix-installer-action), add magic-nix-cache, build core image via `nix build`, push via `nix run .#core.copyTo`, sign with cosign
-- [ ] T079 [US4] Update `.github/workflows/images-latest.yml` to install Nix, add magic-nix-cache, replace `script/build` + `docker push` with `nix build .#ecosystems.{name}` + `nix run .#ecosystems.{name}.copyTo` for each ecosystem in the matrix
+- [x] T078 [US4] Update `.github/workflows/images-updater-core.yml` to install Nix (DeterminateSystems/nix-installer-action), add magic-nix-cache, build core image via `nix build`, push via `nix run .#core.copyTo`, sign with cosign
+- [x] T079 [US4] Update `.github/workflows/images-latest.yml` to install Nix, add magic-nix-cache, replace `script/build` + `docker push` with `nix build .#ecosystems.{name}` + `nix run .#ecosystems.{name}.copyTo` for each ecosystem in the matrix
 - [ ] T080 [US4] Add arm64 runner (`ubuntu-24.04-arm`) to the matrix in `.github/workflows/images-latest.yml` for multi-arch builds alongside x86_64
-- [ ] T081 [US4] Update `.github/workflows/ci.yml` to build ecosystem images via Nix for test runs (replace `script/build` + `docker run` with Nix equivalents)
-- [ ] T082 [US4] Implement Skopeo GHCR authentication in CI workflows (use `--dest-creds` with `github.actor` and `GITHUB_TOKEN`)
+- [x] T081 [US4] Update `.github/workflows/ci.yml` to build ecosystem images via Nix for test runs (replace `script/build` + `docker run` with Nix equivalents)
+- [x] T082 [US4] Implement Skopeo GHCR authentication in CI workflows (use `--dest-creds` with `github.actor` and `GITHUB_TOKEN`)
 - [ ] T083 [US4] Verify cosign signing works with Nix-pushed images by inspecting the signed digest in GHCR after CI run
 - [ ] T084 [US4] Verify selective caching: change one ecosystem Nix expression, trigger CI, confirm only that ecosystem rebuilds while others use cache
 
@@ -196,9 +196,9 @@
 
 **⚠️ TRANSITION GATE**: Dockerfile removal (T088–T091) MUST NOT begin until: (a) all ecosystem RSpec suites pass on Nix-built images (T069), (b) CI has successfully built and published Nix images for at least 2 consecutive releases without regression (T084), and (c) dev shell is validated (T077). This gate ensures safe rollback is possible during the transition period (FR-012).
 
-- [ ] T085 Update `rakelib/ecosystem.rake` to scaffold a `nix/ecosystems/{name}.nix` file when running `rake ecosystem:create[name]`
-- [ ] T086 [P] Update `CONTRIBUTING.md` to document Nix prerequisites for development (install Nix, how to build/load images, macOS contributor workflow: document that macOS users must either set up a Linux builder VM for local Nix builds or pull pre-built images from GHCR)
-- [ ] T087 [P] Update `README.md` Development Guide section to include Nix build instructions alongside existing Docker instructions
+- [x] T085 Update `rakelib/ecosystem.rake` to scaffold a `nix/ecosystems/{name}.nix` file when running `rake ecosystem:create[name]`
+- [x] T086 [P] Update `CONTRIBUTING.md` to document Nix prerequisites for development (install Nix, how to build/load images, macOS contributor workflow: document that macOS users must either set up a Linux builder VM for local Nix builds or pull pre-built images from GHCR)
+- [x] T087 [P] Update `README.md` Development Guide section to include Nix build instructions alongside existing Docker instructions
 - [ ] T088 Remove `Dockerfile.updater-core` once core image is fully validated and CI uses Nix exclusively
 - [ ] T089 Remove `Dockerfile.development` once dev shell is fully validated with Nix images
 - [ ] T090 Remove per-ecosystem `Dockerfile` files from all 30+ ecosystem directories (batch removal after full validation)

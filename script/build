@@ -10,4 +10,9 @@ cd "$(dirname "$0")/.."
 source script/_common
 
 export OMNIBUS_VERSION="latest"
-docker_build "$1"
+
+if [[ "${USE_NIX:-}" == "1" ]]; then
+  nix_build "$1"
+else
+  docker_build "$1"
+fi

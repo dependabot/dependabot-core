@@ -1,24 +1,37 @@
 {
-  "files.associations": {
-    "Dockerfile.*": "dockerfile"
-  },
-  "jest.pathToJest": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/.bin/jest",
-  "jest.pathToConfig": "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js",
-  "dotnet.defaultSolution": "nuget/helpers/lib/NuGetUpdater/NuGetUpdater.sln",
-  "[ruby]": {
-    "editor.defaultFormatter": "Shopify.ruby-lsp",
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
-    "editor.insertSpaces": true,
-    "editor.rulers": [120],
-    "editor.semanticHighlighting.enabled": true,
-    "editor.tabSize": 2,
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "files.trimTrailingWhitespace": true
-  },
-  "rubocop.autocorrect": true,
-  "sorbet.enabled": true,
-  "rubocop.layoutMode": true,
-  "rubocop.lintMode": true
+    "files.associations": {
+        "Dockerfile.*": "dockerfile"
+    },
+    "jest.pathToJest": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/.bin/jest",
+    "jest.pathToConfig": "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js",
+    "dotnet.defaultSolution": "nuget/helpers/lib/NuGetUpdater/NuGetUpdater.sln",
+    "[ruby]": {
+        "editor.defaultFormatter": "Shopify.ruby-lsp",
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "editor.insertSpaces": true,
+        "editor.rulers": [
+            120
+        ],
+        "editor.semanticHighlighting.enabled": true,
+        "editor.tabSize": 2,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        "files.trimTrailingWhitespace": true
+    },
+    "rubocop.autocorrect": true,
+    "sorbet.enabled": true,
+    "rubocop.layoutMode": true,
+    "rubocop.lintMode": true,
+    "chat.promptFilesRecommendations": {
+        "speckit.constitution": true,
+        "speckit.specify": true,
+        "speckit.plan": true,
+        "speckit.tasks": true,
+        "speckit.implement": true
+    },
+    "chat.tools.terminal.autoApprove": {
+        ".specify/scripts/bash/": true,
+        ".specify/scripts/powershell/": true
+    }
 }

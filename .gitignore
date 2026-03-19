@@ -28,6 +28,11 @@ coverage/
 .idea/
 # Ignore spoom coverage report
 spoom_data/
+# Nix build outputs
+/nix/result
+/nix/result-*
+/result
+/result-*
 spoom_report.html
 .vs/
 # Ignore VSCode C# Dev Kit

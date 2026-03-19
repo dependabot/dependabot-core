@@ -129,3 +129,42 @@ function docker_bundle_exec() {
   -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
   "$UPDATER_IMAGE$TAG" bundle exec "${@:2}"
 }
+
+# Nix-based build: builds the ecosystem image via nix2container and loads it
+# into the Docker daemon with the same image name as docker_build produces.
+# Requires Nix with flakes support and the nix/ directory at the repo root.
+function nix_build() {
+  [[ -n "$SKIP_BUILD" ]] && return
+  ECOSYSTEM="$1"
+  set_tag
+
+  local NIX_DIR
+  NIX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/nix"
+
+  if [[ ! -f "$NIX_DIR/flake.nix" ]]; then
+    echo "Error: nix/flake.nix not found. Cannot build with Nix." >&2
+    exit 1
+  fi
+
+  echo "Building core image with Nix..."
+  nix build "$NIX_DIR#packages.x86_64-linux.core" --no-link
+
+  echo "Loading core image into Docker daemon..."
+  nix run "$NIX_DIR#packages.x86_64-linux.core.copyToDockerDaemon"
+
+  # If an ecosystem-specific image exists in the flake, build and load it too
+  if [[ "$ECOSYSTEM" != "common" ]]; then
+    local ATTR="$NIX_DIR#packages.x86_64-linux.ecosystems.$ECOSYSTEM"
+    if nix eval "$ATTR" --json >/dev/null 2>&1; then
+      echo "Building $ECOSYSTEM ecosystem image with Nix..."
+      nix build "$ATTR" --no-link
+
+      echo "Loading $ECOSYSTEM ecosystem image into Docker daemon..."
+      nix run "${ATTR}.copyToDockerDaemon"
+    else
+      echo "Warning: No Nix definition for ecosystem '$ECOSYSTEM', using core image only."
+    fi
+  fi
+
+  export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
+}

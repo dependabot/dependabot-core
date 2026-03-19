@@ -25,7 +25,25 @@ jobs:
 
       - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
+      # Nix build path
+      - name: Install Nix
+        if: vars.USE_NIX == 'true'
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Enable Nix cache
+        if: vars.USE_NIX == 'true'
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build core image (Nix)
+        if: vars.USE_NIX == 'true'
+        run: |
+          nix build ./nix#packages.x86_64-linux.core --no-link
+          nix run ./nix#packages.x86_64-linux.core.copyToDockerDaemon
+          docker tag ghcr.io/dependabot/dependabot-updater-core "$(docker images ghcr.io/dependabot/dependabot-updater-core --format '{{.Repository}}:{{.Tag}}' | head -1)" "$UPDATER_CORE_IMAGE:latest"
+
+      # Docker build path (default)
       - name: Build dependabot-updater-core image
+        if: vars.USE_NIX != 'true'
         run: script/build common
 
       - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
