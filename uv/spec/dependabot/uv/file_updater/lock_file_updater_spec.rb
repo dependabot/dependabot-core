@@ -1339,6 +1339,47 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         end
       end
     end
+
+    context "with mixed case package name in source file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pyjwt",
+          version: "2.11.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.11.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.10.1",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2.10.1",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: ">=2.11.0" } }
+      let(:old_req) { { requirement: ">=2.10.1" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "PyJWT>=2.10.1",
+          ]
+        TOML
+      end
+
+      it "matches case-insensitively and preserves original casing" do
+        result = replace_dep
+        expect(result).to include('"PyJWT>=2.11.0"')
+        expect(result).not_to include(">=2.10.1")
+      end
+    end
   end
 
   describe "#requirements_match?" do
