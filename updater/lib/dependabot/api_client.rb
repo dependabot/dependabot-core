@@ -59,7 +59,6 @@ module Dependabot
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
-    # TODO: Determine if we should regenerate the PR message within core for updates
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("update_pull_request", kind: :internal) do |span|
@@ -68,14 +67,15 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
         api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/update_pull_request"
-        body = {
-          data: {
-            "dependency-names": dependency_change.updated_dependencies.map(&:name),
-            "updated-dependency-files": dependency_change.updated_dependency_files_hash,
-            "base-commit-sha": base_commit_sha
-          }
+        data = {
+          "dependency-names": dependency_change.updated_dependencies.map(&:name),
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
+          "base-commit-sha": base_commit_sha
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        data["commit-message"] = dependency_change.pr_message.commit_message
+        data["pr-title"] = dependency_change.pr_message.pr_name
+        data["pr-body"] = dependency_change.pr_message.pr_message
+        response = http_client.post(path: api_url, body: { data: data }.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
