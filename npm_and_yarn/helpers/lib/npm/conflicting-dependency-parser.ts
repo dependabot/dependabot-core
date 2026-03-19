@@ -9,23 +9,34 @@
  *  - An array of objects with conflicting dependencies
  */
 
-const Arborist = require("@npmcli/arborist");
-const semver = require("semver");
+import Arborist from "@npmcli/arborist";
+import semver from "semver";
 
-async function findConflictingDependencies(directory, depName, targetVersion) {
+interface ConflictingDependency {
+  explanation: string;
+  name: string;
+  version: string;
+  requirement: string;
+}
+
+export async function findConflictingDependencies(
+  directory: string,
+  depName: string,
+  targetVersion: string
+): Promise<ConflictingDependency[]> {
   const arb = new Arborist({
     path: directory,
     dryRun: true,
     ignoreScripts: true,
   });
 
-  return await arb.loadVirtual().then((tree) => {
-    const parents = [];
+  return await arb.loadVirtual().then((tree: any) => {
+    const parents: ConflictingDependency[] = [];
     for (const node of tree.inventory.query("name", depName)) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
-          findTopLevelEdges(edge).forEach((topLevel) => {
-            explanation = buildExplanation(node, edge, topLevel);
+          findTopLevelEdges(edge).forEach((topLevel: any) => {
+            const explanation = buildExplanation(node, edge, topLevel);
 
             parents.push({
               explanation: explanation,
@@ -42,7 +53,7 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   });
 }
 
-function buildExplanation(node, directEdge, topLevelEdge) {
+function buildExplanation(node: any, directEdge: any, topLevelEdge: any): string {
   if (directEdge.from === topLevelEdge.to) {
     // The nodes parent is top-level
     return `${directEdge.from.name}@${directEdge.from.version} requires ${directEdge.to.name}@${directEdge.spec}`;
@@ -61,8 +72,8 @@ function buildExplanation(node, directEdge, topLevelEdge) {
   }
 }
 
-function findTopLevelEdges(edge, parents = []) {
-  edge.from.edgesIn.forEach((parent) => {
+function findTopLevelEdges(edge: any, parents: any[] = []): any[] {
+  edge.from.edgesIn.forEach((parent: any) => {
     if (parent.from.edgesIn.size === 0) {
       if (!parents.includes(parent)) {
         parents.push(parent);
@@ -74,5 +85,3 @@ function findTopLevelEdges(edge, parents = []) {
 
   return parents;
 }
-
-module.exports = { findConflictingDependencies };

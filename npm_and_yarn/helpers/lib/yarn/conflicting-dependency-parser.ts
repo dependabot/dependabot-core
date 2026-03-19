@@ -9,13 +9,38 @@
  *  - An array of objects with conflicting dependencies
  */
 
-const fs = require("fs");
-const path = require("path");
-const semver = require("semver");
-const { parse } = require("./lockfile-parser");
-const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
+import fs from "fs";
+import path from "path";
+import semver from "semver";
+import { parse } from "./lockfile-parser.js";
+import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
-async function findConflictingDependencies(directory, depName, targetVersion) {
+interface ConflictingDependency {
+  explanation: string;
+  name: string;
+  version: string;
+  requirement: string;
+}
+
+interface ParentSpec {
+  name: string;
+  version: string;
+  requirement: string;
+  transitiveSpec: { name: string; version: string; requirement?: string };
+  topLevelSpec: TopLevelSpec;
+}
+
+interface TopLevelSpec {
+  name: string;
+  requirement: string;
+  version?: string;
+}
+
+export async function findConflictingDependencies(
+  directory: string,
+  depName: string,
+  targetVersion: string
+): Promise<ConflictingDependency[]> {
   const lockfileJson = await parse(directory);
   const packageJson = fs
     .readFileSync(path.join(directory, "package.json"))
@@ -25,13 +50,15 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
     "devDependencies",
     "optionalDependencies",
   ];
-  const topLevelDependencies = dependencyTypes.flatMap((type) => {
-    return Object.entries(JSON.parse(packageJson)[type] || {});
-  });
+  const topLevelDependencies: [string, string][] = dependencyTypes.flatMap(
+    (type) => {
+      return Object.entries(JSON.parse(packageJson)[type] || {}) as [string, string][];
+    }
+  );
 
   const conflictingParents = topLevelDependencies.flatMap(
     ([topLevelDepName, topLevelRequirement]) => {
-      const topLevelSpec = {
+      const topLevelSpec: TopLevelSpec = {
         name: topLevelDepName,
         requirement: topLevelRequirement,
       };
@@ -60,7 +87,7 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   });
 }
 
-function buildExplanation(parentSpec, targetDepName) {
+function buildExplanation(parentSpec: ParentSpec, targetDepName: string): string {
   if (
     parentSpec.name === parentSpec.topLevelSpec.name &&
     parentSpec.version === parentSpec.topLevelSpec.version
@@ -91,16 +118,16 @@ function buildExplanation(parentSpec, targetDepName) {
 }
 
 function findConflictingParentDependencies(
-  dependency,
-  requirement,
-  targetDep,
-  targetversion,
-  topLevelSpec,
-  lockfileJson,
-  transitiveSpec = {},
-  checkedEntries = new Set(),
-  conflictingParents = new Map()
-) {
+  dependency: string,
+  requirement: string,
+  targetDep: string,
+  targetversion: string,
+  topLevelSpec: TopLevelSpec,
+  lockfileJson: Record<string, any>,
+  transitiveSpec: any = {},
+  checkedEntries: Set<string> = new Set(),
+  conflictingParents: Map<string, ParentSpec> = new Map()
+): Map<string, ParentSpec> {
   // Prevent infinite loops for circular dependencies by only checking each
   // lockfile entry once
   const checkedEntry = [dependency, requirement].join("@");
@@ -111,9 +138,9 @@ function findConflictingParentDependencies(
   checkedEntries.add(checkedEntry);
 
   for (const [entry, pkg] of Object.entries(lockfileJson)) {
-    const [_, parentDepName, parentDepRequirement] = entry.match(
-      LOCKFILE_ENTRY_REGEX
-    );
+    const match = entry.match(LOCKFILE_ENTRY_REGEX);
+    if (!match) continue;
+    const [_, parentDepName, parentDepRequirement] = match;
     // Decorate the top-level dependency spec with an installed version as we
     // only have the requirement from the package.json manifest
     if (
@@ -130,7 +157,7 @@ function findConflictingParentDependencies(
     ) {
       // Recursive check for sub-dependencies finding dependencies that don't
       // allow the target version of the vulnerable dependency to be installed
-      for (const [subDepName, spec] of Object.entries(pkg.dependencies)) {
+      for (const [subDepName, spec] of Object.entries(pkg.dependencies) as [string, string][]) {
         if (
           subDepName === targetDep &&
           !semver.satisfies(targetversion, spec)
@@ -172,5 +199,3 @@ function findConflictingParentDependencies(
 
   return conflictingParents;
 }
-
-module.exports = { findConflictingDependencies };

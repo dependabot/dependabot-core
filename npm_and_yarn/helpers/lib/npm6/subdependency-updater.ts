@@ -1,14 +1,26 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { muteStderr, runAsync } from "./helpers.js";
+import { removeDependenciesFromLockfile } from "./remove-dependencies-from-lockfile.js";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const npm = require("npm");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const installer = require("npm/lib/install");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const detectIndent = require("detect-indent");
-const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockfile");
 
-const { muteStderr, runAsync } = require("./helpers.js");
+interface Dependency {
+  name: string;
+  [key: string]: any;
+}
 
-async function updateDependencyFile(directory, lockfileName, dependencies) {
-  const readFile = (fileName) =>
+export async function updateDependencyFile(
+  directory: string,
+  lockfileName: string,
+  dependencies: Dependency[]
+): Promise<Record<string, string>> {
+  const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   const lockfile = readFile(lockfileName);
@@ -56,8 +68,8 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
   });
 
   // Skip printing the success message
-  initialInstaller.printInstalled = (cb) => cb();
-  cleanupInstaller.printInstalled = (cb) => cb();
+  initialInstaller.printInstalled = (cb: () => void) => cb();
+  cleanupInstaller.printInstalled = (cb: () => void) => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
@@ -73,5 +85,3 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
 
   return { [lockfileName]: updatedLockfile };
 }
-
-module.exports = { updateDependencyFile };

@@ -1,17 +1,17 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const { updateDependencyFiles } = require("../../lib/yarn/updater");
-const helpers = require("./helpers");
+import path from "path";
+import os from "os";
+import fs from "fs";
+import { updateDependencyFiles } from "../../lib/yarn/updater.js";
+import * as helpers from "./helpers.js";
 
 describe("updater", () => {
-  let tempDir;
+  let tempDir: string;
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
   afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
-  function copyDependencies(sourceDir, destDir) {
+  function copyDependencies(sourceDir: string, destDir: string) {
     const srcPackageJson = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package.json`
@@ -111,7 +111,7 @@ describe("updater", () => {
       );
     } catch (error) {
       expect(error).not.toBeNull();
-      expect(error.message).toEqual("package.json: Name contains illegal characters")
+      expect((error as Error).message).toEqual("package.json: Name contains illegal characters")
     }
   });
 });

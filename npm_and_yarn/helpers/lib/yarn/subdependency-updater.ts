@@ -1,32 +1,45 @@
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import fixDuplicates from "./fix-duplicates.js";
+import { LightweightInstall, LOCKFILE_ENTRY_REGEX } from "./helpers.js";
+import { parse } from "./lockfile-parser.js";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Config = require("@dependabot/yarn-lib/lib/config").default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const fixDuplicates = require("./fix-duplicates");
-const { LightweightInstall, LOCKFILE_ENTRY_REGEX } = require("./helpers");
-const { parse } = require("./lockfile-parser");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const stringify =
   require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.
-function recoverVersionComments(oldLockfile, newLockfile) {
+function recoverVersionComments(
+  oldLockfile: string,
+  newLockfile: string
+): string {
   const yarnRegex = /^# yarn v(\S+)\n/gm;
   const nodeRegex = /^# node v(\S+)\n/gm;
-  const oldMatch = (regex) => [].concat(oldLockfile.match(regex))[0];
+  const oldMatch = (regex: RegExp) =>
+    ([] as (string | undefined)[]).concat(oldLockfile.match(regex) || [])[0];
   return newLockfile
     .replace(yarnRegex, () => oldMatch(yarnRegex) || "")
     .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-async function updateDependencyFile(
-  directory,
-  lockfileName,
-  dependencies
-) {
-  const readFile = (fileName) =>
+interface Dependency {
+  name: string;
+  [key: string]: any;
+}
+
+export async function updateDependencyFile(
+  directory: string,
+  lockfileName: string,
+  dependencies: Dependency[]
+): Promise<Record<string, string>> {
+  const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile(lockfileName);
 
@@ -44,22 +57,28 @@ async function updateDependencyFile(
     extraneousYarnrcFiles: [".yarnrc"],
   });
   const noHeader = !Boolean(originalYarnLock.match(/^# THIS IS AN AU/m));
-  config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
+  config.enableLockfileVersions = Boolean(
+    originalYarnLock.match(/^# yarn v/m)
+  );
 
   // SubDependencyVersionResolver relies on the install finding the latest
   // version of a sub-dependency that's been removed from the lockfile
   // YarnLockFileUpdater passes a specific version to be updated
   const lockfileObject = await parse(directory);
   for (const [entry, pkg] of Object.entries(lockfileObject)) {
-    const [_, depName] = entry.match(
-      LOCKFILE_ENTRY_REGEX
-    );
-    if (dependencies.some(dependency => dependency.name === depName)) {
+    const match = entry.match(LOCKFILE_ENTRY_REGEX);
+    if (!match) continue;
+    const [_, depName] = match;
+    if (dependencies.some((dependency) => dependency.name === depName)) {
       delete lockfileObject[entry];
     }
   }
 
-  let newLockFileContent = await stringify(lockfileObject, noHeader, config.enableLockfileVersions);
+  let newLockFileContent = await stringify(
+    lockfileObject,
+    noHeader,
+    config.enableLockfileVersions
+  );
   for (const dependency of dependencies) {
     newLockFileContent = fixDuplicates(newLockFileContent, dependency.name);
   }
@@ -79,5 +98,3 @@ async function updateDependencyFile(
     [lockfileName]: updatedYarnLockWithVersion,
   };
 }
-
-module.exports = { updateDependencyFile };

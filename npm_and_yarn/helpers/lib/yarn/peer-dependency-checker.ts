@@ -9,19 +9,29 @@
  * Outputs:
  *  - successful completion, or an error if there are peer dependency warnings
  */
-const path = require("path");
+import path from "path";
+import { isString } from "./helpers.js";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Config = require("@dependabot/yarn-lib/lib/config").default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { BufferReporter } = require("@dependabot/yarn-lib/lib/reporters");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const { isString } = require("./helpers");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fetcher = require("@dependabot/yarn-lib/lib/package-fetcher.js");
 
 // Check peer dependencies without downloading node_modules or updating
 // package/lockfiles
 //
 // Logic copied from the import command
-class LightweightAdd extends Add {
+class LightweightAdd extends (Add as any) {
+  constructor(...args: any[]) {
+    super(...args);
+  }
+
   async bailout() {
     const manifests = await fetcher.fetch(
       this.resolver.getManifests(),
@@ -33,7 +43,7 @@ class LightweightAdd extends Add {
   }
 }
 
-function devRequirement(requirements) {
+function devRequirement(requirements: any): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("devDependencies") > -1 &&
@@ -41,7 +51,7 @@ function devRequirement(requirements) {
   );
 }
 
-function optionalRequirement(requirements) {
+function optionalRequirement(requirements: any): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("optionalDependencies") > -1 &&
@@ -49,15 +59,19 @@ function optionalRequirement(requirements) {
   );
 }
 
-function installArgsWithVersion(depName, desiredVersion, requirements) {
+function installArgsWithVersion(
+  depName: string,
+  desiredVersion: string,
+  requirements: any
+): string[] {
   const source =
     "source" in requirements
       ? requirements.source
-      : (requirements.find((req) => req.source) || {}).source;
+      : (requirements.find((req: any) => req.source) || {}).source;
   const req =
     "requirement" in requirements
       ? requirements.requirement
-      : (requirements.find((req) => req.requirement) || {}).requirement;
+      : (requirements.find((req: any) => req.requirement) || {}).requirement;
 
   if (source && source.type === "git") {
     if (desiredVersion) {
@@ -70,23 +84,23 @@ function installArgsWithVersion(depName, desiredVersion, requirements) {
   }
 }
 
-async function checkPeerDependencies(
-  directory,
-  depName,
-  desiredVersion,
-  requirements
-) {
-  for (let req of requirements) {
+export async function checkPeerDependencies(
+  directory: string,
+  depName: string,
+  desiredVersion: string,
+  requirements: any[]
+): Promise<void> {
+  for (const req of requirements) {
     await checkPeerDepsForReq(directory, depName, desiredVersion, req);
   }
 }
 
 async function checkPeerDepsForReq(
-  directory,
-  depName,
-  desiredVersion,
-  requirement
-) {
+  directory: string,
+  depName: string,
+  desiredVersion: string,
+  requirement: any
+): Promise<void> {
   const flags = {
     ignoreScripts: true,
     ignoreWorkspaceRootCheck: true,
@@ -108,7 +122,7 @@ async function checkPeerDepsForReq(
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
   // Returns dep name and version for yarn add, example: ["react@16.6.0"]
-  let args = installArgsWithVersion(depName, desiredVersion, requirement);
+  const args = installArgsWithVersion(depName, desiredVersion, requirement);
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
@@ -118,8 +132,8 @@ async function checkPeerDepsForReq(
 
   const eventBuffer = reporter.getBuffer();
   const peerDependencyWarnings = eventBuffer
-    .map(({ data }) => data)
-    .filter((data) => {
+    .map(({ data }: any) => data)
+    .filter((data: any) => {
       // Guard against event.data sometimes being an object
       return isString(data) && data.match(/(unmet|incorrect) peer dependency/);
     });
@@ -128,5 +142,3 @@ async function checkPeerDepsForReq(
     throw new Error(peerDependencyWarnings.join("\n"));
   }
 }
-
-module.exports = { checkPeerDependencies };

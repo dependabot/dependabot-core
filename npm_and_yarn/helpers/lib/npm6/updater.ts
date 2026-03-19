@@ -14,15 +14,38 @@
  * Update the dependency to the version specified and rewrite the package.json
  * and package-lock.json files.
  */
-const fs = require("fs");
-const path = require("path");
-const npm = require("npm");
-const installer = require("npm/lib/install");
-const detectIndent = require("detect-indent");
-const { muteStderr, runAsync } = require("./helpers.js");
+import fs from "fs";
+import path from "path";
+import { muteStderr, runAsync } from "./helpers.js";
+import { removeDependenciesFromLockfile } from "./remove-dependencies-from-lockfile.js";
 
-async function updateDependencyFiles(directory, lockfileName, dependencies) {
-  const readFile = (fileName) =>
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const npm = require("npm");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const installer = require("npm/lib/install");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const detectIndent = require("detect-indent");
+
+interface Dependency {
+  name: string;
+  version: string;
+  requirements: Requirement[];
+}
+
+interface Requirement {
+  source?: {
+    type: string;
+    url: string;
+  };
+  [key: string]: any;
+}
+
+export async function updateDependencyFiles(
+  directory: string,
+  lockfileName: string,
+  dependencies: Dependency[]
+): Promise<Record<string, string>> {
+  const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   // `force: true` ignores checks for platform (os, cpu) and engines
@@ -67,8 +90,8 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
   });
 
   // Skip printing the success message
-  initialInstaller.printInstalled = (cb) => cb();
-  cleanupInstaller.printInstalled = (cb) => cb();
+  initialInstaller.printInstalled = (cb: () => void) => cb();
+  cleanupInstaller.printInstalled = (cb: () => void) => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
@@ -92,7 +115,7 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
   return { [lockfileName]: updatedLockfile };
 }
 
-function updateLockfileWithValidGitUrls(lockfilePath) {
+function updateLockfileWithValidGitUrls(lockfilePath: string): void {
   const lockfile = fs.readFileSync(lockfilePath).toString();
   const indent = detectIndent(lockfile).indent || "  ";
   const updatedLockfileObject = removeInvalidGitUrls(JSON.parse(lockfile));
@@ -102,7 +125,7 @@ function updateLockfileWithValidGitUrls(lockfilePath) {
   );
 }
 
-function flattenAllDependencies(manifest) {
+function flattenAllDependencies(manifest: any): Record<string, string> {
   return Object.assign(
     {},
     manifest.optionalDependencies,
@@ -114,12 +137,12 @@ function flattenAllDependencies(manifest) {
 
 // NOTE: Reused in npm 7 updater
 function installArgs(
-  depName,
-  desiredVersion,
-  requirements,
-  existingVersionRequirement
-) {
-  const source = (requirements.find((req) => req.source) || {}).source;
+  depName: string,
+  desiredVersion: string,
+  requirements: Requirement[],
+  existingVersionRequirement?: string
+): string {
+  const source = (requirements.find((req) => req.source) || {} as any).source;
 
   if (source && source.type === "git") {
     if (!existingVersionRequirement) {
@@ -127,19 +150,19 @@ function installArgs(
     }
 
     // Git is configured to auth over https while updating
-    existingVersionRequirement = existingVersionRequirement.replace(
+    existingVersionRequirement = existingVersionRequirement!.replace(
       /git\+ssh:\/\/git@(.*?)[:/]/,
       "git+https://$1/"
     );
 
     // Keep any semver range that has already been updated in the package
     // requirement when installing the new version
-    if (existingVersionRequirement.match(desiredVersion)) {
+    if (existingVersionRequirement!.match(desiredVersion)) {
       return `${depName}@${existingVersionRequirement}`;
-    } else if (!existingVersionRequirement.includes("#")) {
+    } else if (!existingVersionRequirement!.includes("#")) {
       return `${depName}@${existingVersionRequirement}`;
     } else {
-      return `${depName}@${existingVersionRequirement.replace(
+      return `${depName}@${existingVersionRequirement!.replace(
         /#.*/,
         ""
       )}#${desiredVersion}`;
@@ -156,10 +179,10 @@ function installArgs(
 // - Fails when updating a npm@5 lockfile with git sub-dependencies, resulting
 //   in invalid "requires" that include the dependency name for git dependencies
 //   (e.g. "bignumber.js": "bignumber.js@git+https://gi...)
-function removeInvalidGitUrls(lockfile) {
+function removeInvalidGitUrls(lockfile: any): any {
   if (!lockfile.dependencies) return lockfile;
 
-  const dependencies = Object.keys(lockfile.dependencies).reduce((acc, key) => {
+  const dependencies = Object.keys(lockfile.dependencies).reduce<Record<string, any>>((acc, key) => {
     let value = removeInvalidGitUrlsInFrom(lockfile.dependencies[key], key);
     value = removeInvalidGitUrlsInRequires(value);
     acc[key] = removeInvalidGitUrls(value);
@@ -169,7 +192,7 @@ function removeInvalidGitUrls(lockfile) {
   return Object.assign({}, lockfile, { dependencies });
 }
 
-function removeInvalidGitUrlsInFrom(value, dependencyName) {
+function removeInvalidGitUrlsInFrom(value: any, dependencyName: string): any {
   const matchKey = new RegExp(`^${dependencyName}@`);
   let from = value.from;
   if (value.from && value.from.match(matchKey)) {
@@ -179,10 +202,10 @@ function removeInvalidGitUrlsInFrom(value, dependencyName) {
   return Object.assign({}, value, { from });
 }
 
-function removeInvalidGitUrlsInRequires(value) {
+function removeInvalidGitUrlsInRequires(value: any): any {
   if (!value.requires) return value;
 
-  const requires = Object.keys(value.requires).reduce((acc, reqKey) => {
+  const requires = Object.keys(value.requires).reduce<Record<string, string>>((acc, reqKey) => {
     let reqValue = value.requires[reqKey];
     const requiresMatchKey = new RegExp(`^${reqKey}@`);
     if (reqValue && reqValue.match(requiresMatchKey)) {
@@ -194,5 +217,3 @@ function removeInvalidGitUrlsInRequires(value) {
 
   return Object.assign({}, value, { requires });
 }
-
-module.exports = { updateDependencyFiles };

@@ -12,22 +12,28 @@
  * Update the dependency to the version specified and rewrite the package.json
  * and yarn.lock files.
  */
-const fs = require("fs");
-const path = require("path");
-const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
-const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
-const {
-  cleanLockfile,
-} = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
-const Config = require("@dependabot/yarn-lib/lib/config").default;
-const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
-const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-const fixDuplicates = require("./fix-duplicates");
-const replaceDeclaration = require("./replace-lockfile-declaration");
-const { LightweightAdd, LightweightInstall } = require("./helpers");
+import fs from "fs";
+import path from "path";
+import fixDuplicates from "./fix-duplicates.js";
+import replaceLockfileDeclaration from "./replace-lockfile-declaration.js";
+import { LightweightAdd, LightweightInstall } from "./helpers.js";
 
-function flattenAllDependencies(manifest) {
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { cleanLockfile } = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Config = require("@dependabot/yarn-lib/lib/config").default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
+
+function flattenAllDependencies(manifest: any): Record<string, string> {
   return Object.assign(
     {},
     manifest.optionalDependencies,
@@ -39,16 +45,20 @@ function flattenAllDependencies(manifest) {
 
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.
-function recoverVersionComments(oldLockfile, newLockfile) {
+function recoverVersionComments(
+  oldLockfile: string,
+  newLockfile: string
+): string {
   const yarnRegex = /^# yarn v(\S+)\n/gm;
   const nodeRegex = /^# node v(\S+)\n/gm;
-  const oldMatch = (regex) => [].concat(oldLockfile.match(regex))[0];
+  const oldMatch = (regex: RegExp) =>
+    ([] as (string | undefined)[]).concat(oldLockfile.match(regex) || [])[0];
   return newLockfile
-    .replace(yarnRegex, (match) => oldMatch(yarnRegex) || "")
-    .replace(nodeRegex, (match) => oldMatch(nodeRegex) || "");
+    .replace(yarnRegex, () => oldMatch(yarnRegex) || "")
+    .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-function devRequirement(requirements) {
+function devRequirement(requirements: any): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("devDependencies") > -1 &&
@@ -56,7 +66,7 @@ function devRequirement(requirements) {
   );
 }
 
-function optionalRequirement(requirements) {
+function optionalRequirement(requirements: any): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("optionalDependencies") > -1 &&
@@ -65,11 +75,11 @@ function optionalRequirement(requirements) {
 }
 
 function installArgsWithVersion(
-  depName,
-  desiredVersion,
-  requirements,
-  existingVersionRequirement
-) {
+  depName: string,
+  desiredVersion: string,
+  requirements: any,
+  existingVersionRequirement?: string
+): string[] {
   const source = requirements.source;
 
   if (source && source.type === "git") {
@@ -78,18 +88,18 @@ function installArgsWithVersion(
     }
 
     // Git is configured to auth over https while updating
-    existingVersionRequirement = existingVersionRequirement.replace(
+    existingVersionRequirement = existingVersionRequirement!.replace(
       /git\+ssh:\/\/git@(.*?)[:/]/,
       "git+https://$1/"
     );
 
     // Keep any semver range that has already been updated in the package
     // requirement when installing the new version
-    if (existingVersionRequirement.match(desiredVersion)) {
+    if (existingVersionRequirement!.match(desiredVersion)) {
       return [`${depName}@${existingVersionRequirement}`];
     } else {
       return [
-        `${depName}@${existingVersionRequirement.replace(
+        `${depName}@${existingVersionRequirement!.replace(
           /#.*/,
           ""
         )}#${desiredVersion}`,
@@ -100,15 +110,26 @@ function installArgsWithVersion(
   }
 }
 
-async function updateDependencyFiles(directory, dependencies) {
-  const readFile = (fileName) =>
+interface Dependency {
+  name: string;
+  version: string;
+  requirements: any[];
+}
+
+export async function updateDependencyFiles(
+  directory: string,
+  dependencies: Dependency[]
+): Promise<Record<string, string>> {
+  const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
-  let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
-  let requiredVersions = [];
-  for (let dep of dependencies) {
-    for (let reqs of dep.requirements) {
+  let updateRunResults: Record<string, string> = {
+    "yarn.lock": readFile("yarn.lock"),
+  };
+  const requiredVersions: string[] = [];
+  for (const dep of dependencies) {
+    for (const reqs of dep.requirements) {
       if (requiredVersions.indexOf(reqs.requirement) > -1) {
-          continue;
+        continue;
       }
       updateRunResults = Object.assign(
         updateRunResults,
@@ -121,12 +142,12 @@ async function updateDependencyFiles(directory, dependencies) {
 }
 
 async function updateDependencyFile(
-  directory,
-  depName,
-  desiredVersion,
-  requirements
-) {
-  const readFile = (fileName) =>
+  directory: string,
+  depName: string,
+  desiredVersion: string,
+  requirements: any
+): Promise<Record<string, string>> {
+  const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile("yarn.lock");
   const originalPackageJson = readFile(requirements.file);
@@ -147,7 +168,9 @@ async function updateDependencyFile(
     enableDefaultRc: true,
     extraneousYarnrcFiles: [".yarnrc"],
   });
-  config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
+  config.enableLockfileVersions = Boolean(
+    originalYarnLock.match(/^# yarn v/m)
+  );
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
@@ -176,7 +199,7 @@ async function updateDependencyFile(
   // exact version, not a requirement range)
   // If we don't have new requirement (e.g. git source) use the existing version
   // requirement from the package manifest
-  const replacedDeclarationYarnLock = replaceDeclaration(
+  const replacedDeclarationYarnLock = replaceLockfileDeclaration(
     originalYarnLock,
     dedupedYarnLock,
     depName,
@@ -195,7 +218,12 @@ async function updateDependencyFile(
   );
 
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
-  const install2 = new LightweightInstall(flags, config, reporter, lockfile2);
+  const install2 = new LightweightInstall(
+    flags,
+    config,
+    reporter,
+    lockfile2
+  );
   await install2.init();
 
   let updatedYarnLock = readFile("yarn.lock");
@@ -205,5 +233,3 @@ async function updateDependencyFile(
     "yarn.lock": updatedYarnLock,
   };
 }
-
-module.exports = { updateDependencyFiles };

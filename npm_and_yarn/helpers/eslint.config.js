@@ -23,5 +23,8 @@ module.exports = defineConfig([
         },
     },
     temporaryDisabledRules,
-    eslintConfigPrettier
+    eslintConfigPrettier,
+    {
+        ignores: ["dist/**"],
+    }
 ])

@@ -1,19 +1,19 @@
-const {
+import {
     parseLockfile,
-} = require("../../lib/pnpm");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+} from "../../lib/pnpm/index.js";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 describe("generates an updated pnpm lock for the original file", () => {
 
-    let tempDir;
+    let tempDir: string;
     beforeEach(() => {
         tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
     });
     afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
-    function copyDependencies(sourceDir, destDir) {
+    function copyDependencies(sourceDir: string, destDir: string) {
         const srcPnpmYaml = path.join(
             __dirname,
             `fixtures/parser/${sourceDir}/pnpm-lock.yaml`

@@ -1,6 +1,6 @@
-function runAsync(obj, method, args) {
+export function runAsync(obj: any, method: (...args: any[]) => void, args: any[]): Promise<any[]> {
   return new Promise((resolve, reject) => {
-    const cb = (err, ...returnValues) => {
+    const cb = (err: any, ...returnValues: any[]) => {
       if (err) {
         reject(err);
       } else {
@@ -11,15 +11,10 @@ function runAsync(obj, method, args) {
   });
 }
 
-function muteStderr() {
+export function muteStderr(): () => void {
   const original = process.stderr.write;
-  process.stderr.write = () => {};
+  process.stderr.write = (() => {}) as any;
   return () => {
     process.stderr.write = original;
   };
 }
-
-module.exports = {
-  runAsync,
-  muteStderr,
-};

@@ -1,11 +1,11 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const { updateDependencyFiles } = require("../../lib/npm6/updater");
-const helpers = require("./helpers");
+import path from "path";
+import os from "os";
+import fs from "fs";
+import { updateDependencyFiles } from "../../lib/npm6/updater.js";
+import * as helpers from "./helpers.js";
 
 describe("updater", () => {
-  let tempDir;
+  let tempDir: string;
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });

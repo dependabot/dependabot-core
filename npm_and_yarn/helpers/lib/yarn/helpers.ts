@@ -1,7 +1,9 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
 
-function isString(value) {
+export function isString(value: any): value is string {
   return Object.prototype.toString.call(value) === "[object String]";
 }
 
@@ -15,7 +17,11 @@ function isString(value) {
 // We only care about the first and last steps: resolve, then save the new
 // manifest. Fortunately, overriding bailout() gives us an opportunity to skip
 // over the intermediate steps in a relatively painless fashion.
-class LightweightAdd extends Add {
+class LightweightAdd extends (Add as any) {
+  constructor(...args: any[]) {
+    super(...args);
+  }
+
   // This method is called by init() at the end of the resolve step, and is
   // responsible for checking if any dependencies need to be updated locally.
   // If everything is up to date, it'll save a new lockfile and return true,
@@ -27,7 +33,7 @@ class LightweightAdd extends Add {
   // Add overrides Install's implementation to always return false - meaning
   // that it will always continue to the fetch and install steps. We want to
   // do the opposite - just save the new lockfile and stop there.
-  async bailout(patterns, workspaceLayout) {
+  async bailout(patterns: any, workspaceLayout: any) {
     // This is the only part of the original bailout implementation that
     // matters: saving the new lockfile
     await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
@@ -37,18 +43,17 @@ class LightweightAdd extends Add {
   }
 }
 
-class LightweightInstall extends Install {
-  async bailout(patterns, workspaceLayout) {
+class LightweightInstall extends (Install as any) {
+  constructor(...args: any[]) {
+    super(...args);
+  }
+
+  async bailout(patterns: any, workspaceLayout: any) {
     await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
     return true;
   }
 }
 
-const LOCKFILE_ENTRY_REGEX = /^(.*)@([^@]*?)$/;
+export const LOCKFILE_ENTRY_REGEX = /^(.*)@([^@]*?)$/;
 
-module.exports = {
-  isString,
-  LightweightAdd,
-  LightweightInstall,
-  LOCKFILE_ENTRY_REGEX,
-};
+export { LightweightAdd, LightweightInstall };

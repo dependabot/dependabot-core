@@ -1,13 +1,13 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const {
+import path from "path";
+import os from "os";
+import fs from "fs";
+import {
   findConflictingDependencies,
-} = require("../../lib/npm/conflicting-dependency-parser");
-const helpers = require("./helpers");
+} from "../../lib/yarn/conflicting-dependency-parser.js";
+import * as helpers from "./helpers.js";
 
 describe("findConflictingDependencies", () => {
-  let tempDir;
+  let tempDir: string;
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
@@ -19,9 +19,9 @@ describe("findConflictingDependencies", () => {
     const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
     expect(result).toEqual([
       {
-        explanation: "objnest@4.1.2 requires abind@^1.0.0",
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
         name: "objnest",
-        version: "4.1.2",
+        version: "4.1.4",
         requirement: "^1.0.0",
       },
     ]);
@@ -50,15 +50,32 @@ describe("findConflictingDependencies", () => {
     const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
     expect(result).toEqual([
       {
+        explanation: `apass@1.1.0 requires abind@^1.0.0 via a transitive dependency on objnest@3.0.9`,
+        name: "objnest",
+        version: "3.0.9",
+        requirement: "^1.0.0",
+      },
+      {
         explanation: "apass@1.1.0 requires abind@^1.0.0 via cipherjson@2.1.0",
         name: "cipherjson",
         version: "2.1.0",
         requirement: "^1.0.0",
       },
+    ]);
+  });
+
+  it("explains conflicting devDependencies", async () => {
+    helpers.copyDependencies(
+      "conflicting-dependency-parser/dev-dependencies",
+      tempDir
+    );
+
+    const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
+    expect(result).toEqual([
       {
-        explanation: `apass@1.1.0 requires abind@^1.0.0 via a transitive dependency on objnest@3.0.9`,
+        explanation: "objnest@4.1.4 requires abind@^1.0.0",
         name: "objnest",
-        version: "3.0.9",
+        version: "4.1.4",
         requirement: "^1.0.0",
       },
     ]);

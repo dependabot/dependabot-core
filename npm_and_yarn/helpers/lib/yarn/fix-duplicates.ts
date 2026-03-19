@@ -1,11 +1,14 @@
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
-  .default;
-const semver = require("semver");
-const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
+import semver from "semver";
+import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
-function flattenIndirectDependencies(packages) {
-  return (packages || []).reduce((acc, { pkg }) => {
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const stringify =
+  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+
+function flattenIndirectDependencies(packages: any[]): string[] {
+  return (packages || []).reduce((acc: string[], { pkg }: any) => {
     if ("dependencies" in pkg) {
       return acc.concat(Object.keys(pkg.dependencies));
     }
@@ -15,7 +18,10 @@ function flattenIndirectDependencies(packages) {
 
 // Inspired by yarn-deduplicate. Altered to ensure the latest version is always used
 // for version ranges which allow it.
-module.exports = (data, updatedDependencyName) => {
+export default function fixDuplicates(
+  data: string,
+  updatedDependencyName: string
+): string {
   if (!updatedDependencyName) {
     throw new Error("Yarn fix duplicates: must provide dependency name");
   }
@@ -24,13 +30,12 @@ module.exports = (data, updatedDependencyName) => {
   const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
   const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
 
-  const packages = {};
+  const packages: Record<string, any[]> = {};
 
-  Object.entries(json).forEach(([name, pkg]) => {
+  Object.entries(json).forEach(([name, pkg]: [string, any]) => {
     if (name.match(LOCKFILE_ENTRY_REGEX)) {
-      const [_, packageName, requestedVersion] = name.match(
-        LOCKFILE_ENTRY_REGEX
-      );
+      const match = name.match(LOCKFILE_ENTRY_REGEX)!;
+      const [_, packageName, requestedVersion] = match;
       packages[packageName] = packages[packageName] || [];
       packages[packageName].push(
         Object.assign({}, { name, pkg, packageName, requestedVersion })
@@ -57,11 +62,12 @@ module.exports = (data, updatedDependencyName) => {
     .filter(([name]) => packagesToDedupe.includes(name))
     .forEach(([name, packages]) => {
       // Reverse sort, so we'll find the maximum satisfying version first
-      const versions = packages.map((p) => p.pkg.version).sort(semver.rcompare);
-      const ranges = packages.map((p) => p.requestedVersion);
+      const versions = packages
+        .map((p: any) => p.pkg.version)
+        .sort(semver.rcompare);
 
       // Dedup each package to its maxSatisfying version
-      packages.forEach((p) => {
+      packages.forEach((p: any) => {
         const targetVersion = semver.maxSatisfying(
           versions,
           p.requestedVersion
@@ -69,7 +75,7 @@ module.exports = (data, updatedDependencyName) => {
         if (targetVersion === null) return;
         if (targetVersion !== p.pkg.version) {
           const dedupedPackage = packages.find(
-            (p) => p.pkg.version === targetVersion
+            (p: any) => p.pkg.version === targetVersion
           );
           json[`${name}@${p.requestedVersion}`] = dedupedPackage.pkg;
         }
@@ -77,4 +83,4 @@ module.exports = (data, updatedDependencyName) => {
     });
 
   return stringify(json, noHeader, enableLockfileVersions);
-};
+}

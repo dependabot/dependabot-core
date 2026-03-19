@@ -1,17 +1,23 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
-  .default;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const stringify =
+  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 // Get an array of a dependency's requested version ranges from a lockfile
-function getRequestedVersions(depName, lockfileJson) {
-  const requestedVersions = [];
+function getRequestedVersions(
+  depName: string,
+  lockfileJson: Record<string, any>
+): string[] {
+  const requestedVersions: string[] = [];
   // Matching dependency name and version requirements which could be a full url:
   // dep@version, @private-dep@version, private-dep@https:://token@gh.com...#ref
   const re = /^(.[^@]*)@(.*?)$/;
 
-  Object.entries(lockfileJson).forEach(([name, _]) => {
+  Object.entries(lockfileJson).forEach(([name]) => {
     if (name.match(re)) {
-      const [_, packageName, requestedVersion] = name.match(re);
+      const match = name.match(re)!;
+      const [_, packageName, requestedVersion] = match;
       if (packageName === depName) {
         requestedVersions.push(requestedVersion);
       }
@@ -21,13 +27,13 @@ function getRequestedVersions(depName, lockfileJson) {
   return requestedVersions;
 }
 
-module.exports = (
-  oldLockfileContent,
-  newLockfileContent,
-  depName,
-  newVersionRequirement,
-  existingVersionRequirement
-) => {
+export default function replaceLockfileDeclaration(
+  oldLockfileContent: string,
+  newLockfileContent: string,
+  depName: string,
+  newVersionRequirement: string,
+  existingVersionRequirement: string
+): string {
   const oldJson = parse(oldLockfileContent).object;
   const newJson = parse(newLockfileContent).object;
 
@@ -54,4 +60,4 @@ module.exports = (
   }
 
   return stringify(newJson, noHeader, enableLockfileVersions);
-};
+}

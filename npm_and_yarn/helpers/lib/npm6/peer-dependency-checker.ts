@@ -10,12 +10,33 @@
  *  - successful completion, or an error if there are peer dependency warnings
  */
 
-const npm = require("npm");
-const installer = require("npm/lib/install");
-const { muteStderr, runAsync } = require("./helpers.js");
+import { muteStderr, runAsync } from "./helpers.js";
 
-function installArgsWithVersion(depName, desiredVersion, reqs) {
-  const source = (reqs.find((req) => req.source) || {}).source;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const npm = require("npm");
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const installer = require("npm/lib/install");
+
+interface Requirement {
+  source?: {
+    type: string;
+    url: string;
+  };
+  [key: string]: any;
+}
+
+interface TopLevelDependency {
+  name: string;
+  version: string;
+  requirements: Requirement[];
+}
+
+function installArgsWithVersion(
+  depName: string,
+  desiredVersion: string,
+  reqs: Requirement[]
+): string[] {
+  const source = (reqs.find((req) => req.source) || {} as any).source;
 
   if (source && source.type === "git") {
     return [`${depName}@${source.url}#${desiredVersion}`];
@@ -24,13 +45,13 @@ function installArgsWithVersion(depName, desiredVersion, reqs) {
   }
 }
 
-async function checkPeerDependencies(
-  directory,
-  depName,
-  desiredVersion,
-  requirements,
-  topLevelDependencies
-) {
+export async function checkPeerDependencies(
+  directory: string,
+  depName: string,
+  desiredVersion: string,
+  requirements: Requirement[],
+  topLevelDependencies?: TopLevelDependency[]
+): Promise<void> {
   // `force: true` ignores checks for platform (os, cpu) and engines
   // in npm/lib/install/validate-args.js
   // Platform is checked and raised from (EBADPLATFORM):
@@ -78,7 +99,7 @@ async function checkPeerDependencies(
     .map((dep) =>
       installArgsWithVersion(dep.name, dep.version, dep.requirements)
     )
-    .reduce((acc, dep) => acc.concat(dep), []);
+    .reduce<string[]>((acc, dep) => acc.concat(dep), []);
 
   args = args.concat(otherDeps);
 
@@ -87,7 +108,7 @@ async function checkPeerDependencies(
   });
 
   // Skip printing the success message
-  initialInstaller.printInstalled = (cb) => cb();
+  initialInstaller.printInstalled = (cb: () => void) => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
@@ -99,12 +120,10 @@ async function checkPeerDependencies(
   }
 
   const peerDependencyWarnings = initialInstaller.idealTree.warnings
-    .filter((warning) => warning.code === "EPEERINVALID")
-    .map((warning) => warning.message);
+    .filter((warning: any) => warning.code === "EPEERINVALID")
+    .map((warning: any) => warning.message);
 
   if (peerDependencyWarnings.length) {
     throw new Error(peerDependencyWarnings.join("\n"));
   }
 }
-
-module.exports = { checkPeerDependencies };
