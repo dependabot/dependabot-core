@@ -1507,7 +1507,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "Mongey/confluentcloud",
+            name: "mongey/confluentcloud",
             version: "0.0.11",
             previous_version: "0.0.6",
             requirements: [{
@@ -1517,7 +1517,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             previous_requirements: [{
@@ -1527,7 +1527,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             package_manager: "opentofu"
@@ -1545,6 +1545,13 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
           DEP
         )
       end
+
+      it "updates the manifest version constraint" do
+        manifest = updated_dependency_files.find { |file| file.name == "providers.tf" }
+
+        expect(manifest.content).to include(">= 0.0.11, < 0.0.12")
+        expect(manifest.content).not_to include(">= 0.0.6, < 0.0.12")
+      end
     end
 
     describe "when updating a provider with multiple local path modules" do
@@ -1552,7 +1559,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "Mongey/confluentcloud",
+            name: "mongey/confluentcloud",
             version: "0.0.10",
             previous_version: "0.0.6",
             requirements: [{
@@ -1562,7 +1569,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.10",
@@ -1571,7 +1578,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.10",
@@ -1580,7 +1587,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             previous_requirements: [{
@@ -1590,7 +1597,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.6",
@@ -1599,7 +1606,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.6",
@@ -1608,7 +1615,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             package_manager: "opentofu"

@@ -256,6 +256,83 @@ RSpec.describe Dependabot::Swift::FileUpdater do
         end
       end
 
+      context "with workspace-scoped Package.resolved" do
+        let(:project_name) { "xcode_workspace" }
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "MyApp.xcworkspace/contents.xcworkspacedata",
+              content: fixture("projects", project_name, "MyApp.xcworkspace", "contents.xcworkspacedata"),
+              support_file: true
+            ),
+            Dependabot::DependencyFile.new(
+              name: "AppA.xcodeproj/project.pbxproj",
+              content: fixture("projects", project_name, "AppA.xcodeproj", "project.pbxproj"),
+              support_file: true
+            ),
+            Dependabot::DependencyFile.new(
+              name: "MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+              content: fixture(
+                "projects",
+                project_name,
+                "MyApp.xcworkspace",
+                "xcshareddata",
+                "swiftpm",
+                "Package.resolved"
+              )
+            )
+          ]
+        end
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "github.com/apple/swift-nio",
+              version: "2.55.0",
+              previous_version: "2.54.0",
+              requirements: [{
+                requirement: ">= 2.55.0, < 3.0.0",
+                groups: ["dependencies"],
+                file: "AppA.xcodeproj/project.pbxproj",
+                source: {
+                  type: "git",
+                  url: "https://github.com/apple/swift-nio.git",
+                  ref: "abc123newrevision",
+                  branch: nil
+                },
+                metadata: {
+                  requirement_string: "from: \"2.55.0\""
+                }
+              }],
+              previous_requirements: [{
+                requirement: ">= 2.54.0, < 3.0.0",
+                groups: ["dependencies"],
+                file: "AppA.xcodeproj/project.pbxproj",
+                source: {
+                  type: "git",
+                  url: "https://github.com/apple/swift-nio.git",
+                  ref: "1234567890abcdef1234567890abcdef12345678",
+                  branch: nil
+                },
+                metadata: {
+                  requirement_string: "from: \"2.54.0\""
+                }
+              }],
+              package_manager: "swift",
+              metadata: { identity: "swift-nio" }
+            )
+          ]
+        end
+
+        it "updates workspace Package.resolved" do
+          expect(updated_dependency_files.length).to eq(1)
+          resolved = updated_dependency_files.first
+
+          expect(resolved.name).to eq("MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved")
+          expect(resolved.content).to include('"version" : "2.55.0"')
+        end
+      end
+
       context "with multiple Xcode projects" do
         let(:project_name) { "xcode_project_multiple" }
         let(:files) do
