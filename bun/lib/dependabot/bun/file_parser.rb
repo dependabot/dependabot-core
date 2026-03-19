@@ -98,9 +98,7 @@ module Dependabot
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
             parsed_package_json,
-            lockfiles,
-            registry_config_files,
-            credentials
+            lockfiles
           ),
           T.nilable(PackageManagerHelper)
         )

@@ -19,7 +19,6 @@ module Dependabot
       NPM_SCOPE_KEY_FOR_YARN = "npmScopes"
       NPM_REGISTER_KEY_FOR_YARN = "npmRegistryServer"
 
-
       sig do
         params(
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],

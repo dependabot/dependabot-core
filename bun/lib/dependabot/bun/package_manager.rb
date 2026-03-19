@@ -59,12 +59,10 @@ module Dependabot
       sig do
         params(
           package_json: T.nilable(T::Hash[String, T.untyped]),
-          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          credentials: T.nilable(T::Array[Dependabot::Credential])
+          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
         ).void
       end
-      def initialize(package_json, lockfiles, registry_config_files, credentials)
+      def initialize(package_json, lockfiles)
         @package_json = package_json
         @lockfiles = lockfiles
         @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
