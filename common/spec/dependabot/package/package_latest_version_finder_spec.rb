@@ -48,7 +48,6 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
         downloads = release.fetch(:downloads, nil)
         url = release.fetch(:url, nil)
         package_type = release.fetch(:package_type, nil)
-        tag = release.fetch(:tag, nil)
         language = if release[:language]
                      Dependabot::Package::PackageLanguage.new(
                        name: release[:language].fetch(:name, ""),
@@ -68,7 +67,7 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
           url: url,
           package_type: package_type,
           language: language,
-          tag: tag
+          tag: release.fetch(:tag, nil)
         )
       end
     )

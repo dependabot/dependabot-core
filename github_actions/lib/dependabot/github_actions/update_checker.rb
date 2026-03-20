@@ -21,7 +21,7 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release,
+          T.must(latest_version_finder).latest_release_version,
           T.nilable(T.any(String, Gem::Version))
         )
       end
