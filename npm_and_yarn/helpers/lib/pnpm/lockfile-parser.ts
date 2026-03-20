@@ -7,7 +7,11 @@
  *  - JSON formatted information of dependencies (name, version, dependency-type)
  */
 
-import { readWantedLockfile } from "@pnpm/lockfile-file";
+import {
+  readWantedLockfile,
+  type PackageSnapshot,
+  type ProjectSnapshot,
+} from "@pnpm/lockfile-file";
 import * as dependencyPath from "@pnpm/dependency-path";
 
 interface PnpmDependency {
@@ -29,11 +33,11 @@ export async function parse(directory: string): Promise<PnpmDependency[]> {
   }
 
   return Object.entries(lockfile.packages ?? {})
-    .filter(([depPath]: [string, any]) => {
+    .filter(([depPath]) => {
       const dp = dependencyPath.parse(depPath);
       return dp && dp.name; // null or undefined checked for dependency path (dp) and empty name dps are filtered.
     })
-    .map(([depPath, pkgSnapshot]: [string, any]) =>
+    .map(([depPath, pkgSnapshot]: [string, PackageSnapshot]) =>
       nameVerDevFromPkgSnapshot(
         depPath,
         pkgSnapshot,
@@ -44,8 +48,8 @@ export async function parse(directory: string): Promise<PnpmDependency[]> {
 
 function nameVerDevFromPkgSnapshot(
   depPath: string,
-  pkgSnapshot: any,
-  projectSnapshots: any[]
+  pkgSnapshot: PackageSnapshot,
+  projectSnapshots: ProjectSnapshot[]
 ): PnpmDependency {
   let name: string;
   let version: string;
@@ -56,18 +60,18 @@ function nameVerDevFromPkgSnapshot(
     version = pkgInfo.version ?? "";
   } else {
     name = pkgSnapshot.name;
-    version = pkgSnapshot.version;
+    version = pkgSnapshot.version ?? "";
   }
 
   const specifiers: string[] = [];
   let aliased = false;
 
-  projectSnapshots.every((projectSnapshot: any) => {
+  projectSnapshots.every((projectSnapshot) => {
     const projectSpecifiers = projectSnapshot.specifiers;
 
     if (
       Object.values(projectSpecifiers).some(
-        (specifier: any) =>
+        (specifier) =>
           specifier.startsWith(`npm:${name}@`) || specifier == `npm:${name}`
       )
     ) {
@@ -81,21 +85,18 @@ function nameVerDevFromPkgSnapshot(
       return true;
     }
 
-    let specifierVersion = currentSpecifier.version;
-
-    if (!currentSpecifier.version) {
-      specifierVersion =
-        projectSnapshot.dependencies?.[name] ||
-        projectSnapshot.devDependencies?.[name] ||
-        projectSnapshot.optionalDependencies?.[name];
-    }
+    const specifierVersion =
+      projectSnapshot.dependencies?.[name] ||
+      projectSnapshot.devDependencies?.[name] ||
+      projectSnapshot.optionalDependencies?.[name];
 
     if (
-      specifierVersion == version ||
-      specifierVersion.startsWith(`${version}_`) || // lockfileVersion 5.4
-      specifierVersion.startsWith(`${version}(`) // lockfileVersion 6.0
+      specifierVersion &&
+      (specifierVersion == version ||
+        specifierVersion.startsWith(`${version}_`) || // lockfileVersion 5.4
+        specifierVersion.startsWith(`${version}(`)) // lockfileVersion 6.0
     ) {
-      specifiers.push(currentSpecifier.specifier || currentSpecifier);
+      specifiers.push(currentSpecifier);
     }
 
     return true;
@@ -104,8 +105,11 @@ function nameVerDevFromPkgSnapshot(
   return {
     name: name,
     version: version,
-    resolved: pkgSnapshot.resolution.tarball,
-    dev: pkgSnapshot.dev,
+    resolved:
+      "tarball" in pkgSnapshot.resolution
+        ? pkgSnapshot.resolution.tarball
+        : undefined,
+    dev: "dev" in pkgSnapshot && pkgSnapshot.dev === true,
     specifiers: specifiers,
     aliased: aliased,
   };
