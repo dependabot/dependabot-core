@@ -67,12 +67,23 @@ module Dependabot
           new_requirement_string = build_xcode_requirement_string(requirement_string, kind)
           new_requirement = build_xcode_requirement(requirement_string, kind)
 
+          # Update source ref to target version
+          updated_source = update_source_ref(requirement[:source])
+
           requirement.merge(
             requirement: new_requirement,
+            source: updated_source,
             metadata: metadata.merge(
               requirement_string: new_requirement_string
             ).compact
           )
+        end
+
+        sig { params(source: T.nilable(T::Hash[Symbol, T.untyped])).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def update_source_ref(source)
+          return source unless source && target_version
+
+          source.merge(ref: target_version.to_s)
         end
 
         sig do
