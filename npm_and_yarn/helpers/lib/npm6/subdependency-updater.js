@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const npm = require("npm");
 const installer = require("npm/lib/install");
-const detectIndent = require("detect-indent");
+const detectIndent = require("detect-indent").default;
 const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockfile");
 
 const { muteStderr, runAsync } = require("./helpers.js");
