@@ -8,6 +8,7 @@ on: # yamllint disable-line rule:truthy
       - main
     paths-ignore:
       - "common/lib/dependabot.rb"
+permissions: {}
 
 jobs:
   date-version:
