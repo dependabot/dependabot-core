@@ -209,6 +209,21 @@ module Dependabot
         )
         return conflicts unless vulnerability_audit_performed?
 
+        # When the lockfile-based conflict resolver didn't find blocking dependencies,
+        # generate entries from the vulnerability audit's fix_updates as a fallback.
+        # This ensures the error message always includes which dependencies are blocking.
+        if conflicts.empty? && vulnerability_audit["fix_updates"]&.any?
+          vulnerability_audit["fix_updates"].each do |update|
+            conflicts << {
+              "explanation" => "#{update['dependency_name']}@#{update['current_version']} requires " \
+                               "#{dependency.name}@#{dependency.version}",
+              "name" => update["dependency_name"],
+              "version" => update["current_version"].to_s,
+              "requirement" => dependency.version.to_s
+            }
+          end
+        end
+
         vulnerable = [vulnerability_audit].select do |hash|
           !hash["fix_available"] && hash["explanation"]
         end
