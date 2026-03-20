@@ -32,6 +32,7 @@ let
     cmake
     pkg-config
     openssh
+    rubyPackages_4_0.rspec-core
   ];
 
   # Create .vimrc and .bashrc customizations
@@ -84,7 +85,7 @@ n2c.buildImage {
   perms = [
     {
       path = devConfig;
-      regex = "/home/dependabot/.*";
+      regex = "/home/dependabot";
       mode = "0777";
       uid = 1000;
       gid = 1000;

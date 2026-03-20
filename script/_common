@@ -155,12 +155,18 @@ function nix_build() {
   # If an ecosystem-specific image exists in the flake, build and load it too
   if [[ "$ECOSYSTEM" != "common" ]]; then
     local ATTR="$NIX_DIR#packages.x86_64-linux.ecosystems.$ECOSYSTEM"
+    local DEV="$NIX_DIR#packages.x86_64-linux.dev.$ECOSYSTEM"
     if nix eval "$ATTR" --json >/dev/null 2>&1; then
       echo "Building $ECOSYSTEM ecosystem image with Nix..."
       nix build "$ATTR" --no-link
+      echo "Building $ECOSYSTEM dev image with Nix..."
+      nix build "$DEV" --no-link
 
       echo "Loading $ECOSYSTEM ecosystem image into Docker daemon..."
       nix run "${ATTR}.copyToDockerDaemon"
+      echo "Loading $ECOSYSTEM dev image into Docker daemon..."
+      nix run "${DEV}.copyToDockerDaemon"
+
     else
       echo "Warning: No Nix definition for ecosystem '$ECOSYSTEM', using core image only."
     fi
