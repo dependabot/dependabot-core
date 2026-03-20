@@ -93,18 +93,18 @@ module Dependabot
 
       sig do
         params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-          .returns(T.nilable(Dependabot::Package::PackageRelease))
-      end
-      def latest_release(language_version: nil)
-        @latest_release ||= fetch_latest_release(language_version: language_version)
-      end
-
-      sig do
-        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
           .returns(T.nilable(String))
       end
       def latest_tag(language_version: nil)
         latest_release(language_version: language_version)&.tag
+      end
+
+      sig do
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(Dependabot::Package::PackageRelease))
+      end
+      def latest_release(language_version: nil)
+        @latest_release ||= fetch_latest_release(language_version: language_version)
       end
 
       sig do

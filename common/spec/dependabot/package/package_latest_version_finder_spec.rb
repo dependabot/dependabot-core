@@ -315,16 +315,19 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
     end
   end
 
-  describe "#latest_release" do
-    subject(:latest_release) { finder.latest_release }
+  describe "#latest_tag" do
+    subject(:latest_tag) { finder.latest_tag }
 
-    it "returns the latest non-yanked release" do
-      expect(latest_release).to be_a(Dependabot::Package::PackageRelease)
-      expect(latest_release.version).to eq(TestVersion.new("7.0.0"))
+    it "returns the tag of the latest release" do
+      expect(latest_tag).to eq("v7.0.0")
     end
 
-    it "includes the tag from the release" do
-      expect(latest_release.tag).to eq("v7.0.0")
+    context "when the latest release has no tag" do
+      let(:available_releases) do
+        [available_release_6_1_4, available_release_6_0_2, available_release_6_0_0]
+      end
+
+      it { is_expected.to be_nil }
     end
 
     context "when all supported versions are ignored" do
@@ -340,19 +343,16 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
     end
   end
 
-  describe "#latest_tag" do
-    subject(:latest_tag) { finder.latest_tag }
+  describe "#latest_release" do
+    subject(:latest_release) { finder.latest_release }
 
-    it "returns the tag of the latest release" do
-      expect(latest_tag).to eq("v7.0.0")
+    it "returns the latest non-yanked release" do
+      expect(latest_release).to be_a(Dependabot::Package::PackageRelease)
+      expect(latest_release.version).to eq(TestVersion.new("7.0.0"))
     end
 
-    context "when the latest release has no tag" do
-      let(:available_releases) do
-        [available_release_6_1_4, available_release_6_0_2, available_release_6_0_0]
-      end
-
-      it { is_expected.to be_nil }
+    it "includes the tag from the release" do
+      expect(latest_release.tag).to eq("v7.0.0")
     end
 
     context "when all supported versions are ignored" do
