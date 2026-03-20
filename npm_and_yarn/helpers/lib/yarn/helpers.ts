@@ -9,6 +9,7 @@ export function isString(value: unknown): value is string {
 
 // Mirrors Dependabot::Dependency#requirements entries from Ruby,
 // which are T::Hash[Symbol, T.untyped] — an unstructured hash.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Requirement = Record<string, any>;
 
 // Add is a subclass of the Install CLI command, which is responsible for
@@ -21,7 +22,9 @@ export type Requirement = Record<string, any>;
 // We only care about the first and last steps: resolve, then save the new
 // manifest. Fortunately, overriding bailout() gives us an opportunity to skip
 // over the intermediate steps in a relatively painless fashion.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 class LightweightAdd extends (Add as any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(...args: any[]) {
     super(...args);
   }
@@ -37,6 +40,7 @@ class LightweightAdd extends (Add as any) {
   // Add overrides Install's implementation to always return false - meaning
   // that it will always continue to the fetch and install steps. We want to
   // do the opposite - just save the new lockfile and stop there.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async bailout(patterns: any, workspaceLayout: any) {
     // This is the only part of the original bailout implementation that
     // matters: saving the new lockfile
@@ -47,11 +51,14 @@ class LightweightAdd extends (Add as any) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 class LightweightInstall extends (Install as any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(...args: any[]) {
     super(...args);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async bailout(patterns: any, workspaceLayout: any) {
     await this.saveLockfileAndIntegrity(patterns, workspaceLayout);
     return true;

@@ -23,21 +23,11 @@ import {
 } from "./helpers.js";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const {
-  cleanLockfile,
-} = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 
 function flattenAllDependencies(
   manifest: Record<string, Record<string, string> | undefined>

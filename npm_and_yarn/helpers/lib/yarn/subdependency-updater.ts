@@ -4,14 +4,15 @@ import fixDuplicates from "./fix-duplicates.js";
 import { LightweightInstall, LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 import { parse } from "./lockfile-parser.js";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Config = require("@dependabot/yarn-lib/lib/config").default;
+const Config =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@dependabot/yarn-lib/lib/config").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const stringify =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 // Replace the version comments in the new lockfile with the ones from the old
@@ -31,6 +32,7 @@ function recoverVersionComments(
 
 interface Dependency {
   name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -56,17 +58,17 @@ export async function updateDependencyFile(
     enableDefaultRc: true,
     extraneousYarnrcFiles: [".yarnrc"],
   });
-  const noHeader = !Boolean(originalYarnLock.match(/^# THIS IS AN AU/m));
-  config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
+  const noHeader = !originalYarnLock.match(/^# THIS IS AN AU/m);
+  config.enableLockfileVersions = !!originalYarnLock.match(/^# yarn v/m);
 
   // SubDependencyVersionResolver relies on the install finding the latest
   // version of a sub-dependency that's been removed from the lockfile
   // YarnLockFileUpdater passes a specific version to be updated
   const lockfileObject = await parse(directory);
-  for (const [entry, pkg] of Object.entries(lockfileObject)) {
+  for (const [entry] of Object.entries(lockfileObject)) {
     const match = entry.match(LOCKFILE_ENTRY_REGEX);
     if (!match) continue;
-    const [_, depName] = match;
+    const [, depName] = match;
     if (dependencies.some((dependency) => dependency.name === depName)) {
       delete lockfileObject[entry];
     }

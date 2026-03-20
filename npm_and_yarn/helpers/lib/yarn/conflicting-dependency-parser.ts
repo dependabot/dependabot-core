@@ -152,7 +152,7 @@ function findConflictingParentDependencies(
   for (const [entry, pkg] of Object.entries(lockfileJson)) {
     const match = entry.match(LOCKFILE_ENTRY_REGEX);
     if (!match) continue;
-    const [_, parentDepName, parentDepRequirement] = match;
+    const [, parentDepName, parentDepRequirement] = match;
     // Decorate the top-level dependency spec with an installed version as we
     // only have the requirement from the package.json manifest
     if (

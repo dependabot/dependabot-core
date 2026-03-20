@@ -8,8 +8,8 @@
  */
 import fs from "fs";
 import path from "path";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const parseLockfile =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 
 export interface LockfileEntry {

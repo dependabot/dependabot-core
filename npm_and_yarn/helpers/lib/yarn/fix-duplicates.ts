@@ -3,8 +3,8 @@ import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const stringify =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 interface PackageEntry {
@@ -34,15 +34,15 @@ export default function fixDuplicates(
   }
 
   const json = parse(data).object;
-  const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
-  const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
+  const enableLockfileVersions = !!data.match(/^# yarn v/m);
+  const noHeader = !data.match(/^# THIS IS AN AU/m);
 
   const packages: Record<string, PackageEntry[]> = {};
 
   Object.entries(json).forEach(([name, pkg]: [string, unknown]) => {
     if (name.match(LOCKFILE_ENTRY_REGEX)) {
       const match = name.match(LOCKFILE_ENTRY_REGEX)!;
-      const [_, packageName, requestedVersion] = match;
+      const [, packageName, requestedVersion] = match;
       packages[packageName] = packages[packageName] || [];
       packages[packageName].push(
         Object.assign(

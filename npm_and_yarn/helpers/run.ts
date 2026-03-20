@@ -6,12 +6,18 @@ import * as npm6 from "./lib/npm6/index.js";
 import * as pnpm from "./lib/pnpm/index.js";
 import * as yarn from "./lib/yarn/index.js";
 
+interface StdInputRequest {
+  function: string;
+  args: unknown[];
+}
+
 function output(obj: object): void {
   process.stdout.write(JSON.stringify(obj));
 }
 
 const managers: Record<
   string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Record<string, (...args: any[]) => Promise<unknown>>
 > = {
   npm,
@@ -23,7 +29,7 @@ const managers: Record<
 const input: Buffer[] = [];
 process.stdin.on("data", (data) => input.push(data));
 process.stdin.on("end", () => {
-  const request = JSON.parse(input.join(""));
+  const request: StdInputRequest = JSON.parse(input.join(""));
   const [manager, functionName] = request.function.split(":");
   const helpers = managers[manager];
   if (!helpers) {
@@ -36,8 +42,7 @@ process.stdin.on("end", () => {
     process.exit(1);
   }
 
-  func
-    .apply(null, request.args)
+  func(...request.args)
     .then((result: unknown) => {
       output({ result: result });
     })

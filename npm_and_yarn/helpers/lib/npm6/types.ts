@@ -1,5 +1,6 @@
 // Mirrors Dependabot::Dependency#requirements entries from Ruby,
 // which are T::Hash[Symbol, T.untyped] — an unstructured hash.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Requirement = Record<string, any>;
 
 // Represents a serialized Dependabot::Dependency from the Ruby codebase (via Dependency#to_h).

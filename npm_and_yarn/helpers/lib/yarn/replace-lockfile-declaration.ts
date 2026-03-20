@@ -1,7 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+const parse =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const stringify =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 import type { LockfileEntry } from "./lockfile-parser.js";
@@ -19,7 +20,7 @@ function getRequestedVersions(
   Object.entries(lockfileJson).forEach(([name]) => {
     if (name.match(re)) {
       const match = name.match(re)!;
-      const [_, packageName, requestedVersion] = match;
+      const [, packageName, requestedVersion] = match;
       if (packageName === depName) {
         requestedVersions.push(requestedVersion);
       }
@@ -39,10 +40,8 @@ export default function replaceLockfileDeclaration(
   const oldJson = parse(oldLockfileContent).object;
   const newJson = parse(newLockfileContent).object;
 
-  const enableLockfileVersions = Boolean(
-    oldLockfileContent.match(/^# yarn v/m)
-  );
-  const noHeader = !Boolean(oldLockfileContent.match(/^# THIS IS AN AU/m));
+  const enableLockfileVersions = !!oldLockfileContent.match(/^# yarn v/m);
+  const noHeader = !oldLockfileContent.match(/^# THIS IS AN AU/m);
 
   const oldPackageReqs = getRequestedVersions(depName, oldJson);
   const newPackageReqs = getRequestedVersions(depName, newJson);

@@ -27,7 +27,9 @@ const fetcher = require("@dependabot/yarn-lib/lib/package-fetcher.js");
 // package/lockfiles
 //
 // Logic copied from the import command
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 class LightweightAdd extends (Add as any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(...args: any[]) {
     super(...args);
   }

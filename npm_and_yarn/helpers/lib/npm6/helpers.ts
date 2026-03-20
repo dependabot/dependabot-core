@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function runAsync(
   obj: any,
   method: (...args: any[]) => void,
@@ -17,7 +18,7 @@ export function runAsync(
 
 export function muteStderr(): () => void {
   const original = process.stderr.write;
-  process.stderr.write = (() => {}) as any;
+  process.stderr.write = (() => {}) as unknown as typeof process.stderr.write;
   return () => {
     process.stderr.write = original;
   };
