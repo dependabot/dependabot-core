@@ -73,7 +73,7 @@ n2c.buildImage {
   perms = [
     {
       path = devConfig;
-      regex = "/home/dependabot";
+      regex = "/home/dependabot/";
       mode = "0644";
       uid = 1000;
       gid = 1000;

@@ -7,6 +7,9 @@
   src,
 }:
 
+let
+  dotnet = pkgs.dotnetCorePackages.sdk_9_0;
+in
 mkEcosystemImage {
   inherit
     pkgs
@@ -16,5 +19,10 @@ mkEcosystemImage {
     ;
   name = "dotnet_sdk";
   tag = "dotnet-sdk";
-  toolchainPackages = [ pkgs.dotnetCorePackages.sdk_9_0 ];
+  toolchainPackages = [ dotnet ];
+  envVars = [
+    "PATH=${dotnet}/bin:/home/dependabot/bin:$PATH"
+    "DOTNET_ROOT=${dotnet}"
+    "DOTNET_CLI_TELEMETRY_OPTOUT=1"
+  ];
 }

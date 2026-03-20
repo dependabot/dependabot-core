@@ -49,6 +49,7 @@ let
     zlib.dev
 
     # Compression
+    bzip2
     unzip
     zstd
 
@@ -56,6 +57,15 @@ let
     file
     libyaml
     libyaml.dev
+
+    # Native gem build dependencies
+    gpgme
+    gpgme.dev
+    libgpg-error
+    libgpg-error.dev
+    libassuan
+    libassuan.dev
+    pkg-config
 
     # Locale
     glibcLocales
@@ -200,6 +210,39 @@ let
   '';
 
   # --- Environment variables (T014) ---
+  pathParts = [
+    "/home/dependabot/bin"
+    "${ruby}/bin"
+    "${pkgs.git}/bin"
+    "${pkgs.git-lfs}/bin"
+    "${pkgs.gnupg}/bin"
+    "${pkgs.openssh}/bin"
+    "${pkgs.gcc}/bin"
+    "${pkgs.gnumake}/bin"
+    "${pkgs.pkg-config}/bin"
+    "${pkgs.gpgme.dev}/bin"
+    "${pkgs.coreutils}/bin"
+    "${pkgs.bashInteractive}/bin"
+    "${pkgs.findutils}/bin"
+    "${pkgs.gawk}/bin"
+    "${pkgs.gnugrep}/bin"
+    "${pkgs.gnused}/bin"
+    "${pkgs.gnutar}/bin"
+    "${pkgs.curl}/bin"
+    "${pkgs.which}/bin"
+    "${pkgs.file}/bin"
+    "${pkgs.bzip2}/bin"
+    "${pkgs.unzip}/bin"
+    "${pkgs.zstd}/bin"
+    "${pkgs.gzip}/bin"
+    "${pkgs.breezy}/bin"
+    "${pkgs.mercurial}/bin"
+    "${pkgs.less}/bin"
+    "${pkgs.patch}/bin"
+    "/usr/bin"
+    "/bin"
+  ];
+
   envVars = [
     "DEPENDABOT=true"
     "DEPENDABOT_HOME=/home/dependabot"
@@ -208,7 +251,7 @@ let
     "LC_ALL=en_US.UTF-8"
     "LANG=en_US.UTF-8"
     "DEBIAN_FRONTEND=noninteractive"
-    "PATH=/home/dependabot/bin:${ruby}/bin:${pkgs.git}/bin:${pkgs.git-lfs}/bin:${pkgs.gnupg}/bin:${pkgs.openssh}/bin:${pkgs.gcc}/bin:${pkgs.gnumake}/bin:${pkgs.coreutils}/bin:${pkgs.bashInteractive}/bin:${pkgs.findutils}/bin:${pkgs.gawk}/bin:${pkgs.gnugrep}/bin:${pkgs.gnused}/bin:${pkgs.gnutar}/bin:${pkgs.curl}/bin:${pkgs.which}/bin:${pkgs.file}/bin:${pkgs.unzip}/bin:${pkgs.zstd}/bin:${pkgs.breezy}/bin:${pkgs.mercurial}/bin:${pkgs.less}/bin:${pkgs.patch}/bin:/usr/bin:/bin"
+    "PATH=${builtins.concatStringsSep ":" pathParts}"
     "LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive"
     "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
     "GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt"

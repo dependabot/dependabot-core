@@ -11,8 +11,5 @@ source script/_common
 
 export OMNIBUS_VERSION="latest"
 
-if [[ "${USE_NIX:-}" == "1" ]]; then
-  nix_build "$1"
-else
-  docker_build "$1"
-fi
+echo "Building with Nix"
+nix_build "$1"
