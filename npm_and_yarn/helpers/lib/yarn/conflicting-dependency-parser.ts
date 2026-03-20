@@ -12,7 +12,7 @@
 import fs from "fs";
 import path from "path";
 import semver from "semver";
-import { parse } from "./lockfile-parser.js";
+import { parse, type LockfileEntry } from "./lockfile-parser.js";
 import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
 interface ConflictingDependency {
@@ -26,7 +26,7 @@ interface ParentSpec {
   name: string;
   version: string;
   requirement: string;
-  transitiveSpec: { name: string; version: string; requirement?: string };
+  transitiveSpec: TransitiveSpec;
   topLevelSpec: TopLevelSpec;
 }
 
@@ -34,6 +34,12 @@ interface TopLevelSpec {
   name: string;
   requirement: string;
   version?: string;
+}
+
+interface TransitiveSpec {
+  name: string;
+  version: string;
+  requirement?: string;
 }
 
 export async function findConflictingDependencies(
@@ -123,8 +129,8 @@ function findConflictingParentDependencies(
   targetDep: string,
   targetversion: string,
   topLevelSpec: TopLevelSpec,
-  lockfileJson: Record<string, any>,
-  transitiveSpec: any = {},
+  lockfileJson: Record<string, LockfileEntry>,
+  transitiveSpec: TransitiveSpec = {} as TransitiveSpec,
   checkedEntries: Set<string> = new Set(),
   conflictingParents: Map<string, ParentSpec> = new Map()
 ): Map<string, ParentSpec> {

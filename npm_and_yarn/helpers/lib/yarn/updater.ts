@@ -16,7 +16,7 @@ import fs from "fs";
 import path from "path";
 import fixDuplicates from "./fix-duplicates.js";
 import replaceLockfileDeclaration from "./replace-lockfile-declaration.js";
-import { LightweightAdd, LightweightInstall } from "./helpers.js";
+import { LightweightAdd, LightweightInstall, type Requirement } from "./helpers.js";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
@@ -33,7 +33,7 @@ const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 
-function flattenAllDependencies(manifest: any): Record<string, string> {
+function flattenAllDependencies(manifest: Record<string, Record<string, string> | undefined>): Record<string, string> {
   return Object.assign(
     {},
     manifest.optionalDependencies,
@@ -58,7 +58,7 @@ function recoverVersionComments(
     .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-function devRequirement(requirements: any): boolean {
+function devRequirement(requirements: Requirement): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("devDependencies") > -1 &&
@@ -66,7 +66,7 @@ function devRequirement(requirements: any): boolean {
   );
 }
 
-function optionalRequirement(requirements: any): boolean {
+function optionalRequirement(requirements: Requirement): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("optionalDependencies") > -1 &&
@@ -77,7 +77,7 @@ function optionalRequirement(requirements: any): boolean {
 function installArgsWithVersion(
   depName: string,
   desiredVersion: string,
-  requirements: any,
+  requirements: Requirement,
   existingVersionRequirement?: string
 ): string[] {
   const source = requirements.source;
@@ -113,7 +113,7 @@ function installArgsWithVersion(
 interface Dependency {
   name: string;
   version: string;
-  requirements: any[];
+  requirements: Requirement[];
 }
 
 export async function updateDependencyFiles(
@@ -125,7 +125,7 @@ export async function updateDependencyFiles(
   let updateRunResults: Record<string, string> = {
     "yarn.lock": readFile("yarn.lock"),
   };
-  const requiredVersions: string[] = [];
+  const requiredVersions: (string | undefined)[] = [];
   for (const dep of dependencies) {
     for (const reqs of dep.requirements) {
       if (requiredVersions.indexOf(reqs.requirement) > -1) {
@@ -145,7 +145,7 @@ async function updateDependencyFile(
   directory: string,
   depName: string,
   desiredVersion: string,
-  requirements: any
+  requirements: Requirement
 ): Promise<Record<string, string>> {
   const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
@@ -203,7 +203,7 @@ async function updateDependencyFile(
     originalYarnLock,
     dedupedYarnLock,
     depName,
-    newVersionRequirement,
+    newVersionRequirement!,
     existingVersionRequirement
   );
 

@@ -10,7 +10,7 @@ function output(obj: object): void {
   process.stdout.write(JSON.stringify(obj));
 }
 
-const managers: Record<string, Record<string, (...args: any[]) => Promise<any>>> = {
+const managers: Record<string, Record<string, (...args: any[]) => Promise<unknown>>> = {
   npm,
   npm6,
   pnpm,
@@ -35,7 +35,7 @@ process.stdin.on("end", () => {
 
   func
     .apply(null, request.args)
-    .then((result: any) => {
+    .then((result: unknown) => {
       output({ result: result });
     })
     .catch((error: Error) => {

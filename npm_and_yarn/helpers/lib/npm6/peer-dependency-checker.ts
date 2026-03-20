@@ -11,31 +11,18 @@
  */
 
 import { muteStderr, runAsync } from "./helpers.js";
+import type { Dependency, Requirement } from "./types.js";
 import npm from "npm";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const installer = require("npm/lib/install");
-
-interface Requirement {
-  source?: {
-    type: string;
-    url: string;
-  };
-  [key: string]: any;
-}
-
-interface TopLevelDependency {
-  name: string;
-  version: string;
-  requirements: Requirement[];
-}
 
 function installArgsWithVersion(
   depName: string,
   desiredVersion: string,
   reqs: Requirement[]
 ): string[] {
-  const source = (reqs.find((req) => req.source) || {} as any).source;
+  const source = reqs.find((req) => req.source)?.source;
 
   if (source && source.type === "git") {
     return [`${depName}@${source.url}#${desiredVersion}`];
@@ -49,7 +36,7 @@ export async function checkPeerDependencies(
   depName: string,
   desiredVersion: string,
   requirements: Requirement[],
-  topLevelDependencies?: TopLevelDependency[]
+  topLevelDependencies?: Dependency[]
 ): Promise<void> {
   // `force: true` ignores checks for platform (os, cpu) and engines
   // in npm/lib/install/validate-args.js
@@ -96,7 +83,7 @@ export async function checkPeerDependencies(
   const otherDeps = (topLevelDependencies || [])
     .filter((dep) => dep.name !== depName && dep.version)
     .map((dep) =>
-      installArgsWithVersion(dep.name, dep.version, dep.requirements)
+      installArgsWithVersion(dep.name, dep.version!, dep.requirements)
     )
     .reduce<string[]>((acc, dep) => acc.concat(dep), []);
 
@@ -119,8 +106,8 @@ export async function checkPeerDependencies(
   }
 
   const peerDependencyWarnings = initialInstaller.idealTree.warnings
-    .filter((warning: any) => warning.code === "EPEERINVALID")
-    .map((warning: any) => warning.message);
+    .filter((warning: { code: string; message: string }) => warning.code === "EPEERINVALID")
+    .map((warning: { code: string; message: string }) => warning.message);
 
   if (peerDependencyWarnings.length) {
     throw new Error(peerDependencyWarnings.join("\n"));

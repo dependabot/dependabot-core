@@ -2,16 +2,12 @@ import fs from "fs";
 import path from "path";
 import detectIndent from "detect-indent";
 import { muteStderr, runAsync } from "./helpers.js";
-import { removeDependenciesFromLockfile } from "./remove-dependencies-from-lockfile.js";
+import { removeDependenciesFromLockfile, type LockDependency } from "./remove-dependencies-from-lockfile.js";
+import type { Dependency } from "./types.js";
 import npm from "npm";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const installer = require("npm/lib/install");
-
-interface Dependency {
-  name: string;
-  [key: string]: any;
-}
 
 export async function updateDependencyFile(
   directory: string,
@@ -23,7 +19,7 @@ export async function updateDependencyFile(
 
   const lockfile = readFile(lockfileName);
   const indent = detectIndent(lockfile).indent || "  ";
-  const lockfileObject = JSON.parse(lockfile);
+  const lockfileObject: LockDependency = JSON.parse(lockfile);
   // Remove the dependency we want to update from the lockfile and let
   // npm find the latest resolvable version and fix the lockfile
   const updatedLockfileObject = removeDependenciesFromLockfile(

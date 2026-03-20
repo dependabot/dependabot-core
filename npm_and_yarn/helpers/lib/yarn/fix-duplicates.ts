@@ -6,9 +6,16 @@ const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
-function flattenIndirectDependencies(packages: any[]): string[] {
-  return (packages || []).reduce((acc: string[], { pkg }: any) => {
-    if ("dependencies" in pkg) {
+interface PackageEntry {
+  name: string;
+  pkg: { version: string; dependencies?: Record<string, string> };
+  packageName: string;
+  requestedVersion: string;
+}
+
+function flattenIndirectDependencies(packages: PackageEntry[]): string[] {
+  return (packages || []).reduce((acc: string[], { pkg }: PackageEntry) => {
+    if (pkg.dependencies) {
       return acc.concat(Object.keys(pkg.dependencies));
     }
     return acc;
@@ -29,15 +36,15 @@ export default function fixDuplicates(
   const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
   const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
 
-  const packages: Record<string, any[]> = {};
+  const packages: Record<string, PackageEntry[]> = {};
 
-  Object.entries(json).forEach(([name, pkg]: [string, any]) => {
+  Object.entries(json).forEach(([name, pkg]: [string, unknown]) => {
     if (name.match(LOCKFILE_ENTRY_REGEX)) {
       const match = name.match(LOCKFILE_ENTRY_REGEX)!;
       const [_, packageName, requestedVersion] = match;
       packages[packageName] = packages[packageName] || [];
       packages[packageName].push(
-        Object.assign({}, { name, pkg, packageName, requestedVersion })
+        Object.assign({}, { name, pkg: pkg as PackageEntry["pkg"], packageName, requestedVersion })
       );
     }
   });
@@ -62,11 +69,11 @@ export default function fixDuplicates(
     .forEach(([name, packages]) => {
       // Reverse sort, so we'll find the maximum satisfying version first
       const versions = packages
-        .map((p: any) => p.pkg.version)
+        .map((p) => p.pkg.version)
         .sort(semver.rcompare);
 
       // Dedup each package to its maxSatisfying version
-      packages.forEach((p: any) => {
+      packages.forEach((p) => {
         const targetVersion = semver.maxSatisfying(
           versions,
           p.requestedVersion
@@ -74,9 +81,9 @@ export default function fixDuplicates(
         if (targetVersion === null) return;
         if (targetVersion !== p.pkg.version) {
           const dedupedPackage = packages.find(
-            (p: any) => p.pkg.version === targetVersion
+            (p) => p.pkg.version === targetVersion
           );
-          json[`${name}@${p.requestedVersion}`] = dedupedPackage.pkg;
+          json[`${name}@${p.requestedVersion}`] = dedupedPackage!.pkg;
         }
       });
     });

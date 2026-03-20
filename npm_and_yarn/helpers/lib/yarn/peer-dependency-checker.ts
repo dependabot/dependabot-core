@@ -10,7 +10,7 @@
  *  - successful completion, or an error if there are peer dependency warnings
  */
 import path from "path";
-import { isString } from "./helpers.js";
+import { isString, type Requirement } from "./helpers.js";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
@@ -43,7 +43,7 @@ class LightweightAdd extends (Add as any) {
   }
 }
 
-function devRequirement(requirements: any): boolean {
+function devRequirement(requirements: Requirement): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("devDependencies") > -1 &&
@@ -51,7 +51,7 @@ function devRequirement(requirements: any): boolean {
   );
 }
 
-function optionalRequirement(requirements: any): boolean {
+function optionalRequirement(requirements: Requirement): boolean {
   const groups = requirements.groups;
   return (
     groups.indexOf("optionalDependencies") > -1 &&
@@ -62,16 +62,16 @@ function optionalRequirement(requirements: any): boolean {
 function installArgsWithVersion(
   depName: string,
   desiredVersion: string,
-  requirements: any
+  requirements: Requirement | Requirement[]
 ): string[] {
   const source =
     "source" in requirements
       ? requirements.source
-      : (requirements.find((req: any) => req.source) || {}).source;
+      : ((requirements as Requirement[]).find((req) => req.source) || {}).source;
   const req =
     "requirement" in requirements
       ? requirements.requirement
-      : (requirements.find((req: any) => req.requirement) || {}).requirement;
+      : ((requirements as Requirement[]).find((req) => req.requirement) || {}).requirement;
 
   if (source && source.type === "git") {
     if (desiredVersion) {
@@ -88,7 +88,7 @@ export async function checkPeerDependencies(
   directory: string,
   depName: string,
   desiredVersion: string,
-  requirements: any[]
+  requirements: Requirement[]
 ): Promise<void> {
   for (const req of requirements) {
     await checkPeerDepsForReq(directory, depName, desiredVersion, req);
@@ -99,7 +99,7 @@ async function checkPeerDepsForReq(
   directory: string,
   depName: string,
   desiredVersion: string,
-  requirement: any
+  requirement: Requirement
 ): Promise<void> {
   const flags = {
     ignoreScripts: true,
@@ -132,8 +132,8 @@ async function checkPeerDepsForReq(
 
   const eventBuffer = reporter.getBuffer();
   const peerDependencyWarnings = eventBuffer
-    .map(({ data }: any) => data)
-    .filter((data: any) => {
+    .map(({ data }: { data: unknown }) => data)
+    .filter((data: unknown) => {
       // Guard against event.data sometimes being an object
       return isString(data) && data.match(/(unmet|incorrect) peer dependency/);
     });

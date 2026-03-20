@@ -3,9 +3,13 @@ const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
 
-export function isString(value: any): value is string {
+export function isString(value: unknown): value is string {
   return Object.prototype.toString.call(value) === "[object String]";
 }
+
+// Mirrors Dependabot::Dependency#requirements entries from Ruby,
+// which are T::Hash[Symbol, T.untyped] — an unstructured hash.
+export type Requirement = Record<string, any>;
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
