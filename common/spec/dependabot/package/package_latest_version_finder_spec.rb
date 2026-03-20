@@ -48,6 +48,7 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
         downloads = release.fetch(:downloads, nil)
         url = release.fetch(:url, nil)
         package_type = release.fetch(:package_type, nil)
+        tag = release.fetch(:tag, nil)
         language = if release[:language]
                      Dependabot::Package::PackageLanguage.new(
                        name: release[:language].fetch(:name, ""),
@@ -66,7 +67,8 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
           downloads: downloads,
           url: url,
           package_type: package_type,
-          language: language
+          language: language,
+          tag: tag
         )
       end
     )
@@ -152,6 +154,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       downloads: 1,
       url: "https://example.com",
       package_type: "gem",
+      tag: "v7.0.0",
       language: language_with_requirement
     }
   end
@@ -309,6 +312,59 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
           expect(latest_version).to eq(TestVersion.new("7.0.0"))
         end
       end
+    end
+  end
+
+  describe "#latest_release" do
+    subject(:latest_release) { finder.latest_release }
+
+    it "returns the latest non-yanked release" do
+      expect(latest_release).to be_a(Dependabot::Package::PackageRelease)
+      expect(latest_release.version).to eq(TestVersion.new("7.0.0"))
+    end
+
+    it "includes the tag from the release" do
+      expect(latest_release.tag).to eq("v7.0.0")
+    end
+
+    context "when all supported versions are ignored" do
+      let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#latest_tag" do
+    subject(:latest_tag) { finder.latest_tag }
+
+    it "returns the tag of the latest release" do
+      expect(latest_tag).to eq("v7.0.0")
+    end
+
+    context "when the latest release has no tag" do
+      let(:available_releases) do
+        [available_release_6_1_4, available_release_6_0_2, available_release_6_0_0]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when all supported versions are ignored" do
+      let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      it { is_expected.to be_nil }
     end
   end
 
