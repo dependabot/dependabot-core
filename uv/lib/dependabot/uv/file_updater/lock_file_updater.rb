@@ -460,8 +460,22 @@ module Dependabot
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
         def escape_package_name(name)
-          # Per PEP 503, Python package names normalize -, _, and . to the same character
-          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
+          name_str = name.to_s
+          match = name_str.match(/\A([^\[]+)\[([^\]]+)\]\z/)
+
+          # Handle extras: "pkg[extra1,extra2]" needs flexible matching for
+          # whitespace around commas and any ordering of extras in source file
+          if match
+            base = Regexp.escape(T.must(match[1])).gsub(/\\[-_.]/, "[-_.]")
+            extras = T.must(match[2]).split(",").map(&:strip)
+            extras_patterns = extras.map { |e| Regexp.escape(e).gsub(/\\[-_.]/, "[-_.]") }
+            # Use lookaheads so extras match in any order
+            lookaheads = extras_patterns.map { |e| "(?=[^\\]]*#{e})" }.join
+            "#{base}\\[#{lookaheads}[^\\]]+\\]"
+          else
+            # Per PEP 503, Python package names normalize -, _, and . to the same character
+            Regexp.escape(name_str).gsub(/\\[-_.]/, "[-_.]")
+          end
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }

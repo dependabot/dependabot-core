@@ -1339,6 +1339,129 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         end
       end
     end
+
+    context "with extras that have spaces in source file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aws-lambda-powertools[aws-sdk,tracer]",
+          version: "3.25.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.25.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.24.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "3.24.0",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: "~=3.25.0" } }
+      let(:old_req) { { requirement: "~=3.24.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "aws-lambda-powertools[aws-sdk, tracer]~=3.24.0",
+          ]
+        TOML
+      end
+
+      it "matches extras despite spaces in source" do
+        result = replace_dep
+        expect(result).to include('"aws-lambda-powertools[aws-sdk, tracer]~=3.25.0"')
+        expect(result).not_to include("~=3.24.0")
+      end
+    end
+
+    context "with extras in non-alphabetical order in source file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aws-lambda-powertools[aws-sdk,tracer]",
+          version: "3.25.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.25.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.24.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "3.24.0",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: "~=3.25.0" } }
+      let(:old_req) { { requirement: "~=3.24.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "aws-lambda-powertools[tracer, aws-sdk]~=3.24.0",
+          ]
+        TOML
+      end
+
+      it "matches extras regardless of order" do
+        result = replace_dep
+        expect(result).to include('"aws-lambda-powertools[tracer, aws-sdk]~=3.25.0"')
+        expect(result).not_to include("~=3.24.0")
+      end
+    end
+
+    context "with extras matching exactly (no spaces, alphabetical)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aws-lambda-powertools[aws-sdk,tracer]",
+          version: "3.25.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.25.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.24.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "3.24.0",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: "~=3.25.0" } }
+      let(:old_req) { { requirement: "~=3.24.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "aws-lambda-powertools[aws-sdk,tracer]~=3.24.0",
+          ]
+        TOML
+      end
+
+      it "still works when extras match exactly" do
+        result = replace_dep
+        expect(result).to include('"aws-lambda-powertools[aws-sdk,tracer]~=3.25.0"')
+        expect(result).not_to include("~=3.24.0")
+      end
+    end
   end
 
   describe "#requirements_match?" do
