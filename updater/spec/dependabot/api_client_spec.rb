@@ -285,8 +285,7 @@ RSpec.describe Dependabot::ApiClient do
         source: source,
         credentials: [],
         commit_message_options: [],
-        updating_a_pull_request?: true,
-        ignore_conditions: []
+        updating_a_pull_request?: true
       )
     end
     let(:dependency) do
@@ -317,20 +316,12 @@ RSpec.describe Dependabot::ApiClient do
         )
       ]
     end
-    let(:message) do
-      Dependabot::PullRequestCreator::Message.new(
-        pr_name: "PR name",
-        pr_message: "PR message",
-        commit_message: "Commit message"
-      )
-    end
     let(:update_pull_request_url) do
       "http://example.com/update_jobs/1/update_pull_request"
     end
     let(:base_commit) { "sha" }
 
     before do
-      allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
       stub_request(:post, update_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -374,9 +365,9 @@ RSpec.describe Dependabot::ApiClient do
                 ]
               )
               expect(data["base-commit-sha"]).to eql("sha")
-              expect(data["commit-message"]).to eq("Commit message")
-              expect(data["pr-title"]).to eq("PR name")
-              expect(data["pr-body"]).to eq("PR message")
+              expect(data).not_to have_key("commit-message")
+              expect(data).not_to have_key("pr-title")
+              expect(data).not_to have_key("pr-body")
             end)
     end
   end
