@@ -14,4 +14,3 @@ export interface Dependency {
   subdependency_metadata?: Record<string, string>[];
   removed?: boolean;
 }
-

@@ -10,7 +10,10 @@ function output(obj: object): void {
   process.stdout.write(JSON.stringify(obj));
 }
 
-const managers: Record<string, Record<string, (...args: any[]) => Promise<unknown>>> = {
+const managers: Record<
+  string,
+  Record<string, (...args: any[]) => Promise<unknown>>
+> = {
   npm,
   npm6,
   pnpm,

@@ -2,7 +2,10 @@ import fs from "fs";
 import path from "path";
 import detectIndent from "detect-indent";
 import { muteStderr, runAsync } from "./helpers.js";
-import { removeDependenciesFromLockfile, type LockDependency } from "./remove-dependencies-from-lockfile.js";
+import {
+  removeDependenciesFromLockfile,
+  type LockDependency,
+} from "./remove-dependencies-from-lockfile.js";
 import type { Dependency } from "./types.js";
 import npm from "npm";
 

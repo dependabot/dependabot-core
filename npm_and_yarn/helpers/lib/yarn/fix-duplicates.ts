@@ -4,7 +4,8 @@ import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+const stringify =
+  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 interface PackageEntry {
   name: string;
@@ -44,7 +45,15 @@ export default function fixDuplicates(
       const [_, packageName, requestedVersion] = match;
       packages[packageName] = packages[packageName] || [];
       packages[packageName].push(
-        Object.assign({}, { name, pkg: pkg as PackageEntry["pkg"], packageName, requestedVersion })
+        Object.assign(
+          {},
+          {
+            name,
+            pkg: pkg as PackageEntry["pkg"],
+            packageName,
+            requestedVersion,
+          }
+        )
       );
     }
   });
@@ -68,9 +77,7 @@ export default function fixDuplicates(
     .filter(([name]) => packagesToDedupe.includes(name))
     .forEach(([name, packages]) => {
       // Reverse sort, so we'll find the maximum satisfying version first
-      const versions = packages
-        .map((p) => p.pkg.version)
-        .sort(semver.rcompare);
+      const versions = packages.map((p) => p.pkg.version).sort(semver.rcompare);
 
       // Dedup each package to its maxSatisfying version
       packages.forEach((p) => {

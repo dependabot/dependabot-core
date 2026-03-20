@@ -1,7 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+const stringify =
+  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 import type { LockfileEntry } from "./lockfile-parser.js";
 

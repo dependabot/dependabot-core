@@ -1,4 +1,8 @@
-export function runAsync(obj: any, method: (...args: any[]) => void, args: any[]): Promise<any[]> {
+export function runAsync(
+  obj: any,
+  method: (...args: any[]) => void,
+  args: any[]
+): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const cb = (err: Error | null, ...returnValues: any[]) => {
       if (err) {

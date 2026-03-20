@@ -1,9 +1,7 @@
 import path from "path";
 import os from "os";
 import fs from "fs";
-import {
-  findConflictingDependencies,
-} from "../../lib/yarn/conflicting-dependency-parser.js";
+import { findConflictingDependencies } from "../../lib/yarn/conflicting-dependency-parser.js";
 import * as helpers from "./helpers.js";
 
 describe("findConflictingDependencies", () => {

@@ -11,7 +11,8 @@ const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+const stringify =
+  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.
@@ -56,9 +57,7 @@ export async function updateDependencyFile(
     extraneousYarnrcFiles: [".yarnrc"],
   });
   const noHeader = !Boolean(originalYarnLock.match(/^# THIS IS AN AU/m));
-  config.enableLockfileVersions = Boolean(
-    originalYarnLock.match(/^# yarn v/m)
-  );
+  config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
   // SubDependencyVersionResolver relies on the install finding the latest
   // version of a sub-dependency that's been removed from the lockfile

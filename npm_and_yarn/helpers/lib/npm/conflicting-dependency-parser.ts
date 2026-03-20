@@ -53,7 +53,11 @@ export async function findConflictingDependencies(
   });
 }
 
-function buildExplanation(node: Arborist.Node, directEdge: Arborist.Edge, topLevelEdge: Arborist.Edge): string {
+function buildExplanation(
+  node: Arborist.Node,
+  directEdge: Arborist.Edge,
+  topLevelEdge: Arborist.Edge
+): string {
   if (directEdge.from === topLevelEdge.to) {
     // The nodes parent is top-level
     return `${directEdge.from!.name}@${directEdge.from!.version} requires ${directEdge.to!.name}@${directEdge.spec}`;
@@ -72,7 +76,10 @@ function buildExplanation(node: Arborist.Node, directEdge: Arborist.Edge, topLev
   }
 }
 
-function findTopLevelEdges(edge: Arborist.Edge, parents: Arborist.Edge[] = []): Arborist.Edge[] {
+function findTopLevelEdges(
+  edge: Arborist.Edge,
+  parents: Arborist.Edge[] = []
+): Arborist.Edge[] {
   edge.from!.edgesIn.forEach((parent) => {
     if (parent.from!.edgesIn.size === 0) {
       if (!parents.includes(parent)) {

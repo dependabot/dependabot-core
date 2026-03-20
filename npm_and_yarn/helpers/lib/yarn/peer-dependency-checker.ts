@@ -67,11 +67,13 @@ function installArgsWithVersion(
   const source =
     "source" in requirements
       ? requirements.source
-      : ((requirements as Requirement[]).find((req) => req.source) || {}).source;
+      : ((requirements as Requirement[]).find((req) => req.source) || {})
+          .source;
   const req =
     "requirement" in requirements
       ? requirements.requirement
-      : ((requirements as Requirement[]).find((req) => req.requirement) || {}).requirement;
+      : ((requirements as Requirement[]).find((req) => req.requirement) || {})
+          .requirement;
 
   if (source && source.type === "git") {
     if (desiredVersion) {

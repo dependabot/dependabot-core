@@ -8,6 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "test": "jest",
     "postinstall": "patch-package"
   },

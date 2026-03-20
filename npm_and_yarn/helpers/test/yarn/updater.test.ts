@@ -91,27 +91,27 @@ describe("updater", () => {
 
     try {
       await updateDependencyFiles(tempDir, [
-          {
-            name: "@commitlint/cli",
-            version: "19.3.0",
-            requirements: [
-              {
-                requirement: "^19.3.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source:
-                  {
-                    type: "registry",
-                    url: "https://registry.yarnpkg.com"
-                  }
-              }
-            ]
-          }
-        ]
-      );
+        {
+          name: "@commitlint/cli",
+          version: "19.3.0",
+          requirements: [
+            {
+              requirement: "^19.3.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "registry",
+                url: "https://registry.yarnpkg.com",
+              },
+            },
+          ],
+        },
+      ]);
     } catch (error) {
       expect(error).not.toBeNull();
-      expect((error as Error).message).toEqual("package.json: Name contains illegal characters")
+      expect((error as Error).message).toEqual(
+        "package.json: Name contains illegal characters"
+      );
     }
   });
 });

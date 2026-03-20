@@ -9,7 +9,8 @@
 import fs from "fs";
 import path from "path";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const parseLockfile = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
+const parseLockfile =
+  require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 
 export interface LockfileEntry {
   version: string;
@@ -17,7 +18,9 @@ export interface LockfileEntry {
   dependencies?: Record<string, string>;
 }
 
-export async function parse(directory: string): Promise<Record<string, LockfileEntry>> {
+export async function parse(
+  directory: string
+): Promise<Record<string, LockfileEntry>> {
   const readFile = (fileName: string) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const data = readFile("yarn.lock");

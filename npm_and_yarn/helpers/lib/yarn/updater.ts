@@ -16,14 +16,20 @@ import fs from "fs";
 import path from "path";
 import fixDuplicates from "./fix-duplicates.js";
 import replaceLockfileDeclaration from "./replace-lockfile-declaration.js";
-import { LightweightAdd, LightweightInstall, type Requirement } from "./helpers.js";
+import {
+  LightweightAdd,
+  LightweightInstall,
+  type Requirement,
+} from "./helpers.js";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { cleanLockfile } = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
+const {
+  cleanLockfile,
+} = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -33,7 +39,9 @@ const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 
-function flattenAllDependencies(manifest: Record<string, Record<string, string> | undefined>): Record<string, string> {
+function flattenAllDependencies(
+  manifest: Record<string, Record<string, string> | undefined>
+): Record<string, string> {
   return Object.assign(
     {},
     manifest.optionalDependencies,
@@ -168,9 +176,7 @@ async function updateDependencyFile(
     enableDefaultRc: true,
     extraneousYarnrcFiles: [".yarnrc"],
   });
-  config.enableLockfileVersions = Boolean(
-    originalYarnLock.match(/^# yarn v/m)
-  );
+  config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
 
@@ -218,12 +224,7 @@ async function updateDependencyFile(
   );
 
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
-  const install2 = new LightweightInstall(
-    flags,
-    config,
-    reporter,
-    lockfile2
-  );
+  const install2 = new LightweightInstall(flags, config, reporter, lockfile2);
   await install2.init();
 
   let updatedYarnLock = readFile("yarn.lock");

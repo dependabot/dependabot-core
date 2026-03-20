@@ -58,7 +58,10 @@ export async function findConflictingDependencies(
   ];
   const topLevelDependencies: [string, string][] = dependencyTypes.flatMap(
     (type) => {
-      return Object.entries(JSON.parse(packageJson)[type] || {}) as [string, string][];
+      return Object.entries(JSON.parse(packageJson)[type] || {}) as [
+        string,
+        string,
+      ][];
     }
   );
 
@@ -93,7 +96,10 @@ export async function findConflictingDependencies(
   });
 }
 
-function buildExplanation(parentSpec: ParentSpec, targetDepName: string): string {
+function buildExplanation(
+  parentSpec: ParentSpec,
+  targetDepName: string
+): string {
   if (
     parentSpec.name === parentSpec.topLevelSpec.name &&
     parentSpec.version === parentSpec.topLevelSpec.version
@@ -163,7 +169,10 @@ function findConflictingParentDependencies(
     ) {
       // Recursive check for sub-dependencies finding dependencies that don't
       // allow the target version of the vulnerable dependency to be installed
-      for (const [subDepName, spec] of Object.entries(pkg.dependencies) as [string, string][]) {
+      for (const [subDepName, spec] of Object.entries(pkg.dependencies) as [
+        string,
+        string,
+      ][]) {
         if (
           subDepName === targetDep &&
           !semver.satisfies(targetversion, spec)

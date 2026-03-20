@@ -106,7 +106,10 @@ export async function checkPeerDependencies(
   }
 
   const peerDependencyWarnings = initialInstaller.idealTree.warnings
-    .filter((warning: { code: string; message: string }) => warning.code === "EPEERINVALID")
+    .filter(
+      (warning: { code: string; message: string }) =>
+        warning.code === "EPEERINVALID"
+    )
     .map((warning: { code: string; message: string }) => warning.message);
 
   if (peerDependencyWarnings.length) {
