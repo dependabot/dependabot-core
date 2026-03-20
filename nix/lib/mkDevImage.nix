@@ -6,6 +6,7 @@
 #     ecosystemImage = <ecosystem image>;
 #     name = "go_modules";
 #     tag = "gomod";
+#     coreEnvVars = [ "DEPENDABOT=true" ... ];
 #   }
 #
 # Returns a nix2container image with the ecosystem image as base
@@ -17,6 +18,7 @@
   ecosystemImage,
   name,
   tag ? name,
+  coreEnvVars ? [],
 }:
 
 let
@@ -56,6 +58,14 @@ let
     deps = devToolsPackages;
   };
 
+  # Augment PATH from coreEnvVars with dev tool bin paths
+  devToolPaths = builtins.concatStringsSep ":" (map (p: "${p}/bin") devToolsPackages);
+  devEnvVars = map (v:
+    if pkgs.lib.hasPrefix "PATH=" v
+    then "${v}:${devToolPaths}"
+    else v
+  ) coreEnvVars;
+
 in
 n2c.buildImage {
   name = "ghcr.io/dependabot/dependabot-dev-${tag}";
@@ -65,6 +75,7 @@ n2c.buildImage {
   copyToRoot = [ devConfig ];
 
   config = {
+    Env = devEnvVars;
     User = "dependabot";
     WorkingDir = "/home/dependabot";
     Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
@@ -73,8 +84,8 @@ n2c.buildImage {
   perms = [
     {
       path = devConfig;
-      regex = "/home/dependabot/";
-      mode = "0644";
+      regex = "/home/dependabot/.*";
+      mode = "0777";
       uid = 1000;
       gid = 1000;
       uname = "dependabot";

@@ -51,37 +51,19 @@ fi
 build_image() {
   export BUILT_IMAGE=true
 
-  if [[ "${USE_NIX:-}" == "1" ]]; then
-    echo "$(tput setaf 2)=> building image with Nix$(tput sgr0)"
-    local NIX_DIR
-    NIX_DIR="$(pwd)/nix"
+  echo "$(tput setaf 2)=> building image with Nix$(tput sgr0)"
+  local NIX_DIR
+  NIX_DIR="$(pwd)/nix"
 
-    # Build and load the dev image into Docker daemon
-    nix build "$NIX_DIR#packages.x86_64-linux.dev.$ECOSYSTEM" --no-link
-    nix run "$NIX_DIR#packages.x86_64-linux.dev.$ECOSYSTEM.copyToDockerDaemon"
+  # Build and load the dev image into Docker daemon
+  nix build "$NIX_DIR#packages.x86_64-linux.dev.$ECOSYSTEM" --no-link
+  nix run "$NIX_DIR#packages.x86_64-linux.dev.$ECOSYSTEM.copyToDockerDaemon"
 
-    # Tag it with the expected image name
-    local NIX_TAG
-    NIX_TAG=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "dependabot-dev-" | head -1)
-    if [ -n "$NIX_TAG" ]; then
-      docker tag "$NIX_TAG" "$IMAGE_NAME"
-    fi
-  else
-    echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
-
-    DEPENDABOT_USER_UID=$(id -u)
-    DEPENDABOT_USER_GID=$(id -g)
-    export DEPENDABOT_USER_UID
-    export DEPENDABOT_USER_GID
-    docker_build "$ECOSYSTEM"
-
-    echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
-    docker build \
-      --build-arg BUILDKIT_INLINE_CACHE=1 \
-      --build-arg "FROM_IMAGE=$UPDATER_IMAGE_NAME" \
-      -t "$IMAGE_NAME" \
-      -f "$DOCKERFILE" \
-      .
+  # Tag it with the expected image name
+  local NIX_TAG
+  NIX_TAG=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "dependabot-dev-" | head -1)
+  if [ -n "$NIX_TAG" ]; then
+    docker tag "$NIX_TAG" "$IMAGE_NAME"
   fi
 }
 

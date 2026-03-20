@@ -259,8 +259,10 @@ let
 
 in
 # --- Build the core image (T015, T016) ---
-n2c.buildImage {
-  name = "ghcr.io/dependabot/dependabot-updater-core";
+# Return both the image and envVars so dev images can inherit them.
+{
+  image = n2c.buildImage {
+    name = "ghcr.io/dependabot/dependabot-updater-core";
 
   layers = [
     systemLayer
@@ -321,4 +323,7 @@ n2c.buildImage {
       gname = "dependabot";
     }
   ];
+};
+
+  inherit envVars;
 }

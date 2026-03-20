@@ -54,7 +54,7 @@
           pkgs = nixpkgs.legacyPackages.${system};
           n2c = nix2container.packages.${system}.nix2container;
           fetchGitShim = import ./packages/git-shim.nix { inherit pkgs system; };
-          coreImage = import ./core.nix {
+          coreResult = import ./core.nix {
             inherit
               pkgs
               n2c
@@ -63,6 +63,8 @@
               ;
             src = ./..;
           };
+          coreImage = coreResult.image;
+          coreEnvVars = coreResult.envVars;
         in
         {
           core = coreImage;
@@ -134,7 +136,7 @@
             let
               ecosystems' = self.packages.${system}.ecosystems;
               mkDev = name: tag: ecosystemImage: mkDevImage {
-                inherit pkgs n2c ecosystemImage name tag;
+                inherit pkgs n2c ecosystemImage name tag coreEnvVars;
               };
             in
             builtins.mapAttrs (name: ecosystemImage:
