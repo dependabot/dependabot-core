@@ -4,8 +4,7 @@ import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const stringify =
-  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 function flattenIndirectDependencies(packages: any[]): string[] {
   return (packages || []).reduce((acc: string[], { pkg }: any) => {

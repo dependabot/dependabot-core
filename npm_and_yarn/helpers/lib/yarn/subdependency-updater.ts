@@ -11,8 +11,7 @@ const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const stringify =
-  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
+const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.

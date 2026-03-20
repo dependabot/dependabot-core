@@ -7,10 +7,8 @@
  *  - JSON formatted information of dependencies (name, version, dependency-type)
  */
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { readWantedLockfile } = require("@pnpm/lockfile-file");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const dependencyPath = require("@pnpm/dependency-path");
+import { readWantedLockfile } from "@pnpm/lockfile-file";
+import * as dependencyPath from "@pnpm/dependency-path";
 
 interface PnpmDependency {
   name: string;
@@ -25,6 +23,10 @@ export async function parse(directory: string): Promise<PnpmDependency[]> {
   const lockfile = await readWantedLockfile(directory, {
     ignoreIncompatible: true,
   });
+
+  if (!lockfile) {
+    return [];
+  }
 
   return Object.entries(lockfile.packages ?? {})
     .filter(([depPath]: [string, any]) => {
@@ -50,8 +52,8 @@ function nameVerDevFromPkgSnapshot(
 
   if (!pkgSnapshot.name) {
     const pkgInfo = dependencyPath.parse(depPath);
-    name = pkgInfo.name;
-    version = pkgInfo.version;
+    name = pkgInfo.name ?? depPath;
+    version = pkgInfo.version ?? "";
   } else {
     name = pkgSnapshot.name;
     version = pkgSnapshot.version;

@@ -8,10 +8,8 @@
  */
 import fs from "fs";
 import path from "path";
-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const parseLockfile =
-  require("@dependabot/yarn-lib/lib/lockfile/parse").default;
+const parseLockfile = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 
 export async function parse(directory: string): Promise<any> {
   const readFile = (fileName: string) =>

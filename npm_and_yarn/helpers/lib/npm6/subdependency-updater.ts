@@ -1,14 +1,12 @@
 import fs from "fs";
 import path from "path";
+import detectIndent from "detect-indent";
 import { muteStderr, runAsync } from "./helpers.js";
 import { removeDependenciesFromLockfile } from "./remove-dependencies-from-lockfile.js";
+import npm from "npm";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const npm = require("npm");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const installer = require("npm/lib/install");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const detectIndent = require("detect-indent");
 
 interface Dependency {
   name: string;
