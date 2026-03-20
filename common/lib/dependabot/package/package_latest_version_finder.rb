@@ -371,7 +371,7 @@ module Dependabot
           .returns(T.nilable(Dependabot::Version))
       end
       def fetch_latest_version(language_version: nil)
-        fetch_latest_release(language_version: language_version)&.version
+        latest_release(language_version: language_version)&.version
       end
 
       sig do
