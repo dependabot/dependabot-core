@@ -53,7 +53,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_cargo_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
+              run_cargo_update_command
             end
 
             updated_lockfile = File.read("Cargo.lock")
@@ -213,6 +213,24 @@ module Dependabot
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
+        sig { void }
+        def run_cargo_update_command
+          # Git dependencies use the basic update command since --precise only
+          # applies to registry versions. Non-git dependencies use --precise to
+          # pin to the exact target version without modifying the manifest.
+          if git_dependency?
+            run_cargo_command(
+              "cargo update -p #{dependency_spec}",
+              fingerprint: "cargo update -p <dependency_spec>"
+            )
+          else
+            run_cargo_command(
+              "cargo update --precise #{dependency.version} -p #{dependency_spec}",
+              fingerprint: "cargo update --precise <version> -p <dependency_spec>"
+            )
+          end
+        end
+
         sig { params(command: String, fingerprint: String).void }
         def run_cargo_command(command, fingerprint:)
           start = Time.now
@@ -346,7 +364,6 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).returns(String) }
         def prepared_manifest_content(file)
           content = updated_manifest_content(file)
-          content = pin_version(content) unless git_dependency?
           content = replace_ssh_urls(content)
           content = remove_binary_specifications(content)
           content = remove_default_run_specification(content)
@@ -366,47 +383,6 @@ module Dependabot
             dependencies: dependencies,
             manifest: file
           ).updated_manifest_content
-        end
-
-        sig { params(content: String).returns(String) }
-        def pin_version(content)
-          parsed_manifest = TomlRB.parse(content)
-
-          Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            next unless (req = parsed_manifest.dig(type, dependency.name))
-
-            updated_req = "=#{dependency.version}"
-
-            if req.is_a?(Hash)
-              parsed_manifest[type][dependency.name]["version"] = updated_req
-            else
-              parsed_manifest[type][dependency.name] = updated_req
-            end
-          end
-
-          pin_target_specific_dependencies!(parsed_manifest)
-
-          TomlRB.dump(parsed_manifest)
-        end
-
-        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
-        def pin_target_specific_dependencies!(parsed_manifest)
-          parsed_manifest.fetch("target", {}).each do |target, t_details|
-            Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              t_details.fetch(type, {}).each do |name, requirement|
-                next unless name == dependency.name
-
-                updated_req = "=#{dependency.version}"
-
-                if requirement.is_a?(Hash)
-                  parsed_manifest["target"][target][type][name]["version"] =
-                    updated_req
-                else
-                  parsed_manifest["target"][target][type][name] = updated_req
-                end
-              end
-            end
-          end
         end
 
         sig { params(content: String).returns(String) }
