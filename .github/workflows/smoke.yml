@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'main' }}
+  SMOKE_TEST_BRANCH: regenerate-test-pip-1773949143
 jobs:
   discover:
     runs-on: ubuntu-latest
