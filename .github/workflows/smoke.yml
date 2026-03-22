@@ -139,7 +139,23 @@ jobs:
 
       - name: Diff
         continue-on-error: true
-        run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
+        run: |
+          diff_output=$(diff --ignore-space-change --unified smoke.yaml result.yaml || true)
+
+          if [ -z "$diff_output" ]; then
+            echo "Contents are identical"
+            echo "Contents are identical" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Files differ"
+            echo "### ❌ Files differ" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>Show diff</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Create summary
         run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
