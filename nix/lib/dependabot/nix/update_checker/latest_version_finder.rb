@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/package/package_latest_version_finder"
+require "dependabot/package/package_details"
 require "dependabot/nix/update_checker"
 require "dependabot/nix/package/package_details_fetcher"
 
@@ -12,29 +13,6 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
-
-        sig { returns(T.nilable(String)) }
-        def latest_tag
-          releases = version_list
-          return nil unless releases
-
-          releases = filter_by_cooldown(releases)
-          releases = filter_ignored_versions(releases)
-          releases = apply_post_fetch_latest_versions_filter(releases)
-          releases.max_by(&:version)&.tag
-        end
-
-        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
-        def version_list
-          @version_list ||=
-            T.let(
-              Package::PackageDetailsFetcher.new(
-                dependency: dependency,
-                credentials: credentials
-              ).available_versions,
-              T.nilable(T::Array[Dependabot::Package::PackageRelease])
-            )
-        end
 
         sig do
           override.params(releases: T::Array[Dependabot::Package::PackageRelease])
@@ -54,10 +32,28 @@ module Dependabot
           releases
         end
 
+        # All Nix versions are pseudo-versions with prerelease segments (0.0.0-0.N),
+        # so we must always include prereleases to avoid filtering everything out.
+        sig { override.returns(T::Boolean) }
+        def wants_prerelease?
+          true
+        end
+
         private
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
-        def package_details; end
+        def package_details
+          @package_details ||= T.let(
+            Dependabot::Package::PackageDetails.new(
+              dependency: dependency,
+              releases: Package::PackageDetailsFetcher.new(
+                dependency: dependency,
+                credentials: credentials
+              ).available_versions || []
+            ),
+            T.nilable(Dependabot::Package::PackageDetails)
+          )
+        end
       end
     end
   end
