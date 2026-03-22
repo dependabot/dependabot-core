@@ -47,6 +47,9 @@ hex:
 maven:
   - *common
   - 'maven/**'
+nix:
+  - *common
+  - 'nix/**'
 npm_and_yarn:
   - *common
   - 'npm_and_yarn/**'
