@@ -33,8 +33,26 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
   let(:uv_tree_output) { fixture("dependency_grapher", "uv_tree_output.txt") }
 
   describe "#relevant_dependency_file" do
-    it "specifies the pyproject.toml as the relevant dependency file" do
-      expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+    context "when uv.lock is not present" do
+      it "falls back to pyproject.toml" do
+        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+      end
+    end
+
+    context "when uv.lock is present" do
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("dependency_grapher", "uv_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
+
+      it "specifies the uv.lock as the relevant dependency file" do
+        expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
+      end
     end
   end
 
