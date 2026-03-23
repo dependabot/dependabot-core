@@ -1458,6 +1458,26 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           expect(ref).to match(/\A[0-9a-f]{40}\z/)
         end
       end
+
+      context "when a dependency has a major-only floating tag" do
+        let(:reference) { "v1" }
+        let(:dependency_version) { "1" }
+
+        it "resolves to the latest version's SHA instead of staying at the same precision" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+
+      context "when a dependency has a major-minor floating tag" do
+        let(:reference) { "v1.0" }
+        let(:dependency_version) { "1.0" }
+
+        it "resolves to the latest version's SHA instead of staying at the same precision" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
     end
   end
 end

@@ -152,7 +152,7 @@ module Dependabot
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
-           (new_tag = T.must(latest_version_finder).latest_version_tag)
+           (new_tag = latest_version_tag_for(source_git_commit_checker))
           return pin_to_sha? ? new_tag.fetch(:commit_sha) : new_tag.fetch(:tag)
         end
 
@@ -169,6 +169,17 @@ module Dependabot
       sig { returns(T::Boolean) }
       def pin_to_sha?
         T.let(options[:github_actions_pin_to_sha], T.untyped) == true
+      end
+
+      sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def latest_version_tag_for(source_checker)
+        if pin_to_sha?
+          # When pinning to SHA, ignore precision filtering so floating tags
+          # like @v1 resolve to the latest specific version's SHA
+          source_checker.local_tag_for_latest_version
+        else
+          T.must(latest_version_finder).latest_version_tag
+        end
       end
 
       sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }
