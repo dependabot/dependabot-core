@@ -74,9 +74,16 @@ module Dependabot
         target = preferred_resolvable_version
         return old_requirements unless target
 
-        # Get the commit SHA for the target version to update Package.resolved revision
-        tag = xcode_version_resolver.latest_resolvable_version_tag
-        commit_sha = tag&.fetch(:commit_sha, nil)
+        # Only use the "latest" tag's commit SHA when the chosen target version
+        # is actually the latest resolvable version. This avoids attaching a
+        # mismatched SHA when preferred_resolvable_version selects a different
+        # version (for example, the lowest resolvable security-fix version).
+        commit_sha = nil
+        latest = latest_resolvable_version
+        if latest && target == latest
+          tag = xcode_version_resolver.latest_resolvable_version_tag
+          commit_sha = tag&.fetch(:commit_sha, nil)
+        end
 
         RequirementsUpdater.new(
           requirements: old_requirements,
