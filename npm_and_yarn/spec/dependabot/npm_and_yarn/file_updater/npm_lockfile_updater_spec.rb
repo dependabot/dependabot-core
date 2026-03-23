@@ -242,10 +242,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     let(:files) { project_dependency_files("npm8/workspace_outdated_deps_not_in_root_package_json") }
 
     it "updates" do
-      expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"])
+      parsed_lockfile = JSON.parse(updated_npm_lock_content)
+
+      expect(parsed_lockfile["packages"]["node_modules/@swc/core"]["version"])
         .to eq("1.3.44")
 
-      expect(JSON.parse(updated_npm_lock_content).dig("packages", "bump-version-for-cron", "devDependencies", "@swc/core"))
+      expect(
+        parsed_lockfile.dig("packages", "bump-version-for-cron", "devDependencies", "@swc/core")
+      )
         .to eq("^1.3.37")
     end
   end
@@ -288,6 +292,50 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       expect(nested_chokidar["version"]).to eq("3.6.0")
       expect(nested_chokidar["optional"]).to be(true)
       expect(nested_chokidar["peer"]).to be(true)
+    end
+  end
+
+  context "when syncing workspace package entries for a nested lockfile" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "cli/package-lock.json",
+          content: "{\"name\":\"cli\",\"lockfileVersion\":3,\"packages\":{\"\":{}}}"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "cli/package.json",
+          content: "{\"name\":\"@repro/cli\",\"workspaces\":[\"packages/*\"]}"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "cli/packages/app/package.json",
+          content: "{\"name\":\"@repro/app\",\"dependencies\":{\"pacote\":\"^21.4.0\"}}"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: "{\"name\":\"repo-root\",\"dependencies\":{\"outside\":\"1.0.0\"}}"
+        )
+      ]
+    end
+
+    let(:dependencies) { [] }
+    let(:package_lock) { files.find { |f| f.name == "cli/package-lock.json" } }
+
+    it "uses lockfile-directory-relative package keys and ignores outside manifests" do
+      parsed_lockfile = {
+        "packages" => {
+          "" => { "name" => "@repro/cli" },
+          "packages/app" => {
+            "name" => "@repro/app",
+            "dependencies" => { "pacote" => "^21.5.0" }
+          }
+        }
+      }
+
+      changed = updater.send(:sync_package_entry_dependencies_with_manifests, parsed_lockfile)
+
+      expect(changed).to be(true)
+      expect(parsed_lockfile.dig("packages", "packages/app", "dependencies", "pacote")).to eq("^21.4.0")
+      expect(parsed_lockfile.dig("packages", "", "dependencies")).to be_nil
     end
   end
 

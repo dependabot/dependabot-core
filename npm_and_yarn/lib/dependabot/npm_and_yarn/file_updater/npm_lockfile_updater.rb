@@ -1218,39 +1218,95 @@ module Dependabot
           packages = parsed_lockfile["packages"]
           return false unless packages.is_a?(Hash)
 
+          dependency_sections = %w(dependencies devDependencies peerDependencies optionalDependencies).freeze
+
+          changed = T.let(false, T::Boolean)
+          package_files.each do |file|
+            changed ||= sync_package_entry_dependencies_for_file(
+              packages: packages,
+              file: file,
+              dependency_sections: dependency_sections
+            )
+          end
+
+          changed
+        end
+
+        sig do
+          params(
+            packages: T::Hash[String, T.untyped],
+            file: Dependabot::DependencyFile,
+            dependency_sections: T::Array[String]
+          ).returns(T::Boolean)
+        end
+        def sync_package_entry_dependencies_for_file(packages:, file:, dependency_sections:)
+          manifest = manifest_hash_for_sync(file)
+          return false unless manifest
+
+          package_entry = package_entry_name(file)
+          return false unless package_entry
+
+          lockfile_package = packages[package_entry]
+          return false unless lockfile_package.is_a?(Hash)
+
+          sync_dependency_sections(
+            lockfile_package: lockfile_package,
+            manifest: manifest,
+            dependency_sections: dependency_sections
+          )
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, T.untyped])) }
+        def manifest_hash_for_sync(file)
+          manifest_content = T.must(updated_package_json_content(file) || file.content)
+          parsed_manifest = JSON.parse(manifest_content)
+          return parsed_manifest if parsed_manifest.is_a?(Hash)
+
+          nil
+        rescue JSON::ParserError => e
+          Dependabot.logger.warn(
+            "Failed to parse #{file.name} while syncing lockfile package entries: #{e.message}"
+          )
+          nil
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def package_entry_name(file)
+          lockfile_dir = Pathname.new(lockfile_directory).cleanpath
+          file_dir = Pathname.new(File.dirname(file.name)).cleanpath
+
+          return "" if file_dir == lockfile_dir
+
+          relative_dir = file_dir.relative_path_from(lockfile_dir).to_s
+          return nil if relative_dir.start_with?("..")
+
+          relative_dir
+        rescue ArgumentError
+          nil
+        end
+
+        sig do
+          params(
+            lockfile_package: T::Hash[String, T.untyped],
+            manifest: T::Hash[String, T.untyped],
+            dependency_sections: T::Array[String]
+          ).returns(T::Boolean)
+        end
+        def sync_dependency_sections(lockfile_package:, manifest:, dependency_sections:)
           changed = T.let(false, T::Boolean)
 
-          package_files.each do |file|
-            begin
-              manifest_content = T.must(updated_package_json_content(file) || file.content)
-              manifest = JSON.parse(manifest_content)
-            rescue JSON::ParserError => e
-              Dependabot.logger.warn("Failed to parse #{file.name} while syncing lockfile package entries: #{e.message}")
-              next
-            end
+          dependency_sections.each do |dep_type|
+            manifest_deps = manifest[dep_type]
 
-            next unless manifest.is_a?(Hash)
+            if manifest_deps
+              next unless manifest_deps.is_a?(Hash)
+              next if lockfile_package[dep_type] == manifest_deps
 
-            package_entry = File.dirname(file.name)
-            package_entry = "" if package_entry == "."
-
-            lockfile_package = packages[package_entry]
-            next unless lockfile_package.is_a?(Hash)
-
-            %w(dependencies devDependencies peerDependencies optionalDependencies).each do |dep_type|
-              manifest_deps = manifest[dep_type]
-
-              if manifest_deps
-                next unless manifest_deps.is_a?(Hash)
-
-                unless lockfile_package[dep_type] == manifest_deps
-                  lockfile_package[dep_type] = manifest_deps
-                  changed = true
-                end
-              elsif lockfile_package.key?(dep_type)
-                lockfile_package.delete(dep_type)
-                changed = true
-              end
+              lockfile_package[dep_type] = manifest_deps
+              changed = true
+            elsif lockfile_package.key?(dep_type)
+              lockfile_package.delete(dep_type)
+              changed = true
             end
           end
 
