@@ -77,6 +77,7 @@ module Dependabot
         @options             = options
 
         @latest_version = T.let(nil, T.nilable(Dependabot::Version))
+        @latest_release = T.let(nil, T.nilable(Dependabot::Package::PackageRelease))
         @latest_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
         @lowest_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
         @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
@@ -88,6 +89,22 @@ module Dependabot
       end
       def latest_version(language_version: nil)
         @latest_version ||= fetch_latest_version(language_version: language_version)
+      end
+
+      sig do
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(String))
+      end
+      def latest_tag(language_version: nil)
+        latest_release(language_version: language_version)&.tag
+      end
+
+      sig do
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(Dependabot::Package::PackageRelease))
+      end
+      def latest_release(language_version: nil)
+        @latest_release ||= fetch_latest_release(language_version: language_version)
       end
 
       sig do
@@ -354,6 +371,14 @@ module Dependabot
           .returns(T.nilable(Dependabot::Version))
       end
       def fetch_latest_version(language_version: nil)
+        latest_release(language_version: language_version)&.version
+      end
+
+      sig do
+        params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+          .returns(T.nilable(Dependabot::Package::PackageRelease))
+      end
+      def fetch_latest_release(language_version: nil)
         releases = available_versions
         return unless releases
 
@@ -363,7 +388,7 @@ module Dependabot
         releases = filter_prerelease_versions(releases)
         releases = filter_ignored_versions(releases)
         releases = apply_post_fetch_latest_versions_filter(releases)
-        releases.max_by(&:version)&.version
+        releases.max_by(&:version)
       end
 
       sig do

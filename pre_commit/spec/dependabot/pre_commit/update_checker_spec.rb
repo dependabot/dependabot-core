@@ -190,7 +190,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         latest_version_finder = instance_double(
           Dependabot::PreCommit::UpdateChecker::LatestVersionFinder,
           latest_version_tag: nil, # No tags in repo
-          latest_release: new_commit_sha
+          latest_release_version: new_commit_sha
         )
         allow(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)
           .to receive(:new).and_return(latest_version_finder)

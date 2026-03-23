@@ -77,7 +77,7 @@ module Dependabot
         def package_details; end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
-        def latest_release
+        def latest_release_version
           release = available_release
           return nil unless release
 
