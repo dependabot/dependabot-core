@@ -32,12 +32,10 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        # This cannot realistically happen as the parser will throw a runtime error
-        # on init without a pyproject.toml file,
-        # but this will avoid surprises if anything changes.
-        raise DependabotError, "No pyproject.toml present in dependency files." unless pyproject_toml
+        return T.must(uv_lock) if uv_lock
+        return T.must(pyproject_toml) if pyproject_toml
 
-        T.must(pyproject_toml)
+        raise DependabotError, "No uv.lock or pyproject.toml present."
       end
 
       private
