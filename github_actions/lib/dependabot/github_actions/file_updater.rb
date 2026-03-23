@@ -106,7 +106,6 @@ module Dependabot
         raise "No comment!" unless comment
 
         comment = comment.rstrip
-        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
         return unless git_checker.ref_looks_like_commit_sha?(old_ref)
 
         previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
@@ -131,14 +130,20 @@ module Dependabot
       sig { params(old_ref: String, new_ref: String).returns(T.nilable(String)) }
       def new_version_comment(old_ref, new_ref)
         return unless version_class.correct?(old_ref)
-
-        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
         return unless git_checker.ref_looks_like_commit_sha?(new_ref)
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag
 
         " # #{new_version_tag}"
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_checker
+        @git_checker ||= T.let(
+          Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
