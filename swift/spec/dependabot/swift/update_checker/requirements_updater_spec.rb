@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
   end
 
   describe "#updated_requirements" do
-    context "in xcode_mode" do
+    context "when xcode_mode is enabled" do
       let(:xcode_mode) { true }
 
       it "updates the requirement string" do
