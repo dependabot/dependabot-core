@@ -356,6 +356,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
           expect(updated_requirements.first[:requirement]).to eq(">= 7.0.2, < 8.0.0")
           expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
         end
+
+        it "updates the source ref to the new version" do
+          expect(updated_requirements.first[:source][:ref]).to eq("7.0.2")
+        end
       end
     end
 
@@ -399,6 +403,54 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
         # Branch-pinned dependencies don't have a semver version
         it { is_expected.to be_nil }
+      end
+    end
+
+    context "with Xcode project pinned to exact version" do
+      let(:project_name) { "xcode_project_exact_version" }
+      let(:name) { "github.com/quick/quick" }
+      let(:url) { "https://github.com/Quick/Quick" }
+      let(:upload_pack_fixture) { "quick" }
+
+      before { stub_xcode_upload_pack }
+
+      describe "#can_update?" do
+        subject { checker.can_update?(requirements_to_unlock: :own) }
+
+        it { is_expected.to be_truthy }
+      end
+
+      describe "#latest_version" do
+        subject(:latest_version) { checker.latest_version }
+
+        it "returns latest version from git tags" do
+          expect(latest_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_version.to_s).to eq("7.0.2")
+        end
+      end
+
+      describe "#latest_resolvable_version" do
+        subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+        it "returns the latest version despite exactVersion constraint" do
+          expect(latest_resolvable_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_resolvable_version.to_s).to eq("7.0.2")
+        end
+      end
+
+      describe "#updated_requirements" do
+        subject(:updated_requirements) { checker.updated_requirements }
+
+        it "returns updated requirements with new exact version" do
+          expect(updated_requirements.first[:requirement]).to eq("= 7.0.2")
+          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first[:metadata][:kind]).to eq("exactVersion")
+          expect(updated_requirements.first[:metadata][:requirement_string]).to eq("exact: \"7.0.2\"")
+        end
+
+        it "updates the source ref to the new version" do
+          expect(updated_requirements.first[:source][:ref]).to eq("7.0.2")
+        end
       end
     end
 

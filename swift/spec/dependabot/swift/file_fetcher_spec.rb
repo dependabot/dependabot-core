@@ -97,6 +97,40 @@ RSpec.describe Dependabot::Swift::FileFetcher do
       end
     end
 
+    context "with a .xcworkspace and sibling .xcodeproj" do
+      let(:project_name) { "xcode_workspace" }
+      let(:directory) { "/" }
+
+      it "fetches workspace lockfile/support file and project support files" do
+        files = file_fetcher_instance.files
+        names = files.map(&:name)
+
+        expect(names).to include(
+          "MyApp.xcworkspace/contents.xcworkspacedata",
+          "MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          "AppA.xcodeproj/project.pbxproj",
+          "AppA.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+        )
+      end
+    end
+
+    context "with nested .xcworkspace under subdirectory" do
+      let(:project_name) { "xcode_workspace_nested" }
+      let(:directory) { "/" }
+
+      it "discovers workspace and project files recursively" do
+        files = file_fetcher_instance.files
+        names = files.map(&:name)
+
+        expect(names).to include(
+          "ios/MyApp.xcworkspace/contents.xcworkspacedata",
+          "ios/MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          "ios/AppA.xcodeproj/project.pbxproj",
+          "ios/AppA.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+        )
+      end
+    end
+
     context "with both Package.swift and .xcodeproj present" do
       let(:project_name) { "xcode_project_with_manifest" }
       let(:directory) { "/" }

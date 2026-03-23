@@ -26,7 +26,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        return nil if Distributions.distribution_requirements?(dependency.requirements)
+        return distributions_source if Distributions.distribution_requirements?(dependency.requirements)
 
         tmp_source = look_up_source_in_pom(dependency_pom_file)
         return tmp_source if tmp_source
@@ -40,6 +40,17 @@ module Dependabot
         return tmp_source if tmp_source.repo.end_with?(T.must(artifact))
 
         tmp_source if repo_has_subdir_for_dep?(tmp_source)
+      end
+
+      # The Gradle Wrapper does not have its own release notes.
+      # Instead, it shares the release notes of the matching Gradle version.
+      sig { returns(Dependabot::Source) }
+      def distributions_source
+        Source.new(
+          provider: "github",
+          repo: "gradle/gradle",
+          directory: "/"
+        )
       end
 
       sig { params(tmp_source: Dependabot::Source).returns(T::Boolean) }

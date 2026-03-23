@@ -162,8 +162,8 @@ module Dependabot
           current_repo = repo_match[1] if repo_match
 
           if current_repo == repo_url &&
-             line.match?(/^\s*rev:\s+#{Regexp.escape(old_ref)}(\s*(?:#.*)?)?$/)
-            updated_line = line.sub(old_ref, new_ref)
+             line.match?(/^\s*rev:\s+["']?#{Regexp.escape(old_ref)}["']?(\s*(?:#.*)?)?$/)
+            updated_line = line.sub(/(["']?)#{Regexp.escape(old_ref)}(["']?)/, "\\1#{new_ref}\\2")
             updated_line = update_version_comment(updated_line, old_version, new_version)
             updated_line
           else
