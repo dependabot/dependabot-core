@@ -41,17 +41,13 @@ module Dependabot
         end
 
         # Returns the full tag info including commit_sha for the latest resolvable version
+        # Memoized to avoid redundant computation when called from UpdateChecker
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_resolvable_version_tag
-          return nil unless version_pinned?
-
-          tag = git_commit_checker.local_tag_for_latest_version
-          return nil unless tag
-
-          version = tag.fetch(:version)
-          return nil unless version_meets_requirements?(version)
-
-          tag
+          @latest_resolvable_version_tag ||= T.let(
+            compute_latest_resolvable_version_tag,
+            T.nilable(T::Hash[Symbol, T.untyped])
+          )
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -88,6 +84,19 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
+
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def compute_latest_resolvable_version_tag
+          return nil unless version_pinned?
+
+          tag = git_commit_checker.local_tag_for_latest_version
+          return nil unless tag
+
+          version = tag.fetch(:version)
+          return nil unless version_meets_requirements?(version)
+
+          tag
+        end
 
         sig { returns(T.nilable(Dependabot::Swift::Requirement)) }
         def dependency_requirement
