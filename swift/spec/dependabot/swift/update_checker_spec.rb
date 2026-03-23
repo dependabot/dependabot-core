@@ -357,8 +357,9 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
           expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
         end
 
-        it "updates the source ref to the new version" do
-          expect(updated_requirements.first[:source][:ref]).to eq("7.0.2")
+        it "updates the source ref to the commit SHA" do
+          # The ref should be a git commit SHA (40 hex chars) for Package.resolved
+          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end
@@ -448,8 +449,57 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
           expect(updated_requirements.first[:metadata][:requirement_string]).to eq("exact: \"7.0.2\"")
         end
 
-        it "updates the source ref to the new version" do
-          expect(updated_requirements.first[:source][:ref]).to eq("7.0.2")
+        it "updates the source ref to the commit SHA" do
+          # The ref should be a git commit SHA (40 hex chars) for Package.resolved
+          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+    end
+
+    context "with Xcode project pinned to upToNextMinorVersion" do
+      let(:project_name) { "xcode_project_minor_version" }
+      let(:name) { "github.com/quick/quick" }
+      let(:url) { "https://github.com/Quick/Quick" }
+      let(:upload_pack_fixture) { "quick" }
+
+      before { stub_xcode_upload_pack }
+
+      describe "#can_update?" do
+        subject { checker.can_update?(requirements_to_unlock: :own) }
+
+        it { is_expected.to be_truthy }
+      end
+
+      describe "#latest_version" do
+        subject(:latest_version) { checker.latest_version }
+
+        it "returns latest version from git tags" do
+          expect(latest_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_version.to_s).to eq("7.0.2")
+        end
+      end
+
+      describe "#latest_resolvable_version" do
+        subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+        it "returns the latest version despite upToNextMinorVersion constraint" do
+          expect(latest_resolvable_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_resolvable_version.to_s).to eq("7.0.2")
+        end
+      end
+
+      describe "#updated_requirements" do
+        subject(:updated_requirements) { checker.updated_requirements }
+
+        it "returns updated requirements with new minor version range" do
+          expect(updated_requirements.first[:requirement]).to eq(">= 7.0.2, < 7.1.0")
+          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first[:metadata][:kind]).to eq("upToNextMinorVersion")
+          expect(updated_requirements.first[:metadata][:requirement_string]).to eq(".upToNextMinor(from: \"7.0.2\")")
+        end
+
+        it "updates the source ref to the commit SHA" do
+          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end
