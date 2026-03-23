@@ -168,13 +168,18 @@ module Dependabot
           .returns(String)
       end
       def security_update_not_possible_message(checker, latest_allowed_version, conflicting_dependencies)
-        if conflicting_dependencies.any?
-          dep_messages = conflicting_dependencies.map do |dep|
+        # Real conflicting dependencies (from the resolver) have a "name" key.
+        # Vulnerability audit results lack this key and should not be presented
+        # as "conflicting dependencies" in the message.
+        dependency_conflicts = conflicting_dependencies.select { |dep| dep["name"] }
+
+        if dependency_conflicts.any?
+          dep_messages = dependency_conflicts.map do |dep|
             "  #{dep['explanation']}"
           end.join("\n")
 
           dependencies_pluralized =
-            conflicting_dependencies.count > 1 ? "dependencies" : "dependency"
+            dependency_conflicts.count > 1 ? "dependencies" : "dependency"
 
           "The latest possible version that can be installed is " \
             "#{latest_allowed_version} because of the following " \

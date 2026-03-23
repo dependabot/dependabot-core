@@ -362,6 +362,57 @@ RSpec.describe Dependabot::Updater do
 
           updater.run
         end
+
+        it "does not show 'conflicting dependency' message when only a vulnerability audit result is present" do
+          checker = stub_update_checker(vulnerable?: true)
+
+          job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
+            security_advisories: [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "affected-versions" => ["< 9.0.6"]
+              }
+            ],
+            security_updates_only: true
+          )
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          audit_only_conflict = {
+            "dependency_name" => "dummy-pkg-b",
+            "fix_available" => false,
+            "fix_updates" => [],
+            "top_level_ancestors" => [],
+            "explanation" => "No patched version available for dummy-pkg-b"
+          }
+
+          expect(checker).to receive(:lowest_resolvable_security_fix_version)
+            .and_return("9.0.5")
+          expect(checker).to receive(:lowest_security_fix_version)
+            .and_return(Dependabot::Bundler::Version.new("10.2.3"))
+          expect(checker).to receive(:conflicting_dependencies)
+            .and_return([audit_only_conflict])
+
+          expect(service).not_to receive(:create_pull_request)
+          expect(service).to receive(:record_update_job_error).with(
+            {
+              error_type: "security_update_not_possible",
+              error_details: {
+                "dependency-name": "dummy-pkg-b",
+                "latest-resolvable-version": "9.0.5",
+                "lowest-non-vulnerable-version": "10.2.3",
+                "conflicting-dependencies": [audit_only_conflict]
+              }
+            }
+          )
+          expect(Dependabot.logger)
+            .to receive(:info).with(
+              "The latest possible version of dummy-pkg-b that can be installed is 9.0.5"
+            )
+
+          updater.run
+        end
       end
     end
 
