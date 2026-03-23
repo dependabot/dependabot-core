@@ -760,6 +760,14 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           # The line already has a comment, so updated_version_comment should handle it
           expect(updated_workflow_file.content).not_to include("# v2.1.0 # v2.2.0")
         end
+
+        it "updates an existing version comment when transitioning from tag to SHA" do
+          expect(updated_workflow_file.content).to include(
+            "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 # v2.2.0\n"
+          )
+          # The old comment "# v2.1.0" should not remain
+          expect(updated_workflow_file.content).not_to include("# v2.1.0")
+        end
       end
     end
   end
