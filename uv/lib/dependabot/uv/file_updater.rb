@@ -20,6 +20,7 @@ module Dependabot
       def updated_dependency_files
         updated_files = updated_pip_compile_based_files
         updated_files += updated_uv_lock_files
+        updated_files = updated_files.uniq(&:name)
 
         if updated_files.none? ||
            updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)

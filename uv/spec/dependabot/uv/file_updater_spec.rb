@@ -140,6 +140,31 @@ RSpec.describe Dependabot::Uv::FileUpdater do
             .to eq([stub_file])
         end
       end
+
+      context "when both updaters return pyproject.toml" do
+        it "deduplicates files by name" do
+          compile_pyproject = Data.define(:name).new("pyproject.toml")
+          lock_pyproject = Data.define(:name).new("pyproject.toml")
+          lockfile = Data.define(:name).new("uv.lock")
+
+          compile_updater = instance_double(described_class::CompileFileUpdater)
+          allow(described_class::CompileFileUpdater).to receive(:new)
+            .and_return(compile_updater)
+          allow(compile_updater)
+            .to receive(:updated_dependency_files)
+            .and_return([compile_pyproject])
+
+          lock_updater = instance_double(described_class::LockFileUpdater)
+          allow(described_class::LockFileUpdater).to receive(:new)
+            .and_return(lock_updater)
+          allow(lock_updater)
+            .to receive(:updated_dependency_files)
+            .and_return([lock_pyproject, lockfile])
+
+          result = updater.updated_dependency_files
+          expect(result.map(&:name)).to eq(%w(pyproject.toml uv.lock))
+        end
+      end
     end
 
     describe "with no Pipfile or pip-compile files" do
