@@ -145,7 +145,7 @@ module Dependabot
         return unless git_commit_checker.git_dependency?
 
         if vulnerable? && (new_tag = T.must(latest_version_finder).lowest_security_fix_release)
-          return new_tag.fetch(:tag)
+          return pin_to_sha? ? new_tag.fetch(:commit_sha) : new_tag.fetch(:tag)
         end
 
         source_git_commit_checker = git_helper.git_commit_checker_for(source)
@@ -153,7 +153,7 @@ module Dependabot
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = T.must(latest_version_finder).latest_version_tag)
-          return new_tag.fetch(:tag)
+          return pin_to_sha? ? new_tag.fetch(:commit_sha) : new_tag.fetch(:tag)
         end
 
         # Return the pinned git commit if one is available
@@ -164,6 +164,11 @@ module Dependabot
 
         # Otherwise we can't update the ref
         nil
+      end
+
+      sig { returns(T::Boolean) }
+      def pin_to_sha?
+        T.let(options[:github_actions_pin_to_sha], T.untyped) == true
       end
 
       sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }

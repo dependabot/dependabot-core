@@ -90,6 +90,8 @@ module Dependabot
               match.gsub!(old_declaration, new_declaration)
               if comment && (updated_comment = updated_version_comment(comment, old_ref, new_ref))
                 match.gsub!(comment, updated_comment)
+              elsif !comment && (new_comment = new_version_comment(old_ref, new_ref))
+                match << new_comment
               end
               match
             end
@@ -123,6 +125,20 @@ module Dependabot
 
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
+      end
+
+      # Generates a version comment when transitioning from a version tag to a SHA pin.
+      sig { params(old_ref: String, new_ref: String).returns(T.nilable(String)) }
+      def new_version_comment(old_ref, new_ref)
+        return unless version_class.correct?(old_ref)
+
+        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
+        return unless git_checker.ref_looks_like_commit_sha?(new_ref)
+
+        new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        return unless new_version_tag
+
+        " # #{new_version_tag}"
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }

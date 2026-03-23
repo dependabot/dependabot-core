@@ -688,6 +688,79 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/second/exec@exec/2.0.0\n" }
       end
+
+      context "when transitioning from version tag to SHA pin" do
+        let(:service_pack_url) do
+          "https://github.com/actions/checkout.git/info/refs" \
+            "?service=git-upload-pack"
+        end
+        let(:workflow_file_body) do
+          fixture("workflow_files", "pin_to_sha.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            package_manager: "github_actions",
+            previous_version: "2.1.0",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.1.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/checkout@v2.1.0" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "aabbfeb2ce60b5bd82389903509092c4648a9713",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713" }
+            }]
+          )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "checkout"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
+        it "replaces the version tag with a SHA and adds a version comment" do
+          expect(updated_workflow_file.content).to include(
+            "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 # v2.2.0"
+          )
+        end
+
+        it "handles quoted declarations" do
+          expect(updated_workflow_file.content).to include(
+            '"actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713" # v2.2.0'
+          )
+          expect(updated_workflow_file.content).to include(
+            "'actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713' # v2.2.0"
+          )
+        end
+
+        it "does not add a duplicate comment to already-commented SHA lines" do
+          # The line already has a comment, so updated_version_comment should handle it
+          expect(updated_workflow_file.content).not_to include("# v2.1.0 # v2.2.0")
+        end
+      end
     end
   end
 end

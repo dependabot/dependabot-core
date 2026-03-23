@@ -1,0 +1,9 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: actions/checkout@v2.1.0
+    - uses: "actions/checkout@v2.1.0"
+    - uses: 'actions/checkout@v2.1.0'
