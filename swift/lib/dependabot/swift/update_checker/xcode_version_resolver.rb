@@ -90,8 +90,17 @@ module Dependabot
           nil
         end
 
+        sig { returns(T.nilable(String)) }
+        def requirement_kind
+          dependency.requirements.first&.dig(:metadata, :kind)
+        end
+
         sig { params(version: T.untyped).returns(T::Boolean) }
         def version_meets_requirements?(version)
+          # For exactVersion requirements, we update the requirement itself to the new version,
+          # so we don't need to check if the new version satisfies the current requirement.
+          return true if requirement_kind == "exactVersion"
+
           requirement = dependency_requirement
           return true unless requirement
 

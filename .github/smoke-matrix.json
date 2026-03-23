@@ -80,6 +80,11 @@
     "ecosystem": "maven"
   },
   {
+    "core": "nix",
+    "test": "nix",
+    "ecosystem": "nix"
+  },
+  {
     "core": "npm_and_yarn",
     "test": "npm",
     "ecosystem": "npm"
