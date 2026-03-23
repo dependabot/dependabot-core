@@ -34,6 +34,15 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Version)) }
         def latest_resolvable_version
+          tag = latest_resolvable_version_tag
+          return nil unless tag
+
+          Version.new(tag.fetch(:version))
+        end
+
+        # Returns the full tag info including commit_sha for the latest resolvable version
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def latest_resolvable_version_tag
           return nil unless version_pinned?
 
           tag = git_commit_checker.local_tag_for_latest_version
@@ -42,7 +51,7 @@ module Dependabot
           version = tag.fetch(:version)
           return nil unless version_meets_requirements?(version)
 
-          Version.new(version)
+          tag
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -97,9 +106,17 @@ module Dependabot
 
         sig { params(version: T.untyped).returns(T::Boolean) }
         def version_meets_requirements?(version)
-          # For exactVersion requirements, we update the requirement itself to the new version,
-          # so we don't need to check if the new version satisfies the current requirement.
-          return true if requirement_kind == "exactVersion"
+          kind = requirement_kind
+
+          # For most Xcode requirement kinds, we update the requirement itself to match
+          # the new version, so we don't need to check if the new version satisfies
+          # the current requirement:
+          # - exactVersion: requirement changes to exact new version
+          # - upToNextMajorVersion: requirement updates to new version's major range
+          # - upToNextMinorVersion: requirement updates to new version's minor range
+          #
+          # Only versionRange has an explicit upper bound that should be respected.
+          return true if %w(exactVersion upToNextMajorVersion upToNextMinorVersion).include?(kind)
 
           requirement = dependency_requirement
           return true unless requirement

@@ -357,8 +357,9 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
           expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
         end
 
-        it "updates the source ref to the new version" do
-          expect(updated_requirements.first[:source][:ref]).to eq("7.0.2")
+        it "updates the source ref to the commit SHA" do
+          # The ref should be a git commit SHA (40 hex chars) for Package.resolved
+          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end
@@ -448,8 +449,9 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
           expect(updated_requirements.first[:metadata][:requirement_string]).to eq("exact: \"7.0.2\"")
         end
 
-        it "updates the source ref to the new version" do
-          expect(updated_requirements.first[:source][:ref]).to eq("7.0.2")
+        it "updates the source ref to the commit SHA" do
+          # The ref should be a git commit SHA (40 hex chars) for Package.resolved
+          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end

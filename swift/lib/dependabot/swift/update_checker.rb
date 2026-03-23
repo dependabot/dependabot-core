@@ -74,10 +74,15 @@ module Dependabot
         target = preferred_resolvable_version
         return old_requirements unless target
 
+        # Get the commit SHA for the target version to update Package.resolved revision
+        tag = xcode_version_resolver.latest_resolvable_version_tag
+        commit_sha = tag&.fetch(:commit_sha, nil)
+
         RequirementsUpdater.new(
           requirements: old_requirements,
           target_version: target,
-          xcode_mode: true
+          xcode_mode: true,
+          target_commit_sha: commit_sha
         ).updated_requirements
       end
 
