@@ -1165,6 +1165,7 @@ module Dependabot
           original_lockfile = JSON.parse(T.must(lockfile.content))
 
           changed = remove_spurious_root_deps(parsed, original_pkg)
+          changed = sync_package_entry_dependencies_with_manifests(parsed) || changed
           changed = restore_optional_peer_deps(parsed, original_lockfile) || changed
 
           return unless changed
@@ -1206,6 +1207,50 @@ module Dependabot
             if root_entry[dep_type].empty?
               root_entry.delete(dep_type)
               changed = true
+            end
+          end
+
+          changed
+        end
+
+        sig { params(parsed_lockfile: T::Hash[String, T.untyped]).returns(T::Boolean) }
+        def sync_package_entry_dependencies_with_manifests(parsed_lockfile)
+          packages = parsed_lockfile["packages"]
+          return false unless packages.is_a?(Hash)
+
+          changed = T.let(false, T::Boolean)
+
+          package_files.each do |file|
+            begin
+              manifest_content = T.must(updated_package_json_content(file) || file.content)
+              manifest = JSON.parse(manifest_content)
+            rescue JSON::ParserError => e
+              Dependabot.logger.warn("Failed to parse #{file.name} while syncing lockfile package entries: #{e.message}")
+              next
+            end
+
+            next unless manifest.is_a?(Hash)
+
+            package_entry = File.dirname(file.name)
+            package_entry = "" if package_entry == "."
+
+            lockfile_package = packages[package_entry]
+            next unless lockfile_package.is_a?(Hash)
+
+            %w(dependencies devDependencies peerDependencies optionalDependencies).each do |dep_type|
+              manifest_deps = manifest[dep_type]
+
+              if manifest_deps
+                next unless manifest_deps.is_a?(Hash)
+
+                unless lockfile_package[dep_type] == manifest_deps
+                  lockfile_package[dep_type] = manifest_deps
+                  changed = true
+                end
+              elsif lockfile_package.key?(dep_type)
+                lockfile_package.delete(dep_type)
+                changed = true
+              end
             end
           end
 

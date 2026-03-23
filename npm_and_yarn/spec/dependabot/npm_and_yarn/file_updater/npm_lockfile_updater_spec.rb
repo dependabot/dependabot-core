@@ -244,6 +244,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     it "updates" do
       expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"])
         .to eq("1.3.44")
+
+      expect(JSON.parse(updated_npm_lock_content).dig("packages", "bump-version-for-cron", "devDependencies", "@swc/core"))
+        .to eq("^1.3.37")
     end
   end
 
