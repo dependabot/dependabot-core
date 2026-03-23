@@ -12,14 +12,15 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      require_relative "file_updater/compile_file_updater"
       require_relative "file_updater/lock_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
-        updated_files = updated_pip_compile_based_files
+        updated_files = updated_requirement_based_files
         updated_files += updated_uv_lock_files
+        # Deduplicate in case both updaters return the same file (e.g. pyproject.toml).
+        # RequirementFileUpdater results take precedence as they appear first.
         updated_files = updated_files.uniq(&:name)
 
         if updated_files.none? ||
@@ -32,30 +33,13 @@ module Dependabot
 
       private
 
-      sig { returns(T.nilable(Symbol)) }
-      def subdependency_resolver
-        raise "Claimed to be a sub-dependency, but no lockfile exists!" if pip_compile_files.empty?
-
-        :pip_compile if pip_compile_files.any?
-      end
-
-      sig { returns(T::Array[DependencyFile]) }
-      def updated_pip_compile_based_files
-        CompileFileUpdater.new(
-          dependencies: dependencies,
-          dependency_files: dependency_files,
-          credentials: credentials,
-          index_urls: pip_compile_index_urls
-        ).updated_dependency_files
-      end
-
       sig { returns(T::Array[DependencyFile]) }
       def updated_requirement_based_files
         RequirementFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          index_urls: pip_compile_index_urls
+          index_urls: index_urls
         ).updated_dependency_files
       end
 
@@ -65,13 +49,13 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          index_urls: pip_compile_index_urls,
+          index_urls: index_urls,
           repo_contents_path: repo_contents_path
         ).updated_dependency_files
       end
 
       sig { returns(T::Array[T.nilable(String)]) }
-      def pip_compile_index_urls
+      def index_urls
         if credentials.any?(&:replaces_base?)
           credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
         else
@@ -85,7 +69,7 @@ module Dependabot
       sig { override.void }
       def check_required_files
         filenames = dependency_files.map(&:name)
-        return if filenames.any? { |name| name.end_with?(".txt", ".in") }
+        return if filenames.any? { |name| name.end_with?(".txt") }
         return if pyproject
 
         raise "Missing required files!"
@@ -94,14 +78,6 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pyproject
         @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T::Array[DependencyFile]) }
-      def pip_compile_files
-        @pip_compile_files ||= T.let(
-          dependency_files.select { |f| f.name.end_with?(".in") },
-          T.nilable(T::Array[DependencyFile])
-        )
       end
     end
   end

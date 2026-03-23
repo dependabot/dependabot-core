@@ -62,112 +62,7 @@ RSpec.describe Dependabot::Uv::FileUpdater do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
-    context "with a pip-compile file" do
-      let(:dependency_files) { [manifest_file, generated_file] }
-      let(:manifest_file) do
-        Dependabot::DependencyFile.new(
-          name: "requirements/test.in",
-          content: fixture("pip_compile_files", "unpinned.in")
-        )
-      end
-      let(:generated_file) do
-        Dependabot::DependencyFile.new(
-          name: "requirements/test.txt",
-          content: fixture("requirements", "pip_compile_unpinned.txt")
-        )
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "psycopg2",
-          version: "2.8.1",
-          requirements: [{
-            file: "requirements/test.in",
-            requirement: "==2.8.1",
-            groups: [],
-            source: nil
-          }],
-          previous_requirements: [{
-            file: "requirements/test.in",
-            requirement: "==2.7.1",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "uv"
-        )
-      end
-
-      it "delegates to CompileFileUpdater" do
-        stub_file = Data.define(:name).new("updated files")
-        dummy_updater =
-          instance_double(described_class::CompileFileUpdater)
-        allow(described_class::CompileFileUpdater).to receive(:new)
-          .and_return(dummy_updater)
-        allow(dummy_updater)
-          .to receive(:updated_dependency_files)
-          .and_return([stub_file])
-        expect(updater.updated_dependency_files)
-          .to eq([stub_file])
-      end
-
-      context "when a requirements.txt that specifies a subdependency" do
-        let(:dependency_files) { [manifest_file, generated_file, requirements] }
-        let(:manifest_fixture_name) { "requests.in" }
-        let(:generated_fixture_name) { "pip_compile_requests.txt" }
-        let(:requirements_fixture_name) { "urllib.txt" }
-        let(:pypi_url) { "https://pypi.org/simple/urllib/" }
-
-        let(:dependency_name) { "urllib" }
-        let(:dependency_version) { "1.22" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements.txt",
-            requirement: nil,
-            groups: [],
-            source: nil
-          }]
-        end
-
-        it "delegates to CompileFileUpdater" do
-          stub_file = Data.define(:name).new("updated files")
-          dummy_updater =
-            instance_double(described_class::CompileFileUpdater)
-          allow(described_class::CompileFileUpdater).to receive(:new)
-            .and_return(dummy_updater)
-          allow(dummy_updater)
-            .to receive(:updated_dependency_files)
-            .and_return([stub_file])
-          expect(updater.updated_dependency_files)
-            .to eq([stub_file])
-        end
-      end
-
-      context "when both updaters return pyproject.toml" do
-        it "deduplicates files by name" do
-          compile_pyproject = Data.define(:name).new("pyproject.toml")
-          lock_pyproject = Data.define(:name).new("pyproject.toml")
-          lockfile = Data.define(:name).new("uv.lock")
-
-          compile_updater = instance_double(described_class::CompileFileUpdater)
-          allow(described_class::CompileFileUpdater).to receive(:new)
-            .and_return(compile_updater)
-          allow(compile_updater)
-            .to receive(:updated_dependency_files)
-            .and_return([compile_pyproject])
-
-          lock_updater = instance_double(described_class::LockFileUpdater)
-          allow(described_class::LockFileUpdater).to receive(:new)
-            .and_return(lock_updater)
-          allow(lock_updater)
-            .to receive(:updated_dependency_files)
-            .and_return([lock_pyproject, lockfile])
-
-          result = updater.updated_dependency_files
-          expect(result.map(&:name)).to eq(%w(pyproject.toml uv.lock))
-        end
-      end
-    end
-
-    describe "with no Pipfile or pip-compile files" do
+    context "when only plain requirements files are present" do
       let(:dependency_files) { [requirements] }
 
       it "delegates to RequirementFileUpdater" do
@@ -178,7 +73,34 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
-    describe "#pip_compile_index_urls" do
+    context "when both updaters return pyproject.toml" do
+      let(:dependency_files) { [requirements] }
+
+      it "deduplicates files by name" do
+        req_pyproject = Data.define(:name).new("pyproject.toml")
+        lock_pyproject = Data.define(:name).new("pyproject.toml")
+        lockfile = Data.define(:name).new("uv.lock")
+
+        req_updater = instance_double(described_class::RequirementFileUpdater)
+        allow(described_class::RequirementFileUpdater).to receive(:new)
+          .and_return(req_updater)
+        allow(req_updater)
+          .to receive(:updated_dependency_files)
+          .and_return([req_pyproject])
+
+        lock_updater = instance_double(described_class::LockFileUpdater)
+        allow(described_class::LockFileUpdater).to receive(:new)
+          .and_return(lock_updater)
+        allow(lock_updater)
+          .to receive(:updated_dependency_files)
+          .and_return([lock_pyproject, lockfile])
+
+        result = updater.updated_dependency_files
+        expect(result.map(&:name)).to eq(%w(pyproject.toml uv.lock))
+      end
+    end
+
+    describe "#index_urls" do
       let(:instance) do
         described_class.new(
           dependencies: [],
@@ -199,13 +121,13 @@ RSpec.describe Dependabot::Uv::FileUpdater do
         let(:replaces_base) { true }
 
         it "returns authed urls for these credentials" do
-          expect(instance.send(:pip_compile_index_urls)).to eq(["authed_url"])
+          expect(instance.send(:index_urls)).to eq(["authed_url"])
         end
       end
 
       context "when credentials do not replace base" do
         it "returns nil and authed urls for all credentials" do
-          expect(instance.send(:pip_compile_index_urls)).to eq([nil, "authed_url"])
+          expect(instance.send(:index_urls)).to eq([nil, "authed_url"])
         end
       end
     end
