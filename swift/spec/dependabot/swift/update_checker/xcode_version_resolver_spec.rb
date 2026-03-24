@@ -253,8 +253,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
     end
 
     before do
-      allow(git_commit_checker).to receive(:local_tag_for_latest_version).and_return(latest_tag)
-      allow(git_commit_checker).to receive(:local_tags_for_allowed_versions).and_return(all_tags)
+      allow(git_commit_checker).to receive_messages(
+        local_tag_for_latest_version: latest_tag,
+        local_tags_for_allowed_versions: all_tags
+      )
     end
 
     it "returns the highest version within the range when latest exceeds upper bound" do
