@@ -206,36 +206,5 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         expect(purl_keys).not_to include(a_string_matching(/\[/))
       end
     end
-
-    context "when dependencies have requirements but no resolved version" do
-      before do
-        deps = [
-          Dependabot::Dependency.new(
-            name: "flask",
-            version: nil,
-            requirements: [{ requirement: ">=3.1.3", file: "pyproject.toml", source: nil, groups: ["dependencies"] }],
-            package_manager: "uv"
-          ),
-          Dependabot::Dependency.new(
-            name: "requests",
-            version: nil,
-            requirements: [{ requirement: ">=2.32.5", file: "pyproject.toml", source: nil, groups: ["dependencies"] }],
-            package_manager: "uv"
-          )
-        ]
-        allow(parser).to receive(:parse).and_return(deps)
-        # stub relationship fetching since there's no lockfile
-        allow(parser).to receive(:run_in_parsed_context).and_raise(StandardError.new("no lockfile"))
-      end
-
-      it "uses requirement constraints as PURL versions" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(resolved_dependencies.keys).to include(
-          "pkg:pypi/flask@>=3.1.3",
-          "pkg:pypi/requests@>=2.32.5"
-        )
-      end
-    end
   end
 end

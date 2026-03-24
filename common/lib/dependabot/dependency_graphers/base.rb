@@ -134,17 +134,12 @@ module Dependabot
       end
 
       # We should ensure we don't include an `@` if there isn't a resolved version, but some ecosystems
-      # specifically include the `v` or allow certain prefixes.
-      # Falls back to the requirement constraint when no resolved version is
-      # available so the PURL still carries version information for the SBOM.
+      # specifically include the `v` or allow certain prefixes
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def purl_version_for(dependency)
-        return "@#{dependency.version}" if dependency.version
+        return "" unless dependency.version
 
-        requirement = T.let(dependency.requirements.first&.dig(:requirement), T.nilable(String))
-        return "" unless requirement
-
-        "@#{requirement}"
+        "@#{dependency.version}"
       end
 
       # Generate a purl for the provided Dependency object
