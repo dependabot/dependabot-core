@@ -113,9 +113,7 @@ module Dependabot
         Dependabot.logger.warn(
           "No poetry.lock was found in this repository. " \
           "Dependabot generated a temporary lockfile to determine exact dependency versions.\n\n" \
-          "To ensure consistent builds and security scanning, we recommend:\n" \
-          "  - Committing your poetry.lock file\n" \
-          "  - Setting up a scheduled Dependabot graph job to periodically scan for changes\n\n" \
+          "To ensure consistent builds and security scanning, we recommend committing your poetry.lock file. " \
           "Without a committed lockfile, resolved dependency versions may change between scans " \
           "due to new package releases."
         )

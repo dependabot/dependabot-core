@@ -140,9 +140,8 @@ module Dependabot
         Dependabot.logger.warn(
           "No lockfile was found in this repository. " \
           "Dependabot generated a temporary lockfile to determine exact dependency versions.\n\n" \
-          "To ensure consistent builds and security scanning, we recommend:\n" \
-          "  - Committing your package-lock.json (npm), yarn.lock (yarn), or pnpm-lock.yaml (pnpm)\n" \
-          "  - Setting up a scheduled Dependabot graph job to periodically scan for changes\n\n" \
+          "To ensure consistent builds and security scanning, we recommend committing your " \
+          "package-lock.json (npm), yarn.lock (yarn), or pnpm-lock.yaml (pnpm). " \
           "Without a committed lockfile, resolved dependency versions may change between scans " \
           "due to new package releases."
         )
