@@ -49,7 +49,6 @@ module Dependabot
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @updated_pyproject_content = T.let(nil, T.nilable(String))
-          @python_helper_path = T.let(nil, T.nilable(String))
           @poetry_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
@@ -363,7 +362,7 @@ module Dependabot
               write_temporary_dependency_files(pyproject_content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "pyenv exec python3 #{python_helper_path}",
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
                 function: "get_pyproject_hash",
                 args: [T.cast(dir, Pathname).to_s]
               )
@@ -386,7 +385,16 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency, old_req: String).returns(Regexp) }
         def pep621_declaration_regex(dep, old_req)
-          /(?<declaration>["']#{escape(dep)}#{Regexp.escape(old_req)}["'])/mi
+          /(?<declaration>["']#{escape(dep)}#{extras_pattern(dep)}#{Regexp.escape(old_req)}["'])/mi
+        end
+
+        # Reconstructs extras from metadata for PEP 621 regex matching.
+        sig { params(dep: Dependabot::Dependency).returns(String) }
+        def extras_pattern(dep)
+          extras_str = dep.metadata[:extras]
+          return "" unless extras_str.is_a?(String) && !extras_str.empty?
+
+          "\\[" + extras_str.split(",").map { |e| Regexp.escape(e.strip) }.join(",\\s*") + "\\]"
         end
 
         sig { params(dep: Dependency).returns(String) }
@@ -444,11 +452,6 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           @lockfile ||= poetry_lock
-        end
-
-        sig { returns(String) }
-        def python_helper_path
-          NativeHelpers.python_helper_path
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

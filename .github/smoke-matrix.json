@@ -135,6 +135,11 @@
     "ecosystem": "terraform"
   },
   {
+    "core": "uv",
+    "test": "uv",
+    "ecosystem": "uv"
+  },
+  {
     "core": "vcpkg",
     "test": "vcpkg",
     "ecosystem": "vcpkg"
