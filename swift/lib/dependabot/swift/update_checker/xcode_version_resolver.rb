@@ -89,6 +89,10 @@ module Dependabot
         def compute_latest_resolvable_version_tag
           return nil unless version_pinned?
 
+          # For versionRange, we need to find the highest version within the range,
+          # not just check if the absolute latest satisfies it
+          return compute_latest_version_in_range if requirement_kind == "versionRange"
+
           tag = git_commit_checker.local_tag_for_latest_version
           return nil unless tag
 
@@ -96,6 +100,20 @@ module Dependabot
           return nil unless version_meets_requirements?(version)
 
           tag
+        end
+
+        # For versionRange requirements, find the highest version that satisfies
+        # the explicit upper bound constraint
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def compute_latest_version_in_range
+          requirement = dependency_requirement
+          return nil unless requirement
+
+          tags = git_commit_checker.local_tags_for_allowed_versions
+          matching_tags = tags.select { |tag| requirement.satisfied_by?(tag.fetch(:version)) }
+          matching_tags = filter_lower_tags(matching_tags)
+
+          matching_tags.max_by { |tag| tag.fetch(:version) }
         end
 
         sig { returns(T.nilable(Dependabot::Swift::Requirement)) }
