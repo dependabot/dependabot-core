@@ -160,51 +160,5 @@ RSpec.describe Dependabot::Python::DependencyGrapher::LockfileGenerator do
         expect(Dependabot.logger).to have_received(:warn).with("poetry.lock was not generated")
       end
     end
-
-    context "with credentials for private registry" do
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            {
-              "type" => "python_index",
-              "index-url" => "https://pypi.example.com/simple",
-              "token" => "user:pass"
-            }
-          )
-        ]
-      end
-
-      before do
-        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield
-        allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
-
-        language_version_manager = instance_double(
-          Dependabot::Python::LanguageVersionManager,
-          install_required_python: nil,
-          python_major_minor: "3.12"
-        )
-        allow(Dependabot::Python::LanguageVersionManager)
-          .to receive(:new).and_return(language_version_manager)
-
-        allow(File).to receive(:write).and_return(nil)
-        allow(FileUtils).to receive(:mkdir_p).and_return(nil)
-        allow(File).to receive(:exist?).and_call_original
-        allow(File).to receive(:exist?).with("poetry.lock").and_return(true)
-        allow(File).to receive(:read).and_call_original
-        allow(File).to receive(:read).with("poetry.lock").and_return("[metadata]\n")
-      end
-
-      it "passes credentials to the PyprojectPreparer" do
-        preparer = instance_double(Dependabot::Python::FileUpdater::PyprojectPreparer)
-        allow(Dependabot::Python::FileUpdater::PyprojectPreparer)
-          .to receive(:new).and_return(preparer)
-        allow(preparer).to receive(:add_auth_env_vars)
-
-        generator.generate
-
-        expect(preparer).to have_received(:add_auth_env_vars).with(credentials)
-      end
-    end
   end
 end

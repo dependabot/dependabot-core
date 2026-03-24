@@ -6,7 +6,6 @@ require "sorbet-runtime"
 require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser/python_requirement_parser"
-require "dependabot/python/file_updater/pyproject_preparer"
 require "dependabot/python/language_version_manager"
 
 module Dependabot
@@ -33,7 +32,6 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_files
-              add_auth_env_vars
               language_version_manager.install_required_python
               run_poetry_lock
               read_generated_lockfile
@@ -61,16 +59,6 @@ module Dependabot
           end
 
           File.write(".python-version", language_version_manager.python_major_minor)
-        end
-
-        sig { void }
-        def add_auth_env_vars
-          pyproject = dependency_files.find { |f| f.name == "pyproject.toml" }
-          return unless pyproject&.content
-
-          FileUpdater::PyprojectPreparer
-            .new(pyproject_content: T.must(pyproject.content))
-            .add_auth_env_vars(credentials)
         end
 
         sig { void }
