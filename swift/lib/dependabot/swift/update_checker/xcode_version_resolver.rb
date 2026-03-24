@@ -103,7 +103,8 @@ module Dependabot
         end
 
         # For versionRange requirements, find the highest version that satisfies
-        # the explicit upper bound constraint
+        # the explicit upper bound constraint. We don't filter out lower versions here
+        # because `can_update?` will decide whether an update is actually needed.
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def compute_latest_version_in_range
           requirement = dependency_requirement
@@ -111,7 +112,6 @@ module Dependabot
 
           tags = git_commit_checker.local_tags_for_allowed_versions
           matching_tags = tags.select { |tag| requirement.satisfied_by?(tag.fetch(:version)) }
-          matching_tags = filter_lower_tags(matching_tags)
 
           matching_tags.max_by { |tag| tag.fetch(:version) }
         end
