@@ -260,6 +260,16 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           expect(dep.dependencies).to eq([])
         end
       end
+
+      it "uses requirement constraints as PURL versions" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).to include(
+          "pkg:pypi/flask@^3.1.3",
+          "pkg:pypi/requests@^2.32.5",
+          "pkg:pypi/ruff@^0.15.4"
+        )
+      end
     end
 
     context "when poetry.lock is corrupt" do
