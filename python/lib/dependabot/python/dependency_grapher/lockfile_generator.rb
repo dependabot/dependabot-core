@@ -122,7 +122,7 @@ module Dependabot
         sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
         def handle_generation_error(error)
           Dependabot.logger.error(
-            "Failed to generate poetry.lock: #{error.message}"
+            "Failed to generate #{LOCKFILE_NAME}: #{error.message}"
           )
         end
       end
