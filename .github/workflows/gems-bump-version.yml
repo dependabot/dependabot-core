@@ -12,11 +12,14 @@ on: # yamllint disable-line rule:truthy
           - minor
           - patch
         default: "minor"
+permissions: {}
 
 jobs:
   Create-PR-To-Bump-Dependabot-Gems-Version:
     if: github.repository == 'dependabot/dependabot-core'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Generate token
         id: generate_token

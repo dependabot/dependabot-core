@@ -15,12 +15,14 @@ module Dependabot
           params(
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
             target_version: T.nilable(T.any(String, Gem::Version)),
-            xcode_mode: T::Boolean
+            xcode_mode: T::Boolean,
+            target_commit_sha: T.nilable(String)
           ).void
         end
-        def initialize(requirements:, target_version:, xcode_mode: false)
+        def initialize(requirements:, target_version:, xcode_mode: false, target_commit_sha: nil)
           @requirements = requirements
           @xcode_mode = xcode_mode
+          @target_commit_sha = T.let(target_commit_sha, T.nilable(String))
 
           return unless target_version && Version.correct?(target_version)
 
@@ -46,6 +48,9 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         attr_reader :xcode_mode
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :target_commit_sha
 
         # For Xcode projects, we update the version in the requirement while preserving the kind.
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -87,9 +92,13 @@ module Dependabot
         def update_source_ref(source)
           return source unless source && target_version
 
+          # Use commit SHA if available (for revision field in Package.resolved),
+          # otherwise fall back to version string
+          ref = target_commit_sha || target_version.to_s
+
           updated_source = source.dup
-          updated_source[:ref] = target_version.to_s
-          updated_source["ref"] = target_version.to_s
+          updated_source[:ref] = ref
+          updated_source["ref"] = ref
           updated_source
         end
 
