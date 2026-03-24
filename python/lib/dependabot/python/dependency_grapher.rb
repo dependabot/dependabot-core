@@ -71,7 +71,7 @@ module Dependabot
 
         parsed = TomlRB.parse(T.must(pyproject_toml&.content))
         !parsed.dig("tool", "poetry").nil?
-      rescue TomlRB::ParseError
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         false
       end
 
