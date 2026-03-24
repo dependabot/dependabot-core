@@ -253,11 +253,92 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
 
     context "when poetry.lock is not present" do
-      it "returns dependencies without relationship data" do
-        resolved_dependencies = grapher.resolved_dependencies
+      let(:lockfile_generator) do
+        instance_double(
+          Dependabot::Python::DependencyGrapher::LockfileGenerator,
+          generate: nil
+        )
+      end
 
-        resolved_dependencies.each_value do |dep|
-          expect(dep.dependencies).to eq([])
+      before do
+        allow(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+          .to receive(:new).and_return(lockfile_generator)
+      end
+
+      it "attempts to generate an ephemeral lockfile" do
+        grapher.resolved_dependencies
+        expect(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+          .to have_received(:new).with(
+            dependency_files: dependency_files,
+            credentials: []
+          )
+        expect(lockfile_generator).to have_received(:generate)
+      end
+
+      context "when lockfile generation fails" do
+        it "returns dependencies without relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          resolved_dependencies.each_value do |dep|
+            expect(dep.dependencies).to eq([])
+          end
+        end
+
+        it "returns PURLs without resolved versions" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.keys).to include(
+            "pkg:pypi/flask",
+            "pkg:pypi/requests",
+            "pkg:pypi/ruff"
+          )
+        end
+      end
+
+      context "when lockfile generation succeeds" do
+        let(:ephemeral_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+            directory: "/"
+          )
+        end
+
+        let(:lockfile_generator) do
+          instance_double(
+            Dependabot::Python::DependencyGrapher::LockfileGenerator,
+            generate: ephemeral_lockfile
+          )
+        end
+
+        it "injects the ephemeral lockfile and uses it for relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.fetch("pkg:pypi/flask@3.1.3").dependencies).to eq(
+            [
+              "pkg:pypi/blinker@1.9.0",
+              "pkg:pypi/click@8.3.1",
+              "pkg:pypi/itsdangerous@2.2.0",
+              "pkg:pypi/jinja2@3.1.6",
+              "pkg:pypi/markupsafe@3.0.3",
+              "pkg:pypi/werkzeug@3.1.6"
+            ]
+          )
+        end
+
+        it "resolves exact versions from the generated lockfile" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.keys).to include(
+            "pkg:pypi/flask@3.1.3",
+            "pkg:pypi/requests@2.32.5",
+            "pkg:pypi/ruff@0.15.4"
+          )
+        end
+
+        it "reports pyproject.toml as the relevant dependency file, not the ephemeral lockfile" do
+          grapher.resolved_dependencies
+          expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
         end
       end
     end
