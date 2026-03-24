@@ -43,7 +43,7 @@ module Dependabot
         if poetry_project_without_lockfile?
           Dependabot.logger.info("No poetry.lock found, generating ephemeral lockfile for dependency graphing")
           generate_ephemeral_lockfile!
-          emit_missing_lockfile_warning!
+          emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
       end
