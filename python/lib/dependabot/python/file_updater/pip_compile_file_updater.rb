@@ -359,7 +359,8 @@ module Dependabot
           content = replace_header_with_original(updated_content, T.must(file.content))
           content = remove_new_warnings(content, T.must(file.content))
           content = update_hashes_if_required(content, T.must(file.content))
-          replace_absolute_file_paths(content, T.must(file.content))
+          content = replace_absolute_file_paths(content, T.must(file.content))
+          restore_via_requirement_paths(content, T.must(file.content))
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
@@ -390,6 +391,34 @@ module Dependabot
 
             content = content.gsub(line_to_update, original_line)
             update_count += 1
+          end
+
+          content
+        end
+
+        # When pip-compile regenerates a .txt file where both input and output
+        # are in a subdirectory (e.g., requirements/), it may shorten the -r
+        # reference paths in "# via" annotations (e.g., "-r requirements/main.in"
+        # becomes "-r main.in"). This restores the original full paths.
+        sig { params(updated_content: String, original_content: String).returns(String) }
+        def restore_via_requirement_paths(updated_content, original_content)
+          via_ref_regex = /^\s*#\s+(?:via\s+)?-r (\S+\.(?:in|txt))/
+
+          original_paths = original_content.scan(via_ref_regex).flatten.uniq
+          return updated_content if original_paths.empty?
+
+          content = updated_content
+          updated_paths = content.scan(via_ref_regex).flatten.uniq
+
+          updated_paths.each do |short_path|
+            full_path = original_paths.find do |orig|
+              File.basename(orig) == File.basename(short_path) && orig != short_path
+            end
+            next unless full_path
+
+            content = content.gsub(/^(\s*#\s+(?:via\s+)?)-r #{Regexp.escape(short_path)}/) do
+              "#{Regexp.last_match(1)}-r #{full_path}"
+            end
           end
 
           content
