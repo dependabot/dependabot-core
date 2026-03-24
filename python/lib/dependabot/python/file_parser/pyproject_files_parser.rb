@@ -46,11 +46,7 @@ module Dependabot
         def pyproject_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
-          # Parse Poetry dependencies if [tool.poetry] section exists
           dependencies += poetry_dependencies if using_poetry?
-
-          # Parse PEP 621/735 dependencies if those sections exist
-          # This handles hybrid projects that have both Poetry and PEP 621 sections
           dependencies += pep621_pep735_dependencies if using_pep621? || using_pep735?
 
           dependencies
@@ -101,7 +97,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: normalised_name(dep["name"], dep["extras"]),
+                name: normalise(dep["name"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
@@ -109,7 +105,8 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]].compact
                 }],
-                package_manager: "pip"
+                package_manager: "pip",
+                metadata: extras_metadata(dep["extras"])
               )
           end
 
@@ -145,6 +142,16 @@ module Dependabot
         sig { params(name: String, extras: T::Array[String]).returns(String) }
         def normalised_name(name, extras)
           NameNormaliser.normalise_including_extras(name, extras)
+        end
+
+        # Build metadata hash storing extras as a comma-separated string.
+        # Stored in metadata so the file updater can reconstruct the full
+        # PEP 621 declaration (e.g. "cachecontrol[filecache]>=0.14.0").
+        sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+        def extras_metadata(extras)
+          return {} if extras.empty?
+
+          { extras: extras.join(",") }
         end
 
         # @param req can be an Array, Hash or String that represents the constraints for a dependency

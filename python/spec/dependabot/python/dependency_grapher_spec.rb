@@ -450,5 +450,32 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(purl_keys).not_to include("pkg:pypi/cachecontrol[filecache]@0.14.2")
       end
     end
+
+    context "when PEP 621 + Poetry project has extras dependencies" do
+      let(:pep621_poetry_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "pep621_poetry_with_extras.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:pep621_poetry_lock) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "pep621_poetry_with_extras.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pep621_poetry_toml, pep621_poetry_lock] }
+
+      it "includes the versioned PURL without a duplicate versionless entry" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).to include("pkg:pypi/cachecontrol@0.14.4")
+        expect(resolved_dependencies.keys).not_to include("pkg:pypi/cachecontrol")
+      end
+    end
   end
 end
