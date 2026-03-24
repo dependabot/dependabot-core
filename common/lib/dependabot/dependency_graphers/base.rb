@@ -141,7 +141,7 @@ module Dependabot
       def purl_version_for(dependency)
         return "@#{dependency.version}" if dependency.version
 
-        requirement = dependency.requirements.first&.dig(:requirement)
+        requirement = T.let(dependency.requirements.first&.dig(:requirement), T.nilable(String))
         return "" unless requirement
 
         "@#{requirement}"
