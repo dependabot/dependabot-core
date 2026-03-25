@@ -2716,12 +2716,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
-        it "updates the override in the package.json preserving the version prefix" do
-          updater_instance = Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater.new(
-            package_json: files.find { |f| f.name == "package.json" },
-            dependencies: dependencies
+        before do
+          lockfile = files.find { |f| f.name == "package-lock.json" }
+          updated_lockfile_content = lockfile.content.gsub("6.23.0", "6.24.1")
+          updated_lockfile = Dependabot::DependencyFile.new(
+            name: lockfile.name,
+            content: updated_lockfile_content
           )
-          parsed = JSON.parse(updater_instance.updated_package_json.content)
+          npm_updater = instance_double(
+            Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
+            updated_lockfile: updated_lockfile
+          )
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+            .to receive(:new).and_return(npm_updater)
+        end
+
+        it "includes both package.json and package-lock.json in updated_files" do
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+        end
+
+        it "updates the override in the package.json preserving the version prefix" do
+          parsed = JSON.parse(updated_package_json.content)
           expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
         end
       end
