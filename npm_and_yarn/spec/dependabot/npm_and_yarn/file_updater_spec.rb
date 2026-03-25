@@ -2676,6 +2676,55 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
         end
       end
+
+      context "with npm overrides" do
+        let(:files) { project_dependency_files("npm8/simple_with_overrides") }
+        let(:repo_contents_path) { build_tmp_repo("npm8/simple_with_overrides", path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the override in the package.json" do
+          # The PackageJsonUpdater correctly updates both the devDependency
+          # declaration and the override entry in package.json
+          updater_instance = Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater.new(
+            package_json: files.find { |f| f.name == "package.json" },
+            dependencies: dependencies
+          )
+          parsed = JSON.parse(updater_instance.updated_package_json.content)
+          expect(parsed.dig("overrides", "lodash")).to eq("3.10.1")
+          expect(parsed.dig("devDependencies", "lodash")).to eq("^3.0")
+        end
+      end
+
+      context "with npm overrides for a sub-dependency" do
+        let(:files) { project_dependency_files("npm8/subdep_with_override") }
+
+        let(:dependency_name) { "undici" }
+        let(:version) { "6.24.1" }
+        let(:previous_version) { "6.23.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the override in the package.json preserving the version prefix" do
+          updater_instance = Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater.new(
+            package_json: files.find { |f| f.name == "package.json" },
+            dependencies: dependencies
+          )
+          parsed = JSON.parse(updater_instance.updated_package_json.content)
+          expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
+        end
+      end
     end
 
     #############################

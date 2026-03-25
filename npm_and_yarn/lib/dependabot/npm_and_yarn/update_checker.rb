@@ -275,6 +275,7 @@ module Dependabot
 
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
+          next if update["target_version"] == update["current_version"]
           dependency_name = update["dependency_name"]
           requirements = if top_level_dependencies[dependency_name]&.version == update["current_version"]
                            top_level_dependencies[dependency_name]&.requirements || []
@@ -305,7 +306,7 @@ module Dependabot
             version: target_version,
             previous_version: dependency.version,
             removed: target_version.nil?,
-            metadata: { information_only: true } # Instruct updater to not directly update this dependency
+            metadata: updated_deps.any? ? { information_only: true } : {} # Instruct updater to not directly update this dependency
           )
         end
 
