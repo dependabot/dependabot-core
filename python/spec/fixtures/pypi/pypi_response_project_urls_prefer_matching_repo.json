@@ -4,11 +4,11 @@
     "download_url": null,
     "docs_url": null,
     "project_urls": {
-      "Benchmark Results": "https://github.com/ringsaturn/tz-benchmark",
-      "Documentation": "https://github.com/ringsaturn/tzfpy",
-      "Issues": "https://github.com/ringsaturn/tzfpy/issues",
-      "Online Demo": "https://ringsaturn.github.io/tzf-web/",
-      "Source Code": "https://github.com/ringsaturn/tzfpy"
+      "Benchmark Results": "https://github.com/example-org/location-bench",
+      "Documentation": "https://github.com/example-org/geohelper",
+      "Issues": "https://github.com/example-org/geohelper/issues",
+      "Online Demo": "https://example-org.github.io/geohelper-demo/",
+      "Source Code": "https://github.com/example-org/geohelper"
     }
   }
 }

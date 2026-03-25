@@ -60,9 +60,11 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def labelled_source_url_from_project_urls
-        source_like_project_url_labels.filter_map do |label|
+        source_urls = source_like_project_url_labels.filter_map do |label|
           project_urls[label]
-        end.find { |url| Source.from_url(url) }
+        end
+
+        source_urls.find { |url| Source.from_url(url) }
       end
 
       sig { returns(T.nilable(String)) }
