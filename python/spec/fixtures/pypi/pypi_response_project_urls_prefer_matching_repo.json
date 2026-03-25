@@ -1,0 +1,14 @@
+{
+  "info": {
+    "home_page": null,
+    "download_url": null,
+    "docs_url": null,
+    "project_urls": {
+      "Benchmark Results": "https://github.com/ringsaturn/tz-benchmark",
+      "Documentation": "https://github.com/ringsaturn/tzfpy",
+      "Issues": "https://github.com/ringsaturn/tzfpy/issues",
+      "Online Demo": "https://ringsaturn.github.io/tzf-web/",
+      "Source Code": "https://github.com/ringsaturn/tzfpy"
+    }
+  }
+}

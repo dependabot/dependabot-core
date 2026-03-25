@@ -476,6 +476,15 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/xxxxx/django-split-settings") }
     end
+
+    context "when project_urls includes unrelated links before the source repo" do
+      let(:dependency_name) { "tzfpy" }
+      let(:pypi_response) { fixture("pypi", "pypi_response_project_urls_prefer_matching_repo.json") }
+
+      it "prefers the repository that matches the dependency name" do
+        expect(source_url).to eq("https://github.com/ringsaturn/tzfpy")
+      end
+    end
   end
 
   describe "#homepage_url" do

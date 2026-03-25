@@ -41,22 +41,51 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
+        source_url = exact_match_source_url_from_project_urls
+        source_url ||= labelled_source_url_from_project_urls
+        source_url ||= fallback_source_url
+        source_url ||= source_from_description
+        source_url ||= source_from_homepage
+
+        Source.from_url(source_url)
+      end
+
+      sig { returns(T.nilable(String)) }
+      def exact_match_source_url_from_project_urls
+        project_urls.values.find do |url|
+          repo = Source.from_url(url)&.repo
+          repo&.downcase&.end_with?(normalised_dependency_name)
+        end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def labelled_source_url_from_project_urls
+        source_like_project_url_labels.filter_map do |label|
+          project_urls[label]
+        end.find { |url| Source.from_url(url) }
+      end
+
+      sig { returns(T.nilable(String)) }
+      def fallback_source_url
         potential_source_urls = [
-          pypi_listing.dig("info", "project_urls", "Source"),
-          pypi_listing.dig("info", "project_urls", "Repository"),
           pypi_listing.dig("info", "home_page"),
           pypi_listing.dig("info", "download_url"),
           pypi_listing.dig("info", "docs_url")
         ].compact
 
-        potential_source_urls +=
-          (pypi_listing.dig("info", "project_urls") || {}).values
+        potential_source_urls += project_urls.values
 
-        source_url = potential_source_urls.find { |url| Source.from_url(url) }
-        source_url ||= source_from_description
-        source_url ||= source_from_homepage
+        potential_source_urls.find { |url| Source.from_url(url) }
+      end
 
-        Source.from_url(source_url)
+      sig { returns(T::Hash[String, String]) }
+      def project_urls
+        pypi_listing.dig("info", "project_urls") || {}
+      end
+
+      sig { returns(T::Array[String]) }
+      def source_like_project_url_labels
+        ["Source", "Source Code", "Repository", "Code", "Homepage"]
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
