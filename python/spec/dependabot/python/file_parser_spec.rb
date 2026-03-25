@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("psycopg2[bar,foo]")
+          expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
           expect(dependency.requirements).to eq(
             [{
@@ -238,6 +238,7 @@ RSpec.describe Dependabot::Python::FileParser do
               source: nil
             }]
           )
+          expect(dependency.metadata[:extras]).to eq("bar,foo")
         end
       end
     end
@@ -805,7 +806,7 @@ RSpec.describe Dependabot::Python::FileParser do
             package_manager: "pip"
           ),
           Dependabot::Dependency.new(
-            name: "aiocache[redis]",
+            name: "aiocache",
             version: "0.10.0",
             requirements: [{
               requirement: "==0.10.0",
@@ -813,7 +814,8 @@ RSpec.describe Dependabot::Python::FileParser do
               groups: ["dependencies"],
               source: nil
             }],
-            package_manager: "pip"
+            package_manager: "pip",
+            metadata: { extras: "redis" }
           ),
           Dependabot::Dependency.new(
             name: "luigi",
@@ -1060,12 +1062,12 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "a dependency with extras" do
           subject(:dependency) do
-            dependencies.find { |d| d.name == "requests[security]" }
+            dependencies.find { |d| d.name == "requests" }
           end
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).to eq("requests[security]")
+            expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
             expect(dependency.requirements).to eq(
               [{
@@ -1075,6 +1077,7 @@ RSpec.describe Dependabot::Python::FileParser do
                 source: nil
               }]
             )
+            expect(dependency.metadata[:extras]).to eq("security")
           end
         end
       end
@@ -1146,12 +1149,12 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "a dependency with extras" do
           subject(:dependency) do
-            dependencies.find { |d| d.name == "requests[security]" }
+            dependencies.find { |d| d.name == "requests" }
           end
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).to eq("requests[security]")
+            expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
             expect(dependency.requirements).to eq(
               [{
@@ -1161,6 +1164,7 @@ RSpec.describe Dependabot::Python::FileParser do
                 source: nil
               }]
             )
+            expect(dependency.metadata[:extras]).to eq("security")
           end
         end
       end

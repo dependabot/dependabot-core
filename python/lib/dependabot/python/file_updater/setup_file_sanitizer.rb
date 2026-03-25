@@ -64,7 +64,7 @@ module Dependabot
               next unless first[:groups]
                           .include?("install_requires")
 
-              dep.name + first[:requirement].to_s
+              name_with_extras(dep) + first[:requirement].to_s
             end
         end
 
@@ -76,7 +76,7 @@ module Dependabot
               next unless first[:groups]
                           .include?("setup_requires")
 
-              dep.name + first[:requirement].to_s
+              name_with_extras(dep) + first[:requirement].to_s
             end
         end
 
@@ -92,12 +92,21 @@ module Dependabot
 
                   hash[group.split(":").last] ||= []
                   hash[group.split(":").last] <<
-                    (dep.name + first[:requirement].to_s)
+                    (name_with_extras(dep) + first[:requirement].to_s)
                 end
               end
 
               hash
             end
+        end
+
+        # Reconstruct dependency name with extras from metadata.
+        sig { params(dep: Dependabot::Dependency).returns(String) }
+        def name_with_extras(dep)
+          extras_str = dep.metadata[:extras]
+          return dep.name unless extras_str.is_a?(String) && !extras_str.empty?
+
+          "#{dep.name}[#{extras_str}]"
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }

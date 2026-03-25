@@ -216,4 +216,59 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       end
     end
   end
+
+  describe "#latest_resolvable_version_tag with versionRange" do
+    let(:requirement_kind) { "versionRange" }
+    let(:requirements) do
+      [{
+        file: "MyApp.xcodeproj/project.pbxproj",
+        requirement: ">= 5.15.0, < 5.20.0",
+        groups: [],
+        source: { type: "git", url: "https://github.com/SDWebImage/SDWebImage.git", ref: "5.15.0", branch: nil },
+        metadata: { kind: "versionRange", requirement_string: "\"5.15.0\"..<\"5.20.0\"" }
+      }]
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "github.com/sdwebimage/sdwebimage",
+        version: "5.15.0",
+        requirements: requirements,
+        package_manager: "swift"
+      )
+    end
+
+    let(:all_tags) do
+      [
+        { tag: "5.15.0", version: Dependabot::Swift::Version.new("5.15.0"), commit_sha: "aaa111" },
+        { tag: "5.18.0", version: Dependabot::Swift::Version.new("5.18.0"), commit_sha: "bbb222" },
+        { tag: "5.19.0", version: Dependabot::Swift::Version.new("5.19.0"), commit_sha: "ccc333" },
+        { tag: "5.20.0", version: Dependabot::Swift::Version.new("5.20.0"), commit_sha: "ddd444" },
+        { tag: "5.21.7", version: Dependabot::Swift::Version.new("5.21.7"), commit_sha: "eee555" }
+      ]
+    end
+
+    let(:latest_tag) do
+      { tag: "5.21.7", version: Dependabot::Swift::Version.new("5.21.7"), commit_sha: "eee555" }
+    end
+
+    before do
+      allow(git_commit_checker).to receive_messages(
+        local_tag_for_latest_version: latest_tag,
+        local_tags_for_allowed_versions: all_tags
+      )
+    end
+
+    it "returns the highest version within the range when latest exceeds upper bound" do
+      tag = resolver.latest_resolvable_version_tag
+      expect(tag).not_to be_nil
+      expect(tag[:version]).to eq(Dependabot::Swift::Version.new("5.19.0"))
+      expect(tag[:commit_sha]).to eq("ccc333")
+    end
+
+    it "returns a version higher than current" do
+      tag = resolver.latest_resolvable_version_tag
+      expect(tag[:version]).to be > Dependabot::Swift::Version.new("5.15.0")
+    end
+  end
 end

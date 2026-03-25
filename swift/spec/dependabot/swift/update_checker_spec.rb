@@ -504,6 +504,55 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       end
     end
 
+    context "with Xcode project using versionRange" do
+      let(:project_name) { "xcode_project_version_range" }
+      let(:name) { "github.com/quick/quick" }
+      let(:url) { "https://github.com/Quick/Quick" }
+      let(:upload_pack_fixture) { "quick" }
+
+      before { stub_xcode_upload_pack }
+
+      describe "#can_update?" do
+        subject { checker.can_update?(requirements_to_unlock: :own) }
+
+        it { is_expected.to be_truthy }
+      end
+
+      describe "#latest_version" do
+        subject(:latest_version) { checker.latest_version }
+
+        it "returns latest version from git tags" do
+          expect(latest_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_version.to_s).to eq("7.0.2")
+        end
+      end
+
+      describe "#latest_resolvable_version" do
+        subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
+        it "returns the highest version within the range constraint" do
+          # Latest is 7.0.2 but maximumVersion is 7.0.1, so we expect 7.0.0
+          expect(latest_resolvable_version).to be_a(Dependabot::Swift::Version)
+          expect(latest_resolvable_version.to_s).to eq("7.0.0")
+        end
+      end
+
+      describe "#updated_requirements" do
+        subject(:updated_requirements) { checker.updated_requirements }
+
+        it "returns updated requirements with version within range" do
+          # minimum is updated to target version, maximum stays the same
+          expect(updated_requirements.first[:requirement]).to eq(">= 7.0.0, < 7.0.1")
+          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first[:metadata][:kind]).to eq("versionRange")
+        end
+
+        it "updates the source ref to the commit SHA" do
+          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+    end
+
     context "with multiple Xcode projects" do
       let(:project_name) { "xcode_project_needs_update" }
       # Use the same fixture format as single xcode project but for multi-project test
