@@ -275,7 +275,11 @@ module Dependabot
 
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
-          next if update["target_version"] == update["current_version"]
+          if update["target_version"] == update["current_version"]
+            Dependabot.logger.info("#{update['dependency_name']} is already at the target version " \
+                                   "(#{update['current_version']}), no update needed")
+            next
+          end
 
           dependency_name = update["dependency_name"]
           requirements = if top_level_dependencies[dependency_name]&.version == update["current_version"]
