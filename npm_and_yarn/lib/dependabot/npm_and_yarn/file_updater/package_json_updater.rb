@@ -186,7 +186,7 @@ module Dependabot
               content: content
             )
 
-            new_resolution = resolution == old_req ? new_req : dep.version
+            new_resolution = resolution == old_req&.dig(:requirement) ? new_req : dep.version
 
             replacement_line = replacement_declaration_line(
               original_line: original_line,
