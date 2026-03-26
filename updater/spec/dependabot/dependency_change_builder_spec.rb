@@ -283,6 +283,5 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
           )
       end
     end
-
   end
 end
