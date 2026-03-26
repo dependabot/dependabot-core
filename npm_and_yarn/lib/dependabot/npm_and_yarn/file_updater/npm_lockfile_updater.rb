@@ -50,7 +50,7 @@ module Dependabot
         sig { returns(T::Hash[Dependabot::DependencyFile, String]) }
         def updated_package_json_files
           updated_lockfile_content
-          T.must(@updated_package_json_files || {})
+          @updated_package_json_files || {}
         end
 
         sig { params(response: Exception).returns(T.noreturn) }
@@ -154,7 +154,10 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
               updated_files = Dir.chdir(lockfile_directory) { run_current_npm_update }
-              @updated_package_json_files = T.let(capture_updated_package_json_files, T.nilable(T::Hash[Dependabot::DependencyFile, String]))
+              @updated_package_json_files = T.let(
+                capture_updated_package_json_files,
+                T.nilable(T::Hash[Dependabot::DependencyFile, String])
+              )
               updated_lockfile_content = updated_files.fetch(lockfile_basename)
               post_process_npm_lockfile(updated_lockfile_content)
             end,
