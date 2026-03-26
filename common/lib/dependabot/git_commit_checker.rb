@@ -515,16 +515,30 @@ module Dependabot
 
     sig { params(tag: String, other_tag: String).returns(T::Boolean) }
     def same_prefix?(tag, other_tag)
-      normalize_prefix(tag) == normalize_prefix(other_tag)
+      tag_prefix = tag.gsub(VERSION_REGEX, "")
+      other_tag_prefix = other_tag.gsub(VERSION_REGEX, "")
+
+      return true if tag_prefix == other_tag_prefix
+
+      if semver_like?(tag) && semver_like?(other_tag)
+        normalize_v_prefix(tag_prefix) == normalize_v_prefix(other_tag_prefix)
+      else
+        false
+      end
     end
 
-    # Strips trailing 'v' only if there's additional prefix before it (e.g., "tags/v1.0" -> "tags/")
-    # but preserves standalone 'v' prefix to distinguish v-prefixed semver (v1.2.3) from
-    # other versioning schemes like date-based tags (19.0614).
-    sig { params(tag: String).returns(String) }
-    def normalize_prefix(tag)
-      prefix = tag.gsub(VERSION_REGEX, "")
-      prefix.length > 1 ? prefix.gsub(/v$/i, "") : prefix
+    # Returns true if the tag's version has 3+ segments (standard semver like "1.2.3")
+    sig { params(tag: String).returns(T::Boolean) }
+    def semver_like?(tag)
+      version = scan_version(tag)
+      version.split(".").length >= 3
+    rescue StandardError
+      false
+    end
+
+    sig { params(prefix: String).returns(String) }
+    def normalize_v_prefix(prefix)
+      prefix.length > 1 ? prefix.gsub(/v$/i, "") : prefix.gsub(/^v$/i, "")
     end
 
     sig { params(tag: T.nilable(Dependabot::GitRef)).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
