@@ -226,5 +226,139 @@ RSpec.describe Dependabot::Mise::FileUpdater do
         expect(updated_files.first.content).to include("[tools.golang]\nenv = \"production\"\nversion = \"1.22.0\"")
       end
     end
+
+    context "with dependency in multiple files" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.toml",
+          content: <<~TOML
+            [tools]
+            erlang = "27.3.2"
+            node = "20.0.0"
+          TOML
+        )
+      end
+
+      let(:mise_production_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.production.toml",
+          content: <<~TOML
+            [tools]
+            erlang = "28.0.0"
+            python = "3.11.0"
+          TOML
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "erlang",
+          version: "28.5.0",
+          previous_version: "28.0.0",
+          package_manager: "mise",
+          requirements: [
+            { requirement: "28.5.0", file: "mise.toml", groups: [], source: nil },
+            { requirement: "28.5.0", file: "mise.production.toml", groups: [], source: nil }
+          ],
+          previous_requirements: [
+            { requirement: "27.3.2", file: "mise.toml", groups: [], source: nil },
+            { requirement: "28.0.0", file: "mise.production.toml", groups: [], source: nil }
+          ]
+        )
+      end
+
+      let(:updater) do
+        described_class.new(
+          dependency_files: [mise_toml, mise_production_toml],
+          dependencies: [dependency],
+          credentials: []
+        )
+      end
+
+      it "updates both files" do
+        expect(updated_files.length).to eq(2)
+      end
+
+      it "updates erlang in mise.toml from 27.3.2 to 28.5.0" do
+        mise_file = updated_files.find { |f| f.name == "mise.toml" }
+        expect(mise_file.content).to include('erlang = "28.5.0"')
+        expect(mise_file.content).not_to include('erlang = "27.3.2"')
+      end
+
+      it "updates erlang in mise.production.toml from 28.0.0 to 28.5.0" do
+        production_file = updated_files.find { |f| f.name == "mise.production.toml" }
+        expect(production_file.content).to include('erlang = "28.5.0"')
+        expect(production_file.content).not_to include('erlang = "28.0.0"')
+      end
+
+      it "does not modify other tools in mise.toml" do
+        mise_file = updated_files.find { |f| f.name == "mise.toml" }
+        expect(mise_file.content).to include('node = "20.0.0"')
+      end
+
+      it "does not modify other tools in mise.production.toml" do
+        production_file = updated_files.find { |f| f.name == "mise.production.toml" }
+        expect(production_file.content).to include('python = "3.11.0"')
+      end
+    end
+
+    context "with dependency only in one of multiple files" do
+      let(:mise_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.toml",
+          content: <<~TOML
+            [tools]
+            erlang = "27.3.2"
+            node = "20.0.0"
+          TOML
+        )
+      end
+
+      let(:mise_production_toml) do
+        Dependabot::DependencyFile.new(
+          name: "mise.production.toml",
+          content: <<~TOML
+            [tools]
+            python = "3.11.0"
+          TOML
+        )
+      end
+
+      let(:node_dependency) do
+        Dependabot::Dependency.new(
+          name: "node",
+          version: "22.0.0",
+          previous_version: "20.0.0",
+          package_manager: "mise",
+          requirements: [
+            { requirement: "22.0.0", file: "mise.toml", groups: [], source: nil }
+          ],
+          previous_requirements: [
+            { requirement: "20.0.0", file: "mise.toml", groups: [], source: nil }
+          ]
+        )
+      end
+
+      let(:updater) do
+        described_class.new(
+          dependency_files: [mise_toml, mise_production_toml],
+          dependencies: [node_dependency],
+          credentials: []
+        )
+      end
+
+      it "only updates the file containing the dependency" do
+        expect(updated_files.length).to eq(1)
+        expect(updated_files.first.name).to eq("mise.toml")
+      end
+
+      it "updates node in mise.toml" do
+        expect(updated_files.first.content).to include('node = "22.0.0"')
+      end
+
+      it "does not update mise.production.toml" do
+        expect(updated_files.map(&:name)).not_to include("mise.production.toml")
+      end
+    end
   end
 end
