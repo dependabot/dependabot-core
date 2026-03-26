@@ -67,15 +67,15 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       )
   end
 
-  describe "#latest_release" do
-    subject(:latest_release) { finder.latest_release }
+  describe "#latest_release_version" do
+    subject(:latest_release_version) { finder.latest_release_version }
 
     context "when pinned to a version tag" do
       let(:reference) { "v4.4.0" }
 
       it "returns the latest version" do
-        expect(latest_release).to be_a(Dependabot::PreCommit::Version)
-        expect(latest_release.to_s).to eq("6.0.0")
+        expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_release_version.to_s).to eq("6.0.0")
       end
     end
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
 
       it "returns the latest tagged version" do
-        expect(latest_release).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
 
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
 
       it "falls back to latest commit SHA" do
-        expect(latest_release).to be_a(String)
+        expect(latest_release_version).to be_a(String)
       end
     end
 
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
 
       it "returns the latest tagged version using comment metadata" do
-        expect(latest_release).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
       end
     end
 
@@ -164,8 +164,8 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { [">= 6.0.0"] }
 
       it "filters out ignored versions" do
-        expect(latest_release).to be_a(Dependabot::PreCommit::Version)
-        expect(latest_release.to_s.split(".").first.to_i).to be < 6
+        expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_release_version.to_s.split(".").first.to_i).to be < 6
       end
     end
   end
@@ -181,12 +181,12 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
 
       it "accepts cooldown configuration without error" do
-        expect { finder.latest_release }.not_to raise_error
-        expect(finder.latest_release).to be_a(Dependabot::PreCommit::Version)
+        expect { finder.latest_release_version }.not_to raise_error
+        expect(finder.latest_release_version).to be_a(Dependabot::PreCommit::Version)
       end
 
       it "returns a version when cooldown is applied" do
-        result = finder.latest_release
+        result = finder.latest_release_version
         expect(result).not_to be_nil
         expect(result).to be_a(Dependabot::PreCommit::Version)
       end
@@ -196,8 +196,8 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       let(:update_cooldown) { nil }
 
       it "returns latest version without filtering" do
-        expect(finder.latest_release).to be_a(Dependabot::PreCommit::Version)
-        expect(finder.latest_release.to_s).to eq("6.0.0")
+        expect(finder.latest_release_version).to be_a(Dependabot::PreCommit::Version)
+        expect(finder.latest_release_version.to_s).to eq("6.0.0")
       end
     end
   end
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       let(:reference) { "v4.4" }
 
       it "handles shortened version refs" do
-        result = finder.latest_release
+        result = finder.latest_release_version
         expect(result).to be_a(Dependabot::PreCommit::Version)
       end
     end
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       let(:reference) { "v4.4.0" }
 
       it "handles full version refs" do
-        result = finder.latest_release
+        result = finder.latest_release_version
         expect(result).to be_a(Dependabot::PreCommit::Version)
         expect(result.to_s).to eq("6.0.0")
       end

@@ -46,17 +46,9 @@ module Dependabot
                            updated_lockfiles
                          end
 
-        # Also treat all-support-file updates as no change — this happens when
-        # pnpm-workspace.yaml and pnpm-lock.yaml are fetched from a parent
-        # directory (marked support_file=true by fetch_file_from_parent_directories).
-        # In that case the updated files would be filtered out by
-        # DependencyChangeBuilder, so we surface the underlying misconfiguration.
-        if updated_files.none? || updated_files.all?(&:support_file?)
-          if original_pnpm_locks.any?
-            raise_tool_not_supported_for_pnpm_if_transitive
-            raise_miss_configured_tooling_if_pnpm_subdirectory
-          end
+        handle_pnpm_support_file_no_change!(updated_files)
 
+        if updated_files.none?
           raise NoChangeError.new(
             message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
@@ -76,9 +68,23 @@ module Dependabot
 
       private
 
+      sig { params(updated_files: T::Array[DependencyFile]).void }
+      def handle_pnpm_support_file_no_change!(updated_files)
+        # Also handle all-support-file updates for pnpm workspaces — this can
+        # happen when pnpm-workspace.yaml and pnpm-lock.yaml are fetched from a
+        # parent directory (marked support_file=true by
+        # fetch_file_from_parent_directories). In that case the updated files
+        # would be filtered out by DependencyChangeBuilder, so we surface the
+        # underlying pnpm misconfiguration.
+        return unless original_pnpm_locks.any?
+        return unless updated_files.none? || updated_files.all?(&:support_file?)
+
+        raise_tool_not_supported_for_pnpm_if_transitive
+        raise_miss_configured_tooling_if_pnpm_subdirectory
+      end
+
       sig { void }
       def raise_tool_not_supported_for_pnpm_if_transitive
-        # ✅ Ensure there are dependencies and check if all are transitive
         return if dependencies.empty? || dependencies.any?(&:top_level?)
 
         raise ToolFeatureNotSupported.new(
@@ -94,17 +100,16 @@ module Dependabot
         workspace_files = original_pnpm_workspace
         lockfiles = original_pnpm_locks
 
-        # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
         return if workspace_files.empty?
         return if workspace_files.any? { |f| f.directory == "/" }
         return unless workspace_files.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-workspace\.yaml\z}) }
 
-        # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
         return if lockfiles.empty?
         return if lockfiles.any? { |f| f.directory == "/" }
         return unless lockfiles.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-lock\.yaml\z}) }
 
-        # ❌ Raise error → Updating inside a subdirectory is misconfigured
+        # Updating a workspace from a subdirectory is unsupported when both
+        # pnpm files are sourced from parent directories.
         raise MisconfiguredTooling.new(
           "pnpm",
           "Updating workspaces from inside a workspace subdirectory is not supported. " \
@@ -291,11 +296,32 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_files
         @package_files ||= T.let(
-          filtered_dependency_files.select do |f|
-            f.name.end_with?("package.json")
+          begin
+            files = filtered_dependency_files.select { |f| f.name.end_with?("package.json") }
+
+            if files.empty? && dependencies.none?(&:top_level?)
+              files = dependency_files
+                      .select { |f| f.name.end_with?("package.json") }
+                      .select { |f| package_json_has_override_for_deps?(f) }
+            end
+
+            files
           end,
           T.nilable(T::Array[DependencyFile])
         )
+      end
+
+      sig { params(package_json: Dependabot::DependencyFile).returns(T::Boolean) }
+      def package_json_has_override_for_deps?(package_json)
+        parsed = JSON.parse(T.must(package_json.content))
+        entries = parsed["resolutions"] || parsed["overrides"] || parsed.dig("pnpm", "overrides") || {}
+        return false unless entries.is_a?(Hash)
+
+        dependencies.any? do |dep|
+          entries.any? { |k, v| v.is_a?(String) && (k == dep.name || k.end_with?("/#{dep.name}")) }
+        end
+      rescue JSON::ParserError
+        false
       end
 
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Boolean) }

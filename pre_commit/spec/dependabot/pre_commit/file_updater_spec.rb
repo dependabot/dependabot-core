@@ -298,6 +298,76 @@ RSpec.describe Dependabot::PreCommit::FileUpdater do
           expect(second_rev_line).to include("v4.5.0")
         end
       end
+
+      context "with quoted repo URLs" do
+        let(:config_file_body) { fixture("pre_commit_configs", "with_quoted_urls.yaml") }
+
+        its(:content) do
+          is_expected.to include "rev: v4.5.0"
+          is_expected.not_to include "rev: v4.4.0"
+        end
+
+        it "updates the rev even when repo URL is double-quoted" do
+          expect(updated_config_file.content).to include('- repo: "https://github.com/pre-commit/pre-commit-hooks"')
+          expect(updated_config_file.content).to include("rev: v4.5.0")
+        end
+      end
+
+      context "with single-quoted rev values" do
+        let(:config_file_body) { fixture("pre_commit_configs", "with_quoted_revs.yaml") }
+
+        it "updates the rev and preserves the single quotes" do
+          expect(updated_config_file.content).to include "rev: 'v4.5.0'"
+          expect(updated_config_file.content).not_to include "rev: 'v4.4.0'"
+        end
+
+        it "does not modify other repos" do
+          expect(updated_config_file.content).to include 'rev: "23.12.1"'
+        end
+      end
+
+      context "with double-quoted rev values" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/psf/black",
+            version: "24.1.0",
+            previous_version: "23.12.1",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/psf/black",
+                ref: "24.1.0",
+                branch: nil
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: {
+                type: "git",
+                url: "https://github.com/psf/black",
+                ref: "23.12.1",
+                branch: nil
+              }
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+        let(:config_file_body) { fixture("pre_commit_configs", "with_quoted_revs.yaml") }
+
+        it "updates the rev and preserves the double quotes" do
+          expect(updated_config_file.content).to include 'rev: "24.1.0"'
+          expect(updated_config_file.content).not_to include 'rev: "23.12.1"'
+        end
+
+        it "does not modify other repos" do
+          expect(updated_config_file.content).to include "rev: 'v4.4.0'"
+        end
+      end
     end
   end
 end

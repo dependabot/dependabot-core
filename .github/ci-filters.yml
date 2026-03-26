@@ -71,6 +71,9 @@ julia:
 maven:
   - *shared
   - 'maven/**'
+nix:
+  - *shared
+  - 'nix/**'
 npm_and_yarn:
   - *shared
   - 'npm_and_yarn/**'

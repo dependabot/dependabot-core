@@ -15,9 +15,13 @@ concurrency:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'main' }}
+permissions: {}
+
 jobs:
   discover:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
     steps:
@@ -57,18 +61,16 @@ jobs:
 
           # Set the step output
           echo "suites=$(cat suites.json)" >> $GITHUB_OUTPUT
-  download-cli:
-    uses: dependabot/smoke-tests/.github/workflows/download-cli.yml@main
-    permissions:
-      contents: read
-    secrets:
-      gh_token: ${{ secrets.GITHUB_TOKEN }}
 
   e2e:
-    needs: [discover, download-cli]
+    needs: [discover]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
+      max-parallel: 10
       matrix:
         suite: ${{ fromJSON(needs.discover.outputs.suites) }}
     steps:
@@ -77,15 +79,13 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - name: Download CLI artifact
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+      - name: Setup Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          name: dependabot-cli
+          go-version-file: 'go_modules/helpers/go.mod'
 
-      - name: Make CLI executable
-        run: |
-          chmod +x dependabot
-          ./dependabot --version
+      - name: Install Dependabot CLI
+        run: go install github.com/dependabot/cli/cmd/dependabot@latest
 
       - name: Restore Smoke Test
         id: cache-smoke-test
@@ -97,8 +97,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          URL=https://api.github.com/repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
-          curl $(gh api $URL --jq .download_url) -o smoke.yaml
+          gh api "repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}" -H "Accept: application/vnd.github.raw" > smoke.yaml
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
@@ -130,7 +129,7 @@ jobs:
           LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
-          ./dependabot test \
+          dependabot test \
             -f=smoke.yaml \
             -o=result.yaml \
             --cache=cache \

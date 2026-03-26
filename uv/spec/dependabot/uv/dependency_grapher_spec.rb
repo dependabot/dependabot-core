@@ -33,8 +33,26 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
   let(:uv_tree_output) { fixture("dependency_grapher", "uv_tree_output.txt") }
 
   describe "#relevant_dependency_file" do
-    it "specifies the pyproject.toml as the relevant dependency file" do
-      expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+    context "when uv.lock is not present" do
+      it "falls back to pyproject.toml" do
+        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+      end
+    end
+
+    context "when uv.lock is present" do
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("dependency_grapher", "uv_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
+
+      it "specifies the uv.lock as the relevant dependency file" do
+        expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
+      end
     end
   end
 
@@ -158,6 +176,34 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         markupsafe = resolved_dependencies.fetch("pkg:pypi/markupsafe@3.0.3")
         expect(markupsafe.direct).to be(false)
         expect(markupsafe.dependencies).to eq([])
+      end
+    end
+
+    context "when dependencies have extras in their names" do
+      let(:pyproject_toml) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_dependency_grapher_extras.toml"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml] }
+
+      let(:generated_uv_lock) { fixture("dependency_grapher", "generated_uv.lock") }
+
+      before do
+        allow(parser).to receive(:run_in_parsed_context)
+          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+          .and_return(generated_uv_lock)
+      end
+
+      it "strips extras from PURL names" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        purl_keys = resolved_dependencies.keys
+        expect(purl_keys).to include(a_string_matching(%r{^pkg:pypi/cachecontrol}))
+        expect(purl_keys).not_to include(a_string_matching(/\[/))
       end
     end
   end

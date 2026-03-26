@@ -41,8 +41,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
 
-        # rubocop:disable Metrics/PerceivedComplexity
-
         sig { returns(T.nilable(String)) }
         def updated_package_json_content
           # checks if we are updating single dependency in package.json
@@ -59,27 +57,14 @@ module Dependabot
                 new_req: new_req
               )
 
-              if Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) &&
-                 content == new_content && unique_deps_count > 1
-
-                # (we observed that) package.json does not always contains the same dependencies compared to
-                # "dependencies" list, for example, dependencies object can contain same name dependency "dep"=> "1.0.0"
-                # and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0",the other dependency is
-                # not present in package.json so we don't have to update it, this is most likely (as observed)
-                # a transitive dependency which only needs update in lockfile, So we avoid throwing exception and let
-                # the update continue.
-
-                Dependabot.logger.info(
-                  "experiment: avoid_duplicate_updates_package_json.
-                Updating package.json for #{dep.name} "
-                )
-
-                raise "Expected content to change!"
-              end
-
-              if !Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) && (content == new_content)
-                raise "Expected content to change!"
-              end
+              # package.json does not always contain the same dependencies compared to the
+              # "dependencies" list. For example, the dependencies object can contain same name dependency
+              # "dep" => "1.0.0" and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0".
+              # The other dependency is not present in package.json so we don't have to update it — this is
+              # most likely a transitive dependency which only needs an update in the lockfile. For a batch
+              # with a single unique dependency name we tolerate this no-op update, but when multiple unique
+              # dependencies are being updated and none change the content we treat that as unexpected and raise.
+              raise "Expected content to change!" if content == new_content && unique_deps_count > 1
 
               content = new_content
             end
@@ -95,10 +80,16 @@ module Dependabot
               )
             end
 
+            if dep.previous_version && new_requirements(dep).empty?
+              content = update_overrides_for_subdependency(
+                package_json_content: T.must(content),
+                dependency: dep
+              )
+            end
+
             content
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -183,11 +174,7 @@ module Dependabot
         end
         def update_package_json_resolutions(package_json_content:, new_req:, dependency:, old_req:)
           dep = dependency
-          parsed_json_content = JSON.parse(package_json_content)
-          resolutions =
-            parsed_json_content.fetch("resolutions", parsed_json_content.dig("pnpm", "overrides") || {})
-                               .reject { |_, v| v != old_req && v != dep.previous_version }
-                               .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+          resolutions = matching_resolutions(package_json_content, dep, old_req)
 
           return package_json_content unless resolutions.any?
 
@@ -199,7 +186,7 @@ module Dependabot
               content: content
             )
 
-            new_resolution = resolution == old_req ? new_req : dep.version
+            new_resolution = resolution == old_req&.dig(:requirement) ? new_req.fetch(:requirement) : dep.version
 
             replacement_line = replacement_declaration_line(
               original_line: original_line,
@@ -212,6 +199,72 @@ module Dependabot
             )
           end
           content
+        end
+
+        sig do
+          params(
+            package_json_content: String,
+            dependency: Dependabot::Dependency
+          ).returns(String)
+        end
+        def update_overrides_for_subdependency(package_json_content:, dependency:)
+          parsed = JSON.parse(package_json_content)
+          entries = resolution_entries(parsed)
+          return package_json_content unless entries.any?
+
+          matching = entries
+                     .select { |_, v| v.is_a?(String) }
+                     .select { |k, _| k == dependency.name || k.end_with?("/#{dependency.name}") }
+                     .select { |_, v| v.include?(T.must(dependency.previous_version)) }
+          return package_json_content unless matching.any?
+
+          content = package_json_content
+          matching.each do |_, resolution|
+            original_line = declaration_line(
+              dependency_name: dependency.name,
+              dependency_req: { requirement: resolution },
+              content: content
+            )
+
+            new_resolution = resolution.sub(T.must(dependency.previous_version), T.must(dependency.version))
+
+            replacement_line = replacement_declaration_line(
+              original_line: original_line,
+              old_req: { requirement: resolution },
+              new_req: { requirement: new_resolution }
+            )
+
+            content = update_package_json_sections(
+              %w(resolutions overrides), content, original_line, replacement_line
+            )
+          end
+          content
+        end
+
+        sig do
+          params(
+            package_json_content: String,
+            dep: Dependabot::Dependency,
+            old_req: T.nilable(T::Hash[Symbol, T.untyped])
+          )
+            .returns(T::Hash[String, String])
+        end
+        def matching_resolutions(package_json_content, dep, old_req)
+          parsed = JSON.parse(package_json_content)
+          old_requirement = old_req&.dig(:requirement)
+
+          resolution_entries(parsed)
+            .select { |_, v| v.is_a?(String) }
+            .select { |_, v| v == old_requirement || v == dep.previous_version }
+            .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
+        end
+
+        sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T.untyped]) }
+        def resolution_entries(parsed)
+          parsed["resolutions"] ||
+            parsed["overrides"] ||
+            parsed.dig("pnpm", "overrides") ||
+            {}
         end
 
         sig do

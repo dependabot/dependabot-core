@@ -8,6 +8,7 @@ on: # yamllint disable-line rule:truthy
       - main
     paths-ignore:
       - "common/lib/dependabot.rb"
+permissions: {}
 
 jobs:
   date-version:
@@ -54,6 +55,7 @@ jobs:
           - { name: hex, ecosystem: mix }
           - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
+          - { name: nix, ecosystem: nix }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
           - { name: pre_commit, ecosystem: pre-commit }
@@ -88,7 +90,7 @@ jobs:
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

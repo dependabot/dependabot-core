@@ -67,12 +67,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:avoid_duplicate_updates_package_json).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
@@ -118,6 +112,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { previous_requirements }
 
         specify { expect { updated_files }.to raise_error(/No files/) }
+      end
+
+      context "when non-pnpm updated files are marked as support files" do
+        before do
+          files.each { |file| file.support_file = true }
+        end
+
+        it "updates package.json" do
+          expect(updated_files.map(&:name)).to include("package.json")
+        end
       end
     end
 
@@ -2670,6 +2674,71 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+        end
+      end
+
+      context "with npm overrides" do
+        let(:files) { project_dependency_files("npm8/simple_with_overrides") }
+        let(:repo_contents_path) { build_tmp_repo("npm8/simple_with_overrides", path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the override in the package.json" do
+          # The PackageJsonUpdater correctly updates both the devDependency
+          # declaration and the override entry in package.json
+          updater_instance = Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater.new(
+            package_json: files.find { |f| f.name == "package.json" },
+            dependencies: dependencies
+          )
+          parsed = JSON.parse(updater_instance.updated_package_json.content)
+          expect(parsed.dig("overrides", "lodash")).to eq("3.10.1")
+          expect(parsed.dig("devDependencies", "lodash")).to eq("^3.0")
+        end
+      end
+
+      context "with npm overrides for a sub-dependency" do
+        let(:files) { project_dependency_files("npm8/subdep_with_override") }
+
+        let(:dependency_name) { "undici" }
+        let(:version) { "6.24.1" }
+        let(:previous_version) { "6.23.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          lockfile = files.find { |f| f.name == "package-lock.json" }
+          updated_lockfile_content = lockfile.content.gsub("6.23.0", "6.24.1")
+          updated_lockfile = Dependabot::DependencyFile.new(
+            name: lockfile.name,
+            content: updated_lockfile_content
+          )
+          npm_updater = instance_double(
+            Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
+            updated_lockfile: updated_lockfile
+          )
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+            .to receive(:new).and_return(npm_updater)
+        end
+
+        it "includes both package.json and package-lock.json in updated_files" do
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+        end
+
+        it "updates the override in the package.json preserving the version prefix" do
+          parsed = JSON.parse(updated_package_json.content)
+          expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
         end
       end
     end

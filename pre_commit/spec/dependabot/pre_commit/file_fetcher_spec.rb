@@ -33,7 +33,6 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -120,19 +119,6 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
       expect(content).to include("v4.4.0")
     end
 
-    context "when beta ecosystems are disabled" do
-      before do
-        Dependabot::Experiments.register(:enable_beta_ecosystems, false)
-      end
-
-      it "raises a DependencyFileNotFound error" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.message).to include("beta")
-          end
-      end
-    end
-
     context "when the config file is missing" do
       before do
         stub_request(:get, url + ".pre-commit-config.yaml?ref=sha")
@@ -149,7 +135,6 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
     context "when exclude_paths is configured" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(true)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enable_exclude_paths_subdirectory_manifest_files).and_return(true)
         file_fetcher_instance.exclude_paths = [".pre-commit-config.yaml"]

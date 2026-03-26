@@ -186,10 +186,10 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.setup_credentials_in_environment(credentials)
-          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
-          # environment variables, and also any CARGO_REGISTRY_... configuration.
-          env = ENV.select { |key, _value| key.match(/^(CARGO_REGISTRY|CARGO_REGISTRIES)_/) }
+          Helpers.bypass_cargo_credential_providers
+          # Pass through any cargo registry configuration via environment variables
+          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
+          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
 
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
@@ -215,10 +215,11 @@ module Dependabot
 
           File.write(T.must(lockfile).name, T.must(lockfile).content) if lockfile
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          return unless config
+          config_file = config
+          return unless config_file
 
-          FileUtils.mkdir_p(File.dirname(T.must(config).name))
-          File.write(T.must(config).name, T.must(config).content)
+          FileUtils.mkdir_p(File.dirname(config_file.name))
+          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
         end
 
         sig { void }

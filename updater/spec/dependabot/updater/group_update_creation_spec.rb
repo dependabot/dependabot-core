@@ -659,4 +659,34 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       end
     end
   end
+
+  describe "#create_change_for" do
+    let(:no_change_error_class) { Class.new(StandardError) }
+    let(:lead_dependency) do
+      instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.1")
+    end
+    let(:updated_dependencies) { [lead_dependency] }
+
+    it "handles file updater no-change errors from DependencyChangeBuilder" do
+      no_change_error = no_change_error_class.new("No files were updated!")
+
+      allow(Dependabot::DependencyChangeBuilder).to receive(:create_from).and_raise(no_change_error)
+
+      expect(error_handler).to receive(:handle_dependency_error).with(
+        error: no_change_error,
+        dependency: lead_dependency,
+        dependency_group: group
+      )
+
+      result = test_instance.send(
+        :create_change_for,
+        lead_dependency,
+        updated_dependencies,
+        dependency_files,
+        group
+      )
+
+      expect(result).to be(false)
+    end
+  end
 end

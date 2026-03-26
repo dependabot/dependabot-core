@@ -339,4 +339,483 @@ RSpec.describe Dependabot::Swift::FileParser do
       end
     end
   end
+
+  context "when enable_swift_xcode_spm experiment is enabled" do
+    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, true) }
+    after { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
+
+    context "with a single Xcode project (v2 Package.resolved)" do
+      let(:project_name) { "xcode_project" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses Xcode SPM dependencies" do
+        deps = parser.parse
+        expect(deps.length).to eq(1)
+
+        dep = deps.first
+        expect(dep.name).to eq("github.com/apple/swift-nio")
+        expect(dep.version).to eq("2.54.0")
+        expect(dep.package_manager).to eq("swift")
+      end
+
+      it "enriches dependencies with pbxproj requirements" do
+        dep = parser.parse.first
+        req = dep.requirements.first
+
+        expect(req[:requirement]).to eq(">= 2.54.0, < 3.0.0")
+        expect(req[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
+        expect(req[:metadata][:requirement_string]).to eq("from: \"2.54.0\"")
+      end
+
+      it "sets correct source info" do
+        dep = parser.parse.first
+        source = dep.requirements.first[:source]
+
+        expect(source[:type]).to eq("git")
+        expect(source[:url]).to eq("https://github.com/apple/swift-nio.git")
+        expect(source[:ref]).to eq("2.54.0")
+      end
+    end
+
+    context "with v1 Package.resolved" do
+      let(:project_name) { "xcode_project_v1_resolved" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses v1 format dependencies" do
+        deps = parser.parse
+        expect(deps.length).to eq(1)
+
+        dep = deps.first
+        expect(dep.name).to eq("github.com/apple/swift-nio")
+        expect(dep.version).to eq("2.54.0")
+      end
+    end
+
+    context "with v3 Package.resolved" do
+      let(:project_name) { "xcode_project_v3_resolved" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses v3 format dependencies" do
+        deps = parser.parse
+        expect(deps.length).to eq(1)
+
+        dep = deps.first
+        expect(dep.name).to eq("github.com/apple/swift-nio")
+        expect(dep.version).to eq("2.54.0")
+      end
+    end
+
+    context "with multiple dependencies and requirement types" do
+      let(:project_name) { "xcode_project_multi_req" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses all dependencies" do
+        deps = parser.parse
+        expect(deps.length).to eq(4)
+
+        names = deps.map(&:name)
+        expect(names).to contain_exactly(
+          "github.com/apple/swift-nio",
+          "github.com/apple/swift-collections",
+          "github.com/apple/swift-argument-parser",
+          "github.com/apple/swift-log"
+        )
+      end
+
+      it "applies correct requirement types from pbxproj" do
+        deps = parser.parse
+        nio = deps.find { |d| d.name == "github.com/apple/swift-nio" }
+        collections = deps.find { |d| d.name == "github.com/apple/swift-collections" }
+        parser_dep = deps.find { |d| d.name == "github.com/apple/swift-argument-parser" }
+        log = deps.find { |d| d.name == "github.com/apple/swift-log" }
+
+        expect(nio.requirements.first[:requirement]).to eq(">= 2.54.0, < 3.0.0")
+        expect(collections.requirements.first[:requirement]).to eq(">= 1.0.0, < 1.1.0")
+        expect(parser_dep.requirements.first[:requirement]).to eq("= 1.2.0")
+        expect(log.requirements.first[:requirement]).to eq(">= 1.4.0, < 2.0.0")
+      end
+    end
+
+    context "with multiple .xcodeproj directories" do
+      let(:project_name) { "xcode_project_multiple" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "AppA.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "AppA.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "AppA.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "AppA.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          ),
+          Dependabot::DependencyFile.new(
+            name: "AppB.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "AppB.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "AppB.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "AppB.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses dependencies from all resolved files" do
+        deps = parser.parse
+        names = deps.map(&:name)
+
+        expect(names).to include("github.com/apple/swift-nio")
+        expect(names).to include("github.com/apple/swift-collections")
+      end
+
+      it "associates requirements with correct pbxproj files" do
+        deps = parser.parse
+        nio_dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
+        collections_dep = deps.find { |d| d.name == "github.com/apple/swift-collections" }
+
+        # With scoped requirements, swift-nio comes from AppA and swift-collections from AppB
+        expect(nio_dep.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(collections_dep.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
+      end
+    end
+
+    context "with revision-only pin (no version)" do
+      let(:project_name) { "xcode_project_revision_only" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses with nil version" do
+        dep = parser.parse.first
+        expect(dep.version).to be_nil
+      end
+
+      it "records revision in source ref" do
+        dep = parser.parse.first
+        source = dep.requirements.first[:source]
+        expect(source[:ref]).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
+      end
+    end
+
+    context "with no pbxproj file (only Package.resolved)" do
+      let(:project_name) { "xcode_project" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "parses dependencies without requirement enrichment" do
+        deps = parser.parse
+        expect(deps.length).to eq(1)
+
+        dep = deps.first
+        expect(dep.name).to eq("github.com/apple/swift-nio")
+        expect(dep.version).to eq("2.54.0")
+        # Without pbxproj, requirement comes from Package.resolved only
+        expect(dep.requirements.first[:requirement]).to eq("= 2.54.0")
+      end
+    end
+
+    context "with invalid JSON in Package.resolved" do
+      let(:project_name) { "xcode_project_invalid_json" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "raises DependencyFileNotParseable" do
+        expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    context "with unknown schema version" do
+      let(:project_name) { "xcode_project_unknown_schema" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "raises DependencyFileNotParseable with schema info" do
+        expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.message).to include("unsupported schema version")
+        end
+      end
+    end
+
+    context "with empty pins" do
+      let(:project_name) { "xcode_project_empty_pins" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "returns an empty dependency list" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with both Package.swift and .xcodeproj present" do
+      let(:project_name) { "xcode_project_with_manifest" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Package.swift",
+            content: fixture("projects", project_name, "Package.swift")
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Package.resolved",
+            content: fixture("projects", project_name, "Package.resolved")
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "uses classic SPM path (Package.swift takes precedence)" do
+        deps = parser.parse
+        # Classic SPM parses via swift CLI, so requirements come from Package.swift
+        dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
+        expect(dep).not_to be_nil
+        expect(dep.requirements.first[:file]).to eq("Package.swift")
+      end
+    end
+  end
+
+  context "when enable_swift_xcode_spm experiment is disabled" do
+    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
+
+    context "with only Xcode files (no Package.swift)" do
+      let(:project_name) { "xcode_project" }
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.pbxproj",
+            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
+            support_file: true
+          ),
+          Dependabot::DependencyFile.new(
+            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+            content: fixture(
+              "projects",
+              project_name,
+              "MyApp.xcodeproj",
+              "project.xcworkspace",
+              "xcshareddata",
+              "swiftpm",
+              "Package.resolved"
+            )
+          )
+        ]
+      end
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+      it "raises an error about missing Package.swift" do
+        expect { parser }.to raise_error("No Package.swift!")
+      end
+    end
+  end
 end

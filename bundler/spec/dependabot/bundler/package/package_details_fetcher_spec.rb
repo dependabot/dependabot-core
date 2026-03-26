@@ -458,5 +458,127 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         end
       end
     end
+
+    describe "replaces_base credential support" do
+      let(:private_registry_url) { "https://gems.example.com/api/v1/versions/#{dependency_name}.json" }
+
+      context "when a replaces_base rubygems_server credential exists" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "rubygems_server",
+                "host" => "gems.example.com",
+                "token" => "secret",
+                "replaces-base" => true
+              }
+            )
+          ]
+        end
+
+        context "when dependency has no source in requirements" do
+          let(:source) { nil }
+
+          before do
+            stub_request(:get, private_registry_url)
+              .to_return(
+                status: 200,
+                body: fixture("releases_api", "dependabot_common.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "queries the private registry instead of rubygems.org" do
+            result = fetch
+
+            expect(result).to be_a(Dependabot::Package::PackageDetails)
+            expect(result.releases).not_to be_empty
+            expect(a_request(:get, private_registry_url)).to have_been_made.once
+            expect(a_request(:get, json_url)).not_to have_been_made
+          end
+        end
+
+        context "when dependency has explicit source in requirements" do
+          let(:source) do
+            {
+              type: "rubygems",
+              url: "https://other-registry.example.com"
+            }
+          end
+
+          let(:explicit_url) { "https://other-registry.example.com/api/v1/versions/#{dependency_name}.json" }
+
+          before do
+            stub_request(:get, explicit_url)
+              .to_return(
+                status: 200,
+                body: fixture("releases_api", "dependabot_common.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "uses the explicit source URL over the replaces_base credential" do
+            result = fetch
+
+            expect(result).to be_a(Dependabot::Package::PackageDetails)
+            expect(a_request(:get, explicit_url)).to have_been_made.once
+            expect(a_request(:get, private_registry_url)).not_to have_been_made
+          end
+        end
+      end
+
+      context "when no replaces_base credential exists" do
+        let(:credentials) { [] }
+        let(:source) { nil }
+
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: fixture("releases_api", "dependabot_common.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "falls back to rubygems.org" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(a_request(:get, json_url)).to have_been_made.once
+        end
+      end
+
+      context "when a non-replaces_base rubygems_server credential exists" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "rubygems_server",
+                "host" => "gems.example.com",
+                "token" => "secret"
+              }
+            )
+          ]
+        end
+        let(:source) { nil }
+
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: fixture("releases_api", "dependabot_common.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "falls back to rubygems.org" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(a_request(:get, json_url)).to have_been_made.once
+          expect(a_request(:get, private_registry_url)).not_to have_been_made
+        end
+      end
+    end
   end
 end

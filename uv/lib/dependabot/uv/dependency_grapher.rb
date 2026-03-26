@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/uv/file_parser"
+require "dependabot/uv/name_normaliser"
 require "toml-rb"
 
 module Dependabot
@@ -31,12 +32,10 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        # This cannot realistically happen as the parser will throw a runtime error
-        # on init without a pyproject.toml file,
-        # but this will avoid surprises if anything changes.
-        raise DependabotError, "No pyproject.toml present in dependency files." unless pyproject_toml
+        return T.must(uv_lock) if uv_lock
+        return T.must(pyproject_toml) if pyproject_toml
 
-        T.must(pyproject_toml)
+        raise DependabotError, "No uv.lock or pyproject.toml present."
       end
 
       private
@@ -168,6 +167,13 @@ module Dependabot
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "pypi"
+      end
+
+      # Strip extras (e.g. "[filecache]") from the dependency name for PURLs,
+      # since the PURL should reference the base package only.
+      sig { override.params(dependency: Dependabot::Dependency).returns(String) }
+      def purl_name_for(dependency)
+        NameNormaliser.normalise(dependency.name)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

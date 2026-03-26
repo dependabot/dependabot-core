@@ -47,8 +47,6 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
@@ -124,22 +122,54 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
     context "without a lockfile - range versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
 
-      before do
-        # Mock lockfile generation to avoid network calls
-        lockfile_generator = instance_double(
-          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-          generate: nil
-        )
-        allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
-          .to receive(:new).and_return(lockfile_generator)
+      context "when lockfile generation fails" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
+            generate: nil
+          )
+          allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "does not emit a misleading warning about generating a temporary lockfile" do
+          allow(Dependabot.logger).to receive(:info)
+          allow(Dependabot.logger).to receive(:warn)
+
+          grapher.resolved_dependencies
+
+          expect(Dependabot.logger).to have_received(:info).with(/No lockfile found/)
+          expect(Dependabot.logger).not_to have_received(:warn).with(/No lockfile was found/)
+        end
       end
 
-      it "emits a warning about missing lockfile" do
-        allow(Dependabot.logger).to receive(:info) # Allow other info logs
-        expect(Dependabot.logger).to receive(:info).with(/No lockfile found/)
-        expect(Dependabot.logger).to receive(:warn).with(/No lockfile was found/)
+      context "when lockfile generation succeeds" do
+        let(:ephemeral_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: { "lockfileVersion" => 3, "packages" => {} }.to_json,
+            directory: "/"
+          )
+        end
 
-        grapher.resolved_dependencies
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
+            generate: ephemeral_lockfile
+          )
+          allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "emits a warning about missing lockfile" do
+          allow(Dependabot.logger).to receive(:info)
+          allow(Dependabot.logger).to receive(:warn)
+
+          grapher.resolved_dependencies
+
+          expect(Dependabot.logger).to have_received(:info).with(/No lockfile found/)
+          expect(Dependabot.logger).to have_received(:warn).with(/No lockfile was found/)
+        end
       end
     end
   end

@@ -19,23 +19,14 @@ module Dependabot
         extend T::Sig
 
         sig do
-          params(
-            dependency: Dependabot::Dependency,
-            credentials: T::Array[Dependabot::Credential],
-            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
-          ).void
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(String))
         end
-        def initialize(dependency:, credentials:, cooldown_options:)
-          @dependency = dependency
-          @credentials = credentials
-          @cooldown_options = cooldown_options
-        end
-
-        sig { returns(T.nilable(String)) }
-        def latest_tag
+        def latest_tag(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           releases = version_list
 
           releases = filter_by_cooldown(T.must(releases))
+          releases = filter_ignored_versions(releases)
 
           # if there are no releases after applying filters, we fallback to the current tag to avoid empty results
           releases = apply_post_fetch_latest_versions_filter(releases)
@@ -115,15 +106,6 @@ module Dependabot
 
           releases
         end
-
-        sig { returns(Dependabot::Dependency) }
-        attr_reader :dependency
-
-        sig { returns(T::Array[Dependabot::Credential]) }
-        attr_reader :credentials
-
-        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
-        attr_reader :cooldown_options
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end

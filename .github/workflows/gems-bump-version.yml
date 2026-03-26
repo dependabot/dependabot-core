@@ -12,11 +12,14 @@ on: # yamllint disable-line rule:truthy
           - minor
           - patch
         default: "minor"
+permissions: {}
 
 jobs:
   Create-PR-To-Bump-Dependabot-Gems-Version:
     if: github.repository == 'dependabot/dependabot-core'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Generate token
         id: generate_token
@@ -32,7 +35,7 @@ jobs:
           ref: "main"
 
       # bump-version.rb needs bundler
-      - uses: ruby/setup-ruby@09a7688d3b55cf0e976497ff046b70949eeaccfd # v1.288.0
+      - uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
         with:
           # Use the version of bundler specified in `updater/Gemfile.lock`.
           # Otherwise the generated PR will change `BUNDLED WITH` in
