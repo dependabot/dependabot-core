@@ -227,7 +227,9 @@ module Dependabot
         return uri.to_s if uri.scheme == "https"
         raise error("Unsupported scheme provided") if uri.host && uri.scheme
 
-        uri.host = hostname
+        host, port = hostname.split(":", 2)
+        uri.host = host
+        uri.port = port.to_i if port
         uri.scheme = "https"
         uri.to_s
       end
