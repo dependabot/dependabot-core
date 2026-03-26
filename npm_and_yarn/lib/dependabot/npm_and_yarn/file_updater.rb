@@ -50,8 +50,7 @@ module Dependabot
 
         if updated_files.none?
           raise NoChangeError.new(
-            message: "No files were updated! Package manager: #{detected_package_manager}" \
-                     " Update type: #{detected_update_type}",
+            message: "No files were updated! Package manager: #{detected_package_manager}",
             error_context: error_context(updated_files: updated_files)
           )
         end
@@ -59,8 +58,7 @@ module Dependabot
         sorted_updated_files = updated_files.sort_by(&:name)
         if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
           raise NoChangeError.new(
-            message: "Updated files are unchanged! Package manager: #{detected_package_manager}" \
-                     " Update type: #{detected_update_type}",
+            message: "Updated files are unchanged! Package manager: #{detected_package_manager}",
             error_context: error_context(updated_files: updated_files)
           )
         end
@@ -229,8 +227,7 @@ module Dependabot
           dependencies: dependencies.map(&:to_h),
           updated_files: updated_files.map(&:name),
           dependency_files: dependency_files.map(&:name),
-          package_manager: detected_package_manager,
-          update_type: detected_update_type
+          package_manager: detected_package_manager
         }
       end
 
@@ -241,11 +238,6 @@ module Dependabot
         return "pnpm" if pnpm_locks.any?
 
         "unknown"
-      end
-
-      sig { returns(String) }
-      def detected_update_type
-        options[:security_updates_only] ? "security" : "version"
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

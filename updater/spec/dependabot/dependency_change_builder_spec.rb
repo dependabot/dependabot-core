@@ -23,7 +23,6 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         }
       ],
       experiments: {},
-      security_updates_only?: false,
       source: source
     )
   end
@@ -285,49 +284,5 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
     end
 
-    context "when passing options to the file updater" do
-      let(:change_source) { lead_dependency_change_source }
-
-      it "passes security_updates_only as false for version updates" do
-        stub_file_updater(updated_dependency_files: dependency_files)
-
-        create_change
-
-        expect(file_updater_class).to have_received(:new).with(
-          hash_including(options: { security_updates_only: false })
-        )
-      end
-
-      context "when the job is a security update" do
-        let(:job) do
-          instance_double(
-            Dependabot::Job,
-            package_manager: "bundler",
-            repo_contents_path: nil,
-            credentials: [
-              {
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "github-token"
-              }
-            ],
-            experiments: {},
-            security_updates_only?: true,
-            source: source
-          )
-        end
-
-        it "passes security_updates_only as true" do
-          stub_file_updater(updated_dependency_files: dependency_files)
-
-          create_change
-
-          expect(file_updater_class).to have_received(:new).with(
-            hash_including(options: { security_updates_only: true })
-          )
-        end
-      end
-    end
   end
 end

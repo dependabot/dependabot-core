@@ -1777,7 +1777,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           it "doesn't update any files and raises with npm package manager" do
             expect { updated_files }.to raise_error(
               described_class::NoChangeError,
-              /No files were updated! Package manager: npm Update type: version/
+              /No files were updated! Package manager: npm/
             )
           end
         end
@@ -4121,48 +4121,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       it "returns unknown" do
         expect(detected_manager).to eq("unknown")
-      end
-    end
-  end
-
-  describe "#detected_update_type" do
-    subject(:update_type) { updater.send(:detected_update_type) }
-
-    let(:files) { project_dependency_files("npm6/simple") }
-
-    context "when options do not include security_updates_only" do
-      it "returns version" do
-        expect(update_type).to eq("version")
-      end
-    end
-
-    context "when security_updates_only is false" do
-      let(:updater) do
-        described_class.new(
-          dependency_files: files,
-          dependencies: [dependency],
-          credentials: credentials,
-          options: { security_updates_only: false }
-        )
-      end
-
-      it "returns version" do
-        expect(update_type).to eq("version")
-      end
-    end
-
-    context "when security_updates_only is true" do
-      let(:updater) do
-        described_class.new(
-          dependency_files: files,
-          dependencies: [dependency],
-          credentials: credentials,
-          options: { security_updates_only: true }
-        )
-      end
-
-      it "returns security" do
-        expect(update_type).to eq("security")
       end
     end
   end
