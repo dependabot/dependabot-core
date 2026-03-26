@@ -92,22 +92,6 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       allow(file_updater_class).to receive(:new).and_return(file_updater)
     end
 
-    def stub_file_updater_with_options_check(updated_dependency_files:, expected_options:)
-      file_updater = instance_double(
-        Dependabot::Bundler::FileUpdater,
-        updated_dependency_files: updated_dependency_files,
-        notices: []
-      )
-
-      allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
-        .with("bundler")
-        .and_return(file_updater_class)
-      allow(file_updater_class).to receive(:new) do |args|
-        expect(args[:options]).to eq(expected_options)
-        file_updater
-      end
-    end
-
     def build_dependency(name:, version:, previous_version: nil)
       requirement = {
         file: "Gemfile",
@@ -305,12 +289,13 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       let(:change_source) { lead_dependency_change_source }
 
       it "passes security_updates_only as false for version updates" do
-        stub_file_updater_with_options_check(
-          updated_dependency_files: dependency_files,
-          expected_options: { security_updates_only: false }
-        )
+        stub_file_updater(updated_dependency_files: dependency_files)
 
         create_change
+
+        expect(file_updater_class).to have_received(:new).with(
+          hash_including(options: { security_updates_only: false })
+        )
       end
 
       context "when the job is a security update" do
@@ -334,12 +319,13 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         end
 
         it "passes security_updates_only as true" do
-          stub_file_updater_with_options_check(
-            updated_dependency_files: dependency_files,
-            expected_options: { security_updates_only: true }
-          )
+          stub_file_updater(updated_dependency_files: dependency_files)
 
           create_change
+
+          expect(file_updater_class).to have_received(:new).with(
+            hash_including(options: { security_updates_only: true })
+          )
         end
       end
     end
