@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       it "parses the module dependency with the port in the hostname" do
         module_dep = dependencies.find { |d| d.name == "terraform-aws-modules/vpc/aws" }
-        expect(module_dep).to_not be_nil
+        expect(module_dep).not_to be_nil
         expect(module_dep.version).to eq("5.5.1")
         expect(module_dep.requirements).to eq(
           [{
