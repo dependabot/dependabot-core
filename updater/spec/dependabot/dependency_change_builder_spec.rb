@@ -23,6 +23,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         }
       ],
       experiments: {},
+      security_updates_only?: false,
       source: source
     )
   end
@@ -89,6 +90,22 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         .with("bundler")
         .and_return(file_updater_class)
       allow(file_updater_class).to receive(:new).and_return(file_updater)
+    end
+
+    def stub_file_updater_with_options_check(updated_dependency_files:, expected_options:)
+      file_updater = instance_double(
+        Dependabot::Bundler::FileUpdater,
+        updated_dependency_files: updated_dependency_files,
+        notices: []
+      )
+
+      allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+        .with("bundler")
+        .and_return(file_updater_class)
+      allow(file_updater_class).to receive(:new) do |args|
+        expect(args[:options]).to eq(expected_options)
+        file_updater
+      end
     end
 
     def build_dependency(name:, version:, previous_version: nil)
@@ -281,6 +298,49 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
             Dependabot::DependabotError,
             "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
           )
+      end
+    end
+
+    context "when passing options to the file updater" do
+      let(:change_source) { lead_dependency_change_source }
+
+      it "passes security_updates_only as false for version updates" do
+        stub_file_updater_with_options_check(
+          updated_dependency_files: dependency_files,
+          expected_options: { security_updates_only: false }
+        )
+
+        create_change
+      end
+
+      context "when the job is a security update" do
+        let(:job) do
+          instance_double(
+            Dependabot::Job,
+            package_manager: "bundler",
+            repo_contents_path: nil,
+            credentials: [
+              {
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "github-token"
+              }
+            ],
+            experiments: {},
+            security_updates_only?: true,
+            source: source
+          )
+        end
+
+        it "passes security_updates_only as true" do
+          stub_file_updater_with_options_check(
+            updated_dependency_files: dependency_files,
+            expected_options: { security_updates_only: true }
+          )
+
+          create_change
+        end
       end
     end
   end
