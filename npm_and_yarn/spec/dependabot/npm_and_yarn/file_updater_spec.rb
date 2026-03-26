@@ -2758,7 +2758,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           )
           npm_updater = instance_double(
             Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
-            updated_lockfile: updated_lockfile
+            updated_lockfile: updated_lockfile,
+            updated_package_json_files: {}
           )
           allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
             .to receive(:new).and_return(npm_updater)

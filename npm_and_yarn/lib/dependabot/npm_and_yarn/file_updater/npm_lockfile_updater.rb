@@ -779,6 +779,11 @@ module Dependabot
 
           File.write(File.join(lockfile_directory, ".npmrc"), npmrc_content)
 
+          @pre_npm_package_json_contents = T.let(
+            {},
+            T.nilable(T::Hash[String, String])
+          )
+
           package_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -804,18 +809,21 @@ module Dependabot
 
             updated_content = package_json_preparer.remove_invalid_characters(updated_content)
 
+            T.must(@pre_npm_package_json_contents)[file.name] = updated_content
             File.write(file.name, updated_content)
           end
         end
 
         sig { returns(T::Hash[Dependabot::DependencyFile, String]) }
         def capture_updated_package_json_files
+          pre_npm_contents = @pre_npm_package_json_contents || {}
           package_files.each_with_object({}) do |file, updates|
             next if file.name == T.must(package_json).name
             next unless File.exist?(file.name)
 
             updated_content = File.read(file.name)
-            next if updated_content == file.content
+            pre_npm_content = pre_npm_contents[file.name] || file.content
+            next if updated_content == pre_npm_content
 
             updates[file] = updated_content
           end

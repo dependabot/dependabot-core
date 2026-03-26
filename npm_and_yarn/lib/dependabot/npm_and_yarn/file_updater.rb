@@ -407,8 +407,11 @@ module Dependabot
           content: T.must(updated_lockfile_content(file))
         )]
 
+        already_updated_names = updated_manifest_files.to_set(&:name)
+
         workspace_package_json_updates(file).each do |manifest_file, updated_content|
           next if updated_content == manifest_file.content
+          next if already_updated_names.include?(manifest_file.name)
 
           updated_file_set << updated_file(file: manifest_file, content: updated_content)
         end
