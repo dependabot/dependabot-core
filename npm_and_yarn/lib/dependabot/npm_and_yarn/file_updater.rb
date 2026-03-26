@@ -296,11 +296,32 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_files
         @package_files ||= T.let(
-          filtered_dependency_files.select do |f|
-            f.name.end_with?("package.json")
+          begin
+            files = filtered_dependency_files.select { |f| f.name.end_with?("package.json") }
+
+            if files.empty? && dependencies.none?(&:top_level?)
+              files = dependency_files
+                      .select { |f| f.name.end_with?("package.json") }
+                      .select { |f| package_json_has_override_for_deps?(f) }
+            end
+
+            files
           end,
           T.nilable(T::Array[DependencyFile])
         )
+      end
+
+      sig { params(package_json: Dependabot::DependencyFile).returns(T::Boolean) }
+      def package_json_has_override_for_deps?(package_json)
+        parsed = JSON.parse(T.must(package_json.content))
+        entries = parsed["resolutions"] || parsed["overrides"] || parsed.dig("pnpm", "overrides") || {}
+        return false unless entries.is_a?(Hash)
+
+        dependencies.any? do |dep|
+          entries.any? { |k, v| v.is_a?(String) && (k == dep.name || k.end_with?("/#{dep.name}")) }
+        end
+      rescue JSON::ParserError
+        false
       end
 
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Boolean) }
