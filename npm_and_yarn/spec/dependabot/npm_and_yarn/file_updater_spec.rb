@@ -1807,9 +1807,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          it "doesn't update any files and raises" do
+          it "doesn't update any files and raises with npm package manager" do
             expect { updated_files }.to raise_error(
-              described_class::NoChangeError, "No files were updated!"
+              described_class::NoChangeError,
+              /No files were updated! Package manager: npm/
             )
           end
         end
@@ -4111,6 +4112,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
           end
         end
+      end
+    end
+  end
+
+  describe "#detected_package_manager" do
+    subject(:detected_manager) { updater.send(:detected_package_manager) }
+
+    context "with only npm lockfile" do
+      let(:files) { project_dependency_files("npm6/simple") }
+
+      it "returns npm" do
+        expect(detected_manager).to eq("npm")
+      end
+    end
+
+    context "with only yarn lockfile" do
+      let(:files) { project_dependency_files("yarn/simple") }
+
+      it "returns yarn" do
+        expect(detected_manager).to eq("yarn")
+      end
+    end
+
+    context "with only pnpm lockfile" do
+      let(:files) { project_dependency_files("pnpm/simple") }
+
+      it "returns pnpm" do
+        expect(detected_manager).to eq("pnpm")
+      end
+    end
+
+    context "with no lockfiles" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            content: '{"dependencies":{"fetch-factory":"^0.0.1"}}',
+            name: "package.json"
+          )
+        ]
+      end
+
+      it "returns unknown" do
+        expect(detected_manager).to eq("unknown")
       end
     end
   end
