@@ -27,6 +27,7 @@ module Dependabot
       def initialize(dependency:, credentials:)
         super
         @pypi_listing = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        @parsed_source_urls = T.let({}, T::Hash[String, T.nilable(Dependabot::Source)])
       end
 
       sig { returns(T.nilable(String)) }
@@ -47,13 +48,13 @@ module Dependabot
         source_url ||= source_from_description
         source_url ||= source_from_homepage
 
-        Source.from_url(source_url)
+        parsed_source_from_url(source_url)
       end
 
       sig { returns(T.nilable(String)) }
       def exact_match_source_url_from_project_urls
         project_urls.values.find do |url|
-          repo = Source.from_url(url)&.repo
+          repo = parsed_source_from_url(url)&.repo
           repo&.downcase&.end_with?(normalised_dependency_name)
         end
       end
@@ -64,7 +65,7 @@ module Dependabot
           project_urls[label]
         end
 
-        source_urls.find { |url| Source.from_url(url) }
+        source_urls.find { |url| parsed_source_from_url(url) }
       end
 
       sig { returns(T.nilable(String)) }
@@ -77,7 +78,7 @@ module Dependabot
 
         potential_source_urls += project_urls.values
 
-        potential_source_urls.find { |url| Source.from_url(url) }
+        potential_source_urls.find { |url| parsed_source_from_url(url) }
       end
 
       sig { returns(T::Hash[String, String]) }
@@ -104,7 +105,7 @@ module Dependabot
         # Looking for a source where the repo name exactly matches the
         # dependency name
         match_url = potential_source_urls.find do |url|
-          repo = Source.from_url(url)&.repo
+          repo = parsed_source_from_url(url)&.repo
           repo&.downcase&.end_with?(normalised_dependency_name)
         end
 
@@ -114,7 +115,7 @@ module Dependabot
         # mentioned when the link is followed
         @source_from_description ||= T.let(
           potential_source_urls.find do |url|
-            full_url = Source.from_url(url)&.url
+            full_url = parsed_source_from_url(url)&.url
             next unless full_url
 
             response = Dependabot::RegistryClient.get(url: full_url)
@@ -139,7 +140,7 @@ module Dependabot
         end
 
         match_url = potential_source_urls.find do |url|
-          repo = Source.from_url(url)&.repo
+          repo = parsed_source_from_url(url)&.repo
           repo&.downcase&.end_with?(normalised_dependency_name)
         end
 
@@ -147,7 +148,7 @@ module Dependabot
 
         @source_from_homepage ||= T.let(
           potential_source_urls.find do |url|
-            full_url = Source.from_url(url)&.url
+            full_url = parsed_source_from_url(url)&.url
             next unless full_url
 
             response = Dependabot::RegistryClient.get(url: full_url)
@@ -241,6 +242,14 @@ module Dependabot
       sig { returns(String) }
       def normalised_dependency_name
         NameNormaliser.normalise(dependency.name)
+      end
+
+      sig { params(url: T.nilable(String)).returns(T.nilable(Dependabot::Source)) }
+      def parsed_source_from_url(url)
+        return unless url
+        return @parsed_source_urls[url] if @parsed_source_urls.key?(url)
+
+        @parsed_source_urls[url] = Source.from_url(url)
       end
     end
   end
