@@ -1751,6 +1751,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
+        context "when npm rewrites a workspace manifest but the requirement still satisfies the new version" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "keeps the workspace package.json update in the returned files" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
         context "with a dependency that's actually up-to-date but has the wrong previous version" do
           let(:files) { project_dependency_files("npm8/workspaces_incorrect_version") }
 

@@ -47,6 +47,12 @@ module Dependabot
           updated_file
         end
 
+        sig { returns(T::Hash[Dependabot::DependencyFile, String]) }
+        def updated_package_json_files
+          updated_lockfile_content
+          T.must(@updated_package_json_files || {})
+        end
+
         sig { params(response: Exception).returns(T.noreturn) }
         def updated_lockfile_reponse(response)
           handle_npm_updater_error(response)
@@ -148,6 +154,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
               updated_files = Dir.chdir(lockfile_directory) { run_current_npm_update }
+              @updated_package_json_files = T.let(capture_updated_package_json_files, T.nilable(T::Hash[Dependabot::DependencyFile, String]))
               updated_lockfile_content = updated_files.fetch(lockfile_basename)
               post_process_npm_lockfile(updated_lockfile_content)
             end,
@@ -795,6 +802,19 @@ module Dependabot
             updated_content = package_json_preparer.remove_invalid_characters(updated_content)
 
             File.write(file.name, updated_content)
+          end
+        end
+
+        sig { returns(T::Hash[Dependabot::DependencyFile, String]) }
+        def capture_updated_package_json_files
+          package_files.each_with_object({}) do |file, updates|
+            next if file.name == T.must(package_json).name
+            next unless File.exist?(file.name)
+
+            updated_content = File.read(file.name)
+            next if updated_content == file.content
+
+            updates[file] = updated_content
           end
         end
 
