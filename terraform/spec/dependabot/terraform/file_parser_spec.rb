@@ -151,6 +151,28 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a registry source that includes a port" do
+      let(:files) { project_dependency_files("registry_with_port") }
+
+      it "parses the module dependency with the port in the hostname" do
+        module_dep = dependencies.find { |d| d.name == "terraform-aws-modules/vpc/aws" }
+        expect(module_dep).not_to be_nil
+        expect(module_dep.version).to eq("5.5.1")
+        expect(module_dep.requirements).to eq(
+          [{
+            requirement: "5.5.1",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io:443",
+              module_identifier: "terraform-aws-modules/vpc/aws"
+            }
+          }]
+        )
+      end
+    end
+
     context "with a private registry" do
       let(:files) { project_dependency_files("private_registry") }
 
