@@ -618,7 +618,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
-       context "with correct public key fingerprint verification" do
+      context "with correct public key fingerprint verification" do
         let(:credentials) do
           [Dependabot::Credential.new(
             {
