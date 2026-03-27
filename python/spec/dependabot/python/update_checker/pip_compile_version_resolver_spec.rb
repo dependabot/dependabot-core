@@ -503,6 +503,29 @@ RSpec.describe namespace::PipCompileVersionResolver do
           end
         end
 
+        context "when dealing with a conflicting dependencies error without ERROR: prefix" do
+          let(:exception_message) do
+            "error: subprocess-exited-with-error\n\n" \
+              "× pip subprocess to install build dependencies did not run successfully.\n" \
+              "│ exit code: 1\n" \
+              "╰─> [4 lines of output]\n" \
+              "    Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions " \
+              "have conflicting dependencies.\n" \
+              "    The conflict is caused by:\n" \
+              "[end of output]\n"
+          end
+
+          it "raises an error with the specific conflict message" do
+            expect { error_handler.handle_pipcompile_error(exception_message) }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message).to include(
+                  "Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions " \
+                  "have conflicting dependencies."
+                )
+              end
+          end
+        end
+
         context "when dealing with an installation error" do
           let(:exception_message) do
             "pip._internal.exceptions.InstallationError: Could not install requirement" \

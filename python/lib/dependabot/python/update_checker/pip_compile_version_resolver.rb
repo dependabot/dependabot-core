@@ -593,6 +593,14 @@ module Dependabot
 
       ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
 
+      # Modern pip emits "Cannot install X<=Y and >=Z because these package
+      # versions have conflicting dependencies." inside the subprocess output
+      # box without an "ERROR: " prefix, so ERROR_REGEX won't match it.
+      CONFLICTING_DEPS_REGEX = T.let(
+        /Cannot install [^\n]+ because these package versions have conflicting dependencies\./,
+        Regexp
+      )
+
       sig { params(error: String).void }
       def handle_pipcompile_error(error)
         return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
@@ -601,6 +609,8 @@ module Dependabot
         meaningful_message = error.scan(ERROR_REGEX)
                                   .reject { |m| m.match?(SUBPROCESS_ERROR) }
                                   .last
+
+        meaningful_message ||= error.match(CONFLICTING_DEPS_REGEX)&.to_s
 
         raise DependencyFileNotResolvable, meaningful_message || "Error resolving dependency"
       end
