@@ -928,22 +928,10 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "requirements_with_whl_env_marker.json"),
             headers: { "content-type" => "application/json" }
           )
-        stub_request(:get, url + "addons/iot_box_image/configuration/aiortc-1.4.0-py3-none-any.whl?ref=sha")
+        stub_request(:get, url + "lib/aiortc-1.4.0-py3-none-any.whl?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
-        stub_request(
-          :get,
-          url + "addons/iot_box_image/configuration/aiortc-1.4.0-py3-none-any.whl/setup.py?ref=sha"
-        )
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(status: 404)
-        stub_request(
-          :get,
-          url + "addons/iot_box_image/configuration/aiortc-1.4.0-py3-none-any.whl/pyproject.toml?ref=sha"
-        )
-          .with(headers: { "Authorization" => "token token" })
-          .to_return(status: 404)
-        stub_request(:get, url + "addons/iot_box_image/configuration?ref=sha")
+        stub_request(:get, url + "lib?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
       end
