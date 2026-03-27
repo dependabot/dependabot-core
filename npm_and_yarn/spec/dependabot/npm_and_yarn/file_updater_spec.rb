@@ -1720,10 +1720,90 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(other_package.content).to include('"lodash": "^1.3.1"')
         end
 
-        context "with a dependency that doesn't appear in all the workspaces" do
+        context "when npm rewrites a workspace manifest but the requirement still satisfies the new version" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          # This scenario also covers the lockfile-only strategy: requirements
+          # are unchanged, but npm still rewrites workspace manifests as a side
+          # effect of `npm install dep@version --workspace=... --package-lock-only`.
+          it "keeps the workspace package.json update in the returned files" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
+        context "when a workspace manifest is in updated_manifest_files and npm also rewrites it (dedup path)" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          # Only packages/package1 has an explicit requirement change — it will
+          # appear in updated_manifest_files. other_package's requirement is
+          # unchanged so Dependabot won't include it in updated_manifest_files,
+          # but npm rewrites both workspace manifests when running the install.
+          # The dedup check must prevent packages/package1 from appearing twice.
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.3.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "includes each workspace manifest exactly once regardless of whether it came from Dependabot or npm" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            # packages/package1 sourced from updated_manifest_files (Dependabot's version)
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            # other_package sourced from npm's workspace manifest capture
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
+        context "when the dependency is only in one workspace and npm does not rewrite the other (partial workspace)" do
           let(:dependency_name) { "chalk" }
           let(:version) { "0.4.0" }
           let(:previous_version) { "0.3.0" }
+          # chalk exists only in packages/package1; other_package has no chalk entry.
+          # npm rewrites packages/package1/package.json for chalk but leaves
+          # other_package/package.json untouched — workspace_package_json_updates
+          # returns an empty hash for other_package (empty capture path).
           let(:requirements) do
             [{
               file: "packages/package1/package.json",
@@ -1741,13 +1821,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          it "updates the yarn.lock and the correct package_json" do
+          it "returns only the lockfile and the workspace manifest that changed, not all workspace manifests" do
             expect(updated_files.map(&:name))
               .to match_array(%w(package-lock.json packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "package-lock.json" }
-            parsed_lockfile = JSON.parse(lockfile.content)
-            expect(parsed_lockfile["dependencies"]["chalk"]["version"]).to eq("0.4.0")
+            expect(JSON.parse(lockfile.content)["dependencies"]["chalk"]["version"]).to eq("0.4.0")
           end
         end
 
@@ -2726,7 +2805,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           )
           npm_updater = instance_double(
             Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
-            updated_lockfile: updated_lockfile
+            updated_lockfile: updated_lockfile,
+            updated_package_json_files: {}
           )
           allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
             .to receive(:new).and_return(npm_updater)
