@@ -618,7 +618,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
-      context "with correct public key fingerprint verification" do
+       context "with correct public key fingerprint verification" do
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
-      context "when the helper receives headers instead of a PEM key (tuple order regression)" do
+      context "when the helper fails to decode the public key (tuple order regression)" do
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -691,25 +691,25 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Simulate the error that occurs when the Elixir helper destructures
-          # the Hex.Repo.get_public_key/1 response in the wrong tuple order,
-          # causing `key` to be a headers map instead of a PEM binary.
-          # This triggers a FunctionClauseError in :public_key.pem_decode/1.
+          # Simulate the error produced by the Elixir helper when
+          # Hex.Repo.get_public_key/1 returns data in the wrong tuple order,
+          # causing `key` to be a headers map that :public_key.pem_decode/1
+          # cannot decode.
           allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
             .with(hash_including(function: "get_latest_resolvable_version"))
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: "** (FunctionClauseError) no function clause matching in :public_key.pem_decode/1",
+
+                message: 'Failed to decode public key for repo "dependabot"',
                 error_context: {}
               )
             )
         end
 
-        it "raises an error indicating the helper subprocess failed" do
+        it "raises a PrivateSourceAuthenticationFailure error" do
           expect { latest_resolvable_version }
-            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-              expect(error.message).to include("FunctionClauseError")
-              expect(error.message).to include(":public_key.pem_decode/1")
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("dependabot")
             end
         end
       end

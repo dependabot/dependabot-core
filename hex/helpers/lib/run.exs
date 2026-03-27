@@ -123,10 +123,15 @@ defmodule DependencyHelper do
   defp fetch_public_key(repo, repo_url, auth_key, fingerprint) do
     case Hex.Repo.get_public_key(%{trusted: true, url: repo_url, auth_key: auth_key}) do
       {:ok, {200, _headers, key}} ->
-        if public_key_matches?(key, fingerprint) do
-          {:ok, key}
-        else
-          {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
+        try do
+          if public_key_matches?(key, fingerprint) do
+            {:ok, key}
+          else
+            {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
+          end
+        rescue
+          FunctionClauseError ->
+            {:error, "Failed to decode public key for repo \"#{repo}\""}
         end
 
       {:ok, {code, _headers, _body}} ->
