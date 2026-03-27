@@ -145,6 +145,12 @@ PATH
       rexml (~> 3.4.1)
 
 PATH
+  remote: ../nix
+  specs:
+    dependabot-nix (0.367.0)
+      dependabot-common (= 0.367.0)
+
+PATH
   remote: ../npm_and_yarn
   specs:
     dependabot-npm_and_yarn (0.367.0)
@@ -613,6 +619,7 @@ DEPENDENCIES
   dependabot-hex!
   dependabot-julia!
   dependabot-maven!
+  dependabot-nix!
   dependabot-npm_and_yarn!
   dependabot-nuget!
   dependabot-opentofu!
@@ -701,6 +708,7 @@ CHECKSUMS
   dependabot-hex (0.367.0)
   dependabot-julia (0.367.0)
   dependabot-maven (0.367.0)
+  dependabot-nix (0.367.0)
   dependabot-npm_and_yarn (0.367.0)
   dependabot-nuget (0.367.0)
   dependabot-opentofu (0.367.0)
