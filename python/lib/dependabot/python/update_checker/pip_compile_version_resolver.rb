@@ -36,6 +36,7 @@ module Dependabot
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
         PYTHON_PACKAGE_NAME_REGEX = T.let(/[A-Za-z0-9_\-]+/, Regexp)
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
+        CONFLICTING_DEPENDENCIES_ERROR = T.let("package versions have conflicting dependencies", String)
         ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
 
         sig { returns(Dependabot::Dependency) }
@@ -154,7 +155,7 @@ module Dependabot
             retry
           end
 
-          handle_pip_compile_errors(e.message)
+          handle_pip_compile_errors(e)
           false
         end
 
@@ -165,9 +166,14 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(message: String).returns(T.nilable(String)) }
-        def handle_pip_compile_errors(message) # rubocop:disable Metrics/MethodLength
-          if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+        sig do
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .returns(T.nilable(String))
+        end
+        def handle_pip_compile_errors(error) # rubocop:disable Metrics/MethodLength
+          message = [error.message, error.cause&.message].compact.join("\n")
+
+          if dependency_resolution_error?(message)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
             # incompatibility error after unlocking then it's likely to be
@@ -225,7 +231,7 @@ module Dependabot
 
           error_handler.handle_pipcompile_error(message)
 
-          raise
+          raise error
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
@@ -255,10 +261,10 @@ module Dependabot
               # Pick the error message that includes resolvability errors, this might be the cause from
               # handle_pip_compile_errors (it's unclear if we should always pick the cause here)
               error_message = [e.message, e.cause&.message].compact.find do |msg|
-                msg.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+                dependency_resolution_error?(msg)
               end
 
-              cleaned_message = clean_error_message(error_message || "")
+              cleaned_message = cleaned_resolution_error_message(error_message || "")
               raise if cleaned_message.empty?
 
               raise DependencyFileNotResolvable, cleaned_message
@@ -417,9 +423,26 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
+        sig { params(message: String).returns(T::Boolean) }
+        def dependency_resolution_error?(message)
+          message.include?(RESOLUTION_IMPOSSIBLE_ERROR) ||
+            message.include?(CONFLICTING_DEPENDENCIES_ERROR)
+        end
+
+        sig { params(message: String).returns(String) }
+        def cleaned_resolution_error_message(message)
+          extract_conflicting_dependencies_message(message) || clean_error_message(message)
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def extract_conflicting_dependencies_message(message)
+          normalized_message = message.gsub(/\s+/, " ").strip
+          normalized_message.match(/Cannot install .*? because these package versions have conflicting dependencies\./)&.to_s
+        end
+
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
-          T.must(T.cast(message.scan(ERROR_REGEX), T::Array[String]).last)
+          T.cast(message.scan(ERROR_REGEX), T::Array[String]).last.to_s
         end
 
         sig { returns(T::Array[String]) }
