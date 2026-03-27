@@ -1112,6 +1112,25 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("tags/v1.13.0") }
         end
       end
+
+      # Repos with mixed version schemes (semver and date-based tags) should only
+      # match tags with the same versioning scheme.
+      context "when repo has mixed version schemes (semver and date-based tags)" do
+        let(:repo_url) { "https://github.com/norwoodj/helm-docs.git" }
+        let(:upload_pack_fixture) { "helm-docs" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/norwoodj/helm-docs",
+            branch: "master",
+            ref: "v1.14.2"
+          }
+        end
+
+        it "only considers tags with matching prefix (excludes date-based tags)" do
+          expect(local_tag_for_latest_version[:tag]).to eq("v1.14.2")
+        end
+      end
     end
   end
 

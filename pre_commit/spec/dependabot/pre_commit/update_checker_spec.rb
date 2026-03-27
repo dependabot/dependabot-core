@@ -164,6 +164,17 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         expect(latest_version.to_s.split(".").first.to_i).to be < 7
       end
     end
+
+    context "when repo has mixed version schemes (semver and date-based tags)" do
+      let(:upload_pack_fixture) { "helm-docs" }
+      let(:dependency_name) { "norwoodj/helm-docs" }
+      let(:reference) { "v1.14.2" }
+
+      it "only considers tags with matching prefix (v-prefixed semver)" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s).to eq("1.14.2")
+      end
+    end
   end
 
   describe "#updated_requirements" do

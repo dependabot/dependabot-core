@@ -309,4 +309,23 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       end
     end
   end
+
+  context "with a hostname that includes a port" do
+    subject(:client) { described_class.new(hostname: "registry.example.org:8443") }
+
+    let(:metadata) { "https://registry.example.org:8443/.well-known/terraform.json" }
+
+    it "fetches module versions using the correct port" do
+      stub_request(:get, metadata)
+        .and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+      stub_request(:get, "https://registry.example.org:8443/v1/modules/hashicorp/consul/aws/versions")
+        .and_return(body: {
+          modules: [{ source: "hashicorp/consul/aws",
+                      versions: [{ version: "0.1.0" }, { version: "0.2.0" }] }]
+        }.to_json)
+
+      response = client.all_module_versions(identifier: "hashicorp/consul/aws")
+      expect(response).to contain_exactly(Gem::Version.new("0.1.0"), Gem::Version.new("0.2.0"))
+    end
+  end
 end
