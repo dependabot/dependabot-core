@@ -72,12 +72,17 @@ module Dependabot
 
         sig { override.returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def available_versions
-          return nil if package_details&.releases.nil?
+          releases = package_details&.releases
+          return nil if releases.nil?
 
           source_versions = releases_from_dependency_source
           return [] if source_versions.empty?
 
-          T.must(package_details).releases.select do |release|
+          # Some private registries don't support the versions API that we use for fetching release dates for cooldown.
+          # In that case, skip cooldown and just return all versions.
+          return source_versions if releases.empty?
+
+          releases.select do |release|
             source_versions.any? { |v| v.to_s == release.version.to_s }
           end
         end
