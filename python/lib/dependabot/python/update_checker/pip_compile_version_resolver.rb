@@ -606,13 +606,16 @@ module Dependabot
         return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
                       error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH)
 
-        meaningful_message = error.scan(ERROR_REGEX)
-                                  .reject { |m| m.match?(SUBPROCESS_ERROR) }
-                                  .last
+        # First try ERROR_REGEX (matches lines like "ERROR: Cannot install...")
+        extracted_message = error.scan(ERROR_REGEX)
+                                 .reject { |m| m.match?(SUBPROCESS_ERROR) }
+                                 .last
 
-        meaningful_message ||= error.match(CONFLICTING_DEPS_REGEX)&.to_s
+        # Modern pip emits the conflict line without an "ERROR: " prefix inside
+        # the subprocess output box, so fall back to CONFLICTING_DEPS_REGEX.
+        extracted_message ||= error.match(CONFLICTING_DEPS_REGEX)&.to_s
 
-        raise DependencyFileNotResolvable, meaningful_message || "Error resolving dependency"
+        raise DependencyFileNotResolvable, extracted_message || "Error resolving dependency"
       end
     end
   end
