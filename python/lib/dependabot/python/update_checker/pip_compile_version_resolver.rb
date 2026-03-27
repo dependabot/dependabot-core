@@ -591,12 +591,18 @@ module Dependabot
 
       HASH_MISMATCH = T.let(/HashMismatch/, Regexp)
 
+      ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
+
       sig { params(error: String).void }
       def handle_pipcompile_error(error)
         return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
                       error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH)
 
-        raise DependencyFileNotResolvable, "Error resolving dependency"
+        meaningful_message = error.scan(ERROR_REGEX)
+                                  .reject { |m| m.match?(SUBPROCESS_ERROR) }
+                                  .last
+
+        raise DependencyFileNotResolvable, meaningful_message || "Error resolving dependency"
       end
     end
   end
