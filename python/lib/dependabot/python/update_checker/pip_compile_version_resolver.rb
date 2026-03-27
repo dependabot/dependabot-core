@@ -231,7 +231,7 @@ module Dependabot
 
           error_handler.handle_pipcompile_error(message)
 
-          raise error
+          raise error, error.message, error.backtrace
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
