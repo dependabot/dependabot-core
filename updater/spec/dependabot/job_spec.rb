@@ -454,6 +454,239 @@ RSpec.describe Dependabot::Job do
 
       it { is_expected.to be(false) }
     end
+
+    context "with update-types in allow block" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          package_manager: "bundler",
+          version: "1.9.0",
+          previous_version: "1.8.0",
+          requirements: requirements
+        )
+      end
+
+      context "when allowing minor updates and dependency has minor update" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-minor"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when allowing only patch updates but dependency has minor update" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when allowing multiple update types including minor" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-patch", "version-update:semver-minor"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(true) }
+      end
+
+      context "with a major version update" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "2.0.0",
+            previous_version: "1.8.0",
+            requirements: requirements
+          )
+        end
+
+        context "when allowing major updates" do
+          let(:allowed_updates) do
+            [
+              {
+                "dependency-name" => "business",
+                "update-types" => ["version-update:semver-major"]
+              }
+            ]
+          end
+
+          it { is_expected.to be(true) }
+        end
+
+        context "when only allowing minor updates" do
+          let(:allowed_updates) do
+            [
+              {
+                "dependency-name" => "business",
+                "update-types" => ["version-update:semver-minor"]
+              }
+            ]
+          end
+
+          it { is_expected.to be(false) }
+        end
+      end
+
+      context "with a patch version update" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.1",
+            previous_version: "1.8.0",
+            requirements: requirements
+          )
+        end
+
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when combining update-types with dependency-type" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "dependency-type" => "direct",
+              "update-types" => ["version-update:semver-minor", "version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when dependency has no previous version" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.9.0",
+            previous_version: nil,
+            requirements: requirements
+          )
+        end
+
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-minor"]
+            }
+          ]
+        end
+
+        it "allows update when semver type cannot be determined" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "when dependency name does not match" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "other-dep",
+              "update-types" => ["version-update:semver-minor"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when update-types is empty array" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => []
+            }
+          ]
+        end
+
+        it "treats empty update-types as no filtering" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "when one allow rule has update-types and another does not" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "2.0.0",
+            previous_version: "1.0.0",
+            requirements: requirements
+          )
+        end
+
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-patch"]
+            },
+            {
+              "dependency-name" => "business"
+            }
+          ]
+        end
+
+        it "allows if any rule matches (second rule has no update-types filter)" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "with security updates" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => [],
+              "patched-versions" => ["~> 1.11.0"],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        let(:allowed_updates) do
+          [
+            {
+              "update-type" => "security",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it "bypasses update-types filtering for security updates" do
+          expect(allowed_update).to be(true)
+        end
+      end
+    end
   end
 
   describe "#security_updates_only?" do

@@ -13,6 +13,7 @@ require "dependabot/requirements_update_strategy"
 require "dependabot/source"
 require "dependabot/pull_request"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/updater/update_type_helper"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -27,6 +28,7 @@ require "dependabot/package/release_cooldown_options"
 module Dependabot
   class Job # rubocop:disable Metrics/ClassLength
     extend T::Sig
+    include Dependabot::Updater::UpdateTypeHelper
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
     PERMITTED_KEYS = T.let(
@@ -299,6 +301,7 @@ module Dependabot
     #   was vulnerable instead of the current version. This prevents security updates
     #   from being filtered out after the dependency has already been updated in group scenarios.
     #
+    # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
     sig { params(dependency: Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
@@ -321,6 +324,14 @@ module Dependabot
         condition_name = update.fetch("dependency-name", dependency.name)
         next false unless name_match?(condition_name, dependency.name)
 
+        # Check update-types (semver-based filtering) - security updates bypass this
+        allowed_update_types = update.fetch("update-types", nil)
+        if allowed_update_types.is_a?(Array) && !allowed_update_types.empty? && !security_update
+          dep_update_type = update_type_for_dependency(dependency)
+          config_type = "version-update:semver-#{dep_update_type}" if dep_update_type
+          next false if config_type && !allowed_update_types.include?(config_type)
+        end
+
         # Check the dependency-type (defaulting to all)
         dep_type = update.fetch("dependency-type", "all")
         next false if dep_type == "indirect" &&
@@ -336,6 +347,7 @@ module Dependabot
         true
       end
     end
+    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
 
