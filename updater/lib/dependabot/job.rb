@@ -329,7 +329,8 @@ module Dependabot
         if allowed_update_types.is_a?(Array) && !allowed_update_types.empty? && !security_update
           dep_update_type = update_type_for_dependency(dependency)
           config_type = "version-update:semver-#{dep_update_type}" if dep_update_type
-          next false if config_type && !allowed_update_types.include?(config_type)
+          normalized_types = allowed_update_types.filter_map { |t| t.is_a?(String) ? t.downcase.strip : nil }
+          next false if config_type && !normalized_types.include?(config_type)
         end
 
         # Check the dependency-type (defaulting to all)
