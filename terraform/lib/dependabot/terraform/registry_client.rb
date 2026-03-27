@@ -216,6 +216,7 @@ module Dependabot
         response = http_get(url)
 
         raise Dependabot::PrivateSourceAuthenticationFailure, hostname if response.status == 401
+        raise Dependabot::DependencyNotFound, hostname if response.status == 404
         raise error("Response from registry was #{response.status}") unless response.status == 200
 
         response
