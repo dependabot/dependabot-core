@@ -50,6 +50,8 @@ module Dependabot
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
+          return nil if dependency_source.git?
+
           @package_details ||= Package::PackageDetailsFetcher.new(
             dependency: dependency,
             dependency_files: dependency_files,

@@ -84,22 +84,6 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
         expect(first_result.language.name).to eq(latest_release.language.name)
         expect(first_result.language.requirement).to eq(latest_release.language.requirement)
       end
-
-      context "when dependency uses a git source" do
-        let(:source) do
-          {
-            type: "git",
-            url: "git@github.com/dependabot/dependabot-common"
-          }
-        end
-
-        it "returns nil" do
-          result = fetch
-
-          expect(result).to be_nil
-          expect(a_request(:get, json_url)).not_to have_been_made
-        end
-      end
     end
 
     context "with error responses" do

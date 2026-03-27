@@ -27,8 +27,6 @@ module Dependabot
         PACKAGE_LANGUAGE = "ruby"
         APPLICATION_JSON = "application/json"
         RUBYGEMS = "rubygems"
-        GIT = "git"
-        OTHER = "other"
 
         sig do
           params(
@@ -42,7 +40,6 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
 
-          @source_type = T.let(nil, T.nilable(String))
           @options = T.let({}, T::Hash[Symbol, T.untyped])
           @repo_contents_path = T.let(nil, T.nilable(String))
         end
@@ -62,14 +59,9 @@ module Dependabot
         sig { override.returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
-        sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
+        sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
-          case source_type
-          when GIT, OTHER
-            nil
-          else
-            rubygems_versions
-          end
+          rubygems_versions
         end
 
         private
@@ -236,16 +228,6 @@ module Dependabot
         sig { params(req_string: String).returns(Requirement) }
         def language_requirement(req_string)
           Requirement.new(req_string)
-        end
-
-        sig { returns(T.nilable(String)) }
-        def source_type
-          return nil unless dependency.requirements.any?
-
-          first_requirement = dependency.requirements.first
-          return nil unless first_requirement && first_requirement[:source]
-
-          first_requirement[:source][:type]
         end
 
         sig { override.returns(String) }

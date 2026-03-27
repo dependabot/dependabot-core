@@ -398,10 +398,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         stub_request(:get, private_versions_url)
           .to_return(status: 404, body: "Not Found")
 
-        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json")
-          .to_return(status: 200, body: rubygems_response)
-
         allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("rubygems")
       end
 
