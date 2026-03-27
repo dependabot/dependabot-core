@@ -14,9 +14,9 @@ module Dependabot
   class RegistryClient
     extend T::Sig
 
-    CACHED_ERROR_TYPE = T.type_alias { T.any(Excon::Error::Timeout, Excon::Error::Socket) }
+    CachedErrorType = T.type_alias { T.any(Excon::Error::Timeout, Excon::Error::Socket) }
 
-    @cached_errors = T.let({}, T::Hash[T.nilable(String), CACHED_ERROR_TYPE])
+    @cached_errors = T.let({}, T::Hash[T.nilable(String), CachedErrorType])
 
     sig do
       params(
@@ -66,13 +66,13 @@ module Dependabot
       @cached_errors = {}
     end
 
-    sig { params(url: String, error: CACHED_ERROR_TYPE).void }
+    sig { params(url: String, error: CachedErrorType).void }
     private_class_method def self.cache_error(url, error)
       host = URI(url).host
       @cached_errors[host] = error
     end
 
-    sig { params(url: String).returns(T.nilable(CACHED_ERROR_TYPE)) }
+    sig { params(url: String).returns(T.nilable(CachedErrorType)) }
     private_class_method def self.cached_error_for(url)
       host = URI(url).host
       @cached_errors.fetch(host, nil)
