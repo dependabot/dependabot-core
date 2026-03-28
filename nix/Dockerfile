@@ -4,7 +4,7 @@ FROM docker.io/nixos/nix:2.34.1 AS nix
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Copy Nix from the official image
-COPY --from=nix /nix /nix
+COPY --from=nix --chown=dependabot:dependabot /nix /nix
 
 # Configure Nix for single-user mode with flakes enabled
 RUN mkdir -p /etc/nix \
