@@ -39,9 +39,7 @@ module Dependabot
         # than the pseudo-version's base, the comparison is unreliable because
         # the module may have moved past the fix without updating its import path
         # (e.g., a v3.x module without /v3 suffix gets a v1.x pseudo-version).
-        if GoModules::Version.pseudo_version?(dependency.version)
-          return pseudo_version_active_advisories.any?
-        end
+        return pseudo_version_active_advisories.any? if GoModules::Version.pseudo_version?(dependency.version)
 
         super
       end
