@@ -14,7 +14,9 @@ module Dependabot
   class RegistryClient
     extend T::Sig
 
-    @cached_errors = T.let({}, T::Hash[T.nilable(String), Excon::Error::Timeout])
+    CachedErrorType = T.type_alias { T.any(Excon::Error::Timeout, Excon::Error::Socket) }
+
+    @cached_errors = T.let({}, T::Hash[T.nilable(String), CachedErrorType])
 
     sig do
       params(
@@ -33,7 +35,7 @@ module Dependabot
         **SharedHelpers.excon_defaults({ headers: headers }.merge(options)),
         retry_interval: 5
       )
-    rescue Excon::Error::Timeout => e
+    rescue Excon::Error::Timeout, Excon::Error::Socket => e
       cache_error(url, e)
       raise e
     end
@@ -54,7 +56,7 @@ module Dependabot
         idempotent: true,
         **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
       )
-    rescue Excon::Error::Timeout => e
+    rescue Excon::Error::Timeout, Excon::Error::Socket => e
       cache_error(url, e)
       raise e
     end
@@ -64,13 +66,13 @@ module Dependabot
       @cached_errors = {}
     end
 
-    sig { params(url: String, error: Excon::Error::Timeout).void }
+    sig { params(url: String, error: CachedErrorType).void }
     private_class_method def self.cache_error(url, error)
       host = URI(url).host
       @cached_errors[host] = error
     end
 
-    sig { params(url: String).returns(T.nilable(Excon::Error::Timeout)) }
+    sig { params(url: String).returns(T.nilable(CachedErrorType)) }
     private_class_method def self.cached_error_for(url)
       host = URI(url).host
       @cached_errors.fetch(host, nil)
