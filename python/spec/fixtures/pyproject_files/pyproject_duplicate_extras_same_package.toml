@@ -15,9 +15,9 @@ dev-mkdocs = [
 ]
 dev-noxfile = [
     "nox==2026.2.9",
-    "frequenz-repo-config[lib]==0.13.6",
+    "frequenz-repo-config[lib]==0.13.6"
 ]
 dev-pytest = [
     "pytest==9.0.2",
-    "frequenz-repo-config[extra-lint-examples]==0.13.6",
+    "frequenz-repo-config[extra-lint-examples]==0.13.6"
 ]
