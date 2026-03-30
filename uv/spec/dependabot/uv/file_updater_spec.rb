@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.7.0",
           requirements: [{
             file: "uv.toml",

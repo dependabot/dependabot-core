@@ -27,7 +27,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::UvVersionFileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.7.0",
           requirements: [{
             file: "uv.toml",
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::UvVersionFileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.7.0",
           requirements: [{
             file: "uv.toml",
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::UvVersionFileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.7.0",
           requirements: [{
             file: "pyproject.toml",
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::UvVersionFileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.6.12",
           requirements: [{
             file: "uv.toml",
@@ -214,7 +214,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::UvVersionFileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.7.0",
           requirements: [
             {
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::UvVersionFileUpdater do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "uv",
+          name: "uv:required-version",
           version: "0.7.0",
           requirements: [{
             file: "pyproject.toml",

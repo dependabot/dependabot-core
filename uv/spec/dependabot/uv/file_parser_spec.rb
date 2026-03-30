@@ -957,7 +957,7 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
 
       it "parses the uv tool dependency" do
-        uv_dep = dependencies.find { |d| d.name == "uv" }
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
         expect(uv_dep).not_to be_nil
         expect(uv_dep.version).to eq("0.6.12")
         expect(uv_dep.requirements).to eq(
@@ -981,7 +981,7 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
 
       it "parses the uv tool dependency without a version" do
-        uv_dep = dependencies.find { |d| d.name == "uv" }
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
         expect(uv_dep).not_to be_nil
         expect(uv_dep.version).to be_nil
         expect(uv_dep.requirements).to eq(
@@ -1005,7 +1005,7 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
 
       it "does not add a uv tool dependency" do
-        uv_dep = dependencies.find { |d| d.name == "uv" }
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
         expect(uv_dep).to be_nil
       end
     end
@@ -1020,7 +1020,7 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
 
       it "parses the uv tool dependency from pyproject.toml" do
-        uv_dep = dependencies.find { |d| d.name == "uv" }
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
         expect(uv_dep).not_to be_nil
         expect(uv_dep.version).to eq("0.6.12")
         expect(uv_dep.requirements.first[:file]).to eq("pyproject.toml")

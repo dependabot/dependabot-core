@@ -34,13 +34,12 @@ module Dependabot
 
       sig { override.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files
-        # uv.lock is not a standalone required file - it requires pyproject.toml
-        []
+        %w(uv.toml)
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a requirements.txt, uv.lock, requirements.in, or pyproject.toml"
+        "Repo must contain a requirements.txt, uv.lock, uv.toml, requirements.in, or pyproject.toml"
       end
 
       private

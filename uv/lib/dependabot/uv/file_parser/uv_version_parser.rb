@@ -15,7 +15,7 @@ module Dependabot
       class UvVersionParser
         extend T::Sig
 
-        UV_TOOL_DEP_NAME = "uv"
+        UV_TOOL_DEP_NAME = "uv:required-version"
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)

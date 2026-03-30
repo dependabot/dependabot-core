@@ -31,8 +31,6 @@ module Dependabot
         updated_files
       end
 
-      UV_VERSION_GROUP = "uv-required-version"
-
       private
 
       sig { returns(T.nilable(Symbol)) }
@@ -44,11 +42,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Dependency]) }
       def package_dependencies
-        dependencies.reject do |dep|
-          dep.requirements.all? do |req|
-            T.cast(req[:groups], T.nilable(T::Array[String]))&.include?(UV_VERSION_GROUP)
-          end
-        end
+        dependencies.reject { |dep| dep.name == "uv:required-version" }
       end
 
       sig { returns(T::Array[DependencyFile]) }

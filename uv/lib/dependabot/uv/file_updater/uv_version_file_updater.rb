@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "toml-rb"
 require "dependabot/uv/file_updater"
 
 module Dependabot
@@ -61,11 +60,13 @@ module Dependabot
           updated_files
         end
 
+        UV_TOOL_DEP_NAME = "uv:required-version"
+
         private
 
         sig { returns(T::Array[Dependency]) }
         def uv_tool_dependencies
-          dependencies.select { |dep| dep.name == "uv" }
+          dependencies.select { |dep| dep.name == UV_TOOL_DEP_NAME }
         end
 
         sig do

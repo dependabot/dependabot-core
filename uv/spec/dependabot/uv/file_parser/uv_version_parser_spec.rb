@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Uv::FileParser::UvVersionParser do
       it "returns a single uv dependency" do
         expect(dependencies.length).to eq(1)
         dep = dependencies.first
-        expect(dep.name).to eq("uv")
+        expect(dep.name).to eq("uv:required-version")
         expect(dep.version).to eq("0.6.12")
         expect(dep.requirements).to eq(
           [{
@@ -50,7 +50,7 @@ RSpec.describe Dependabot::Uv::FileParser::UvVersionParser do
       it "returns a dependency with nil version" do
         expect(dependencies.length).to eq(1)
         dep = dependencies.first
-        expect(dep.name).to eq("uv")
+        expect(dep.name).to eq("uv:required-version")
         expect(dep.version).to be_nil
         expect(dep.requirements.first[:requirement]).to eq(">=0.6.0")
       end
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Uv::FileParser::UvVersionParser do
       it "returns a uv dependency from pyproject.toml" do
         expect(dependencies.length).to eq(1)
         dep = dependencies.first
-        expect(dep.name).to eq("uv")
+        expect(dep.name).to eq("uv:required-version")
         expect(dep.version).to eq("0.6.12")
         expect(dep.requirements.first[:file]).to eq("pyproject.toml")
       end
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::Uv::FileParser::UvVersionParser do
       end
 
       it "returns dependencies from both files" do
-        uv_deps = dependencies.select { |d| d.name == "uv" }
+        uv_deps = dependencies.select { |d| d.name == "uv:required-version" }
         files = uv_deps.flat_map { |d| d.requirements.map { |r| r[:file] } }
         expect(files).to include("uv.toml")
         expect(files).to include("pyproject.toml")
