@@ -29,7 +29,7 @@ module Dependabot
           def updated_content
             updated_content = apply_requirement_updates(content)
             updated_content = apply_resolution_updates(updated_content)
-            return updated_content unless dependency.previous_version && new_requirements.empty?
+            return updated_content unless subdependency_manifest_update?
 
             apply_subdependency_updates(updated_content)
           end
@@ -158,6 +158,13 @@ module Dependabot
           sig { returns(T.nilable(String)) }
           def detected_package_manager
             updater.send(:detected_package_manager)
+          end
+
+          sig { returns(T::Boolean) }
+          def subdependency_manifest_update?
+            !dependency.previous_version.nil? &&
+              new_requirements.empty? &&
+              dependency.previous_requirements == []
           end
         end
       end

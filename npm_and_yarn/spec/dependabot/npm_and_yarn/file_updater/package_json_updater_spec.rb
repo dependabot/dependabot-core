@@ -705,5 +705,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         expect(parsed.dig("pnpm", "overrides", "undici")).to eq("6.24.1")
       end
     end
+
+    context "with malformed existing override entries in a pnpm project" do
+      let(:detected_package_manager) { "pnpm" }
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            resolutions: "not-a-hash",
+            dependencies: { "some-parent" => "^1.0.0" }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "leaves package.json unchanged instead of raising" do
+        expect(updated_package_json.content).to eq(package_json.content)
+      end
+    end
   end
 end

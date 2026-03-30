@@ -58,16 +58,17 @@ module Dependabot
           def addable?
             parsed = JSON.parse(package_json_content)
             return false unless pnpm_project?(parsed)
+            return false unless existing_override_entries(parsed).is_a?(Hash)
 
-            resolution_entries(parsed).keys.none? do |key|
+            existing_override_entries(parsed).keys.none? do |key|
               key == dependency.name || key.end_with?("/#{dependency.name}")
             end
           rescue JSON::ParserError
             false
           end
 
-          sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T.untyped]) }
-          def resolution_entries(parsed)
+          sig { params(parsed: T::Hash[String, T.untyped]).returns(T.untyped) }
+          def existing_override_entries(parsed)
             parsed["resolutions"] ||
               parsed["overrides"] ||
               parsed.dig("pnpm", "overrides") ||

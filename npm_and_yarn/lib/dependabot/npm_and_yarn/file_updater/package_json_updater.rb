@@ -177,6 +177,7 @@ module Dependabot
         def update_overrides_for_subdependency(package_json_content:, dependency:)
           parsed = JSON.parse(package_json_content)
           entries = resolution_entries(parsed)
+          return package_json_content unless entries.is_a?(Hash)
           return package_json_content unless entries.any?
 
           matching = entries
@@ -219,14 +220,16 @@ module Dependabot
         def matching_resolutions(package_json_content, dep, old_req)
           parsed = JSON.parse(package_json_content)
           old_requirement = old_req&.dig(:requirement)
+          entries = resolution_entries(parsed)
+          return {} unless entries.is_a?(Hash)
 
-          resolution_entries(parsed)
+          entries
             .select { |_, v| v.is_a?(String) }
             .select { |_, v| v == old_requirement || v == dep.previous_version }
             .select { |k, _| k == dep.name || k.end_with?("/#{dep.name}") }
         end
 
-        sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T.untyped]) }
+        sig { params(parsed: T::Hash[String, T.untyped]).returns(T.untyped) }
         def resolution_entries(parsed)
           parsed["resolutions"] ||
             parsed["overrides"] ||
