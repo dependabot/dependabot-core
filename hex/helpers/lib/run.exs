@@ -130,8 +130,10 @@ defmodule DependencyHelper do
             {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
           end
         rescue
-          FunctionClauseError ->
-            {:error, "Failed to decode public key for repo \"#{repo}\""}
+          e in FunctionClauseError ->
+            {:error,
+             "Failed to decode public key for repo \"#{repo}\": " <>
+               "#{Exception.message(e)} (#{inspect(e.__struct__)})"}
         end
 
       {:ok, {code, _headers, _body}} ->
