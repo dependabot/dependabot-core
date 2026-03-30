@@ -134,11 +134,6 @@ module Dependabot
 
         sig { params(prefix: String).returns(T::Array[Dependabot::GitRef]) }
         def tags_with_prefix(prefix)
-          # Use all_version_tags instead of allowed_version_tags to avoid automatic
-          # prefix detection that may select wrong tags when the ref is a commit SHA.
-          # The frozen comment specifies the expected prefix, so we filter by comparing
-          # the extracted prefix of each tag. Using start_with? would incorrectly match
-          # "varcon-core-v5.0.6" when looking for prefix "v" (since "varcon" starts with 'v').
           git_commit_checker.all_version_tags.select { |tag| tag_prefix(tag.name) == prefix }
         end
 

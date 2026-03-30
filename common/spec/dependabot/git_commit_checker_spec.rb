@@ -1416,7 +1416,6 @@ RSpec.describe Dependabot::GitCommitChecker do
           type: "git",
           url: "https://github.com/gocardless/business",
           branch: "master",
-          # A commit SHA that doesn't exactly match any tag
           ref: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
         }
       end
@@ -1449,15 +1448,12 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       it "returns all version tags without prefix filtering" do
         tag_names = all_version_tags.map(&:name)
-        # all_version_tags returns ALL version tags, regardless of the current ref's prefix
         expect(tag_names).to include("0.2.0")
         expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
         expect(tag_names).to include("gatsby-transformer-sqip@2.0.40")
       end
 
       it "returns more tags than allowed_version_tags (which filters by prefix)" do
-        # allowed_version_tags filters to match the prefix of the current ref
-        # all_version_tags includes all version tags
         expect(all_version_tags.length).to be > checker.allowed_version_tags.length
       end
     end
