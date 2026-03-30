@@ -57,7 +57,9 @@ module Dependabot
         def fetch_updated_dependency_files
           updated_contents = T.let({}, T::Hash[String, String])
 
-          unique_requirement_changes.each do |new_req, old_req|
+          unique_requirement_changes.each do |pair|
+            new_req = T.must(pair[0])
+            old_req = pair[1]
             filename = new_req.fetch(:file)
             content = updated_contents[filename] || T.must(T.must(get_original_file(filename)).content)
             updated_contents[filename] = updated_requirement_or_setup_file_content(content, new_req, old_req)
@@ -75,7 +77,7 @@ module Dependabot
         # Deduplicates requirements that share the same file and requirement strings.
         # The replacer's regex matches all extras variants at once, so one call per
         # unique (file, old_requirement, new_requirement) is sufficient.
-        sig { returns(T::Array[T::Array[T::Hash[Symbol, T.untyped]]]) }
+        sig { returns(T::Array[T::Array[T.nilable(T::Hash[Symbol, T.untyped])]]) }
         def unique_requirement_changes
           previous_reqs = dependency.previous_requirements || []
 
@@ -86,7 +88,9 @@ module Dependabot
             [new_req, old_req]
           end
 
-          changes.uniq do |new_req, old_req|
+          changes.uniq do |pair|
+            new_req = T.must(pair[0])
+            old_req = pair[1]
             [new_req[:file], old_req&.fetch(:requirement), new_req.fetch(:requirement)]
           end
         end
