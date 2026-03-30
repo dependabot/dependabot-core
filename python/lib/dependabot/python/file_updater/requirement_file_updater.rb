@@ -89,7 +89,7 @@ module Dependabot
           end
 
           changes.uniq do |pair|
-            new_req = T.must(pair[0])
+            new_req = pair[0]
             old_req = pair[1]
             [new_req[:file], old_req&.fetch(:requirement), new_req.fetch(:requirement)]
           end
