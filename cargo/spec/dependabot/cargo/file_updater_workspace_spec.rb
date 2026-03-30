@@ -96,6 +96,60 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       end
     end
 
+    context "with a workspace git dependency using a tag" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("manifests", "workspace_dependencies_git_tag")
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "utf8-ranges",
+            version: "83141b376b93484341c68fbca3ca110ae5cd2708",
+            previous_version: "d5094c7e9456f2965dec20de671094a98c6929c2",
+            requirements: [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["workspace.dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "1.0.0"
+              }
+            }],
+            previous_requirements: [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["workspace.dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "0.1.3"
+              }
+            }],
+            package_manager: "cargo"
+          )
+        ]
+      end
+
+      it "updates the git tag in the workspace manifest" do
+        updated_files = updater.updated_dependency_files
+        updated_cargo = updated_files.find { |f| f.name == "Cargo.toml" }
+
+        expect(updated_cargo.content).to include('tag = "1.0.0"')
+        expect(updated_cargo.content).not_to include('tag = "0.1.3"')
+        expect(updated_cargo.content)
+          .to include('git = "https://github.com/BurntSushi/utf8-ranges"')
+      end
+    end
+
     context "with complex workspace dependency formats" do
       let(:complex_workspace_toml) do
         <<~TOML
