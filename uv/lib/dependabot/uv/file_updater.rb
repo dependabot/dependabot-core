@@ -45,7 +45,9 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Dependency]) }
       def package_dependencies
         dependencies.reject do |dep|
-          dep.requirements.all? { |req| req[:groups]&.include?(UV_VERSION_GROUP) }
+          dep.requirements.all? do |req|
+            T.cast(req[:groups], T.nilable(T::Array[String]))&.include?(UV_VERSION_GROUP)
+          end
         end
       end
 

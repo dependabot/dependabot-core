@@ -47,9 +47,9 @@ module Dependabot
 
               updated_content = update_required_version(
                 T.must(file.content),
-                T.must(old_req[:requirement]),
-                T.must(new_req[:requirement]),
-                T.must(new_req[:file])
+                old_req[:requirement],
+                new_req[:requirement],
+                new_req[:file]
               )
 
               next if updated_content == file.content
@@ -102,12 +102,12 @@ module Dependabot
           section_start = lines.index { |l| l.strip.match?(/^\[tool\.uv\]\s*(#.*)?$/) }
           return content unless section_start
 
-          section_end = lines[(section_start + 1)..].index { |l| l.strip.match?(/^\[/) }
+          section_end = T.must(lines[(section_start + 1)..]).index { |l| l.strip.match?(/^\[/) }
           section_end = section_end ? section_start + 1 + section_end : lines.length
 
-          before = lines[0...section_start].join
-          section = lines[section_start...section_end].join
-          after = lines[section_end..].join
+          before = T.must(lines[0...section_start]).join
+          section = T.must(lines[section_start...section_end]).join
+          after = T.must(lines[section_end..]).join
 
           before + replace_required_version(section, old_requirement, new_requirement) + after
         end
