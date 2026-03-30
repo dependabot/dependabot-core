@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "dependabot-extras-repro"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "some-other-package==1.0.0",
+]
+[project.optional-dependencies]
+dev-mkdocs = [
+    "mkdocs-material==9.7.6",
+    "frequenz-repo-config[lib]==0.13.6",
+]
+dev-noxfile = [
+    "nox==2026.2.9",
+    "frequenz-repo-config[lib]==0.13.6",
+]
+dev-pytest = [
+    "pytest==9.0.2",
+    "frequenz-repo-config[extra-lint-examples]==0.13.6",
+]
