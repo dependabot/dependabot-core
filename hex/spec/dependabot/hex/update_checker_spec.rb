@@ -699,7 +699,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             .with(hash_including(function: "get_latest_resolvable_version"))
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-
                 message: 'Failed to decode public key for repo "dependabot"',
                 error_context: {}
               )
