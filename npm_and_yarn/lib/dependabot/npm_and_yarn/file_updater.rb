@@ -390,12 +390,10 @@ module Dependabot
         updated_files.concat(update_pnpm_locks)
 
         package_locks.each do |package_lock|
-          next unless package_lock_changed?(package_lock)
+          lockfile_updates = updated_lockfile_files(package_lock)
+          next if lockfile_updates.empty?
 
-          updated_files << updated_file(
-            file: package_lock,
-            content: T.must(updated_lockfile_content(package_lock))
-          )
+          updated_files.concat(lockfile_updates)
         end
 
         shrinkwraps.each do |shrinkwrap|
@@ -408,6 +406,27 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_lockfile_files(file)
+        return [] unless package_lock_changed?(file)
+
+        updated_file_set = [updated_file(
+          file: file,
+          content: T.must(updated_lockfile_content(file))
+        )]
+
+        already_updated_names = updated_manifest_files.to_set(&:name)
+
+        workspace_package_json_updates(file).each do |manifest_file, updated_content|
+          next if updated_content == manifest_file.content
+          next if already_updated_names.include?(manifest_file.name)
+
+          updated_file_set << updated_file(file: manifest_file, content: updated_content)
+        end
+
+        updated_file_set
       end
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
       def updated_yarn_lock_content(yarn_lock)
@@ -452,16 +471,31 @@ module Dependabot
         )
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(NpmLockfileUpdater) }
+      def npm_lockfile_updater_for(file)
+        @npm_lockfile_updaters ||= T.let(
+          {},
+          T.nilable(T::Hash[String, NpmLockfileUpdater])
+        )
+        @npm_lockfile_updaters[file.name] ||= NpmLockfileUpdater.new(
+          lockfile: file,
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials
+        )
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_lockfile_content(file)
-        @updated_lockfile_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_lockfile_content[file.name] ||=
-          NpmLockfileUpdater.new(
-            lockfile: file,
-            dependencies: dependencies,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).updated_lockfile.content
+        npm_lockfile_updater_for(file).updated_lockfile.content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T::Hash[Dependabot::DependencyFile, String])
+      end
+      def workspace_package_json_updates(file)
+        npm_lockfile_updater_for(file).updated_package_json_files
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
