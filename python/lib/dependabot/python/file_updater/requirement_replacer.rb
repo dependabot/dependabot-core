@@ -53,7 +53,7 @@ module Dependabot
               # ignore it, since it isn't actually a declaration
               next mtch if Regexp.last_match&.pre_match&.match?(/--.*\z/)
 
-              updated_dependency_declaration_string
+              updated_matched_declaration(mtch)
             end
 
           raise "Expected content to change!" if old_requirement != new_requirement && content == updated_content
@@ -124,6 +124,33 @@ module Dependabot
           )
         end
 
+        # Builds updated declaration from the actual matched text, preserving
+        # whatever extras (or lack thereof) appeared in the original match.
+        sig { params(matched_declaration: String).returns(String) }
+        def updated_matched_declaration(matched_declaration)
+          updated = if old_requirement
+                      matched_declaration
+                        .sub(RequirementParser::REQUIREMENTS, updated_requirement_string || "")
+                    else
+                      matched_declaration
+                        .sub(RequirementParser::NAME_WITH_EXTRAS) { |nm| nm + (updated_requirement_string || "") }
+                    end
+
+          return updated unless update_hashes? && matched_declaration.match?(RequirementParser::HASHES)
+
+          algorithm = T.must(matched_declaration.match(RequirementParser::HASHES))
+                       .named_captures.fetch("algorithm")
+          separator = hash_separator_for(matched_declaration)
+          updated.sub(
+            RequirementParser::HASHES,
+            package_hashes_for(
+              name: dependency_name,
+              version: new_hash_version,
+              algorithm: algorithm
+            ).join(separator)
+          )
+        end
+
         sig { returns(T::Boolean) }
         def add_space_after_commas?
           original_dependency_declaration_string(old_requirement)
@@ -142,7 +169,14 @@ module Dependabot
         def original_declaration_replacement_regex
           original_string =
             original_dependency_declaration_string(old_requirement)
-          /(?<![\-\w\.\[])#{Regexp.escape(original_string)}(?![\-\w\.])/
+          match_data = T.must(original_string.match(RequirementParser::NAME_WITH_EXTRAS))
+          name_escaped = Regexp.escape(T.must(match_data[:name]))
+          # Everything after name+extras (the requirement/markers/hashes portion)
+          after_name_extras = T.must(original_string[T.must(match_data[0]).length..]).strip
+          after_escaped = Regexp.escape(after_name_extras)
+          # Match the dependency name with any extras (or none), followed by the requirement.
+          # This ensures a single gsub handles all extras variants of the same dependency.
+          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*#{after_escaped}(?![\-\w\.])/
         end
 
         sig { params(requirement: T.nilable(String)).returns(T::Boolean) }
@@ -178,6 +212,26 @@ module Dependabot
           )
           default_separator = hash_matches
                               .named_captures.fetch("separator")
+
+          current_separator || default_separator || ""
+        end
+
+        # Extracts the hash separator directly from a matched declaration string,
+        # without needing to look up the declaration from content again.
+        sig { params(declaration: String).returns(String) }
+        def hash_separator_for(declaration)
+          hash_regex = RequirementParser::HASH
+          matches = T.must(
+            declaration.match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)
+          )
+          current_separator = matches.named_captures.fetch("separator")
+
+          hash_matches = T.must(
+            T.must(
+              declaration.match(RequirementParser::HASH)
+            ).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
+          )
+          default_separator = hash_matches.named_captures.fetch("separator")
 
           current_separator || default_separator || ""
         end
