@@ -24,6 +24,7 @@ module Dependabot
 
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/python_requirement_parser"
+      require_relative "file_parser/uv_version_parser"
 
       DEPENDENCY_GROUP_KEYS = T.let(
         [
@@ -55,6 +56,7 @@ module Dependabot
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += uv_lock_file_dependencies
         dependency_set += requirement_dependencies if requirement_files.any?
+        dependency_set += uv_version_dependencies
 
         dependency_set.dependencies
       end
@@ -215,6 +217,13 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      sig { returns(DependencySet) }
+      def uv_version_dependencies
+        UvVersionParser.new(
+          dependency_files: dependency_files
+        ).dependency_set
       end
 
       sig { returns(DependencySet) }
@@ -409,6 +418,7 @@ module Dependabot
         filenames = dependency_files.map(&:name)
         return if filenames.any? { |name| name.end_with?(".txt", ".in") }
         return if pyproject
+        return if uv_toml_file
 
         raise "Missing required files!"
       end
@@ -416,6 +426,11 @@ module Dependabot
       sig { returns(T.nilable(DependencyFile)) }
       def pyproject
         @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(DependencyFile))
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def uv_toml_file
+        @uv_toml_file ||= T.let(dependency_files.find { |f| f.name == "uv.toml" }, T.nilable(DependencyFile))
       end
 
       sig { returns(T::Array[DependencyFile]) }
