@@ -8,22 +8,27 @@ require "dependabot/npm_and_yarn/file_updater"
 module Dependabot
   module NpmAndYarn
     class FileUpdater < Dependabot::FileUpdaters::Base
+      # This updater intentionally keeps declaration, resolution, and override rewrites together
+      # because they share the same string-based package.json editing primitives.
+      # rubocop:disable Metrics/ClassLength
       class PackageJsonUpdater
         extend T::Sig
 
+        require_relative "package_json_updater/pnpm_override_helper"
         LOCAL_PACKAGE = T.let([/portal:/, /file:/].freeze, T::Array[Regexp])
-
         PATCH_PACKAGE = T.let([/patch:/].freeze, T::Array[Regexp])
 
         sig do
           params(
             package_json: Dependabot::DependencyFile,
-            dependencies: T::Array[Dependabot::Dependency]
+            dependencies: T::Array[Dependabot::Dependency],
+            detected_package_manager: T.nilable(String)
           ).void
         end
-        def initialize(package_json:, dependencies:)
+        def initialize(package_json:, dependencies:, detected_package_manager: nil)
           @package_json = package_json
           @dependencies = dependencies
+          @detected_package_manager = detected_package_manager
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -42,54 +47,88 @@ module Dependabot
         attr_reader :dependencies
 
         sig { returns(T.nilable(String)) }
+        attr_reader :detected_package_manager
+
+        sig { returns(T.nilable(String)) }
         def updated_package_json_content
           # checks if we are updating single dependency in package.json
           unique_deps_count = dependencies.map(&:name).to_a.uniq.compact.length
 
           dependencies.reduce(package_json.content.dup) do |content, dep|
-            updated_requirements(dep)&.each do |new_req|
-              old_req = old_requirement(dep, new_req)
-
-              new_content = update_package_json_declaration(
-                package_json_content: T.must(content),
-                dependency_name: dep.name,
-                old_req: old_req,
-                new_req: new_req
-              )
-
-              # package.json does not always contain the same dependencies compared to the
-              # "dependencies" list. For example, the dependencies object can contain same name dependency
-              # "dep" => "1.0.0" and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0".
-              # The other dependency is not present in package.json so we don't have to update it — this is
-              # most likely a transitive dependency which only needs an update in the lockfile. For a batch
-              # with a single unique dependency name we tolerate this no-op update, but when multiple unique
-              # dependencies are being updated and none change the content we treat that as unexpected and raise.
-              raise "Expected content to change!" if content == new_content && unique_deps_count > 1
-
-              content = new_content
-            end
-
-            new_requirements(dep).each do |new_req|
-              old_req = old_requirement(dep, new_req)
-
-              content = update_package_json_resolutions(
-                package_json_content: T.must(content),
-                new_req: new_req,
-                dependency: dep,
-                old_req: old_req
-              )
-            end
-
-            if dep.previous_version && new_requirements(dep).empty?
-              content = update_overrides_for_subdependency(
-                package_json_content: T.must(content),
-                dependency: dep
-              )
-            end
-
-            content
+            apply_dependency_updates(content: T.must(content), dependency: dep, unique_deps_count: unique_deps_count)
           end
         end
+
+        sig do
+          params(content: String, dependency: Dependabot::Dependency, unique_deps_count: Integer)
+            .returns(String)
+        end
+        def apply_dependency_updates(content:, dependency:, unique_deps_count:)
+          content = apply_requirement_updates(
+            content: content,
+            dependency: dependency,
+            unique_deps_count: unique_deps_count
+          )
+          content = apply_resolution_updates(content: content, dependency: dependency)
+          return content unless dependency.previous_version && new_requirements(dependency).empty?
+
+          apply_subdependency_updates(content: content, dependency: dependency)
+        end
+
+        sig do
+          params(content: String, dependency: Dependabot::Dependency, unique_deps_count: Integer)
+            .returns(String)
+        end
+        def apply_requirement_updates(content:, dependency:, unique_deps_count:)
+          updated_requirements(dependency)&.each do |new_req|
+            new_content = update_package_json_declaration(
+              package_json_content: content,
+              dependency_name: dependency.name,
+              old_req: old_requirement(dependency, new_req),
+              new_req: new_req
+            )
+
+            # package.json does not always contain the same dependencies as the parsed dependency list.
+            # For example, the parsed data can contain "dep" => "1.0.0" and "dev" => "1.0.1" while
+            # package.json only contains "dep" => "1.0.0". For a single unique dependency name we
+            # tolerate that no-op, but for multiple unique dependencies we treat it as unexpected and raise.
+            raise "Expected content to change!" if content == new_content && unique_deps_count > 1
+
+            content = new_content
+          end
+
+          content
+        end
+
+        sig { params(content: String, dependency: Dependabot::Dependency).returns(String) }
+        def apply_resolution_updates(content:, dependency:)
+          new_requirements(dependency).each do |new_req|
+            content = update_package_json_resolutions(
+              package_json_content: content,
+              new_req: new_req,
+              dependency: dependency,
+              old_req: old_requirement(dependency, new_req)
+            )
+          end
+
+          content
+        end
+
+        sig { params(content: String, dependency: Dependabot::Dependency).returns(String) }
+        def apply_subdependency_updates(content:, dependency:)
+          updated_content = update_overrides_for_subdependency(
+            package_json_content: content,
+            dependency: dependency
+          )
+          return updated_content unless updated_content == content
+
+          PnpmOverrideHelper.new(
+            package_json_content: content,
+            dependency: dependency,
+            detected_package_manager: detected_package_manager
+          ).updated_content
+        end
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -201,12 +240,7 @@ module Dependabot
           content
         end
 
-        sig do
-          params(
-            package_json_content: String,
-            dependency: Dependabot::Dependency
-          ).returns(String)
-        end
+        sig { params(package_json_content: String, dependency: Dependabot::Dependency).returns(String) }
         def update_overrides_for_subdependency(package_json_content:, dependency:)
           parsed = JSON.parse(package_json_content)
           entries = resolution_entries(parsed)
@@ -434,6 +468,7 @@ module Dependabot
           end
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

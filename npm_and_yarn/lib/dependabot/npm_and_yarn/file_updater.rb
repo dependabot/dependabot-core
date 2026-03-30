@@ -310,15 +310,32 @@ module Dependabot
             files = filtered_dependency_files.select { |f| f.name.end_with?("package.json") }
 
             if files.empty? && dependencies.none?(&:top_level?)
-              files = dependency_files
-                      .select { |f| f.name.end_with?("package.json") }
-                      .select { |f| package_json_has_override_for_deps?(f) }
+              package_json_files = dependency_files.select { |f| f.name.end_with?("package.json") }
+
+              files = if original_pnpm_locks.any?
+                        pnpm_root_package_files(package_json_files)
+                      else
+                        package_json_files.select { |f| package_json_has_override_for_deps?(f) }
+                      end
             end
 
             files
           end,
           T.nilable(T::Array[DependencyFile])
         )
+      end
+
+      sig do
+        params(package_json_files: T::Array[Dependabot::DependencyFile])
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def pnpm_root_package_files(package_json_files)
+        root_package_names = original_pnpm_locks.map do |lockfile|
+          dirname = File.dirname(lockfile.name)
+          dirname == "." ? "package.json" : File.join(dirname, "package.json")
+        end
+
+        package_json_files.select { |file| root_package_names.include?(file.name) }
       end
 
       sig { params(package_json: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -504,7 +521,8 @@ module Dependabot
         @updated_package_json_content[file.name] ||=
           PackageJsonUpdater.new(
             package_json: file,
-            dependencies: dependencies
+            dependencies: dependencies,
+            detected_package_manager: detected_package_manager
           ).updated_package_json.content
       end
 

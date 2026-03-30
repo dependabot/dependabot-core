@@ -10,7 +10,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
   let(:package_json_updater) do
     described_class.new(
       package_json: package_json,
-      dependencies: dependencies
+      dependencies: dependencies,
+      detected_package_manager: detected_package_manager
     )
   end
 
@@ -18,6 +19,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end
   let(:project_name) { "npm8/simple" }
+  let(:detected_package_manager) { nil }
 
   let(:dependencies) { [dependency] }
   let(:dependency) do
@@ -672,6 +674,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       it "updates the pnpm override" do
         parsed = JSON.parse(updated_package_json.content)
         expect(parsed.dig("pnpm", "overrides", "undici")).to eq(">=6.24.1")
+      end
+    end
+
+    context "with a pnpm sub-dependency without an existing override" do
+      let(:detected_package_manager) { "pnpm" }
+      let(:package_json) do
+        Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "test",
+            version: "1.0.0",
+            dependencies: { "some-parent" => "^1.0.0" }
+          }.to_json
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "undici",
+          version: "6.24.1",
+          previous_version: "6.23.0",
+          package_manager: "npm_and_yarn",
+          requirements: [],
+          previous_requirements: []
+        )
+      end
+
+      it "adds a pnpm override" do
+        parsed = JSON.parse(updated_package_json.content)
+        expect(parsed.dig("pnpm", "overrides", "undici")).to eq("6.24.1")
       end
     end
   end

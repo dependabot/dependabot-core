@@ -3835,6 +3835,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "with a sub-dependency and no existing override" do
+        let(:project_name) { "pnpm/no_lockfile_change" }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.4" }
+        let(:previous_version) { "5.2.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          allow(updater).to receive(:updated_pnpm_lock_content, &:content)
+        end
+
+        it "adds a pnpm override instead of raising an unsupported feature error" do
+          expect(updated_files.map(&:name)).to eq(["package.json"])
+
+          parsed_package_json = JSON.parse(updated_package_json.content)
+          expect(parsed_package_json.dig("pnpm", "overrides", "acorn")).to eq("5.7.4")
+        end
+      end
+
       context "with resolutions" do
         let(:project_name) { "pnpm/resolution_specified" }
 
