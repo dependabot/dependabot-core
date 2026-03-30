@@ -98,32 +98,6 @@ module Dependabot
           new_req_string
         end
 
-        sig { returns(String) }
-        def updated_dependency_declaration_string
-          old_req = old_requirement
-          updated_string =
-            if old_req
-              original_dependency_declaration_string(old_req)
-                .sub(RequirementParser::REQUIREMENTS, updated_requirement_string || "")
-            else
-              original_dependency_declaration_string(old_req)
-                .sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
-                  nm + (updated_requirement_string || "")
-                end
-            end
-
-          return updated_string unless update_hashes? && requirement_includes_hashes?(old_req)
-
-          updated_string.sub(
-            RequirementParser::HASHES,
-            package_hashes_for(
-              name: dependency_name,
-              version: new_hash_version,
-              algorithm: hash_algorithm(old_req)
-            ).join(hash_separator(old_req))
-          )
-        end
-
         # Builds updated declaration from the actual matched text, preserving
         # whatever extras (or lack thereof) appeared in the original match.
         sig { params(matched_declaration: String).returns(String) }
@@ -140,7 +114,7 @@ module Dependabot
 
           algorithm = T.must(matched_declaration.match(RequirementParser::HASHES))
                        .named_captures.fetch("algorithm")
-          separator = hash_separator_for(matched_declaration)
+          separator = hash_separator(old_requirement)
           updated.sub(
             RequirementParser::HASHES,
             package_hashes_for(
@@ -212,26 +186,6 @@ module Dependabot
           )
           default_separator = hash_matches
                               .named_captures.fetch("separator")
-
-          current_separator || default_separator || ""
-        end
-
-        # Extracts the hash separator directly from a matched declaration string,
-        # without needing to look up the declaration from content again.
-        sig { params(declaration: String).returns(String) }
-        def hash_separator_for(declaration)
-          hash_regex = RequirementParser::HASH
-          matches = T.must(
-            declaration.match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)
-          )
-          current_separator = matches.named_captures.fetch("separator")
-
-          hash_matches = T.must(
-            T.must(
-              declaration.match(RequirementParser::HASH)
-            ).pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
-          )
-          default_separator = hash_matches.named_captures.fetch("separator")
 
           current_separator || default_separator || ""
         end
