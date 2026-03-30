@@ -277,6 +277,21 @@ module Dependabot
       to_local_tag(max_version_tag)
     end
 
+    # Returns all version tags without prefix filtering.
+    # Useful when the caller knows the expected prefix (e.g., from a frozen comment)
+    # and wants to filter tags themselves without relying on automatic prefix detection.
+    sig { returns(T::Array[Dependabot::GitRef]) }
+    def all_version_tags
+      tags = local_tags.select { |t| version_tag?(t.name) }
+      filtered = tags.reject { |t| tag_included_in_ignore_requirements?(t) }
+
+      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
+        raise Dependabot::AllVersionsIgnored
+      end
+
+      filtered.reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+    end
+
     private
 
     sig { returns(Dependabot::Dependency) }

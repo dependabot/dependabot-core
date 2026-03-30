@@ -132,14 +132,80 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
           Dependabot::GitRef.new(name: "varcon-core-v4.0.0", commit_sha: "ddd444"),
           Dependabot::GitRef.new(name: "v2.0.0", commit_sha: "eee555")
         ]
+        # Mock all_version_tags since tags_with_prefix now uses it instead of allowed_version_tags
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:allowed_version_tags).and_return(mixed_tags)
+          .to receive(:all_version_tags).and_return(mixed_tags)
       end
 
       it "returns only tags matching the frozen version prefix and major version" do
         expect(latest_version_tag).to be_a(Hash)
         expect(latest_version_tag[:tag]).to eq("v1.29.4")
         expect(latest_version_tag[:version].to_s).to eq("1.29.4")
+      end
+    end
+
+    context "when SHA-pinned with frozen comment and different prefix has higher version (issue #14550)" do
+      # This test reproduces the bug from https://github.com/dependabot/dependabot-core/issues/14550
+      # where a dependency pinned to a commit SHA with frozen: v1.44.0 was incorrectly updated
+      # to varcon-core-v5.0.6 because 5.0.6 > 1.44.0
+      let(:reference) { "631208b7aac2daa8b707f55e7331f9112b0e062d" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/crate-ci/typos",
+          version: reference,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: {
+              type: "git",
+              url: "https://github.com/crate-ci/typos",
+              ref: reference,
+              branch: nil
+            },
+            metadata: { comment: "# frozen: v1.44.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+
+      let(:mixed_tags) do
+        [
+          Dependabot::GitRef.new(name: "v1.44.0", commit_sha: "631208b7aac2daa8b707f55e7331f9112b0e062d"),
+          Dependabot::GitRef.new(name: "v1.45.0", commit_sha: "new_sha_1"),
+          Dependabot::GitRef.new(name: "v1.46.0", commit_sha: "new_sha_2"),
+          # This tag has version 5.0.6 which is > 1.46.0, but it's for a different package
+          Dependabot::GitRef.new(name: "varcon-core-v5.0.6", commit_sha: "different_sha"),
+          Dependabot::GitRef.new(name: "varcon-core-v4.0.0", commit_sha: "another_sha")
+        ]
+      end
+
+      before do
+        # Stub the git upload pack URL for the typos repository
+        typos_service_pack_url = "https://github.com/crate-ci/typos.git/info/refs?service=git-upload-pack"
+        stub_request(:get, typos_service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "pre-commit-hooks"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+
+        # Mock local_tags to return our mixed tags - this is what all_version_tags uses internally
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags).and_return(mixed_tags)
+      end
+
+      it "selects the correct v-prefixed tag, not the higher-versioned different-prefix tag" do
+        expect(latest_version_tag).to be_a(Hash)
+        # Should select v1.46.0 (the latest v-prefixed tag), NOT varcon-core-v5.0.6
+        expect(latest_version_tag[:tag]).to eq("v1.46.0")
+        expect(latest_version_tag[:version].to_s).to eq("1.46.0")
+      end
+
+      it "does not select a tag with a different prefix even if it has a higher version" do
+        expect(latest_version_tag[:tag]).not_to include("varcon-core")
       end
     end
   end
