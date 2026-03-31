@@ -364,4 +364,33 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         .to include("https://registry.npmjs.org/node-fetch/-/node-fetch-1.7.3")
     end
   end
+
+  context "when updating a yarn berry sub-dependency and normal update is a no-op" do
+    let(:files) { project_dependency_files("yarn_berry/workspace_subdependency_update") }
+
+    let(:dependency_name) { "lodash" }
+    let(:version) { "3.10.2" }
+    let(:previous_version) { "3.10.1" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    before do
+      # Stub run_yarn_commands to simulate a no-op (lockfile still has previous_version)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands)
+      allow(Dependabot::NpmAndYarn::NativeHelpers)
+        .to receive(:run_yarn_audit_fix_command).and_return("")
+    end
+
+    it "falls back to yarn npm audit --fix when lockfile still has previous version" do
+      expect(Dependabot::NpmAndYarn::NativeHelpers)
+        .to receive(:run_yarn_audit_fix_command).once
+
+      Dir.mktmpdir do |tmp_dir|
+        File.write(File.join(tmp_dir, yarn_lock.name), yarn_lock.content)
+        Dir.chdir(tmp_dir) do
+          updater.send(:run_yarn_berry_subdependency_updater, yarn_lock: yarn_lock)
+        end
+      end
+    end
+  end
 end

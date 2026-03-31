@@ -79,19 +79,7 @@ module Dependabot
         return unless original_pnpm_locks.any?
         return unless updated_files.none? || updated_files.all?(&:support_file?)
 
-        raise_tool_not_supported_for_pnpm_if_transitive
         raise_miss_configured_tooling_if_pnpm_subdirectory
-      end
-
-      sig { void }
-      def raise_tool_not_supported_for_pnpm_if_transitive
-        return if dependencies.empty? || dependencies.any?(&:top_level?)
-
-        raise ToolFeatureNotSupported.new(
-          tool_name: "pnpm",
-          tool_type: "package_manager",
-          feature: "updating transitive dependencies"
-        )
       end
 
       # rubocop:disable Metrics/PerceivedComplexity

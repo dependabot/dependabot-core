@@ -333,7 +333,42 @@ module Dependabot
         def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
           NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
-          { lockfile_basename => File.read(lockfile_basename) }
+
+          updated_content = File.read(lockfile_basename)
+          if lockfile_content_unchanged?(updated_content, sub_dependencies)
+            # `npm update` is a no-op for transitive dependencies not listed in
+            # any package.json (common in workspace repos). Fall back to
+            # `npm audit fix` which can update these in the lockfile.
+            # npm audit fix exits non-zero when vulnerabilities remain, so we
+            # rescue and use whatever lockfile changes it managed to make.
+            begin
+              NativeHelpers.run_npm_audit_fix_command
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+            end
+            updated_content = File.read(lockfile_basename)
+          end
+
+          { lockfile_basename => updated_content }
+        end
+
+        sig do
+          params(
+            updated_content: String,
+            sub_dependencies: T::Array[Dependabot::Dependency]
+          ).returns(T::Boolean)
+        end
+        def lockfile_content_unchanged?(updated_content, sub_dependencies)
+          parsed = JSON.parse(updated_content)
+          packages = parsed.fetch("packages", {})
+
+          sub_dependencies.any? do |dep|
+            packages.any? do |path, details|
+              next false unless path.end_with?("/#{dep.name}") || path == "node_modules/#{dep.name}"
+
+              details["version"] == dep.previous_version
+            end
+          end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }

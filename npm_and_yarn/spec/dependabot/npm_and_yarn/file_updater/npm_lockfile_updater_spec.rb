@@ -384,6 +384,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
       end
     end
+
+    context "when updating a subdependency in a workspace repo" do
+      let(:files) { project_dependency_files("npm8/workspace_subdependency_update") }
+
+      let(:dependency_name) { "lodash" }
+      let(:version) { "3.10.2" }
+      let(:previous_version) { "3.10.1" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+
+      it "falls back to npm audit fix when npm update is a no-op" do
+        # Simulate npm update being a no-op (transitive dep not in package.json)
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm8_subdependency_update_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm_audit_fix_command).and_return("")
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm_audit_fix_command).once
+
+        updated_npm_lock_content
+      end
+    end
   end
 
   describe "npm errors" do
