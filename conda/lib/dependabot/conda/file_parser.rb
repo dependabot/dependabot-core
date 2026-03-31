@@ -303,9 +303,9 @@ module Dependabot
         parts = dep_string.split("=")
         return false unless parts.length == 3
 
-        name = parts[0]
-        version = parts[1]
-        build_string = parts[2]
+        name = T.must(parts[0])
+        version = T.must(parts[1])
+        build_string = T.must(parts[2])
         return false if name.empty? || version.empty? || build_string.empty?
 
         build_string.match?(/^[a-zA-Z0-9_]+$/)
