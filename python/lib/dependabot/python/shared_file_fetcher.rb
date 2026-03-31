@@ -285,7 +285,10 @@ module Dependabot
           end
         end.flatten.uniq
 
-        constraints_paths.map { |path| fetch_file_from_host(path) }
+        already_fetched_names = child_requirement_files.map(&:name)
+        constraints_paths
+          .reject { |path| already_fetched_names.include?(path) }
+          .map { |path| fetch_file_from_host(path) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
