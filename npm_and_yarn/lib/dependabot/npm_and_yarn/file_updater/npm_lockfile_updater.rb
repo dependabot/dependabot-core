@@ -345,6 +345,7 @@ module Dependabot
             # rescue and use whatever lockfile changes it managed to make.
             begin
               NativeHelpers.run_npm_audit_fix_command
+              sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
             rescue SharedHelpers::HelperSubprocessFailed
               Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
             end

@@ -171,6 +171,7 @@ module Dependabot
               if updated_content == original_content
                 begin
                   NativeHelpers.run_yarn_audit_fix_command
+                  dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info(
                     "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
@@ -203,6 +204,7 @@ module Dependabot
                     "install --lockfile-only",
                     fingerprint: "install --lockfile-only"
                   )
+                  dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info(
                     "pnpm audit --fix failed or partially fixed — continuing with any changes made"
@@ -226,13 +228,9 @@ module Dependabot
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content
-                # `npm update` is a no-op for transitive dependencies not in
-                # any package.json (common in workspace repos). Fall back to
-                # `npm audit fix` which can resolve these in the lockfile.
-                # npm audit fix exits non-zero when vulnerabilities remain, so
-                # we rescue and use whatever lockfile changes it managed to make.
                 begin
                   NativeHelpers.run_npm_audit_fix_command
+                  dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
                 end
