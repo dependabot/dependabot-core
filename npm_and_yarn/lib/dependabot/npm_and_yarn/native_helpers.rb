@@ -45,6 +45,37 @@ module Dependabot
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
+
+      sig { returns(String) }
+      def self.run_npm_audit_fix_command
+        # Fallback for transitive dependencies in workspace repos where
+        # `npm update` is a no-op because the package isn't in package.json.
+        # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
+        command = "audit fix --package-lock-only --ignore-scripts"
+        fingerprint = "audit fix --package-lock-only --ignore-scripts"
+
+        Helpers.run_npm_command(command, fingerprint: fingerprint)
+      end
+
+      sig { returns(String) }
+      def self.run_pnpm_audit_fix_command
+        # Fallback for transitive dependencies where `pnpm update` is a no-op.
+        # `pnpm audit --fix` adds overrides to the manifest for vulnerable deps.
+        Helpers.run_pnpm_command(
+          "audit --fix",
+          fingerprint: "audit --fix"
+        )
+      end
+
+      sig { returns(String) }
+      def self.run_yarn_audit_fix_command
+        # Fallback for transitive dependencies where `yarn up -R` is a no-op.
+        # `yarn npm audit --fix` updates vulnerable deps in the lockfile.
+        Helpers.run_yarn_command(
+          "npm audit --fix --mode update-lockfile",
+          fingerprint: "npm audit --fix --mode update-lockfile"
+        )
+      end
     end
   end
 end

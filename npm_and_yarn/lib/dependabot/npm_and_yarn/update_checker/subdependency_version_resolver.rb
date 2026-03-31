@@ -164,7 +164,20 @@ module Dependabot
                 "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
                 fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
               )
-              { lockfile_name => File.read(lockfile_name) }
+
+              updated_content = File.read(lockfile_name)
+              if yarn_update_was_noop?(updated_content)
+                begin
+                  NativeHelpers.run_yarn_audit_fix_command
+                rescue SharedHelpers::HelperSubprocessFailed
+                  Dependabot.logger.info(
+                    "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+                  )
+                end
+                updated_content = File.read(lockfile_name)
+              end
+
+              { lockfile_name => updated_content }
             end
           end
         end
@@ -177,7 +190,24 @@ module Dependabot
                 "update #{dependency.name} --lockfile-only",
                 fingerprint: "update <dependency_name> --lockfile-only"
               )
-              { lockfile_name => File.read(lockfile_name) }
+
+              updated_content = File.read(lockfile_name)
+              if pnpm_update_was_noop?(updated_content)
+                begin
+                  NativeHelpers.run_pnpm_audit_fix_command
+                  Helpers.run_pnpm_command(
+                    "install --lockfile-only",
+                    fingerprint: "install --lockfile-only"
+                  )
+                rescue SharedHelpers::HelperSubprocessFailed
+                  Dependabot.logger.info(
+                    "pnpm audit --fix failed or partially fixed — continuing with any changes made"
+                  )
+                end
+                updated_content = File.read(lockfile_name)
+              end
+
+              { lockfile_name => updated_content }
             end
           end
         end
@@ -188,9 +218,49 @@ module Dependabot
             Dir.chdir(path) do
               NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
 
-              { lockfile_name => File.read(lockfile_name) }
+              updated_content = File.read(lockfile_name)
+              if npm_update_was_noop?(updated_content)
+                # `npm update` is a no-op for transitive dependencies not in
+                # any package.json (common in workspace repos). Fall back to
+                # `npm audit fix` which can resolve these in the lockfile.
+                # npm audit fix exits non-zero when vulnerabilities remain, so
+                # we rescue and use whatever lockfile changes it managed to make.
+                begin
+                  NativeHelpers.run_npm_audit_fix_command
+                rescue SharedHelpers::HelperSubprocessFailed
+                  Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+                end
+                updated_content = File.read(lockfile_name)
+              end
+
+              { lockfile_name => updated_content }
             end
           end
+        end
+
+        sig { params(updated_content: String).returns(T::Boolean) }
+        def npm_update_was_noop?(updated_content)
+          parsed = JSON.parse(updated_content)
+          packages = parsed.fetch("packages", {})
+
+          packages.any? do |path, details|
+            next false unless path.end_with?("/#{dependency.name}") ||
+                              path == "node_modules/#{dependency.name}"
+
+            details["version"] == dependency.version
+          end
+        end
+
+        sig { params(updated_content: String).returns(T::Boolean) }
+        def yarn_update_was_noop?(updated_content)
+          updated_content.include?("\"#{dependency.name}@") &&
+            updated_content.include?("version: #{dependency.version}")
+        end
+
+        sig { params(updated_content: String).returns(T::Boolean) }
+        def pnpm_update_was_noop?(updated_content)
+          updated_content.include?("'#{dependency.name}@#{dependency.version}'") ||
+            updated_content.include?("/#{dependency.name}@#{dependency.version}")
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }

@@ -255,6 +255,19 @@ module Dependabot
           ]
 
           Helpers.run_yarn_commands(*commands)
+
+          updated_content = File.read(yarn_lock.name)
+          if updated_content.include?("#{dep.name}@") &&
+             updated_content.include?("version: #{dep.previous_version}")
+            begin
+              NativeHelpers.run_yarn_audit_fix_command
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info(
+                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+              )
+            end
+          end
+
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
 

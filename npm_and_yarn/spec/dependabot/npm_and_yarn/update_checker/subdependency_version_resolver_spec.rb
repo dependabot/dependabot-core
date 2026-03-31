@@ -106,6 +106,32 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
     end
 
+    context "with a yarn berry workspace subdependency" do
+      let(:dependency_files) { project_dependency_files("yarn_berry/workspace_subdependency_update") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "3.10.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:latest_allowable_version) { "3.10.2" }
+
+      it "falls back to yarn npm audit --fix when yarn up -R is a no-op" do
+        # Stub yarn up -R to be a no-op (returns unchanged lockfile)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_yarn_audit_fix_command).and_return("")
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_yarn_audit_fix_command).once
+
+        latest_resolvable_version
+      end
+    end
+
     context "with a pnpm-lock.yaml" do
       let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
 
@@ -122,6 +148,32 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       # NOTE: The latest version is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+    end
+
+    context "with a pnpm workspace subdependency" do
+      let(:dependency_files) { project_dependency_files("pnpm/workspace_subdependency_update") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: "3.10.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:latest_allowable_version) { "3.10.2" }
+
+      it "falls back to pnpm audit --fix when pnpm update is a no-op" do
+        # Stub pnpm update to be a no-op (returns unchanged lockfile)
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_pnpm_audit_fix_command).and_return("")
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_pnpm_audit_fix_command).once
+
+        latest_resolvable_version
+      end
     end
 
     context "with a npm8 package-lock.json" do
