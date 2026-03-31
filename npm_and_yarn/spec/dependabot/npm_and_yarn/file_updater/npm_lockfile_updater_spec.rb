@@ -397,9 +397,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       it "falls back to npm audit fix when npm update is a no-op" do
         # Simulate npm update being a no-op (transitive dep not in package.json)
         allow(Dependabot::NpmAndYarn::NativeHelpers)
-          .to receive(:run_npm8_subdependency_update_command).and_return("")
-        allow(Dependabot::NpmAndYarn::NativeHelpers)
-          .to receive(:run_npm_audit_fix_command).and_return("")
+          .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
 
         expect(Dependabot::NpmAndYarn::NativeHelpers)
           .to receive(:run_npm_audit_fix_command).once
