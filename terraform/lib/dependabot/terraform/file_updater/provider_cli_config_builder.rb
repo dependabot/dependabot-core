@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "json"
 require "open3"
 require "securerandom"
+require "pathname"
 require "dependabot/shared_helpers"
 require "dependabot/terraform/file_updater"
 
@@ -23,14 +24,12 @@ module Dependabot
         sig do
           params(
             dependency: Dependabot::Dependency,
-            terraform_files: T::Array[Dependabot::DependencyFile],
-            native_helpers_path: T.nilable(String)
+            terraform_files: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def initialize(dependency:, terraform_files:, native_helpers_path: nil)
+        def initialize(dependency:, terraform_files:)
           @dependency = dependency
           @terraform_files = terraform_files
-          @native_helpers_path = native_helpers_path
           @terraform_cli_config_path = T.let(nil, T.nilable(String))
           @dev_override_dir = T.let(nil, T.nilable(String))
         end
