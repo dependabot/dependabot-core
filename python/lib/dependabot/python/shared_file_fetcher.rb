@@ -238,7 +238,8 @@ module Dependabot
         content = file.content
         return [] if content.nil?
 
-        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten
+        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten +
+                content.scan(CONSTRAINT_REGEX).flatten
         current_dir = File.dirname(file.name)
 
         paths.flat_map do |path|
@@ -268,7 +269,8 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def constraints_files
         all_requirement_files = requirements_txt_files +
-                                child_requirement_txt_files
+                                child_requirement_txt_files +
+                                requirements_in_files
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
