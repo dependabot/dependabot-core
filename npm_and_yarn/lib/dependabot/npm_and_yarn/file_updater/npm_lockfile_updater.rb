@@ -337,7 +337,7 @@ module Dependabot
           NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
 
           updated_content = File.read(lockfile_basename)
-          if updated_content == original_content
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
             # `npm update` is a no-op for transitive dependencies not listed in
             # any package.json (common in workspace repos). Fall back to
             # `npm audit fix` which can update these in the lockfile.

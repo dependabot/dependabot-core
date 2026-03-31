@@ -258,7 +258,7 @@ module Dependabot
           Helpers.run_yarn_commands(*commands)
 
           updated_content = File.read(yarn_lock.name)
-          if updated_content == original_content
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
             begin
               NativeHelpers.run_yarn_audit_fix_command
               dep.metadata[:audit_fix_used] = true

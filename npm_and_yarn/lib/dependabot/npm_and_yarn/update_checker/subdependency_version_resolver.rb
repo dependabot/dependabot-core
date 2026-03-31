@@ -168,7 +168,7 @@ module Dependabot
               )
 
               updated_content = File.read(lockfile_name)
-              if updated_content == original_content
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
                   NativeHelpers.run_yarn_audit_fix_command
                   dependency.metadata[:audit_fix_used] = true
@@ -197,7 +197,7 @@ module Dependabot
               )
 
               updated_content = File.read(lockfile_name)
-              if updated_content == original_content
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
                   NativeHelpers.run_pnpm_audit_fix_command
                   Helpers.run_pnpm_command(
@@ -227,7 +227,7 @@ module Dependabot
               NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
 
               updated_content = File.read(lockfile_name)
-              if updated_content == original_content
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
                   NativeHelpers.run_npm_audit_fix_command
                   dependency.metadata[:audit_fix_used] = true
