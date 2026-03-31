@@ -224,7 +224,12 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         expect(possible_urls).not_to include(a_string_matching(/pypi\.org/))
       end
 
-      it "does not query public PyPI" do
+      it "does not query public PyPI even when private registry returns 404" do
+        private_url = "https://jfrogghdemo.jfrog.io/artifactory/api/pypi/dependabot-pip/pypi/#{dependency_name}/json"
+        stub_request(:get, private_url)
+          .with(basic_auth: %w(testuser testpass))
+          .to_return(status: 404, body: "")
+
         source_url
         expect(WebMock).not_to have_requested(:get, pypi_url)
       end
@@ -295,7 +300,12 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         expect(possible_urls).not_to include(a_string_matching(/pypi\.org/))
       end
 
-      it "does not query public PyPI" do
+      it "does not query public PyPI even when private registry returns 404" do
+        private_url = "https://registry.example.com/simple/pypi/#{dependency_name}/json"
+        stub_request(:get, private_url)
+          .with(basic_auth: %w(testuser testpass))
+          .to_return(status: 404, body: "")
+
         source_url
         expect(WebMock).not_to have_requested(:get, pypi_url)
       end

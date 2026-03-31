@@ -230,13 +230,16 @@ module Dependabot
           credentials
           .select { |cred| cred["type"] == "python_index" }
 
-        credential_urls = index_credentials.map { |c| AuthedUrlBuilder.authed_url(credential: c) }
+        credential_urls = index_credentials
+                          .map { |c| AuthedUrlBuilder.authed_url(credential: c) }
+                          .reject { |url| url.strip.empty? }
 
         base_urls = if index_credentials.any?(&:replaces_base?)
                       credential_urls
                     else
                       credential_urls + [MAIN_PYPI_URL]
                     end
+        base_urls = [MAIN_PYPI_URL] if base_urls.empty?
 
         base_urls.map do |base_url|
           # Convert /simple/ endpoints to /pypi/ for JSON API access
