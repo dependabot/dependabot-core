@@ -4,16 +4,17 @@
 require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/swift/file_updater/lockfile_updater"
-require "dependabot/swift/file_updater/manifest_updater"
-require "dependabot/swift/file_updater/pbxproj_updater"
-require "dependabot/swift/file_updater/xcode_lockfile_updater"
 require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
+
+      require_relative "file_updater/lockfile_updater"
+      require_relative "file_updater/manifest_updater"
+      require_relative "file_updater/pbxproj_updater"
+      require_relative "file_updater/xcode_lockfile_updater"
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
