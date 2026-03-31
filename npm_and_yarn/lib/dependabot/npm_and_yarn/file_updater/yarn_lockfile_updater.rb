@@ -261,6 +261,7 @@ module Dependabot
           if updated_content == original_content
             begin
               NativeHelpers.run_yarn_audit_fix_command
+              dep.metadata[:audit_fix_used] = true
             rescue SharedHelpers::HelperSubprocessFailed
               Dependabot.logger.info(
                 "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
