@@ -9,6 +9,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/nix/package_manager"
+require "dependabot/nix/nixpkgs_version"
 
 module Dependabot
   module Nix
@@ -142,14 +143,54 @@ module Dependabot
 
         ref = original.fetch("ref", nil)
 
+        if nixpkgs_input?(locked) && ref && NixpkgsVersion.valid?(ref)
+          build_nixpkgs_dependency(input_name, rev, url, ref)
+        else
+          Dependency.new(
+            name: input_name,
+            version: rev,
+            package_manager: "nix",
+            requirements: [{
+              requirement: nil,
+              file: "flake.lock",
+              source: { type: "git", url: url, branch: ref, ref: ref },
+              groups: []
+            }]
+          )
+        end
+      end
+
+      sig { params(locked: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def nixpkgs_input?(locked)
+        locked["type"] == "github" &&
+          locked.fetch("owner", "").casecmp("nixos").zero? &&
+          locked.fetch("repo", "").casecmp("nixpkgs").zero?
+      end
+
+      sig do
+        params(
+          input_name: String,
+          commit_sha: String,
+          url: String,
+          ref: String
+        ).returns(Dependabot::Dependency)
+      end
+      def build_nixpkgs_dependency(input_name, commit_sha, url, ref)
         Dependency.new(
           name: input_name,
-          version: rev,
+          version: ref,
           package_manager: "nix",
           requirements: [{
-            requirement: nil,
+            requirement: ref,
             file: "flake.lock",
-            source: { type: "git", url: url, branch: ref, ref: ref },
+            source: {
+              type: "git",
+              url: url,
+              branch: ref,
+              ref: ref,
+              commit_sha: commit_sha,
+              nixpkgs: true
+            },
             groups: []
           }]
         )

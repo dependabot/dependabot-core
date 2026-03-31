@@ -117,4 +117,81 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_name>")
     end
   end
+
+  describe "#updated_dependency_files with nixpkgs branch change" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:flake_nix_content) { fixture("flake_nixpkgs_versioned.nix") }
+    let(:flake_lock_content) { fixture("flake_nixpkgs_versioned.lock") }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "nixpkgs",
+        version: "nixos-23.11",
+        previous_version: "nixos-23.05",
+        requirements: [{
+          file: "flake.lock",
+          requirement: "nixos-23.11",
+          source: {
+            type: "git",
+            url: "https://github.com/NixOS/nixpkgs",
+            branch: "nixos-23.11",
+            ref: "nixos-23.11",
+            commit_sha: "newcommitsha",
+            nixpkgs: true
+          },
+          groups: []
+        }],
+        previous_requirements: [{
+          file: "flake.lock",
+          requirement: "nixos-23.05",
+          source: {
+            type: "git",
+            url: "https://github.com/NixOS/nixpkgs",
+            branch: "nixos-23.05",
+            ref: "nixos-23.05",
+            commit_sha: "aabbccdd11223344556677889900aabbccddeeff",
+            nixpkgs: true
+          },
+          groups: []
+        }],
+        package_manager: "nix"
+      )
+    end
+
+    let(:updated_lock_content) do
+      flake_lock_content.gsub("nixos-23.05", "nixos-23.11")
+                        .gsub("aabbccdd11223344556677889900aabbccddeeff", "newcommitsha")
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers)
+        .to receive(:in_a_temporary_repo_directory)
+        .and_yield
+      allow(Dependabot::SharedHelpers)
+        .to receive(:run_shell_command)
+      allow(File).to receive(:write).and_call_original
+      allow(File).to receive(:write).with("flake.nix", anything)
+      allow(File).to receive(:write).with("flake.lock", anything)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with("flake.lock").and_return(updated_lock_content)
+    end
+
+    it "returns both flake.nix and flake.lock" do
+      expect(updated_files.length).to eq(2)
+      expect(updated_files.map(&:name)).to contain_exactly("flake.nix", "flake.lock")
+    end
+
+    it "updates the branch in flake.nix" do
+      nix_file = updated_files.find { |f| f.name == "flake.nix" }
+      expect(nix_file.content).to include("github:NixOS/nixpkgs/nixos-23.11")
+      expect(nix_file.content).not_to include("nixos-23.05")
+    end
+
+    it "writes the updated flake.nix content to disk for nix flake update" do
+      updated_files
+      expect(File).to have_received(:write)
+        .with("flake.nix", include("nixos-23.11"))
+    end
+  end
 end

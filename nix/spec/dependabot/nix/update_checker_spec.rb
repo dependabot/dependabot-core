@@ -58,8 +58,112 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    it "returns the existing requirements unchanged" do
-      expect(checker.updated_requirements).to eq(dependency.requirements)
+    context "for a non-nixpkgs input" do
+      it "returns the existing requirements unchanged" do
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+
+    context "for a nixpkgs input with a newer branch available" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "nixos-23.05",
+          requirements: [{
+            file: "flake.lock",
+            requirement: "nixos-23.05",
+            groups: [],
+            source: {
+              type: "git", url: url, branch: "nixos-23.05", ref: "nixos-23.05",
+              commit_sha: "aabbccdd", nixpkgs: true
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        branch_finder = instance_double(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+        allow(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+        allow(branch_finder).to receive(:latest_branch).and_return("nixos-23.11")
+      end
+
+      it "returns updated requirements with the new branch" do
+        updated = checker.updated_requirements
+        expect(updated.first[:requirement]).to eq("nixos-23.11")
+        expect(updated.first[:source][:branch]).to eq("nixos-23.11")
+        expect(updated.first[:source][:ref]).to eq("nixos-23.11")
+      end
+    end
+
+    context "for a nixpkgs input already on the latest branch" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "nixos-23.11",
+          requirements: [{
+            file: "flake.lock",
+            requirement: "nixos-23.11",
+            groups: [],
+            source: {
+              type: "git", url: url, branch: "nixos-23.11", ref: "nixos-23.11",
+              commit_sha: "aabbccdd", nixpkgs: true
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        branch_finder = instance_double(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+        allow(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+        allow(branch_finder).to receive(:latest_branch).and_return(nil)
+      end
+
+      it "returns the existing requirements unchanged" do
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+  end
+
+  describe "#latest_version" do
+    context "for a nixpkgs input" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "nixos-23.05",
+          requirements: [{
+            file: "flake.lock",
+            requirement: "nixos-23.05",
+            groups: [],
+            source: {
+              type: "git", url: url, branch: "nixos-23.05", ref: "nixos-23.05",
+              commit_sha: "aabbccdd", nixpkgs: true
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      it "returns the latest branch name when newer is available" do
+        branch_finder = instance_double(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+        allow(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+        allow(branch_finder).to receive(:latest_branch).and_return("nixos-23.11")
+
+        expect(checker.latest_version).to eq("nixos-23.11")
+      end
+
+      it "returns the current version when no newer branch is available" do
+        branch_finder = instance_double(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+        allow(Dependabot::Nix::UpdateChecker::NixpkgsBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+        allow(branch_finder).to receive(:latest_branch).and_return(nil)
+
+        expect(checker.latest_version).to eq("nixos-23.05")
+      end
     end
   end
 end

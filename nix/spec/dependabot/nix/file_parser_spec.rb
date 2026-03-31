@@ -58,17 +58,19 @@ RSpec.describe Dependabot::Nix::FileParser do
       it "parses nixpkgs correctly" do
         nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
         expect(nixpkgs).to be_a(Dependabot::Dependency)
-        expect(nixpkgs.version).to eq("3030f185ba6a4bf4f18b87f345f104e6a6961f34")
+        expect(nixpkgs.version).to eq("nixos-unstable")
         expect(nixpkgs.package_manager).to eq("nix")
         expect(nixpkgs.requirements).to eq(
           [{
-            requirement: nil,
+            requirement: "nixos-unstable",
             file: "flake.lock",
             source: {
               type: "git",
               url: "https://github.com/NixOS/nixpkgs",
               branch: "nixos-unstable",
-              ref: "nixos-unstable"
+              ref: "nixos-unstable",
+              commit_sha: "3030f185ba6a4bf4f18b87f345f104e6a6961f34",
+              nixpkgs: true
             },
             groups: []
           }]
@@ -146,6 +148,44 @@ RSpec.describe Dependabot::Nix::FileParser do
         dep = dependencies.find { |d| d.name == "internal-lib" }
         expect(dep.requirements.first[:source][:url])
           .to eq("https://github.corp.example.com/myteam/internal-lib")
+      end
+    end
+
+    context "with a versioned nixpkgs input (nixos-23.05)" do
+      let(:flake_nix_content) { fixture("flake_nixpkgs_versioned.nix") }
+      let(:flake_lock_content) { fixture("flake_nixpkgs_versioned.lock") }
+
+      it "detects nixpkgs and uses branch name as version" do
+        nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
+        expect(nixpkgs.version).to eq("nixos-23.05")
+      end
+
+      it "stores the commit SHA in source metadata" do
+        nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
+        source = nixpkgs.requirements.first[:source]
+        expect(source[:commit_sha]).to eq("aabbccdd11223344556677889900aabbccddeeff")
+        expect(source[:nixpkgs]).to be true
+      end
+
+      it "sets the requirement to the branch name" do
+        nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
+        expect(nixpkgs.requirements.first[:requirement]).to eq("nixos-23.05")
+      end
+
+      it "does not affect non-nixpkgs inputs" do
+        flake_utils = dependencies.find { |d| d.name == "flake-utils" }
+        expect(flake_utils.version).to eq("b1d9ab70662946ef0850d488da1c9019f3a9752a")
+        expect(flake_utils.requirements.first[:requirement]).to be_nil
+        expect(flake_utils.requirements.first[:source][:nixpkgs]).to be_nil
+      end
+    end
+
+    context "with nixos-unstable (still a valid nixpkgs version)" do
+      it "detects nixpkgs with nixos-unstable ref" do
+        nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
+        # The standard fixture uses nixos-unstable which is a valid NixpkgsVersion
+        expect(nixpkgs.version).to eq("nixos-unstable")
+        expect(nixpkgs.requirements.first[:source][:nixpkgs]).to be true
       end
     end
   end

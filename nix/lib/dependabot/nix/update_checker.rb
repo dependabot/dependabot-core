@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -7,6 +7,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/nix/version"
 require "dependabot/nix/requirement"
+require "dependabot/nix/nixpkgs_version"
 require "dependabot/git_commit_checker"
 
 module Dependabot
@@ -15,6 +16,7 @@ module Dependabot
       extend T::Sig
 
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/nixpkgs_branch_finder"
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
@@ -39,8 +41,18 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
-        # Flake input requirements are the URL and branch — we never update those.
-        dependency.requirements
+        return dependency.requirements unless nixpkgs_input?
+
+        new_branch = latest_nixpkgs_branch
+        return dependency.requirements unless new_branch
+
+        dependency.requirements.map do |req|
+          source = req.fetch(:source, {})
+          req.merge(
+            requirement: new_branch,
+            source: source.merge(branch: new_branch, ref: new_branch)
+          )
+        end
       end
 
       private
@@ -56,9 +68,29 @@ module Dependabot
         raise NotImplementedError
       end
 
+      sig { returns(T::Boolean) }
+      def nixpkgs_input?
+        source = dependency.requirements.first&.dig(:source)
+        source&.dig(:nixpkgs) == true
+      end
+
+      sig { returns(T.nilable(String)) }
+      def latest_nixpkgs_branch
+        @latest_nixpkgs_branch ||= T.let(
+          NixpkgsBranchFinder.new(
+            dependency: dependency,
+            credentials: credentials
+          ).latest_branch,
+          T.nilable(String)
+        )
+      end
+
       sig { returns(T.nilable(String)) }
       def fetch_latest_version
-        T.let(
+        if nixpkgs_input?
+          # For nixpkgs inputs, the "version" is the branch name
+          latest_nixpkgs_branch || dependency.version
+        else
           LatestVersionFinder.new(
             dependency: dependency,
             dependency_files: dependency_files,
@@ -67,9 +99,8 @@ module Dependabot
             security_advisories: security_advisories,
             cooldown_options: update_cooldown,
             raise_on_ignored: raise_on_ignored
-          ).latest_tag,
-          T.nilable(String)
-        )
+          ).latest_tag
+        end
       end
     end
   end
