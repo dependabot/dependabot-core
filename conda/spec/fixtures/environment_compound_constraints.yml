@@ -13,4 +13,4 @@ dependencies:
   - scipy<=1.17.0
   - pip
   - pip:
-    - hmmlearn==0.2
+      - hmmlearn==0.2
