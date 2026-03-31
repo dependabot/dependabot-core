@@ -332,10 +332,12 @@ module Dependabot
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
+          original_content = File.read(lockfile_basename)
+
           NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
 
           updated_content = File.read(lockfile_basename)
-          if lockfile_content_unchanged?(updated_content, sub_dependencies)
+          if updated_content == original_content
             # `npm update` is a no-op for transitive dependencies not listed in
             # any package.json (common in workspace repos). Fall back to
             # `npm audit fix` which can update these in the lockfile.
@@ -350,25 +352,6 @@ module Dependabot
           end
 
           { lockfile_basename => updated_content }
-        end
-
-        sig do
-          params(
-            updated_content: String,
-            sub_dependencies: T::Array[Dependabot::Dependency]
-          ).returns(T::Boolean)
-        end
-        def lockfile_content_unchanged?(updated_content, sub_dependencies)
-          parsed = JSON.parse(updated_content)
-          packages = parsed.fetch("packages", {})
-
-          sub_dependencies.any? do |dep|
-            packages.any? do |path, details|
-              next false unless path.end_with?("/#{dep.name}") || path == "node_modules/#{dep.name}"
-
-              details["version"] == dep.previous_version
-            end
-          end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
