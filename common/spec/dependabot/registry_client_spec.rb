@@ -184,6 +184,42 @@ RSpec.describe Dependabot::RegistryClient do
       end
     end
 
+    describe "when Excon encounters a socket error" do
+      let(:error) { Excon::Error::Socket.new(EOFError.new) }
+
+      it "only attempts to reach it once via get and then plays back the first error" do
+        expect(Excon).to receive(:get).with(unreachable_url, anything).once
+
+        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+      end
+
+      it "replays the first get error for the host on any request path" do
+        expect(Excon).to receive(:get).with(unreachable_url, anything).once
+
+        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        expect { described_class.get(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
+        expect { described_class.get(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+      end
+
+      it "only attempts to reach it once via head and then plays back the first error" do
+        expect(Excon).to receive(:head).with(unreachable_url, anything).once
+
+        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+      end
+
+      it "replays the first head error for the host on any request path" do
+        expect(Excon).to receive(:head).with(unreachable_url, anything).once
+
+        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        expect { described_class.head(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
+        expect { described_class.head(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+      end
+    end
+
     describe "with an HTTP status error" do
       Excon::Error.status_errors.each do |status_code, error_details|
         context "with [#{status_code}] - #{error_details.last}" do
