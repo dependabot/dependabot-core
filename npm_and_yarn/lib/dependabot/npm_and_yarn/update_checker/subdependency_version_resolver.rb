@@ -160,13 +160,15 @@ module Dependabot
         def run_yarn_berry_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              original_content = File.read(lockfile_name)
+
               Helpers.run_yarn_command(
                 "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
                 fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
               )
 
               updated_content = File.read(lockfile_name)
-              if yarn_update_was_noop?(updated_content)
+              if updated_content == original_content
                 begin
                   NativeHelpers.run_yarn_audit_fix_command
                 rescue SharedHelpers::HelperSubprocessFailed
@@ -186,13 +188,15 @@ module Dependabot
         def run_pnpm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              original_content = File.read(lockfile_name)
+
               Helpers.run_pnpm_command(
                 "update #{dependency.name} --lockfile-only",
                 fingerprint: "update <dependency_name> --lockfile-only"
               )
 
               updated_content = File.read(lockfile_name)
-              if pnpm_update_was_noop?(updated_content)
+              if updated_content == original_content
                 begin
                   NativeHelpers.run_pnpm_audit_fix_command
                   Helpers.run_pnpm_command(
@@ -216,10 +220,12 @@ module Dependabot
         def run_npm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              original_content = File.read(lockfile_name)
+
               NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
 
               updated_content = File.read(lockfile_name)
-              if npm_update_was_noop?(updated_content)
+              if updated_content == original_content
                 # `npm update` is a no-op for transitive dependencies not in
                 # any package.json (common in workspace repos). Fall back to
                 # `npm audit fix` which can resolve these in the lockfile.
@@ -236,31 +242,6 @@ module Dependabot
               { lockfile_name => updated_content }
             end
           end
-        end
-
-        sig { params(updated_content: String).returns(T::Boolean) }
-        def npm_update_was_noop?(updated_content)
-          parsed = JSON.parse(updated_content)
-          packages = parsed.fetch("packages", {})
-
-          packages.any? do |path, details|
-            next false unless path.end_with?("/#{dependency.name}") ||
-                              path == "node_modules/#{dependency.name}"
-
-            details["version"] == dependency.version
-          end
-        end
-
-        sig { params(updated_content: String).returns(T::Boolean) }
-        def yarn_update_was_noop?(updated_content)
-          updated_content.include?("\"#{dependency.name}@") &&
-            updated_content.include?("version: #{dependency.version}")
-        end
-
-        sig { params(updated_content: String).returns(T::Boolean) }
-        def pnpm_update_was_noop?(updated_content)
-          updated_content.include?("'#{dependency.name}@#{dependency.version}'") ||
-            updated_content.include?("/#{dependency.name}@#{dependency.version}")
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
