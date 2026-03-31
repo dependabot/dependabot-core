@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
-require "dependabot/swift/file_updater"
+require "dependabot/file_updaters/base"
 require "dependabot/swift/url_helpers"
 
 module Dependabot
