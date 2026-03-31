@@ -254,11 +254,11 @@ module Dependabot
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
+          original_content = File.read(yarn_lock.name)
           Helpers.run_yarn_commands(*commands)
 
           updated_content = File.read(yarn_lock.name)
-          if updated_content.include?("#{dep.name}@") &&
-             updated_content.include?("version: #{dep.previous_version}")
+          if updated_content == original_content
             begin
               NativeHelpers.run_yarn_audit_fix_command
             rescue SharedHelpers::HelperSubprocessFailed
