@@ -376,6 +376,23 @@ RSpec.describe Dependabot::Conda::FileParser do
       end
     end
 
+    context "with compound constraints and digits-only upper bounds (>=X,<=Y)" do
+      let(:environment_content) do
+        <<~YAML
+          dependencies:
+            - pkg>=6,<=7
+        YAML
+      end
+
+      it "does not treat digits-only upper bounds as fully qualified specs" do
+        dependencies = parser.parse
+        pkg_dep = dependencies.find { |dep| dep.name == "pkg" }
+
+        expect(pkg_dep).not_to be_nil
+        expect(pkg_dep.requirements.first[:requirement]).to eq(">=6,<=7")
+      end
+    end
+
     context "with compatible release operator (~=) for conda packages" do
       let(:environment_content) do
         <<~YAML

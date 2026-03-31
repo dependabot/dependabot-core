@@ -294,15 +294,19 @@ module Dependabot
 
       sig { params(dep_string: String).returns(T::Boolean) }
       def fully_qualified_package?(dep_string)
-        # Fully qualified: package=version=build_string (e.g., python=3.9.7=h60c2a47_0)
+        # Fully qualified: name=version=build_string (e.g., python=3.9.7=h60c2a47_0)
+        # Reject compound/ranged constraints that contain comparator characters
+        return false if dep_string.match?(/[<>!~,]/)
         return false if dep_string.include?("==")
         return false if dep_string.include?("[")
 
         parts = dep_string.split("=")
-        return false unless parts.length >= 3
+        return false unless parts.length == 3
 
+        name = parts[0]
+        version = parts[1]
         build_string = parts[2]
-        return false unless build_string && !build_string.empty?
+        return false if name.empty? || version.empty? || build_string.empty?
 
         build_string.match?(/^[a-zA-Z0-9_]+$/)
       end
