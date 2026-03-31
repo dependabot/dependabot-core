@@ -298,7 +298,13 @@ module Dependabot
         return false if dep_string.include?("==")
         return false if dep_string.include?("[")
 
-        dep_string.count("=") >= 2
+        parts = dep_string.split("=")
+        return false unless parts.length >= 3
+
+        build_string = parts[2]
+        return false unless build_string && !build_string.empty?
+
+        build_string.match?(/^[a-zA-Z0-9_]+$/)
       end
 
       sig { override.returns(T::Boolean) }
