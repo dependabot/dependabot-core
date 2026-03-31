@@ -383,14 +383,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
     it "falls back to yarn npm audit --fix when lockfile still has previous version" do
       expect(Dependabot::NpmAndYarn::NativeHelpers)
-        .to receive(:run_yarn_audit_fix_command).once
+        .to receive(:run_yarn_audit_fix_command).once.and_return("")
 
-      Dir.mktmpdir do |tmp_dir|
-        File.write(File.join(tmp_dir, yarn_lock.name), yarn_lock.content)
-        Dir.chdir(tmp_dir) do
-          updater.send(:run_yarn_berry_subdependency_updater, yarn_lock: yarn_lock)
-        end
-      end
+      # Trigger the update via the public API; the stubbed run_yarn_commands
+      # simulates a no-op so the updater should fall back to yarn audit fix.
+      updated_yarn_lock_content
     end
   end
 end
