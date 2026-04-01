@@ -98,6 +98,11 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
+      it "still includes public PyPI as a fallback" do
+        possible_urls = finder.send(:possible_listing_urls)
+        expect(possible_urls).to include(a_string_matching(/pypi\.org/))
+      end
+
       context "with the creds passed as a token" do
         let(:credentials) do
           [Dependabot::Credential.new(
@@ -189,9 +194,6 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       before do
-        # Stub the public PyPI to return 404 (private registry replaces base)
-        stub_request(:get, pypi_url).to_return(status: 404, body: "")
-
         # Stub the correctly converted private registry URL (/simple/ -> /pypi/)
         private_url = "https://jfrogghdemo.jfrog.io/artifactory/api/pypi/dependabot-pip/pypi/#{dependency_name}/json"
         stub_request(:get, private_url)
@@ -215,6 +217,21 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         expect(possible_urls).not_to include(
           "https://testuser:testpass@jfrogghdemo.jfrog.io/artifactory/api/pypi/dependabot-pip/simple/luigi/json"
         )
+      end
+
+      it "does not include public PyPI in possible listing URLs" do
+        possible_urls = finder.send(:possible_listing_urls)
+        expect(possible_urls).not_to include(a_string_matching(/pypi\.org/))
+      end
+
+      it "does not query public PyPI even when private registry returns 404" do
+        private_url = "https://jfrogghdemo.jfrog.io/artifactory/api/pypi/dependabot-pip/pypi/#{dependency_name}/json"
+        stub_request(:get, private_url)
+          .with(basic_auth: %w(testuser testpass))
+          .to_return(status: 404, body: "")
+
+        source_url
+        expect(WebMock).not_to have_requested(:get, pypi_url)
       end
 
       context "when the private registry endpoint doesn't end with /simple/" do
@@ -266,25 +283,31 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       before do
-        # Stub the public PyPI to return 404 (private registry replaces base)
-        stub_request(:get, pypi_url).to_return(status: 404, body: "")
-
         # Stub the correctly converted private registry URL
         # Should convert only the trailing /simple to /pypi, leaving repository name intact
         private_url = "https://registry.example.com/simple/pypi/#{dependency_name}/json"
         stub_request(:get, private_url)
           .with(basic_auth: %w(testuser testpass))
           .to_return(status: 200, body: pypi_response)
-
-        # Also stub the original URL (since both URLs should be tried)
-        original_url = "https://registry.example.com/simple/simple/#{dependency_name}/json"
-        stub_request(:get, original_url)
-          .with(basic_auth: %w(testuser testpass))
-          .to_return(status: 404, body: "")
       end
 
       it "correctly converts only trailing /simple/ to /pypi/, preserving 'simple' in repository name" do
         expect(source_url).to eq("https://github.com/spotify/luigi")
+      end
+
+      it "does not include public PyPI in possible listing URLs" do
+        possible_urls = finder.send(:possible_listing_urls)
+        expect(possible_urls).not_to include(a_string_matching(/pypi\.org/))
+      end
+
+      it "does not query public PyPI even when private registry returns 404" do
+        private_url = "https://registry.example.com/simple/pypi/#{dependency_name}/json"
+        stub_request(:get, private_url)
+          .with(basic_auth: %w(testuser testpass))
+          .to_return(status: 404, body: "")
+
+        source_url
+        expect(WebMock).not_to have_requested(:get, pypi_url)
       end
 
       it "generates the correct URL with 'simple' preserved in repository name" do

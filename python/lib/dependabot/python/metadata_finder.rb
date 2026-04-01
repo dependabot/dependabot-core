@@ -261,12 +261,22 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def possible_listing_urls
-        credential_urls =
+        index_credentials =
           credentials
           .select { |cred| cred["type"] == "python_index" }
-          .map { |c| AuthedUrlBuilder.authed_url(credential: c) }
 
-        (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
+        credential_urls = index_credentials
+                          .map { |c| AuthedUrlBuilder.authed_url(credential: c) }
+                          .reject { |url| url.strip.empty? }
+
+        base_urls = if index_credentials.any?(&:replaces_base?)
+                      credential_urls
+                    else
+                      credential_urls + [MAIN_PYPI_URL]
+                    end
+        base_urls = [MAIN_PYPI_URL] if base_urls.empty?
+
+        base_urls.map do |base_url|
           # Convert /simple/ endpoints to /pypi/ for JSON API access
           json_base_url = base_url.sub(%r{/simple/?$}i, "/pypi")
           json_base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
