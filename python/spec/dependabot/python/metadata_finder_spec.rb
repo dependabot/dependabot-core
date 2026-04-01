@@ -540,4 +540,182 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       end
     end
   end
+
+  describe "#maintainer_changes" do
+    subject(:maintainer_changes) { finder.maintainer_changes }
+
+    let(:version) { "2.1.0" }
+    let(:previous_version) { "2.0.0" }
+    let(:pypi_version_url) { "https://pypi.org/pypi/#{dependency_name}/#{version}/json" }
+    let(:pypi_previous_version_url) do
+      "https://pypi.org/pypi/#{dependency_name}/#{previous_version}/json"
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: version,
+        previous_version: previous_version,
+        requirements: [{
+          file: "requirements.txt",
+          requirement: "==#{version}",
+          groups: [],
+          source: nil
+        }],
+        package_manager: "pip"
+      )
+    end
+
+    context "when there is no previous version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            file: "requirements.txt",
+            requirement: "==#{version}",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the maintainers have not changed" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when all maintainers are new" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_changed.json"))
+      end
+
+      it "returns a warning about new maintainers" do
+        expect(maintainer_changes).to eq(
+          "None of the maintainers for your current version of luigi are " \
+          "listed as maintainers for the new version on PyPI."
+        )
+      end
+    end
+
+    context "when some maintainers overlap" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(
+            status: 200,
+            body: fixture("pypi", "pypi_response_ownership_partial_change.json")
+          )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the organization changes" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_org_old.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(
+            status: 200,
+            body: fixture("pypi", "pypi_response_ownership_org_changed.json")
+          )
+      end
+
+      it "returns a warning about the organization change" do
+        expect(maintainer_changes).to eq(
+          "The organization that maintains luigi on PyPI has " \
+          "changed since your current version."
+        )
+      end
+    end
+
+    context "when the organization is added" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(
+            status: 200,
+            body: fixture("pypi", "pypi_response_ownership_org_changed.json")
+          )
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the organization is removed" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_org_old.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+      end
+
+      it "returns a warning about the organization change" do
+        expect(maintainer_changes).to eq(
+          "The organization that maintains luigi on PyPI has " \
+          "changed since your current version."
+        )
+      end
+    end
+
+    context "when the dependency uses a local version" do
+      let(:version) { "2.1.0+build1" }
+      let(:previous_version) { "2.0.0+build1" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when fetching ownership data times out" do
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+        stub_request(:get, pypi_previous_version_url)
+          .to_raise(Excon::Error::Socket.new(IOError.new("socket error")))
+        stub_request(:get, pypi_version_url)
+          .to_raise(OpenSSL::SSL::SSLError.new("ssl error"))
+      end
+
+      it "returns nil and logs the request failures" do
+        expect(maintainer_changes).to be_nil
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(/Error fetching Python package ownership/).at_least(:once)
+      end
+    end
+
+    context "when ownership info is not available for the new version" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_no_ownership.json"))
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the version endpoint is not found" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 404, body: "")
+        stub_request(:get, pypi_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+      end
+
+      it { is_expected.to be_nil }
+    end
+  end
 end

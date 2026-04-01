@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "openssl"
 require "uri"
 
 require "dependabot/metadata_finders"
@@ -36,6 +37,37 @@ module Dependabot
           pypi_listing.dig("info", "project_urls", "Homepage") ||
           pypi_listing.dig("info", "project_urls", "homepage") ||
           super
+      end
+
+      sig { override.returns(T.nilable(String)) }
+      def maintainer_changes
+        return unless dependency.previous_version
+        return unless dependency.version
+
+        previous_ownership = ownership_for_version(T.must(dependency.previous_version))
+        current_ownership = ownership_for_version(T.must(dependency.version))
+
+        if previous_ownership.nil? || current_ownership.nil?
+          Dependabot.logger.info("Unable to determine ownership changes for #{dependency.name}")
+          return
+        end
+
+        previous_org = previous_ownership["organization"]
+        current_org = current_ownership["organization"]
+
+        if previous_org != current_org && !(previous_org.nil? && current_org)
+          return "The organization that maintains #{dependency.name} on PyPI has " \
+                 "changed since your current version."
+        end
+
+        previous_users = ownership_users(previous_ownership)
+        current_users = ownership_users(current_ownership)
+
+        # Warn only when there were previous maintainers and none of them remain
+        return unless previous_users.any? && !previous_users.intersect?(current_users)
+
+        "None of the maintainers for your current version of #{dependency.name} are " \
+          "listed as maintainers for the new version on PyPI."
       end
 
       private
@@ -119,7 +151,10 @@ module Dependabot
             next unless full_url
 
             response = Dependabot::RegistryClient.get(url: full_url)
-            next unless response.status == 200
+            unless response.status == 200
+              Dependabot.logger.warn("Error fetching source URL #{full_url}: HTTP #{response.status}")
+              next
+            end
 
             response.body.include?(normalised_dependency_name)
           end,
@@ -175,7 +210,8 @@ module Dependabot
           begin
             Dependabot::RegistryClient.get(url: homepage_url)
           rescue Excon::Error::Timeout, Excon::Error::Socket,
-                 Excon::Error::TooManyRedirects, ArgumentError
+                 Excon::Error::TooManyRedirects, OpenSSL::SSL::SSLError, ArgumentError => e
+            Dependabot.logger.warn("Error fetching Python homepage URL #{homepage_url}: #{e.class}: #{e.message}")
             nil
           end,
           T.nilable(Excon::Response)
@@ -197,9 +233,8 @@ module Dependabot
 
           @pypi_listing = JSON.parse(response.body)
           return @pypi_listing
-        rescue JSON::ParserError
-          next
-        rescue Excon::Error::Timeout
+        rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, OpenSSL::SSL::SSLError => e
+          Dependabot.logger.warn("Error fetching Python package listing from #{url}: #{e.class}: #{e.message}")
           next
         end
 
@@ -246,6 +281,53 @@ module Dependabot
           json_base_url = base_url.sub(%r{/simple/?$}i, "/pypi")
           json_base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
+      end
+
+      sig { params(version: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def ownership_for_version(version)
+        if version.include?("+")
+          Dependabot.logger.info("Version #{version} includes a local version identifier, skipping ownership check")
+          return nil
+        end
+
+        possible_version_listing_urls(version).each do |url|
+          response = fetch_authed_url(url)
+          unless response.status == 200
+            Dependabot.logger.warn(
+              "Error fetching Python package ownership from #{url} for version #{version}: " \
+              "HTTP #{response.status}"
+            )
+            next
+          end
+
+          data = JSON.parse(response.body)
+          ownership = data["ownership"]
+          Dependabot.logger.debug("Found ownership for #{dependency.name} version #{version}")
+          return ownership
+        rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket,
+               Excon::Error::TooManyRedirects, OpenSSL::SSL::SSLError, ArgumentError => e
+          Dependabot.logger.warn(
+            "Error fetching Python package ownership from #{url} for version #{version}: #{e.class}: #{e.message}"
+          )
+          next
+        end
+
+        nil
+      end
+
+      sig { params(version: String).returns(T::Array[String]) }
+      def possible_version_listing_urls(version)
+        possible_listing_urls.map do |url|
+          url.sub(%r{/json$}, "/#{URI::DEFAULT_PARSER.escape(version)}/json")
+        end
+      end
+
+      sig { params(ownership: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+      def ownership_users(ownership)
+        roles = ownership["roles"]
+        return [] unless roles.is_a?(Array)
+
+        roles.filter_map { |role| role["user"] if role.is_a?(Hash) }
       end
 
       # Strip [extras] from name (dependency_name[extra_dep,other_extra])
