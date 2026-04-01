@@ -937,6 +937,58 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
+    context "when using a lockfile with a private/unresolvable provider" do
+      let(:project_name) { "lockfile_with_private_provider" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.42.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.42.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the target provider in the lockfile despite the unresolvable provider" do
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/aws" {
+              version     = "3.45.0"
+              constraints = ">= 3.42.0, < 3.46.0"
+          DEP
+        )
+      end
+
+      it "does not add the private provider to the lockfile" do
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).not_to include("acme-corp/nonexistent")
+      end
+    end
+
     context "when using versions.tf with a lockfile with multiple platforms present" do
       let(:project_name) { "lockfile_multiple_platforms" }
       let(:dependencies) do
