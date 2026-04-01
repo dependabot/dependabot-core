@@ -155,6 +155,8 @@ module Dependabot
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
+              original_content = File.read(pnpm_lock.name)
+
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
               else
@@ -164,7 +166,21 @@ module Dependabot
 
               run_pnpm_install
 
-              File.read(pnpm_lock.name)
+              updated_content = File.read(pnpm_lock.name)
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                begin
+                  NativeHelpers.run_pnpm_audit_fix_command
+                  run_pnpm_install
+                  dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
+                rescue SharedHelpers::HelperSubprocessFailed
+                  Dependabot.logger.info(
+                    "pnpm audit --fix failed or partially fixed — continuing with any changes made"
+                  )
+                end
+                updated_content = File.read(pnpm_lock.name)
+              end
+
+              updated_content
             end
           end
         end
