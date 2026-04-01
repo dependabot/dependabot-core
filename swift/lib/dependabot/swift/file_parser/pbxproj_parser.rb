@@ -34,9 +34,10 @@ module Dependabot
 
         # Patterns for extracting requirement fields
         KIND_PATTERN = T.let(/kind\s*=\s*(\w+);/, Regexp)
-        MIN_VERSION_PATTERN = T.let(/minimumVersion\s*=\s*([\d.]+);/, Regexp)
-        MAX_VERSION_PATTERN = T.let(/maximumVersion\s*=\s*([\d.]+);/, Regexp)
-        VERSION_PATTERN = T.let(/version\s*=\s*([\d.]+);/, Regexp)
+        VERSION_NUMBER_PATTERN = T.let(/[0-9A-Za-z.+-]+/, Regexp)
+        MIN_VERSION_PATTERN = T.let(/minimumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
+        MAX_VERSION_PATTERN = T.let(/maximumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
+        VERSION_PATTERN = T.let(/version\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
         BRANCH_PATTERN = T.let(/branch\s*=\s*"?([^";]+)"?;/, Regexp)
         REVISION_PATTERN = T.let(/revision\s*=\s*"?([^";]+)"?;/, Regexp)
 

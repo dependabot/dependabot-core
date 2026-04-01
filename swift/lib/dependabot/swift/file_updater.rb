@@ -1,18 +1,20 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/swift/file_updater/lockfile_updater"
-require "dependabot/swift/file_updater/manifest_updater"
-require "dependabot/swift/file_updater/xcode_lockfile_updater"
 require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
+
+      require_relative "file_updater/lockfile_updater"
+      require_relative "file_updater/manifest_updater"
+      require_relative "file_updater/pbxproj_updater"
+      require_relative "file_updater/xcode_lockfile_updater"
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -46,7 +48,7 @@ module Dependabot
         updated_files
       end
 
-      # Xcode SPM update: updates Package.resolved files in-place without CLI
+      # Xcode SPM update: updates Package.resolved and project.pbxproj files
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_xcode_spm_files
         updated_files = T.let([], T::Array[Dependabot::DependencyFile])
@@ -65,6 +67,8 @@ module Dependabot
 
           updated_files << updated_file(file: resolved_file, content: updated_content)
         end
+
+        update_pbxproj_files(updated_files)
 
         if updated_files.empty?
           raise Dependabot::DependencyFileNotFound.new(
@@ -104,6 +108,51 @@ module Dependabot
           dependency_files.select do |f|
             XcodeFileHelpers.xcode_resolved_path?(f.name) &&
               !f.support_file?
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).void }
+      def update_pbxproj_files(updated_files)
+        pbxproj_files.each do |pbxproj_file|
+          scoped_dependencies = dependencies_for_pbxproj(pbxproj_file)
+          next if scoped_dependencies.empty?
+
+          updater = PbxprojUpdater.new(
+            pbxproj_file: pbxproj_file,
+            dependencies: scoped_dependencies
+          )
+          updated_content = updater.updated_pbxproj_content
+          next if updated_content == pbxproj_file.content
+
+          updated = updated_file(file: pbxproj_file, content: updated_content)
+          updated.support_file = false
+          updated_files << updated
+        end
+      end
+
+      sig do
+        params(pbxproj_file: Dependabot::DependencyFile)
+          .returns(T::Array[Dependabot::Dependency])
+      end
+      def dependencies_for_pbxproj(pbxproj_file)
+        dependencies.select do |dep|
+          requirement_files_for(dep).include?(pbxproj_file.name)
+        end
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(T::Set[String]) }
+      def requirement_files_for(dep)
+        files = dep.requirements.map { |req| req[:file] } + (dep.previous_requirements || []).map { |req| req[:file] }
+        files.compact.to_set
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pbxproj_files
+        @pbxproj_files ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?("project.pbxproj") && f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
