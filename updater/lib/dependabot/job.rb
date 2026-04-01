@@ -28,7 +28,6 @@ require "dependabot/updater/update_type_helper"
 module Dependabot
   class Job # rubocop:disable Metrics/ClassLength
     extend T::Sig
-    include Dependabot::Updater::UpdateTypeHelper
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
     PERMITTED_KEYS = T.let(
@@ -301,7 +300,10 @@ module Dependabot
     #   was vulnerable instead of the current version. This prevents security updates
     #   from being filtered out after the dependency has already been updated in group scenarios.
     #
-    # rubocop:disable Metrics/AbcSize
+    # NOTE: update-types (semver-based filtering) is handled in ignore_conditions_for,
+    # not here — allowed_update? runs pre-resolution when only the current version is
+    # known, and semver-level filtering needs version ranges computed from that version.
+    #
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
     sig { params(dependency: Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
@@ -324,15 +326,6 @@ module Dependabot
         condition_name = update.fetch("dependency-name", dependency.name)
         next false unless name_match?(condition_name, dependency.name)
 
-        # Check update-types (semver-based filtering) - security updates bypass this
-        allowed_update_types = update.fetch("update-types", nil)
-        if allowed_update_types.is_a?(Array) && !allowed_update_types.empty? && !security_update
-          dep_update_type = update_type_for_dependency(dependency)
-          config_type = "version-update:semver-#{dep_update_type}" if dep_update_type
-          normalized_types = allowed_update_types.filter_map { |t| t.is_a?(String) ? t.downcase.strip : nil }
-          next false if config_type && !normalized_types.include?(config_type)
-        end
-
         # Check the dependency-type (defaulting to all)
         dep_type = update.fetch("dependency-type", "all")
         next false if dep_type == "indirect" &&
@@ -348,7 +341,6 @@ module Dependabot
         true
       end
     end
-    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
 
@@ -443,10 +435,16 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def ignore_conditions_for(dependency)
-      update_config.ignored_versions_for(
+      conditions = update_config.ignored_versions_for(
         dependency,
         security_updates_only: security_updates_only?
       )
+
+      # Supplement with implicit ignore ranges derived from allow update-types.
+      # allow update-types cannot be checked in allowed_update? because it runs
+      # pre-resolution when only the current version is known. Version ranges
+      # only need the current version — the same mechanism as ignore update-types.
+      conditions + ignored_versions_from_allowed_update_types(dependency)
     end
 
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
@@ -483,6 +481,100 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
       ignore_conditions_for(dependency).any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
+    end
+
+    # Derives implicit ignore version ranges from allow rules that specify update-types.
+    # For example, if allow says only "semver-patch", this computes ignore ranges for
+    # major and minor — using the same mechanism as IgnoreCondition#versions_by_type.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def ignored_versions_from_allowed_update_types(dependency)
+      return [] if security_updates_only?
+
+      permitted_types = collect_permitted_update_types(dependency)
+      return [] if permitted_types.empty?
+
+      disallowed_types = Dependabot::Updater::UpdateTypeHelper::ALL_SEMVER_UPDATE_TYPES - permitted_types
+
+      version = version_for_dependency(dependency)
+      return [] unless version
+
+      disallowed_types.flat_map do |t|
+        case t
+        when Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+          version.ignored_patch_versions
+        when Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE
+          version.ignored_minor_versions
+        when Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE
+          version.ignored_major_versions
+        else
+          []
+        end
+      end.compact
+    end
+
+    # Collects the union of update-types from all matching allow rules for a dependency.
+    # Returns empty if no matching rules specify update-types (meaning no filtering needed).
+    # If any matching rule lacks update-types, it permits all types — returns empty.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def collect_permitted_update_types(dependency)
+      matching_rules = matching_allow_rules(dependency)
+      return [] if matching_rules.empty?
+
+      # If any matching rule lacks update-types, it permits all types
+      return [] if matching_rules.any? { |r| allow_rule_permits_all_types?(r) }
+
+      matching_rules
+        .flat_map { |r| r.fetch("update-types", []) }
+        .filter_map { |t| t.is_a?(String) ? t.downcase.strip : nil }
+        .uniq
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[String, T.untyped]]) }
+    def matching_allow_rules(dependency)
+      allowed_updates.select do |update|
+        allow_rule_matches_dependency?(update, dependency)
+      end
+    end
+
+    sig { params(update: T::Hash[String, T.untyped], dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def allow_rule_matches_dependency?(update, dependency)
+      condition_name = update.fetch("dependency-name", nil)
+      return false if condition_name && !name_match?(condition_name, dependency.name)
+
+      dep_type = update.fetch("dependency-type", nil)
+      return true if dep_type.nil? || dep_type == "all"
+
+      # Indirect deps don't match top-level type rules (matching allowed_update? behavior)
+      return false if dependency.requirements.none? && TOP_LEVEL_DEPENDENCY_TYPES.include?(dep_type)
+
+      case dep_type
+      when "production" then dependency.production?
+      when "development" then !dependency.production?
+      when "direct" then dependency.requirements.any?
+      when "indirect" then dependency.requirements.none?
+      else true
+      end
+    end
+
+    sig { params(rule: T::Hash[String, T.untyped]).returns(T::Boolean) }
+    def allow_rule_permits_all_types?(rule)
+      !rule.key?("update-types") || !rule["update-types"].is_a?(Array) || rule["update-types"].empty?
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Version)) }
+    def version_for_dependency(dependency)
+      version_str = dependency.version
+      return nil if version_str.nil? || version_str.empty?
+
+      version_class = begin
+        Dependabot::Utils.version_class_for_package_manager(dependency.package_manager)
+      rescue StandardError
+        Dependabot::Version
+      end
+
+      return nil unless version_class.correct?(version_str)
+
+      version_class.new(version_str)
     end
 
     sig { void }
