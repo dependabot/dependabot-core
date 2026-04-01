@@ -20,6 +20,8 @@ module Dependabot
       class VersionFinder < Dependabot::Maven::Shared::SharedVersionFinder
         extend T::Sig
 
+        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 

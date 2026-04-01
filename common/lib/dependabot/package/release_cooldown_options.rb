@@ -66,12 +66,12 @@ module Dependabot
         current_major, current_minor, current_patch = current_semver
         new_major, new_minor, new_patch = new_semver
 
-        return @semver_major_days if T.must(new_major) > T.must(current_major)
+        return @semver_major_days if new_major > current_major
 
-        if T.must(new_major) == T.must(current_major)
-          return @semver_minor_days if T.must(new_minor) > T.must(current_minor)
-          return @semver_patch_days if T.must(new_minor) == T.must(current_minor) &&
-                                       T.must(new_patch) > T.must(current_patch)
+        if new_major == current_major
+          return @semver_minor_days if new_minor > current_minor
+          return @semver_patch_days if new_minor == current_minor &&
+                                       new_patch > current_patch
         end
 
         @default_days

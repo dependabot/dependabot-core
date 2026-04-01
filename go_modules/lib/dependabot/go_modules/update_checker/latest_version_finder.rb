@@ -20,6 +20,8 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+
         RESOLVABILITY_ERROR_REGEXES = T.let(
           [
             # Package url/proxy doesn't include any redirect meta tags

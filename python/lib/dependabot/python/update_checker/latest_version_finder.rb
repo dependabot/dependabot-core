@@ -23,6 +23,8 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
+
         sig do
           params(git_commit_checker: Dependabot::GitCommitChecker)
             .returns(T.nilable(T::Hash[Symbol, T.untyped]))
