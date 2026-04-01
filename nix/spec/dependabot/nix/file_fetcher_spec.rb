@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Nix::FileFetcher do
   end
 
   before do
-    allow(file_fetcher_instance).to receive_messages(commit: "sha", allow_beta_ecosystems?: true)
+    allow(file_fetcher_instance).to receive_messages(commit: "sha")
   end
 
   describe ".required_files_in?" do
@@ -75,17 +75,6 @@ RSpec.describe Dependabot::Nix::FileFetcher do
     it "fetches both flake.nix and flake.lock" do
       expect(file_fetcher_instance.files.count).to eq(2)
       expect(file_fetcher_instance.files.map(&:name)).to match_array(%w(flake.nix flake.lock))
-    end
-
-    context "when beta ecosystems are not allowed" do
-      before do
-        allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(false)
-      end
-
-      it "raises a DependencyFileNotFound error" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotFound)
-      end
     end
   end
 
