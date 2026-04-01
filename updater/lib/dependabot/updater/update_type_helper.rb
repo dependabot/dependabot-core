@@ -98,6 +98,27 @@ module Dependabot
 
         SemverParts.new(major: major, minor: minor, patch: patch)
       end
+
+      # Determines the semver update type ("major", "minor", "patch") for a dependency
+      # by comparing its previous and current versions. Returns nil if it cannot be determined.
+      sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
+      def update_type_for_dependency(dep)
+        prev_str = dep.respond_to?(:previous_version) ? dep.previous_version&.to_s : nil
+        curr_str = dep.respond_to?(:version) ? dep.version&.to_s : nil
+        return nil unless prev_str && curr_str
+
+        version_class = version_class_for(dep)
+        return nil unless version_class
+
+        update_type = update_type_from_class(version_class, prev_str, curr_str)
+        return update_type if update_type
+
+        versions = build_versions(version_class, prev_str, curr_str)
+        return nil unless versions
+
+        prev_ver, curr_ver = versions
+        classify_semver_update(prev_ver, curr_ver)
+      end
     end
   end
 end

@@ -142,5 +142,34 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
         expect(req[:branch]).to eq("main")
       end
     end
+
+    context "with prerelease minimumVersion" do
+      let(:file_name) { "MyApp.xcodeproj/project.pbxproj" }
+      let(:file_content) do
+        <<~PBXPROJ
+          // !$*UTF8*$!
+          {
+            objects = {
+              A1B2C3D4E5F60001 = {
+                isa = XCRemoteSwiftPackageReference;
+                repositoryURL = "https://github.com/apple/swift-nio.git";
+                requirement = {
+                  kind = upToNextMajorVersion;
+                  minimumVersion = 2.54.0-beta.1;
+                };
+              };
+            };
+            rootObject = A1B2C3D4E5F60000;
+          }
+        PBXPROJ
+      end
+
+      it "parses prerelease versions" do
+        req = parser.parse["github.com/apple/swift-nio"]
+        expect(req[:requirement]).to eq(">= 2.54.0.pre.beta.1, < 3.0.0.0")
+        expect(req[:requirement_string]).to eq("from: \"2.54.0-beta.1\"")
+        expect(req[:kind]).to eq("upToNextMajorVersion")
+      end
+    end
   end
 end

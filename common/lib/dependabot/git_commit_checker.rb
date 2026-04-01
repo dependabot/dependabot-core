@@ -277,6 +277,11 @@ module Dependabot
       to_local_tag(max_version_tag)
     end
 
+    sig { returns(T::Array[Dependabot::GitRef]) }
+    def all_version_tags
+      allowed_versions(local_tags, filter_by_prefix: false)
+    end
+
     private
 
     sig { returns(Dependabot::Dependency) }
@@ -335,11 +340,16 @@ module Dependabot
       version.split(".").length
     end
 
-    sig { params(local_tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
-    def allowed_versions(local_tags)
+    sig do
+      params(
+        local_tags: T::Array[Dependabot::GitRef],
+        filter_by_prefix: T::Boolean
+      ).returns(T::Array[Dependabot::GitRef])
+    end
+    def allowed_versions(local_tags, filter_by_prefix: true)
       tags =
         local_tags
-        .select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+        .select { |t| version_tag?(t.name) && (filter_by_prefix ? matches_existing_prefix?(t.name) : true) }
       filtered = tags
                  .reject { |t| tag_included_in_ignore_requirements?(t) }
       if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
