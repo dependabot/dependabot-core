@@ -526,6 +526,7 @@ module Dependabot
       matching_rules
         .flat_map { |r| r.fetch("update-types", []) }
         .filter_map { |t| t.is_a?(String) ? t.downcase.strip : nil }
+        .select { |t| Dependabot::Updater::UpdateTypeHelper::ALL_SEMVER_UPDATE_TYPES.include?(t) }
         .uniq
     end
 
