@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/security_advisory"
 require "dependabot/uv/update_checker/lock_file_resolver"
 
@@ -211,6 +212,53 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
         # Should return a version < 2.30.0
         expect(result).to be < Dependabot::Uv::Version.new("2.30.0")
       end
+    end
+  end
+
+  describe "cooldown support" do
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7
+      )
+    end
+
+    let(:resolver_with_cooldown) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        repo_contents_path: nil,
+        security_advisories: security_advisories,
+        ignored_versions: ignored_versions,
+        update_cooldown: cooldown_options
+      )
+    end
+
+    it "passes cooldown_options to LatestVersionFinder" do
+      expect(Dependabot::Uv::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .with(hash_including(cooldown_options: cooldown_options))
+        .and_call_original
+
+      # Trigger creation of the LatestVersionFinder via a public method
+      pypi_url = "https://pypi.org/simple/requests/"
+      pypi_response = fixture("pypi", "pypi_simple_response_requests.html")
+      stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+
+      resolver_with_cooldown.lowest_resolvable_security_fix_version
+    end
+
+    it "does not pass cooldown_options when update_cooldown is nil" do
+      expect(Dependabot::Uv::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .with(hash_including(cooldown_options: nil))
+        .and_call_original
+
+      pypi_url = "https://pypi.org/simple/requests/"
+      pypi_response = fixture("pypi", "pypi_simple_response_requests.html")
+      stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+
+      resolver.lowest_resolvable_security_fix_version
     end
   end
 end
