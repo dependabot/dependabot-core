@@ -634,6 +634,22 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       it { is_expected.to be_nil }
     end
 
+    context "when the organization is removed" do
+      before do
+        stub_request(:get, pypi_previous_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_org_old.json"))
+        stub_request(:get, pypi_version_url)
+          .to_return(status: 200, body: fixture("pypi", "pypi_response_ownership_single.json"))
+      end
+
+      it "returns a warning about the organization change" do
+        expect(maintainer_changes).to eq(
+          "The organization that maintains luigi on PyPI has " \
+          "changed since your current version."
+        )
+      end
+    end
+
     context "when the dependency uses a local version" do
       let(:version) { "2.1.0+build1" }
       let(:previous_version) { "2.0.0+build1" }

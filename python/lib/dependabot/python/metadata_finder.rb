@@ -292,9 +292,10 @@ module Dependabot
 
           data = JSON.parse(response.body)
           ownership = data["ownership"]
-          Dependabot.logger.info("Found ownership for #{dependency.name} version #{version}")
+          Dependabot.logger.debug("Found ownership for #{dependency.name} version #{version}")
           return ownership
-        rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, OpenSSL::SSL::SSLError => e
+        rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket,
+               Excon::Error::TooManyRedirects, OpenSSL::SSL::SSLError, ArgumentError => e
           Dependabot.logger.warn(
             "Error fetching Python package ownership from #{url} for version #{version}: #{e.class}: #{e.message}"
           )
