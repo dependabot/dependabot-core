@@ -133,7 +133,6 @@ module Dependabot
         prev_ver, curr_ver = versions
         classify_semver_update(prev_ver, curr_ver)
       end
-
     end
   end
 end
