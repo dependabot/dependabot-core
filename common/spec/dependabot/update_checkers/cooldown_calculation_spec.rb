@@ -21,6 +21,11 @@ RSpec.describe Dependabot::UpdateCheckers::CooldownCalculation do
       release_date = Time.now - 1 # 1 second ago
       expect(described_class.within_cooldown_window?(release_date, 0)).to be false
     end
+
+    it "returns false when release_date is in the future" do
+      release_date = Time.now + (60 * 60) # 1 hour from now
+      expect(described_class.within_cooldown_window?(release_date, 1)).to be false
+    end
   end
 
   describe ".cooldown_days_for" do

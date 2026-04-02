@@ -248,7 +248,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LockFileResolver do
       resolver_with_cooldown.lowest_resolvable_security_fix_version
     end
 
-    it "does not pass cooldown_options when update_cooldown is nil" do
+    it "passes cooldown_options: nil when update_cooldown is nil" do
       expect(Dependabot::Uv::UpdateChecker::LatestVersionFinder)
         .to receive(:new)
         .with(hash_including(cooldown_options: nil))
