@@ -17,17 +17,12 @@ module Dependabot
       SEMVER_MINOR = "minor"
       SEMVER_PATCH = "patch"
 
-      SEMVER_LABEL_TO_UPDATE_TYPE = T.let(
-        {
-          SEMVER_MAJOR => Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE,
-          SEMVER_MINOR => Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE,
-          SEMVER_PATCH => Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
-        }.freeze,
-        T::Hash[String, String]
-      )
-
       ALL_SEMVER_UPDATE_TYPES = T.let(
-        SEMVER_LABEL_TO_UPDATE_TYPE.values.freeze,
+        [
+          Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE,
+          Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE,
+          Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+        ].freeze,
         T::Array[String]
       )
 
@@ -139,11 +134,6 @@ module Dependabot
         classify_semver_update(prev_ver, curr_ver)
       end
 
-      # Maps a semver label ("major", "minor", "patch") to the full config update-type string
-      sig { params(label: String).returns(T.nilable(String)) }
-      def semver_label_to_update_type(label)
-        SEMVER_LABEL_TO_UPDATE_TYPE[label]
-      end
     end
   end
 end
