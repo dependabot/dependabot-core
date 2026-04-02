@@ -12,6 +12,7 @@ require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/helpers"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/update_checkers/version_filters"
 
 module Dependabot
@@ -19,8 +20,6 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
-
-        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
 
         sig do
           params(
@@ -211,14 +210,14 @@ module Dependabot
           return false unless T.must(cooldown).included?(dependency.name)
 
           days = T.must(cooldown).default_days
-          passed_seconds = Time.now.to_i - release_date.to_i
 
           Dependabot.logger.info(
-            "Days since release : #{passed_seconds / (3600 * 24)} " \
-            "(cooldown days #{T.must(cooldown_options).default_days})"
+            "Days since release : #{(Time.now.to_i - release_date.to_i) / (24 * 60 * 60)} " \
+            "(cooldown days #{days})"
           )
 
-          passed_seconds < days * DAY_IN_SECONDS
+          Dependabot::UpdateCheckers::CooldownCalculation
+            .within_cooldown_window?(release_date, days)
         end
 
         sig { returns(String) }
