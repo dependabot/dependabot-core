@@ -21,10 +21,7 @@ module Dependabot
       def self.within_cooldown_window?(release_date, cooldown_days)
         return false if cooldown_days <= 0
 
-        time_since_release = Time.now.to_i - release_date.to_i
-        return false if time_since_release.negative?
-
-        time_since_release < (cooldown_days * DAY_IN_SECONDS)
+        (Time.now.to_i - release_date.to_i) < (cooldown_days * DAY_IN_SECONDS)
       end
 
       sig do
