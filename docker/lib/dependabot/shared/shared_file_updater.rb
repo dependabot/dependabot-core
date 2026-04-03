@@ -55,7 +55,7 @@ module Dependabot
         old_sources = previous_sources(file)
         new_sources = sources(file)
 
-        updated_content = T.let(file.content, T.untyped)
+        updated_content = T.let(file.content, T.nilable(String))
 
         T.must(old_sources).zip(new_sources).each do |old_source, new_source|
           updated_content = update_digest_and_tag(updated_content, old_source, T.must(new_source))
