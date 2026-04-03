@@ -281,7 +281,7 @@ module Dependabot
 
         sig { returns(T::Array[T.untyped]) }
         def fetch_github_releases
-          releases = T.unsafe(github_client).releases(T.must(source).repo, per_page: 100)
+          releases = github_client.releases(T.must(source).repo, per_page: 100)
 
           # Remove any releases without a tag name. These are draft releases and
           # aren't yet associated with a tag, so shouldn't be used.
@@ -304,7 +304,7 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         def fetch_gitlab_releases
           releases =
-            T.unsafe(gitlab_client)
+            gitlab_client
              .tags(T.must(source).repo)
              .select(&:release)
              .sort_by { |r| r.commit.authored_date }
