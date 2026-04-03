@@ -86,7 +86,7 @@ module Dependabot
       sig { returns(T.untyped) }
       def merge_request
         @merge_request ||= T.let(
-          gitlab_client_for_source.merge_request(
+          T.unsafe(gitlab_client_for_source).merge_request(
             target_project_id || source.repo,
             pull_request_number
           ),

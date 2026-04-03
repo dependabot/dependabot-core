@@ -198,7 +198,7 @@ module Dependabot
                         { sha: nil }
                       elsif file.binary?
                         sha = github_client_for_source.create_blob(
-                          source.repo, file.content, "base64"
+                          source.repo, T.must(file.content), "base64"
                         )
                         { sha: sha }
                       else
@@ -277,8 +277,8 @@ module Dependabot
                .git_commit(source.repo, pull_request.head.sha)
             else
               commits =
-                github_client_for_source
-                 .pull_request_commits(source.repo, pull_request_number)
+                T.unsafe(github_client_for_source
+                 .pull_request_commits(source.repo, pull_request_number))
 
               commit = commits.find { |c| c.sha == old_commit }
               commit&.commit

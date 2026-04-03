@@ -395,7 +395,7 @@ module Dependabot
 
   # Interface for error classes that provide Sentry context (e.g. fingerprint).
   # Include this module in any error class that defines #sentry_context.
-  module SentryContext
+  module HasSentryContext
     extend T::Sig
     extend T::Helpers
 

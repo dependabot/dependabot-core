@@ -566,7 +566,7 @@ module Dependabot
         github_response = github_client.contents(repo, path: path, ref: commit)
 
         if github_response.respond_to?(:type)
-          update_linked_paths(repo, path, commit, github_response)
+          update_linked_paths(repo, path, commit, T.unsafe(github_response))
           raise Octokit::NotFound
         end
 
@@ -638,8 +638,8 @@ module Dependabot
 
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _gitlab_repo_contents(repo, path, commit)
-        gitlab_client
-         .repo_tree(repo, path: path, ref: commit, per_page: 100)
+        T.unsafe(gitlab_client
+         .repo_tree(repo, path: path, ref: commit, per_page: 100))
          .map do |file|
           # GitLab API essentially returns the output from `git ls-tree`
           type = case file.type
@@ -774,7 +774,7 @@ module Dependabot
         when "github"
           _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
-          tmp = gitlab_client.get_file(repo, path, commit).content
+          tmp = T.unsafe(gitlab_client.get_file(repo, path, commit)).content
           decode_binary_string(tmp)
         when "azure"
           azure_client.fetch_file_contents(commit, path)
@@ -793,26 +793,26 @@ module Dependabot
 
         raise Octokit::NotFound if tmp.is_a?(Array)
 
-        if tmp.type == "symlink"
+        if T.unsafe(tmp).type == "symlink"
           @linked_paths[path] = {
             repo: repo,
             provider: "github",
             commit: commit,
-            path: Pathname.new(tmp.target).cleanpath.to_path
+            path: Pathname.new(T.unsafe(tmp).target).cleanpath.to_path
           }
           tmp = github_client.contents(
             repo,
-            path: Pathname.new(tmp.target).cleanpath.to_path,
+            path: Pathname.new(T.unsafe(tmp).target).cleanpath.to_path,
             ref: commit
           )
         end
 
-        if tmp.content == ""
+        if T.unsafe(tmp).content == ""
           # The file may have exceeded the 1MB limit
           # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
-          github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
+          T.unsafe(github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw"))
         else
-          decode_binary_string(tmp.content)
+          decode_binary_string(T.unsafe(tmp).content)
         end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
@@ -825,9 +825,9 @@ module Dependabot
         raise unless file_details
 
         tmp = github_client.blob(repo, file_details.sha)
-        return tmp.content if tmp.encoding == "utf-8"
+        return T.unsafe(tmp).content if T.unsafe(tmp).encoding == "utf-8"
 
-        decode_binary_string(tmp.content)
+        decode_binary_string(T.unsafe(tmp).content)
       end
       # rubocop:enable Metrics/AbcSize
 

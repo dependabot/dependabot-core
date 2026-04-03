@@ -86,7 +86,7 @@ module Dependabot
 
     class HelperSubprocessFailed < Dependabot::DependabotError
       extend T::Sig
-      include Dependabot::SentryContext
+      include Dependabot::HasSentryContext
 
       sig { returns(String) }
       attr_reader :error_class
