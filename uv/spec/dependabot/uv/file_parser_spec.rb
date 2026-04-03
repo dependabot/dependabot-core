@@ -987,7 +987,7 @@ RSpec.describe Dependabot::Uv::FileParser do
 
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, args:, **|
-          expect(function).to eq("parse_pep621_pep735_dependencies")
+          raise "Unexpected helper function: #{function}" unless function == "parse_pep621_pep735_dependencies"
 
           pyproject_path = args.first
           parsed_files << pyproject_path
@@ -1035,9 +1035,7 @@ RSpec.describe Dependabot::Uv::FileParser do
       it "parses fetched workspace member manifests with their own file paths" do
         dependency = dependencies.find { |dep| dep.name == "click" }
 
-        expect(parsed_files).to match_array(
-          ["pyproject.toml", "packages/my-package/pyproject.toml"]
-        )
+        expect(parsed_files).to contain_exactly("pyproject.toml", "packages/my-package/pyproject.toml")
         expect(dependency&.requirements).to eq(
           [{
             requirement: ">=8.1.0",
