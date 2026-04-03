@@ -142,20 +142,33 @@ module Dependabot
           # - upToNextMajorVersion: requirement updates to new version's major range
           # - upToNextMinorVersion: requirement updates to new version's minor range
           #
+          # Only versionRange has an explicit upper bound that should be respected.
+          return true if %w(exactVersion upToNextMajorVersion upToNextMinorVersion).include?(kind)
+
           # For sub-dependencies that are not declared directly in project.pbxproj
-          # (e.g., transitive dependencies of local packages), kind will be nil.
+          # (e.g., transitive dependencies of local packages), kind will be nil and
+          # the requirement comes from Package.resolved as an equality pin.
           # In this case, we allow updates since the actual constraint lives in
           # the local package's Package.swift, which we don't have access to.
-          # This is safe because the Swift Package Manager will validate constraints
-          # during resolution.
-          #
-          # Only versionRange has an explicit upper bound that should be respected.
-          return true if kind.nil? || %w(exactVersion upToNextMajorVersion upToNextMinorVersion).include?(kind)
+          # This may produce a pin that is not resolvable for the full package graph.
+          # In Xcode mode we intentionally defer that validation to downstream
+          # SwiftPM/Xcode resolution.
+          return true if kind.nil? && package_resolved_requirement?
 
           requirement = dependency_requirement
           return true unless requirement
 
           requirement.satisfied_by?(version)
+        end
+
+        # Returns true if the dependency's requirement originates from a
+        # Package.resolved file (rather than project.pbxproj).
+        sig { returns(T::Boolean) }
+        def package_resolved_requirement?
+          dependency.requirements.any? do |req|
+            file = req[:file]
+            file.is_a?(String) && file.end_with?("Package.resolved")
+          end
         end
 
         sig do

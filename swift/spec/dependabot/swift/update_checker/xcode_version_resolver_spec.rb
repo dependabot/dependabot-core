@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       end
     end
 
-    context "with nil requirement kind" do
+    context "with nil requirement kind from pbxproj" do
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
@@ -175,12 +175,12 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
         }]
       end
 
-      it "allows updates since this is likely a sub-dependency without pbxproj entry" do
-        expect(resolver.send(:version_meets_requirements?, version)).to be true
+      it "falls back to checking the requirement constraint" do
+        expect(resolver.send(:version_meets_requirements?, version)).to be false
       end
     end
 
-    context "with sub-dependency from Package.resolved (no kind, equality constraint)" do
+    context "with nil requirement kind from Package.resolved (sub-dependency)" do
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
