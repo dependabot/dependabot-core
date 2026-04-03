@@ -175,8 +175,24 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
         }]
       end
 
-      it "falls back to checking the requirement constraint" do
-        expect(resolver.send(:version_meets_requirements?, version)).to be false
+      it "allows updates since this is likely a sub-dependency without pbxproj entry" do
+        expect(resolver.send(:version_meets_requirements?, version)).to be true
+      end
+    end
+
+    context "with sub-dependency from Package.resolved (no kind, equality constraint)" do
+      let(:requirements) do
+        [{
+          file: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          requirement: "= 7.0.0",
+          groups: ["dependencies"],
+          source: { type: "git", url: "https://github.com/Quick/Quick.git", ref: "7.0.0", branch: nil },
+          metadata: { identity: "quick" }
+        }]
+      end
+
+      it "allows updates since actual constraint is in local package's Package.swift" do
+        expect(resolver.send(:version_meets_requirements?, version)).to be true
       end
     end
   end

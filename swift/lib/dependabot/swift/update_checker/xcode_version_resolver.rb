@@ -142,8 +142,15 @@ module Dependabot
           # - upToNextMajorVersion: requirement updates to new version's major range
           # - upToNextMinorVersion: requirement updates to new version's minor range
           #
+          # For sub-dependencies that are not declared directly in project.pbxproj
+          # (e.g., transitive dependencies of local packages), kind will be nil.
+          # In this case, we allow updates since the actual constraint lives in
+          # the local package's Package.swift, which we don't have access to.
+          # This is safe because the Swift Package Manager will validate constraints
+          # during resolution.
+          #
           # Only versionRange has an explicit upper bound that should be respected.
-          return true if %w(exactVersion upToNextMajorVersion upToNextMinorVersion).include?(kind)
+          return true if kind.nil? || %w(exactVersion upToNextMajorVersion upToNextMinorVersion).include?(kind)
 
           requirement = dependency_requirement
           return true unless requirement
