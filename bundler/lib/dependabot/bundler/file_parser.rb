@@ -347,9 +347,9 @@ module Dependabot
         )
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(::Bundler::LockfileParser) }
       def parsed_lockfile
-        @parsed_lockfile = T.let(@parsed_lockfile, T.untyped)
+        @parsed_lockfile = T.let(@parsed_lockfile, T.nilable(::Bundler::LockfileParser))
         @parsed_lockfile ||= CachedLockfileParser.parse(sanitized_lockfile_content)
       end
 

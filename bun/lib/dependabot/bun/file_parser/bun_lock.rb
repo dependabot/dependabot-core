@@ -42,7 +42,7 @@ module Dependabot
               end
             end
 
-            T.let(content, T.untyped)
+            T.let(content, T.nilable(T::Hash[String, T.untyped]))
           end
         end
 
