@@ -320,16 +320,18 @@ module Dependabot
       def fetch_github_labels
         client = github_client_for_source
 
-        labels =
-          client
-           .labels(source.repo, per_page: 100)
-           .map(&:name)
+        labels = T.let(
+          T.unsafe(client
+           .labels(source.repo, per_page: 100))
+           .map(&:name),
+          T::Array[String]
+        )
 
-        next_link = client.last_response.rels[:next]
+        next_link = T.let(client.last_response.rels[:next], T.nilable(Sawyer::Relation))
 
         while next_link
-          next_page = next_link.get
-          labels += next_page.data.map(&:name)
+          next_page = T.let(next_link.get, Sawyer::Response)
+          labels += T.unsafe(next_page.data).map(&:name)
           next_link = next_page.rels[:next]
         end
 
@@ -338,9 +340,9 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def fetch_gitlab_labels
-        gitlab_client_for_source
+        T.unsafe(gitlab_client_for_source
          .labels(source.repo, per_page: 100)
-         .auto_paginate
+         .auto_paginate)
          .map(&:name)
       end
 

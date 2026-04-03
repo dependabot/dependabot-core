@@ -20,7 +20,7 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
-        include Dependabot::SentryContext
+        include Dependabot::HasSentryContext
 
         sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
         def initialize(message:, error_context:)
