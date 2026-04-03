@@ -124,7 +124,20 @@ module Dependabot
           .returns(Dependabot::DependencyFile)
       end
       def create_dependency_file(parameters)
-        Dependabot::DependencyFile.new(**T.unsafe(parameters))
+        Dependabot::DependencyFile.new(
+          name: parameters.fetch(:name),
+          content: parameters[:content],
+          directory: parameters.fetch(:directory, "/"),
+          type: parameters.fetch(:type, "file"),
+          support_file: parameters.fetch(:support_file, false),
+          vendored_file: parameters.fetch(:vendored_file, false),
+          symlink_target: parameters[:symlink_target],
+          content_encoding: parameters.fetch(:content_encoding,
+                                             Dependabot::DependencyFile::ContentEncoding::UTF_8),
+          deleted: parameters.fetch(:deleted, false),
+          operation: parameters.fetch(:operation, Dependabot::DependencyFile::Operation::UPDATE),
+          mode: parameters[:mode]
+        )
       end
     end
   end
