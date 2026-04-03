@@ -86,7 +86,7 @@ module Dependabot
       sig { returns(T.untyped) }
       def merge_request
         @merge_request ||= T.let(
-          T.unsafe(gitlab_client_for_source).merge_request(
+          gitlab_client_for_source.merge_request(
             target_project_id || source.repo,
             pull_request_number
           ),
@@ -108,7 +108,7 @@ module Dependabot
 
       sig { params(name: String).returns(T::Boolean) }
       def branch_exists?(name)
-        !T.unsafe(gitlab_client_for_source).branch(source.repo, name).nil?
+        !gitlab_client_for_source.branch(source.repo, name).nil?
       rescue ::Gitlab::Error::NotFound
         false
       end
@@ -116,7 +116,7 @@ module Dependabot
       # TODO: This needs to be typed when the underlying client is
       sig { returns(T.untyped) }
       def commit_being_updated
-        T.unsafe(gitlab_client_for_source).commit(source.repo, old_commit)
+        gitlab_client_for_source.commit(source.repo, old_commit)
       end
 
       sig { void }

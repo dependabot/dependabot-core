@@ -143,7 +143,7 @@ module Dependabot
       def branch_exists?
         @branch_ref ||=
           T.let(
-            T.unsafe(gitlab_client_for_source).branch(source.repo, branch_name),
+            gitlab_client_for_source.branch(source.repo, branch_name),
             T.nilable(::Gitlab::ObjectifiedHash)
           )
         true
@@ -155,7 +155,7 @@ module Dependabot
       def commit_exists?
         @commits ||=
           T.let(
-            T.unsafe(gitlab_client_for_source).commits(source.repo, ref_name: branch_name),
+            gitlab_client_for_source.commits(source.repo, ref_name: branch_name),
             T.nilable(::Gitlab::PaginatedResponse)
           )
         @commits.first.message == commit_message
@@ -163,7 +163,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def merge_request_exists?
-        T.unsafe(gitlab_client_for_source).merge_requests(
+        gitlab_client_for_source.merge_requests(
           target_project_id || source.repo,
           source_branch: branch_name,
           target_branch: source.branch || default_branch,
@@ -173,7 +173,7 @@ module Dependabot
 
       sig { returns(::Gitlab::ObjectifiedHash) }
       def create_branch
-        T.unsafe(gitlab_client_for_source).create_branch(
+        gitlab_client_for_source.create_branch(
           source.repo,
           branch_name,
           base_commit
@@ -201,7 +201,7 @@ module Dependabot
       def create_submodule_update_commit
         file = T.must(files.first)
 
-        T.unsafe(gitlab_client_for_source).edit_submodule(
+        gitlab_client_for_source.edit_submodule(
           source.repo,
           file.path.gsub(%r{^/}, ""),
           branch: branch_name,
@@ -212,7 +212,7 @@ module Dependabot
 
       sig { returns(T.nilable(::Gitlab::ObjectifiedHash)) }
       def create_merge_request
-        T.unsafe(gitlab_client_for_source).create_merge_request(
+        gitlab_client_for_source.create_merge_request(
           source.repo,
           pr_name,
           source_branch: branch_name,
@@ -236,7 +236,7 @@ module Dependabot
       def add_approvers_to_merge_request(merge_request)
         return unless approvers_hash[:approvers] || approvers_hash[:group_approvers]
 
-        T.unsafe(gitlab_client_for_source).create_merge_request_level_rule(
+        gitlab_client_for_source.create_merge_request_level_rule(
           target_project_id || source.repo,
           T.unsafe(merge_request).iid,
           name: "dependency-updates",
@@ -258,7 +258,7 @@ module Dependabot
       def default_branch
         @default_branch ||=
           T.let(
-            T.unsafe(gitlab_client_for_source).project(source.repo).default_branch,
+            gitlab_client_for_source.project(source.repo).default_branch,
             T.nilable(String)
           )
       end
