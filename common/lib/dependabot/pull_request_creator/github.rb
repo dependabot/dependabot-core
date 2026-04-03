@@ -196,7 +196,7 @@ module Dependabot
         @pull_requests_for_branch ||=
           T.let(
             begin
-              T.unsafe(github_client_for_source).pull_requests(
+              github_client_for_source.pull_requests(
                 source.repo,
                 head: "#{source.repo.split('/').first}:#{branch_name}",
                 state: "all"
@@ -204,13 +204,13 @@ module Dependabot
             rescue Octokit::InternalServerError
               # A GitHub bug sometimes means adding `state: all` causes problems.
               # In that case, fall back to making two separate requests.
-              open_prs = T.unsafe(github_client_for_source).pull_requests(
+              open_prs = github_client_for_source.pull_requests(
                 source.repo,
                 head: "#{source.repo.split('/').first}:#{branch_name}",
                 state: "open"
               )
 
-              closed_prs = T.unsafe(github_client_for_source).pull_requests(
+              closed_prs = github_client_for_source.pull_requests(
                 source.repo,
                 head: "#{source.repo.split('/').first}:#{branch_name}",
                 state: "closed"
@@ -254,7 +254,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def repo_exists?
-        T.unsafe(github_client_for_source).repo(source.repo)
+        github_client_for_source.repo(source.repo)
         true
       rescue Octokit::NotFound
         false
@@ -265,7 +265,7 @@ module Dependabot
         tree = create_tree
 
         begin
-          T.unsafe(github_client_for_source).create_commit(
+          github_client_for_source.create_commit(
             source.repo,
             commit_message,
             tree.sha,
@@ -317,7 +317,7 @@ module Dependabot
             content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
                         { sha: nil }
                       elsif file.binary?
-                        sha = T.unsafe(github_client_for_source).create_blob(
+                        sha = github_client_for_source.create_blob(
                           source.repo, file.content, "base64"
                         )
                         { sha: sha }
@@ -333,7 +333,7 @@ module Dependabot
           end
         end
 
-        T.unsafe(github_client_for_source).create_tree(
+        github_client_for_source.create_tree(
           source.repo,
           file_trees,
           base_tree: base_commit
@@ -365,7 +365,7 @@ module Dependabot
 
         begin
           branch =
-            T.unsafe(github_client_for_source).create_ref(source.repo, ref, commit.sha)
+            github_client_for_source.create_ref(source.repo, ref, commit.sha)
           @branch_name = ref.gsub(%r{^refs/heads/}, "")
           branch
         rescue Octokit::UnprocessableEntity => e
@@ -385,7 +385,7 @@ module Dependabot
 
       sig { params(commit: T.untyped).void }
       def update_branch(commit)
-        T.unsafe(github_client_for_source).update_ref(
+        github_client_for_source.update_ref(
           source.repo,
           "heads/#{branch_name}",
           commit.sha,
@@ -406,7 +406,7 @@ module Dependabot
         reviewers_hash =
           T.must(reviewers).keys.to_h { |k| [k.to_sym, T.must(reviewers)[k]] }
 
-        T.unsafe(github_client_for_source).request_pull_request_review(
+        github_client_for_source.request_pull_request_review(
           source.repo,
           pull_request.number,
           reviewers: reviewers_hash[:reviewers] || [],
@@ -458,7 +458,7 @@ module Dependabot
                "#{message}\n" \
                "```"
 
-        T.unsafe(github_client_for_source).add_comment(
+        github_client_for_source.add_comment(
           source.repo,
           pull_request.number,
           msg
@@ -467,7 +467,7 @@ module Dependabot
 
       sig { params(pull_request: T.untyped).void }
       def add_assignees_to_pull_request(pull_request)
-        T.unsafe(github_client_for_source).add_assignees(
+        github_client_for_source.add_assignees(
           source.repo,
           pull_request.number,
           assignees
@@ -482,7 +482,7 @@ module Dependabot
 
       sig { params(pull_request: T.untyped).void }
       def add_milestone_to_pull_request(pull_request)
-        T.unsafe(github_client_for_source).update_issue(
+        github_client_for_source.update_issue(
           source.repo,
           pull_request.number,
           milestone: milestone
@@ -493,7 +493,7 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def create_pull_request
-        T.unsafe(github_client_for_source).create_pull_request(
+        github_client_for_source.create_pull_request(
           source.repo,
           target_branch,
           branch_name,
@@ -521,7 +521,7 @@ module Dependabot
       def default_branch
         @default_branch ||=
           T.let(
-            T.unsafe(github_client_for_source).repo(source.repo).default_branch,
+            github_client_for_source.repo(source.repo).default_branch,
             T.nilable(String)
           )
       end

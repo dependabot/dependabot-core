@@ -91,7 +91,7 @@ module Dependabot
         target_branch = source.branch || pull_request.base.repo.default_branch
         return if target_branch == pull_request.base.ref
 
-        T.unsafe(github_client_for_source).update_pull_request(
+        github_client_for_source.update_pull_request(
           source.repo,
           pull_request_number,
           base: target_branch
@@ -137,7 +137,7 @@ module Dependabot
       def pull_request
         @pull_request ||=
           T.let(
-            T.unsafe(github_client_for_source).pull_request(
+            github_client_for_source.pull_request(
               source.repo,
               pull_request_number
             ),
@@ -147,7 +147,7 @@ module Dependabot
 
       sig { params(name: String).returns(T::Boolean) }
       def branch_exists?(name)
-        T.unsafe(github_client_for_source).branch(source.repo, name)
+        github_client_for_source.branch(source.repo, name)
         true
       rescue Octokit::NotFound
         false
@@ -165,7 +165,7 @@ module Dependabot
         end
 
         begin
-          T.unsafe(github_client_for_source).create_commit(
+          github_client_for_source.create_commit(
             source.repo,
             commit_message,
             tree.sha,
@@ -200,7 +200,7 @@ module Dependabot
             content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
                         { sha: nil }
                       elsif file.binary?
-                        sha = T.unsafe(github_client_for_source).create_blob(
+                        sha = github_client_for_source.create_blob(
                           source.repo, file.content, "base64"
                         )
                         { sha: sha }
@@ -216,7 +216,7 @@ module Dependabot
           end
         end
 
-        T.unsafe(github_client_for_source).create_tree(
+        github_client_for_source.create_tree(
           source.repo,
           file_trees,
           base_tree: base_commit
@@ -240,7 +240,7 @@ module Dependabot
 
       sig { params(commit: T.untyped).returns(T.untyped) }
       def update_branch(commit)
-        T.unsafe(github_client_for_source).update_ref(
+        github_client_for_source.update_ref(
           source.repo,
           "heads/" + pull_request.head.ref,
           commit.sha,
@@ -279,11 +279,11 @@ module Dependabot
         @commit_being_updated =
           T.let(
             if pull_request.commits == 1
-              T.unsafe(github_client_for_source)
+              github_client_for_source
                .git_commit(source.repo, pull_request.head.sha)
             else
               commits =
-                T.unsafe(github_client_for_source)
+                github_client_for_source
                  .pull_request_commits(source.repo, pull_request_number)
 
               commit = commits.find { |c| c.sha == old_commit }

@@ -26,7 +26,7 @@ module Dependabot
 
         sig { params(module_name: String).returns(T::Array[String]) }
         def all_module_versions(module_name)
-          contents = T.unsafe(github_client).contents(GITHUB_REPO, path: "modules/#{module_name}")
+          contents = github_client.contents(GITHUB_REPO, path: "modules/#{module_name}")
           return [] unless contents.is_a?(Array)
 
           versions = contents.filter_map do |item|
@@ -66,7 +66,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/source.json"
 
           begin
-            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            content = github_client.contents(GITHUB_REPO, path: file_path)
             return nil unless content
 
             decoded_content = Base64.decode64(content.content)
@@ -82,7 +82,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           begin
-            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            content = github_client.contents(GITHUB_REPO, path: file_path)
             return nil unless content
 
             Base64.decode64(content.content)
@@ -102,7 +102,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           commits = begin
-            T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
+            github_client.commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
           end
