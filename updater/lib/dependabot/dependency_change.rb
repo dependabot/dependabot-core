@@ -95,7 +95,13 @@ module Dependabot
         dependency_group: dependency_group,
         pr_message_max_length: pr_message_max_length,
         pr_message_encoding: pr_message_encoding,
-        ignore_conditions: job.ignore_conditions,
+        ignore_conditions: job.ignore_conditions.map do |ic|
+          {
+            "dependency-name" => ic.dependency_name,
+            "version-requirement" => ic.version_requirement,
+            "source" => ic.source
+          }.compact
+        end,
         notices: notices
       ).message
 
