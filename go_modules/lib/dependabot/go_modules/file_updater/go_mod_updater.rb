@@ -548,21 +548,24 @@ module Dependabot
           # Note: Files can contain both formats
 
           # Parse multi-line use blocks
-          T.must(content).scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
-            block_match[0].scan(%r{^\s*\.?/?([\S]+)}).each do |path_match|
+          content.scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
+            T.must(block_match[0]).scan(%r{^\s*\.?/?([\S]+)}).each do |path_match|
               paths << path_match[0]
             end
           end
 
           # Parse single-line use directives (not followed by opening paren)
-          T.must(content).scan(/^use\s+(?!\()\.?\/?([\S]+)/m).each do |path_match|
+          content.scan(%r{^use\s+(?!\()\.?/?([\S]+)}m).each do |path_match|
             paths << path_match[0]
           end
 
           # Normalize and validate paths
-          paths.map { |p| p.sub(%r{^\./}, "") }
-               .select { |p| valid_workspace_path?(p) }
-               .uniq
+          normalized_paths = T.let([], T::Array[String])
+          paths.each do |p|
+            normalized = p.sub(%r{^\./}, "")
+            normalized_paths << normalized if valid_workspace_path?(normalized)
+          end
+          normalized_paths.uniq
         end
 
         sig { params(path: String).returns(T::Boolean) }

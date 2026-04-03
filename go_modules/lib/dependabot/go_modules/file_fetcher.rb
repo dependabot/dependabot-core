@@ -46,10 +46,12 @@ module Dependabot
             workspace_files = workspace_module_files
 
             # Ensure at least one workspace module was found
-            raise Dependabot::DependencyFileNotFound.new(
-              "go.mod",
-              "go.work found but no workspace modules with go.mod files could be fetched"
-            ) if workspace_files.empty?
+            if workspace_files.empty?
+              raise Dependabot::DependencyFileNotFound.new(
+                "go.mod",
+                "go.work found but no workspace modules with go.mod files could be fetched"
+              )
+            end
 
             fetched_files.concat(workspace_files)
 
@@ -117,7 +119,7 @@ module Dependabot
         end
 
         # Parse single-line use directives (not followed by opening paren)
-        T.must(content).scan(/^use\s+(?!\()\.?\/?([\S]+)/m).each do |path_match|
+        T.must(content).scan(%r{^use\s+(?!\()\.?/?([\S]+)}m).each do |path_match|
           paths << path_match[0]
         end
 
