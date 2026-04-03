@@ -321,9 +321,7 @@ module Dependabot
         client = github_client_for_source
 
         labels = T.let(
-          T.unsafe(client
-           .labels(source.repo, per_page: 100))
-           .map(&:name),
+          T.unsafe(client.labels(source.repo, per_page: 100)).map(&:name),
           T::Array[String]
         )
 
@@ -340,9 +338,11 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def fetch_gitlab_labels
-        T.unsafe(gitlab_client_for_source
-         .labels(source.repo, per_page: 100)
-         .auto_paginate)
+        T.unsafe(
+          gitlab_client_for_source
+                   .labels(source.repo, per_page: 100)
+                   .auto_paginate
+        )
          .map(&:name)
       end
 

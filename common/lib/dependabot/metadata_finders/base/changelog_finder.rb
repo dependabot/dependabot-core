@@ -306,7 +306,7 @@ module Dependabot
         sig { params(file: T.untyped).returns(String) }
         def fetch_bitbucket_file(file)
           bitbucket_client.get(file.download_url).body
-           .force_encoding("UTF-8").encode
+                          .force_encoding("UTF-8").encode
         end
 
         sig { params(file: T.untyped).returns(String) }
@@ -349,7 +349,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped]) }
         def fetch_github_file_list(ref)
           files = []
@@ -374,8 +373,6 @@ module Dependabot
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(T.untyped) }
         def fetch_bitbucket_file_list
           branch = default_bitbucket_branch

@@ -304,8 +304,10 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         def fetch_gitlab_releases
           releases =
-            T.unsafe(gitlab_client
-             .tags(T.must(source).repo))
+            T.unsafe(
+              gitlab_client
+                           .tags(T.must(source).repo)
+            )
              .select(&:release)
              .sort_by { |r| T.unsafe(r).commit.authored_date }
              .reverse

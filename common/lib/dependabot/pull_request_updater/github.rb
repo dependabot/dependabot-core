@@ -277,8 +277,10 @@ module Dependabot
                .git_commit(source.repo, pull_request.head.sha)
             else
               commits =
-                T.unsafe(github_client_for_source
-                 .pull_request_commits(source.repo, pull_request_number))
+                T.unsafe(
+                  github_client_for_source
+                                   .pull_request_commits(source.repo, pull_request_number)
+                )
 
               commit = commits.find { |c| c.sha == old_commit }
               commit&.commit

@@ -132,8 +132,10 @@ module Dependabot
           support_file: parameters.fetch(:support_file, false),
           vendored_file: parameters.fetch(:vendored_file, false),
           symlink_target: parameters[:symlink_target],
-          content_encoding: parameters.fetch(:content_encoding,
-                                             Dependabot::DependencyFile::ContentEncoding::UTF_8),
+          content_encoding: parameters.fetch(
+            :content_encoding,
+            Dependabot::DependencyFile::ContentEncoding::UTF_8
+          ),
           deleted: parameters.fetch(:deleted, false),
           operation: parameters.fetch(:operation, Dependabot::DependencyFile::Operation::UPDATE),
           mode: parameters[:mode]

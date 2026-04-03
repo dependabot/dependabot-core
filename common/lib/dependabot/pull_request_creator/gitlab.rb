@@ -163,12 +163,14 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def merge_request_exists?
-        T.unsafe(gitlab_client_for_source.merge_requests(
-          (target_project_id || source.repo).to_s,
-          source_branch: branch_name,
-          target_branch: source.branch || default_branch,
-          state: "all"
-        )).any?
+        T.unsafe(
+          gitlab_client_for_source.merge_requests(
+            (target_project_id || source.repo).to_s,
+            source_branch: branch_name,
+            target_branch: source.branch || default_branch,
+            state: "all"
+          )
+        ).any?
       end
 
       sig { returns(::Gitlab::ObjectifiedHash) }

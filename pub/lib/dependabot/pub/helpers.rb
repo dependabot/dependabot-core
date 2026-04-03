@@ -343,12 +343,17 @@ module Dependabot
           .returns(Dependabot::Dependency)
       end
       def parse_updated_dependency(json, requirements_update_strategy)
-        requirements = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+        params = {
+          name: json["name"],
+          version: json["version"],
+          package_manager: "pub",
+          requirements: []
+        }
         constraint_field = constraint_field_from_update_strategy(requirements_update_strategy)
 
         if json["kind"] != "transitive" && !json[constraint_field].nil?
           constraint = json[constraint_field]
-          requirements << {
+          params[:requirements] << {
             requirement: constraint,
             groups: [json["kind"]],
             source: nil, # TODO: Expose some information about the source
@@ -356,15 +361,15 @@ module Dependabot
           }
         end
 
-        previous_version = T.let(nil, T.nilable(String))
-        previous_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
-
         if json["previousVersion"]
-          previous_version = json["previousVersion"]
-          previous_requirements = []
+          params = {
+            **params,
+            previous_version: json["previousVersion"],
+            previous_requirements: []
+          }
           if json["kind"] != "transitive" && !json["previousConstraint"].nil?
             constraint = json["previousConstraint"]
-            previous_requirements << {
+            params[:previous_requirements] << {
               requirement: constraint,
               groups: [json["kind"]],
               source: nil, # TODO: Expose some information about the source
@@ -372,15 +377,7 @@ module Dependabot
             }
           end
         end
-
-        Dependency.new(
-          name: json["name"],
-          version: json["version"],
-          package_manager: "pub",
-          requirements: requirements,
-          previous_version: previous_version,
-          previous_requirements: previous_requirements
-        )
+        Dependency.new(**T.unsafe(params))
       end
 
       # expects "auto" to already have been resolved to one of the other

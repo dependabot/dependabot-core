@@ -638,8 +638,10 @@ module Dependabot
 
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _gitlab_repo_contents(repo, path, commit)
-        T.unsafe(gitlab_client
-         .repo_tree(repo, path: path, ref: commit, per_page: 100))
+        T.unsafe(
+          gitlab_client
+                   .repo_tree(repo, path: path, ref: commit, per_page: 100)
+        )
          .map do |file|
           # GitLab API essentially returns the output from `git ls-tree`
           type = case file.type
@@ -681,11 +683,11 @@ module Dependabot
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _bitbucket_repo_contents(repo, path, commit)
         response = bitbucket_client
-                    .fetch_repo_contents(
-                      repo,
-                      commit,
-                      path
-                    )
+                   .fetch_repo_contents(
+                     repo,
+                     commit,
+                     path
+                   )
 
         response.map do |file|
           type = case file.fetch("type")
