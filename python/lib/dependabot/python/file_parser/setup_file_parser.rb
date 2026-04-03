@@ -21,7 +21,7 @@ module Dependabot
         TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m
         EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*\{/m
 
-        CLOSING_BRACKET = T.let({ "[" => "]", "{" => "}" }.freeze, T.any(T.untyped, T.untyped))
+        CLOSING_BRACKET = T.let({ "[" => "]", "{" => "}" }.freeze, T::Hash[String, String])
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)

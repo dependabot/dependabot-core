@@ -102,7 +102,7 @@ module Dependabot
           @suggested_changelog_url = @suggested_changelog_url&.split("#")&.first
 
           @new_version = T.let(nil, T.nilable(String))
-          @changelog_from_suggested_url = T.let(nil, T.untyped)
+          @changelog_from_suggested_url = T.let(nil, T.nilable(Sawyer::Resource))
         end
 
         sig { returns(T.nilable(String)) }

@@ -63,7 +63,7 @@ module Dependabot
           @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T::Hash[String, Object]]))
           @pipenv_runner = T.let(nil, T.nilable(PipenvRunner))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
-          @sanitized_setup_file_content = T.let({}, T.untyped)
+          @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
         end
 
