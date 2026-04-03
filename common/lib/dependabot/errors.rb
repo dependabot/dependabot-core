@@ -393,6 +393,18 @@ module Dependabot
   # rubocop:enable Lint/RedundantCopDisableDirective
   # rubocop:enable Metrics/AbcSize
 
+  # Interface for error classes that provide Sentry context (e.g. fingerprint).
+  # Include this module in any error class that defines #sentry_context.
+  module SentryContext
+    extend T::Sig
+    extend T::Helpers
+
+    interface!
+
+    sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
+    def sentry_context; end
+  end
+
   class DependabotError < StandardError
     extend T::Sig
 
