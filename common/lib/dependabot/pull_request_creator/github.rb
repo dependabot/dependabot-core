@@ -318,7 +318,7 @@ module Dependabot
                         { sha: nil }
                       elsif file.binary?
                         sha = github_client_for_source.create_blob(
-                          source.repo, file.content, "base64"
+                          source.repo, T.must(file.content), "base64"
                         )
                         { sha: sha }
                       else
@@ -470,7 +470,7 @@ module Dependabot
         github_client_for_source.add_assignees(
           source.repo,
           pull_request.number,
-          assignees
+          T.must(assignees)
         )
       rescue Octokit::NotFound
         # This can happen if a passed assignee login is now an org account
@@ -521,7 +521,7 @@ module Dependabot
       def default_branch
         @default_branch ||=
           T.let(
-            github_client_for_source.repo(source.repo).default_branch,
+            T.unsafe(github_client_for_source.repo(source.repo)).default_branch,
             T.nilable(String)
           )
       end

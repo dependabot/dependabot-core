@@ -66,7 +66,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/source.json"
 
           begin
-            content = github_client.contents(GITHUB_REPO, path: file_path)
+            content = T.unsafe(github_client.contents(GITHUB_REPO, path: file_path))
             return nil unless content
 
             decoded_content = Base64.decode64(content.content)
@@ -82,7 +82,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           begin
-            content = github_client.contents(GITHUB_REPO, path: file_path)
+            content = T.unsafe(github_client.contents(GITHUB_REPO, path: file_path))
             return nil unless content
 
             Base64.decode64(content.content)
@@ -102,14 +102,14 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           commits = begin
-            github_client.commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
+            T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
           end
 
           return nil unless commits&.any?
 
-          commits.first.commit.committer.date
+          T.unsafe(commits).first.commit.committer.date
         end
 
         private

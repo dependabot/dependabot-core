@@ -61,7 +61,7 @@ module Dependabot
           languages: {
             python: {
               "raw" => language_version_manager.user_specified_python_version || "unknown",
-              "max" => language_version_manager.python_major_minor || "unknown"
+              "max" => language_version_manager.python_major_minor
             }
           }
         }

@@ -285,17 +285,17 @@ module Dependabot
 
           # Remove any releases without a tag name. These are draft releases and
           # aren't yet associated with a tag, so shouldn't be used.
-          releases = releases.reject { |r| r.tag_name.nil? }
+          releases = releases.reject { |r| T.unsafe(r).tag_name.nil? }
 
           clean_release_names =
-            releases.map { |r| r.tag_name.gsub(/^[^0-9\.]*/, "") }
+            releases.map { |r| T.unsafe(r).tag_name.gsub(/^[^0-9\.]*/, "") }
 
           if clean_release_names.all? { |nm| version_class.correct?(nm) }
             releases.sort_by do |r|
-              version_class.new(r.tag_name.gsub(/^[^0-9\.]*/, ""))
+              version_class.new(T.unsafe(r).tag_name.gsub(/^[^0-9\.]*/, ""))
             end.reverse
           else
-            releases.sort_by(&:id).reverse
+            releases.sort_by { |r| T.unsafe(r).id }.reverse
           end
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
@@ -304,18 +304,18 @@ module Dependabot
         sig { returns(T::Array[T.untyped]) }
         def fetch_gitlab_releases
           releases =
-            gitlab_client
-             .tags(T.must(source).repo)
+            T.unsafe(gitlab_client
+             .tags(T.must(source).repo))
              .select(&:release)
-             .sort_by { |r| r.commit.authored_date }
+             .sort_by { |r| T.unsafe(r).commit.authored_date }
              .reverse
 
           releases.map do |tag|
             GitLabRelease.new(
-              name: tag.name,
-              tag_name: tag.release.tag_name,
-              body: tag.release.description,
-              html_url: "#{T.must(source).url}/tags/#{tag.name}"
+              name: T.unsafe(tag).name,
+              tag_name: T.unsafe(tag).release.tag_name,
+              body: T.unsafe(tag).release.description,
+              html_url: "#{T.must(source).url}/tags/#{T.unsafe(tag).name}"
             )
           end
         rescue Gitlab::Error::NotFound

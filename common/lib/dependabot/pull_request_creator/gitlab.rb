@@ -158,17 +158,17 @@ module Dependabot
             gitlab_client_for_source.commits(source.repo, ref_name: branch_name),
             T.nilable(::Gitlab::PaginatedResponse)
           )
-        @commits.first.message == commit_message
+        T.unsafe(@commits).first.message == commit_message
       end
 
       sig { returns(T::Boolean) }
       def merge_request_exists?
-        gitlab_client_for_source.merge_requests(
-          target_project_id || source.repo,
+        T.unsafe(gitlab_client_for_source.merge_requests(
+          (target_project_id || source.repo).to_s,
           source_branch: branch_name,
           target_branch: source.branch || default_branch,
           state: "all"
-        ).any?
+        )).any?
       end
 
       sig { returns(::Gitlab::ObjectifiedHash) }
@@ -237,7 +237,7 @@ module Dependabot
         return unless approvers_hash[:approvers] || approvers_hash[:group_approvers]
 
         gitlab_client_for_source.create_merge_request_level_rule(
-          target_project_id || source.repo,
+          (target_project_id || source.repo).to_s,
           T.unsafe(merge_request).iid,
           name: "dependency-updates",
           approvals_required: 1,
@@ -258,7 +258,7 @@ module Dependabot
       def default_branch
         @default_branch ||=
           T.let(
-            gitlab_client_for_source.project(source.repo).default_branch,
+            T.unsafe(gitlab_client_for_source.project(source.repo)).default_branch,
             T.nilable(String)
           )
       end

@@ -172,7 +172,7 @@ module Dependabot
 
           opts = { path: suggested_source&.directory, ref: suggested_source&.branch }.compact
           suggested_source_client = github_client_for_source(T.must(suggested_source))
-          tmp_files = suggested_source_client.contents(suggested_source&.repo, opts)
+          tmp_files = suggested_source_client.contents(T.must(suggested_source).repo, opts)
 
           filename = T.must(T.must(suggested_changelog_url).split("/").last)
           @changelog_from_suggested_url =
@@ -290,7 +290,7 @@ module Dependabot
         sig { params(file_source: Dependabot::Source, file: T.untyped).returns(String) }
         def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = github_client_for_source(file_source).get(file.url).content
+          raw_content = T.unsafe(github_client_for_source(file_source).get(file.url)).content
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
@@ -402,7 +402,7 @@ module Dependabot
         sig { returns(T.untyped) }
         def fetch_gitlab_file_list
           branch = default_gitlab_branch
-          gitlab_client.repo_tree(T.must(source).repo).map do |file|
+          T.unsafe(gitlab_client.repo_tree(T.must(source).repo)).map do |file|
             type = case file.type
                    when "blob" then "file"
                    when "tree" then "dir"
