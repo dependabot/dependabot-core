@@ -946,5 +946,107 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
+
+    context "with uv workspace member pyprojects" do
+      let(:files) { [pyproject, workspace_member_pyproject] }
+      let(:parsed_files) { [] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "workspace-root"
+            version = "0.1.0"
+            dependencies = [
+              "requests>=2.31.0",
+              "my-package",
+            ]
+
+            [tool.uv.workspace]
+            members = ["packages/my-package"]
+
+            [tool.uv.sources]
+            my-package = { workspace = true }
+          TOML
+        )
+      end
+      let(:workspace_member_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "packages/my-package/pyproject.toml",
+          support_file: true,
+          content: <<~TOML
+            [project]
+            name = "my-package"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.1.0",
+            ]
+          TOML
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, args:, **|
+          expect(function).to eq("parse_pep621_pep735_dependencies")
+
+          pyproject_path = args.first
+          parsed_files << pyproject_path
+
+          case pyproject_path
+          when "pyproject.toml"
+            [
+              {
+                "name" => "requests",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => ">=2.31.0",
+                "extras" => [],
+                "requirement_type" => nil
+              },
+              {
+                "name" => "my-package",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => "",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          when "packages/my-package/pyproject.toml"
+            [
+              {
+                "name" => "click",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "packages/my-package/pyproject.toml",
+                "requirement" => ">=8.1.0",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          else
+            raise "Unexpected pyproject path: #{pyproject_path}"
+          end
+        end
+      end
+
+      it "parses fetched workspace member manifests with their own file paths" do
+        dependency = dependencies.find { |dep| dep.name == "click" }
+
+        expect(parsed_files).to match_array(
+          ["pyproject.toml", "packages/my-package/pyproject.toml"]
+        )
+        expect(dependency&.requirements).to eq(
+          [{
+            requirement: ">=8.1.0",
+            file: "packages/my-package/pyproject.toml",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
   end
 end
