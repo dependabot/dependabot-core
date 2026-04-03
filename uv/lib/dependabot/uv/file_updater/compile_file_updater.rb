@@ -177,7 +177,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig do
           params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile])
         end
@@ -211,8 +210,6 @@ module Dependabot
             credentials: credentials
           ).updated_dependency_files
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig do
           params(
             cmd: String,
