@@ -326,7 +326,7 @@ module Dependabot
 
         sig { returns(String) }
         def security_advisory_dependency
-          T.cast(job.security_advisories.first, T::Hash[String, String])["dependency-name"].to_s
+          job.security_advisories.first&.dependency_name.to_s
         end
       end
     end
