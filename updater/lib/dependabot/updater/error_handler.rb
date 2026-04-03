@@ -224,7 +224,7 @@ module Dependabot
       sig { params(error: StandardError).returns(T.nilable(T::Array[String])) }
       def extract_fingerprint(error)
         if error.respond_to?(:sentry_context)
-          context = T.unsafe(error).sentry_context
+          context = T.cast(error, Dependabot::SentryContext).sentry_context
           return context[:fingerprint] if context.is_a?(Hash)
         end
 

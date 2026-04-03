@@ -86,6 +86,7 @@ module Dependabot
 
     class HelperSubprocessFailed < Dependabot::DependabotError
       extend T::Sig
+      include Dependabot::SentryContext
 
       sig { returns(String) }
       attr_reader :error_class
@@ -112,7 +113,7 @@ module Dependabot
         @trace = trace
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { override.returns(T::Hash[Symbol, T.untyped]) }
       def sentry_context
         { fingerprint: [@fingerprint], extra: @error_context.except(:stderr_output, :fingerprint) }
       end
