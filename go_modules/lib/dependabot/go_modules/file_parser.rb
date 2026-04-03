@@ -52,11 +52,19 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |hsh|
-          unless skip_dependency?(hsh) # rubocop:disable Style/Next
-
-            dep = dependency_from_details(hsh)
+        if workspace?
+          # Parse dependencies from all workspace modules
+          workspace_dependencies.each do |dep|
             dependency_set << dep
+          end
+        else
+          # Single module mode
+          required_packages.each do |hsh|
+            unless skip_dependency?(hsh) # rubocop:disable Style/Next
+
+              dep = dependency_from_details(hsh)
+              dependency_set << dep
+            end
           end
         end
 
@@ -190,9 +198,89 @@ module Dependabot
         @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def workspace_go_mods
+        return [] unless workspace?
+
+        dependency_files.select { |f| f.name.end_with?("go.mod") && f.name != "go.mod" }
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def workspace_dependencies
+        deps = Dependabot::FileParsers::Base::DependencySet.new
+
+        # Get all go.mod files from workspace modules
+        all_go_mods = workspace_go_mods
+        all_go_mods << go_mod if go_mod
+
+        all_go_mods.each do |mod_file|
+          # Parse each module's dependencies
+          module_deps = parse_module_dependencies(mod_file)
+          module_deps.each { |dep| deps << dep }
+        end
+
+        deps.dependencies
+      end
+
+      sig { params(mod_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_module_dependencies(mod_file)
+        # Parse go.mod file to get dependencies
+        SharedHelpers.in_a_temporary_directory do |path|
+          File.write("go.mod", mod_file.content)
+
+          # Create stub modules for local replacements
+          manifest = JSON.parse(SharedHelpers.run_shell_command("go mod edit -json"))
+          local_replacements = ReplaceStubber.new(T.must(repo_contents_path))
+                                             .stub_paths(manifest, mod_file.directory)
+
+          local_replacements.each do |_, stub_path|
+            FileUtils.mkdir_p(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+          end
+
+          # Get required packages
+          packages = JSON.parse(SharedHelpers.run_shell_command("go mod edit -json"))["Require"] || []
+
+          packages.filter_map do |hsh|
+            next if skip_dependency?(hsh)
+
+            # Create dependency with the module file reference
+            source = { type: "default", source: hsh["Path"] }
+            version = hsh["Version"]&.sub(/^v?/, "")
+
+            reqs = [{
+              requirement: hsh["Version"],
+              file: mod_file.name,
+              source: source,
+              groups: []
+            }]
+
+            Dependency.new(
+              name: hsh["Path"],
+              version: version,
+              requirements: hsh["Indirect"] ? [] : reqs,
+              package_manager: "go_modules"
+            )
+          rescue StandardError => e
+            Dependabot.logger.warn("Failed to parse dependency from #{mod_file.name}: #{e.message}")
+            nil
+          end
+        end
+      end
+
       sig { override.void }
       def check_required_files
-        raise "No go.mod!" unless go_mod
+        raise "No go.mod or go.work!" unless go_mod || go_work
       end
 
       sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }

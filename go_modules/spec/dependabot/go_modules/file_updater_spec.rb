@@ -270,5 +270,53 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
     end
+
+    context "with a go.work file (workspace mode)" do
+      let(:project_name) { "workspace" }
+      let(:dependency_name) { "github.com/dependabot/vgotest" }
+      let(:dependency_previous_version) { "v1.0.0" }
+      let(:dependency_version) { "v1.1.0" }
+
+      let(:go_work_body) { fixture("projects", project_name, "go.work") }
+      let(:go_work) do
+        Dependabot::DependencyFile.new(name: "go.work", content: go_work_body)
+      end
+
+      let(:tools_go_mod_body) { fixture("projects", project_name, "tools", "go.mod") }
+      let(:tools_go_mod) do
+        Dependabot::DependencyFile.new(name: "tools/go.mod", content: tools_go_mod_body)
+      end
+
+      let(:tools_go_sum_body) { fixture("projects", project_name, "tools", "go.sum") }
+      let(:tools_go_sum) do
+        Dependabot::DependencyFile.new(name: "tools/go.sum", content: tools_go_sum_body)
+      end
+
+      let(:api_go_mod_body) { fixture("projects", project_name, "api", "go.mod") }
+      let(:api_go_mod) do
+        Dependabot::DependencyFile.new(name: "api/go.mod", content: api_go_mod_body)
+      end
+
+      let(:api_go_sum_body) { fixture("projects", project_name, "api", "go.sum") }
+      let(:api_go_sum) do
+        Dependabot::DependencyFile.new(name: "api/go.sum", content: api_go_sum_body)
+      end
+
+      let(:files) { [go_work, go_mod, go_sum, tools_go_mod, tools_go_sum, api_go_mod, api_go_sum] }
+
+      it "identifies workspace mode" do
+        expect(updater.send(:workspace?)).to be true
+      end
+
+      it "updates all workspace module files" do
+        updated_file_names = updated_files.map(&:name)
+        expect(updated_file_names).to include("go.mod", "tools/go.mod", "api/go.mod")
+      end
+
+      it "updates go.sum files for workspace modules" do
+        updated_file_names = updated_files.map(&:name)
+        expect(updated_file_names).to include("go.sum", "tools/go.sum", "api/go.sum")
+      end
+    end
   end
 end

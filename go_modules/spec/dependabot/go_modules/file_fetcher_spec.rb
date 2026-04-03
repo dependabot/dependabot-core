@@ -97,4 +97,51 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       )
     end
   end
+
+  context "with a go.work file (workspace mode)" do
+    let(:branch) { "with-workspace" }
+
+    before do
+      # Set up workspace fixture
+      workspace_path = File.join(repo_contents_path, directory)
+      FileUtils.mkdir_p(workspace_path)
+
+      # Copy workspace fixture
+      fixture_path = File.join(__dir__, "../../fixtures/projects/workspace")
+      FileUtils.cp_r("#{fixture_path}/.", workspace_path)
+
+      # Stub the file listing to include go.work
+      allow(file_fetcher_instance).to receive(:repo_contents)
+        .and_return(
+          Dependabot::FileFetchers::Base::RepoContents.new(
+            repo_contents_path,
+            directory,
+            github_credentials
+          )
+        )
+    end
+
+    it "fetches the go.work file" do
+      files = file_fetcher_instance.files
+      expect(files.map(&:name)).to include("go.work")
+    end
+
+    it "fetches all workspace module go.mod files" do
+      files = file_fetcher_instance.files
+      expect(files.map(&:name)).to include(
+        "go.mod",
+        "tools/go.mod",
+        "api/go.mod"
+      )
+    end
+
+    it "fetches all workspace module go.sum files" do
+      files = file_fetcher_instance.files
+      expect(files.map(&:name)).to include(
+        "go.sum",
+        "tools/go.sum",
+        "api/go.sum"
+      )
+    end
+  end
 end
