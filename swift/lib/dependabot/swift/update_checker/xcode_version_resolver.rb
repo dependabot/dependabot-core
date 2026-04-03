@@ -6,6 +6,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/swift/update_checker"
 require "dependabot/swift/requirement"
 require "dependabot/swift/version"
+require "dependabot/swift/xcode_file_helpers"
 require "dependabot/update_checkers/version_filters"
 
 module Dependabot
@@ -161,13 +162,13 @@ module Dependabot
           requirement.satisfied_by?(version)
         end
 
-        # Returns true if the dependency's requirement originates from a
-        # Package.resolved file (rather than project.pbxproj).
+        # Returns true if the dependency's requirement originates from an
+        # Xcode-managed Package.resolved file (rather than project.pbxproj).
         sig { returns(T::Boolean) }
         def package_resolved_requirement?
           dependency.requirements.any? do |req|
             file = req[:file]
-            file.is_a?(String) && file.end_with?("Package.resolved")
+            file.is_a?(String) && XcodeFileHelpers.xcode_resolved_path?(file)
           end
         end
 
