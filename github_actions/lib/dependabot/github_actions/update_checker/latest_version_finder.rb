@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "excon"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -19,6 +18,8 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+
+        DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
 
         sig do
           params(
@@ -157,19 +158,32 @@ module Dependabot
           return release unless cooldown_options
 
           Dependabot.logger.info("Initializing cooldown filter")
-          release_date = commit_metadata_details
 
-          unless release_date
-            Dependabot.logger.info("No release date found, skipping cooldown filtering")
-            return release
-          end
+          tags_in_cooldown = select_version_tags_in_cooldown_period
+          return release if tags_in_cooldown.empty?
 
-          if release_in_cooldown_period?(Time.parse(release_date))
+          # Check if the current release tag is in cooldown
+          if tags_in_cooldown.include?(latest_version_tag&.fetch(:tag))
             Dependabot.logger.info("Filtered out (cooldown) #{dependency.name}, #{release}")
             return nil
           end
 
           release
+        end
+
+        sig { returns(T::Array[String]) }
+        def select_version_tags_in_cooldown_period
+          version_tags_in_cooldown_period = T.let([], T::Array[String])
+
+          package_details_fetcher.fetch_tag_and_release_date.each do |git_tag_with_detail|
+            if check_if_version_in_cooldown_period?(git_tag_with_detail.release_date)
+              version_tags_in_cooldown_period << git_tag_with_detail.tag
+            end
+          end
+          version_tags_in_cooldown_period
+        rescue StandardError => e
+          Dependabot.logger.error("Error checking if version is in cooldown: #{e.message}")
+          []
         end
 
         sig { returns(T.nilable(String)) }
@@ -202,21 +216,27 @@ module Dependabot
           )
         end
 
-        sig { params(release_date: Time).returns(T::Boolean) }
-        def release_in_cooldown_period?(release_date)
-          cooldown = @cooldown_options
+        sig { params(release_date: T.nilable(String)).returns(T::Boolean) }
+        def check_if_version_in_cooldown_period?(release_date)
+          return false unless release_date&.length&.positive?
+          return false unless cooldown_options
 
-          return false unless T.must(cooldown).included?(dependency.name)
-
-          days = T.must(cooldown).default_days
-          passed_seconds = Time.now.to_i - release_date.to_i
+          passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
 
           Dependabot.logger.info(
             "Days since release : #{passed_seconds / (3600 * 24)} " \
             "(cooldown days #{T.must(cooldown_options).default_days})"
           )
 
-          passed_seconds < days * DAY_IN_SECONDS
+          passed_seconds < T.must(cooldown_options).default_days * DAY_IN_SECONDS
+        rescue StandardError => e
+          Dependabot.logger.debug("Error parsing release date: #{e.message}")
+          false
+        end
+
+        sig { params(release_date: String).returns(Integer) }
+        def release_date_to_seconds(release_date)
+          Time.parse(release_date).to_i
         end
 
         sig { returns(String) }

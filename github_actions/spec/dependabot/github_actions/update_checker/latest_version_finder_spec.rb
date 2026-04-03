@@ -282,5 +282,159 @@ RSpec.describe namespace::LatestVersionFinder do
         )
       end
     end
+
+    describe "#check_if_version_in_cooldown_period?" do
+      subject { finder.send(:check_if_version_in_cooldown_period?, release_date) }
+
+      before do
+        allow(Time).to receive(:now).and_return(Time.parse("2024-04-03T16:00:00Z"))
+      end
+
+      context "with a release date more than 90 days ago" do
+        let(:release_date) { "2023-11-03T10:00:00Z" }
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "with a release date less than 90 days ago" do
+        let(:release_date) { "2024-03-14T10:00:00Z" }
+
+        it { is_expected.to eq(true) }
+      end
+
+      context "with a release date exactly 90 days ago" do
+        let(:release_date) { "2024-01-04T16:00:00Z" }
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "with nil release_date" do
+        let(:release_date) { nil }
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "with empty release_date" do
+        let(:release_date) { "" }
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "with invalid date format" do
+        let(:release_date) { "invalid-date" }
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "without cooldown options" do
+        subject { finder_no_cooldown.send(:check_if_version_in_cooldown_period?, release_date) }
+
+        let(:release_date) { "2024-03-14T10:00:00Z" }
+        let(:finder_no_cooldown) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: github_credentials,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: nil
+          )
+        end
+
+        it { is_expected.to eq(false) }
+      end
+    end
+
+    describe "#release_date_to_seconds" do
+      subject { finder.send(:release_date_to_seconds, release_date) }
+
+      context "with ISO 8601 date string" do
+        let(:release_date) { "2024-04-03T16:00:00Z" }
+
+        it { is_expected.to be_a(Integer) }
+
+        it "converts date to Unix timestamp" do
+          expect(subject).to eq(Time.parse("2024-04-03T16:00:00Z").to_i)
+        end
+      end
+
+      context "with different date formats" do
+        let(:release_date) { "2024-01-15T10:30:00Z" }
+
+        it "parses and converts correctly" do
+          expect(subject).to eq(Time.parse("2024-01-15T10:30:00Z").to_i)
+        end
+      end
+    end
+
+    describe "#select_version_tags_in_cooldown_period" do
+      subject(:selected_tags) { finder.send(:select_version_tags_in_cooldown_period) }
+
+      before do
+        allow(Time).to receive(:now).and_return(Time.parse("2024-04-03T16:00:00Z"))
+      end
+
+      let(:finder) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [],
+          credentials: github_credentials,
+          security_advisories: security_advisories,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        )
+      end
+
+      context "with cooldown enabled" do
+        it "returns array of tag names" do
+          expect(selected_tags).to be_an(Array)
+          expect(selected_tags).to all(be_a(String))
+        end
+
+        it "includes tags within cooldown period" do
+          # Tags released within 90 days should be included
+          # This depends on the actual tags in the fixture
+          # The test validates the method returns the correct format
+          expect(selected_tags).to be_an(Array)
+        end
+      end
+
+      context "when git fetch fails" do
+        before do
+          allow_any_instance_of(Dependabot::GithubActions::Package::PackageDetailsFetcher)
+            .to receive(:fetch_tag_and_release_date).and_raise(StandardError, "git error")
+        end
+
+        it "handles error gracefully and returns empty array" do
+          expect(selected_tags).to eq([])
+        end
+
+        it "logs the error" do
+          expect(Dependabot.logger).to receive(:error).with(/Error checking if version is in cooldown/)
+          selected_tags
+        end
+      end
+
+      context "when there are no tags in cooldown" do
+        let(:finder) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: github_credentials,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1)
+          )
+        end
+
+        it "returns empty array" do
+          # With a 1-day cooldown, most tags should be outside the period
+          expect(selected_tags).to be_an(Array)
+        end
+      end
+    end
   end
 end

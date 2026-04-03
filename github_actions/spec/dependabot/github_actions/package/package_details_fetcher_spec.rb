@@ -252,4 +252,45 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
   end
+
+  describe "#fetch_tag_and_release_date" do
+    subject(:fetch_tag_and_release_date) { fetcher.fetch_tag_and_release_date }
+
+    let(:upload_pack_fixture) { "setup-node" }
+
+    it "returns array of GitTagWithDetail objects" do
+      expect(fetch_tag_and_release_date).to be_an(Array)
+      expect(fetch_tag_and_release_date.first).to be_a(Dependabot::GitTagWithDetail)
+    end
+
+    it "includes tag and release_date attributes" do
+      results = fetch_tag_and_release_date
+      results.each do |tag_detail|
+        expect(tag_detail).to have_attributes(
+          tag: an_instance_of(String),
+          release_date: [an_instance_of(String), nil]
+        )
+      end
+    end
+
+    it "populates tags from allowed version tags" do
+      results = fetch_tag_and_release_date
+      expect(results.map(&:tag)).not_to be_empty
+    end
+
+    context "when git fetch fails" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "git error")
+      end
+
+      it "handles error gracefully and returns empty array" do
+        expect(fetch_tag_and_release_date).to eq([])
+      end
+
+      it "logs the error" do
+        expect(Dependabot.logger).to receive(:error).with(/Error fetching tag and release date/)
+        fetch_tag_and_release_date
+      end
+    end
+  end
 end

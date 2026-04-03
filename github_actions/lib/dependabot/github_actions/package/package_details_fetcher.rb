@@ -8,6 +8,7 @@ require "sorbet-runtime"
 require "time"
 
 require "dependabot/errors"
+require "dependabot/git_tag_with_detail"
 require "dependabot/github_actions/helpers"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
@@ -16,6 +17,7 @@ require "dependabot/package/package_details"
 require "dependabot/package/package_release"
 require "dependabot/registry_client"
 require "dependabot/shared_helpers"
+require "dependabot/source"
 
 module Dependabot
   module GithubActions
@@ -127,7 +129,48 @@ module Dependabot
           )
         end
 
+        sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
+        def fetch_tag_and_release_date
+          allowed_version_tags = git_commit_checker.allowed_version_tags
+          result = T.let([], T::Array[Dependabot::GitTagWithDetail])
+
+          allowed_version_tags.each do |tag|
+            release_date = fetch_release_date_for_tag(tag.name)
+            result << Dependabot::GitTagWithDetail.new(
+              tag: tag.name,
+              release_date: release_date
+            )
+          end
+
+          result
+        rescue StandardError => e
+          Dependabot.logger.error("Error fetching tag and release date: #{e.message}")
+          []
+        end
+
         private
+
+        sig { params(tag_name: String).returns(T.nilable(String)) }
+        def fetch_release_date_for_tag(tag_name)
+          url = git_commit_checker.dependency_source_details&.fetch(:url)
+          source = T.must(Source.from_url(url))
+
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+
+            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+            Dir.chdir(repo_contents_path) do
+              date = SharedHelpers.run_shell_command(
+                "git show --no-patch --format=\"%cd\" --date=iso #{tag_name}",
+                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <tag>"
+              )
+              return date.strip
+            end
+          end
+        rescue StandardError => e
+          Dependabot.logger.debug("Error fetching release date for tag #{tag_name}: #{e.message}")
+          nil
+        end
 
         sig { returns(Dependabot::GitCommitChecker) }
         def git_commit_checker
