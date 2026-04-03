@@ -143,17 +143,19 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def updated_go_mod_content
-          updated_files[:go_mod]
+          updated_files["go.mod"]
         end
 
         sig { returns(T.nilable(String)) }
         def updated_go_sum_content
-          updated_files[:go_sum]
+          updated_files["go.sum"]
         end
 
         sig { returns(T::Hash[String, String]) }
         def updated_workspace_files
-          updated_files.reject { |k, _| %i[go_mod go_sum].include?(k) }
+          # Return all files except the root go.mod and go.sum
+          # Keys are already string paths (e.g., "tools/go.mod")
+          updated_files.reject { |k, _| k == "go.mod" || k == "go.sum" }
         end
 
         private
@@ -173,12 +175,12 @@ module Dependabot
         sig { returns(String) }
         attr_reader :directory
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[String, String]) }
         def updated_files
-          @updated_files ||= T.let(update_files, T.nilable(T::Hash[Symbol, String]))
+          @updated_files ||= T.let(update_files, T.nilable(T::Hash[String, String]))
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[String, String]) }
         def update_files
           in_repo_path do
             # During grouped updates, the dependency_files are from a previous dependency
@@ -197,7 +199,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[String, String]) }
         def update_single_module_files
           # Map paths in local replace directives to path hashes
           original_manifest = parse_manifest
@@ -231,65 +233,37 @@ module Dependabot
           updated_go_sum = original_go_sum ? File.read("go.sum") : nil
           updated_go_mod = File.read("go.mod")
 
-          { go_mod: updated_go_mod, go_sum: updated_go_sum }
+          result = { "go.mod" => updated_go_mod }
+          result["go.sum"] = updated_go_sum if updated_go_sum
+          result
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[String, String]) }
         def update_workspace_files
           result = {}
 
-          # Get all workspace module paths
-          workspace_modules = workspace_module_paths
-
-          # Store original content for all modules
-          original_files = {}
-          workspace_modules.each do |module_path|
-            mod_path = File.join(module_path, "go.mod")
-            sum_path = File.join(module_path, "go.sum")
-
-            original_files["#{module_path}/go.mod"] = File.read(mod_path) if File.exist?(mod_path)
-            original_files["#{module_path}/go.sum"] = File.read(sum_path) if File.exist?(sum_path)
-          end
-
-          # Update dependencies in the main module or first workspace module
-          # The `go get` command will work across the workspace
+          # Update dependencies using `go get` - it works across the entire workspace
           run_go_get(dependencies)
+
+          # Run internal validation
+          run_go_get
 
           # Run go work sync to synchronize dependencies across all modules
           run_go_work_sync
 
-          # Run go mod tidy on each module
-          workspace_modules.each do |module_path|
-            Dir.chdir(module_path) do
-              run_go_mod_tidy
-              run_go_vendor
-            end
-          end
-
-          # Collect updated files
-          workspace_modules.each do |module_path|
+          # Collect updated files from all workspace modules
+          # Use actual file paths as string keys
+          workspace_module_paths.each do |module_path|
             mod_path = File.join(module_path, "go.mod")
             sum_path = File.join(module_path, "go.sum")
 
-            if File.exist?(mod_path)
-              file_key = "#{module_path}/go.mod".gsub("/", "_").to_sym
-              result[file_key] = File.read(mod_path)
-            end
-
-            if File.exist?(sum_path)
-              file_key = "#{module_path}/go.sum".gsub("/", "_").to_sym
-              result[file_key] = File.read(sum_path)
-            end
+            result[mod_path] = File.read(mod_path) if File.exist?(mod_path)
+            result[sum_path] = File.read(sum_path) if File.exist?(sum_path)
           end
 
           # Handle root go.mod and go.sum if they exist
-          if File.exist?("go.mod")
-            result[:go_mod] = File.read("go.mod")
-          end
-
-          if File.exist?("go.sum")
-            result[:go_sum] = File.read("go.sum")
-          end
+          result["go.mod"] = File.read("go.mod") if File.exist?("go.mod")
+          result["go.sum"] = File.read("go.sum") if File.exist?("go.sum")
 
           result
         end
@@ -561,24 +535,57 @@ module Dependabot
           go_work_file = dependency_files.find { |f| f.name == "go.work" }
           return [] unless go_work_file
 
-          content = go_work_file.content
+          content = T.must(go_work_file.content)
           paths = []
 
           # Match "use" directives in go.work
-          # Format: use ./path/to/module or use ( ./path1 ./path2 )
-          content.scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
-            # Multi-line use block
-            block_match[0].scan(/^\s*\.?\/?([\S]+)/).each do |path_match|
+          # Format can be:
+          #   1. use ./path/to/module (single line)
+          #   2. use (
+          #        ./path1
+          #        ./path2
+          #      )
+          # Note: Files can contain both formats
+
+          # Parse multi-line use blocks
+          T.must(content).scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
+            block_match[0].scan(%r{^\s*\.?/?([\S]+)}).each do |path_match|
               paths << path_match[0]
             end
           end
 
-          # Single line use directives
-          content.scan(/^use\s+\.?\/?(\S+)/).each do |path_match|
-            paths << path_match[0] unless content =~ /^use\s+\(/
+          # Parse single-line use directives (not followed by opening paren)
+          T.must(content).scan(/^use\s+(?!\()\.?\/?([\S]+)/m).each do |path_match|
+            paths << path_match[0]
           end
 
-          paths.uniq
+          # Normalize and validate paths
+          paths.map { |p| p.sub(%r{^\./}, "") }
+               .select { |p| valid_workspace_path?(p) }
+               .uniq
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def valid_workspace_path?(path)
+          # Reject absolute paths
+          return false if Pathname.new(path).absolute?
+
+          # Reject paths containing null bytes
+          return false if path.include?("\0")
+
+          # Clean and normalize the path
+          clean_path = Pathname.new(path).cleanpath.to_s
+
+          # Reject if the cleaned path tries to escape (starts with ../)
+          return false if clean_path.start_with?("../")
+
+          # Reject if the path is just "." or empty
+          return false if clean_path == "." || clean_path.empty?
+
+          # Additional safety: ensure the path doesn't contain suspicious patterns
+          return false if path.include?("//") || path.include?("\\")
+
+          true
         end
       end
     end

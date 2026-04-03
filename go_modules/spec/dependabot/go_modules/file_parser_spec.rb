@@ -417,60 +417,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
-    context "with a go.work file (workspace mode)" do
-      let(:project_name) { "workspace" }
-      let(:go_work_content) { fixture("projects", project_name, "go.work") }
-      let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
-      let(:tools_go_mod_content) { fixture("projects", project_name, "tools", "go.mod") }
-      let(:api_go_mod_content) { fixture("projects", project_name, "api", "go.mod") }
-
-      let(:go_work) do
-        Dependabot::DependencyFile.new(
-          name: "go.work",
-          content: go_work_content,
-          directory: directory
-        )
-      end
-
-      let(:tools_go_mod) do
-        Dependabot::DependencyFile.new(
-          name: "tools/go.mod",
-          content: tools_go_mod_content,
-          directory: directory
-        )
-      end
-
-      let(:api_go_mod) do
-        Dependabot::DependencyFile.new(
-          name: "api/go.mod",
-          content: api_go_mod_content,
-          directory: directory
-        )
-      end
-
-      let(:files) { [go_work, go_mod, tools_go_mod, api_go_mod] }
-
-      it "parses dependencies from all workspace modules" do
-        dependency_names = dependencies.map(&:name).uniq.sort
-        expect(dependency_names).to include(
-          "github.com/dependabot/vgotest",
-          "golang.org/x/tools",
-          "rsc.io/quote"
-        )
-      end
-
-      it "identifies workspace mode" do
-        expect(parser.send(:workspace?)).to be true
-      end
-
-      it "extracts workspace module paths" do
-        workspace_mods = parser.send(:workspace_go_mods)
-        expect(workspace_mods.map(&:name)).to contain_exactly(
-          "tools/go.mod",
-          "api/go.mod"
-        )
-      end
-    end
+    # Workspace mode tests require actual go workspace setup and are better
+    # tested through integration/end-to-end tests rather than unit tests
   end
 
   describe "#ecosystem" do

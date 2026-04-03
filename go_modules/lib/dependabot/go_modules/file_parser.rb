@@ -96,7 +96,8 @@ module Dependabot
             FileUtils.touch(File.join(stub_path, "go.mod"))
           end
 
-          File.write("go.mod", go_mod_content)
+          # Only write go.mod if it exists (might be workspace-only)
+          File.write("go.mod", go_mod_content) if go_mod_content
 
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr) unless status.success?
@@ -221,7 +222,10 @@ module Dependabot
 
         # Get all go.mod files from workspace modules
         all_go_mods = workspace_go_mods
-        all_go_mods << go_mod if go_mod
+        # Include root go.mod only if it exists (workspace root might not have go.mod)
+        all_go_mods << T.must(go_mod) if go_mod
+
+        raise "No go.mod files found in workspace!" if all_go_mods.empty?
 
         all_go_mods.each do |mod_file|
           # Parse each module's dependencies
@@ -239,17 +243,29 @@ module Dependabot
           File.write("go.mod", mod_file.content)
 
           # Create stub modules for local replacements
-          manifest = JSON.parse(SharedHelpers.run_shell_command("go mod edit -json"))
+          # Derive the actual module directory from the file name
+          # e.g., "tools/go.mod" -> "/tools", "go.mod" -> "/"
+          module_directory = File.dirname(mod_file.name)
+          module_directory = "/" if module_directory == "."
+          module_directory = "/#{module_directory}" unless module_directory.start_with?("/")
+
+          # Parse manifest using consistent error handling
+          stdout, stderr, status = Open3.capture3("go mod edit -json")
+          handle_parser_error(path, stderr) unless status.success?
+          manifest = JSON.parse(stdout)
+
           local_replacements = ReplaceStubber.new(T.must(repo_contents_path))
-                                             .stub_paths(manifest, mod_file.directory)
+                                             .stub_paths(manifest, module_directory)
 
           local_replacements.each do |_, stub_path|
             FileUtils.mkdir_p(stub_path)
             FileUtils.touch(File.join(stub_path, "go.mod"))
           end
 
-          # Get required packages
-          packages = JSON.parse(SharedHelpers.run_shell_command("go mod edit -json"))["Require"] || []
+          # Get required packages using consistent error handling
+          stdout, stderr, status = Open3.capture3("go mod edit -json")
+          handle_parser_error(path, stderr) unless status.success?
+          packages = JSON.parse(stdout)["Require"] || []
 
           packages.filter_map do |hsh|
             next if skip_dependency?(hsh)
@@ -271,9 +287,6 @@ module Dependabot
               requirements: hsh["Indirect"] ? [] : reqs,
               package_manager: "go_modules"
             )
-          rescue StandardError => e
-            Dependabot.logger.warn("Failed to parse dependency from #{mod_file.name}: #{e.message}")
-            nil
           end
         end
       end
@@ -329,17 +342,22 @@ module Dependabot
       def manifest
         @manifest ||=
           T.let(
-            SharedHelpers.in_a_temporary_directory do |path|
-              File.write("go.mod", go_mod&.content)
+            begin
+              # In workspace-only mode (no root go.mod), return empty manifest
+              return {} unless go_mod
 
-              # Parse the go.mod to get a JSON representation of the replace
-              # directives
-              command = "go mod edit -json"
+              SharedHelpers.in_a_temporary_directory do |path|
+                File.write("go.mod", go_mod&.content)
 
-              stdout, stderr, status = Open3.capture3(command)
-              handle_parser_error(path, stderr) unless status.success?
+                # Parse the go.mod to get a JSON representation of the replace
+                # directives
+                command = "go mod edit -json"
 
-              JSON.parse(stdout)
+                stdout, stderr, status = Open3.capture3(command)
+                handle_parser_error(path, stderr) unless status.success?
+
+                JSON.parse(stdout)
+              end
             end,
             T.nilable(T::Hash[String, T.untyped])
           )
@@ -347,6 +365,8 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def go_mod_content
+        return nil unless go_mod
+
         local_replacements.reduce(go_mod&.content) do |body, (path, stub_path)|
           body&.sub(path, stub_path)
         end
@@ -355,7 +375,9 @@ module Dependabot
       sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
       def handle_parser_error(path, stderr)
         msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
+        # Use go.work path if no go.mod exists (workspace-only repos)
+        file_path = go_mod&.path || go_work&.path || "go.mod"
+        raise Dependabot::DependencyFileNotParseable.new(file_path, msg)
       end
 
       sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }

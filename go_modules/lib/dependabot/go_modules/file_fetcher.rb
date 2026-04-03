@@ -13,12 +13,12 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.include?("go.mod")
+        filenames.include?("go.mod") || filenames.include?("go.work")
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a go.mod."
+        "Repo must contain a go.mod or go.work."
       end
 
       sig { override.returns(T::Hash[Symbol, T.untyped]) }
@@ -43,7 +43,19 @@ module Dependabot
           # If go.work exists, fetch it and all workspace modules
           if go_work
             fetched_files << T.must(go_work)
-            fetched_files.concat(workspace_module_files)
+            workspace_files = workspace_module_files
+
+            # Ensure at least one workspace module was found
+            raise Dependabot::DependencyFileNotFound.new(
+              "go.mod",
+              "go.work found but no workspace modules with go.mod files could be fetched"
+            ) if workspace_files.empty?
+
+            fetched_files.concat(workspace_files)
+
+            # Also fetch root go.mod and go.sum if they exist (root might be included in workspace)
+            fetched_files << go_mod if go_mod
+            fetched_files << T.must(go_sum) if go_sum
           elsif go_mod
             # Fallback to single module mode
             fetched_files << go_mod
@@ -85,24 +97,57 @@ module Dependabot
         return [] unless go_work
 
         # Parse go.work file to extract module paths
-        content = T.must(go_work).content
+        content = T.must(T.must(go_work).content)
         paths = []
 
         # Match "use" directives in go.work
-        # Format: use ./path/to/module or use ( ./path1 ./path2 )
-        content.scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
-          # Multi-line use block
-          block_match[0].scan(/^\s*\.?\/?([\S]+)/).each do |path_match|
+        # Format can be:
+        #   1. use ./path/to/module (single line)
+        #   2. use (
+        #        ./path1
+        #        ./path2
+        #      )
+        # Note: Files can contain both formats
+
+        # Parse multi-line use blocks
+        T.must(content).scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
+          block_match[0].scan(%r{^\s*\.?/?([\S]+)}).each do |path_match|
             paths << path_match[0]
           end
         end
 
-        # Single line use directives
-        content.scan(/^use\s+\.?\/?(\S+)/).each do |path_match|
-          paths << path_match[0] unless content =~ /^use\s+\(/
+        # Parse single-line use directives (not followed by opening paren)
+        T.must(content).scan(/^use\s+(?!\()\.?\/?([\S]+)/m).each do |path_match|
+          paths << path_match[0]
         end
 
-        paths.uniq
+        # Normalize and validate paths
+        paths.map { |p| p.sub(%r{^\./}, "") }
+             .select { |p| valid_workspace_path?(p) }
+             .uniq
+      end
+
+      sig { params(path: String).returns(T::Boolean) }
+      def valid_workspace_path?(path)
+        # Reject absolute paths
+        return false if Pathname.new(path).absolute?
+
+        # Reject paths containing null bytes
+        return false if path.include?("\0")
+
+        # Clean and normalize the path
+        clean_path = Pathname.new(path).cleanpath.to_s
+
+        # Reject if the cleaned path tries to escape (starts with ../)
+        return false if clean_path.start_with?("../")
+
+        # Reject if the path is just "." or empty
+        return false if clean_path == "." || clean_path.empty?
+
+        # Additional safety: ensure the path doesn't contain suspicious patterns
+        return false if path.include?("//") || path.include?("\\")
+
+        true
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -110,6 +155,10 @@ module Dependabot
         files = []
 
         workspace_module_paths.each do |module_path|
+          # module_path is already validated by valid_workspace_path?
+          # but we double-check here for defense in depth
+          next unless valid_workspace_path?(module_path)
+
           # Construct the full path for go.mod
           mod_path = File.join(module_path, "go.mod")
           sum_path = File.join(module_path, "go.sum")

@@ -110,38 +110,31 @@ module Dependabot
         workspace_files = file_updater.updated_workspace_files
 
         # Process each workspace module's files
-        workspace_files.each do |file_key, content|
-          # Convert the file key back to a path
-          # e.g., "tools_go.mod" -> "tools/go.mod"
-          file_path = file_key.to_s.gsub("_", "/")
-
-          # Find the original file
+        # Keys are actual file paths (e.g., "tools/go.mod")
+        workspace_files.each do |file_path, content|
+          # Find the original file by its path
           original = dependency_files.find { |f| f.name == file_path }
           next unless original
 
           # Only include if content changed
-          if original.content != content
-            updated << updated_file(file: original, content: content)
-          end
+          updated << updated_file(file: original, content: content) if original.content != content
         end
 
         # Also handle root go.mod and go.sum if present
-        if go_mod && file_updater.updated_go_mod_content
-          if T.must(go_mod).content != file_updater.updated_go_mod_content
-            updated << updated_file(
-              file: T.must(go_mod),
-              content: T.must(file_updater.updated_go_mod_content)
-            )
-          end
+        if go_mod && file_updater.updated_go_mod_content &&
+           T.must(go_mod).content != file_updater.updated_go_mod_content
+          updated << updated_file(
+            file: T.must(go_mod),
+            content: T.must(file_updater.updated_go_mod_content)
+          )
         end
 
-        if go_sum && file_updater.updated_go_sum_content
-          if T.must(go_sum).content != file_updater.updated_go_sum_content
-            updated << updated_file(
-              file: T.must(go_sum),
-              content: T.must(file_updater.updated_go_sum_content)
-            )
-          end
+        if go_sum && file_updater.updated_go_sum_content &&
+           T.must(go_sum).content != file_updater.updated_go_sum_content
+          updated << updated_file(
+            file: T.must(go_sum),
+            content: T.must(file_updater.updated_go_sum_content)
+          )
         end
 
         updated
