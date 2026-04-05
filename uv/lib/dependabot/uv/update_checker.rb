@@ -157,7 +157,7 @@ module Dependabot
         requirement = reqs.find do |r|
           file = r[:file]
 
-          file == "uv.lock" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "uv.lock" || file.end_with?("pyproject.toml") || file.end_with?(".in") || file.end_with?(".txt")
         end
 
         requirement&.fetch(:requirement)
@@ -232,6 +232,11 @@ module Dependabot
         false
       rescue URI::InvalidURIError
         false
+      end
+
+      sig { returns(T::Boolean) }
+      def updating_pyproject?
+        requirement_files.any? { |file| file.end_with?("pyproject.toml") }
       end
 
       sig { returns(T::Boolean) }

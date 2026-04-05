@@ -772,5 +772,25 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
         end
       end
     end
+
+    context "when dealing with a nested pyproject.toml dependency" do
+      subject(:updated_requirement) do
+        updated_requirements.find { |r| r[:file] == "packages/example-package/pyproject.toml" }
+      end
+
+      let(:requirements) do
+        [{
+          file: "packages/example-package/pyproject.toml",
+          requirement: "^1.3.0",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:latest_resolvable_version) { "1.5.0" }
+
+      it "updates the nested requirement like a pyproject dependency" do
+        expect(updated_requirement[:requirement]).to eq("^1.5.0")
+      end
+    end
   end
 end
