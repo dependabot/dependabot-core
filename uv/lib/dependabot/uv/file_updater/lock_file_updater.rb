@@ -92,14 +92,13 @@ module Dependabot
         def fetch_updated_dependency_files
           return [] unless create_or_update_lock_file?
 
-          updated_files = []
+          updated_files = pyproject_files.filter_map do |file|
+            next unless file_changed?(file)
 
-          if file_changed?(pyproject)
-            updated_files <<
-              updated_file(
-                file: T.must(pyproject),
-                content: T.must(updated_pyproject_content)
-              )
+            updated_file(
+              file: file,
+              content: T.must(updated_pyproject_content_for(file))
+            )
           end
 
           if lockfile && !build_system_only_dependency?
@@ -116,15 +115,20 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def updated_pyproject_content
-          content = T.must(pyproject).content
-          return content unless file_changed?(T.must(pyproject))
+          updated_pyproject_content_for(T.must(pyproject))
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def updated_pyproject_content_for(file)
+          content = T.must(file.content)
+          return content unless file_changed?(file)
 
           updated_content = content.dup
 
           T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
-            next unless new_r[:file] == T.must(pyproject).name && T.must(old_r)[:file] == T.must(pyproject).name
+            next unless new_r[:file] == file.name && T.must(old_r)[:file] == file.name
 
-            updated_content = replace_dep(T.must(dependency), T.must(updated_content), new_r, T.must(old_r))
+            updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
           end
 
           raise DependencyFileContentNotChanged, "Content did not change!" if content == updated_content
@@ -301,11 +305,16 @@ module Dependabot
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
-          end
+            content = if file.name == "pyproject.toml"
+                        pyproject_content
+                      elsif file.name.end_with?("pyproject.toml") && file_changed?(file)
+                        T.must(updated_pyproject_content_for(file))
+                      else
+                        T.must(file.content)
+                      end
 
-          # Overwrite the pyproject with updated content
-          File.write("pyproject.toml", pyproject_content)
+            File.write(path, content)
+          end
 
           ensure_version_file_directories
         end
@@ -537,6 +546,11 @@ module Dependabot
             dependency_files.find { |f| f.name == "pyproject.toml" },
             T.nilable(Dependabot::DependencyFile)
           )
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def pyproject_files
+          dependency_files.select { |file| file.name.end_with?("pyproject.toml") }
         end
 
         sig { returns(String) }

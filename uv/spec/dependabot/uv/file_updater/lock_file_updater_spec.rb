@@ -411,6 +411,79 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(lockfile.content).to include('version = "2.33.0"')
       end
     end
+
+    context "when updating a workspace member dependency" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "workspace-root"
+          version = "0.1.0"
+          dependencies = ["my-package"]
+
+          [tool.uv.workspace]
+          members = ["packages/my-package"]
+
+          [tool.uv.sources]
+          my-package = { workspace = true }
+        TOML
+      end
+
+      let(:workspace_member_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "packages/my-package/pyproject.toml",
+          support_file: true,
+          content: <<~TOML
+            [project]
+            name = "my-package"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.1.0",
+            ]
+          TOML
+        )
+      end
+
+      let(:dependency_files) { [pyproject_file, lockfile, workspace_member_pyproject] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "click",
+          version: "8.2.0",
+          requirements: [{
+            file: "packages/my-package/pyproject.toml",
+            requirement: ">=8.2.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "packages/my-package/pyproject.toml",
+            requirement: ">=8.1.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "8.1.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "returns the updated workspace member manifest and lockfile" do
+        updated_lockfile = lockfile_content.sub('version = "2.32.3"', 'version = "8.2.0"')
+
+        allow(updater).to receive(:updated_lockfile_content_for).and_return(updated_lockfile)
+
+        updated_dependency_files = updater.updated_dependency_files
+
+        expect(updated_dependency_files.map(&:name)).to include("packages/my-package/pyproject.toml")
+        expect(updated_dependency_files.map(&:name)).to include("uv.lock")
+        expect(updated_dependency_files.map(&:name)).not_to include("pyproject.toml")
+
+        member_pyproject = updated_dependency_files.find { |f| f.name == "packages/my-package/pyproject.toml" }
+        expect(member_pyproject.content).to include('"click>=8.2.0"')
+
+        updated_lock = updated_dependency_files.find { |f| f.name == "uv.lock" }
+        expect(updated_lock.content).to include('version = "8.2.0"')
+      end
+    end
   end
 
   describe "with a requirements.txt or requirements.in file only" do
@@ -1101,6 +1174,76 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           )
         )
       end
+    end
+  end
+
+  describe "#write_temporary_dependency_files" do
+    subject(:write_temporary_dependency_files) do
+      updater.send(:write_temporary_dependency_files, "sanitized root pyproject")
+    end
+
+    let(:pyproject_content) do
+      <<~TOML
+        [project]
+        name = "workspace-root"
+        version = "0.1.0"
+        dependencies = ["my-package"]
+      TOML
+    end
+
+    let(:workspace_member_pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "packages/my-package/pyproject.toml",
+        support_file: true,
+        content: <<~TOML
+          [project]
+          name = "my-package"
+          version = "0.1.0"
+          dependencies = [
+            "click>=8.1.0",
+          ]
+        TOML
+      )
+    end
+
+    let(:dependency_files) { [pyproject_file, lockfile, workspace_member_pyproject] }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "click",
+        version: "8.2.0",
+        requirements: [{
+          file: "packages/my-package/pyproject.toml",
+          requirement: ">=8.2.0",
+          groups: [],
+          source: nil
+        }],
+        previous_requirements: [{
+          file: "packages/my-package/pyproject.toml",
+          requirement: ">=8.1.0",
+          groups: [],
+          source: nil
+        }],
+        previous_version: "8.1.0",
+        package_manager: "uv"
+      )
+    end
+
+    before do
+      allow(FileUtils).to receive(:mkdir_p)
+      allow(File).to receive(:write)
+      allow(updater).to receive(:ensure_version_file_directories)
+    end
+
+    it "writes updated workspace member manifests into the temporary repo" do
+      write_temporary_dependency_files
+
+      expect(File).to have_received(:write).with("pyproject.toml", "sanitized root pyproject")
+      expect(File).to have_received(:write).with(
+        "packages/my-package/pyproject.toml",
+        include('"click>=8.2.0"')
+      )
+      expect(File).to have_received(:write).with("uv.lock", lockfile_content)
     end
   end
 
