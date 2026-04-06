@@ -171,13 +171,34 @@ module Dependabot
         token ? { "Authorization" => "Bearer #{token}" } : {}
       end
 
+      sig { params(service_discovery: T::Hash[String, String]).void }
+      def register_service_discovery_hostnames(service_discovery)
+        base_token = tokens[hostname]
+        return unless base_token
+
+        service_discovery.each_value do |service_uri|
+          next unless service_uri.is_a?(String)
+
+          uri = URI.parse(service_uri)
+          discovered_host = uri.host
+          if discovered_host && discovered_host != hostname && !tokens.key?(discovered_host)
+            tokens[discovered_host] = base_token
+          end
+        rescue URI::InvalidURIError
+          # Skip URI's without a hostname, e.g. relative paths
+          next
+        end
+      end
+
       sig { returns(T::Hash[String, String]) }
       def services
         @services ||= T.let(
           begin
             response = http_get(url_for("/.well-known/terraform.json"))
             if response.status == 200 && !response.body.empty?
-              JSON.parse(response.body)
+              service_discovery_urls = JSON.parse(response.body)
+              register_service_discovery_hostnames(service_discovery_urls)
+              service_discovery_urls
             else
               {}
             end
