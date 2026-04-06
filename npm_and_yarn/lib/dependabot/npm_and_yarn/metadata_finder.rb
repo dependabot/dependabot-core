@@ -3,6 +3,7 @@
 
 require "excon"
 require "time"
+require "uri"
 require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
@@ -40,8 +41,9 @@ module Dependabot
         return unless npm_listing.dig("time", dependency.version)
         return if previous_releasers&.include?(npm_releaser)
 
+        encoded_releaser = URI::DEFAULT_PARSER.escape(npm_releaser, /[^a-zA-Z0-9._-]/)
         "This version was pushed to npm by " \
-          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "[#{npm_releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
           "releaser for #{dependency.name} since your current version."
       end
 

@@ -1,0 +1,116 @@
+{
+  "_attachments": {},
+  "_id": "npm-package-json-lint",
+  "_rev": "142-abc1234567890",
+  "bugs": {
+    "url": "https://github.com/ericcornelissen/npm-package-json-lint/issues"
+  },
+  "contributors": [
+    {
+      "email": "eric@example.com",
+      "name": "Eric Cornelissen"
+    }
+  ],
+  "description": "Configurable npm package.json linter",
+  "dist-tags": {
+    "latest": "10.0.0"
+  },
+  "homepage": "https://github.com/ericcornelissen/npm-package-json-lint",
+  "keywords": [
+    "lint",
+    "npm",
+    "package.json"
+  ],
+  "license": "MIT",
+  "maintainers": [
+    {
+      "email": "github-actions@github.com",
+      "name": "GitHub Actions"
+    }
+  ],
+  "name": "npm-package-json-lint",
+  "readme": "# npm-package-json-lint\n\nA utility for linting npm package.json files.\n",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ericcornelissen/npm-package-json-lint"
+  },
+  "time": {
+    "created": "2020-01-01T00:00:00.000Z",
+    "modified": "2024-01-02T00:00:00.000Z",
+    "9.0.0": "2024-01-01T00:00:00.000Z",
+    "10.0.0": "2024-01-02T00:00:00.000Z"
+  },
+  "versions": {
+    "9.0.0": {
+      "_from": ".",
+      "_id": "npm-package-json-lint@9.0.0",
+      "_npmUser": {
+        "email": "eric@example.com",
+        "name": "oldmaintainer"
+      },
+      "_npmVersion": "11.10.0",
+      "_shasum": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p",
+      "bugs": {
+        "url": "https://github.com/ericcornelissen/npm-package-json-lint/issues"
+      },
+      "description": "Configurable npm package.json linter",
+      "dist": {
+        "shasum": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p",
+        "tarball": "https://registry.npmjs.org/npm-package-json-lint/-/npm-package-json-lint-9.0.0.tgz"
+      },
+      "engines": {
+        "node": ">=14.0.0"
+      },
+      "homepage": "https://github.com/ericcornelissen/npm-package-json-lint",
+      "keywords": [
+        "lint",
+        "npm",
+        "package.json"
+      ],
+      "license": "MIT",
+      "main": "dist/index.js",
+      "name": "npm-package-json-lint",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/ericcornelissen/npm-package-json-lint"
+      },
+      "version": "9.0.0"
+    },
+    "10.0.0": {
+      "_from": ".",
+      "_id": "npm-package-json-lint@10.0.0",
+      "_npmUser": {
+        "email": "github-actions@github.com",
+        "name": "GitHub Actions"
+      },
+      "_npmVersion": "11.11.0",
+      "_shasum": "2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q",
+      "bugs": {
+        "url": "https://github.com/ericcornelissen/npm-package-json-lint/issues"
+      },
+      "description": "Configurable npm package.json linter",
+      "dist": {
+        "shasum": "2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q",
+        "tarball": "https://registry.npmjs.org/npm-package-json-lint/-/npm-package-json-lint-10.0.0.tgz"
+      },
+      "engines": {
+        "node": ">=14.0.0"
+      },
+      "homepage": "https://github.com/ericcornelissen/npm-package-json-lint",
+      "keywords": [
+        "lint",
+        "npm",
+        "package.json"
+      ],
+      "license": "MIT",
+      "main": "dist/index.js",
+      "name": "npm-package-json-lint",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/ericcornelissen/npm-package-json-lint"
+      },
+      "version": "10.0.0"
+    }
+  }
+}
