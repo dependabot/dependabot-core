@@ -84,3 +84,6 @@
 
 "L: pre:commit":
     - '(pre_commit)'
+
+"L: nix":
+    - '(nix)'

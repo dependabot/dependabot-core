@@ -111,8 +111,8 @@ RSpec.describe namespace::LatestVersionFinder do
     end
   end
 
-  describe "#latest_release" do
-    subject(:latest_release) { finder.latest_release }
+  describe "#latest_release_version" do
+    subject(:latest_release_version) { finder.latest_release_version }
 
     let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
 
@@ -135,7 +135,7 @@ RSpec.describe namespace::LatestVersionFinder do
       let(:reference) { tip_of_master }
 
       it "considers the commit itself as the latest version" do
-        expect(latest_release).to eq(tip_of_master)
+        expect(latest_release_version).to eq(tip_of_master)
       end
     end
 
@@ -163,7 +163,7 @@ RSpec.describe namespace::LatestVersionFinder do
       include_context "with multiple git sources"
 
       it "returns the expected value" do
-        expect(latest_release).to eq(Gem::Version.new("3.5.2"))
+        expect(latest_release_version).to eq(Gem::Version.new("3.5.2"))
       end
     end
   end
@@ -240,12 +240,12 @@ RSpec.describe namespace::LatestVersionFinder do
       }
     end
 
-    describe "#latest_release" do
-      subject(:latest_release) { finder.latest_release }
+    describe "#latest_release_version" do
+      subject(:latest_release_version) { finder.latest_release_version }
 
       it "correctly identifies v0.0.24 as the latest version" do
-        expect(latest_release).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
-        expect(latest_release).not_to eq("a9594b7a3de691e58c1ff7f96448d9b93fd831e7")
+        expect(latest_release_version).to eq(Dependabot::GithubActions::Version.new("0.0.24"))
+        expect(latest_release_version).not_to eq("a9594b7a3de691e58c1ff7f96448d9b93fd831e7")
       end
 
       it "handles dependencies with version tag prefixes correctly" do

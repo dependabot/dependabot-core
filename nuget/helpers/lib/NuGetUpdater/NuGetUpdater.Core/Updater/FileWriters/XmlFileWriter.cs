@@ -253,21 +253,47 @@ public class XmlFileWriter : IFileWriter
                     .ToArray();
                 if (matchingPackageVersionElementsAndPaths.Length > 0)
                 {
-                    // found matching `<PackageVersion>` element; if `Version` attribute is appropriate we're done, otherwise set `VersionOverride` attribute on new element
+                    // found matching `<PackageVersion>` element
                     var (matchingPackageVersionElement, filePath) = matchingPackageVersionElementsAndPaths.First();
                     var versionAttribute = matchingPackageVersionElement.GetAttributeCaseInsensitive(VersionMetadataName);
+                    var isVersionOverrideNeeded = false;
                     if (versionAttribute is not null &&
-                        VersionRange.TryParse(versionAttribute.Value, out var existingVersionRange) &&
-                        existingVersionRange.MinVersion == requiredVersion)
+                        VersionRange.TryParse(versionAttribute.Value, out var existingVersionRange))
                     {
-                        // version matches; no update needed
-                        _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no override needed.");
+                        if (existingVersionRange.MinVersion == requiredVersion)
+                        {
+                            // version matches; no update needed
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion} in file {filePath}; no update needed.");
+                        }
+                        else if (existingVersionRange.Satisfies(oldVersion))
+                        {
+                            // found matching old version; update the attribute directly
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} updated from version {oldVersion} to {requiredVersion} in file {filePath}.");
+                            ReplaceNode(
+                                filePath,
+                                matchingPackageVersionElement.AsNode,
+                                matchingPackageVersionElement.ReplaceAttribute(
+                                    versionAttribute,
+                                    versionAttribute.WithValue(requiredVersion.ToString())
+                                ).AsNode
+                            );
+                        }
+                        else
+                        {
+                            // version doesn't match; use `VersionOverride` attribute on new element
+                            isVersionOverrideNeeded = true;
+                        }
                     }
                     else
                     {
-                        // version doesn't match; use `VersionOverride` attribute on new element
-                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `{VersionOverrideMetadataName}` attribute on new element.");
-                        newElement = (IXmlElementSyntax)ReplaceNode(
+                        // version not found; use `VersionOverride` attribute on new element
+                        isVersionOverrideNeeded = true;
+                    }
+
+                    if (isVersionOverrideNeeded)
+                    {
+                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion} using `{VersionOverrideMetadataName}` attribute on new element in file {projectRelativePath}.");
+                        ReplaceNode(
                             projectRelativePath,
                             newElement.AsNode,
                             newElement.WithAttribute(VersionOverrideMetadataName, requiredVersion.ToString()).AsNode

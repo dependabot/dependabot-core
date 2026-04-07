@@ -10,6 +10,7 @@ require "dependabot/swift/file_parser/manifest_parser"
 require "dependabot/swift/file_parser/xcode_spm_resolver"
 require "dependabot/swift/package_manager"
 require "dependabot/swift/language"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -115,13 +116,12 @@ module Dependabot
         @package_manifest_file ||= T.let(get_original_file("Package.swift"), T.nilable(Dependabot::DependencyFile))
       end
 
-      # All non-support Package.resolved files from Xcode project directories
+      # All non-support Package.resolved files from Xcode project and workspace directories (.xcodeproj, .xcworkspace)
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("Package.resolved") &&
-              f.name.include?(".xcodeproj/") &&
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
               !f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])

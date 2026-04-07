@@ -246,7 +246,7 @@ module Dependabot
         current_repo = T.let(nil, T.nilable(String))
 
         T.must(file.content).each_line do |line|
-          repo_match = line.match(/^\s*-\s*repo:\s*(\S+)/)
+          repo_match = line.match(/^\s*-\s*repo:\s*["']?([^"'\s]+)["']?/)
           current_repo = repo_match[1] if repo_match
 
           next unless current_repo == repo_url

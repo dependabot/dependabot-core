@@ -238,7 +238,8 @@ module Dependabot
         content = file.content
         return [] if content.nil?
 
-        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten
+        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten +
+                content.scan(CONSTRAINT_REGEX).flatten
         current_dir = File.dirname(file.name)
 
         paths.flat_map do |path|
@@ -268,7 +269,8 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def constraints_files
         all_requirement_files = requirements_txt_files +
-                                child_requirement_txt_files
+                                child_requirement_txt_files +
+                                requirements_in_files
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
@@ -283,7 +285,10 @@ module Dependabot
           end
         end.flatten.uniq
 
-        constraints_paths.map { |path| fetch_file_from_host(path) }
+        already_fetched_names = child_requirement_files.map(&:name)
+        constraints_paths
+          .reject { |path| already_fetched_names.include?(path) }
+          .map { |path| fetch_file_from_host(path) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -355,7 +360,7 @@ module Dependabot
 
         uneditable_reqs =
           content
-          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n]*))/)
+          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name } unless p.to_s.include?("://")
@@ -363,7 +368,7 @@ module Dependabot
 
         editable_reqs =
           content
-          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n]*))/)
+          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             unless p.to_s.include?("://") || p.to_s.include?("git@")

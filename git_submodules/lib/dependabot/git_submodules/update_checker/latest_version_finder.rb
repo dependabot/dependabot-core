@@ -18,8 +18,11 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        sig { returns(T.nilable(String)) }
-        def latest_tag
+        sig do
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(String))
+        end
+        def latest_tag(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           releases = version_list
 
           releases = filter_by_cooldown(T.must(releases))

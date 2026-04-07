@@ -16,6 +16,7 @@ on: # yamllint disable-line rule:truthy
         required: true
         type: number
         description: PR number
+permissions: {}
 
 jobs:
   approval:
@@ -24,6 +25,9 @@ jobs:
     # Running this workflow against PR's from forks requires manually triggering it via `workflow_dispatch`.
     if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       decision: ${{ steps.decision.outputs.decision }}
     steps:
@@ -77,6 +81,7 @@ jobs:
           - { name: hex, ecosystem: mix }
           - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
+          - { name: nix, ecosystem: nix }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
           - { name: pre_commit, ecosystem: pre-commit }

@@ -1949,4 +1949,52 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task UpdatingAPinnedCentrallyManagedPackageUpdatesJustTheVersionNumberWhenDeclarationIsPresent()
+    {
+        await TestAsync(
+            useCentralPackageTransitivePinning: true,
+            files: [
+                ("src/project.csproj", """
+                    <?xml version="1.0"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <?xml version="1.0"?>
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("src/project.csproj", """
+                    <?xml version="1.0"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <?xml version="1.0"?>
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="2.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }

@@ -454,6 +454,91 @@ RSpec.describe Dependabot::Job do
 
       it { is_expected.to be(false) }
     end
+
+    context "with update-types in allow block" do
+      # update-types filtering is handled by ignore_conditions_for (via version ranges),
+      # NOT by allowed_update?. allowed_update? only checks dependency-name, dependency-type,
+      # and update-type (security). So dependencies with update-types should still pass
+      # allowed_update? as long as name/type match.
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          package_manager: "bundler",
+          version: "1.9.0",
+          previous_version: "1.8.0",
+          requirements: requirements
+        )
+      end
+
+      context "when allow rule has update-types and dependency name matches" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it "allows the update (update-types filtering is handled by ignore_conditions_for)" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "when dependency name does not match" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "other-dep",
+              "update-types" => ["version-update:semver-minor"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when update-types is empty array" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => []
+            }
+          ]
+        end
+
+        it "allows the update" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "with security updates" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => [],
+              "patched-versions" => ["~> 1.11.0"],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        let(:allowed_updates) do
+          [
+            {
+              "update-type" => "security",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it "allows security update regardless of update-types" do
+          expect(allowed_update).to be(true)
+        end
+      end
+    end
   end
 
   describe "#security_updates_only?" do
@@ -915,6 +1000,195 @@ RSpec.describe Dependabot::Job do
 
       it "returns true when any advisory matches" do
         expect(vulnerability?).to be(true)
+      end
+    end
+  end
+
+  describe "#ignore_conditions_for" do
+    subject(:ignored) { job.ignore_conditions_for(dependency) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
+      )
+    end
+
+    context "with no ignore conditions and no allow update-types" do
+      let(:allowed_updates) do
+        [{ "dependency-type" => "direct", "update-type" => "all" }]
+      end
+
+      it "returns an empty array" do
+        expect(ignored).to be_empty
+      end
+    end
+
+    context "with explicit ignore conditions" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "business",
+              "version-requirement" => "> 2.0.0"
+            }
+          ]
+        )
+      end
+
+      it "returns the explicit ignore ranges" do
+        expect(ignored).to include("> 2.0.0")
+      end
+    end
+
+    context "with allow update-types" do
+      context "when allowing only patch updates" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "generates ignore ranges for major and minor" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+          expect(ignored).to include(a_string_matching(/>= 1\.9/))
+          expect(ignored).not_to include(a_string_matching(/> 1\.8\.0, < 1\.9/))
+        end
+      end
+
+      context "when allowing only minor updates" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-minor"] }]
+        end
+
+        it "generates ignore ranges for major and patch" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+          expect(ignored).to include(a_string_matching(/> 1\.8\.0, < 1\.9/))
+          expect(ignored).not_to include(a_string_matching(/>= 1\.9/))
+        end
+      end
+
+      context "when allowing minor and patch" do
+        let(:allowed_updates) do
+          [{
+            "dependency-name" => "business",
+            "update-types" => ["version-update:semver-minor", "version-update:semver-patch"]
+          }]
+        end
+
+        it "generates ignore ranges only for major" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+          expect(ignored).not_to include(a_string_matching(/>= 1\.9/))
+          expect(ignored).not_to include(a_string_matching(/> 1\.8\.0/))
+        end
+      end
+
+      context "when allow rule has no update-types" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "dependency-type" => "direct", "update-type" => "all" }]
+        end
+
+        it "does not generate any implicit ignore ranges" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "when one allow rule has update-types and another does not" do
+        let(:allowed_updates) do
+          [
+            { "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] },
+            { "dependency-name" => "business" }
+          ]
+        end
+
+        it "does not generate ignore ranges (rule without update-types permits all)" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "when dependency name does not match" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "other-dep", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "does not generate ignore ranges" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "when security_updates_only is true" do
+        let(:security_updates_only) { true }
+        let(:dependencies) { ["business"] }
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "does not generate ignore ranges" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "with dependency-type filtering" do
+        let(:allowed_updates) do
+          [{ "dependency-type" => "production", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        context "when dependency is production" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              package_manager: "bundler",
+              version: "1.8.0",
+              requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: ["default"], source: nil }]
+            )
+          end
+
+          it "generates ignore ranges for major and minor" do
+            expect(ignored).to include(a_string_matching(/>= 2/))
+            expect(ignored).to include(a_string_matching(/>= 1\.9/))
+          end
+        end
+
+        context "when dependency is development" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              package_manager: "bundler",
+              version: "1.8.0",
+              requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: ["development"], source: nil }]
+            )
+          end
+
+          it "does not generate ignore ranges (rule does not match)" do
+            expect(ignored).to be_empty
+          end
+        end
+      end
+
+      context "with wildcard dependency name" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "busi*", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "matches and generates ignore ranges" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+        end
+      end
+
+      context "when combining with explicit ignore conditions" do
+        let(:attributes) do
+          super().merge(
+            ignore_conditions: [{ "dependency-name" => "business", "version-requirement" => "> 1.8.1" }]
+          )
+        end
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "includes both explicit ignore and implicit allow-derived ranges" do
+          expect(ignored).to include("> 1.8.1")
+          expect(ignored).to include(a_string_matching(/>= 2/))
+        end
       end
     end
   end
