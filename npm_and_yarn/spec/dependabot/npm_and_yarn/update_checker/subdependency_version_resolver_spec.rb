@@ -132,6 +132,36 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
         latest_resolvable_version
       end
+
+      context "when yarn npm audit --fix fails" do
+        it "logs and continues without raising" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive(:run_yarn_audit_fix_command)
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "audit failed", error_context: {}))
+          allow(Dependabot.logger).to receive(:info)
+
+          expect { latest_resolvable_version }.not_to raise_error
+          expect(Dependabot.logger).to have_received(:info)
+            .with("yarn npm audit --fix failed or partially fixed \u2014 continuing with any changes made")
+        end
+      end
+
+      context "when enable_audit_fix_fallback experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_audit_fix_fallback).and_return(false)
+        end
+
+        it "does not call yarn npm audit --fix" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .not_to receive(:run_yarn_audit_fix_command)
+
+          latest_resolvable_version
+        end
+      end
     end
 
     context "with a pnpm-lock.yaml" do
@@ -176,6 +206,36 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
         latest_resolvable_version
       end
+
+      context "when pnpm audit --fix fails" do
+        it "logs and continues without raising" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive(:run_pnpm_audit_fix_command)
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "audit failed", error_context: {}))
+          allow(Dependabot.logger).to receive(:info)
+
+          expect { latest_resolvable_version }.not_to raise_error
+          expect(Dependabot.logger).to have_received(:info)
+            .with("pnpm audit --fix failed or partially fixed \u2014 continuing with any changes made")
+        end
+      end
+
+      context "when enable_audit_fix_fallback experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_audit_fix_fallback).and_return(false)
+        end
+
+        it "does not call pnpm audit --fix" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .not_to receive(:run_pnpm_audit_fix_command)
+
+          latest_resolvable_version
+        end
+      end
     end
 
     context "with a npm8 package-lock.json" do
@@ -194,6 +254,128 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       it "calls run_npm_updater" do
         expect(resolver).to receive(:run_npm_updater).and_call_original
         expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+      end
+
+      it "calls npm audit fix as a fallback" do
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm8_subdependency_update_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm_audit_fix_command).and_return("")
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm_audit_fix_command).once
+
+        latest_resolvable_version
+      end
+
+      context "when npm audit fix fails" do
+        it "logs and continues without raising" do
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive(:run_npm8_subdependency_update_command).and_return("")
+          allow(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive(:run_npm_audit_fix_command)
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "audit failed", error_context: {}))
+          allow(Dependabot.logger).to receive(:info)
+
+          expect { latest_resolvable_version }.not_to raise_error
+          expect(Dependabot.logger).to have_received(:info)
+            .with("npm audit fix failed or partially fixed \u2014 continuing with any changes made")
+        end
+      end
+
+      context "when enable_audit_fix_fallback experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_audit_fix_fallback).and_return(false)
+        end
+
+        it "does not call npm audit fix" do
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .not_to receive(:run_npm_audit_fix_command)
+
+          latest_resolvable_version
+        end
+      end
+
+      context "when all_versions metadata is present" do
+        let(:all_version_deps) do
+          [
+            Dependabot::Dependency.new(name: "acorn", version: "5.5.3", requirements: [],
+                                       package_manager: "npm_and_yarn"),
+            Dependabot::Dependency.new(name: "acorn", version: "5.6.0", requirements: [],
+                                       package_manager: "npm_and_yarn"),
+            Dependabot::Dependency.new(name: "acorn", version: "5.7.4", requirements: [],
+                                       package_manager: "npm_and_yarn")
+          ]
+        end
+
+        let(:parsed_dep) do
+          Dependabot::Dependency.new(
+            name: "acorn",
+            version: "5.7.4",
+            requirements: [],
+            package_manager: "npm_and_yarn",
+            metadata: { all_versions: all_version_deps }
+          )
+        end
+
+        before do
+          parser = instance_double(Dependabot::NpmAndYarn::FileParser)
+          allow(Dependabot::NpmAndYarn::FileParser).to receive(:new).and_return(parser)
+          allow(parser).to receive(:parse).and_return([parsed_dep])
+        end
+
+        it "returns the highest version from all_versions within the allowable range" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+        end
+
+        context "when latest_allowable_version caps the result" do
+          let(:latest_allowable_version) { "5.6.0" }
+
+          it "returns the highest version at or below the allowable version" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("5.6.0"))
+          end
+        end
+
+        context "when no all_versions candidate is above the current version" do
+          let(:all_version_deps) do
+            [
+              Dependabot::Dependency.new(name: "acorn", version: "5.5.3", requirements: [],
+                                         package_manager: "npm_and_yarn")
+            ]
+          end
+
+          it "falls back to the combined parsed version" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+          end
+        end
+
+        context "when all_versions metadata is empty" do
+          let(:parsed_dep) do
+            Dependabot::Dependency.new(
+              name: "acorn",
+              version: "5.7.4",
+              requirements: [],
+              package_manager: "npm_and_yarn",
+              metadata: { all_versions: [] }
+            )
+          end
+
+          it "falls back to the combined parsed version" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+          end
+        end
+
+        context "when the experiment is disabled" do
+          before do
+            allow(Dependabot::Experiments).to receive(:enabled?)
+              .with(:enable_audit_fix_fallback).and_return(false)
+          end
+
+          it "returns the combined parsed version without checking all_versions" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+          end
+        end
       end
     end
 
