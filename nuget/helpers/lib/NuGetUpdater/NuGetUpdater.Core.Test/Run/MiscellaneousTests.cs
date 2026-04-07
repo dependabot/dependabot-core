@@ -266,6 +266,46 @@ public class MiscellaneousTests
     }
 
     [Theory]
+    [MemberData(nameof(GroupMatcher_IsAllowedByVersionTestData))]
+    public void GroupMatcher_IsAllowedByVersion(string[]? updateTypes, string oldVersion, string newVersion, bool expectedAllowed)
+    {
+        var rules = new Dictionary<string, object>();
+        if (updateTypes is not null)
+        {
+            rules["update-types"] = updateTypes;
+        }
+
+        var group = new DependencyGroup()
+        {
+            Name = "TestGroup",
+            Rules = rules,
+        };
+
+        var matcher = group.GetGroupMatcher();
+        var actualAllowed = matcher.IsAllowedByVersion(NuGetVersion.Parse(oldVersion), NuGetVersion.Parse(newVersion));
+        Assert.Equal(expectedAllowed, actualAllowed);
+    }
+
+    public static IEnumerable<object?[]> GroupMatcher_IsAllowedByVersionTestData()
+    {
+        // defaults to major, minor, and patch
+        yield return [null, "1.0.0", "2.0.0", true];
+        yield return [null, "1.0.0", "1.1.0", true];
+        yield return [null, "1.0.0", "1.0.1", true];
+
+        // constrained update type behavior
+        yield return [new[] { "major" }, "1.0.0", "2.0.0", true];
+        yield return [new[] { "major" }, "1.0.0", "1.1.0", false];
+        yield return [new[] { "minor", "patch" }, "1.0.0", "2.0.0", false];
+
+        // revision-only and prerelease-only updates should be patch-equivalent
+        yield return [null, "1.0.0.1", "1.0.0.3", true];
+        yield return [new[] { "patch" }, "1.0.0.1", "1.0.0.3", true];
+        yield return [null, "1.0.0-alpha", "1.0.0-beta", true];
+        yield return [new[] { "patch" }, "1.0.0-alpha", "1.0.0-beta", true];
+    }
+
+    [Theory]
     [MemberData(nameof(GetMatchingPullRequestTestData))]
     public void GetMatchingPullRequest(Job job, IEnumerable<Dependency> dependencies, bool considerVersions, string? expectedGroupPrName, string[]? expectedPrDependencyNames)
     {
