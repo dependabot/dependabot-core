@@ -770,6 +770,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("install --lockfile-only")
             .ordered
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("audit --fix", { fingerprint: "audit --fix" })
+            .ordered
+            .and_return("")
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
 
           updated_pnpm_lock_content
         end

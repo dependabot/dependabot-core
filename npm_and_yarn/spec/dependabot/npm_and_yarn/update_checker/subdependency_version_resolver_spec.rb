@@ -138,7 +138,10 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
           allow(Dependabot::NpmAndYarn::NativeHelpers)
             .to receive(:run_yarn_audit_fix_command)
-            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "audit failed", error_context: {}))
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                         message: "audit failed",
+                         error_context: {}
+                       ))
           allow(Dependabot.logger).to receive(:info)
 
           expect { latest_resolvable_version }.not_to raise_error
@@ -212,7 +215,10 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
           allow(Dependabot::NpmAndYarn::NativeHelpers)
             .to receive(:run_pnpm_audit_fix_command)
-            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "audit failed", error_context: {}))
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                         message: "audit failed",
+                         error_context: {}
+                       ))
           allow(Dependabot.logger).to receive(:info)
 
           expect { latest_resolvable_version }.not_to raise_error
@@ -258,9 +264,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
       it "calls npm audit fix as a fallback" do
         allow(Dependabot::NpmAndYarn::NativeHelpers)
-          .to receive(:run_npm8_subdependency_update_command).and_return("")
-        allow(Dependabot::NpmAndYarn::NativeHelpers)
-          .to receive(:run_npm_audit_fix_command).and_return("")
+          .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
 
         expect(Dependabot::NpmAndYarn::NativeHelpers)
           .to receive(:run_npm_audit_fix_command).once
@@ -274,7 +278,10 @@ RSpec.describe namespace::SubdependencyVersionResolver do
             .to receive(:run_npm8_subdependency_update_command).and_return("")
           allow(Dependabot::NpmAndYarn::NativeHelpers)
             .to receive(:run_npm_audit_fix_command)
-            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "audit failed", error_context: {}))
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                         message: "audit failed",
+                         error_context: {}
+                       ))
           allow(Dependabot.logger).to receive(:info)
 
           expect { latest_resolvable_version }.not_to raise_error
@@ -300,12 +307,24 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       context "when all_versions metadata is present" do
         let(:all_version_deps) do
           [
-            Dependabot::Dependency.new(name: "acorn", version: "5.5.3", requirements: [],
-                                       package_manager: "npm_and_yarn"),
-            Dependabot::Dependency.new(name: "acorn", version: "5.6.0", requirements: [],
-                                       package_manager: "npm_and_yarn"),
-            Dependabot::Dependency.new(name: "acorn", version: "5.7.4", requirements: [],
-                                       package_manager: "npm_and_yarn")
+            Dependabot::Dependency.new(
+              name: "acorn",
+              version: "5.5.3",
+              requirements: [],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "acorn",
+              version: "5.6.0",
+              requirements: [],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "acorn",
+              version: "5.7.4",
+              requirements: [],
+              package_manager: "npm_and_yarn"
+            )
           ]
         end
 
@@ -340,8 +359,12 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         context "when no all_versions candidate is above the current version" do
           let(:all_version_deps) do
             [
-              Dependabot::Dependency.new(name: "acorn", version: "5.5.3", requirements: [],
-                                         package_manager: "npm_and_yarn")
+              Dependabot::Dependency.new(
+                name: "acorn",
+                version: "5.5.3",
+                requirements: [],
+                package_manager: "npm_and_yarn"
+              )
             ]
           end
 
