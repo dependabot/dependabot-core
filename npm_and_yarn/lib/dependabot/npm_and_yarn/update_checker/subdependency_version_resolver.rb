@@ -126,19 +126,43 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          allowable = latest_allowable_version.is_a?(String) ? version_class.new(latest_allowable_version) : latest_allowable_version
-          if Dependabot::Experiments.enabled?(:enable_audit_fix_fallback) && current_version
-            all_versions = parsed_dep.metadata[:all_versions]
-            if all_versions&.any?
-              candidates = all_versions
-                           .filter_map { |d| version_class.new(d.version) if d.version }
-                           .select { |v| v > current_version && (allowable.nil? || v <= allowable) }
-              highest = candidates.max
-              return highest if highest
-            end
-          end
+          audit_fix_version = audit_fix_best_version(parsed_dep, current_version)
+          audit_fix_version || combined
+        end
 
-          combined
+        sig do
+          params(
+            parsed_dep: Dependabot::Dependency,
+            current_version: T.nilable(Gem::Version)
+          ).returns(T.nilable(Gem::Version))
+        end
+        def audit_fix_best_version(parsed_dep, current_version)
+          return unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+          return unless current_version
+
+          all_versions = parsed_dep.metadata[:all_versions]
+          return unless all_versions&.any?
+
+          best_candidate_version(all_versions, current_version)
+        end
+
+        sig do
+          params(
+            all_versions: T::Array[Dependabot::Dependency],
+            current_version: Gem::Version
+          ).returns(T.nilable(Gem::Version))
+        end
+        def best_candidate_version(all_versions, current_version)
+          allowable = if latest_allowable_version.is_a?(String)
+                        version_class.new(latest_allowable_version)
+                      else
+                        latest_allowable_version
+                      end
+
+          all_versions
+            .filter_map { |d| version_class.new(d.version) if d.version }
+            .select { |v| v > current_version && (allowable.nil? || v <= allowable) }
+            .max
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
