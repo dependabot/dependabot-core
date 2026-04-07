@@ -1005,6 +1005,379 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "PEP 621 project.dependencies" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [pyproject] }
+
+    context "with a simple exact version" do
+      let(:pyproject_fixture_name) { "pep621_project_dependencies.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.14.0",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.14.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.13.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.13.0,<3.0" }
+        )
+      end
+
+      it "updates the version in pyproject.toml" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.14.0,<3.0"')
+        expect(updated_pyproject.content).not_to include('"requests>=2.13.0,<3.0"')
+      end
+
+      it "preserves other dependencies unchanged" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"urllib3>=1.21.1"')
+      end
+    end
+
+    context "with extras in the dependency" do
+      let(:pyproject_fixture_name) { "pep621_poetry_with_extras.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "cachecontrol",
+          version: "0.15.0",
+          previous_version: "0.14.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=0.15.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=0.14.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: {
+            extras: "filecache",
+            source_requirement: ">=0.14.0"
+          }
+        )
+      end
+
+      it "updates the version while preserving extras" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"cachecontrol[filecache]>=0.15.0"')
+        expect(updated_pyproject.content).not_to include('"cachecontrol[filecache]>=0.14.0"')
+      end
+    end
+  end
+
+  describe "PEP 621 project.optional-dependencies" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [pyproject] }
+    let(:pyproject_fixture_name) { "pep621_optional_dependencies.toml" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "pysocks",
+        version: "1.6.0",
+        previous_version: "1.5.6",
+        package_manager: "pip",
+        requirements: [{
+          requirement: ">=1.6.0,!=1.5.7,<2",
+          file: "pyproject.toml",
+          source: nil,
+          groups: ["socks"]
+        }],
+        previous_requirements: [{
+          requirement: ">=1.5.6,!=1.5.7,<2",
+          file: "pyproject.toml",
+          source: nil,
+          groups: ["socks"]
+        }],
+        metadata: { source_requirement: ">= 1.5.6, != 1.5.7, < 2" }
+      )
+    end
+
+    it "updates the optional dependency preserving formatting" do
+      updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+      expect(updated_pyproject.content).to include("'PySocks >= 1.6.0, != 1.5.7, < 2'")
+      expect(updated_pyproject.content).not_to include("'PySocks >= 1.5.6, != 1.5.7, < 2'")
+    end
+
+    it "preserves single quote style" do
+      updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+      pysocks_line = updated_pyproject.content.lines.find { |l| l.include?("PySocks") }
+      expect(pysocks_line).to include("'PySocks")
+    end
+  end
+
+  describe "PEP 508 version specifier formatting" do
+    let(:pep621_updater) { described_class::Pep621Updater.new(dep: dependency) }
+
+    describe "#rewrite_pep508_requirement" do
+      subject(:result) { pep621_updater.rewrite_pep508_requirement(source_req, old_req, new_req) }
+
+      context "with compact specifiers (no spaces)" do
+        let(:source_req) { ">=2.13.0,<3.0" }
+        let(:old_req) { ">=2.13.0,<3.0" }
+        let(:new_req) { ">=2.14.0,<3.0" }
+
+        it "rewrites the changed version" do
+          expect(result).to eq(">=2.14.0,<3.0")
+        end
+      end
+
+      context "with spaced specifiers" do
+        let(:source_req) { ">= 2.13.0, < 3.0" }
+        let(:old_req) { ">=2.13.0,<3.0" }
+        let(:new_req) { ">=2.14.0,<3.0" }
+
+        it "preserves whitespace around operators" do
+          expect(result).to eq(">= 2.14.0, < 3.0")
+        end
+      end
+
+      context "with multiple specifiers including != and <" do
+        let(:source_req) { ">= 1.5.6, != 1.5.7, < 2" }
+        let(:old_req) { "!=1.5.7,<2,>=1.5.6" }
+        let(:new_req) { "!=1.5.7,<2,>=1.6.0" }
+
+        it "updates only the changed version preserving formatting" do
+          expect(result).to eq(">= 1.6.0, != 1.5.7, < 2")
+        end
+      end
+
+      context "with a single == specifier" do
+        let(:source_req) { "==2.18.0" }
+        let(:old_req) { "==2.18.0" }
+        let(:new_req) { "==2.19.0" }
+
+        it "rewrites the exact version" do
+          expect(result).to eq("==2.19.0")
+        end
+      end
+
+      context "with ~= compatible release" do
+        let(:source_req) { "~= 1.4.2" }
+        let(:old_req) { "~=1.4.2" }
+        let(:new_req) { "~=1.5.0" }
+
+        it "preserves spacing with tilde-equals" do
+          expect(result).to eq("~= 1.5.0")
+        end
+      end
+
+      context "when no version changes" do
+        let(:source_req) { ">= 1.0, < 2.0" }
+        let(:old_req) { ">=1.0,<2.0" }
+        let(:new_req) { ">=1.0,<2.0" }
+
+        it "returns the source unchanged" do
+          expect(result).to eq(">= 1.0, < 2.0")
+        end
+      end
+    end
+
+    describe "#parse_specifiers" do
+      subject(:specifiers) { pep621_updater.parse_specifiers(req) }
+
+      context "with a compact multi-specifier string" do
+        let(:req) { ">=2.13.0,<3.0" }
+
+        it "parses each operator and version" do
+          expect(specifiers).to eq(
+            [
+              { operator: ">=", version: "2.13.0" },
+              { operator: "<", version: "3.0" }
+            ]
+          )
+        end
+      end
+
+      context "with a single == specifier" do
+        let(:req) { "==1.2.3" }
+
+        it "returns one entry" do
+          expect(specifiers).to eq([{ operator: "==", version: "1.2.3" }])
+        end
+      end
+
+      context "with != and ~= operators" do
+        let(:req) { "!=1.5.7,~=1.4.2" }
+
+        it "parses both operators" do
+          expect(specifiers).to eq(
+            [
+              { operator: "!=", version: "1.5.7" },
+              { operator: "~=", version: "1.4.2" }
+            ]
+          )
+        end
+      end
+
+      context "with an empty string" do
+        let(:req) { "" }
+
+        it "returns an empty array" do
+          expect(specifiers).to eq([])
+        end
+      end
+    end
+
+    context "with spaced range specifiers (integration)" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "pep508_specifiers.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.14.0",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.14.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.13.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">= 2.13.0, < 3.0" }
+        )
+      end
+
+      it "updates the version preserving whitespace" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests >= 2.14.0, < 3.0"')
+        expect(updated_pyproject.content).not_to include('"requests >= 2.13.0, < 3.0"')
+      end
+
+      it "leaves other dependencies unchanged" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"urllib3==1.26.0"')
+        expect(updated_pyproject.content).to include('"certifi ~= 2023.7.22"')
+        expect(updated_pyproject.content).to include('"idna >= 3.4, != 3.5"')
+      end
+    end
+
+    context "with an exact == specifier (integration)" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "pep508_specifiers.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "urllib3",
+          version: "1.26.1",
+          previous_version: "1.26.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==1.26.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "==1.26.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: "==1.26.0" }
+        )
+      end
+
+      it "updates the pinned version" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"urllib3==1.26.1"')
+        expect(updated_pyproject.content).not_to include('"urllib3==1.26.0"')
+      end
+    end
+
+    context "with a ~= compatible-release specifier (integration)" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "pep508_specifiers.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "certifi",
+          version: "2024.2.2",
+          previous_version: "2023.7.22",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "~=2024.2.2",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "~=2023.7.22",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: "~= 2023.7.22" }
+        )
+      end
+
+      it "updates the version preserving spacing around ~=" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"certifi ~= 2024.2.2"')
+        expect(updated_pyproject.content).not_to include('"certifi ~= 2023.7.22"')
+      end
+    end
+
+    context "with a != exclusion specifier (integration)" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "pep508_specifiers.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "idna",
+          version: "3.6",
+          previous_version: "3.4",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=3.6,!=3.5",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=3.4,!=3.5",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">= 3.4, != 3.5" }
+        )
+      end
+
+      it "updates the lower bound while preserving the exclusion" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"idna >= 3.6, != 3.5"')
+        expect(updated_pyproject.content).not_to include('"idna >= 3.4, != 3.5"')
+      end
+    end
+  end
+
   describe "Git dependencies" do
     let(:pyproject_fixture_name) { "git_dependency_with_tag.toml" }
     let(:dependency_files) { [pyproject] }

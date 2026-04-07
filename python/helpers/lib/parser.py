@@ -32,6 +32,28 @@ def parse_pep621_pep735_dependencies(pyproject_path):
                 next(iter(specifier_set)).operator in {"==", "==="}):
             return next(iter(specifier_set)).version
 
+    def original_requirement_from_entry(entry, req):
+        """Extract the original (non-normalized) requirement string from a PEP 508 entry.
+
+        The packaging library normalizes specifiers (removes spaces, reorders operators),
+        but we need the original string so the file updater regex can match the file content.
+        """
+        # Strip the name (and any extras like [filecache]) from the start
+        remainder = entry[len(req.name):].strip()
+
+        # Strip extras bracket if present, e.g. [filecache]
+        if remainder.startswith("["):
+            close = remainder.index("]")
+            remainder = remainder[close + 1:].strip()
+
+        # Strip markers from the end, e.g. "; python_version < '3.4'"
+        if req.marker:
+            marker_pos = remainder.find(";")
+            if marker_pos != -1:
+                remainder = remainder[:marker_pos].strip()
+
+        return remainder
+
     def parse_requirement(entry, pyproject_path, requirement_type=None):
         try:
             req = Requirement(entry)
@@ -45,6 +67,7 @@ def parse_pep621_pep735_dependencies(pyproject_path):
                 "markers": str(req.marker) or None,
                 "file": pyproject_path,
                 "requirement": str(req.specifier),
+                "source_requirement": original_requirement_from_entry(entry, req),
                 "extras": sorted(list(req.extras)),
                 "requirement_type": requirement_type,
             }
