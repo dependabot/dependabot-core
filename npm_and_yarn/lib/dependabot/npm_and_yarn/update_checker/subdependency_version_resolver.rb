@@ -117,14 +117,28 @@ module Dependabot
                           dependency_files_builder.lockfiles +
                           updated_lockfiles
 
-          updated_version = NpmAndYarn::FileParser.new(
+          parsed_dep = NpmAndYarn::FileParser.new(
             dependency_files: updated_files,
             source: nil,
             credentials: credentials
-          ).parse.find { |d| d.name == dependency.name }&.version
-          return unless updated_version
+          ).parse.find { |d| d.name == dependency.name }
+          return unless parsed_dep&.version
 
-          version_class.new(updated_version)
+          combined = version_class.new(parsed_dep.version)
+          current_version = dependency.version ? version_class.new(dependency.version) : nil
+          allowable = latest_allowable_version.is_a?(String) ? version_class.new(latest_allowable_version) : latest_allowable_version
+          if Dependabot::Experiments.enabled?(:enable_audit_fix_fallback) && current_version
+            all_versions = parsed_dep.metadata[:all_versions]
+            if all_versions&.any?
+              candidates = all_versions
+                           .filter_map { |d| version_class.new(d.version) if d.version }
+                           .select { |v| v > current_version && (allowable.nil? || v <= allowable) }
+              highest = candidates.max
+              return highest if highest
+            end
+          end
+
+          combined
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
@@ -160,15 +174,12 @@ module Dependabot
         def run_yarn_berry_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              original_content = File.read(lockfile_name)
-
               Helpers.run_yarn_command(
                 "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
                 fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
               )
 
-              updated_content = File.read(lockfile_name)
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+              if Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
                   NativeHelpers.run_yarn_audit_fix_command
                   dependency.metadata[:audit_fix_used] = true
@@ -177,10 +188,9 @@ module Dependabot
                     "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
                   )
                 end
-                updated_content = File.read(lockfile_name)
               end
 
-              { lockfile_name => updated_content }
+              { lockfile_name => File.read(lockfile_name) }
             end
           end
         end
@@ -189,15 +199,12 @@ module Dependabot
         def run_pnpm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              original_content = File.read(lockfile_name)
-
               Helpers.run_pnpm_command(
                 "update #{dependency.name} --lockfile-only",
                 fingerprint: "update <dependency_name> --lockfile-only"
               )
 
-              updated_content = File.read(lockfile_name)
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+              if Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
                   NativeHelpers.run_pnpm_audit_fix_command
                   Helpers.run_pnpm_command(
@@ -210,10 +217,9 @@ module Dependabot
                     "pnpm audit --fix failed or partially fixed — continuing with any changes made"
                   )
                 end
-                updated_content = File.read(lockfile_name)
               end
 
-              { lockfile_name => updated_content }
+              { lockfile_name => File.read(lockfile_name) }
             end
           end
         end
@@ -222,22 +228,18 @@ module Dependabot
         def run_npm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              original_content = File.read(lockfile_name)
-
               NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
 
-              updated_content = File.read(lockfile_name)
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+              if Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
                   NativeHelpers.run_npm_audit_fix_command
                   dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
                 end
-                updated_content = File.read(lockfile_name)
               end
 
-              { lockfile_name => updated_content }
+              { lockfile_name => File.read(lockfile_name) }
             end
           end
         end
