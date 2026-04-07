@@ -42,12 +42,14 @@ RSpec.describe Dependabot::Bun::UpdateChecker::SubdependencyVersionResolver do
   end
 
   before do
-    allow(resolver).to receive(:dependency_files_builder).and_return(dependency_files_builder)
+    allow(resolver).to receive_messages(
+      dependency_files_builder: dependency_files_builder,
+      filtered_lockfiles: dependency_files,
+      version_from_updated_lockfiles: Gem::Version.new("1.0.1")
+    )
     allow(dependency_files_builder).to receive(:write_temporary_dependency_files) do
       File.write("bun.lock", "dummy lockfile")
     end
-    allow(resolver).to receive(:filtered_lockfiles).and_return(dependency_files)
-    allow(resolver).to receive(:version_from_updated_lockfiles).and_return(Gem::Version.new("1.0.1"))
 
     allow(Dependabot::Bun::Helpers).to receive(:run_bun_command)
   end
