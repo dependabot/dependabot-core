@@ -848,6 +848,115 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "hybrid Poetry v2 projects" do
+    let(:dependency_files) { [pyproject] }
+
+    context "when dependency has version in both project.dependencies and tool.poetry.dependencies" do
+      let(:pyproject_fixture_name) { "pep621_hybrid_version_in_both.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.19.1",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [
+            {
+              requirement: ">=2.19.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            },
+            {
+              requirement: "^2.19",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: ">=2.13.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            },
+            {
+              requirement: "^2.13",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ]
+        )
+      end
+
+      describe "#updated_dependency_files" do
+        subject(:updated_files) { updater.updated_dependency_files }
+
+        it "updates the version in project.dependencies" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          expect(updated_pyproject.content).to include('"requests>=2.19.1"')
+          expect(updated_pyproject.content).not_to include('"requests>=2.13.0"')
+        end
+
+        it "updates the version in tool.poetry.dependencies" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          parsed = TomlRB.parse(updated_pyproject.content)
+          poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+          expect(poetry_req["version"]).to eq("^2.19")
+        end
+
+        it "preserves enrichment metadata in tool.poetry.dependencies" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          parsed = TomlRB.parse(updated_pyproject.content)
+          poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+          expect(poetry_req["source"]).to eq("private-source")
+        end
+      end
+    end
+
+    context "when tool.poetry.dependencies has enrichment only (no version key)" do
+      let(:pyproject_fixture_name) { "pep621_hybrid_enrichment_only.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.19.1",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.19.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.13.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      describe "#updated_dependency_files" do
+        subject(:updated_files) { updater.updated_dependency_files }
+
+        it "updates the version in project.dependencies" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          expect(updated_pyproject.content).to include('"requests>=2.19.1"')
+          expect(updated_pyproject.content).not_to include('"requests>=2.13.0"')
+        end
+
+        it "leaves the enrichment-only entry in tool.poetry.dependencies unchanged" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          parsed = TomlRB.parse(updated_pyproject.content)
+          poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+          expect(poetry_req).to eq({ "source" => "private-source" })
+        end
+      end
+    end
+  end
+
   describe "#prepared_project_file" do
     subject(:prepared_project) { updater.send(:prepared_pyproject) }
 
