@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/git_commit_checker"
 require "dependabot/python/update_checker"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
@@ -110,8 +111,9 @@ module Dependabot
           new_version = version_class.new(tag_version_str)
           days = cooldown_days_for(current_version, new_version)
 
-          passed_seconds = Time.now.to_i - release_date_to_seconds(tag_with_detail.release_date)
-          passed_seconds < days * DAY_IN_SECONDS
+          release_time = Time.at(release_date_to_seconds(tag_with_detail.release_date))
+          Dependabot::UpdateCheckers::CooldownCalculation
+            .within_cooldown_window?(release_time, days)
         end
 
         sig do

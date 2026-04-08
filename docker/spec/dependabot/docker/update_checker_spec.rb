@@ -2578,6 +2578,37 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
+  describe "#cooldown_period?" do
+    let(:version) { "1.0.0" }
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 5,
+        semver_major_days: 14,
+        semver_minor_days: 7,
+        semver_patch_days: 2
+      )
+    end
+    let(:release_date) { Time.now - (8 * 24 * 60 * 60) }
+
+    it "uses semver_major_days for major updates" do
+      candidate_tag = Dependabot::Docker::Tag.new("2.0.0")
+
+      expect(checker.send(:cooldown_period?, release_date, candidate_tag)).to be true
+    end
+
+    it "uses semver_minor_days for minor updates" do
+      candidate_tag = Dependabot::Docker::Tag.new("1.1.0")
+
+      expect(checker.send(:cooldown_period?, release_date, candidate_tag)).to be false
+    end
+
+    it "uses semver_patch_days for patch updates" do
+      candidate_tag = Dependabot::Docker::Tag.new("1.0.1")
+
+      expect(checker.send(:cooldown_period?, release_date, candidate_tag)).to be false
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
