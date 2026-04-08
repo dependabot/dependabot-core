@@ -143,7 +143,8 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             security_advisories: security_advisories,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            update_cooldown: @update_cooldown
           ),
           T.nilable(LockFileResolver)
         )

@@ -1,0 +1,13 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+
+[dependency-groups]
+a = [
+    {include-group = "b"},
+    "requests>=2.0",
+]
+b = [
+    {include-group = "a"},
+    "flask>=2.0",
+]
