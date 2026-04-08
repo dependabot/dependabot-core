@@ -13,6 +13,7 @@ require "sorbet-runtime"
 require "dependabot/gradle/package/package_details_fetcher"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/maven/shared/shared_version_finder"
+require "dependabot/update_checkers/cooldown_calculation"
 
 module Dependabot
   module Gradle
@@ -265,20 +266,18 @@ module Dependabot
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
           days = cooldown_days_for(current_version, release.version)
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(release.released_at), days)
 
-          # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
-
-          if passed_days < days
+          if in_cooldown
+            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Version #{release.version}, Release date: #{release.released_at}." \
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
 
-          # Check if the release is within the cooldown period
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
 
         sig { returns(T::Boolean) }

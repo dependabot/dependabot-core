@@ -10,6 +10,7 @@ require "shellwords"
 require "dependabot/errors"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/devcontainers/file_parser"
 require "dependabot/devcontainers/package/package_details_fetcher"
@@ -171,17 +172,18 @@ module Dependabot
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
 
           days = cooldown_days_for(current_version, T.must(release).version)
-          passed_seconds = Time.now.to_i - T.must(release).released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(T.must(release).released_at), days)
 
-          if passed_days < days
+          if in_cooldown
+            passed_days = (Time.now.to_i - T.must(release).released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Version #{T.must(release).version}, Release date: #{T.must(release).released_at}." \
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
 
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
         # rubocop:enable Metrics/AbcSize
       end

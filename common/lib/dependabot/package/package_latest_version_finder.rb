@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/security_advisory"
 require "dependabot/dependency"
 require "dependabot/update_checkers/version_filters"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/registry_client"
 require "dependabot/package/package_details"
 require "dependabot/package/release_cooldown_options"
@@ -18,8 +19,6 @@ module Dependabot
     class PackageLatestVersionFinder
       extend T::Sig
       extend T::Helpers
-
-      DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
 
       abstract!
 
@@ -202,13 +201,18 @@ module Dependabot
       def in_cooldown_period?(release)
         return false unless release.released_at
 
-        current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-        days = cooldown_days_for(current_version, release.version)
+        cooldown = @cooldown_options
+        return false if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+          cooldown, dependency.name, cooldown_enabled: cooldown_enabled?
+        )
 
-        # Calculate the number of seconds passed since the release
-        passed_seconds = Time.now.to_i - release.released_at.to_i
-        # Check if the release is within the cooldown period
-        passed_seconds < days * DAY_IN_SECONDS
+        current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
+        days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+          T.must(cooldown), current_version, release.version
+        )
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
+          T.must(release.released_at), days
+        )
       end
 
       sig do
@@ -308,27 +312,13 @@ module Dependabot
       end
       def cooldown_days_for(current_version, new_version)
         cooldown = @cooldown_options
-        return 0 if cooldown.nil?
-        return 0 unless cooldown_enabled?
-        return 0 unless cooldown.included?(dependency.name)
-        return cooldown.default_days if current_version.nil?
+        return 0 if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+          cooldown, dependency.name, cooldown_enabled: cooldown_enabled?
+        )
 
-        current_version_semver = current_version.semver_parts
-        new_version_semver = new_version.semver_parts
-
-        # If semver_parts is nil for either, return default cooldown
-        return cooldown.default_days if current_version_semver.nil? || new_version_semver.nil?
-
-        # Ensure values are always integers
-        current_major, current_minor, current_patch = current_version_semver
-        new_major, new_minor, new_patch = new_version_semver
-
-        # Determine cooldown based on version difference
-        return cooldown.semver_major_days if new_major > current_major
-        return cooldown.semver_minor_days if new_minor > current_minor
-        return cooldown.semver_patch_days if new_patch > current_patch
-
-        cooldown.default_days
+        Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+          T.must(cooldown), current_version, new_version
+        )
       end
 
       sig { returns(T::Boolean) }

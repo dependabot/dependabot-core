@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/errors"
 require "dependabot/docker/tag"
 require "dependabot/docker/file_parser"
@@ -346,7 +347,7 @@ module Dependabot
 
           next if !details || !details.released_at
 
-          return [tag] unless cooldown_period?(details.released_at)
+          return [tag] unless cooldown_period?(T.must(details.released_at), tag)
 
           Dependabot.logger.info("Skipping tag #{tag.name} due to cooldown period")
         end
@@ -812,7 +813,9 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def should_skip_cooldown?
-        @update_cooldown.nil? || !cooldown_enabled? || !@update_cooldown.included?(dependency.name)
+        Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+          @update_cooldown, dependency.name, cooldown_enabled: cooldown_enabled?
+        )
       end
 
       sig { returns(T::Boolean) }
@@ -825,19 +828,17 @@ module Dependabot
         Dependabot::Experiments.enabled?(:docker_pin_digests)
       end
 
-      sig do
-        returns(Integer)
-      end
-      def cooldown_days_for
+      sig { params(release_date: Time, candidate_tag: Dependabot::Docker::Tag).returns(T::Boolean) }
+      def cooldown_period?(release_date, candidate_tag)
         cooldown = @update_cooldown
+        return false unless cooldown
 
-        T.must(cooldown).default_days
-      end
-
-      sig { params(release_date: T.untyped).returns(T::Boolean) }
-      def cooldown_period?(release_date)
-        days = cooldown_days_for
-        (Time.now.to_i - release_date.to_i) < (days * 24 * 60 * 60)
+        current_version = dependency.version ? comparable_version_from(version_tag) : nil
+        new_version = comparable_version_from(candidate_tag)
+        days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+          cooldown, current_version, new_version
+        )
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(release_date, days)
       end
 
       # Fetches the "created" timestamp from the image config blob for a given tag.
