@@ -29,6 +29,9 @@ module Dependabot
       # Long form:  "jsr:@scope/name@^3.0.0" → "^3.0.0"
       JSR_PREFIX = T.let(/\Ajsr:(?:@?[^@]+@)?/, Regexp)
 
+      # The npm-compatible registry endpoint for JSR packages.
+      JSR_REGISTRY = T.let("https://npm.jsr.io", String)
+
       sig do
         params(
           obj: T.any(String, Gem::Version)
