@@ -59,6 +59,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         .not_to(change { Dir.entries(tmp_path) })
     end
 
+    it "uses --precise flag for non-git dependency updates" do
+      expect(updater).to receive(:run_cargo_command).with(
+        a_string_including("--precise #{dependency_version}"),
+        fingerprint: "cargo update --precise <version> -p <dependency_spec>"
+      ).and_call_original
+      updated_lockfile_content
+    end
+
     it { expect { updated_lockfile_content }.not_to output.to_stdout }
 
     context "when using a toolchain file that is too old" do
@@ -304,6 +312,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content)
             .to include("utf8-ranges#be9b8dfcaf449453cbf83ac85260ee80323f4f77")
+        end
+
+        it "does not use --precise flag for git dependency updates" do
+          expect(updater).to receive(:run_cargo_command).with(
+            a_string_not_including("--precise"),
+            fingerprint: "cargo update -p <dependency_spec>"
+          ).and_call_original
+          updated_lockfile_content
         end
 
         context "with an ssh URl" do
