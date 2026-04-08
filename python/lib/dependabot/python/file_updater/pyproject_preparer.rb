@@ -16,6 +16,46 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
+        # Freezes PEP 621 dependencies in-place within a parsed pyproject object.
+        # Replaces version specifiers with ==dep.version for each matching dep.
+        # Accepts an optional block to filter which dependencies to freeze.
+        sig do
+          params(
+            pyproject_object: T::Hash[String, T.untyped],
+            deps: T::Array[Dependabot::Dependency]
+          ).void
+        end
+        def self.freeze_pep621_deps!(pyproject_object, deps)
+          project_object = pyproject_object["project"]
+          return unless project_object
+
+          dep_arrays = [project_object["dependencies"]]
+          project_object["optional-dependencies"]&.each_value { |opt| dep_arrays << opt }
+          dep_arrays.compact!
+
+          deps.each do |dep|
+            next if block_given? && !yield(dep)
+            next unless dep.version
+
+            pin_pep621_dep_in_arrays!(dep_arrays, dep)
+          end
+        end
+
+        sig { params(dep_arrays: T::Array[T::Array[String]], dep: Dependabot::Dependency).void }
+        def self.pin_pep621_dep_in_arrays!(dep_arrays, dep)
+          name_pattern = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
+          dep_arrays.each do |arr|
+            arr.each_with_index do |entry, i|
+              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~;]/i)
+
+              arr[i] = entry.sub(
+                /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*(?:[><=!~][^;]*)/i,
+                "\\k<pre>==#{dep.version}"
+              )
+            end
+          end
+        end
+
         sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
@@ -109,6 +149,9 @@ module Dependabot
             end
           end
 
+          # Freeze PEP 621 project.dependencies and project.optional-dependencies
+          freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
+
           TomlRB.dump(pyproject_object)
         end
         # rubocop:enable Metrics/AbcSize
@@ -121,6 +164,41 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
+        def freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
+          project_object = pyproject_object["project"]
+          return unless project_object
+
+          freeze_pep621_dep_array!(project_object["dependencies"], excluded_names)
+
+          project_object["optional-dependencies"]&.each_value do |opt_deps|
+            freeze_pep621_dep_array!(opt_deps, excluded_names)
+          end
+        end
+
+        sig { params(dep_array: T.nilable(T::Array[String]), excluded_names: T::Array[String]).void }
+        def freeze_pep621_dep_array!(dep_array, excluded_names)
+          return unless dep_array
+
+          dep_array.each_with_index do |entry, index|
+            # Extract dependency name from PEP 508 string
+            match = entry.match(/\A([a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?)/i)
+            next unless match
+
+            dep_name = normalise(match[1])
+            next if excluded_names.include?(dep_name)
+
+            locked_details = locked_details(dep_name)
+            next unless (locked_version = locked_details&.fetch("version"))
+
+            # Replace version specifier with pinned version, preserving markers
+            dep_array[index] = entry.sub(
+              /(?<name_and_extras>[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\[.*?\])?)\s*(?<specifier>[><=!~][^;]*)/i,
+              "\\k<name_and_extras>==#{locked_version}"
+            )
+          end
+        end
 
         sig { params(dep_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
         def locked_details(dep_name)

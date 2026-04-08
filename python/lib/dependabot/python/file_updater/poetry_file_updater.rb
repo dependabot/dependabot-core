@@ -124,8 +124,10 @@ module Dependabot
           declaration_match = content.match(declaration_regex)
           if declaration_match
             declaration = declaration_match[:declaration]
-            new_declaration = T.must(declaration).sub(old_req, new_req)
-            return content.sub(T.must(declaration), new_declaration)
+            if T.must(declaration).include?(old_req)
+              new_declaration = T.must(declaration).sub(old_req, new_req)
+              return content.sub(T.must(declaration), new_declaration)
+            end
           end
 
           # Try Poetry table format
@@ -220,15 +222,13 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
-          PyprojectPreparer
-            .new(pyproject_content: pyproject_content, lockfile: lockfile)
-            .freeze_top_level_dependencies_except(dependencies)
+          PyprojectPreparer.new(pyproject_content: pyproject_content, lockfile: lockfile)
+                           .freeze_top_level_dependencies_except(dependencies)
         end
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_dependencies_being_updated(pyproject_content)
           pyproject_object = TomlRB.parse(pyproject_content)
-
           poetry_object = pyproject_object.dig("tool", "poetry")
 
           if poetry_object
@@ -244,14 +244,18 @@ module Dependabot
             end
           end
 
+          # Freeze PEP 621 project.dependencies and project.optional-dependencies
+          PyprojectPreparer.freeze_pep621_deps!(pyproject_object, dependencies) do |dep|
+            !git_dependency_being_updated?(dep) && dep.version
+          end
+
           TomlRB.dump(pyproject_object)
         end
 
         sig { params(pyproject_content: String).returns(String) }
         def update_python_requirement(pyproject_content)
-          PyprojectPreparer
-            .new(pyproject_content: pyproject_content)
-            .update_python_requirement(language_version_manager.python_version)
+          PyprojectPreparer.new(pyproject_content: pyproject_content)
+                           .update_python_requirement(language_version_manager.python_version)
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
@@ -284,9 +288,7 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def sanitize(pyproject_content)
-          PyprojectPreparer
-            .new(pyproject_content: pyproject_content)
-            .sanitize
+          PyprojectPreparer.new(pyproject_content: pyproject_content).sanitize
         end
 
         sig { params(pyproject_content: String).returns(String) }
