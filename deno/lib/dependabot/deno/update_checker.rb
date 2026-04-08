@@ -54,8 +54,11 @@ module Dependabot
         @latest_version_finder ||= T.let(
           LatestVersionFinder.new(
             dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
             ignored_versions: ignored_versions,
-            security_advisories: security_advisories
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown
           ),
           T.nilable(LatestVersionFinder)
         )
