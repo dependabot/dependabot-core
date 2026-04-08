@@ -298,11 +298,19 @@ public class MiscellaneousTests
         yield return [new[] { "major" }, "1.0.0", "1.1.0", false];
         yield return [new[] { "minor", "patch" }, "1.0.0", "2.0.0", false];
 
-        // revision-only and prerelease-only updates should be patch-equivalent
+        // revision-only and prerelease-only updates should be patch-equivalent, but only for upgrades
         yield return [null, "1.0.0.1", "1.0.0.3", true];
+        yield return [null, "1.0.0.1", "1.0.0.1", false];
+        yield return [null, "1.0.0.3", "1.0.0.1", false];
         yield return [new[] { "patch" }, "1.0.0.1", "1.0.0.3", true];
+        yield return [new[] { "patch" }, "1.0.0.1", "1.0.0.1", false];
+        yield return [new[] { "patch" }, "1.0.0.3", "1.0.0.1", false];
         yield return [null, "1.0.0-alpha", "1.0.0-beta", true];
+        yield return [null, "1.0.0-alpha", "1.0.0-alpha", false];
+        yield return [null, "1.0.0-beta", "1.0.0-alpha", false];
         yield return [new[] { "patch" }, "1.0.0-alpha", "1.0.0-beta", true];
+        yield return [new[] { "patch" }, "1.0.0-alpha", "1.0.0-alpha", false];
+        yield return [new[] { "patch" }, "1.0.0-beta", "1.0.0-alpha", false];
     }
 
     [Theory]

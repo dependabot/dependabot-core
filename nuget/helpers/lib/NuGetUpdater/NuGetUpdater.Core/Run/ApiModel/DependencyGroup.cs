@@ -44,6 +44,11 @@ public class GroupMatcher
 
     public bool IsAllowedByVersion(NuGetVersion oldVersion, NuGetVersion newVersion)
     {
+        if (newVersion <= oldVersion)
+        {
+            return false;
+        }
+
         var isMajorBump = newVersion.Major > oldVersion.Major;
         var isMinorBump = newVersion.Major == oldVersion.Major && newVersion.Minor > oldVersion.Minor;
         var isPatchEquivalentBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor;
