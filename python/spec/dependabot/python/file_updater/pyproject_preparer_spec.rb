@@ -262,5 +262,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         end
       end
     end
+
+    context "with PEP 621 dependencies containing environment markers" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "pep621_hybrid_with_markers.toml" }
+      let(:poetry_lock_fixture_name) { "caret_version.lock" }
+
+      it "freezes the version while preserving markers" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        project_deps = parsed.dig("project", "dependencies")
+        requests_dep = project_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==1.2.3 ; python_version >= '3.7'")
+      end
+    end
+
+    context "with PEP 621 project.optional-dependencies" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "pep621_hybrid_optional_deps.toml" }
+      let(:poetry_lock_fixture_name) { "caret_version.lock" }
+
+      it "freezes optional dependencies to their locked versions" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        opt_deps = parsed.dig("project", "optional-dependencies", "networking")
+        requests_dep = opt_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==1.2.3")
+      end
+    end
   end
 end

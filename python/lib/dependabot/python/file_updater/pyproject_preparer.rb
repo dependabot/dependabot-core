@@ -46,15 +46,23 @@ module Dependabot
           name_pattern = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
           dep_arrays.each do |arr|
             arr.each_with_index do |entry, i|
-              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~;]/i)
+              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[><=!~;,])/i)
 
-              arr[i] = entry.sub(
-                /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*(?:[><=!~][^;]*)/i,
-                "\\k<pre>==#{dep.version}"
-              )
+              arr[i] = if entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~]/i)
+                         entry.sub(
+                           /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
+                           "\\k<pre>==#{dep.version}"
+                         )
+                       else
+                         entry.sub(
+                           /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
+                           "\\k<pre>==#{dep.version}\\k<rest>"
+                         )
+                       end
             end
           end
         end
+        private_class_method :pin_pep621_dep_in_arrays!
 
         sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
@@ -183,7 +191,7 @@ module Dependabot
 
           dep_array.each_with_index do |entry, index|
             # Extract dependency name from PEP 508 string
-            match = entry.match(/\A([a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?)/i)
+            match = entry.match(/\A([a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)/i)
             next unless match
 
             dep_name = normalise(match[1])
@@ -192,11 +200,20 @@ module Dependabot
             locked_details = locked_details(dep_name)
             next unless (locked_version = locked_details&.fetch("version"))
 
-            # Replace version specifier with pinned version, preserving markers
-            dep_array[index] = entry.sub(
-              /(?<name_and_extras>[a-zA-Z0-9][a-zA-Z0-9._-]*(?:\[.*?\])?)\s*(?<specifier>[><=!~][^;]*)/i,
-              "\\k<name_and_extras>==#{locked_version}"
-            )
+            # Build a name-specific pattern consistent with pin_pep621_dep_in_arrays!
+            name_pattern = Regexp.escape(match[1]).gsub("\\-", "[-_.]")
+
+            dep_array[index] = if entry.match?(/\A#{name_pattern}(?:\[.*?\])?\s*[><=!~]/i)
+                                 entry.sub(
+                                   /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
+                                   "\\k<pre>==#{locked_version}"
+                                 )
+                               else
+                                 entry.sub(
+                                   /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
+                                   "\\k<pre>==#{locked_version}\\k<rest>"
+                                 )
+                               end
           end
         end
 

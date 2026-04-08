@@ -246,7 +246,7 @@ module Dependabot
 
           # Freeze PEP 621 project.dependencies and project.optional-dependencies
           PyprojectPreparer.freeze_pep621_deps!(pyproject_object, dependencies) do |dep|
-            !git_dependency_being_updated?(dep) && dep.version
+            !git_dependency_being_updated?(dep)
           end
 
           TomlRB.dump(pyproject_object)
