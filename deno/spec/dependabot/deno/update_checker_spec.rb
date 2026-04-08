@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/deno/update_checker"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::Deno::UpdateChecker do
   let(:checker) do
@@ -78,6 +79,58 @@ RSpec.describe Dependabot::Deno::UpdateChecker do
     it "updates requirements" do
       updated = checker.updated_requirements
       expect(updated.first[:requirement]).to eq("^1.1.4")
+    end
+  end
+
+  context "with cooldown enabled" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@std/path",
+        version: "1.0.0",
+        requirements: [{
+          requirement: "^1.0.0",
+          file: "deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        package_manager: "deno"
+      )
+    end
+    let(:checker) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        security_advisories: [],
+        ignored_versions: [],
+        update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 30,
+          semver_major_days: 30,
+          semver_minor_days: 30,
+          semver_patch_days: 30
+        )
+      )
+    end
+
+    before do
+      stub_request(:get, "https://jsr.io/@std/path/meta.json")
+        .to_return(
+          status: 200,
+          body: {
+            scope: "std",
+            name: "path",
+            latest: "1.1.4",
+            versions: {
+              "1.1.4" => { "createdAt" => Time.now.utc.iso8601 },
+              "1.0.0" => { "createdAt" => "2024-01-01T00:00:00Z" }
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "filters out versions within the cooldown period and falls back to current version" do
+      expect(checker.latest_version).to eq(Dependabot::Deno::Version.new("1.0.0"))
     end
   end
 

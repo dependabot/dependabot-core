@@ -8,6 +8,7 @@ require "dependabot/deno/file_parser"
 require "dependabot/deno/update_checker"
 require "dependabot/deno/file_updater"
 require "dependabot/deno/metadata_finder"
+require "dependabot/deno/package/package_details_fetcher"
 require "dependabot/deno/version"
 require "dependabot/deno/requirement"
 
