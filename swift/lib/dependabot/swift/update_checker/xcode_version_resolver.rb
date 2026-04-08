@@ -6,6 +6,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/swift/update_checker"
 require "dependabot/swift/requirement"
 require "dependabot/swift/version"
+require "dependabot/swift/xcode_file_helpers"
 require "dependabot/update_checkers/version_filters"
 
 module Dependabot
@@ -145,10 +146,30 @@ module Dependabot
           # Only versionRange has an explicit upper bound that should be respected.
           return true if %w(exactVersion upToNextMajorVersion upToNextMinorVersion).include?(kind)
 
+          # For sub-dependencies that are not declared directly in project.pbxproj
+          # (e.g., transitive dependencies of local packages), kind will be nil and
+          # the requirement comes from Package.resolved as an equality pin.
+          # In this case, we allow updates since the actual constraint lives in
+          # the local package's Package.swift, which we don't have access to.
+          # This may produce a pin that is not resolvable for the full package graph.
+          # In Xcode mode we intentionally defer that validation to downstream
+          # SwiftPM/Xcode resolution.
+          return true if kind.nil? && package_resolved_requirement?
+
           requirement = dependency_requirement
           return true unless requirement
 
           requirement.satisfied_by?(version)
+        end
+
+        # Returns true if the dependency's requirement originates from an
+        # Xcode-managed Package.resolved file (rather than project.pbxproj).
+        sig { returns(T::Boolean) }
+        def package_resolved_requirement?
+          dependency.requirements.any? do |req|
+            file = req[:file]
+            file.is_a?(String) && XcodeFileHelpers.xcode_resolved_path?(file)
+          end
         end
 
         sig do
