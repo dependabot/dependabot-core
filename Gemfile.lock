@@ -39,9 +39,9 @@ PATH
       json (< 2.19)
       nokogiri (~> 1.8)
       octokit (~> 10.0)
-      opentelemetry-api (~> 1.5)
-      opentelemetry-logs-api (~> 0.2)
-      opentelemetry-metrics-api (~> 0.3)
+      opentelemetry-api (~> 1.9)
+      opentelemetry-logs-api (~> 0.3)
+      opentelemetry-metrics-api (~> 0.5)
       parser (~> 3.3)
       psych (~> 5.0)
       sorbet-runtime (~> 0.6)
@@ -325,10 +325,11 @@ GEM
     octokit (10.0.0)
       faraday (>= 1, < 3)
       sawyer (~> 0.9)
-    opentelemetry-api (1.7.0)
-    opentelemetry-logs-api (0.2.0)
+    opentelemetry-api (1.9.0)
+      logger
+    opentelemetry-logs-api (0.3.0)
       opentelemetry-api (~> 1.0)
-    opentelemetry-metrics-api (0.4.0)
+    opentelemetry-metrics-api (0.5.0)
       opentelemetry-api (~> 1.0)
     parallel (1.27.0)
     parallel_tests (4.10.1)
@@ -618,9 +619,9 @@ CHECKSUMS
   nokogiri (1.19.1-arm64-darwin) sha256=dfe2d337e6700eac47290407c289d56bcf85805d128c1b5a6434ddb79731cb9e
   nokogiri (1.19.1-x86_64-linux-gnu) sha256=1a4902842a186b4f901078e692d12257678e6133858d0566152fe29cdb98456a
   octokit (10.0.0) sha256=82e99a539b7637b7e905e6d277bb0c1a4bed56735935cc33db6da7eae49a24e8
-  opentelemetry-api (1.7.0) sha256=ccfd264ea6f2db5bf4185e3c07a1297977b44a944e2ce65457c4fe63a697214f
-  opentelemetry-logs-api (0.2.0) sha256=0e9241b9b53a315101a6a5f2efbfa80278a0d39f9220915871f8d6057c39b117
-  opentelemetry-metrics-api (0.4.0) sha256=37f8b8440d644ca94dfe6a9d69ad9f8da3745c810d24cd9ca950c739483b5fe0
+  opentelemetry-api (1.9.0) sha256=d24065dd26583babd8d498d38ea35f74dfa193fb7102512e6e161649440079fb
+  opentelemetry-logs-api (0.3.0) sha256=c07957abe24e5c1539d2b8d7341de24b8ef4c18404c5b3caa4fb818d1d6f7ca5
+  opentelemetry-metrics-api (0.5.0) sha256=fc1b4cdf7ad2b103a0b4c5d7bcc205ff58ef9356769b5d24af7fa9efe9ec607a
   parallel (1.27.0) sha256=4ac151e1806b755fb4e2dc2332cbf0e54f2e24ba821ff2d3dcf86bf6dc4ae130
   parallel_tests (4.10.1) sha256=df05458c691462b210f7a41fc2651d4e4e8a881e8190e6d1e122c92c07735d70
   parseconfig (1.1.2) sha256=e52247d15070fb47f9e58f44f7888d1e7f65775274cd60f9ab4b7acd7943b291
