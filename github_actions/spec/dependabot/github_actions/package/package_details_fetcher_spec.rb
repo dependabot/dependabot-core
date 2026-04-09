@@ -252,4 +252,111 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
   end
+
+  describe "#fetch_tag_and_release_date" do
+    subject(:fetch_tag_and_release_date) { fetcher.fetch_tag_and_release_date }
+
+    let(:upload_pack_fixture) { "setup-node" }
+    let(:git_tag_with_details) do
+      [
+        Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2024-01-01T00:00:00Z"),
+        Dependabot::GitTagWithDetail.new(tag: "v2.0.0", release_date: "2024-02-01T00:00:00Z"),
+        Dependabot::GitTagWithDetail.new(tag: "v3.0.0", release_date: "2024-03-01T00:00:00Z")
+      ]
+    end
+
+    before do
+      # Stub git_commit_checker to return mock tags with release dates
+      mock_checker = instance_double(Dependabot::GitCommitChecker)
+
+      # Also stub allowed_version_tags to include all our test tags
+      allow(mock_checker).to receive_messages(
+        refs_for_tag_with_detail: git_tag_with_details,
+        allowed_version_tags: git_tag_with_details.map { |tag|
+          double(name: tag.tag)
+        }
+      )
+      allow(fetcher).to receive(:git_commit_checker).and_return(mock_checker)
+    end
+
+    it "returns array of GitTagWithDetail objects" do
+      expect(fetch_tag_and_release_date).to be_an(Array)
+      expect(fetch_tag_and_release_date.first).to be_a(Dependabot::GitTagWithDetail)
+    end
+
+    it "includes tag and release_date attributes with correct values" do
+      results = fetch_tag_and_release_date
+      expect(results).to(
+        all(
+          have_attributes(
+            tag: an_instance_of(String),
+            release_date: an_instance_of(String)
+          )
+        )
+      )
+      # Assert specific tag values
+      tags = results.map(&:tag).sort
+      expect(tags).to include("v1.0.0", "v2.0.0", "v3.0.0")
+    end
+
+    it "filters to only allowed version tags" do
+      results = fetch_tag_and_release_date
+      expect(results.map(&:tag)).not_to be_empty
+      # All returned tags should be in the git_tag_with_details
+      expected_tags = git_tag_with_details.map(&:tag)
+      actual_tags = results.map(&:tag)
+      expect(actual_tags).to match_array(expected_tags)
+    end
+
+    it "preserves release dates for each tag" do
+      results = fetch_tag_and_release_date
+      tag_date_map = results.to_h { |item| [item.tag, item.release_date] }
+
+      git_tag_with_details.each do |git_tag|
+        expect(tag_date_map[git_tag.tag]).to eq(git_tag.release_date)
+      end
+    end
+
+    context "when git_commit_checker.refs_for_tag_with_detail fails" do
+      before do
+        mock_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(mock_checker).to receive(:allowed_version_tags).and_return([double(name: "v1.0.0")])
+        allow(mock_checker).to receive(:refs_for_tag_with_detail)
+          .and_raise(StandardError, "git error")
+        allow(fetcher).to receive(:git_commit_checker).and_return(mock_checker)
+      end
+
+      it "handles error gracefully and returns empty array" do
+        expect(fetch_tag_and_release_date).to eq([])
+      end
+
+      it "logs the error" do
+        expect(Dependabot.logger).to receive(:error).with(/Error fetching tag and release date/)
+        fetch_tag_and_release_date
+      end
+    end
+
+    context "when no tags match allowed versions" do
+      before do
+        mock_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(mock_checker).to receive_messages(
+          refs_for_tag_with_detail: [
+            Dependabot::GitTagWithDetail.new(tag: "v999.0.0", release_date: "2099-01-01T00:00:00Z")
+          ],
+          allowed_version_tags: [double(name: "v1.0.0")]
+        )
+        allow(fetcher).to receive(:git_commit_checker).and_return(mock_checker)
+      end
+
+      it "returns empty array when no tags match allowed versions" do
+        expect(fetch_tag_and_release_date).to eq([])
+      end
+
+      it "logs error when no release dates found for allowed tags" do
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Error fetching tag and release date: unable to fetch for allowed tags/)
+        fetch_tag_and_release_date
+      end
+    end
+  end
 end
