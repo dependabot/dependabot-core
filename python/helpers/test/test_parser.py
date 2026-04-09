@@ -182,3 +182,84 @@ class TestEdgeCases:
         # Both groups should be processed without infinite recursion
         assert "requests" in names
         assert "flask" in names
+
+
+# ---------------------------------------------------------------------------
+# source_requirement — preserves original specifier string from the TOML
+# ---------------------------------------------------------------------------
+class TestSourceRequirement:
+    def test_simple_specifier_preserves_order(self):
+        deps = parse("pep621_dependencies.toml")
+        requests = find_dep(deps, "requests")
+        # Original: "requests>=2.13.0,<3.0" — order preserved
+        assert requests["source_requirement"] == ">=2.13.0,<3.0"
+        # Normalized by packaging: "<3.0,>=2.13.0" (alphabetical by operator)
+        assert requests["requirement"] == "<3.0,>=2.13.0"
+
+    def test_exact_version(self):
+        deps = parse("pep621_dependencies.toml")
+        urllib3 = find_dep(deps, "urllib3")
+        assert urllib3["source_requirement"] == "==1.26.0"
+
+    def test_extras_stripped_from_source(self):
+        deps = parse("pep621_extras.toml")
+        cc = find_dep(deps, "cachecontrol")
+        assert cc["source_requirement"] == ">=0.14.0"
+
+    def test_markers_stripped_from_source(self):
+        deps = parse("pep621_markers.toml")
+        requests = find_dep(deps, "requests")
+        assert requests["source_requirement"] == ">=2.13.0"
+
+    def test_no_version_specifier(self):
+        deps = parse("pep621_no_version.toml")
+        requests = find_dep(deps, "requests")
+        assert requests["source_requirement"] == ""
+
+    def test_multiple_extras_stripped(self):
+        deps = parse("pep621_multiple_extras.toml")
+        boto3 = find_dep(deps, "boto3")
+        assert boto3["source_requirement"] == ">=1.28.0"
+
+    def test_arbitrary_equality(self):
+        deps = parse("pep621_arbitrary_equality.toml")
+        numpy = find_dep(deps, "numpy")
+        assert numpy["source_requirement"] == "===1.24.0rc1"
+
+    def test_spaced_specifiers_preserved(self):
+        deps = parse("pep621_spaced_specifiers.toml")
+        requests = find_dep(deps, "requests")
+        # Spaces are preserved from the original entry
+        assert requests["source_requirement"] == ">= 2.13.0, < 3.0"
+
+    def test_spaced_exact_version_preserved(self):
+        deps = parse("pep621_spaced_specifiers.toml")
+        urllib3 = find_dep(deps, "urllib3")
+        assert urllib3["source_requirement"] == "== 1.26.0"
+
+    def test_spaced_extras_and_specifier(self):
+        deps = parse("pep621_spaced_specifiers.toml")
+        cc = find_dep(deps, "cachecontrol")
+        assert cc["source_requirement"] == ">= 0.14.0"
+
+    def test_spaced_specifier_with_markers(self):
+        deps = parse("pep621_spaced_specifiers.toml")
+        idna = find_dep(deps, "idna")
+        # Markers stripped, original spacing kept
+        assert idna["source_requirement"] == ">= 2.5"
+
+    def test_optional_deps_with_spaces(self):
+        deps = parse("pep621_dependencies.toml")
+        pysocks = find_dep(deps, "PySocks")
+        # Original: "PySocks >= 1.5.6, != 1.5.7, < 2"
+        assert pysocks["source_requirement"] == ">= 1.5.6, != 1.5.7, < 2"
+
+    def test_build_system_source_requirement(self):
+        deps = parse("pep621_dependencies.toml")
+        setuptools = find_dep(deps, "setuptools")
+        assert setuptools["source_requirement"] == ">=68.0"
+
+    def test_dependency_group_source_requirement(self):
+        deps = parse("pep735_dependency_groups.toml")
+        pytest_dep = find_dep(deps, "pytest")
+        assert pytest_dep["source_requirement"] == "==7.1.3"
