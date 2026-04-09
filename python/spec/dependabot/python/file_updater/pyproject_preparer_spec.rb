@@ -289,6 +289,27 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         requests_dep = opt_deps.find { |d| d.start_with?("requests") }
         expect(requests_dep).to eq("requests==1.2.3")
       end
+
+      context "when excluding a dependency" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "2.19.1",
+              package_manager: "pip",
+              requirements: []
+            )
+          ]
+        end
+
+        it "does not freeze the excluded optional dependency" do
+          result = freeze_top_level_dependencies_except
+          parsed = TomlRB.parse(result)
+          opt_deps = parsed.dig("project", "optional-dependencies", "networking")
+          requests_dep = opt_deps.find { |d| d.start_with?("requests") }
+          expect(requests_dep).to eq("requests>=2.13.0")
+        end
+      end
     end
   end
 end

@@ -53,12 +53,8 @@ module Dependabot
           ).void
         end
         def self.freeze_pep621_deps!(pyproject_object, deps, &blk)
-          project_object = pyproject_object["project"]
-          return unless project_object
-
-          dep_arrays = [project_object["dependencies"]]
-          project_object["optional-dependencies"]&.each_value { |opt| dep_arrays << opt }
-          dep_arrays.compact!
+          dep_arrays = collect_pep621_dep_arrays(pyproject_object)
+          return if dep_arrays.empty?
 
           deps.each do |dep|
             next if blk && !yield(dep)
@@ -67,6 +63,19 @@ module Dependabot
             pin_pep621_dep_in_arrays!(dep_arrays, dep)
           end
         end
+
+        sig { params(pyproject_object: T::Hash[String, T.untyped]).returns(T::Array[T::Array[String]]) }
+        def self.collect_pep621_dep_arrays(pyproject_object)
+          project_object = pyproject_object["project"]
+          return [] unless project_object
+
+          dep_arrays = [project_object["dependencies"]]
+          project_object["optional-dependencies"]&.each_value { |opt| dep_arrays << opt }
+          dep_arrays.compact!
+          dep_arrays.select! { |arr| arr.is_a?(Array) && arr.all?(String) }
+          dep_arrays
+        end
+        private_class_method :collect_pep621_dep_arrays
 
         sig { params(dep_arrays: T::Array[T::Array[String]], dep: Dependabot::Dependency).void }
         def self.pin_pep621_dep_in_arrays!(dep_arrays, dep)
