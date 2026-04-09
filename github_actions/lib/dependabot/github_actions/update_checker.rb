@@ -156,19 +156,26 @@ module Dependabot
           return new_tag.fetch(:tag)
         end
 
-        # Return the pinned git commit if one is available, respecting cooldown
         if source_git_commit_checker.pinned_ref_looks_like_commit_sha?
-          cooled_down_version = latest_version
-          pinned_ref = source&.fetch(:ref)
-          return nil if cooled_down_version.is_a?(String) && cooled_down_version == pinned_ref
-
-          if (new_commit_sha = latest_commit_sha(source_git_commit_checker))
-            return new_commit_sha
-          end
+          return updated_pinned_commit_sha_respecting_cooldown(source, source_git_commit_checker)
         end
 
         # Otherwise we can't update the ref
         nil
+      end
+
+      sig do
+        params(
+          source: T.nilable(T::Hash[Symbol, String]),
+          source_checker: Dependabot::GitCommitChecker
+        ).returns(T.nilable(String))
+      end
+      def updated_pinned_commit_sha_respecting_cooldown(source, source_checker)
+        cooled_down_version = latest_version
+        pinned_ref = source&.fetch(:ref)
+        return nil if cooled_down_version.is_a?(String) && cooled_down_version == pinned_ref
+
+        latest_commit_sha(source_checker)
       end
 
       sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }
