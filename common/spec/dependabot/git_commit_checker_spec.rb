@@ -832,6 +832,19 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it { is_expected.to be(false) }
+
+      context "when the pin looks like invalid compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20261399"
+          }
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
 
     context "with no ref" do
