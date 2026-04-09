@@ -464,6 +464,42 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(pydantic.requirements.first[:groups]).to eq(["dependencies"])
         end
       end
+
+      context "with dynamic dependencies in Poetry project" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pep621_dynamic_dependencies.toml" }
+
+        it "skips PEP 621 dependencies when dependencies is dynamic" do
+          dep_names = dependencies.map(&:name)
+          # Poetry deps are parsed but PEP 621 [project] dependencies are not
+          # since they are marked as dynamic and managed by Poetry
+          expect(dep_names).to include("requests", "django")
+          dependencies.each do |dep|
+            expect(dep.requirements.first[:groups]).to eq(["dependencies"])
+          end
+        end
+      end
+
+      context "with dynamic optional-dependencies in Poetry project" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pep621_dynamic_optional_dependencies.toml" }
+
+        it "skips PEP 621 optional deps but keeps non-dynamic deps" do
+          dep_names = dependencies.map(&:name)
+          # requests comes from [project] dependencies (not dynamic)
+          expect(dep_names).to include("requests")
+          req = dependencies.find { |d| d.name == "requests" }
+          expect(req.requirements.first[:groups]).to eq(["dependencies"])
+        end
+
+        it "does not duplicate optional deps from PEP 621 when dynamic" do
+          pysocks_deps = dependencies.select { |d| d.name == "pysocks" }
+          # Should only appear once (from Poetry), not duplicated from PEP 621
+          expect(pysocks_deps.length).to eq(1)
+        end
+      end
     end
 
     describe "with pep 735" do
