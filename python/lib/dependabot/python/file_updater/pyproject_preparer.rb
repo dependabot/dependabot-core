@@ -61,7 +61,7 @@ module Dependabot
           dep_arrays.compact!
 
           deps.each do |dep|
-            next if block_given? && !yield(dep)
+            next if blk && !yield(dep)
             next unless dep.version
 
             pin_pep621_dep_in_arrays!(dep_arrays, dep)
