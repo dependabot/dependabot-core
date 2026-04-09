@@ -95,6 +95,10 @@ module Dependabot
             # Poetry manages its own build system dependencies
             next if using_poetry? && dep["requirement_type"] == "build-system.requires"
 
+            # When dependencies or optional-dependencies are listed in project.dynamic,
+            # they are managed by the build backend (e.g. Poetry) — skip the PEP 621 path
+            next if dynamic_pep621_dep?(dep["requirement_type"])
+
             dependencies <<
               Dependency.new(
                 name: normalise(dep["name"]),
@@ -229,6 +233,28 @@ module Dependabot
         sig { returns(T.untyped) }
         def using_pdm?
           using_pep621? && pdm_lock
+        end
+
+        sig { returns(T::Array[String]) }
+        def dynamic_fields
+          @dynamic_fields ||= T.let(
+            parsed_pyproject.dig("project", "dynamic") || [],
+            T.nilable(T::Array[String])
+          )
+        end
+
+        sig { params(requirement_type: T.nilable(String)).returns(T::Boolean) }
+        def dynamic_pep621_dep?(requirement_type)
+          return false unless using_poetry?
+          return false unless requirement_type
+
+          if requirement_type == "dependencies"
+            dynamic_fields.include?("dependencies")
+          elsif parsed_pyproject.dig("project", "optional-dependencies")&.key?(requirement_type)
+            dynamic_fields.include?("optional-dependencies")
+          else
+            false
+          end
         end
 
         # Create a DependencySet where each element has no requirement. Any
