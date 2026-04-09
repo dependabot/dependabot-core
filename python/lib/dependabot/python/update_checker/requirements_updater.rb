@@ -111,7 +111,11 @@ module Dependabot
         def updated_pyproject_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
-          return req if new_version_satisfies?(req) && !has_lockfile
+          # Only skip update for strategies that don't require bumping when already satisfied
+          if new_version_satisfies?(req) && !has_lockfile &&
+             update_strategy != RequirementsUpdateStrategy::BumpVersions
+            return req
+          end
 
           # If the requirement uses || syntax then we always want to widen it
           return widen_pyproject_requirement(req) if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
@@ -134,7 +138,22 @@ module Dependabot
         def update_pyproject_version_if_needed(req)
           return req if new_version_satisfies?(req)
 
-          update_pyproject_version(req)
+          requirement_strings = req[:requirement].split(",").map(&:strip)
+
+          new_requirement =
+            if requirement_strings.any? { |r| r.match?(/^=|^\d/) }
+              # Equality - update to latest
+              find_and_update_equality_match(requirement_strings)
+            elsif requirement_strings.any? { |r| r.start_with?("~", "^") }
+              # Compatibility operator - bump version
+              v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
+              bump_version(v_req, latest_resolvable_version.to_s)
+            else
+              # Range requirements - only update upper bound, don't bump lower
+              update_requirements_range(requirement_strings)
+            end
+
+          req.merge(requirement: new_requirement)
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
@@ -151,13 +170,12 @@ module Dependabot
               # version (and remove any other requirements)
               v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
               bump_version(v_req, latest_resolvable_version.to_s)
-            elsif new_version_satisfies?(req)
-              # Otherwise we're looking at a range operator. No change
-              # required if it's already satisfied
+            elsif req[:requirement] == "*"
+              # Asterisk matches everything, keep as-is
               req.fetch(:requirement)
             else
-              # But if it's not, update it
-              update_requirements_range(requirement_strings)
+              # For range requirements, bump the lower bound and update upper bound if needed
+              bump_requirements_range(requirement_strings)
             end
 
           req.merge(requirement: new_requirement)
@@ -337,6 +355,63 @@ module Dependabot
               raise UnfixableRequirement
             else
               raise "Unexpected op for unsatisfied requirement: #{op}"
+            end
+          end.compact
+
+          updated_requirement_strings
+            .sort_by { |r| requirement_class.new(r).requirements.first.last }.join(",").delete(" ")
+        end
+
+        # Bumps the lower bound of a range requirement to the latest version
+        # Used by BumpVersions strategy to increase the minimum version
+        sig { params(requirement_strings: T::Array[String]).returns(String) }
+        def bump_requirements_range(requirement_strings)
+          ruby_requirements =
+            requirement_strings.map { |r| requirement_class.new(r) }
+
+          # Check if any lower bound is higher than the latest version (unfixable)
+          ruby_requirements.each do |r|
+            op = r.requirements.first.first
+            version = r.requirements.first.last
+            if [">", ">="].include?(op) && version > T.must(latest_resolvable_version)
+              raise UnfixableRequirement
+            end
+          end
+
+          updated_requirement_strings = ruby_requirements.flat_map do |r|
+            op = r.requirements.first.first
+            version = r.requirements.first.last
+
+            case op
+            when ">="
+              # Bump the lower bound to the latest version
+              ">=" + T.must(latest_resolvable_version).to_s
+            when ">"
+              # Convert > to >= with the latest version
+              ">=" + T.must(latest_resolvable_version).to_s
+            when "<"
+              # Update upper bound if it doesn't satisfy the new version
+              if r.satisfied_by?(T.must(latest_resolvable_version))
+                r.to_s
+              else
+                "<" + update_greatest_version(version, T.must(latest_resolvable_version))
+              end
+            when "<="
+              # Update upper bound if it doesn't satisfy the new version
+              if r.satisfied_by?(T.must(latest_resolvable_version))
+                r.to_s
+              else
+                "<=" + T.must(latest_resolvable_version).to_s
+              end
+            when "!="
+              # Keep != constraints, they may still be relevant
+              r.to_s
+            when "~>", "~="
+              # This shouldn't happen as ~ requirements are handled separately
+              bump_version(r.to_s, T.must(latest_resolvable_version).to_s)
+            else
+              # For any other operators, keep them as-is
+              r.to_s
             end
           end.compact
 
