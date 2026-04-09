@@ -51,8 +51,10 @@ module Dependabot
         # Fallback for transitive dependencies in workspace repos where
         # `npm update` is a no-op because the package isn't in package.json.
         # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
-        command = "audit fix --package-lock-only --ignore-scripts"
-        fingerprint = "audit fix --package-lock-only --ignore-scripts"
+        # `--force` ignores checks for platform (os, cpu) and engines,
+        # matching the flags used by run_npm8_subdependency_update_command.
+        command = "audit fix --force --package-lock-only --ignore-scripts"
+        fingerprint = "audit fix --force --package-lock-only --ignore-scripts"
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
