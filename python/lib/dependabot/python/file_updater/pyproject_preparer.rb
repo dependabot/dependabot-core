@@ -22,10 +22,11 @@ module Dependabot
         sig do
           params(
             pyproject_object: T::Hash[String, T.untyped],
-            deps: T::Array[Dependabot::Dependency]
+            deps: T::Array[Dependabot::Dependency],
+            blk: T.nilable(T.proc.params(dep: Dependabot::Dependency).returns(T::Boolean))
           ).void
         end
-        def self.freeze_pep621_deps!(pyproject_object, deps)
+        def self.freeze_pep621_deps!(pyproject_object, deps, &blk)
           project_object = pyproject_object["project"]
           return unless project_object
 
@@ -194,14 +195,14 @@ module Dependabot
             match = entry.match(/\A([a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)/i)
             next unless match
 
-            dep_name = normalise(match[1])
+            dep_name = normalise(T.must(match[1]))
             next if excluded_names.include?(dep_name)
 
             locked_details = locked_details(dep_name)
             next unless (locked_version = locked_details&.fetch("version"))
 
             # Build a name-specific pattern consistent with pin_pep621_dep_in_arrays!
-            name_pattern = Regexp.escape(match[1]).gsub("\\-", "[-_.]")
+            name_pattern = Regexp.escape(T.must(match[1])).gsub("\\-", "[-_.]")
 
             dep_array[index] = if entry.match?(/\A#{name_pattern}(?:\[.*?\])?\s*[><=!~]/i)
                                  entry.sub(
