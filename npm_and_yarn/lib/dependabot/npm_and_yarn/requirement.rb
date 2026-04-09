@@ -24,6 +24,14 @@ module Dependabot
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
 
+      # Matches the JSR (jsr.io) registry prefix used by pnpm.
+      # Short form: "jsr:^3.0.0" → "^3.0.0"
+      # Long form:  "jsr:@scope/name@^3.0.0" → "^3.0.0"
+      JSR_PREFIX = T.let(/\Ajsr:(?:@?[^@]+@)?/, Regexp)
+
+      # The npm-compatible registry endpoint for JSR packages.
+      JSR_REGISTRY = T.let("https://npm.jsr.io", String)
+
       sig do
         params(
           obj: T.any(String, Gem::Version)
@@ -105,8 +113,17 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(String) }
+      def strip_jsr_prefix(req_string)
+        return req_string unless req_string.start_with?("jsr:")
+
+        req_string.sub(JSR_PREFIX, "")
+      end
+
       sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
       def convert_js_constraint_to_ruby_constraint(req_string)
+        req_string = strip_jsr_prefix(req_string)
+
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
         req_string = req_string.gsub(/(?:\.|^)[xX*]/, "")

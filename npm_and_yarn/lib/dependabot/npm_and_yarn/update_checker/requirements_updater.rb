@@ -63,7 +63,8 @@ module Dependabot
             req = req.merge(source: updated_source)
             next req unless latest_resolvable_version
             next initial_req_after_source_change(req) unless req[:requirement]
-            next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
+            next req if req[:requirement].sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+                                         .match?(/^([A-Za-uw-z]|v[^\d])/)
 
             case update_strategy
             when RequirementsUpdateStrategy::WidenRanges then widen_requirement(req)
