@@ -62,6 +62,12 @@ PATH
       dependabot-python (= 0.368.0)
 
 PATH
+  remote: deno
+  specs:
+    dependabot-deno (0.368.0)
+      dependabot-common (= 0.368.0)
+
+PATH
   remote: devcontainers
   specs:
     dependabot-devcontainers (0.368.0)
@@ -490,6 +496,7 @@ DEPENDENCIES
   dependabot-common!
   dependabot-composer!
   dependabot-conda!
+  dependabot-deno!
   dependabot-devcontainers!
   dependabot-docker!
   dependabot-docker_compose!
@@ -558,6 +565,7 @@ CHECKSUMS
   dependabot-common (0.368.0)
   dependabot-composer (0.368.0)
   dependabot-conda (0.368.0)
+  dependabot-deno (0.368.0)
   dependabot-devcontainers (0.368.0)
   dependabot-docker (0.368.0)
   dependabot-docker_compose (0.368.0)

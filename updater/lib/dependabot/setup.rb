@@ -32,6 +32,7 @@ Sentry.init do |config|
     cargo|
     composer|
     conda|
+    deno|
     devcontainers|
     docker_compose|
     docker|
