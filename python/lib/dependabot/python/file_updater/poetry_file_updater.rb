@@ -222,13 +222,15 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_other_dependencies(pyproject_content)
-          PyprojectPreparer.new(pyproject_content: pyproject_content, lockfile: lockfile)
-                           .freeze_top_level_dependencies_except(dependencies)
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content, lockfile: lockfile)
+            .freeze_top_level_dependencies_except(dependencies)
         end
 
         sig { params(pyproject_content: String).returns(String) }
         def freeze_dependencies_being_updated(pyproject_content)
           pyproject_object = TomlRB.parse(pyproject_content)
+
           poetry_object = pyproject_object.dig("tool", "poetry")
 
           if poetry_object
@@ -254,8 +256,9 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def update_python_requirement(pyproject_content)
-          PyprojectPreparer.new(pyproject_content: pyproject_content)
-                           .update_python_requirement(language_version_manager.python_version)
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content)
+            .update_python_requirement(language_version_manager.python_version)
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
@@ -266,6 +269,9 @@ module Dependabot
             next unless pkg_name
 
             if poetry_object[type][pkg_name].is_a?(Hash)
+              # Skip enrichment-only entries that have no version key (e.g., source-only metadata)
+              next unless poetry_object[type][pkg_name].key?("version")
+
               poetry_object[type][pkg_name]["version"] = dep.version
             else
               poetry_object[type][pkg_name] = dep.version
@@ -288,7 +294,9 @@ module Dependabot
 
         sig { params(pyproject_content: String).returns(String) }
         def sanitize(pyproject_content)
-          PyprojectPreparer.new(pyproject_content: pyproject_content).sanitize
+          PyprojectPreparer
+            .new(pyproject_content: pyproject_content)
+            .sanitize
         end
 
         sig { params(pyproject_content: String).returns(String) }

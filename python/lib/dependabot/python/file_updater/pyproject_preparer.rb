@@ -16,6 +16,32 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
+        # Builds a regex pattern that matches a PEP 508 package name,
+        # treating hyphens, underscores, and dots as interchangeable per PEP 508.
+        sig { params(name: String).returns(String) }
+        def self.pep508_name_pattern(name)
+          Regexp.escape(name).gsub("\\-", "[-_.]").gsub("_", "[-_.]").gsub("\\.", "[-_.]")
+        end
+        private_class_method :pep508_name_pattern
+
+        # Pins a single PEP 508 dependency entry string to a specific version,
+        # preserving extras and environment markers.
+        sig { params(entry: String, name_pattern: String, version: String).returns(String) }
+        def self.pin_pep508_entry(entry, name_pattern, version)
+          if entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~]/i)
+            entry.sub(
+              /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
+              "\\k<pre>==#{version}"
+            )
+          else
+            entry.sub(
+              /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
+              "\\k<pre>==#{version}\\k<rest>"
+            )
+          end
+        end
+        private_class_method :pin_pep508_entry
+
         # Freezes PEP 621 dependencies in-place within a parsed pyproject object.
         # Replaces version specifiers with ==dep.version for each matching dep.
         # Accepts an optional block to filter which dependencies to freeze.
@@ -44,22 +70,12 @@ module Dependabot
 
         sig { params(dep_arrays: T::Array[T::Array[String]], dep: Dependabot::Dependency).void }
         def self.pin_pep621_dep_in_arrays!(dep_arrays, dep)
-          name_pattern = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
+          name_pattern = pep508_name_pattern(dep.name)
           dep_arrays.each do |arr|
             arr.each_with_index do |entry, i|
               next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[><=!~;,])/i)
 
-              arr[i] = if entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~]/i)
-                         entry.sub(
-                           /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
-                           "\\k<pre>==#{dep.version}"
-                         )
-                       else
-                         entry.sub(
-                           /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
-                           "\\k<pre>==#{dep.version}\\k<rest>"
-                         )
-                       end
+              arr[i] = pin_pep508_entry(entry, name_pattern, T.must(dep.version))
             end
           end
         end
@@ -201,20 +217,8 @@ module Dependabot
             locked_details = locked_details(dep_name)
             next unless (locked_version = locked_details&.fetch("version"))
 
-            # Build a name-specific pattern consistent with pin_pep621_dep_in_arrays!
-            name_pattern = Regexp.escape(T.must(match[1])).gsub("\\-", "[-_.]")
-
-            dep_array[index] = if entry.match?(/\A#{name_pattern}(?:\[.*?\])?\s*[><=!~]/i)
-                                 entry.sub(
-                                   /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
-                                   "\\k<pre>==#{locked_version}"
-                                 )
-                               else
-                                 entry.sub(
-                                   /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
-                                   "\\k<pre>==#{locked_version}\\k<rest>"
-                                 )
-                               end
+            name_pattern = self.class.send(:pep508_name_pattern, T.must(match[1]))
+            dep_array[index] = self.class.send(:pin_pep508_entry, entry, name_pattern, locked_version)
           end
         end
 
