@@ -1340,8 +1340,10 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       before do
-        allow(checker).to receive(:local_tag_for_pinned_sha).and_return(nil)
-        allow(checker).to receive(:local_refs).and_return(compact_calver_refs)
+        allow(checker).to receive_messages(
+          local_tag_for_pinned_sha: nil,
+          local_refs: compact_calver_refs
+        )
       end
 
       it { is_expected.to match(latest_compact_calver) }
