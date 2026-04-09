@@ -47,12 +47,18 @@ hex:
 maven:
   - *common
   - 'maven/**'
+nix:
+  - *common
+  - 'nix/**'
 npm_and_yarn:
   - *common
   - 'npm_and_yarn/**'
 nuget:
   - *common
   - 'nuget/**'
+pre_commit:
+  - *common
+  - 'pre_commit/**'
 python:
   - *common
   - 'python/**'

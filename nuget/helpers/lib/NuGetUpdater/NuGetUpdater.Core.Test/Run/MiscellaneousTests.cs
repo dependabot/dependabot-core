@@ -129,14 +129,15 @@ public class MiscellaneousTests
     }
 
     [Fact]
-    public void DeserializeDependencyGroup()
+    public void DeserializeDependencyGroup_SpecificValues()
     {
         var json = """
             {
               "name": "test-group",
               "rules": {
                 "patterns": ["Test.*"],
-                "exclude-patterns": ["Dependency.*"]
+                "exclude-patterns": ["Dependency.*"],
+                "update-types": ["minor", "patch"]
               }
             }
             """;
@@ -146,6 +147,24 @@ public class MiscellaneousTests
         var matcher = group.GetGroupMatcher();
         Assert.Equal(["Test.*"], matcher.Patterns);
         Assert.Equal(["Dependency.*"], matcher.ExcludePatterns);
+        Assert.Equal([GroupUpdateType.Minor, GroupUpdateType.Patch], matcher.UpdateTypes);
+    }
+
+    [Fact]
+    public void DeserializeDependencyGroup_DefaultValues()
+    {
+        var json = """
+            {
+              "name": "test-group"
+            }
+            """;
+        var group = JsonSerializer.Deserialize<DependencyGroup>(json, RunWorker.SerializerOptions);
+        Assert.NotNull(group);
+        Assert.Equal("test-group", group.Name);
+        var matcher = group.GetGroupMatcher();
+        Assert.Equal(["*"], matcher.Patterns);
+        Assert.Equal([], matcher.ExcludePatterns);
+        Assert.Equal([GroupUpdateType.Major, GroupUpdateType.Minor, GroupUpdateType.Patch], matcher.UpdateTypes);
     }
 
     [Fact]
@@ -156,7 +175,8 @@ public class MiscellaneousTests
               "name": "test-group",
               "rules": {
                 "patterns": { "unexpected": 1 },
-                "exclude-patterns": { "unexpected": 2 }
+                "exclude-patterns": { "unexpected": 2 },
+                "update-types": { "unexpected": 3 }
               }
             }
             """;
@@ -166,6 +186,7 @@ public class MiscellaneousTests
         var matcher = group.GetGroupMatcher();
         Assert.Equal([], matcher.Patterns);
         Assert.Equal([], matcher.ExcludePatterns);
+        Assert.Equal([], matcher.UpdateTypes);
     }
 
     [Theory]
@@ -515,9 +536,9 @@ public class MiscellaneousTests
 
     [Theory]
     [MemberData(nameof(DependencyInfoFromJobData))]
-    public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
+    public void DependencyInfoFromJob(Job job, Dependency dependency, GroupMatcher? groupMatcher, DependencyInfo expectedDependencyInfo)
     {
-        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatcher is null ? [] : [groupMatcher], allowCooldown: true);
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
@@ -604,7 +625,7 @@ public class MiscellaneousTests
         ];
     }
 
-    public static IEnumerable<object[]> DependencyInfoFromJobData()
+    public static IEnumerable<object?[]> DependencyInfoFromJobData()
     {
         // with security advisory
         yield return
@@ -634,6 +655,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -679,6 +702,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -712,6 +737,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -753,6 +780,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -795,6 +824,8 @@ public class MiscellaneousTests
             },
             // dependency
             new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            null,
             // expectedDependencyInfo
             new DependencyInfo()
             {
@@ -808,6 +839,44 @@ public class MiscellaneousTests
             },
         ];
 
-
+        // with limited group update types; major is explicitly ignored, only patch is explicitly allowed => major and minor are ignored
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo"
+                },
+                IgnoreConditions = [
+                    new Condition()
+                    {
+                        DependencyName = "Some.*",
+                        UpdateTypes = [ConditionUpdateType.SemVerMajor],
+                    },
+                ],
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // groupMatcher
+            new GroupMatcher()
+            {
+                Patterns = ["Some.*"],
+                ExcludePatterns = [],
+                UpdateTypes = [GroupUpdateType.Patch],
+            },
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+                IgnoredUpdateTypes = [ConditionUpdateType.SemVerMajor, ConditionUpdateType.SemVerMinor],
+            },
+        ];
     }
 }

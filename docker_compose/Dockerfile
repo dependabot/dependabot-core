@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
@@ -20,7 +21,5 @@ RUN cd /tmp \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker_compose $DEPENDABOT_HOME/docker_compose
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents docker docker_compose common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
-COPY --chown=dependabot:dependabot docker $DEPENDABOT_HOME/docker

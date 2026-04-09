@@ -401,6 +401,48 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when adding a digest to a tag-only image (digest pinning)" do
+      let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              tag: "17.10",
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                      "ca97eba880ebf600d68608"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) do
+          is_expected.to include "FROM ubuntu:17.10@sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                                 "ca97eba880ebf600d68608\n"
+        end
+
+        its(:content) { is_expected.to include "FROM python:3.6.3\n" }
+        its(:content) { is_expected.to include "RUN apt-get update" }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
@@ -1318,6 +1360,53 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa"
           end
         end
+      end
+    end
+
+    context "when adding a digest to a tag-only YAML image (digest pinning)" do
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: podfile_body,
+          name: "multiple.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.yaml",
+            source: {
+              tag: "17.10",
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                      "ca97eba880ebf600d68608"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.yaml",
+            source: { tag: "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "multiple.yaml" }
+        end
+
+        its(:content) do
+          is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                                 "ca97eba880ebf600d68608\n"
+        end
+
+        its(:content) { is_expected.to include "image: nginx:1.14.2\n" }
+        its(:content) { is_expected.to include "kind: Pod" }
       end
     end
   end

@@ -22,6 +22,8 @@ public class XmlFileWriter : IFileWriter
     private const string PackageVersionElementName = "PackageVersion";
     private const string PropertyGroupElementName = "PropertyGroup";
 
+    private const string UpdaterAnnotationKind = "dependabot";
+
     private readonly ILogger _logger;
 
     // these file extensions are valid project entrypoints; everything else is ignored
@@ -251,21 +253,47 @@ public class XmlFileWriter : IFileWriter
                     .ToArray();
                 if (matchingPackageVersionElementsAndPaths.Length > 0)
                 {
-                    // found matching `<PackageVersion>` element; if `Version` attribute is appropriate we're done, otherwise set `VersionOverride` attribute on new element
+                    // found matching `<PackageVersion>` element
                     var (matchingPackageVersionElement, filePath) = matchingPackageVersionElementsAndPaths.First();
                     var versionAttribute = matchingPackageVersionElement.GetAttributeCaseInsensitive(VersionMetadataName);
+                    var isVersionOverrideNeeded = false;
                     if (versionAttribute is not null &&
-                        NuGetVersion.TryParse(versionAttribute.Value, out var existingVersion) &&
-                        existingVersion == requiredVersion)
+                        VersionRange.TryParse(versionAttribute.Value, out var existingVersionRange))
                     {
-                        // version matches; no update needed
-                        _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion}; no override needed.");
+                        if (existingVersionRange.MinVersion == requiredVersion)
+                        {
+                            // version matches; no update needed
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} already set to {requiredVersion} in file {filePath}; no update needed.");
+                        }
+                        else if (existingVersionRange.Satisfies(oldVersion))
+                        {
+                            // found matching old version; update the attribute directly
+                            _logger.Info($"Dependency {requiredPackageVersion.Name} updated from version {oldVersion} to {requiredVersion} in file {filePath}.");
+                            ReplaceNode(
+                                filePath,
+                                matchingPackageVersionElement.AsNode,
+                                matchingPackageVersionElement.ReplaceAttribute(
+                                    versionAttribute,
+                                    versionAttribute.WithValue(requiredVersion.ToString())
+                                ).AsNode
+                            );
+                        }
+                        else
+                        {
+                            // version doesn't match; use `VersionOverride` attribute on new element
+                            isVersionOverrideNeeded = true;
+                        }
                     }
                     else
                     {
-                        // version doesn't match; use `VersionOverride` attribute on new element
-                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion}; using `{VersionOverrideMetadataName}` attribute on new element.");
-                        newElement = (IXmlElementSyntax)ReplaceNode(
+                        // version not found; use `VersionOverride` attribute on new element
+                        isVersionOverrideNeeded = true;
+                    }
+
+                    if (isVersionOverrideNeeded)
+                    {
+                        _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion} using `{VersionOverrideMetadataName}` attribute on new element in file {projectRelativePath}.");
+                        ReplaceNode(
                             projectRelativePath,
                             newElement.AsNode,
                             newElement.WithAttribute(VersionOverrideMetadataName, requiredVersion.ToString()).AsNode
@@ -357,10 +385,11 @@ public class XmlFileWriter : IFileWriter
                         currentVersionString = versionAttribute.Value;
                         updateVersionLocation = version =>
                         {
+                            var existingAnnotation = versionAttribute.GetAnnotations(UpdaterAnnotationKind).First();
                             var refoundVersionAttribute = filesAndContents[filePath]
                                 .DescendantNodes()
                                 .OfType<XmlAttributeSyntax>()
-                                .First(a => a.FullSpan.Start == versionAttribute.FullSpan.Start);
+                                .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == existingAnnotation));
                             ReplaceNode(filePath, refoundVersionAttribute, refoundVersionAttribute.WithValue(version));
                         };
                         goto doVersionUpdate;
@@ -373,10 +402,11 @@ public class XmlFileWriter : IFileWriter
                         currentVersionString = versionElement.GetContentValue();
                         updateVersionLocation = version =>
                         {
+                            var existingAnnotation = versionElement.AsNode.GetAnnotations(UpdaterAnnotationKind).First();
                             var refoundVersionElement = filesAndContents[filePath]
                                 .DescendantNodes()
                                 .OfType<IXmlElementSyntax>()
-                                .First(e => e.AsNode.FullSpan.Start == versionElement.AsNode.FullSpan.Start);
+                                .First(e => e.AsNode.GetAnnotations(UpdaterAnnotationKind).Any(an => an == existingAnnotation));
                             ReplaceNode(filePath, refoundVersionElement.AsNode, refoundVersionElement.WithContent(version).AsNode);
                         };
                         goto doVersionUpdate;
@@ -556,7 +586,18 @@ public class XmlFileWriter : IFileWriter
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         var contents = await File.ReadAllTextAsync(fullPath);
         var document = Parser.ParseText(contents);
-        return document;
+
+        // ensure relevant nodes have a unique annotation so we can do precise edits later
+        var documentWithAllAnnotations = document.ReplaceNodes(
+            document.DescendantNodes(),
+            (_, node) => node switch
+            {
+                var nodeType when nodeType is XmlAttributeSyntax or XmlElementSyntax
+                    => node.WithAnnotations(new SyntaxAnnotation(UpdaterAnnotationKind)),
+                _ => node,
+            });
+
+        return documentWithAllAnnotations;
     }
 
     private static async Task WriteFileContentsAsync(DirectoryInfo repoContentsPath, string path, XmlDocumentSyntax document)
@@ -596,7 +637,61 @@ public class XmlFileWriter : IFileWriter
         // e.g., "[2.0.0, )" => "2.0.0"
         if (newRange.MaxVersion is null)
         {
-            return requiredVersion.ToString();
+            var requiredVersionString = requiredVersion.ToString();
+            var isWildcardVersion = existingRange.OriginalString?.Contains('*') == true;
+            if (isWildcardVersion)
+            {
+                var oldRangeParts = existingRange.OriginalString!.Split('.');
+                var newRangeParts = requiredVersion.ToFullString().Split('.');
+                var rebuiltParts = new List<string>();
+                for (int i = 0; i < oldRangeParts.Length; i++)
+                {
+                    if (oldRangeParts[i].Contains('*'))
+                    {
+                        var dashIndex = oldRangeParts[i].IndexOf('-');
+                        var starIndex = oldRangeParts[i].IndexOf('*');
+                        if (dashIndex >= 0 && dashIndex < starIndex)
+                        {
+                            // prerelease wildcard (e.g., "3-*")
+                            if (i < newRangeParts.Length)
+                            {
+                                var newDashIndex = newRangeParts[i].IndexOf('-');
+                                if (newDashIndex >= 0)
+                                {
+                                    var beforeDash = newRangeParts[i][..newDashIndex];
+                                    var fromDash = oldRangeParts[i][dashIndex..];
+                                    rebuiltParts.Add(beforeDash + fromDash);
+                                    rebuiltParts.AddRange(oldRangeParts.Skip(i + 1));
+                                }
+                                else
+                                {
+                                    // new version is stable, drop prerelease wildcard
+                                    rebuiltParts.Add(newRangeParts[i]);
+                                }
+                            }
+                            else
+                            {
+                                rebuiltParts.Add("0");
+                            }
+                        }
+                        else
+                        {
+                            // version wildcard (e.g., "*", "*-*", "*-preview*")
+                            rebuiltParts.AddRange(oldRangeParts.Skip(i));
+                        }
+
+                        break;
+                    }
+                    else
+                    {
+                        rebuiltParts.Add(i < newRangeParts.Length ? newRangeParts[i] : "0");
+                    }
+                }
+
+                requiredVersionString = string.Join(".", rebuiltParts);
+            }
+
+            return requiredVersionString;
         }
 
         return newRange.ToString();

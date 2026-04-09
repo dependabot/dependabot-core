@@ -17,15 +17,16 @@ Dependabot::PullRequestCreator::Labeler
   .register_label_details("conda", name: "conda", colour: "44a047")
 
 require "dependabot/dependency"
-# Conda manages Python packages, so use the same production check as Python
+# Conda manages packages from multiple ecosystems (Python, R, Julia, system tools)
+# and can also contain pip dependencies for Python packages from PyPI
 Dependabot::Dependency.register_production_check(
   "conda",
   lambda do |groups|
     return true if groups.empty?
     return true if groups.include?("default")
-    return true if groups.include?("dependencies")
+    return true if groups.include?("dependencies") # Conda packages
 
-    groups.include?("pip")
+    groups.include?("pip") # Pip packages (Python from PyPI)
   end
 )
 

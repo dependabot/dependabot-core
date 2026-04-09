@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "ostruct"
 require "sorbet-runtime"
 
 require "dependabot/credential"
@@ -13,6 +12,37 @@ require "dependabot/utils"
 module Dependabot
   module MetadataFinders
     class Base
+      class GitLabRelease
+        extend T::Sig
+
+        sig { returns(String) }
+        attr_reader :name
+
+        sig { returns(String) }
+        attr_reader :tag_name
+
+        sig { returns(String) }
+        attr_reader :body
+
+        sig { returns(String) }
+        attr_reader :html_url
+
+        sig do
+          params(
+            name: String,
+            tag_name: String,
+            body: String,
+            html_url: String
+          ).void
+        end
+        def initialize(name:, tag_name:, body:, html_url:)
+          @name = name
+          @tag_name = tag_name
+          @body = body
+          @html_url = html_url
+        end
+      end
+
       class ReleaseFinder
         extend T::Sig
 
@@ -281,7 +311,7 @@ module Dependabot
              .reverse
 
           releases.map do |tag|
-            OpenStruct.new(
+            GitLabRelease.new(
               name: tag.name,
               tag_name: tag.release.tag_name,
               body: tag.release.description,

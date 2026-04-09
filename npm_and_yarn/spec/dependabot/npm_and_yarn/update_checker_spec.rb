@@ -69,7 +69,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
+      .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
   after do
@@ -1493,7 +1493,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         updated_dependencies = checker.send(:updated_dependencies_after_full_unlock)
         expect(updated_dependencies.count).to eq(2)
         expect(updated_dependencies.first.name).to eq("lodash")
-        expect(updated_dependencies.first.version).to eq("4.17.21")
+        # The version check uses >= because the native npm helper (vulnerability-auditor.js)
+        # resolves versions from the live npm registry, which cannot be mocked from Ruby.
+        # This ensures the test passes as long as a non-vulnerable version is selected.
+        expect(Gem::Version.new(updated_dependencies.first.version))
+          .to be >= Gem::Version.new("4.17.21")
         expect(updated_dependencies.last.name).to eq("applause")
         expect(updated_dependencies.last.version).to eq("2.0.4")
       end
@@ -1842,7 +1846,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               ),
               Dependabot::Dependency.new(
                 name: "@msgpack/msgpack",
-                version: "3.1.2",
+                version: "3.1.3",
                 package_manager: "npm_and_yarn",
                 previous_version: "3.0.0",
                 requirements: [],
@@ -1850,6 +1854,96 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               )
             ]
           )
+      end
+    end
+
+    context "when fix_updates include a no-op update where target_version equals current_version" do
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
+      let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@dependabot-fixtures/npm-transitive-dependency",
+          version: dependency_version,
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.0.1"]
+          )
+        ]
+      end
+
+      before do
+        allow(checker).to receive(:vulnerability_audit).and_return(vulnerability_audit_result)
+      end
+
+      context "when a fix_update has the same target and current version" do
+        let(:vulnerability_audit_result) do
+          {
+            "fix_available" => true,
+            "target_version" => "1.0.1",
+            "fix_updates" => [
+              {
+                "dependency_name" => "@dependabot-fixtures/npm-parent-dependency",
+                "current_version" => "2.0.0",
+                "target_version" => "2.0.0",
+                "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
+              }
+            ],
+            "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
+          }
+        end
+
+        it "skips the no-op fix_update and updates the target dependency directly" do
+          result = checker.send(:updated_dependencies_after_full_unlock)
+          expect(result.map(&:name)).to eq(["@dependabot-fixtures/npm-transitive-dependency"])
+          expect(result.first.version).to eq("1.0.1")
+          expect(result.first.metadata).to eq({})
+        end
+      end
+
+      context "when there are both no-op and real fix_updates" do
+        let(:vulnerability_audit_result) do
+          {
+            "fix_available" => true,
+            "target_version" => "1.0.1",
+            "fix_updates" => [
+              {
+                "dependency_name" => "@dependabot-fixtures/npm-parent-dependency",
+                "current_version" => "2.0.0",
+                "target_version" => "2.0.0",
+                "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
+              },
+              {
+                "dependency_name" => "@dependabot-fixtures/npm-parent-dependency",
+                "current_version" => "2.0.0",
+                "target_version" => "2.0.2",
+                "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
+              }
+            ],
+            "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
+          }
+        end
+
+        it "skips the no-op and includes the real update with information_only target" do
+          result = checker.send(:updated_dependencies_after_full_unlock)
+          dep_names = result.map(&:name)
+          expect(dep_names).to include("@dependabot-fixtures/npm-transitive-dependency")
+          expect(dep_names).to include("@dependabot-fixtures/npm-parent-dependency")
+
+          target_dep = result.find { |d| d.name == "@dependabot-fixtures/npm-transitive-dependency" }
+          parent_dep = result.find { |d| d.name == "@dependabot-fixtures/npm-parent-dependency" }
+
+          expect(target_dep.metadata).to eq({ information_only: true })
+          expect(parent_dep.version).to eq("2.0.2")
+          expect(parent_dep.previous_version).to eq("2.0.0")
+        end
       end
     end
   end

@@ -106,17 +106,30 @@ module Dependabot
       local_repo_git_metadata_fetcher.head_commit_for_ref_sha(T.must(ref))
     end
 
-    sig { returns(Excon::Response) }
-    def ref_details_for_pinned_ref
+    sig { returns(T::Array[GitRef]) }
+    def tags
+      GitMetadataFetcher.new(
+        url: dependency.source_details&.fetch(:url, nil),
+        credentials: credentials
+      ).tags
+    end
+
+    sig { params(ref: String).returns(Excon::Response) }
+    def ref_details(ref)
       T.must(
         T.let(
           GitMetadataFetcher.new(
             url: dependency.source_details&.fetch(:url, nil),
             credentials: credentials
-          ).ref_details_for_pinned_ref(ref_pinned),
+          ).ref_details_for_pinned_ref(ref),
           T.nilable(Excon::Response)
         )
       )
+    end
+
+    sig { returns(Excon::Response) }
+    def ref_details_for_pinned_ref
+      ref_details(ref_pinned)
     end
 
     sig { params(ref: String).returns(T::Boolean) }
@@ -246,11 +259,15 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T.nilable(String)) }
     def most_specific_version_tag_for_sha(commit_sha)
-      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                       .sort_by { |t| version_class.new(t.name) }
+      tags = local_tags_matching_sha(commit_sha)
       return if tags.empty?
 
       tags[-1]&.name
+    end
+
+    sig { params(commit_sha: T.nilable(String)).returns(T::Array[String]) }
+    def most_specific_version_tags_for_sha(commit_sha)
+      local_tags_matching_sha(commit_sha).map(&:name)
     end
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
@@ -258,6 +275,11 @@ module Dependabot
       max_version_tag = tags.max_by { |t| version_from_tag(t) }
 
       to_local_tag(max_version_tag)
+    end
+
+    sig { returns(T::Array[Dependabot::GitRef]) }
+    def all_version_tags
+      allowed_versions(local_tags, filter_by_prefix: false)
     end
 
     private
@@ -318,11 +340,16 @@ module Dependabot
       version.split(".").length
     end
 
-    sig { params(local_tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
-    def allowed_versions(local_tags)
+    sig do
+      params(
+        local_tags: T::Array[Dependabot::GitRef],
+        filter_by_prefix: T::Boolean
+      ).returns(T::Array[Dependabot::GitRef])
+    end
+    def allowed_versions(local_tags, filter_by_prefix: true)
       tags =
         local_tags
-        .select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+        .select { |t| version_tag?(t.name) && (filter_by_prefix ? matches_existing_prefix?(t.name) : true) }
       filtered = tags
                  .reject { |t| tag_included_in_ignore_requirements?(t) }
       if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
@@ -331,6 +358,12 @@ module Dependabot
 
       filtered
         .reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+    end
+
+    sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
+    def local_tags_matching_sha(commit_sha)
+      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+                .sort_by { |t| version_class.new(t.name) }
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
@@ -492,8 +525,30 @@ module Dependabot
 
     sig { params(tag: String, other_tag: String).returns(T::Boolean) }
     def same_prefix?(tag, other_tag)
-      tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
-        other_tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
+      tag_prefix = tag.gsub(VERSION_REGEX, "")
+      other_tag_prefix = other_tag.gsub(VERSION_REGEX, "")
+
+      return true if tag_prefix == other_tag_prefix
+
+      if semver_like?(tag) && semver_like?(other_tag)
+        normalize_v_prefix(tag_prefix) == normalize_v_prefix(other_tag_prefix)
+      else
+        false
+      end
+    end
+
+    # Returns true if the tag's version has 3+ segments (standard semver like "1.2.3")
+    sig { params(tag: String).returns(T::Boolean) }
+    def semver_like?(tag)
+      version = scan_version(tag)
+      version.split(".").length >= 3
+    rescue StandardError
+      false
+    end
+
+    sig { params(prefix: String).returns(String) }
+    def normalize_v_prefix(prefix)
+      prefix.length > 1 ? prefix.gsub(/v$/i, "") : prefix.gsub(/^v$/i, "")
     end
 
     sig { params(tag: T.nilable(Dependabot::GitRef)).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
@@ -596,7 +651,47 @@ module Dependabot
 
     sig { params(tag: Dependabot::GitRef).returns(T::Boolean) }
     def tag_is_prerelease?(tag)
-      version_from_tag(tag).prerelease?
+      return true if version_from_tag(tag).prerelease?
+
+      # Check if the tag is marked as a pre-release on GitHub
+      github_release_prerelease?(tag.name)
+    end
+
+    sig { params(tag_name: String).returns(T::Boolean) }
+    def github_release_prerelease?(tag_name)
+      return false unless listing_source_url
+
+      source = Source.from_url(listing_source_url)
+      return false unless source&.provider == "github"
+
+      release = github_releases.find { |r| r.tag_name == tag_name }
+      return false unless release
+
+      release.prerelease
+    rescue StandardError => e
+      Dependabot.logger.debug("Error checking GitHub release prerelease status: #{e.message}")
+      false
+    end
+
+    sig { returns(T::Array[T.untyped]) }
+    def github_releases
+      @github_releases ||= T.let(
+        begin
+          return [] unless listing_source_url
+
+          source = Source.from_url(listing_source_url)
+          return [] unless source&.provider == "github"
+
+          client = Dependabot::Clients::GithubWithRetries.for_source(
+            source: T.must(source),
+            credentials: credentials
+          )
+          T.unsafe(client).releases(T.must(source).repo, per_page: 100)
+        rescue Octokit::Error
+          []
+        end,
+        T.nilable(T::Array[T.untyped])
+      )
     end
 
     sig { params(tag: Dependabot::GitRef).returns(Gem::Version) }

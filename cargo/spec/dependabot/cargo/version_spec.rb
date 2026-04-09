@@ -132,7 +132,7 @@ RSpec.describe Dependabot::Cargo::Version do
         let(:version_string) { "0.0.3" }
 
         it "treats patch changes as major (breaking)" do
-          expect(ignored_patch_versions).to eq([">= 1.a"])
+          expect(ignored_patch_versions).to eq([">= 0.0.4.a"])
         end
       end
     end
@@ -152,7 +152,67 @@ RSpec.describe Dependabot::Cargo::Version do
         let(:version_string) { "0.2.3" }
 
         it "treats minor changes as major (breaking)" do
-          expect(ignored_minor_versions).to eq([">= 1.a"])
+          expect(ignored_minor_versions).to eq([">= 0.3.a"])
+        end
+      end
+    end
+
+    describe "#ignored_major_versions" do
+      subject(:ignored_major_versions) { version.ignored_major_versions }
+
+      context "with a standard 1.y.z version" do
+        let(:version_string) { "1.2.3" }
+
+        it "uses standard semantic versioning" do
+          expect(ignored_major_versions).to eq([">= 2.a"])
+        end
+      end
+
+      context "with a 0.y.z version (y > 0)" do
+        let(:version_string) { "0.15.5" }
+
+        it "treats minor changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.16.a"])
+        end
+      end
+
+      context "with another 0.y.z version" do
+        let(:version_string) { "0.2.3" }
+
+        it "treats minor changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.3.a"])
+        end
+      end
+
+      context "with a 0.0.z version" do
+        let(:version_string) { "0.0.3" }
+
+        it "treats patch changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.0.4.a"])
+        end
+      end
+
+      context "with a 0.0.1 version" do
+        let(:version_string) { "0.0.1" }
+
+        it "treats patch changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.0.2.a"])
+        end
+      end
+
+      context "with a 0.0 version (missing patch)" do
+        let(:version_string) { "0.0" }
+
+        it "handles missing patch version gracefully" do
+          expect(ignored_major_versions).to eq([">= 0.0.1.a"])
+        end
+      end
+
+      context "with a 0.y version (missing patch)" do
+        let(:version_string) { "0.5" }
+
+        it "treats minor changes as major (breaking)" do
+          expect(ignored_major_versions).to eq([">= 0.6.a"])
         end
       end
     end
@@ -281,6 +341,58 @@ RSpec.describe Dependabot::Cargo::Version do
             expect(described_class.update_type("0.1.0", "0.2")).to eq("major")
             expect(described_class.update_type("0.1", "0.1.1")).to eq("patch")
           end
+        end
+      end
+    end
+
+    describe "integration with ignore conditions" do
+      # These tests verify that the ignored_major_versions method works correctly
+      # when used by Dependabot::Config::IgnoreCondition, which is how @dependabot
+      # ignore commands are implemented. The IgnoreCondition class calls these
+      # methods to determine which versions to filter out based on user ignore rules.
+
+      context "when ignoring major versions for 0.y.z packages" do
+        let(:version_string) { "0.15.5" }
+
+        it "correctly ignores breaking minor version bumps" do
+          # In Cargo semver, 0.15.5 -> 0.16.0 is a major/breaking change
+          ignored = version.ignored_major_versions
+          req = Gem::Requirement.new(ignored.first)
+
+          expect(req.satisfied_by?(described_class.new("0.15.6"))).to be(false) # patch is allowed
+          expect(req.satisfied_by?(described_class.new("0.16.0"))).to be(true)  # minor bump is ignored
+          expect(req.satisfied_by?(described_class.new("0.17.0"))).to be(true)  # minor bump is ignored
+          expect(req.satisfied_by?(described_class.new("1.0.0"))).to be(true)   # major bump is ignored
+        end
+      end
+
+      context "when ignoring major versions for 0.0.z packages" do
+        let(:version_string) { "0.0.3" }
+
+        it "correctly ignores breaking patch version bumps" do
+          # In Cargo semver, 0.0.3 -> 0.0.4 is a major/breaking change
+          ignored = version.ignored_major_versions
+          req = Gem::Requirement.new(ignored.first)
+
+          expect(req.satisfied_by?(described_class.new("0.0.4"))).to be(true)  # patch bump is ignored
+          expect(req.satisfied_by?(described_class.new("0.0.5"))).to be(true)  # patch bump is ignored
+          expect(req.satisfied_by?(described_class.new("0.1.0"))).to be(true)  # minor bump is ignored
+          expect(req.satisfied_by?(described_class.new("1.0.0"))).to be(true)  # major bump is ignored
+        end
+      end
+
+      context "when ignoring major versions for standard >= 1.0 packages" do
+        let(:version_string) { "2.3.4" }
+
+        it "correctly ignores major version bumps only" do
+          # Standard semver: only actual major version bumps are ignored
+          ignored = version.ignored_major_versions
+          req = Gem::Requirement.new(ignored.first)
+
+          expect(req.satisfied_by?(described_class.new("2.3.5"))).to be(false) # patch is allowed
+          expect(req.satisfied_by?(described_class.new("2.4.0"))).to be(false) # minor is allowed
+          expect(req.satisfied_by?(described_class.new("3.0.0"))).to be(true)  # major bump is ignored
+          expect(req.satisfied_by?(described_class.new("4.0.0"))).to be(true)  # major bump is ignored
         end
       end
     end

@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
@@ -11,14 +12,14 @@ RUN apt-get update \
     curl \
   && mkdir -p /etc/apt/keyrings \
   && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-  && NODE_MAJOR=18 \
+  && NODE_MAJOR=22 \
   && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 
 RUN apt-get update -y \
-  && apt-get install -y nodejs \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN npm install -g @devcontainers/cli
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm install -g @devcontainers/cli \
+  && rm -rf ~/.npm
 
 USER dependabot
 
@@ -33,6 +34,5 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 # Sanity check
 RUN devcontainer --version
 
-COPY --chown=dependabot:dependabot devcontainers $DEPENDABOT_HOME/devcontainers
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents devcontainers common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

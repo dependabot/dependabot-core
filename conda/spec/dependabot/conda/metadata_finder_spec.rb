@@ -10,15 +10,19 @@ RSpec.describe Dependabot::Conda::MetadataFinder do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: "1.0.0",
-      requirements: [{
-        file: "environment.yml",
-        requirement: "=1.0.0",
-        groups: [],
-        source: nil
-      }],
+      requirements: dependency_requirements,
       package_manager: "conda"
     )
   end
+  let(:dependency_requirements) do
+    [{
+      file: "environment.yml",
+      requirement: "=1.0.0",
+      groups: dependency_groups,
+      source: nil
+    }]
+  end
+  let(:dependency_groups) { ["dependencies"] } # Default to conda dependency
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -34,41 +38,9 @@ RSpec.describe Dependabot::Conda::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
-    context "when dependency is a Python package" do
-      let(:dependency_name) { "numpy" }
-
-      before do
-        python_metadata_finder = instance_double(Dependabot::Python::MetadataFinder)
-        allow(Dependabot::Python::MetadataFinder).to receive(:new).and_return(python_metadata_finder)
-        allow(python_metadata_finder).to receive_messages(
-          look_up_source: Dependabot::Source.new(provider: "github", repo: "numpy/numpy"),
-          homepage_url: "https://numpy.org"
-        )
-      end
-
-      it "delegates to Python metadata finder and returns source URL" do
-        expect(metadata_finder.source_url).to eq("https://github.com/numpy/numpy")
-      end
-    end
-
-    context "when dependency is not a Python package" do
-      let(:dependency_name) { "git" }
-
-      it "returns nil for non-Python packages" do
-        expect(metadata_finder.source_url).to be_nil
-      end
-    end
-
-    context "when dependency is cmake (non-Python package)" do
-      let(:dependency_name) { "cmake" }
-
-      it "returns nil for cmake" do
-        expect(metadata_finder.source_url).to be_nil
-      end
-    end
-
-    context "when dependency is requests (Python package)" do
+    context "when dependency is from pip section" do
       let(:dependency_name) { "requests" }
+      let(:dependency_groups) { ["pip"] }
 
       before do
         python_metadata_finder = instance_double(Dependabot::Python::MetadataFinder)
@@ -83,42 +55,69 @@ RSpec.describe Dependabot::Conda::MetadataFinder do
         expect(metadata_finder.source_url).to eq("https://github.com/psf/requests")
       end
     end
+
+    context "when dependency is from conda section" do
+      let(:dependency_name) { "numpy" }
+      let(:dependency_groups) { ["dependencies"] }
+
+      it "returns nil for conda packages (no GitHub link in Conda API)" do
+        expect(metadata_finder.source_url).to be_nil
+      end
+    end
+
+    context "when dependency is cmake (conda package)" do
+      let(:dependency_name) { "cmake" }
+      let(:dependency_groups) { ["dependencies"] }
+
+      it "returns nil for cmake" do
+        expect(metadata_finder.source_url).to be_nil
+      end
+    end
   end
 
   describe "#homepage_url" do
-    context "when dependency is a Python package" do
-      let(:dependency_name) { "numpy" }
+    context "when dependency is from pip section" do
+      let(:dependency_name) { "requests" }
+      let(:dependency_groups) { ["pip"] }
 
       before do
         python_metadata_finder = instance_double(Dependabot::Python::MetadataFinder)
         allow(Dependabot::Python::MetadataFinder).to receive(:new).and_return(python_metadata_finder)
-        allow(python_metadata_finder).to receive(:homepage_url).and_return("https://numpy.org")
+        allow(python_metadata_finder).to receive(:homepage_url).and_return("https://requests.readthedocs.io")
       end
 
       it "delegates to Python metadata finder and returns homepage URL" do
-        expect(metadata_finder.homepage_url).to eq("https://numpy.org")
+        expect(metadata_finder.homepage_url).to eq("https://requests.readthedocs.io")
       end
     end
 
-    context "when dependency is not a Python package" do
-      let(:dependency_name) { "git" }
+    context "when dependency is from conda section" do
+      let(:dependency_name) { "numpy" }
+      let(:dependency_groups) { ["dependencies"] }
 
-      it "returns source_url from base class for non-Python packages" do
+      it "returns nil for conda packages (no homepage in Conda API)" do
         expect(metadata_finder.homepage_url).to be_nil
       end
     end
   end
 
-  describe "#python_package?" do
-    let(:dependency_name) { "numpy" }
+  describe "#pip_dependency?" do
+    context "when dependency has pip in groups" do
+      let(:dependency_name) { "requests" }
+      let(:dependency_groups) { ["pip"] }
 
-    it "delegates to PythonPackageClassifier" do
-      allow(Dependabot::Conda::PythonPackageClassifier)
-        .to receive(:python_package?)
-        .with("numpy")
-        .and_return(true)
+      it "returns true" do
+        expect(metadata_finder.send(:pip_dependency?)).to be(true)
+      end
+    end
 
-      expect(metadata_finder.send(:python_package?, "numpy")).to be(true)
+    context "when dependency has dependencies in groups" do
+      let(:dependency_name) { "numpy" }
+      let(:dependency_groups) { ["dependencies"] }
+
+      it "returns false" do
+        expect(metadata_finder.send(:pip_dependency?)).to be(false)
+      end
     end
   end
 end

@@ -7,10 +7,14 @@ on:  # yamllint disable-line rule:truthy
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+permissions: {}
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core'
     strategy:
       fail-fast: false
       matrix:
@@ -36,8 +40,10 @@ jobs:
           - { path: hex, name: hex, ecosystem: mix }
           - { path: julia, name: julia, ecosystem: julia }
           - { path: maven, name: maven, ecosystem: maven }
+          - { path: nix, name: nix, ecosystem: nix }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pre_commit, name: pre_commit, ecosystem: pre-commit }
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: python, name: python, ecosystem: pip }
@@ -50,7 +56,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           persist-credentials: false
@@ -82,9 +88,11 @@ jobs:
       DOCKER_BUILDKIT: 1
     name: Updater
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           persist-credentials: false
@@ -99,13 +107,15 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
+      - uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
         with:
           bundler-cache: true
       - run: ./bin/lint
@@ -115,11 +125,13 @@ jobs:
   rakefile_tests:
     name: Rakefile Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
@@ -131,7 +143,7 @@ jobs:
 
       - name: Setup Ruby
         if: steps.changes.outputs.rakefile_tests == 'true'
-        uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
+        uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
         with:
           bundler-cache: true
 
@@ -143,9 +155,11 @@ jobs:
     env:
       DOCKER_BUILDKIT: 1
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           persist-credentials: false
@@ -154,21 +168,14 @@ jobs:
         run: script/build silent
 
       - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: 'silent/tests/go.mod'
 
-      - name: Download Dependabot CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
-          tar xzvf *.tar.gz >/dev/null 2>&1
-          ./dependabot --version
+      - name: Install Dependabot CLI
+        run: go install github.com/dependabot/cli/cmd/dependabot@latest
 
       - name: Run integration tests
-        env:
-          PATH: ${{ github.workspace }}:$PATH
         run: |
           cd silent/tests
           go test ./...

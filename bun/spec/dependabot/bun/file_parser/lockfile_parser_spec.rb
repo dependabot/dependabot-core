@@ -37,6 +37,29 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
         end
       end
 
+      context "when the configVersion is invalid" do
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "package.json",
+              content: '{"dependencies": {"etag": "^1.0.0"}}'
+            ),
+            Dependabot::DependencyFile.new(
+              name: "bun.lock",
+              content: '{"lockfileVersion": 0, "configVersion": "invalid", "workspaces": {}, "packages": {}}'
+            )
+          ]
+        end
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { dependencies }
+            .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("bun.lock")
+              expect(error.message).to include("configVersion")
+            end
+        end
+      end
+
       context "when dealing with v0 format" do
         context "with a simple project" do
           let(:dependency_files) { project_dependency_files("bun/simple_v0") }
@@ -88,6 +111,24 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
             version: "1.8.1"
           )
           expect(dependencies.length).to eq(17)
+        end
+      end
+
+      context "when the lockfile has configVersion" do
+        context "with configVersion: 0" do
+          let(:dependency_files) { project_dependency_files("bun/simple_v0_with_config_version") }
+
+          it "parses dependencies properly" do
+            expect(dependencies.find { |d| d.name == "fetch-factory" }).to have_attributes(
+              name: "fetch-factory",
+              version: "0.0.1"
+            )
+            expect(dependencies.find { |d| d.name == "etag" }).to have_attributes(
+              name: "etag",
+              version: "1.8.1"
+            )
+            expect(dependencies.length).to eq(11)
+          end
         end
       end
     end

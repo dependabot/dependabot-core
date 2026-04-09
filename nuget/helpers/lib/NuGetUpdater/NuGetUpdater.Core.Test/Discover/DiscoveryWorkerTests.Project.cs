@@ -626,7 +626,7 @@ public partial class DiscoveryWorkerTests
                     ("src/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows</TargetFrameworks>
+                            <TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-macos;net8.0-windows</TargetFrameworks>
                           </PropertyGroup>
                           <ItemGroup>
                             <PackageReference Include="Some.Package" Version="1.2.3" />
@@ -645,7 +645,7 @@ public partial class DiscoveryWorkerTests
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"], IsDirect: true),
                             ],
                             Properties = [
-                                new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows", @"src/project.csproj"),
+                                new("TargetFrameworks", "net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-macos;net8.0-windows", @"src/project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"],
                             ReferencedProjectPaths = [],
@@ -737,7 +737,7 @@ public partial class DiscoveryWorkerTests
 
             // The SDK package handling is detected in a very specific circumstance; an assembly being removed from the
             // `@(References)` item group in the `_HandlePackageFileConflicts` target.  Since we don't want to involve
-            // the real SDK, we fake some required targets.
+            // the real SDK, we fake some required targets in the same shape as the real SDK.
             await TestDiscoveryAsync(
                 packages: [],
                 workspacePath: "",
@@ -764,6 +764,14 @@ public partial class DiscoveryWorkerTests
                             <Reference Include="@(RuntimeCopyLocalItems)" />
                           </ItemGroup>
 
+                          <Target Name="ResolveProjectReferences">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="Restore">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
                           <Target Name="_HandlePackageFileConflicts">
                             <!-- this target needs to exist for discovery to work -->
                             <ItemGroup>
@@ -775,20 +783,24 @@ public partial class DiscoveryWorkerTests
                             </ItemGroup>
                           </Target>
 
-                          <Target Name="ResolveAssemblyReferences" DependsOnTargets="_HandlePackageFileConflicts">
+                          <Target Name="ResolvePackageAssets">
                             <!-- this target needs to exist for discovery to work -->
                           </Target>
 
-                          <Target Name="GenerateBuildDependencyFile">
+                          <Target Name="ResolveFrameworkReferences" DependsOnTargets="ResolvePackageAssets">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="ResolveRuntimePackAssets" DependsOnTargets="ResolveFrameworkReferences">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="GenerateBuildDependencyFile" DependsOnTargets="_HandlePackageFileConflicts;ResolveRuntimePackAssets">
                             <!-- this target needs to exist for discovery to work -->
                             <ItemGroup>
                               <!-- this removal is what removes the regular package reference from the project -->
                               <RuntimeCopyLocalItems Remove="TestOnlyAssembly.dll" />
                             </ItemGroup>
-                          </Target>
-
-                          <Target Name="ResolvePackageAssets">
-                            <!-- this target needs to exist for discovery to work -->
                           </Target>
                         </Project>
                         """)
@@ -859,6 +871,70 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = ["net48"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
+        public async Task LegacyProjectWithCentralPackageManagementReportsDependencies()
+        {
+            // This is a feature of the VS project system - a legacy project with <PackageReference> elements AND central package management.
+            await TestDiscoveryAsync(
+                packages: [
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net48", [(null, [("Some.Transitive.Dependency", "2.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "2.0.0", "net48"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                            <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("project.csproj", """
+                        <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <OutputType>Library</OutputType>
+                            <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Dependency" />
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
+                                new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTransitive: true),
+                            ],
+                            Properties = [],
+                            TargetFrameworks = ["net48"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Build.targets",
+                                "Directory.Packages.props"
+                            ],
                             AdditionalFiles = [],
                         }
                     ]

@@ -16,6 +16,14 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
+      # Lifecycle scripts that run automatically during package installation.
+      # These are security-relevant because they execute with user privileges.
+      # https://docs.npmjs.com/cli/v11/using-npm/scripts#npm-install
+      INSTALL_SCRIPTS = T.let(
+        %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze,
+        T::Array[String]
+      )
+
       sig { override.returns(T.nilable(String)) }
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
@@ -37,7 +45,78 @@ module Dependabot
           "releaser for #{dependency.name} since your current version."
       end
 
+      sig { override.returns(T.nilable(String)) }
+      def attestation_changes
+        return unless dependency.previous_version
+        return if non_standard_registry?
+
+        previous_attested = version_has_attestation?(dependency.previous_version)
+        current_attested = version_has_attestation?(dependency.version)
+
+        return unless previous_attested && !current_attested
+
+        "This version has no provenance attestation, while the previous version " \
+          "(#{dependency.previous_version}) was attested. Review the " \
+          "[package versions](https://www.npmjs.com/package/#{dependency.name}?activeTab=versions) " \
+          "before updating."
+      end
+
+      sig { override.returns(T.nilable(String)) }
+      def install_script_changes
+        return unless dependency.previous_version
+
+        previous_scripts = install_scripts_for_version(dependency.previous_version)
+        current_scripts = install_scripts_for_version(dependency.version)
+
+        return if previous_scripts == current_scripts
+
+        added = current_scripts.keys - previous_scripts.keys
+        modified = (current_scripts.keys & previous_scripts.keys).reject do |script|
+          current_scripts[script] == previous_scripts[script]
+        end
+
+        changes = []
+        changes << format_script_list("adds", added) if added.any?
+        changes << format_script_list("modifies", modified) if modified.any?
+
+        return if changes.empty?
+
+        total_scripts = added.size + modified.size
+        verb = total_scripts == 1 ? "runs" : "run"
+
+        "This version #{changes.join(' and ')} that #{verb} during installation. " \
+          "Review the package contents before updating."
+      end
+
       private
+
+      sig { params(action: String, scripts: T::Array[String]).returns(String) }
+      def format_script_list(action, scripts)
+        script_names = scripts.map { |s| "`#{s}`" }.join(", ")
+        noun = scripts.size == 1 ? "script" : "scripts"
+        "#{action} #{script_names} #{noun}"
+      end
+
+      sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
+      def install_scripts_for_version(version)
+        return {} unless version
+
+        version_data = all_version_listings.find { |v, _| v == version }&.last
+        return {} unless version_data
+
+        scripts = version_data["scripts"] || {}
+        scripts.slice(*INSTALL_SCRIPTS)
+      end
+
+      sig { params(version: T.nilable(String)).returns(T::Boolean) }
+      def version_has_attestation?(version)
+        return false unless version
+
+        version_data = all_version_listings.find { |v, _| v == version }&.last
+        return false unless version_data
+
+        version_data.dig("dist", "attestations").is_a?(Hash)
+      end
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source

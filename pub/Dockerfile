@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 # Install Dart
@@ -6,7 +7,7 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
 # https://dart.dev/get-dart/archive
-ARG DART_VERSION=3.5.0
+ARG DART_VERSION=3.10.0
 
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
@@ -27,6 +28,5 @@ USER dependabot
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 RUN bash /opt/pub/helpers/build
 
-COPY --chown=dependabot:dependabot pub $DEPENDABOT_HOME/pub
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents pub common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

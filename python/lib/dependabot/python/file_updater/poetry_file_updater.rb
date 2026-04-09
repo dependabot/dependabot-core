@@ -49,7 +49,6 @@ module Dependabot
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @updated_pyproject_content = T.let(nil, T.nilable(String))
-          @python_helper_path = T.let(nil, T.nilable(String))
           @poetry_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
@@ -115,6 +114,9 @@ module Dependabot
           ).returns(String)
         end
         def replace_dep(dep, content, new_r, old_r)
+          # Handle Git dependencies with tags
+          return update_git_tag(dep, content, new_r, old_r) if git_dependency?(new_r) && git_dependency?(old_r)
+
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
 
@@ -149,6 +151,38 @@ module Dependabot
           content
         end
 
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        def git_dependency?(req)
+          req.dig(:source, :type) == "git"
+        end
+
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            content: String,
+            new_r: T::Hash[Symbol, T.untyped],
+            old_r: T::Hash[Symbol, T.untyped]
+          ).returns(String)
+        end
+        def update_git_tag(dep, content, new_r, old_r)
+          old_tag = old_r.dig(:source, :ref)
+          new_tag = new_r.dig(:source, :ref)
+
+          return content if old_tag == new_tag
+
+          # Match git dependency declaration with tag
+          # Example: fastapi = { git = "...", extras = ["all"], tag = "0.110.0" }
+          git_dep_regex = /
+            ^(\s*)#{Regexp.escape(dep.name)}(\s*=\s*\{[^}]*tag\s*=\s*)
+            ["']#{Regexp.escape(old_tag)}["']([^}]*\})
+          /mx
+
+          content.gsub(git_dep_regex) do
+            match_data = T.must(Regexp.last_match)
+            "#{match_data[1]}#{dep.name}#{match_data[2]}\"#{new_tag}\"#{match_data[3]}"
+          end
+        end
+
         sig { returns(String) }
         def updated_lockfile_content
           @updated_lockfile_content ||=
@@ -157,8 +191,10 @@ module Dependabot
 
               original_locked_python = TomlRB.parse(T.must(lockfile).content)["metadata"]["python-versions"]
 
-              new_lockfile.gsub!(/\[metadata\]\n.*python-versions[^\n]+\n/m) do |match|
-                match.gsub(/(["']).*(['"])\n\Z/, '\1' + original_locked_python + '\1' + "\n")
+              new_lockfile.gsub!(/\[metadata\](?:\r?\n).*python-versions[^\r\n]+(?:\r?\n)/m) do |match|
+                # Detect the line ending style from the match (CRLF or LF)
+                line_ending = match.include?("\r\n") ? "\r\n" : "\n"
+                match.gsub(/(["']).*\1(?:\r?\n)\Z/, '\1' + original_locked_python + '\1' + line_ending)
               end
 
               tmp_hash =
@@ -197,6 +233,9 @@ module Dependabot
 
           if poetry_object
             dependencies.each do |dep|
+              # Skip Git dependencies - they use tags/refs, not versions
+              next if git_dependency_being_updated?(dep)
+
               if dep.requirements.find { |r| r[:file] == pyproject&.name }
                 lock_declaration_to_new_version!(poetry_object, dep)
               else
@@ -236,6 +275,11 @@ module Dependabot
 
           poetry_object[subdep_type] ||= {}
           poetry_object[subdep_type][dep.name] = dep.version
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+        def git_dependency_being_updated?(dep)
+          dep.requirements.any? { |r| r.dig(:source, :type) == "git" }
         end
 
         sig { params(pyproject_content: String).returns(String) }
@@ -318,7 +362,7 @@ module Dependabot
               write_temporary_dependency_files(pyproject_content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "pyenv exec python3 #{python_helper_path}",
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
                 function: "get_pyproject_hash",
                 args: [T.cast(dir, Pathname).to_s]
               )
@@ -331,17 +375,26 @@ module Dependabot
           group = old_req[:groups].first
 
           header_regex = "#{group}(?:\\.dependencies)?\\]\s*(?:\s*#.*?)*?"
-          /#{header_regex}\n.*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\n]*)$/mi
+          /#{header_regex}(?:\r?\n).*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\r\n]*)(?=\r?\n|$)/mi
         end
 
         sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
         def table_declaration_regex(dep, old_req)
-          /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+          /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\](?:\r?\n).*?\s*version\s* =.*?(?:\r?\n)/m
         end
 
         sig { params(dep: Dependabot::Dependency, old_req: String).returns(Regexp) }
         def pep621_declaration_regex(dep, old_req)
-          /(?<declaration>["']#{escape(dep)}#{Regexp.escape(old_req)}["'])/mi
+          /(?<declaration>["']#{escape(dep)}#{extras_pattern(dep)}#{Regexp.escape(old_req)}["'])/mi
+        end
+
+        # Reconstructs extras from metadata for PEP 621 regex matching.
+        sig { params(dep: Dependabot::Dependency).returns(String) }
+        def extras_pattern(dep)
+          extras_str = dep.metadata[:extras]
+          return "" unless extras_str.is_a?(String) && !extras_str.empty?
+
+          "\\[" + extras_str.split(",").map { |e| Regexp.escape(e.strip) }.join(",\\s*") + "\\]"
         end
 
         sig { params(dep: Dependency).returns(String) }
@@ -399,11 +452,6 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           @lockfile ||= poetry_lock
-        end
-
-        sig { returns(String) }
-        def python_helper_path
-          NativeHelpers.python_helper_path
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

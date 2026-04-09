@@ -6,6 +6,7 @@ defmodule DependencyHelper do
     |> case do
       {output, 0} ->
         output = try_decode(output)
+
         if output =~ "No authenticated organization found" do
           {:error, output}
         else
@@ -121,14 +122,21 @@ defmodule DependencyHelper do
 
   defp fetch_public_key(repo, repo_url, auth_key, fingerprint) do
     case Hex.Repo.get_public_key(%{trusted: true, url: repo_url, auth_key: auth_key}) do
-      {:ok, {200, key, _}} ->
-        if public_key_matches?(key, fingerprint) do
-          {:ok, key}
-        else
-          {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
+      {:ok, {200, _headers, key}} ->
+        try do
+          if public_key_matches?(key, fingerprint) do
+            {:ok, key}
+          else
+            {:error, "Public key fingerprint mismatch for repo \"#{repo}\""}
+          end
+        rescue
+          e in FunctionClauseError ->
+            {:error,
+             "Failed to decode public key for repo \"#{repo}\": " <>
+               "#{Exception.message(e)} (#{inspect(e.__struct__)})"}
         end
 
-      {:ok, {code, _, _}} ->
+      {:ok, {code, _headers, _body}} ->
         {:error, "Downloading public key for repo \"#{repo}\" failed with code: #{inspect(code)}"}
 
       other ->

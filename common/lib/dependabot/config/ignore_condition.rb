@@ -27,8 +27,8 @@ module Dependabot
       sig do
         params(
           dependency_name: String,
-          versions: T.any(NilClass, T::Array[String]),
-          update_types: T.any(NilClass, T::Array[String])
+          versions: T.nilable(T::Array[String]),
+          update_types: T.nilable(T::Array[String])
         ).void
       end
       def initialize(dependency_name:, versions: nil, update_types: nil)

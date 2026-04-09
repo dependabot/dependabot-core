@@ -101,16 +101,12 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
-        end
-
         @package_manager ||= T.let(detected_package_manager, T.nilable(Dependabot::Ecosystem::VersionManager))
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+        setup_python_environment
 
         return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
@@ -225,11 +221,6 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
-        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
-          Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
-          Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
-        end
-
         language_version_manager.python_version
       end
 
@@ -302,10 +293,11 @@ module Dependabot
 
           dependencies <<
             Dependency.new(
-              name: normalised_name(name, dep["extras"]),
+              name: NameNormaliser.normalise(name),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "pip"
+              package_manager: "pip",
+              metadata: extras_metadata(dep["extras"])
             )
         end
         dependencies
@@ -474,6 +466,13 @@ module Dependabot
       sig { params(name: String, extras: T::Array[String]).returns(String) }
       def normalised_name(name, extras = [])
         NameNormaliser.normalise_including_extras(name, extras)
+      end
+
+      sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+      def extras_metadata(extras)
+        return {} if extras.empty?
+
+        { extras: extras.join(",") }
       end
 
       sig { override.returns(T.untyped) }

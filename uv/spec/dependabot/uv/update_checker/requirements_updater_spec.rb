@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
         context "when a compatibility requirement was specified" do
           let(:setup_py_req_string) { "~=1.3.0" }
 
-          its([:requirement]) { is_expected.to eq(">=1.3,<1.6") }
+          its([:requirement]) { is_expected.to eq("~=1.5.0") }
 
           context "when the requirement supports the new version" do
             let(:setup_py_req_string) { "~=1.3" }
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
             let(:setup_py_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
+            its([:requirement]) { is_expected.to eq("~=2.1") }
           end
         end
 
@@ -389,7 +389,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
         context "when a compatibility requirement was specified" do
           let(:setup_cfg_req_string) { "~=1.3.0" }
 
-          its([:requirement]) { is_expected.to eq(">=1.3,<1.6") }
+          its([:requirement]) { is_expected.to eq("~=1.5.0") }
 
           context "when the requirement supports the new version" do
             let(:setup_cfg_req_string) { "~=1.3" }
@@ -401,7 +401,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
             let(:setup_cfg_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
+            its([:requirement]) { is_expected.to eq("~=2.1") }
           end
         end
 

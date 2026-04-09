@@ -60,7 +60,9 @@ module Dependabot
       def hex_listing
         return @hex_listing unless @hex_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "https://hex.pm/api/packages/#{dependency.name}")
+        response = Dependabot::RegistryClient.get(
+          url: "https://hex.pm/api/packages/#{dependency.metadata[:hex_package] || dependency.name}"
+        )
         @hex_listing = T.let(JSON.parse(response.body), T.nilable(T::Hash[String, T.untyped]))
       end
     end

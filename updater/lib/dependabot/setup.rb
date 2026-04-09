@@ -19,7 +19,7 @@ end
 # rubocop:disable Metrics/BlockLength
 Sentry.init do |config|
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
-  config.logger = Dependabot.logger
+  config.sdk_logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(
@@ -45,8 +45,10 @@ Sentry.init do |config|
     hex|
     julia|
     maven|
+    nix|
     npm_and_yarn|
     nuget|
+    pre_commit|
     pub|
     python|
     rust_toolchain|
@@ -87,8 +89,10 @@ require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
 require "dependabot/maven"
+require "dependabot/nix"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"

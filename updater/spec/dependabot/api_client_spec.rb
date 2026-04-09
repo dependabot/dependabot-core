@@ -83,7 +83,6 @@ RSpec.describe Dependabot::ApiClient do
 
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
       stub_request(:post, create_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -246,6 +245,27 @@ RSpec.describe Dependabot::ApiClient do
         end.to raise_error(Dependabot::DependencyFileNotSupported)
       end
     end
+
+    context "when base URL includes a path" do
+      subject(:client) { described_class.new("http://example.com/api/v1", 1, "token") }
+
+      let(:create_pull_request_url) do
+        "http://example.com/api/v1/update_jobs/1/create_pull_request"
+      end
+
+      before do
+        stub_request(:post, create_pull_request_url)
+          .to_return(status: 204, headers: headers)
+      end
+
+      it "combines base path with request path" do
+        client.create_pull_request(dependency_change, base_commit)
+
+        expect(WebMock)
+          .to have_requested(:post, create_pull_request_url)
+          .with(headers: { "Authorization" => "token" })
+      end
+    end
   end
 
   describe "update_pull_request" do
@@ -265,7 +285,8 @@ RSpec.describe Dependabot::ApiClient do
         source: source,
         credentials: [],
         commit_message_options: [],
-        updating_a_pull_request?: true
+        updating_a_pull_request?: true,
+        ignore_conditions: []
       )
     end
     let(:dependency) do
@@ -296,12 +317,21 @@ RSpec.describe Dependabot::ApiClient do
         )
       ]
     end
+    let(:message) do
+      Dependabot::PullRequestCreator::Message.new(
+        pr_name: "PR name",
+        pr_message: "PR message",
+        commit_message: "Commit message"
+      )
+    end
     let(:update_pull_request_url) do
       "http://example.com/update_jobs/1/update_pull_request"
     end
     let(:base_commit) { "sha" }
 
     before do
+      allow(Dependabot::PullRequestCreator::MessageBuilder)
+        .to receive_message_chain(:new, :message).and_return(message)
       stub_request(:post, update_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -314,9 +344,7 @@ RSpec.describe Dependabot::ApiClient do
         .with(headers: { "Authorization" => "token" })
     end
 
-    it "does not encode the pull request fields" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
-
+    it "encodes the pull request fields" do
       client.update_pull_request(dependency_change, base_commit)
 
       expect(WebMock)
@@ -348,9 +376,8 @@ RSpec.describe Dependabot::ApiClient do
               )
               expect(data["base-commit-sha"]).to eql("sha")
               expect(data).not_to have_key("commit-message")
-              expect(data).not_to have_key("pr-title")
-              expect(data).not_to have_key("pr-body")
-              expect(data).not_to have_key("grouped-update")
+              expect(data["pr-title"]).to eq("PR name")
+              expect(data["pr-body"]).to eq("PR message")
             end)
     end
   end
@@ -630,10 +657,6 @@ RSpec.describe Dependabot::ApiClient do
   end
 
   describe "record_ecosystem_meta" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
-    end
-
     let(:ecosystem) do
       Dependabot::Ecosystem.new(
         name: "bundler",
@@ -661,6 +684,11 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
     let(:record_ecosystem_meta_url) { "http://example.com/update_jobs/1/record_ecosystem_meta" }
+
+    before do
+      stub_request(:post, record_ecosystem_meta_url)
+        .to_return(status: 204, headers: headers)
+    end
 
     it "hits the correct endpoint" do
       client.record_ecosystem_meta(ecosystem)
@@ -702,17 +730,6 @@ RSpec.describe Dependabot::ApiClient do
     context "when ecosystem is nil" do
       it "does not send a request" do
         client.record_ecosystem_meta(nil)
-        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
-      end
-    end
-
-    context "when feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(false)
-      end
-
-      it "does not send a request" do
-        client.record_ecosystem_meta(ecosystem)
         expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
       end
     end

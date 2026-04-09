@@ -19,10 +19,6 @@ module Dependabot
       NPM_SCOPE_KEY_FOR_YARN = "npmScopes"
       NPM_REGISTER_KEY_FOR_YARN = "npmRegistryServer"
 
-      # Environment variable keys
-      COREPACK_NPM_REGISTRY_ENV = "COREPACK_NPM_REGISTRY"
-      COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
-
       sig do
         params(
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
@@ -32,17 +28,6 @@ module Dependabot
       def initialize(registry_config_files, credentials)
         @registry_config_files = T.let(registry_config_files, T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
         @credentials = T.let(credentials, T.nilable(T::Array[Dependabot::Credential]))
-      end
-
-      sig { returns(T::Hash[String, String]) }
-      def find_corepack_env_variables
-        registry_info = find_registry_and_token
-
-        env_variables = {}
-        env_variables[COREPACK_NPM_REGISTRY_ENV] = registry_info[:registry] if registry_info[:registry]
-        env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
-
-        env_variables
       end
 
       private

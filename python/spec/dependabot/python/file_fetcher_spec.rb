@@ -6,7 +6,25 @@ require "dependabot/python/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Python::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
+  describe "the class inheritance" do
+    it "inherits from Python::SharedFileFetcher which inherits from FileFetchers::Base" do
+      expect(described_class.superclass).to eq(Dependabot::Python::SharedFileFetcher)
+      expect(described_class.ancestors).to include(Dependabot::FileFetchers::Base)
+    end
+
+    it "implements required_files_in?" do
+      expect(described_class.public_methods(false)).to include(:required_files_in?)
+    end
+
+    it "implements required_files_message" do
+      expect(described_class.public_methods(false)).to include(:required_files_message)
+    end
+
+    it "doesn't define any additional public instance methods" do
+      expect(described_class.public_instance_methods)
+        .to match_array(Dependabot::FileFetchers::Base.public_instance_methods)
+    end
+  end
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
@@ -818,6 +836,59 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with a constraint (-c) reference in a .in file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_requirements_with_in_file.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements.in?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_in_with_constraint.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      context "when fetchable" do
+        before do
+          stub_request(:get, url + "constraints.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "python_constraints_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the constraints file referenced from the .in file" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to include("constraints.txt")
+        end
+      end
+
+      context "when an unfetchable path is present" do
+        before do
+          stub_request(:get, url + "constraints.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
+
+        it "raises a DependencyFileNotFound error with details" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+    end
+
     context "with a path-based dependency that it's not fetchable" do
       let(:directory) { "/requirements" }
 
@@ -892,6 +963,33 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
 
       it "does not raise an error when the sdist/wheel file is missing" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
+      end
+    end
+
+    context "with a path-based .whl dependency with environment markers" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_whl_env_marker.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "lib/aiortc-1.4.0-py3-none-any.whl?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + "lib?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "strips environment markers and does not raise an error" do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
       end

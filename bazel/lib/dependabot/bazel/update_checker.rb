@@ -4,6 +4,7 @@
 require "time"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/bazel/version"
 require "dependabot/package/package_release"
 
@@ -137,7 +138,7 @@ module Dependabot
 
           next false unless details&.released_at
 
-          if cooldown_period?(T.must(details.released_at))
+          if cooldown_period?(T.must(details.released_at), version)
             Dependabot.logger.info("Skipping version #{version} due to cooldown period")
             true
           else
@@ -181,19 +182,22 @@ module Dependabot
         )
       end
 
-      sig { params(release_date: Time).returns(T::Boolean) }
-      def cooldown_period?(release_date)
+      sig { params(release_date: Time, version_string: String).returns(T::Boolean) }
+      def cooldown_period?(release_date, version_string)
         cooldown = update_cooldown
         return false unless cooldown
 
-        cooldown_days = cooldown.default_days
-        (Time.now.to_i - release_date.to_i) < (cooldown_days * 24 * 60 * 60)
+        current_version = dependency.version ? version_class.new(dependency.version) : nil
+        new_version = version_class.new(version_string)
+        days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(cooldown, current_version, new_version)
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(release_date, days)
       end
 
       sig { returns(T::Boolean) }
       def should_skip_cooldown?
-        cooldown = update_cooldown
-        cooldown.nil? || !cooldown_enabled? || !cooldown.included?(dependency.name)
+        Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+          update_cooldown, dependency.name, cooldown_enabled: cooldown_enabled?
+        )
       end
 
       sig { returns(T::Boolean) }
@@ -201,11 +205,9 @@ module Dependabot
         true
       end
 
-      sig { params(version: String).returns(T::Array[Integer]) }
+      sig { params(version: String).returns(Dependabot::Bazel::Version) }
       def version_sort_key(version)
-        cleaned = version.gsub(/^v/, "")
-        parts = cleaned.split(".")
-        parts.map { |part| part.match?(/^\d+$/) ? part.to_i : 0 }
+        T.cast(version_class.new(version), Dependabot::Bazel::Version)
       end
     end
   end

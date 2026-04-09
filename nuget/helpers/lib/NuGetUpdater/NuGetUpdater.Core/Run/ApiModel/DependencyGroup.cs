@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using System.IO.Enumeration;
 using System.Text.Json;
 
+using NuGet.Versioning;
+
 namespace NuGetUpdater.Core.Run.ApiModel;
 
 public record DependencyGroup
@@ -13,15 +15,24 @@ public record DependencyGroup
     //   "patterns" => string[] where each element is a wildcard name pattern
     //   "exclude-patterns"=> string[] where each element is a wildcard name pattern
     //   "dependency-type" => production|development // not used for nuget?
+    //   "update-types" => string[] where each element is one of major|minor|patch
     public Dictionary<string, object> Rules { get; init; } = new();
 
     public GroupMatcher GetGroupMatcher() => GroupMatcher.FromRules(Rules);
+}
+
+public enum GroupUpdateType
+{
+    Major,
+    Minor,
+    Patch,
 }
 
 public class GroupMatcher
 {
     public ImmutableArray<string> Patterns { get; init; } = ImmutableArray<string>.Empty;
     public ImmutableArray<string> ExcludePatterns { get; init; } = ImmutableArray<string>.Empty;
+    public ImmutableArray<GroupUpdateType> UpdateTypes { get; init; } = ImmutableArray<GroupUpdateType>.Empty;
 
     public bool IsMatch(string dependencyName)
     {
@@ -31,15 +42,51 @@ public class GroupMatcher
         return isMatch;
     }
 
+    public bool IsAllowedByVersion(NuGetVersion oldVersion, NuGetVersion newVersion)
+    {
+        var isMajorBump = newVersion.Major > oldVersion.Major;
+        var isMinorBump = newVersion.Major == oldVersion.Major && newVersion.Minor > oldVersion.Minor;
+        var isPatchBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor && newVersion.Patch > oldVersion.Patch;
+
+        var allowedUpdateTypes = new HashSet<GroupUpdateType>(UpdateTypes);
+
+        if (isMajorBump && allowedUpdateTypes.Contains(GroupUpdateType.Major))
+        {
+            return true;
+        }
+
+        if (isMinorBump && allowedUpdateTypes.Contains(GroupUpdateType.Minor))
+        {
+            return true;
+        }
+
+        if (isPatchBump && allowedUpdateTypes.Contains(GroupUpdateType.Patch))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public static GroupMatcher FromRules(Dictionary<string, object> rules)
     {
         var patterns = GetStringArray(rules, "patterns", ["*"]); // default to matching everything unless explicitly excluded
         var excludePatterns = GetStringArray(rules, "exclude-patterns", []);
+        var updateTypes = GetStringArray(rules, "update-types", ["major", "minor", "patch"]) // default to everything unless explicitly specified
+            .Select(s => s.ToLowerInvariant() switch
+            {
+                "major" => GroupUpdateType.Major,
+                "minor" => GroupUpdateType.Minor,
+                "patch" => GroupUpdateType.Patch,
+                _ => throw new InvalidOperationException($"Unknown update type: {s}"),
+            })
+            .ToImmutableArray();
 
         return new GroupMatcher()
         {
             Patterns = patterns,
             ExcludePatterns = excludePatterns,
+            UpdateTypes = updateTypes,
         };
     }
 

@@ -253,10 +253,14 @@ module Dependabot
               next unless req.start_with?("dev-")
               next if req.include?("#")
 
-              commit_sha = parsed_lockfile
-                           .fetch(T.must(keys[:lockfile]), [])
-                           .find { |d| d["name"] == name }
-                           &.dig("source", "reference")
+              package = parsed_lockfile
+                        .fetch(T.must(keys[:lockfile]), [])
+                        .find { |d| d["name"] == name }
+
+              commit_sha = package&.dig("source", "reference") || package&.dig("dist", "reference")
+
+              next unless commit_sha
+
               updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
@@ -278,11 +282,11 @@ module Dependabot
             else
               version_for_requirement =
                 dependency.requirements.filter_map { |r| r[:requirement] }
-                          .reject { |req_string| req_string.start_with?("<") }
-                          .select { |req_string| req_string.match?(VERSION_REGEX) }
-                          .map { |req_string| req_string.match(VERSION_REGEX) }
-                          .select { |version| requirement_valid?(">= #{version}") }
-                          .max_by { |version| Composer::Version.new(version.to_s) }
+                                       .reject { |req_string| req_string.start_with?("<") }
+                                       .select { |req_string| req_string.match?(VERSION_REGEX) }
+                                       .map { |req_string| req_string.match(VERSION_REGEX) }
+                                       .select { |version| requirement_valid?(">= #{version}") }
+                                       .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end

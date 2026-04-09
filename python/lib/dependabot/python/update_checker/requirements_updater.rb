@@ -309,15 +309,19 @@ module Dependabot
           count = old_version.split(".").count
           precision = old_version.split(".").index("*") || count
 
-          new_version
-            .split(".")
+          new_segments = new_version.split(".")
+
+          # Pad with zeros if new version has fewer segments than old version
+          new_segments += ["0"] * (count - new_segments.length) if new_segments.length < count
+
+          new_segments
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
-            .join(".")
+                .join(".")
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }
-        def update_requirements_range(requirement_strings) # rubocop:disable Metrics/AbcSize
+        def update_requirements_range(requirement_strings)
           ruby_requirements =
             requirement_strings.map { |r| requirement_class.new(r) }
 
@@ -337,8 +341,7 @@ module Dependabot
           end.compact
 
           updated_requirement_strings
-            .sort_by { |r| requirement_class.new(r).requirements.first.last }
-            .map(&:to_s).join(",").delete(" ")
+            .sort_by { |r| requirement_class.new(r).requirements.first.last }.join(",").delete(" ")
         end
 
         # Updates the version in a constraint to be the given version
@@ -385,7 +388,7 @@ module Dependabot
           version = version.release if version.prerelease?
 
           lb_segments = version.segments
-          lb_segments.pop while lb_segments.last.zero?
+          lb_segments.pop while lb_segments.last&.zero?
 
           lb_segments
         end
@@ -396,7 +399,7 @@ module Dependabot
           version = req.requirements.first.last.release
 
           if req_string.strip.start_with?("^")
-            version.segments.index { |i| i != 0 }
+            version.segments.index { |i| i != 0 } || (version.segments.count - 1)
           elsif req_string.include?("*")
             version.segments.count - 1
           elsif req_string.strip.start_with?("~=", "==")

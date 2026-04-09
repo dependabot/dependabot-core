@@ -55,33 +55,56 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def fetch_updated_dependency_files
-          reqs = dependency.requirements.zip(dependency.previous_requirements || [])
+          updated_contents = T.let({}, T::Hash[String, String])
 
-          reqs.filter_map do |(new_req, old_req)|
+          unique_requirement_changes.each do |pair|
+            new_req = T.must(pair[0])
+            old_req = pair[1]
+            filename = new_req.fetch(:file)
+            content = updated_contents[filename] || T.must(T.must(get_original_file(filename)).content)
+            updated_contents[filename] = updated_requirement_or_setup_file_content(content, new_req, old_req)
+          end
+
+          updated_contents.filter_map do |filename, content|
+            file = T.must(get_original_file(filename)).dup
+            next if content == T.must(file.content)
+
+            file.content = content
+            file
+          end
+        end
+
+        # Deduplicates requirements that share the same file and requirement strings.
+        # The replacer's regex matches all extras variants at once, so one call per
+        # unique (file, old_requirement, new_requirement) is sufficient.
+        sig { returns(T::Array[T::Array[T.nilable(T::Hash[Symbol, T.untyped])]]) }
+        def unique_requirement_changes
+          previous_reqs = dependency.previous_requirements || []
+
+          changes = dependency.requirements.filter_map do |new_req|
+            old_req = previous_reqs.find { |r| r[:file] == new_req[:file] && r[:groups] == new_req[:groups] }
             next if new_req == old_req
 
-            file = T.must(get_original_file(new_req.fetch(:file))).dup
-            updated_content =
-              updated_requirement_or_setup_file_content(new_req, old_req)
-            next if updated_content == file.content
+            [new_req, old_req]
+          end
 
-            file.content = updated_content
-            file
+          changes.uniq do |pair|
+            new_req = pair[0]
+            old_req = pair[1]
+            [new_req[:file], old_req&.fetch(:requirement), new_req.fetch(:requirement)]
           end
         end
 
         sig do
           params(
+            content: String,
             new_req: T::Hash[Symbol, T.untyped],
             old_req: T.nilable(T::Hash[Symbol, T.untyped])
           ).returns(String)
         end
-        def updated_requirement_or_setup_file_content(new_req, old_req)
-          original_file = get_original_file(new_req.fetch(:file))
-          raise "Could not find a dependency file for #{new_req}" unless original_file
-
+        def updated_requirement_or_setup_file_content(content, new_req, old_req)
           RequirementReplacer.new(
-            content: T.must(original_file.content),
+            content: content,
             dependency_name: dependency.name,
             old_requirement: old_req&.fetch(:requirement),
             new_requirement: new_req.fetch(:requirement),

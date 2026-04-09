@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "demo"
+dynamic = ["version"]
+description = "Demo lib with hatch regex version"
+readme = "README.md"
+dependencies = []
+
+[tool.hatch.version]
+path = "../../.release-manifest.json"
+pattern = '"demo":\s*"(?P<version>\d+\.\d+\.\d+(\.\w+)?)"'

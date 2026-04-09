@@ -20,8 +20,12 @@ module Dependabot
       NPM_REGISTER_KEY_FOR_YARN = "npmRegistryServer"
 
       # Environment variable keys
-      COREPACK_NPM_REGISTRY_ENV = "COREPACK_NPM_REGISTRY"
+      COREPACK_NPM_REGISTRY_ENV = "COREPACK_NPM_REGISTRY" # For Corepack
+      NPM_CONFIG_REGISTRY_ENV = "npm_config_registry" # For npm
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
+
+      # Default npm registry - no need to set env vars for this
+      DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
       sig do
         params(
@@ -39,7 +43,19 @@ module Dependabot
         registry_info = find_registry_and_token
 
         env_variables = {}
-        env_variables[COREPACK_NPM_REGISTRY_ENV] = registry_info[:registry] if registry_info[:registry]
+
+        if registry_info[:registry] # Prevent the https from being stripped in the process
+          registry = registry_info[:registry]
+          registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
+
+          # Set both in the env_variables hash
+          unless registry == DEFAULT_NPM_REGISTRY
+            env_variables[COREPACK_NPM_REGISTRY_ENV] = registry # For Corepack
+            env_variables[NPM_CONFIG_REGISTRY_ENV] = registry # For npm
+            env_variables[REGISTRY_KEY] = registry
+          end
+        end
+
         env_variables[COREPACK_NPM_TOKEN_ENV] = registry_info[:auth_token] if registry_info[:auth_token]
 
         env_variables
@@ -81,7 +97,15 @@ module Dependabot
 
         @credentials.each do |cred|
           next unless cred["type"] == "npm_registry" # Skip if not an npm registry
-          next unless cred["replaces-base"] # Skip if not a reverse-proxy registry
+
+          # Handle both Credential objects and plain hashes
+          replaces_base = if cred.respond_to?(:replaces_base?)
+                            cred.replaces_base?
+                          else
+                            cred["replaces-base"]
+                          end
+
+          next unless replaces_base # Skip if not a reverse-proxy registry
 
           # Set the registry if it's not already set
           registries[:registry] ||= cred["registry"]
@@ -89,10 +113,9 @@ module Dependabot
           # Set the token if it's not already set
           registries[:auth_token] ||= cred["token"]
         end
+
         registries
       end
-
-      # Find registry and token in .npmrc or .yarnrc file
       sig do
         params(
           file: T.nilable(Dependabot::DependencyFile),

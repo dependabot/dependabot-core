@@ -86,15 +86,10 @@ module Dependabot
               evaluated_value(node.at_xpath("./*/artifactId").content.strip)
             ].compact.join(":")
 
-            if node.at_xpath("./*/classifier")
-              classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
-              dep_classifier = dependency.requirements.first&.dig(:metadata, :classifier)
-              next false if classifier != dep_classifier
-            end
-
+            next false unless classifier_matches?(node)
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
-            next false unless scope_matches?(node)
+            next false unless declaring_requirement.fetch(:groups) == ["plugin"] || scope_matches?(node)
 
             declaring_requirement_matches?(node)
           end
@@ -141,8 +136,18 @@ module Dependabot
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
+        def classifier_matches?(node)
+          return true unless node.at_xpath("./*/classifier")
+
+          classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
+          dep_classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          classifier == dep_classifier
+        end
+
+        sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def scope_matches?(node)
           dependency_type = declaring_requirement.fetch(:groups)
+
           node_type = dependency_scope(node) == "test" ? ["test"] : []
 
           dependency_type == node_type

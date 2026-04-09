@@ -10,7 +10,7 @@ module Dependabot
 
       sig { returns(String) }
       def self.helper_path
-        "node #{File.join(native_helpers_root, 'run.js')}"
+        "node #{File.join(native_helpers_root, 'dist', 'run.js')}"
       end
 
       sig { returns(String) }
@@ -25,16 +25,12 @@ module Dependabot
       def self.run_npm8_subdependency_update_command(dependency_names)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
-        # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
-        #   work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
         #   when installing git dependencies
         command = [
           "update",
           *dependency_names,
           "--force",
-          "--dry-run",
-          "false",
           "--ignore-scripts",
           "--package-lock-only"
         ].join(" ")
@@ -43,8 +39,6 @@ module Dependabot
           "update",
           "<dependency_names>",
           "--force",
-          "--dry-run",
-          "false",
           "--ignore-scripts",
           "--package-lock-only"
         ].join(" ")

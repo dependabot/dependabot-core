@@ -9,7 +9,6 @@ require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/npm_and_yarn/npm_package_manager"
 require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
-require "dependabot/npm_and_yarn/bun_package_manager"
 require "dependabot/npm_and_yarn/language"
 require "dependabot/npm_and_yarn/constraint_helper"
 
@@ -60,8 +59,7 @@ module Dependabot
       T.any(
         T.class_of(Dependabot::NpmAndYarn::NpmPackageManager),
         T.class_of(Dependabot::NpmAndYarn::YarnPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::BunPackageManager)
+        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager)
       )
     end
 
@@ -69,8 +67,7 @@ module Dependabot
       {
         NpmPackageManager::NAME => NpmPackageManager,
         YarnPackageManager::NAME => YarnPackageManager,
-        PNPMPackageManager::NAME => PNPMPackageManager,
-        BunPackageManager::NAME => BunPackageManager
+        PNPMPackageManager::NAME => PNPMPackageManager
       }.freeze,
       T::Hash[String, NpmAndYarnPackageManagerClassType]
     )
@@ -192,8 +189,6 @@ module Dependabot
         @language_requirement ||= find_engine_constraints_as_requirement(Language::NAME)
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/AbcSize
       sig { params(name: String).returns(T.nilable(Requirement)) }
       def find_engine_constraints_as_requirement(name)
         Dependabot.logger.info("Processing engine constraints for #{name}")
@@ -203,30 +198,12 @@ module Dependabot
         raw_constraint = @engines[name].to_s.strip
         return nil if raw_constraint.empty?
 
-        if Dependabot::Experiments.enabled?(:enable_engine_version_detection)
-          constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
-          # When constraints are invalid we return constraints array nil
-          if constraints.nil?
-            Dependabot.logger.warn(
-              "Unrecognized constraint format for #{name}: #{raw_constraint}"
-            )
-          end
-        else
-          raw_constraints = raw_constraint.split
-          constraints = raw_constraints.map do |constraint|
-            case constraint
-            when /^\d+$/
-              ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
-            when /^\d+\.\d+$/
-              ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
-            when /^\d+\.\d+\.\d+$/
-              "=#{constraint}"
-            else
-              Dependabot.logger.warn("Unrecognized constraint format for #{name}: #{constraint}")
-              constraint
-            end
-          end
-
+        constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
+        # When constraints are invalid we return constraints array nil
+        if constraints.nil?
+          Dependabot.logger.warn(
+            "Unrecognized constraint format for #{name}: #{raw_constraint}"
+          )
         end
 
         if constraints && !constraints.empty?
@@ -237,8 +214,6 @@ module Dependabot
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
       end
-      # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize
@@ -482,8 +457,6 @@ module Dependabot
           NpmPackageManager::SUPPORTED_VERSIONS
         when "yarn"
           YarnPackageManager::SUPPORTED_VERSIONS
-        when "bun"
-          BunPackageManager::SUPPORTED_VERSIONS
         when "pnpm"
           PNPMPackageManager::SUPPORTED_VERSIONS
         end

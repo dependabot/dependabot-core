@@ -1,0 +1,18 @@
+{
+  "name": "pyproject.toml",
+  "path": "packages/my-package/pyproject.toml",
+  "sha": "jkl012",
+  "size": 50,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/packages/my-package/pyproject.toml?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/packages/my-package/pyproject.toml",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/jkl012",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/packages/my-package/pyproject.toml",
+  "type": "file",
+  "encoding": "base64",
+  "content": "W3Byb2plY3RdCm5hbWUgPSAibXktcGFja2FnZSIKdmVyc2lvbiA9ICIwLjEu\nMCIKZGVzY3JpcHRpb24gPSAiQSB3b3Jrc3BhY2UgbWVtYmVyIHBhY2thZ2Ui\nCnJlcXVpcmVzLXB5dGhvbiA9ICI+PTMuOSIKCltidWlsZC1zeXN0ZW1dCnJl\ncXVpcmVzID0gWyJzZXR1cHRvb2xzPj00MiIsICJ3aGVlbCJdCmJ1aWxkLWJh\nY2tlbmQgPSAic2V0dXB0b29scy5idWlsZF9tZXRhIgo=\n",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/packages/my-package/pyproject.toml?ref=sha",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/jkl012",
+    "html": "https://github.com/gocardless/bump/blob/sha/packages/my-package/pyproject.toml"
+  }
+}

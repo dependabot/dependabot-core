@@ -163,19 +163,18 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
-          env_cmd,
-          stdin_data: stdin_data,
-          timeout: timeout
-        )
-      else
-        stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
-      end
+      raw_stdout, raw_stderr, process = CommandHelpers.capture3_with_timeout(
+        env_cmd,
+        stdin_data: stdin_data,
+        timeout: timeout
+      )
+      stdout = T.let(raw_stdout || "", String)
+      stderr = T.let(raw_stderr || "", String)
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
-        puts env_cmd
+        sanitized_env_cmd = [sanitize_env_for_logging(env), cmd].compact
+        puts sanitized_env_cmd
         puts function
         puts stdout
         puts stderr
@@ -479,22 +478,16 @@ module Dependabot
       opts[:chdir] = cwd if cwd
 
       env_cmd = [env || {}, cmd, opts].compact
-      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-        kwargs = {
-          stderr_to_stdout: stderr_to_stdout,
-          timeout: timeout
-        }
-        kwargs[:output_observer] = output_observer if output_observer
+      kwargs = {
+        stderr_to_stdout: stderr_to_stdout,
+        timeout: timeout
+      }
+      kwargs[:output_observer] = output_observer if output_observer
 
-        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
-          env_cmd,
-          **kwargs
-        )
-      elsif stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd, opts)
-      else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
-      end
+      stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+        env_cmd,
+        **kwargs
+      )
 
       time_taken = Time.now - start
 
@@ -542,5 +535,19 @@ module Dependabot
       "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
     end
     private_class_method :helper_subprocess_bash_command
+
+    sig { params(env: T.nilable(T::Hash[String, String])).returns(T.nilable(T::Hash[String, String])) }
+    def self.sanitize_env_for_logging(env)
+      return nil if env.nil?
+
+      env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
+        # Only redact if the key contains "TOKEN" (case-insensitive)
+        result[key] = if key.match?(/TOKEN/i)
+                        "<redacted>"
+                      else
+                        value
+                      end
+      end
+    end
   end
 end

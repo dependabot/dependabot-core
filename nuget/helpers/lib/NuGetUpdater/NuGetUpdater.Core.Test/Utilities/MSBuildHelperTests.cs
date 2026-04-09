@@ -414,6 +414,19 @@ public class MSBuildHelperTests : TestBase
                 // normalize default message for the test
                 actualError = new DependencyFileNotFound(notFound.Details["file-path"].ToString()!, "test message");
             }
+            if (actualError is DependencyFileNotParseable notParseable)
+            {
+                // normalize the path for the test
+                actualError = new DependencyFileNotParseable("/" + notParseable.Details["file-path"].ToString()!.TrimStart('.', '/'), notParseable.Details["message"]?.ToString());
+            }
+            if (actualError is UnknownError unknownError)
+            {
+                // remove callstack from unknown error to make testing easier
+                var originalMessage = unknownError.Exception.Message;
+                var newlineIndex = originalMessage.IndexOf('\n');
+                var trimmedMessage = newlineIndex >= 0 ? originalMessage[..newlineIndex] : originalMessage;
+                actualError = new UnknownError(new Exception(trimmedMessage.Trim()), "TEST-JOB-ID");
+            }
 
             var actualErrorJson = JsonSerializer.Serialize(actualError, RunWorker.SerializerOptions);
             var expectedErrorJson = JsonSerializer.Serialize(expectedError, RunWorker.SerializerOptions);
@@ -608,6 +621,30 @@ public class MSBuildHelperTests : TestBase
             """,
             // expectedError
             new DependencyFileNotParseable("/path/to/NuGet.Config", "Some error message."),
+        ];
+
+        yield return
+        [
+            // output
+            """
+            Output:
+            Using Msbuild from '/usr/local/dotnet/current/sdk/9.0.311'.
+            Found multiple project files for '/home/dependabot/dependabot-updater/repo/path/to/packages.config'.
+            """,
+            // expectedError
+            new UnknownError(new Exception("Multiple project files found for single packages.config"), "TEST-JOB-ID"),
+        ];
+
+        yield return
+        [
+            // output
+            """
+            Error parsing packages.config file at /path/to/packages.config: Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it. Line 1, position 5.
+
+            ^^^ this blank line is necessary to force a newline at the end of the output
+            """,
+            // expectedError
+            new DependencyFileNotParseable("/path/to/packages.config", "Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it. Line 1, position 5.")
         ];
     }
 }

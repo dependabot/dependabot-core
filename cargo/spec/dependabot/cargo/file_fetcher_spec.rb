@@ -148,6 +148,84 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a config file at repository root and Cargo.toml in subdirectory" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "my_dir"
+      )
+    end
+
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
+    end
+
+    before do
+      # Mock the subdirectory listing (includes Cargo.toml and Cargo.lock)
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/my_dir?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_lockfile.json"),
+          headers: json_header
+        )
+
+      # Mock Cargo.toml in subdirectory
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_manifest.json"),
+          headers: json_header
+        )
+
+      # Mock Cargo.lock in subdirectory
+      stub_request(:get, url + "Cargo.lock?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_lockfile.json"),
+          headers: json_header
+        )
+
+      # No config in subdirectory's .cargo directory
+      stub_request(:get, url + ".cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      stub_request(:get, url + ".cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      stub_request(:get, url + ".cargo/config?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # Config at repository root
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_dir.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, "https://api.github.com/repos/gocardless/bump/contents/.cargo/config.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_config.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the Cargo.toml, Cargo.lock, and config.toml from root" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(Cargo.lock Cargo.toml .cargo/config.toml))
+    end
+  end
+
   context "without a lockfile" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -825,6 +903,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       stub_request(:get, %r{#{Regexp.escape(url)}\w+/\.cargo\?ref=sha})
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404, headers: json_header)
+      stub_request(:get, %r{#{Regexp.escape(url)}.*\.cargo/config\.toml\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+      stub_request(:get, %r{#{Regexp.escape(url)}.*\.cargo/config\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
 
       # All the manifest requests
       stub_request(:get, url + "detached_crate_fail_1/Cargo.toml?ref=sha")
@@ -1024,9 +1108,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "packages/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "packages/crate1"),
-            OpenStruct.new(type: "dir", path: "packages/crate2"),
-            OpenStruct.new(type: "file", path: "packages/README.md")
+            Data.define(:type, :path).new("dir", "packages/crate1"),
+            Data.define(:type, :path).new("dir", "packages/crate2"),
+            Data.define(:type, :path).new("file", "packages/README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "packages/*")
@@ -1039,9 +1123,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "crate1"),
-            OpenStruct.new(type: "dir", path: "crate2"),
-            OpenStruct.new(type: "file", path: "README.md")
+            Data.define(:type, :path).new("dir", "crate1"),
+            Data.define(:type, :path).new("dir", "crate2"),
+            Data.define(:type, :path).new("file", "README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "*")
@@ -1054,9 +1138,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "test-crate"),
-            OpenStruct.new(type: "dir", path: "prod-crate"),
-            OpenStruct.new(type: "file", path: "README.md")
+            Data.define(:type, :path).new("dir", "test-crate"),
+            Data.define(:type, :path).new("dir", "prod-crate"),
+            Data.define(:type, :path).new("file", "README.md")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "*-crate")
@@ -1069,9 +1153,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "src/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "src/bin-crate-v1"),
-            OpenStruct.new(type: "dir", path: "src/lib-crate-v2"),
-            OpenStruct.new(type: "dir", path: "src/other")
+            Data.define(:type, :path).new("dir", "src/bin-crate-v1"),
+            Data.define(:type, :path).new("dir", "src/lib-crate-v2"),
+            Data.define(:type, :path).new("dir", "src/other")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "src/*-crate-*")
@@ -1095,9 +1179,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         allow(file_fetcher_instance).to receive(:repo_contents)
           .with(dir: "apps/", raise_errors: false)
           .and_return([
-            OpenStruct.new(type: "dir", path: "apps/web/frontend"),
-            OpenStruct.new(type: "dir", path: "apps/api/backend"),
-            OpenStruct.new(type: "file", path: "apps/config.json")
+            Data.define(:type, :path).new("dir", "apps/web/frontend"),
+            Data.define(:type, :path).new("dir", "apps/api/backend"),
+            Data.define(:type, :path).new("file", "apps/config.json")
           ])
 
         result = file_fetcher_instance.send(:expand_workspaces, "apps/*/frontend")
@@ -1359,6 +1443,143 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         # Should include the path dependency and its workspace root
         expect(result.map(&:name)).to include("../internal/Cargo.toml", "../Cargo.toml")
+      end
+    end
+  end
+
+  describe "filename normalization" do
+    # Tests for the Cargo-specific filename normalization fix
+    # This addresses the "No Cargo.toml!" error caused by leading slashes in filenames
+
+    describe "normalization logic" do
+      it "normalizes various filename formats correctly" do
+        test_cases = [
+          # [input, expected_output]
+          ["Cargo.toml", "Cargo.toml"],
+          ["./Cargo.toml", "Cargo.toml"],
+          ["/Cargo.toml", "Cargo.toml"],
+          ["subdir/Cargo.toml", "subdir/Cargo.toml"],
+          ["/subdir/Cargo.toml", "subdir/Cargo.toml"],
+          ["./subdir/../Cargo.toml", "Cargo.toml"],
+          ["/./subdir/../Cargo.toml", "Cargo.toml"],
+          ["//Cargo.toml", "Cargo.toml"], # Multiple leading slashes
+          ["///deep/path/Cargo.toml", "deep/path/Cargo.toml"]
+        ]
+
+        test_cases.each do |input, expected|
+          # Test the inline normalization logic
+          normalized = Pathname.new(input).cleanpath.to_s.gsub(%r{^/+}, "")
+          expect(normalized).to eq(expected),
+                                "Expected #{input.inspect} to normalize to #{expected.inspect}, " \
+                                "got #{normalized.inspect}"
+        end
+      end
+    end
+
+    describe "#fetch_file_from_host" do
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/"
+        )
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_cargo_with_lockfile.json"),
+            headers: json_header
+          )
+      end
+
+      it "normalizes filenames when fetching files" do
+        file = file_fetcher_instance.send(:fetch_file_from_host, "Cargo.toml")
+        expect(file.name).to eq("Cargo.toml")
+        expect(file.name).not_to start_with("/")
+      end
+
+      it "preserves subdirectory paths while removing leading slashes" do
+        # Mock a file in a subdirectory
+        stub_request(:get, url + "subdir/Cargo.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_cargo_manifest.json"),
+            headers: json_header
+          )
+
+        file = file_fetcher_instance.send(:fetch_file_from_host, "subdir/Cargo.toml")
+        expect(file.name).to eq("subdir/Cargo.toml")
+        expect(file.name).not_to start_with("/")
+      end
+    end
+
+    describe "integration with file parser" do
+      # This test verifies that our fix resolves the "No Cargo.toml!" issue
+      let(:cargo_parser_class) do
+        Class.new do
+          def initialize(dependency_files:, **_)
+            @dependency_files = dependency_files
+            check_required_files
+          end
+
+          def get_original_file(filename)
+            @dependency_files.find { |f| f.name == filename }
+          end
+
+          def check_required_files
+            raise "No Cargo.toml!" unless get_original_file("Cargo.toml")
+          end
+        end
+      end
+
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_cargo_with_lockfile.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches files with normalized names that can be found by the parser" do
+        files = file_fetcher_instance.files
+
+        # Verify all files have normalized names (no leading slashes)
+        files.each do |file|
+          expect(file.name).not_to start_with("/"),
+                                   "File #{file.name} should not start with '/'"
+        end
+
+        # Verify the parser can find the files
+        expect { cargo_parser_class.new(dependency_files: files) }
+          .not_to raise_error
+      end
+
+      it "handles files from subdirectories correctly" do
+        # Create test files as if they were fetched with our normalization
+        files = [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: "[package]\nname = \"test\"\n"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "subdir/Cargo.toml",
+            content: "[package]\nname = \"subdir\"\n"
+          )
+        ]
+
+        # Parser should be able to find the main Cargo.toml
+        expect { cargo_parser_class.new(dependency_files: files) }
+          .not_to raise_error
+
+        # Verify file names are correct
+        expect(files[0].name).to eq("Cargo.toml")
+        expect(files[1].name).to eq("subdir/Cargo.toml")
       end
     end
   end

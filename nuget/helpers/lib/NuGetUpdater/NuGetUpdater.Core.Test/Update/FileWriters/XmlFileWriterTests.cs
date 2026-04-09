@@ -261,6 +261,48 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task SingleDependency_CentralPackageManagement_RangeContainsNewVersion()
+    {
+        // in this scenario, a prior pass updated `[1.0.0]` to `[1.1.0]` for a direct dependency and now in a higher
+        // level project we need to ensure the version matches when pinning a transitive dependency
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ]
+        );
+    }
+
+    [Fact]
     public async Task SingleDependency_SingleFile_AttributeDirectUpdate_ExactMatchVersionRangeFromPropertyValue()
     {
         await TestAsync(
@@ -319,7 +361,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     <Project Sdk="Microsoft.NET.Sdk">
                       <ItemGroup>
                         <PackageReference Include="Ignored.Dependency" Version="7.0.0" />
-                        <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                        <PackageReference Include="Some.Dependency" Version="2.*" />
                         <PackageReference Include="Some.Other.Dependency" Version="8.0.0" />
                       </ItemGroup>
                     </Project>
@@ -1828,6 +1870,128 @@ public class XmlFileWriterTests : FileWriterTestsBase
                       <PropertyGroup>
                         <SomeDependencyVersion>2.0.0</SomeDependencyVersion>
                       </PropertyGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task MultipleEdits_AttributeSpansChange()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency" Version="9.0.0" />
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency" Version="9.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/9.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/10.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency" Version="10.0.0" />
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency" Version="10.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task MultipleEdits_ElementSpansChange()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>9.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>9.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/9.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/10.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup Condition="'$(Configuration)' == 'Release'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>10.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                      <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+                        <PackageReference Include="Some.Dependency">
+                          <Version>10.0.0</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task UpdatingAPinnedCentrallyManagedPackageUpdatesJustTheVersionNumberWhenDeclarationIsPresent()
+    {
+        await TestAsync(
+            useCentralPackageTransitivePinning: true,
+            files: [
+                ("src/project.csproj", """
+                    <?xml version="1.0"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <?xml version="1.0"?>
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("src/project.csproj", """
+                    <?xml version="1.0"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <?xml version="1.0"?>
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="2.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
                     </Project>
                     """)
             ]

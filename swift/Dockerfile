@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
@@ -26,7 +27,7 @@ USER dependabot
 
 # https://www.swift.org/download/
 # https://github.com/apple/swift-org-website/blob/main/_data/builds/swift_releases.yml
-ARG SWIFT_VERSION=6.1.2
+ARG SWIFT_VERSION=6.2.3
 ARG SWIFT_UBUNTU_VERSION=ubuntu24.04
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VERSION}-aarch64"; fi \
@@ -43,6 +44,5 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then SWIFT_UBUNTU_VERSION="${SWIFT_UBUNTU_VE
   && tar -C /opt/swift -xzf /tmp/${SWIFT_TARBALL} --strip-components 1 \
   && rm -f /tmp/${SWIFT_TARBALL} /tmp/${SWIFT_SIGNATURE}
 
-COPY --chown=dependabot:dependabot swift $DEPENDABOT_HOME/swift
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents swift common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

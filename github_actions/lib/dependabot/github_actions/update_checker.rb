@@ -21,7 +21,7 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release,
+          T.must(latest_version_finder).latest_release_version,
           T.nilable(T.any(String, Gem::Version))
         )
       end
@@ -162,19 +162,21 @@ module Dependabot
           pinned_ref = source&.fetch(:ref)
           return nil if cooled_down_version.is_a?(String) && cooled_down_version == pinned_ref
 
-          return latest_commit_sha if latest_commit_sha
+          if (new_commit_sha = latest_commit_sha(source_git_commit_checker))
+            return new_commit_sha
+          end
         end
 
         # Otherwise we can't update the ref
         nil
       end
 
-      sig { returns(T.nilable(String)) }
-      def latest_commit_sha
+      sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }
+      def latest_commit_sha(source_checker)
         new_tag = T.must(latest_version_finder).latest_version_tag
         return unless new_tag
 
-        if git_commit_checker.local_tag_for_pinned_sha
+        if source_checker.local_tag_for_pinned_sha
           new_tag.fetch(:commit_sha)
         else
           latest_commit_for_pinned_ref

@@ -8,6 +8,7 @@ require "support/dependency_file_helpers"
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
 require "dependabot/service"
+require "dependabot/fetched_files"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/group_update_all_versions"
 require "dependabot/updater/operations/create_group_update_pull_request"
@@ -264,12 +265,100 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive(:existing_group_pull_requests).and_return(
             [
-              { "dependency-group-name" => "dummy-group" }
+              { "dependency-group-name" => "dummy-group", "pr_number" => 123 }
             ]
           )
         end
 
         it "skips the group and marks it as handled" do
+          expect(mock_create_group_update).not_to receive(:perform)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+
+        it "logs the PR number when it exists" do
+          allow(Dependabot.logger).to receive(:info).and_call_original
+          expect(Dependabot.logger).to receive(:info).once
+                                                     .with("Detected existing pull request #123 for the dependency group 'dummy-group'.") # rubocop:disable Layout/LineLength
+          perform
+        end
+      end
+
+      context "when PR exists for same group but different directory" do
+        before do
+          allow(job).to receive_messages(
+            existing_group_pull_requests: [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  {
+                    "dependency-name" => "rollup",
+                    "dependency-version" => "2.79.2",
+                    "directory" => "/packages/corelib"
+                  }
+                ]
+              }
+            ],
+            source: mock_source
+          )
+          allow(mock_source).to receive(:directory).and_return("/")
+        end
+
+        it "creates a new PR for the different directory" do
+          allow(mock_create_group_update).to receive(:perform).and_return(mock_dependency_change)
+          expect(mock_create_group_update).to receive(:perform)
+          expect(dependency_snapshot).not_to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+      end
+
+      context "when PR exists for same group and same directory" do
+        before do
+          allow(job).to receive_messages(
+            existing_group_pull_requests: [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  {
+                    "dependency-name" => "rollup",
+                    "dependency-version" => "2.79.2",
+                    "directory" => "/"
+                  }
+                ]
+              }
+            ],
+            source: mock_source
+          )
+          allow(mock_source).to receive(:directory).and_return("/")
+        end
+
+        it "skips creating a new PR" do
+          expect(mock_create_group_update).not_to receive(:perform)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+      end
+
+      context "when existing PR has no directory info" do
+        before do
+          allow(job).to receive_messages(
+            existing_group_pull_requests: [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  { "dependency-name" => "rollup", "dependency-version" => "2.79.2" }
+                ]
+              }
+            ],
+            source: mock_source
+          )
+          allow(mock_source).to receive(:directory).and_return("/")
+        end
+
+        it "treats the existing PR as a match" do
           expect(mock_create_group_update).not_to receive(:perform)
           expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
           perform

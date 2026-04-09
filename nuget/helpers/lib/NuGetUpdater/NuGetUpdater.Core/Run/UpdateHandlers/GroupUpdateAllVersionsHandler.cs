@@ -1,5 +1,8 @@
 using System.Collections.Immutable;
 
+using NuGet.Versioning;
+
+using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
@@ -51,19 +54,12 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         foreach (var group in job.DependencyGroups)
         {
-            var existingGroupPr = job.ExistingGroupPullRequests.FirstOrDefault(pr => pr.DependencyGroupName == group.Name);
-            if (existingGroupPr is not null)
-            {
-                logger.Info($"Existing pull request found for group {group.Name}.  Skipping pull request creation.");
-                continue;
-            }
-
             logger.Info($"Starting update for group {group.Name}");
             var groupMatcher = group.GetGroupMatcher();
             var updateOperationsPerformed = new List<UpdateOperationBase>();
             var updatedDependencies = new List<ReportedDependency>();
             var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
-            foreach (var directory in job.GetAllDirectories())
+            foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
                 var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
                 logger.ReportDiscovery(discoveryResult);
@@ -98,7 +94,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
+                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [groupMatcher], allowCooldown: true);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
                     {
@@ -110,6 +106,13 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
+                        continue;
+                    }
+
+                    var isUpdateAllowed = groupMatcher.IsAllowedByVersion(NuGetVersion.Parse(dependency.Version!), NuGetVersion.Parse(analysisResult.UpdatedVersion));
+                    if (!isUpdateAllowed)
+                    {
+                        logger.Info($"Dependency {dependency.Name} skipped for group {group.Name} because update type was not allowed.");
                         continue;
                     }
 
@@ -146,19 +149,29 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
             if (updateOperationsPerformed.Count > 0)
             {
-                var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], group.Name);
-                var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], group.Name);
-                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-                await apiHandler.CreatePullRequest(new CreatePullRequest()
+                var existingPullRequest = job.GetExistingPullRequestForDependencies(
+                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
+                        considerVersions: true);
+                if (existingPullRequest is not null)
                 {
-                    Dependencies = [.. updatedDependencies],
-                    UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
-                    BaseCommitSha = baseCommitSha,
-                    CommitMessage = commitMessage,
-                    PrTitle = prTitle,
-                    PrBody = prBody,
-                    DependencyGroup = group.Name,
-                });
+                    logger.Info($"Pull request already exists for {string.Join(", ", existingPullRequest!.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}"))}");
+                }
+                else
+                {
+                    var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], group.Name);
+                    var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], group.Name);
+                    var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
+                    await apiHandler.CreatePullRequest(new CreatePullRequest()
+                    {
+                        Dependencies = [.. updatedDependencies],
+                        UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
+                        BaseCommitSha = baseCommitSha,
+                        CommitMessage = commitMessage,
+                        PrTitle = prTitle,
+                        PrBody = prBody,
+                        DependencyGroup = group.Name,
+                    });
+                }
             }
         }
     }
@@ -166,7 +179,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     private async Task RunUngroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
-        foreach (var directory in job.GetAllDirectories())
+        foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);
@@ -201,16 +214,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                         continue;
                     }
 
-                    var matchingGroups = job.DependencyGroups
-                        .Where(group => group.GetGroupMatcher().IsMatch(dependency.Name))
-                        .ToImmutableArray();
-                    if (matchingGroups.Length > 0)
-                    {
-                        logger.Info($"Dependency {dependency.Name} skipped for ungrouped updates because it's a member of the following groups: {string.Join(", ", matchingGroups.Select(group => group.Name))}");
-                        continue;
-                    }
-
-                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, allowCooldown: true);
+                    var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: true);
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     if (analysisResult.Error is not null)
                     {
@@ -222,6 +226,12 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     if (!analysisResult.CanUpdate)
                     {
                         logger.Info($"No updatable version found for {dependency.Name} in {projectPath}.");
+                        continue;
+                    }
+
+                    var isSkipped = IsUngroupedDependencySkipped(dependency, analysisResult, job.DependencyGroups, logger);
+                    if (isSkipped)
+                    {
                         continue;
                     }
 
@@ -254,19 +264,29 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 if (updateOperationsPerformed.Count > 0)
                 {
-                    var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
-                    var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
-                    var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-                    await apiHandler.CreatePullRequest(new CreatePullRequest()
+                    var existingPullRequest = job.GetExistingPullRequestForDependencies(
+                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
+                        considerVersions: true);
+                    if (existingPullRequest is not null)
                     {
-                        Dependencies = [.. updatedDependencies],
-                        UpdatedDependencyFiles = [.. updatedDependencyFiles],
-                        BaseCommitSha = baseCommitSha,
-                        CommitMessage = commitMessage,
-                        PrTitle = prTitle,
-                        PrBody = prBody,
-                        DependencyGroup = null,
-                    });
+                        logger.Info($"Pull request already exists for {string.Join(", ", existingPullRequest!.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}"))}");
+                    }
+                    else
+                    {
+                        var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
+                        var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
+                        var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
+                        await apiHandler.CreatePullRequest(new CreatePullRequest()
+                        {
+                            Dependencies = [.. updatedDependencies],
+                            UpdatedDependencyFiles = [.. updatedDependencyFiles],
+                            BaseCommitSha = baseCommitSha,
+                            CommitMessage = commitMessage,
+                            PrTitle = prTitle,
+                            PrBody = prBody,
+                            DependencyGroup = null,
+                        });
+                    }
                 }
             }
         }
@@ -279,5 +299,30 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             .GroupBy(o => $"{o.Dependency.Name}/{o.Dependency.Version}".ToLowerInvariant())
             .ToImmutableArray();
         return updateOperationsToPerformByDependency;
+    }
+
+    internal static bool IsUngroupedDependencySkipped(Dependency dependency, AnalysisResult dependencyAnalysis, ImmutableArray<DependencyGroup> dependencyGroups, ILogger logger)
+    {
+        var matcherGroups = dependencyGroups
+            .Select(group => (group.Name, Matcher: group.GetGroupMatcher()))
+            .Where(pair => pair.Matcher.IsMatch(dependency.Name))
+            .ToImmutableArray();
+        if (matcherGroups.Length > 0)
+        {
+            // update matches a group by name
+            // if any group allows the proposed version range, then it's not allowed in an ungrouped update
+            var oldVersion = NuGetVersion.Parse(dependency.Version!);
+            var newVersion = NuGetVersion.Parse(dependencyAnalysis.UpdatedVersion);
+            var matcherGroupsAllowingVersionRange = matcherGroups
+                .Where(pair => pair.Matcher.IsAllowedByVersion(oldVersion, newVersion))
+                .ToImmutableArray();
+            if (matcherGroupsAllowingVersionRange.Length > 0)
+            {
+                logger.Info($"Dependency {dependency.Name} skipped for ungrouped updates because it's a member of the following groups: {string.Join(", ", matcherGroupsAllowingVersionRange.Select(pair => pair.Name))}");
+                return true;
+            }
+        }
+
+        return false;
     }
 }

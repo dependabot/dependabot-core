@@ -30,6 +30,14 @@ module Dependabot
 
         GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(/git clone --filter=blob:none --quiet (?<url>[^\s]+).* /, Regexp)
         GIT_REFERENCE_NOT_FOUND_REGEX = T.let(/Did not find branch or tag '(?<tag>[^\n"]+)'/m, Regexp)
+        GIT_CREDENTIALS_ERROR_REGEX = T.let(
+          /could not read Username for '(?<url>[^']+)'/,
+          Regexp
+        )
+        GIT_DEPENDENCY_URL_FROM_UV_REGEX = T.let(
+          %r{git\+(?<url>https?://[^\s@#]+)},
+          Regexp
+        )
         NATIVE_COMPILATION_ERROR = T.let(
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
           String
@@ -39,6 +47,7 @@ module Dependabot
         RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
         ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
         UV_UNRESOLVABLE_REGEX = T.let(/ × No solution found when resolving dependencies:[\s\S]*$/, Regexp)
+        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -209,6 +218,7 @@ module Dependabot
                    .named_captures.fetch("url")
             raise GitDependenciesNotReachable, T.must(url)
           end
+          handle_git_credentials_error(message)
 
           raise Dependabot::OutOfDisk if message.end_with?("[Errno 28] No space left on device")
 
@@ -272,6 +282,8 @@ module Dependabot
             /--index-url=\S+/, "--index-url=<index_url>"
           ).sub(
             /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          ).sub(
+            /--python-version=\S+/, "--python-version=<python_version>"
           )
         end
 
@@ -342,9 +354,18 @@ module Dependabot
 
           options << "--universal" if T.must(requirements_file.content).include?("--universal")
 
-          options
+          options << extract_python_version_option(requirements_file)
+
+          options.compact
         end
         # rubocop:enable Metrics/AbcSize
+
+        sig { params(requirements_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def extract_python_version_option(requirements_file)
+          return unless (match = PYTHON_VERSION_REGEX.match(T.must(requirements_file.content)))
+
+          "--python-version=#{match[:version]}"
+        end
 
         sig { returns(T::Hash[String, String]) }
         def python_env
@@ -418,6 +439,25 @@ module Dependabot
           T.must(T.cast(message.scan(ERROR_REGEX), T::Array[String]).last)
         end
 
+        sig { params(message: String).returns(T.nilable(String)) }
+        def extract_git_url_from_message(message)
+          # Try to extract the full repository URL from UV's git dependency reference (git+https://...)
+          if (url_match = message.match(GIT_DEPENDENCY_URL_FROM_UV_REGEX))
+            return url_match.named_captures.fetch("url")
+          end
+
+          # Fall back to the URL from the "could not read Username" error
+          message.match(GIT_CREDENTIALS_ERROR_REGEX)&.named_captures&.fetch("url")
+        end
+
+        sig { params(message: String).void }
+        def handle_git_credentials_error(message)
+          return unless message.match?(GIT_CREDENTIALS_ERROR_REGEX)
+
+          url = extract_git_url_from_message(message)
+          raise GitDependenciesNotReachable, T.must(url)
+        end
+
         sig { returns(T::Array[String]) }
         def filenames_to_compile
           files_from_reqs =
@@ -485,7 +525,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         def requirement_map
-          child_req_regex = Uv::FileFetcher::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||= T.let(
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = T.must(file.content).scan(child_req_regex).flatten

@@ -141,6 +141,212 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           .with("Failed to fetch latest version for rules_go: Network error")
       end
     end
+
+    context "with BCR .bcr.X versions" do
+      let(:dependency_name) { "libpng" }
+      let(:dependency_version) { "1.6.50" }
+
+      context "when .bcr.X versions are available" do
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.50", "1.6.50.bcr.1"],
+              "latest_version" => "1.6.50.bcr.1"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.50", "1.6.50.bcr.1"])
+        end
+
+        it "returns the .bcr.X version as latest" do
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.6.50.bcr.1"))
+        end
+
+        it "treats .bcr.X as newer than base version" do
+          latest = checker.latest_version
+          base = Dependabot::Bazel::Version.new("1.6.50")
+          expect(latest).to be > base
+        end
+      end
+
+      context "when multiple .bcr.X versions exist" do
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2"],
+              "latest_version" => "1.6.50.bcr.2"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2"])
+        end
+
+        it "returns the highest .bcr.X version" do
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.6.50.bcr.2"))
+        end
+
+        it "correctly orders .bcr versions" do
+          versions = [
+            Dependabot::Bazel::Version.new("1.6.50"),
+            Dependabot::Bazel::Version.new("1.6.50.bcr.1"),
+            Dependabot::Bazel::Version.new("1.6.50.bcr.2")
+          ]
+          expect(versions.max).to eq(Dependabot::Bazel::Version.new("1.6.50.bcr.2"))
+        end
+      end
+
+      context "when upgrading from base to .bcr.X version" do
+        let(:dependency_version) { "1.6.50" }
+
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.50", "1.6.50.bcr.1"],
+              "latest_version" => "1.6.50.bcr.1"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.50", "1.6.50.bcr.1"])
+        end
+
+        it "suggests upgrade to .bcr.X version" do
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.6.50.bcr.1"))
+        end
+
+        it "does not suggest staying at base version" do
+          expect(checker.latest_version).not_to eq(Dependabot::Bazel::Version.new("1.6.50"))
+        end
+      end
+
+      context "when upgrading from .bcr.X to higher .bcr.Y" do
+        let(:dependency_version) { "1.6.50.bcr.1" }
+
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2"],
+              "latest_version" => "1.6.50.bcr.2"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2"])
+        end
+
+        it "suggests upgrade to higher .bcr version" do
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.6.50.bcr.2"))
+        end
+      end
+
+      context "when already at latest .bcr.X version" do
+        let(:dependency_version) { "1.6.50.bcr.1" }
+
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.50", "1.6.50.bcr.1"],
+              "latest_version" => "1.6.50.bcr.1"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.50", "1.6.50.bcr.1"])
+        end
+
+        it "returns nil (no update needed)" do
+          expect(checker.latest_version).to be_nil
+        end
+
+        it "does not suggest downgrade to base version" do
+          # The base version should be filtered out as it's lower than current
+          base_version = Dependabot::Bazel::Version.new("1.6.50")
+          current_version = Dependabot::Bazel::Version.new(dependency_version)
+          expect(current_version).to be > base_version
+        end
+      end
+
+      context "when on .bcr.X version but newer .bcr version exists" do
+        let(:dependency_version) { "1.6.50.bcr.1" }
+
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2", "1.6.50.bcr.3"],
+              "latest_version" => "1.6.50.bcr.3"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2", "1.6.50.bcr.3"])
+        end
+
+        it "suggests upgrade to newest .bcr version" do
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.6.50.bcr.3"))
+        end
+
+        it "skips the base version in upgrade path" do
+          # Should go directly from .bcr.1 to .bcr.3, not suggest base version
+          expect(checker.latest_version).not_to eq(Dependabot::Bazel::Version.new("1.6.50"))
+        end
+      end
+
+      context "with mixed base and .bcr.X versions" do
+        let(:dependency_version) { "1.6.49" }
+
+        before do
+          allow(registry_client).to receive(:get_metadata)
+            .with("libpng")
+            .and_return({
+              "name" => "libpng",
+              "versions" => ["1.6.49", "1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2", "1.6.51"],
+              "latest_version" => "1.6.51"
+            })
+
+          allow(registry_client).to receive(:all_module_versions)
+            .with("libpng")
+            .and_return(["1.6.49", "1.6.50", "1.6.50.bcr.1", "1.6.50.bcr.2", "1.6.51"])
+        end
+
+        it "returns the newest version considering .bcr suffixes" do
+          expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.6.51"))
+        end
+
+        it "correctly sorts all versions" do
+          versions = [
+            Dependabot::Bazel::Version.new("1.6.50.bcr.2"),
+            Dependabot::Bazel::Version.new("1.6.49"),
+            Dependabot::Bazel::Version.new("1.6.51"),
+            Dependabot::Bazel::Version.new("1.6.50"),
+            Dependabot::Bazel::Version.new("1.6.50.bcr.1")
+          ]
+          sorted = versions.sort
+          expect(sorted.map(&:to_s)).to eq(
+            [
+              "1.6.49",
+              "1.6.50",
+              "1.6.50.bcr.1",
+              "1.6.50.bcr.2",
+              "1.6.51"
+            ]
+          )
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -206,6 +412,43 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
       it "returns the original requirements" do
         expect(checker.updated_requirements).to eq(dependency_requirements)
+      end
+    end
+
+    context "with BCR .bcr.X version updates" do
+      let(:dependency_name) { "libpng" }
+      let(:dependency_version) { "1.6.50" }
+      let(:dependency_requirements) do
+        [{
+          file: "MODULE.bazel",
+          requirement: "1.6.50",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      before do
+        allow(checker).to receive(:latest_version)
+          .and_return(Dependabot::Bazel::Version.new("1.6.50.bcr.1"))
+      end
+
+      it "updates requirements to .bcr.X version" do
+        updated_reqs = checker.updated_requirements
+
+        expect(updated_reqs).to eq(
+          [{
+            file: "MODULE.bazel",
+            requirement: "1.6.50.bcr.1",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it "preserves .bcr.X format in requirement string" do
+        updated_reqs = checker.updated_requirements
+        expect(updated_reqs.first[:requirement]).to eq("1.6.50.bcr.1")
+        expect(updated_reqs.first[:requirement]).not_to eq("1.6.50")
       end
     end
 
@@ -397,7 +640,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           allow(Dependabot.logger).to receive(:info)
 
           # Mock cooldown period check - return true for recent time, false for old time
-          allow(checker).to receive(:cooldown_period?) do |release_time|
+          allow(checker).to receive(:cooldown_period?) do |release_time, _version|
             (Time.now.to_i - release_time.to_i) < (24 * 60 * 60) # 24 hours
           end
 
@@ -538,7 +781,14 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
     end
 
     describe "#cooldown_period?" do
-      let(:cooldown_options) { instance_double(Dependabot::Package::ReleaseCooldownOptions) }
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 1,
+          semver_major_days: 7,
+          semver_minor_days: 3,
+          semver_patch_days: 1
+        )
+      end
       let(:checker) do
         described_class.new(
           dependency: dependency,
@@ -548,23 +798,19 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         )
       end
 
-      before do
-        allow(cooldown_options).to receive(:default_days).and_return(1) # 1 day cooldown
-      end
-
       context "when release is within cooldown period" do
         let(:recent_release) { Time.now - (12 * 60 * 60) } # 12 hours ago
 
-        it "returns true" do
-          expect(checker.send(:cooldown_period?, recent_release)).to be true
+        it "returns true for a patch bump" do
+          expect(checker.send(:cooldown_period?, recent_release, "0.33.1")).to be true
         end
       end
 
       context "when release is outside cooldown period" do
         let(:old_release) { Time.now - (48 * 60 * 60) } # 48 hours ago
 
-        it "returns false" do
-          expect(checker.send(:cooldown_period?, old_release)).to be false
+        it "returns false for a patch bump" do
+          expect(checker.send(:cooldown_period?, old_release, "0.33.1")).to be false
         end
       end
 
@@ -580,7 +826,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
         it "returns false" do
           release_time = Time.now - (12 * 60 * 60)
-          expect(checker.send(:cooldown_period?, release_time)).to be false
+          expect(checker.send(:cooldown_period?, release_time, "0.34.0")).to be false
         end
       end
     end
@@ -654,23 +900,32 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         sort_key_one_two_zero = checker.send(:version_sort_key, "1.2.0")
         sort_key_one_ten_zero = checker.send(:version_sort_key, "1.10.0")
 
-        expect(sort_key_one_zero_zero).to eq([1, 0, 0])
-        expect(sort_key_one_two_zero).to eq([1, 2, 0])
-        expect(sort_key_one_ten_zero).to eq([1, 10, 0])
+        # Verify the sort keys return Version objects with correct values
+        expect(sort_key_one_zero_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_zero_zero.to_s).to eq("1.0.0")
 
-        # Verify correct ordering
+        expect(sort_key_one_two_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_two_zero.to_s).to eq("1.2.0")
+
+        expect(sort_key_one_ten_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_ten_zero.to_s).to eq("1.10.0")
+
+        # Verify correct semantic version ordering (1.0.0 < 1.2.0 < 1.10.0)
         expect(sort_key_one_zero_zero <=> sort_key_one_two_zero).to eq(-1)
         expect(sort_key_one_two_zero <=> sort_key_one_ten_zero).to eq(-1)
+        expect(sort_key_one_zero_zero <=> sort_key_one_ten_zero).to eq(-1)
       end
 
       it "handles version prefixes" do
         sort_key = checker.send(:version_sort_key, "v1.2.3")
-        expect(sort_key).to eq([1, 2, 3])
+        expect(sort_key).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key.to_s).to eq("v1.2.3")
       end
 
       it "handles non-numeric version parts" do
         sort_key = checker.send(:version_sort_key, "1.2.beta")
-        expect(sort_key).to eq([1, 2, 0])
+        expect(sort_key).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key.to_s).to eq("1.2.beta")
       end
     end
   end
@@ -748,7 +1003,14 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
   end
 
   describe "cooldown integration" do
-    let(:cooldown_options) { instance_double(Dependabot::Package::ReleaseCooldownOptions) }
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 1,
+        semver_major_days: 1,
+        semver_minor_days: 1,
+        semver_patch_days: 1
+      )
+    end
     let(:checker_with_cooldown) do
       described_class.new(
         dependency: dependency,
@@ -759,8 +1021,6 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
     end
 
     before do
-      allow(cooldown_options).to receive(:included?).with("rules_go").and_return(true)
-      allow(cooldown_options).to receive(:default_days).and_return(1) # 1 day cooldown
       allow(Dependabot.logger).to receive(:info)
     end
 

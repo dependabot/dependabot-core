@@ -80,6 +80,11 @@
     "ecosystem": "maven"
   },
   {
+    "core": "nix",
+    "test": "nix",
+    "ecosystem": "nix"
+  },
+  {
     "core": "npm_and_yarn",
     "test": "npm",
     "ecosystem": "npm"
@@ -93,6 +98,16 @@
     "core": "nuget",
     "test": "nuget-resolvability",
     "ecosystem": "nuget"
+  },
+  {
+    "core": "opentofu",
+    "test": "opentofu",
+    "ecosystem": "opentofu"
+  },
+  {
+    "core": "pre_commit",
+    "test": "pre-commit",
+    "ecosystem": "pre-commit"
   },
   {
     "core": "pub",
@@ -120,9 +135,9 @@
     "ecosystem": "terraform"
   },
   {
-    "core": "opentofu",
-    "test": "opentofu",
-    "ecosystem": "opentofu"
+    "core": "uv",
+    "test": "uv",
+    "ecosystem": "uv"
   },
   {
     "core": "vcpkg",

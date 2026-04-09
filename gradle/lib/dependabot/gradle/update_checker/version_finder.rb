@@ -12,11 +12,13 @@ require "dependabot/maven/utils/auth_headers_finder"
 require "sorbet-runtime"
 require "dependabot/gradle/package/package_details_fetcher"
 require "dependabot/package/package_latest_version_finder"
+require "dependabot/maven/shared/shared_version_finder"
+require "dependabot/update_checkers/cooldown_calculation"
 
 module Dependabot
   module Gradle
     class UpdateChecker
-      class VersionFinder < Dependabot::Package::PackageLatestVersionFinder
+      class VersionFinder < Dependabot::Maven::Shared::SharedVersionFinder
         extend T::Sig
 
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
@@ -253,26 +255,29 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           unless release.released_at
-            Dependabot.logger.info("Release date not available for version #{release.version}")
-            return false
+            if cooldown_options
+              Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
+              return true
+            else
+              Dependabot.logger.info("Release date not available for version #{release.version}")
+              return false
+            end
           end
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
           days = cooldown_days_for(current_version, release.version)
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(release.released_at), days)
 
-          # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
-
-          if passed_days < days
+          if in_cooldown
+            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Version #{release.version}, Release date: #{release.released_at}." \
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
 
-          # Check if the release is within the cooldown period
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
 
         sig { returns(T::Boolean) }
@@ -287,27 +292,6 @@ module Dependabot
           return false unless dependency.numeric_version
 
           T.must(dependency.numeric_version) >= version_class.new(100)
-        end
-
-        sig { params(comparison_version: T.untyped).returns(T::Boolean) }
-        def matches_dependency_version_type?(comparison_version)
-          return true unless dependency.version
-
-          current_type = T.must(dependency.version)
-                          .gsub("native-mt", "native_mt")
-                          .split(/[.\-]/)
-                          .find do |type|
-            TYPE_SUFFICES.find { |s| type.include?(s) }
-          end
-
-          version_type = comparison_version.to_s
-                                           .gsub("native-mt", "native_mt")
-                                           .split(/[.\-]/)
-                                           .find do |type|
-            TYPE_SUFFICES.find { |s| type.include?(s) }
-          end
-
-          current_type == version_type
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

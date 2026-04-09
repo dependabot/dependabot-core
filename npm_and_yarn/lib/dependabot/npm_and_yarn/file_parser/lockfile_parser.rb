@@ -15,11 +15,10 @@ module Dependabot
         require "dependabot/npm_and_yarn/file_parser/yarn_lock"
         require "dependabot/npm_and_yarn/file_parser/pnpm_lock"
         require "dependabot/npm_and_yarn/file_parser/json_lock"
-        require "dependabot/npm_and_yarn/file_parser/bun_lock"
 
-        DEFAULT_LOCKFILES = %w(package-lock.json yarn.lock pnpm-lock.yaml bun.lock npm-shrinkwrap.json).freeze
+        DEFAULT_LOCKFILES = %w(package-lock.json yarn.lock pnpm-lock.yaml npm-shrinkwrap.json).freeze
 
-        LockFile = T.type_alias { T.any(JsonLock, YarnLock, PnpmLock, BunLock) }
+        LockFile = T.type_alias { T.any(JsonLock, YarnLock, PnpmLock) }
 
         sig { params(dependency_files: T::Array[DependencyFile]).void }
         def initialize(dependency_files:)
@@ -34,7 +33,7 @@ module Dependabot
           # end up unique by name. That's not a perfect representation of
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
-          (yarn_locks + pnpm_locks + package_locks + bun_locks + shrinkwraps).each do |file|
+          (yarn_locks + pnpm_locks + package_locks + shrinkwraps).each do |file|
             dependency_set += lockfile_for(file).dependencies
           end
 
@@ -87,8 +86,6 @@ module Dependabot
                                       YarnLock.new(file)
                                     when *pnpm_locks.map(&:name)
                                       PnpmLock.new(file)
-                                    when *bun_locks.map(&:name)
-                                      BunLock.new(file)
                                     else
                                       raise "Unexpected lockfile: #{file.name}"
                                     end
@@ -107,11 +104,6 @@ module Dependabot
         sig { returns(T::Array[DependencyFile]) }
         def pnpm_locks
           @pnpm_locks ||= T.let(select_files_by_extension("pnpm-lock.yaml"), T.nilable(T::Array[DependencyFile]))
-        end
-
-        sig { returns(T::Array[DependencyFile]) }
-        def bun_locks
-          @bun_locks ||= T.let(select_files_by_extension("bun.lock"), T.nilable(T::Array[DependencyFile]))
         end
 
         sig { returns(T::Array[DependencyFile]) }

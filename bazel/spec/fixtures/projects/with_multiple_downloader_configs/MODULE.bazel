@@ -1,0 +1,3 @@
+module(name = "multi_config")
+
+bazel_dep(name = "rules_java", version = "7.1.0")

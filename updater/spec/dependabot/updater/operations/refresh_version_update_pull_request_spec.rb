@@ -138,9 +138,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_exclude_paths_subdirectory_manifest_files)
       .and_return(true)
 
@@ -217,6 +214,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
           :all_versions_ignored?
         ).and_return(true)
         allow(job).to receive(:dependencies).and_return(["dummy-pkg-a"])
+      end
+
+      it "closes the pull request with reason :up_to_date" do
+        expect(refresh_version_update_pull_request).to receive(
+          :close_pull_request
+        ).with(reason: :up_to_date)
+        refresh_version_update_pull_request.send(
+          :check_and_update_pull_request, [dependency]
+        )
       end
 
       it "does not create or update a pull request" do

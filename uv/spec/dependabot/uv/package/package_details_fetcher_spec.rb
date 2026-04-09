@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
-require "dependabot/uv/package/package_details_fetcher"
+require "dependabot/uv/package"
 
 RSpec.describe Dependabot::Uv::Package::PackageDetailsFetcher do
   subject(:fetcher) do

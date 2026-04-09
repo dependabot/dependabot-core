@@ -1,0 +1,4 @@
+# Multiple downloader configs
+build --downloader_config=primary-downloader.cfg
+test --downloader_config secondary-downloader.cfg
+run --downloader_config=mirrors/custom.cfg

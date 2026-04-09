@@ -1,0 +1,30 @@
+[project]
+name = "mixed-workspace-sources"
+version = "0.1.0"
+description = "Test UV mixed workspace and path sources"
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "workspace-pkg",
+    "path-pkg",
+    "git-pkg",
+]
+
+[tool.uv.sources]
+# Workspace dependency - should be detected as workspace
+workspace-pkg = { workspace = true }
+
+# Path dependency - should be detected as path (not workspace)
+path-pkg = { path = "./local-lib" }
+
+# Git dependency - should NOT be detected as workspace or path
+git-pkg = { git = "https://github.com/example/package.git" }
+
+[tool.uv.workspace]
+members = [
+    "packages/workspace-pkg",
+]
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
