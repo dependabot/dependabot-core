@@ -267,9 +267,10 @@ module Dependabot
                 "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
               )
             end
+            updated_content = File.read(yarn_lock.name)
           end
 
-          { yarn_lock.name => File.read(yarn_lock.name) }
+          { yarn_lock.name => updated_content }
         end
 
         sig { returns(String) }
