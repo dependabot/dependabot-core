@@ -123,13 +123,13 @@ module Dependabot
 
           declaration_regex = declaration_regex(dep, old_r)
           declaration_match = content.match(declaration_regex)
-          if declaration_match
-            declaration = declaration_match[:declaration]
-            if T.must(declaration).include?(old_req)
-              new_declaration = T.must(declaration).sub(old_req, new_req)
-              return content.sub(T.must(declaration), new_declaration)
-            end
-          end
+          return unless declaration_match
+
+          declaration = declaration_match[:declaration]
+          return unless T.must(declaration).include?(old_req)
+
+          new_declaration = T.must(declaration).sub(old_req, new_req)
+          content.sub(T.must(declaration), new_declaration)
         end
 
         sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
