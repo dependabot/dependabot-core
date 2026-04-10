@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Swift::FileFetcher do
     let(:project_name) { "xcode_project" }
     let(:directory) { "/" }
 
-      it "fetches project.pbxproj as support file and Package.resolved" do
+    it "fetches project.pbxproj as support file and Package.resolved" do
       files = file_fetcher_instance.files
       names = files.map(&:name)
       expect(names).to match_array(
