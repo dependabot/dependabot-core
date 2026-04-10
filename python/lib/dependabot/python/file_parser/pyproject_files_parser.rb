@@ -118,12 +118,13 @@ module Dependabot
         sig do
           params(
             type: String,
-            deps_hash: T::Hash[String,
-                               T.untyped]
+            deps_hash: T.nilable(T::Hash[String,
+                                         T.untyped])
           ).returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
+          return dependencies if deps_hash.nil?
 
           deps_hash.each do |name, req|
             next if normalise(name) == "python"
