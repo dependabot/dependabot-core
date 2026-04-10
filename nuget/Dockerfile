@@ -87,17 +87,9 @@ RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
 # .NET install targeting packs
 RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
 
-# Install Microsoft.Build.Sql package to enable MSBuild operations with SQL projects
-# TODO(liesen): dotnet package download: https://github.com/NuGet/Home/pull/14495
+# Download Microsoft.Build.Sql for SQL project (.sqlproj) support
 RUN mkdir /tmp/msbuild-sdks \
- && curl -L https://www.nuget.org/api/v2/package/Microsoft.Build.Sql/1.0.0 -o /tmp/msbuild-sdks/Microsoft.Build.Sql.1.0.0.nupkg
-
-# # Set up the .NET SDK resolver path for Microsoft.Build.Sql
-# RUN cp /tmp/msbuild-sdks/Microsoft.Build.Sql.1.0.0.nupkg /tmp/msbuild-sdks/Microsoft.Build.Sql.1.0.0.nupkg.zip \
-#  && unzip /tmp/msbuild-sdks/Microsoft.Build.Sql.1.0.0.nupkg "sdk/*" "tools/*" -d ${DOTNET_INSTALL_DIR}/sdk/${DOTNET_STS_SDK_VERSION}/Sdks/Microsoft.Build.Sql \
-#  # Rename the 'sdk' as .NET expects it to be named 'Sdk'
-#  && mv ${DOTNET_INSTALL_DIR}/sdk/${DOTNET_STS_SDK_VERSION}/Sdks/Microsoft.Build.Sql/sdk ${DOTNET_INSTALL_DIR}/sdk/${DOTNET_STS_SDK_VERSION}/Sdks/Microsoft.Build.Sql/Sdk \
-#  && rm /tmp/msbuild-sdks/Microsoft.Build.Sql.1.0.0.nupkg.zip
+  && curl -L https://www.nuget.org/api/v2/package/Microsoft.Build.Sql/2.1.0 -o /tmp/msbuild-sdks/Microsoft.Build.Sql.2.1.0.nupkg
 
 # Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
 ENV NBGV_GitEngine=Disabled

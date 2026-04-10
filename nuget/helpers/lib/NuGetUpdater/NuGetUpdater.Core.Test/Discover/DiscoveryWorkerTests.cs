@@ -96,7 +96,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 (projectPath, """
                     <?xml version="1.0" encoding="utf-8"?>
                     <Project DefaultTargets="Build">
-                    <Sdk Name="Microsoft.Build.Sql" Version="1.0.0" />
+                    <Sdk Name="Microsoft.Build.Sql" Version="2.1.0" />
                       <PropertyGroup>
                         <Name>sample</Name>
                         <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
