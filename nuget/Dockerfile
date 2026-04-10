@@ -89,7 +89,7 @@ RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
 
 # Download Microsoft.Build.Sql for SQL project (.sqlproj) support
 RUN mkdir /tmp/msbuild-sdks \
-  && curl -L https://www.nuget.org/api/v2/package/Microsoft.Build.Sql/2.1.0 -o /tmp/msbuild-sdks/Microsoft.Build.Sql.2.1.0.nupkg
+  && curl -fsSL https://www.nuget.org/api/v2/package/Microsoft.Build.Sql/2.1.0 -o /tmp/msbuild-sdks/Microsoft.Build.Sql.2.1.0.nupkg
 
 # Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
 ENV NBGV_GitEngine=Disabled
