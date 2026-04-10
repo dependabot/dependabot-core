@@ -151,7 +151,7 @@ module Dependabot
         return nil unless constraint.is_a?(String) && !constraint.strip.empty?
 
         Dependabot::Python::Requirement.new(constraint.strip)
-      rescue TomlRB::ParseError, Gem::Requirement::BadRequirementError
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError, Gem::Requirement::BadRequirementError
         nil
       end
 
