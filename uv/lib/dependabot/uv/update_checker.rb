@@ -76,6 +76,9 @@ module Dependabot
         # It must come from pip-tools or uv.lock.
         return subdependency_resolver if reqs.none?
 
+        # uv tool version constraints use simple PyPI lookup
+        return :requirements if updating_uv_toml?
+
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
         return :requirements if updating_pyproject?
@@ -158,7 +161,8 @@ module Dependabot
         requirement = reqs.find do |r|
           file = r[:file]
 
-          file == "uv.lock" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "uv.lock" || file == "uv.toml" || file == "pyproject.toml" ||
+            file.end_with?(".in") || file.end_with?(".txt")
         end
 
         requirement&.fetch(:requirement)
@@ -238,6 +242,11 @@ module Dependabot
       sig { returns(T::Boolean) }
       def updating_uv_lock?
         requirement_files.any?("uv.lock")
+      end
+
+      sig { returns(T::Boolean) }
+      def updating_uv_toml?
+        requirement_files.any?("uv.toml")
       end
 
       sig { returns(T::Boolean) }
