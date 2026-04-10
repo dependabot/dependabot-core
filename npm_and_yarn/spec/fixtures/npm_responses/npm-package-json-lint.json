@@ -50,13 +50,13 @@
         "name": "oldmaintainer"
       },
       "_npmVersion": "11.10.0",
-      "_shasum": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p",
+      "_shasum": "8f14e45fceea167a5a36dedd4bea2543fba3442a",
       "bugs": {
         "url": "https://github.com/ericcornelissen/npm-package-json-lint/issues"
       },
       "description": "Configurable npm package.json linter",
       "dist": {
-        "shasum": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p",
+        "shasum": "8f14e45fceea167a5a36dedd4bea2543fba3442a",
         "tarball": "https://registry.npmjs.org/npm-package-json-lint/-/npm-package-json-lint-9.0.0.tgz"
       },
       "engines": {
@@ -85,13 +85,13 @@
         "name": "GitHub Actions"
       },
       "_npmVersion": "11.11.0",
-      "_shasum": "2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q",
+      "_shasum": "df3c6c4ce8db6c0f5f5b92b0c1c1c0c0c0c0c0c0",
       "bugs": {
         "url": "https://github.com/ericcornelissen/npm-package-json-lint/issues"
       },
       "description": "Configurable npm package.json linter",
       "dist": {
-        "shasum": "2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q",
+        "shasum": "df3c6c4ce8db6c0f5f5b92b0c1c1c0c0c0c0c0c0",
         "tarball": "https://registry.npmjs.org/npm-package-json-lint/-/npm-package-json-lint-10.0.0.tgz"
       },
       "engines": {
