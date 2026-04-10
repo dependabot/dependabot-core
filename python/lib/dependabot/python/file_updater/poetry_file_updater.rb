@@ -19,6 +19,7 @@ module Dependabot
     class FileUpdater
       class PoetryFileUpdater
         require_relative "pyproject_preparer"
+        require_relative "poetry_file_updater/pep621_updater"
         extend T::Sig
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -105,52 +106,51 @@ module Dependabot
           updated_content
         end
 
-        sig do
-          params(
-            dep: Dependabot::Dependency,
-            content: String,
-            new_r: T::Hash[Symbol, T.untyped],
-            old_r: T::Hash[Symbol, T.untyped]
-          ).returns(String)
-        end
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(String) }
         def replace_dep(dep, content, new_r, old_r)
-          # Handle Git dependencies with tags
           return update_git_tag(dep, content, new_r, old_r) if git_dependency?(new_r) && git_dependency?(old_r)
 
+          replace_poetry_dep(dep, content, new_r, old_r) ||
+            replace_poetry_table_dep(dep, content, new_r, old_r) ||
+            replace_pep621_dep(dep, content, new_r, old_r) ||
+            content
+        end
+
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+        def replace_poetry_dep(dep, content, new_r, old_r)
           new_req = new_r[:requirement]
           old_req = old_r[:requirement]
 
           declaration_regex = declaration_regex(dep, old_r)
           declaration_match = content.match(declaration_regex)
-          if declaration_match
-            declaration = declaration_match[:declaration]
-            if T.must(declaration).include?(old_req)
-              new_declaration = T.must(declaration).sub(old_req, new_req)
-              return content.sub(T.must(declaration), new_declaration)
-            end
-          end
+          return unless declaration_match
 
-          # Try Poetry table format
-          table_match = content.match(table_declaration_regex(dep, new_r))
-          if table_match
-            return content.gsub(table_declaration_regex(dep, new_r)) do |match|
-              match.gsub(
-                /(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
-                '\1' + new_req
-              )
-            end
-          end
+          declaration = declaration_match[:declaration]
+          return unless T.must(declaration).include?(old_req)
 
-          # Try PEP 621 array format (e.g., dependencies = ["django==5.0.0"])
-          pep621_regex = pep621_declaration_regex(dep, old_req)
-          pep621_match = content.match(pep621_regex)
-          if pep621_match
-            declaration = pep621_match[:declaration]
-            new_declaration = T.must(declaration).sub(old_req, new_req)
-            return content.sub(T.must(declaration), new_declaration)
-          end
+          new_declaration = T.must(declaration).sub(old_req, new_req)
+          content.sub(T.must(declaration), new_declaration)
+        end
 
-          content
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+        def replace_poetry_table_dep(dep, content, new_r, old_r)
+          old_req = old_r[:requirement]
+          new_req = new_r[:requirement]
+          regex = table_declaration_regex(dep, new_r)
+
+          return unless content.match(regex)
+
+          content.gsub(regex) do |match|
+            match.gsub(
+              /(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
+              '\1' + new_req
+            )
+          end
+        end
+
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+        def replace_pep621_dep(dep, content, new_r, old_r)
+          Pep621Updater.new(dep: dep).replace(content, new_r, old_r)
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
@@ -158,14 +158,7 @@ module Dependabot
           req.dig(:source, :type) == "git"
         end
 
-        sig do
-          params(
-            dep: Dependabot::Dependency,
-            content: String,
-            new_r: T::Hash[Symbol, T.untyped],
-            old_r: T::Hash[Symbol, T.untyped]
-          ).returns(String)
-        end
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(String) }
         def update_git_tag(dep, content, new_r, old_r)
           old_tag = old_r.dig(:source, :ref)
           new_tag = new_r.dig(:source, :ref)
@@ -350,17 +343,7 @@ module Dependabot
             .add_auth_env_vars(credentials)
         end
 
-        sig do
-          params(
-            pyproject_content: String
-          ).returns(T.nilable(
-                      T.any(
-                        T::Hash[String, T.untyped],
-                        String,
-                        T::Array[T::Hash[String, T.untyped]]
-                      )
-                    ))
-        end
+        sig { params(pyproject_content: String).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]]))) }
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -386,20 +369,6 @@ module Dependabot
         sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
         def table_declaration_regex(dep, old_req)
           /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\](?:\r?\n).*?\s*version\s* =.*?(?:\r?\n)/m
-        end
-
-        sig { params(dep: Dependabot::Dependency, old_req: String).returns(Regexp) }
-        def pep621_declaration_regex(dep, old_req)
-          /(?<declaration>["']#{escape(dep)}#{extras_pattern(dep)}#{Regexp.escape(old_req)}["'])/mi
-        end
-
-        # Reconstructs extras from metadata for PEP 621 regex matching.
-        sig { params(dep: Dependabot::Dependency).returns(String) }
-        def extras_pattern(dep)
-          extras_str = dep.metadata[:extras]
-          return "" unless extras_str.is_a?(String) && !extras_str.empty?
-
-          "\\[" + extras_str.split(",").map { |e| Regexp.escape(e.strip) }.join(",\\s*") + "\\]"
         end
 
         sig { params(dep: Dependency).returns(String) }
