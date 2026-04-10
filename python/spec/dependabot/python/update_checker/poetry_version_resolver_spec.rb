@@ -101,8 +101,8 @@ RSpec.describe namespace::PoetryVersionResolver do
     context "with a metadata-only poetry group" do
       let(:pyproject_fixture_name) { "poetry_metadata_only_group.toml" }
 
-      it "does not raise when a poetry group has no dependencies table" do
-        expect { latest_resolvable_version }.not_to raise_error
+      it "resolves the latest version when a poetry group has no dependencies table" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.18.4"))
       end
     end
 
