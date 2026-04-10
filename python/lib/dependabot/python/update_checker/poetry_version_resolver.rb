@@ -336,8 +336,10 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
-        sig { params(toml_node: T::Hash[String, T.untyped], requirement: String).void }
+        sig { params(toml_node: T.nilable(T::Hash[String, T.untyped]), requirement: String).void }
         def update_dependency_requirement(toml_node, requirement)
+          return unless toml_node
+
           names = toml_node.keys
           pkg_name = names.find { |nm| normalise(nm) == dependency.name }
           return unless pkg_name
