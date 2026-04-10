@@ -6,8 +6,8 @@ license = "MIT"
 readme = "README.md"
 authors = ["Dependabot <support@dependabot.com>"]
 description = "Various small python projects."
+requires-python = ">=3.8"
 
 dependencies = [
-  "python",
   "requests==2.18.0"
 ]
