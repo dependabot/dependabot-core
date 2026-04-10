@@ -1021,13 +1021,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           previous_version: "2.13.0",
           package_manager: "pip",
           requirements: [{
-            requirement: ">=2.14.0,<3.0",
+            requirement: "<3.0,>=2.14.0",
             file: "pyproject.toml",
             source: nil,
             groups: ["dependencies"]
           }],
           previous_requirements: [{
-            requirement: ">=2.13.0,<3.0",
+            requirement: "<3.0,>=2.13.0",
             file: "pyproject.toml",
             source: nil,
             groups: ["dependencies"]
@@ -1095,13 +1095,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         previous_version: "1.5.6",
         package_manager: "pip",
         requirements: [{
-          requirement: ">=1.6.0,!=1.5.7,<2",
+          requirement: "!=1.5.7,<2,>=1.6.0",
           file: "pyproject.toml",
           source: nil,
           groups: ["socks"]
         }],
         previous_requirements: [{
-          requirement: ">=1.5.6,!=1.5.7,<2",
+          requirement: "!=1.5.7,<2,>=1.5.6",
           file: "pyproject.toml",
           source: nil,
           groups: ["socks"]

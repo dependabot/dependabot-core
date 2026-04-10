@@ -71,7 +71,7 @@ module Dependabot
 
           sig { params(old_req: String).returns(Regexp) }
           def declaration_regex(old_req)
-            /(?<declaration>["']#{escape}\s*#{extras_pattern}#{Regexp.escape(old_req)}["'])/mi
+            /(?<declaration>["']#{escape}\s*#{extras_pattern}\s*#{Regexp.escape(old_req)}["'])/mi
           end
 
           sig { returns(String) }
