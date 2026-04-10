@@ -886,7 +886,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
               source: nil,
               groups: ["dependencies"]
             }
-          ]
+          ],
+          metadata: { source_requirement: ">=2.13.0" }
         )
       end
 
@@ -934,7 +935,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
             file: "pyproject.toml",
             source: nil,
             groups: ["dependencies"]
-          }]
+          }],
+          metadata: { source_requirement: ">=2.13.0" }
         )
       end
 
