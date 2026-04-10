@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/swift/xcode_file_helpers"
@@ -97,8 +96,6 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def xcode_spm_mode?
-        return false unless Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-
         manifest.nil? && xcode_resolved_files.any?
       end
 

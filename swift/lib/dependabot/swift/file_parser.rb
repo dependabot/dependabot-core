@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
-require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/swift/file_parser/dependency_parser"
@@ -84,8 +83,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def xcode_spm_mode?
-        Dependabot::Experiments.enabled?(:enable_swift_xcode_spm) &&
-          xcode_resolved_files.any?
+        xcode_resolved_files.any?
       end
 
       sig { returns(Dependabot::Swift::FileParser::DependencyParser) }
@@ -100,14 +98,9 @@ module Dependabot
       sig { override.void }
       def check_required_files
         return if package_manifest_file
+        return if xcode_resolved_files.any?
 
-        if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return if xcode_resolved_files.any?
-
-          raise "No Package.swift or Xcode Package.resolved found!"
-        end
-
-        raise "No Package.swift!"
+        raise "No Package.swift or Xcode Package.resolved found!"
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

@@ -163,10 +163,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     end
   end
 
-  context "when enable_swift_xcode_spm experiment is enabled" do
-    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, true) }
-    after { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
-
+  context "with Xcode SPM projects" do
     describe "#updated_dependency_files" do
       subject(:updated_dependency_files) { updater.updated_dependency_files }
 

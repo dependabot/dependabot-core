@@ -340,10 +340,7 @@ RSpec.describe Dependabot::Swift::FileParser do
     end
   end
 
-  context "when enable_swift_xcode_spm experiment is enabled" do
-    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, true) }
-    after { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
-
+  context "with Xcode SPM projects" do
     context "with a single Xcode project (v2 Package.resolved)" do
       let(:project_name) { "xcode_project" }
       let(:files) do
@@ -781,40 +778,6 @@ RSpec.describe Dependabot::Swift::FileParser do
         dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
         expect(dep).not_to be_nil
         expect(dep.requirements.first[:file]).to eq("Package.swift")
-      end
-    end
-  end
-
-  context "when enable_swift_xcode_spm experiment is disabled" do
-    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
-
-    context "with only Xcode files (no Package.swift)" do
-      let(:project_name) { "xcode_project" }
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "MyApp.xcodeproj/project.pbxproj",
-            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
-            support_file: true
-          ),
-          Dependabot::DependencyFile.new(
-            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
-            content: fixture(
-              "projects",
-              project_name,
-              "MyApp.xcodeproj",
-              "project.xcworkspace",
-              "xcshareddata",
-              "swiftpm",
-              "Package.resolved"
-            )
-          )
-        ]
-      end
-      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-      it "raises an error about missing Package.swift" do
-        expect { parser }.to raise_error("No Package.swift!")
       end
     end
   end
