@@ -143,12 +143,19 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def updated_go_mod_content
-          updated_files[:go_mod]
+          updated_files["go.mod"]
         end
 
         sig { returns(T.nilable(String)) }
         def updated_go_sum_content
-          updated_files[:go_sum]
+          updated_files["go.sum"]
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def updated_workspace_files
+          # Return all files except the root go.mod and go.sum
+          # Keys are already string paths (e.g., "tools/go.mod")
+          updated_files.reject { |k, _| k == "go.mod" || k == "go.sum" }
         end
 
         private
@@ -168,12 +175,12 @@ module Dependabot
         sig { returns(String) }
         attr_reader :directory
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[String, String]) }
         def updated_files
-          @updated_files ||= T.let(update_files, T.nilable(T::Hash[Symbol, String]))
+          @updated_files ||= T.let(update_files, T.nilable(T::Hash[String, String]))
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[String, String]) }
         def update_files
           in_repo_path do
             # During grouped updates, the dependency_files are from a previous dependency
@@ -184,40 +191,81 @@ module Dependabot
               File.write(path, file.content)
             end
 
-            # Map paths in local replace directives to path hashes
-            original_manifest = parse_manifest
-            original_go_sum = File.read("go.sum") if File.exist?("go.sum")
-
-            substitutions = replace_directive_substitutions(original_manifest)
-            build_module_stubs(substitutions.values)
-
-            # Replace full paths with path hashes in the go.mod
-            substitute_all(substitutions)
-
-            # Bump the deps we want to upgrade using `go get lib@version`
-            run_go_get(dependencies)
-
-            # Run `go get`'s internal validation checks against _each_ module in `go.mod`
-            # by running `go get` w/o specifying any library. It finds problems like when a
-            # module declares itself using a different name than specified in our `go.mod` etc.
-            run_go_get
-
-            # If we stubbed modules, don't run `go mod {tidy,vendor}` as
-            # dependencies are incomplete
-            if substitutions.empty?
-              # go mod tidy should run before go mod vendor to ensure any
-              # dependencies removed by go mod tidy are also removed from vendors.
-              run_go_mod_tidy
-              run_go_vendor
+            if workspace?
+              update_workspace_files
             else
-              substitute_all(substitutions.invert)
+              update_single_module_files
             end
-
-            updated_go_sum = original_go_sum ? File.read("go.sum") : nil
-            updated_go_mod = File.read("go.mod")
-
-            { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def update_single_module_files
+          # Map paths in local replace directives to path hashes
+          original_manifest = parse_manifest
+          original_go_sum = File.read("go.sum") if File.exist?("go.sum")
+
+          substitutions = replace_directive_substitutions(original_manifest)
+          build_module_stubs(substitutions.values)
+
+          # Replace full paths with path hashes in the go.mod
+          substitute_all(substitutions)
+
+          # Bump the deps we want to upgrade using `go get lib@version`
+          run_go_get(dependencies)
+
+          # Run `go get`'s internal validation checks against _each_ module in `go.mod`
+          # by running `go get` w/o specifying any library. It finds problems like when a
+          # module declares itself using a different name than specified in our `go.mod` etc.
+          run_go_get
+
+          # If we stubbed modules, don't run `go mod {tidy,vendor}` as
+          # dependencies are incomplete
+          if substitutions.empty?
+            # go mod tidy should run before go mod vendor to ensure any
+            # dependencies removed by go mod tidy are also removed from vendors.
+            run_go_mod_tidy
+            run_go_vendor
+          else
+            substitute_all(substitutions.invert)
+          end
+
+          updated_go_sum = original_go_sum ? File.read("go.sum") : nil
+          updated_go_mod = File.read("go.mod")
+
+          result = { "go.mod" => updated_go_mod }
+          result["go.sum"] = updated_go_sum if updated_go_sum
+          result
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def update_workspace_files
+          result = {}
+
+          # Update dependencies using `go get` - it works across the entire workspace
+          run_go_get(dependencies)
+
+          # Run internal validation
+          run_go_get
+
+          # Run go work sync to synchronize dependencies across all modules
+          run_go_work_sync
+
+          # Collect updated files from all workspace modules
+          # Use actual file paths as string keys
+          workspace_module_paths.each do |module_path|
+            mod_path = File.join(module_path, "go.mod")
+            sum_path = File.join(module_path, "go.sum")
+
+            result[mod_path] = File.read(mod_path) if File.exist?(mod_path)
+            result[sum_path] = File.read(sum_path) if File.exist?(sum_path)
+          end
+
+          # Handle root go.mod and go.sum if they exist
+          result["go.mod"] = File.read("go.mod") if File.exist?("go.mod")
+          result["go.sum"] = File.read("go.sum") if File.exist?("go.sum")
+
+          result
         end
 
         sig { void }
@@ -235,6 +283,21 @@ module Dependabot
             Dependabot.logger.info "`go mod tidy` succeeded"
           else
             Dependabot.logger.info "Failed to `go mod tidy`: #{stderr}"
+          end
+        end
+
+        sig { void }
+        def run_go_work_sync
+          return unless workspace?
+
+          command = "go work sync"
+          _, stderr, status = Open3.capture3(command)
+
+          if status.success?
+            Dependabot.logger.info "`go work sync` succeeded"
+          else
+            Dependabot.logger.warn "Failed to `go work sync`: #{stderr}"
+            # Don't raise an error, just log it
           end
         end
 
@@ -458,6 +521,74 @@ module Dependabot
         sig { returns(T::Boolean) }
         def vendor?
           !!@vendor
+        end
+
+        sig { returns(T::Boolean) }
+        def workspace?
+          dependency_files.any? { |f| f.name == "go.work" }
+        end
+
+        sig { returns(T::Array[String]) }
+        def workspace_module_paths
+          return [] unless workspace?
+
+          go_work_file = dependency_files.find { |f| f.name == "go.work" }
+          return [] unless go_work_file
+
+          content = T.must(go_work_file.content)
+          paths = []
+
+          # Match "use" directives in go.work
+          # Format can be:
+          #   1. use ./path/to/module (single line)
+          #   2. use (
+          #        ./path1
+          #        ./path2
+          #      )
+          # Note: Files can contain both formats
+
+          # Parse multi-line use blocks
+          content.scan(/^use\s+\(([^)]+)\)/m).each do |block_match|
+            T.must(block_match[0]).scan(%r{^\s*\.?/?([\S]+)}).each do |path_match|
+              paths << path_match[0]
+            end
+          end
+
+          # Parse single-line use directives (not followed by opening paren)
+          content.scan(%r{^use\s+(?!\()\.?/?([\S]+)}m).each do |path_match|
+            paths << path_match[0]
+          end
+
+          # Normalize and validate paths
+          normalized_paths = T.let([], T::Array[String])
+          paths.each do |p|
+            normalized = p.sub(%r{^\./}, "")
+            normalized_paths << normalized if valid_workspace_path?(normalized)
+          end
+          normalized_paths.uniq
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def valid_workspace_path?(path)
+          # Reject absolute paths
+          return false if Pathname.new(path).absolute?
+
+          # Reject paths containing null bytes
+          return false if path.include?("\0")
+
+          # Clean and normalize the path
+          clean_path = Pathname.new(path).cleanpath.to_s
+
+          # Reject if the cleaned path tries to escape (starts with ../)
+          return false if clean_path.start_with?("../")
+
+          # Reject if the path is just "." or empty
+          return false if clean_path == "." || clean_path.empty?
+
+          # Additional safety: ensure the path doesn't contain suspicious patterns
+          return false if path.include?("//") || path.include?("\\")
+
+          true
         end
       end
     end

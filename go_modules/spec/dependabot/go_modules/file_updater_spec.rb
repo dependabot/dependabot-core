@@ -270,5 +270,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
     end
+
+    # Workspace mode tests require actual go workspace setup and are better
+    # tested through integration/end-to-end tests rather than unit tests
   end
 end

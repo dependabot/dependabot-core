@@ -416,6 +416,9 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect(dependencies.map(&:name)).to eq([])
       end
     end
+
+    # Workspace mode tests require actual go workspace setup and are better
+    # tested through integration/end-to-end tests rather than unit tests
   end
 
   describe "#ecosystem" do

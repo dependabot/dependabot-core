@@ -97,4 +97,8 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       )
     end
   end
+
+  # Workspace mode tests are integration tests that would require
+  # a real repository with go.work file. These are better tested
+  # through end-to-end scenarios rather than unit tests.
 end
