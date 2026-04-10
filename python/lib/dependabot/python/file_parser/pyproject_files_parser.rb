@@ -118,9 +118,7 @@ module Dependabot
         sig do
           params(
             type: String,
-            deps_hash: T.nilable(
-              T::Hash[String, T.untyped]
-            )
+            deps_hash: T.nilable(T::Hash[String, T.untyped])
           ).returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def parse_poetry_dependency_group(type, deps_hash)

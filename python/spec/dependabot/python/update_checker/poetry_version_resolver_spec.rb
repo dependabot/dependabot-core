@@ -98,6 +98,14 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
+    context "with a metadata-only poetry group" do
+      let(:pyproject_fixture_name) { "poetry_metadata_only_group.toml" }
+
+      it "does not raise when a poetry group has no dependencies table" do
+        expect { latest_resolvable_version }.not_to raise_error
+      end
+    end
+
     context "with a lockfile" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }
