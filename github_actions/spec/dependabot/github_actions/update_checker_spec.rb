@@ -1418,5 +1418,96 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       it { is_expected.to eq(expected_requirements) }
     end
+
+    context "when github_actions_pin_to_sha option is enabled" do
+      let(:upload_pack_fixture) { "checkout" }
+      let(:dependency_name) { "actions/checkout" }
+
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [],
+          credentials: github_credentials,
+          security_advisories: security_advisories,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          update_cooldown: update_cooldown,
+          options: { github_actions_pin_to_sha: true }
+        )
+      end
+
+      context "when a dependency has a tag reference" do
+        let(:reference) { "v1.0.1" }
+        let(:dependency_version) { "1.0.1" }
+
+        it "returns the SHA instead of the tag" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+
+      context "when a dependency has a full version tag reference" do
+        let(:reference) { "v2.1.0" }
+        let(:dependency_version) { "2.1.0" }
+
+        let(:expected_ref) { "8e5e7e5ab8b370d6c329ec480221332ada57f0ab" }
+
+        it "returns the commit SHA for the latest version" do
+          expect(updated_requirements.first[:source][:ref]).to eq(expected_ref)
+        end
+      end
+
+      context "when a dependency is already SHA-pinned" do
+        let(:reference) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+        let(:dependency_version) { nil }
+
+        it "continues to return a SHA" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+
+      context "when a dependency has a vulnerable tag reference" do
+        let(:upload_pack_fixture) { "ghas-to-csv" }
+        let(:dependency_name) { "some-natalie/ghas-to-csv" }
+        let(:reference) { "v0.4.0" }
+        let(:dependency_version) { "0.4.0" }
+
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "github_actions",
+              vulnerable_versions: ["< 1.0"]
+            )
+          ]
+        end
+
+        it "returns the SHA for the security fix" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+
+      context "when a dependency has a major-only floating tag" do
+        let(:reference) { "v1" }
+        let(:dependency_version) { "1" }
+
+        it "resolves to the latest version's SHA instead of staying at the same precision" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+
+      context "when a dependency has a major-minor floating tag" do
+        let(:reference) { "v1.0" }
+        let(:dependency_version) { "1.0" }
+
+        it "resolves to the latest version's SHA instead of staying at the same precision" do
+          ref = updated_requirements.first[:source][:ref]
+          expect(ref).to match(/\A[0-9a-f]{40}\z/)
+        end
+      end
+    end
   end
 end

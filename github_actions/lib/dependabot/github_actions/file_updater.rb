@@ -90,6 +90,8 @@ module Dependabot
               match.gsub!(old_declaration, new_declaration)
               if comment && (updated_comment = updated_version_comment(comment, old_ref, new_ref))
                 match.gsub!(comment, updated_comment)
+              elsif !comment && (new_comment = new_version_comment(old_ref, new_ref))
+                match << new_comment
               end
               match
             end
@@ -104,18 +106,8 @@ module Dependabot
         raise "No comment!" unless comment
 
         comment = comment.rstrip
-        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
-        return unless git_checker.ref_looks_like_commit_sha?(old_ref)
 
-        previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
-        return unless previous_version_tags.any? # There's no tag for this commit
-
-        # Use the most specific (longest) matching version to avoid partial replacements.
-        # Tags are sorted ascending, so ["v1", "v1.0", "v1.0.1"] maps to ["1", "1.0", "1.0.1"].
-        # Without this, "1" could match the end of "v1.0.1", causing gsub("1", "1.1") => "v1.1.0.1.1".
-        previous_version = previous_version_tags.map { |tag| version_class.new(tag).to_s }
-                                                .select { |version| comment.end_with?(version) }
-                                                .max_by(&:length)
+        previous_version = previous_version_from_comment(comment, old_ref, new_ref)
         return unless previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
@@ -123,6 +115,46 @@ module Dependabot
 
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
+      end
+
+      sig { params(comment: String, old_ref: String, new_ref: String).returns(T.nilable(String)) }
+      def previous_version_from_comment(comment, old_ref, new_ref)
+        if git_checker.ref_looks_like_commit_sha?(old_ref)
+          # SHA→SHA: resolve version from old SHA
+          previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
+          return unless previous_version_tags.any?
+
+          # Use the most specific (longest) matching version to avoid partial replacements.
+          # Tags are sorted ascending, so ["v1", "v1.0", "v1.0.1"] maps to ["1", "1.0", "1.0.1"].
+          # Without this, "1" could match the end of "v1.0.1", causing gsub("1", "1.1") => "v1.1.0.1.1".
+          previous_version_tags.map { |tag| version_class.new(tag).to_s }
+                               .select { |version| comment.end_with?(version) }
+                               .max_by(&:length)
+        elsif version_class.correct?(old_ref) && git_checker.ref_looks_like_commit_sha?(new_ref)
+          # Tag→SHA: derive version from old ref directly
+          old_version = version_class.new(old_ref).to_s
+          old_version if comment.end_with?(old_version)
+        end
+      end
+
+      # Generates a version comment when transitioning from a version tag to a SHA pin.
+      sig { params(old_ref: String, new_ref: String).returns(T.nilable(String)) }
+      def new_version_comment(old_ref, new_ref)
+        return unless version_class.correct?(old_ref)
+        return unless git_checker.ref_looks_like_commit_sha?(new_ref)
+
+        new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        return unless new_version_tag
+
+        " # #{new_version_tag}"
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_checker
+        @git_checker ||= T.let(
+          Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
