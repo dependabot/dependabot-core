@@ -380,12 +380,12 @@ module Dependabot
         # specific *manifest*, not a blob.  Use the correct endpoint so the
         # HEAD request succeeds on registries like ghcr.io.
         endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
-        blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           client = docker_registry_client
           client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
         end
 
-        last_modified = blob_info.headers[:last_modified]
+        last_modified = head_response.headers[:last_modified]
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(
