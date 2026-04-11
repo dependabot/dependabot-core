@@ -2866,6 +2866,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(result).to be_a(Dependabot::Package::PackageRelease)
         expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
       end
+
+      it "uses the blobs endpoint for a single-image digest" do
+        get_tag_publication_details
+        expect(mock_client).to have_received(:dohead).with("v2/ubuntu/blobs/sha256:abc123")
+      end
     end
 
     context "when client.digest returns an Array" do
@@ -2879,6 +2884,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         result = get_tag_publication_details
         expect(result).to be_a(Dependabot::Package::PackageRelease)
         expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+
+      it "uses the manifests endpoint for a manifest-list digest" do
+        get_tag_publication_details
+        expect(mock_client).to have_received(:dohead).with("v2/ubuntu/manifests/sha256:def456")
       end
     end
 
