@@ -1514,7 +1514,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         blob_headers =
           fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
 
-        stub_request(:head, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
+        stub_request(:head, repo_url + "manifests/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
           .and_return(status: 200, headers: JSON.parse(blob_headers))
       end
 
@@ -2869,7 +2869,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "uses the blobs endpoint for a single-image digest" do
         get_tag_publication_details
-        expect(mock_client).to have_received(:dohead).with("v2/ubuntu/blobs/sha256:abc123")
+        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/blobs/sha256:abc123")
       end
     end
 
@@ -2888,7 +2888,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "uses the manifests endpoint for a manifest-list digest" do
         get_tag_publication_details
-        expect(mock_client).to have_received(:dohead).with("v2/ubuntu/manifests/sha256:def456")
+        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/manifests/sha256:def456")
       end
     end
 
