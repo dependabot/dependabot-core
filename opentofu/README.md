@@ -15,6 +15,11 @@ OpenTofu support for [`dependabot-core`][core-repo].
    [dependabot-core-dev] ~ $ cd opentofu && rspec
    ```
 
+3. Run against an existing repo:
+   ```
+   bin/dry-run.rb opentofu diofeher/dependabot-example --dep="specific-dependency"
+   ```
+
 ### Configuration
 
 To enable OpenTofu support, add to your `dependabot.yml`:
