@@ -807,6 +807,7 @@ module Dependabot
             updated_content = package_json_preparer.replace_ssh_sources(updated_content)
             updated_content = lock_deps_with_latest_reqs(updated_content)
 
+            updated_content = package_json_preparer.remove_dev_engines(updated_content)
             updated_content = package_json_preparer.remove_invalid_characters(updated_content)
 
             T.must(@pre_npm_package_json_contents)[file.name] = updated_content
