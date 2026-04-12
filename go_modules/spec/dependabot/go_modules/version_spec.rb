@@ -9,6 +9,52 @@ RSpec.describe Dependabot::GoModules::Version do
 
   let(:version_string) { "1.0.0" }
 
+  describe ".pseudo_version?" do
+    subject { described_class.pseudo_version?(version_string) }
+
+    context "with a standard pseudo-version (no prior tag)" do
+      let(:version_string) { "v0.0.0-20180826012351-8a410e7b638d" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with a pseudo-version after a pre-release tag" do
+      let(:version_string) { "v1.4.0-rc1.0.20250929141436-dad09ab05b71" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with a pseudo-version after a release tag" do
+      let(:version_string) { "v1.0.1-0.20231231120000-abcdefabcdef" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with a normal version" do
+      let(:version_string) { "v1.0.0" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with a pre-release version" do
+      let(:version_string) { "v1.0.0-rc1" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with nil" do
+      let(:version_string) { nil }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with an incompatible version" do
+      let(:version_string) { "v3.0.0+incompatible" }
+
+      it { is_expected.to be(false) }
+    end
+  end
+
   describe ".correct?" do
     subject { described_class.correct?(version_string) }
 
