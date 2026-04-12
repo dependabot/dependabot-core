@@ -526,6 +526,112 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         )
       end
     end
+
+    context "when the maintainer name contains spaces" do
+      let(:dependency_name) { "npm-package-json-lint" }
+      let(:npm_url) { "https://registry.npmjs.org/npm-package-json-lint" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "10.0.0",
+          previous_version: "9.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^10.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:npm_all_versions_response) do
+        fixture("npm_responses", "npm-package-json-lint.json")
+      end
+
+      it "properly URL-encodes the maintainer name in the link" do
+        expect(maintainer_changes).to eq(
+          "This version was pushed to npm by " \
+          "[GitHub Actions](https://www.npmjs.com/~GitHub%20Actions), a new releaser " \
+          "for npm-package-json-lint since your current version."
+        )
+      end
+    end
+  end
+
+  describe "#encode_npm_releaser (private helper)" do
+    subject(:encoded) { finder.send(:encode_npm_releaser, releaser_name) }
+
+    context "with safe characters only (no encoding needed)" do
+      let(:releaser_name) { "dougwilson" }
+
+      it "returns the name unmodified" do
+        expect(encoded).to eq("dougwilson")
+      end
+    end
+
+    context "with safe characters including dot, underscore, dash" do
+      let(:releaser_name) { "user.name_test-pkg" }
+
+      it "returns the name unmodified" do
+        expect(encoded).to eq("user.name_test-pkg")
+      end
+    end
+
+    context "with space character" do
+      let(:releaser_name) { "GitHub Actions" }
+
+      it "encodes space as %20" do
+        expect(encoded).to eq("GitHub%20Actions")
+      end
+    end
+
+    context "with @ symbol (common in email-like usernames)" do
+      let(:releaser_name) { "user@domain" }
+
+      it "encodes @ as %40" do
+        expect(encoded).to eq("user%40domain")
+      end
+    end
+
+    context "with + symbol" do
+      let(:releaser_name) { "user+admin" }
+
+      it "encodes + as %2B" do
+        expect(encoded).to eq("user%2Badmin")
+      end
+    end
+
+    context "with / symbol" do
+      let(:releaser_name) { "scope/user" }
+
+      it "encodes / as %2F" do
+        expect(encoded).to eq("scope%2Fuser")
+      end
+    end
+
+    context "with mixed special characters" do
+      let(:releaser_name) { "user@host+admin" }
+
+      it "encodes all unsafe characters" do
+        expect(encoded).to eq("user%40host%2Badmin")
+      end
+    end
+
+    context "with empty string" do
+      let(:releaser_name) { "" }
+
+      it "returns empty string unchanged" do
+        expect(encoded).to eq("")
+      end
+    end
+
+    context "with numeric-only name" do
+      let(:releaser_name) { "12345" }
+
+      it "returns unchanged (digits are safe)" do
+        expect(encoded).to eq("12345")
+      end
+    end
   end
 
   describe "#install_script_changes" do

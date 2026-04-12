@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "cgi"
 require "excon"
 require "time"
 require "sorbet-runtime"
@@ -24,6 +25,12 @@ module Dependabot
         T::Array[String]
       )
 
+      # RFC 3986 unreserved characters safe in URI paths: A-Z, a-z, 0-9, ., _, -
+      # \w matches [a-zA-Z0-9_], combined with . and -, covers all safe characters.
+      # Characters outside this set require percent-encoding in npm releaser profile URLs.
+      CHARS_REQUIRING_ENCODING = T.let(/[^\w.-]/, Regexp)
+      private_constant :CHARS_REQUIRING_ENCODING
+
       sig { override.returns(T.nilable(String)) }
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
@@ -40,8 +47,9 @@ module Dependabot
         return unless npm_listing.dig("time", dependency.version)
         return if previous_releasers&.include?(npm_releaser)
 
+        encoded_releaser = encode_npm_releaser(T.must(npm_releaser))
         "This version was pushed to npm by " \
-          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "[#{npm_releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
           "releaser for #{dependency.name} since your current version."
       end
 
@@ -95,6 +103,18 @@ module Dependabot
         script_names = scripts.map { |s| "`#{s}`" }.join(", ")
         noun = scripts.size == 1 ? "script" : "scripts"
         "#{action} #{script_names} #{noun}"
+      end
+
+      # Encodes npm releaser names for safe inclusion in npmjs.com profile URLs.
+      # Optimization: Returns unmodified if all characters are RFC 3986 unreserved.
+      # Names with special characters (spaces, @, +, etc.) are percent-encoded.
+      sig { params(releaser: String).returns(String) }
+      def encode_npm_releaser(releaser)
+        # Early return for common case: most npm usernames contain only safe characters
+        return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
+
+        # CGI.escape encodes spaces as + (form encoding), but URL paths should use %20
+        CGI.escape(releaser).gsub("+", "%20")
       end
 
       sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
@@ -302,7 +322,7 @@ module Dependabot
           end
 
         # Remove trailing slashes and escape spaces for proper URL formatting
-        registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
+        registry_url = CGI.escape(registry_url).gsub("+", "%20").gsub(%r{/+$}, "")
 
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
