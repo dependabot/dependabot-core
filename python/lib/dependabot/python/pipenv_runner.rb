@@ -35,10 +35,14 @@ module Dependabot
         extras_spec = extras_specification
         package_spec = "#{dependency_name}#{extras_spec}#{constraint}"
 
-        command = "pyenv exec pipenv upgrade --verbose #{package_spec}"
-        command << " --dev" if lockfile_section == "develop"
+        # Use --categories to explicitly scope the upgrade to the correct section,
+        # preventing pipenv from auto-updating the package in other sections.
+        category = lockfile_section == "develop" ? "dev-packages" : "packages"
+        command = "pyenv exec pipenv upgrade --verbose --categories #{category} #{package_spec}"
+        fingerprint = "pyenv exec pipenv upgrade --verbose " \
+                      "--categories <category> <dependency_name><extras><constraint>"
 
-        run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><extras><constraint>")
+        run(command, fingerprint: fingerprint)
       end
 
       sig { params(constraint: T.nilable(String)).returns(T.nilable(String)) }
