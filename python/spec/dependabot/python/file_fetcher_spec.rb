@@ -1130,6 +1130,41 @@ RSpec.describe Dependabot::Python::FileFetcher do
         end
       end
 
+      context "when using a direct reference with file: URI (PEP 508)" do
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body:
+                fixture("github", "requirements_with_direct_reference_path_dependency.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my_package/setup.py?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "my_package/setup.cfg?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(:get, url + "my_package?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the path dependency" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(requirements.txt my_package/setup.py))
+        end
+      end
+
       context "when in a child requirement file" do
         before do
           stub_request(:get, url + "requirements.txt?ref=sha")
