@@ -358,9 +358,9 @@ module Dependabot
         content = req_file.content
         return [] if content.nil?
 
-        # Optionally matches the `name[extras] @ ` prefix of a direct reference (PEP 440).
+        # Optionally matches the `name[extras] @ ` prefix of a direct reference (PEP 508).
         # See https://peps.python.org/pep-0508/#grammar for the url_req grammar rule.
-        direct_reference_prefix = /(?:[^\s@#'"\n]+(?:\[[^\]]*\])?\s+@\s+)?/
+        direct_reference_prefix = /(?:[^\s@#'"\n\[]+(?:\[[^\]]*\])?[ \t]+@[ \t]+)?/
 
         uneditable_reqs =
           content

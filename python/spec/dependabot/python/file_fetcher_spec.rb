@@ -1163,6 +1163,24 @@ RSpec.describe Dependabot::Python::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name))
             .to match_array(%w(requirements.txt my_package/setup.py))
         end
+
+        context "when not editable" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha")
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body:
+                  fixture("github", "requirements_with_non_editable_direct_reference_path_dependency.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "fetches the path dependency" do
+            expect(file_fetcher_instance.files.map(&:name))
+              .to match_array(%w(requirements.txt my_package/setup.py))
+          end
+        end
       end
 
       context "when in a child requirement file" do
