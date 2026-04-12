@@ -7,7 +7,6 @@ ARG PY_3_13=3.13.11
 ARG PY_3_12=3.12.12
 ARG PY_3_11=3.11.14
 ARG PY_3_10=3.10.19
-ARG PY_3_9=3.9.24
 # https://github.com/pyenv/pyenv/releases
 ARG PYENV_VERSION=v2.6.16
 
@@ -20,7 +19,6 @@ ARG PY_3_13
 ARG PY_3_12
 ARG PY_3_11
 ARG PY_3_10
-ARG PY_3_9
 ARG PYENV_VERSION
 USER root
 
@@ -41,24 +39,6 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
 # In the future, we should consider dropping pyenv completely, as it's mostly used here for legacy reasons...
 # Although it is convenient when debugging to be able to quickly flip through environments.
 RUN mkdir "${PYENV_ROOT}/versions"
-
-## 3.9
-# Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
-# TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM docker.io/library/python:$PY_3_9-bookworm AS upstream-python-3.9
-FROM python-core AS python-3.9
-ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_9"
-COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
-COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
-COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/lib $PYTHON_INSTALL_LOCATION/lib
-# `pip` and other scripts need their shebangs rewritten for the new location
-RUN find $PYTHON_INSTALL_LOCATION/bin -type f -exec sed -i "1s|^#!/usr/local/bin/python|#!$PYTHON_INSTALL_LOCATION/bin/python|" {} +
-# Ensure pyenv works and it's the python version we expect
-RUN PYENV_VERSION=$PY_3_9 pyenv exec python --version | grep "Python $PY_3_9" || exit 1
-RUN bash /opt/python/helpers/build $PY_3_9
-# This python environment occupies ~0.5 GB and gets used for a fraction of jobs, so store it compressed.
-RUN cd $PYENV_ROOT/versions \
-  && tar -acf $PY_3_9.tar.zst $PY_3_9
 
 ## 3.10
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
@@ -175,7 +155,6 @@ COPY --chown=dependabot:dependabot --parents uv python common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # Running these steps last means that if the builds in the concurrent stages take longer it doesn't block the pipeline until the end.
-COPY --from=python-3.9 $PYENV_ROOT/versions/$PY_3_9.tar.zst $PYENV_ROOT/versions/$PY_3_9.tar.zst
 COPY --from=python-3.10 $PYENV_ROOT/versions/$PY_3_10.tar.zst $PYENV_ROOT/versions/$PY_3_10.tar.zst
 COPY --from=python-3.11 $PYENV_ROOT/versions/$PY_3_11.tar.zst $PYENV_ROOT/versions/$PY_3_11.tar.zst
 COPY --from=python-3.12 $PYENV_ROOT/versions/$PY_3_12.tar.zst $PYENV_ROOT/versions/$PY_3_12.tar.zst

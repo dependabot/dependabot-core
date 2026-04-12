@@ -21,7 +21,6 @@ module Dependabot
         3.12.12
         3.11.14
         3.10.19
-        3.9.24
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(
@@ -47,7 +46,7 @@ module Dependabot
         T::Array[Dependabot::Python::Version]
       )
 
-      NON_SUPPORTED_HIGHEST_VERSION = "3.8"
+      NON_SUPPORTED_HIGHEST_VERSION = "3.9"
 
       DEPRECATED_VERSIONS = T.let([Version.new(NON_SUPPORTED_HIGHEST_VERSION)].freeze, T::Array[Dependabot::Version])
 
