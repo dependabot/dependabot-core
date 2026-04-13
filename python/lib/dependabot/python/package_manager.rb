@@ -87,12 +87,14 @@ module Dependabot
         false
       end
 
+      # Poetry supports requires-poetry constraints in pyproject.toml;
+      # other Python package managers don't have an equivalent mechanism.
       sig { override.void }
       def raise_if_unsupported!
         super
         return unless requirement
         return unless version
-        return if T.cast(T.must(requirement).satisfied_by?(T.must(version)), T::Boolean)
+        return if T.must(requirement).satisfied_by?(T.must(version))
 
         raise Dependabot::ToolVersionNotSupported.new(
           NAME,
