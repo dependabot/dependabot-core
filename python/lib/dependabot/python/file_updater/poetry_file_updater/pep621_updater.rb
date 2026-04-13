@@ -38,13 +38,16 @@ module Dependabot
             old_specifiers = parse_specifiers(old_req)
             new_specifiers = parse_specifiers(new_req)
 
-            version_map = {}
-            old_specifiers.each_with_index do |old_spec, i|
-              new_spec = new_specifiers[i]
-              next unless new_spec && old_spec[:operator] == new_spec[:operator]
-              next if old_spec[:version] == new_spec[:version]
+            old_by_op = {}
+            old_specifiers.each { |s| old_by_op[s[:operator]] = s[:version] }
 
-              version_map[[old_spec[:operator], old_spec[:version]]] = new_spec[:version]
+            version_map = {}
+            new_specifiers.each do |new_spec|
+              old_version = old_by_op[new_spec[:operator]]
+              next unless old_version
+              next if old_version == new_spec[:version]
+
+              version_map[[new_spec[:operator], old_version]] = new_spec[:version]
             end
 
             result = source_req.dup

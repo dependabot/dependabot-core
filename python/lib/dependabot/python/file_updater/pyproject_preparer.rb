@@ -26,18 +26,27 @@ module Dependabot
 
         # Pins a single PEP 508 dependency entry string to a specific version,
         # preserving extras and environment markers.
+        #
+        # Handles three PEP 508 forms:
+        #   "name[extras] (>=1.0,<2.0) ; marker"   — parenthesized specifiers
+        #   "name[extras]>=1.0,<2.0 ; marker"       — bare specifiers
+        #   "name[extras] ; marker"                  — no specifiers
         sig { params(entry: String, name_pattern: String, version: String).returns(String) }
         def self.pin_pep508_entry(entry, name_pattern, version)
-          if entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~]/i)
-            entry.sub(
-              /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
-              "\\k<pre>==#{version}"
-            )
+          prefix   = "(?<pre>#{name_pattern}(?:\\[.*?\\])?)"
+          extras   = "(?:\\[.*?\\])?"
+          marker   = "(?<rest>\\s*(?:;.*)?)"
+          operator = "[><=!~]"
+
+          if entry.match?(/\A#{name_pattern}#{extras}\s*\(#{operator}/i)
+            # Parenthesized specifiers: strip the (...) block entirely
+            entry.sub(/#{prefix}\s*\(#{operator}[^)]*\)#{marker}/i, "\\k<pre>==#{version}\\k<rest>")
+          elsif entry.match?(/\A#{name_pattern}#{extras}\s*#{operator}/i)
+            # Bare specifiers: strip everything up to the marker
+            entry.sub(/#{prefix}\s*#{operator}[^;]*?(?=\s*;|\s*\z)/i, "\\k<pre>==#{version}")
           else
-            entry.sub(
-              /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
-              "\\k<pre>==#{version}\\k<rest>"
-            )
+            # No specifiers: just pin after the name
+            entry.sub(/#{prefix}#{marker}/i, "\\k<pre>==#{version}\\k<rest>")
           end
         end
         private_class_method :pin_pep508_entry
@@ -82,7 +91,7 @@ module Dependabot
           name_pattern = pep508_name_pattern(dep.name)
           dep_arrays.each do |arr|
             arr.each_with_index do |entry, i|
-              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[><=!~;,])/i)
+              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[(><=!~;,])/i)
 
               arr[i] = pin_pep508_entry(entry, name_pattern, T.must(dep.version))
             end
@@ -138,8 +147,8 @@ module Dependabot
             .gsub('#{', "{")
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
+        UNSUPPORTED_SOURCE_TYPES = T.let(%w(directory file url).freeze, T::Array[String])
+
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
         def freeze_top_level_dependencies_except(dependencies)
           return pyproject_content unless lockfile
@@ -154,32 +163,10 @@ module Dependabot
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
-            source_types = %w(directory file url)
             poetry_object.fetch(key).each do |dep_name, _|
               next if excluded_names.include?(normalise(dep_name))
 
-              locked_details = locked_details(dep_name)
-
-              next unless (locked_version = locked_details&.fetch("version"))
-
-              next if source_types.include?(locked_details.dig("source", "type"))
-
-              if locked_details.dig("source", "type") == "git"
-                poetry_object[key][dep_name] = {
-                  "git" => locked_details.dig("source", "url"),
-                  "rev" => locked_details.dig("source", "reference")
-                }
-                subdirectory = locked_details.dig("source", "subdirectory")
-                poetry_object[key][dep_name]["subdirectory"] = subdirectory if subdirectory
-              elsif poetry_object[key][dep_name].is_a?(Hash)
-                poetry_object[key][dep_name]["version"] = locked_version
-              elsif poetry_object[key][dep_name].is_a?(Array)
-                # if it has multiple-constraints, locking to a single version is
-                # going to result in a bad lockfile, ignore
-                next
-              else
-                poetry_object[key][dep_name] = locked_version
-              end
+              freeze_poetry_dep!(poetry_object[key], dep_name)
             end
           end
 
@@ -188,8 +175,6 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -198,6 +183,33 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { params(deps_hash: T::Hash[String, T.untyped], dep_name: String).void }
+        def freeze_poetry_dep!(deps_hash, dep_name)
+          details = locked_details(dep_name)
+          return unless (locked_version = details&.fetch("version"))
+
+          source_type = details.dig("source", "type")
+          return if UNSUPPORTED_SOURCE_TYPES.include?(source_type)
+
+          if source_type == "git"
+            freeze_git_dep!(deps_hash, dep_name, details)
+          elsif deps_hash[dep_name].is_a?(Hash)
+            deps_hash[dep_name]["version"] = locked_version
+          elsif !deps_hash[dep_name].is_a?(Array)
+            deps_hash[dep_name] = locked_version
+          end
+        end
+
+        sig { params(deps_hash: T::Hash[String, T.untyped], dep_name: String, details: T::Hash[String, T.untyped]).void }
+        def freeze_git_dep!(deps_hash, dep_name, details)
+          deps_hash[dep_name] = {
+            "git" => details.dig("source", "url"),
+            "rev" => details.dig("source", "reference")
+          }
+          subdirectory = details.dig("source", "subdirectory")
+          deps_hash[dep_name]["subdirectory"] = subdirectory if subdirectory
+        end
 
         sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
         def freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
