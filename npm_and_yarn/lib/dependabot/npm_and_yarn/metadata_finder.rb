@@ -25,10 +25,11 @@ module Dependabot
         T::Array[String]
       )
 
-      # RFC 3986 unreserved characters safe in URI paths: A-Z, a-z, 0-9, ., _, -
-      # \w matches [a-zA-Z0-9_], combined with . and -, covers all safe characters.
+      # RFC 3986 unreserved characters safe in URI paths: A-Z, a-z, 0-9, ., _, -, ~
+      # Use an explicit ASCII character class because Ruby's \w is encoding-aware
+      # and can match non-ASCII word characters under UTF-8.
       # Characters outside this set require percent-encoding in npm releaser profile URLs.
-      CHARS_REQUIRING_ENCODING = T.let(/[^\w.-]/, Regexp)
+      CHARS_REQUIRING_ENCODING = T.let(/[^A-Za-z0-9._~-]/, Regexp)
       private_constant :CHARS_REQUIRING_ENCODING
 
       sig { override.returns(T.nilable(String)) }
