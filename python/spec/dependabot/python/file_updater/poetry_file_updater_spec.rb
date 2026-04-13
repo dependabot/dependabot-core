@@ -967,7 +967,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       )
       allow(Dependabot::Python::PoetryPluginInstaller)
         .to receive(:from_dependency_files).and_return(plugin_installer)
-      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
       allow(updater).to receive_messages(
         write_temporary_dependency_files: nil,
@@ -976,7 +977,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
       language_version_manager = instance_double(
         Dependabot::Python::LanguageVersionManager,
-        install_required_python: nil
+        install_required_python: nil,
+        python_version: "3.12.0"
       )
       allow(updater).to receive(:language_version_manager).and_return(language_version_manager)
 

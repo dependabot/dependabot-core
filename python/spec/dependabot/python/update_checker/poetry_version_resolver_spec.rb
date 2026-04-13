@@ -674,7 +674,8 @@ RSpec.describe namespace::PoetryVersionResolver do
       )
       allow(Dependabot::Python::PoetryPluginInstaller)
         .to receive(:from_dependency_files).and_return(plugin_installer)
-      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
 
       language_version_manager = instance_double(
