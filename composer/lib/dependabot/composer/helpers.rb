@@ -55,9 +55,9 @@ module Dependabot
           major_version = version.canonical_segments.first
 
           if major_version && major_version <= 1
+            plugin_api_version = parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
             Dependabot.logger.warn(
-              "Composer V1 lockfile detected (plugin-api-version: " \
-              "#{parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]}). " \
+              "Composer V1 lockfile detected (plugin-api-version: #{plugin_api_version}). " \
               "Dependabot no longer supports Composer V1. Running with Composer V2."
             )
           end
