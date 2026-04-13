@@ -355,6 +355,10 @@ module Dependabot
       def normalize_registry_url(registry)
         return nil unless registry
 
+        # Encode whitespace characters (spaces, tabs, newlines) as %20.
+        # Note: This only handles spaces; other URL-unsafe characters (e.g., #, ?) are not encoded.
+        # However, this matches RegistryFinder's behavior exactly, so it's consistent and acceptable.
+        # If broader URL encoding is needed, that would be a separate concern for the entire codebase.
         registry = registry.strip.gsub(/\s+/, "%20")
         return registry if registry.start_with?("http")
 

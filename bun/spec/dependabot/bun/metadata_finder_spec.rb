@@ -696,4 +696,80 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       end
     end
   end
+
+  describe "#encode_npm_releaser (private helper)" do
+    subject(:encoded) { finder.send(:encode_npm_releaser, releaser_name) }
+
+    context "with safe characters only (no encoding needed)" do
+      let(:releaser_name) { "dougwilson" }
+
+      it "returns the name unmodified" do
+        expect(encoded).to eq("dougwilson")
+      end
+    end
+
+    context "with safe characters including dot, underscore, dash" do
+      let(:releaser_name) { "user.name_test-pkg" }
+
+      it "returns the name unmodified" do
+        expect(encoded).to eq("user.name_test-pkg")
+      end
+    end
+
+    context "with space character" do
+      let(:releaser_name) { "GitHub Actions" }
+
+      it "encodes space as %20" do
+        expect(encoded).to eq("GitHub%20Actions")
+      end
+    end
+
+    context "with @ symbol (common in email-like usernames)" do
+      let(:releaser_name) { "user@domain" }
+
+      it "encodes @ as %40" do
+        expect(encoded).to eq("user%40domain")
+      end
+    end
+
+    context "with + symbol" do
+      let(:releaser_name) { "user+admin" }
+
+      it "encodes + as %2B" do
+        expect(encoded).to eq("user%2Badmin")
+      end
+    end
+
+    context "with / symbol" do
+      let(:releaser_name) { "scope/user" }
+
+      it "encodes / as %2F" do
+        expect(encoded).to eq("scope%2Fuser")
+      end
+    end
+
+    context "with mixed special characters" do
+      let(:releaser_name) { "user@host+admin" }
+
+      it "encodes all unsafe characters" do
+        expect(encoded).to eq("user%40host%2Badmin")
+      end
+    end
+
+    context "with empty string" do
+      let(:releaser_name) { "" }
+
+      it "returns empty string unchanged" do
+        expect(encoded).to eq("")
+      end
+    end
+
+    context "with numeric-only name" do
+      let(:releaser_name) { "12345" }
+
+      it "returns unchanged (digits are safe)" do
+        expect(encoded).to eq("12345")
+      end
+    end
+  end
 end

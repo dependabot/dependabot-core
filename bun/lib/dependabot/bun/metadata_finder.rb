@@ -238,6 +238,12 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
+        # TODO: Remove URI::DEFAULT_PARSER.escape in favor of explicit space encoding (like npm_and_yarn).
+        # Currently, normalize_registry_url safely handles spaces for configured registries (new_source.nil?),
+        # but URI::DEFAULT_PARSER.escape remains here for the new_source case. This should be addressed in a
+        # separate concern when standardizing URL handling across all ecosystems.
+        # NOTE: URI::DEFAULT_PARSER.escape is deprecated and should be replaced with URI.encode_uri_component
+        # or a similar approach.
         # Remove trailing slashes and escape spaces for proper URL formatting
         registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
 
