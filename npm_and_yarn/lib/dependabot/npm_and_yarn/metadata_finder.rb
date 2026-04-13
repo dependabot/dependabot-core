@@ -3,7 +3,7 @@
 
 require "excon"
 require "time"
-require "uri"
+require "cgi"
 require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
@@ -113,8 +113,8 @@ module Dependabot
         # Early return for common case: most npm usernames contain only safe characters
         return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
 
-        # URI.encode_uri_component properly encodes for URL paths (%20 for spaces)
-        URI.encode_uri_component(releaser)
+        # CGI.escape uses + for spaces; convert to %20 for proper URL encoding
+        CGI.escape(releaser).gsub("+", "%20")
       end
 
       sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
@@ -321,8 +321,10 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
-        # Remove trailing slashes from registry URL
-        registry_url = registry_url.gsub(%r{/+$}, "")
+        # Encode spaces in registry URL for proper HTTP requests
+        registry_url = registry_url&.gsub(" ", "%20")
+        # Remove trailing slashes to avoid double slashes when appending dependency name
+        registry_url = registry_url&.gsub(%r{/+$}, "")
 
         # NPM registries expect slashes to be escaped
         escaped_dependency_name = dependency.name.gsub("/", "%2F")
