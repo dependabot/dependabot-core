@@ -205,7 +205,14 @@ module Dependabot
           end
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, old_tag: T.nilable(String), new_tag: T.nilable(String)).returns(String) }
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            content: String,
+            old_tag: T.nilable(String),
+            new_tag: T.nilable(String)
+          ).returns(String)
+        end
         def update_git_tag(dep, content, old_tag, new_tag)
           return content if old_tag.nil? || new_tag.nil?
 
@@ -220,7 +227,14 @@ module Dependabot
           end
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, old_branch: String, new_branch: T.nilable(String)).returns(String) }
+        sig do
+          params(
+            dep: Dependabot::Dependency,
+            content: String,
+            old_branch: String,
+            new_branch: T.nilable(String)
+          ).returns(String)
+        end
         def update_git_branch(dep, content, old_branch, new_branch)
           return content if new_branch.nil?
 

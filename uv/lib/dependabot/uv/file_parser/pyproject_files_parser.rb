@@ -151,14 +151,14 @@ module Dependabot
           [req].flatten.compact.filter_map do |requirement|
             next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
             # Skip git dependencies without a recognized ref type (tag, branch, or rev)
-            next if unrecognized_git_requirement?(requirement)
+            next if git_requirement_without_ref?(requirement)
 
             parse_single_requirement(requirement, type)
           end
         end
 
         sig { params(requirement: T.untyped).returns(T::Boolean) }
-        def unrecognized_git_requirement?(requirement)
+        def git_requirement_without_ref?(requirement)
           requirement.is_a?(Hash) && requirement["git"] &&
             !requirement["tag"] && !requirement["branch"] && !requirement["rev"]
         end
