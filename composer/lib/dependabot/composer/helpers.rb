@@ -48,13 +48,21 @@ module Dependabot
           .returns(String)
       end
       def self.composer_version(composer_json, parsed_lockfile = nil)
-        # If the parsed lockfile has a plugin API version, we return either V1 or V2
-        # based on the major version of the lockfile.
+        # If the parsed lockfile has a plugin API version, always use V2.
+        # V1 helpers have been removed, so we run with Composer V2 regardless.
         if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
           version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY])
           major_version = version.canonical_segments.first
 
-          return major_version.nil? || major_version > 1 ? V2 : V1
+          if major_version && major_version <= 1
+            Dependabot.logger.warn(
+              "Composer V1 lockfile detected (plugin-api-version: " \
+              "#{parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]}). " \
+              "Dependabot no longer supports Composer V1. Running with Composer V2."
+            )
+          end
+
+          return V2
         end
 
         # Check if the composer name does not follow the Composer V2 naming conventions.
