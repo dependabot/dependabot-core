@@ -106,7 +106,9 @@ module Dependabot
                   groups: [dep["requirement_type"]].compact
                 }],
                 package_manager: "pip",
-                metadata: extras_metadata(dep["extras"])
+                metadata: extras_metadata(dep["extras"]).merge(
+                  source_requirement: dep["source_requirement"]
+                ).compact
               )
           end
 

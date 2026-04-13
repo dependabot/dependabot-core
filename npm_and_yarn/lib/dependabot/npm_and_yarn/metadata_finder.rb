@@ -321,7 +321,7 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
-          # Remove trailing slashes from registry URL
+        # Remove trailing slashes from registry URL
         registry_url = registry_url.gsub(%r{/+$}, "")
 
         # NPM registries expect slashes to be escaped
