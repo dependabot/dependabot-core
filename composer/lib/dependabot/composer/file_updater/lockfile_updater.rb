@@ -10,6 +10,7 @@ require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/helpers"
 require "dependabot/composer/update_checker/version_resolver"
+require "dependabot/composer/credential_helpers"
 require "sorbet-runtime"
 
 # rubocop:disable Metrics/ClassLength
@@ -298,26 +299,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def merged_auth_json_content
-          base = auth_json ? JSON.parse(T.must(auth_json).content) : {}
-
-          http_basic = credentials
-                       .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
-                       .select { |cred| cred["password"] }
-                       .to_h do |cred|
-                         [cred["registry"], {
-                           "username" => cred["username"],
-                           "password" => cred["password"]
-                         }]
-                       end
-
-          if http_basic.any?
-            base["http-basic"] ||= {}
-            base["http-basic"].merge!(http_basic)
-          end
-
-          base
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, T.must(auth_json).path
+          CredentialHelpers.merged_auth_json_content(auth_json, credentials)
         end
 
         sig { returns(String) }
@@ -559,21 +541,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         def auth_json_credentials
-          json = auth_json
-          return [] unless json
-
-          parsed_auth_json = JSON.parse(T.must(json.content))
-          parsed_auth_json.fetch("http-basic", {}).map do |reg, details|
-            Dependabot::Credential.new(
-              {
-                "registry" => reg,
-                "username" => details["username"],
-                "password" => details["password"]
-              }
-            )
-          end
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, T.must(json).path
+          CredentialHelpers.auth_json_credentials(auth_json)
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }
