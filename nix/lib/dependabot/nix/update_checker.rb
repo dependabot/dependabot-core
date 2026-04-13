@@ -151,9 +151,7 @@ module Dependabot
       sig { returns(T::Boolean) }
       def ref_pinned_to_version_tag?
         return false unless git_commit_checker.git_dependency?
-
-        ref = dependency_source_ref
-        return false unless ref
+        return false unless dependency_source_ref
 
         git_commit_checker.pinned_ref_looks_like_version?
       end

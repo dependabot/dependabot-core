@@ -153,6 +153,26 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
         expect(result).to be_nil
       end
     end
+
+    context "with similar input names" do
+      let(:content) do
+        <<~NIX
+          {
+            inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+            inputs.my-nixpkgs.url = "github:myorg/my-nixpkgs/main";
+            outputs = { ... }: { };
+          }
+        NIX
+      end
+
+      it "does not match a longer name containing the input name" do
+        result = described_class.find_input_url(content, "nixpkgs")
+
+        expect(result).not_to be_nil
+        expect(result.owner).to eq("NixOS")
+        expect(result.repo).to eq("nixpkgs")
+      end
+    end
   end
 
   describe ".update_input_ref" do

@@ -96,16 +96,19 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def find_url_match
         escaped_name = Regexp.escape(input_name)
+        # Nix identifiers can contain letters, digits, underscores, hyphens, and apostrophes.
+        # Anchor the name so we don't match inside longer identifiers (e.g. "my-nixpkgs").
+        bounded_name = "(?<![A-Za-z0-9_'\\-])#{escaped_name}(?![A-Za-z0-9_'\\-])"
 
         # Pattern 1: inputs.NAME.url = "URL";
         # Pattern 2: NAME.url = "URL";  (inside inputs block)
-        url_assignment = /(?:inputs\.)?#{escaped_name}\.url\s*=\s*"(?<url>[^"]+)"/
+        url_assignment = /(?:inputs\.)?#{bounded_name}\.url\s*=\s*"(?<url>[^"]+)"/
         match = url_assignment.match(content)
         return url_match_hash(match) if match
 
         # Pattern 3: NAME = { ... url = "URL"; ... }
         # Use a non-greedy match to find the url inside the attribute set
-        attr_set = /#{escaped_name}\s*=\s*\{[^}]*?\burl\s*=\s*"(?<url>[^"]+)"/m
+        attr_set = /#{bounded_name}\s*=\s*\{[^}]*?\burl\s*=\s*"(?<url>[^"]+)"/m
         match = attr_set.match(content)
         return url_match_hash(match) if match
 
