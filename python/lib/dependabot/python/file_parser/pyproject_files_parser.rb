@@ -84,20 +84,7 @@ module Dependabot
           return dependencies if using_pdm?
 
           parse_pep621_pep735_dependencies.each do |dep|
-            # If a requirement has a `<` or `<=` marker then updating it is
-            # probably blocked. Ignore it.
-            next if dep["markers"]&.include?("<")
-
-            # If no requirement, don't add it
-            next if dep["requirement"].empty?
-
-            # Skip build-system.requires dependencies when using Poetry
-            # Poetry manages its own build system dependencies
-            next if using_poetry? && dep["requirement_type"] == "build-system.requires"
-
-            # When dependencies or optional-dependencies are listed in project.dynamic,
-            # they are managed by the build backend (e.g. Poetry) — skip the PEP 621 path
-            next if dynamic_pep621_dep?(dep["requirement_type"])
+            next if skip_pep621_dep?(dep)
 
             dependencies <<
               Dependency.new(
@@ -241,6 +228,24 @@ module Dependabot
             parsed_pyproject.dig("project", "dynamic") || [],
             T.nilable(T::Array[String])
           )
+        end
+
+        sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
+        def skip_pep621_dep?(dep)
+          # If a requirement has a `<` or `<=` marker then updating it is
+          # probably blocked. Ignore it.
+          return true if dep["markers"]&.include?("<")
+
+          # If no requirement, don't add it
+          return true if dep["requirement"].empty?
+
+          # Skip build-system.requires dependencies when using Poetry
+          # Poetry manages its own build system dependencies
+          return true if using_poetry? && dep["requirement_type"] == "build-system.requires"
+
+          # When dependencies or optional-dependencies are listed in project.dynamic,
+          # they are managed by the build backend (e.g. Poetry) — skip the PEP 621 path
+          dynamic_pep621_dep?(dep["requirement_type"])
         end
 
         sig { params(requirement_type: T.nilable(String)).returns(T::Boolean) }
