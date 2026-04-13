@@ -23,8 +23,8 @@ module Dependabot
       def self.auth_json_credentials(auth_json_file)
         return [] unless auth_json_file
 
-        parsed_auth_json = JSON.parse(T.must(auth_json_file.content))
-        parsed_auth_json.fetch("http-basic", {}).map do |reg, details|
+        parsed = parse_auth_json(auth_json_file)
+        parsed.fetch("http-basic", {}).map do |reg, details|
           Dependabot::Credential.new(
             {
               "registry" => reg,
@@ -33,8 +33,6 @@ module Dependabot
             }
           )
         end
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, T.must(auth_json_file).path
       end
 
       # Returns merged auth.json content combining the repo's auth.json with
@@ -46,7 +44,7 @@ module Dependabot
         ).returns(T::Hash[String, T.untyped])
       end
       def self.merged_auth_json_content(auth_json_file, credentials)
-        base = auth_json_file ? JSON.parse(T.must(auth_json_file.content)) : {}
+        base = auth_json_file ? parse_auth_json(auth_json_file) : {}
 
         http_basic = credentials
                      .select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY }
@@ -64,9 +62,21 @@ module Dependabot
         end
 
         base
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, T.must(auth_json_file).path
       end
+
+      # Parses the content of an auth.json dependency file, raising a
+      # DependencyFileNotParseable error if the content is not valid JSON.
+      sig do
+        params(auth_json_file: Dependabot::DependencyFile)
+          .returns(T::Hash[String, T.untyped])
+      end
+      def self.parse_auth_json(auth_json_file)
+        JSON.parse(T.must(auth_json_file.content))
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, auth_json_file.path
+      end
+
+      private_class_method :parse_auth_json
     end
   end
 end

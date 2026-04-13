@@ -940,6 +940,54 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with both auth.json and registry credentials" do
+      let(:project_name) { "private_registry_with_auth_json" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dependabot/dummy-pkg-a",
+          version: "2.0.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.0",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "composer_repository",
+          "registry" => "other.registry.com",
+          "username" => "other-user",
+          "password" => "other-pass"
+        }]
+      end
+
+      it "merges credentials from both sources" do
+        expect(merged_content.dig("http-basic", "php.fury.io")).to include(
+          "username" => "user",
+          "password" => "pass"
+        )
+        expect(merged_content.dig("http-basic", "other.registry.com")).to include(
+          "username" => "other-user",
+          "password" => "other-pass"
+        )
+      end
+    end
+
     context "with unparseable auth.json" do
       let(:project_name) { "private_registry_with_unparseable_auth_json" }
       let(:dependency) do
