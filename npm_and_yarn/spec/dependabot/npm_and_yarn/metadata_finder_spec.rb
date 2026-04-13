@@ -964,6 +964,22 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
 
+      context "with registry URL containing spaces" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "http://example.com/registry  with spaces",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "percent-encodes spaces in the registry URL" do
+          expect(dependency_url).to eq("http://example.com/registry%20with%20spaces/etag")
+        end
+      end
+
       context "with multiple credentials" do
         let(:credentials) do
           [

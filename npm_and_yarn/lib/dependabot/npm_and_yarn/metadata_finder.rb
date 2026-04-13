@@ -354,6 +354,8 @@ module Dependabot
       sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
       def normalize_registry_url(registry)
         return nil unless registry
+
+        registry = registry.strip.gsub(/\s+/, "%20")
         return registry if registry.start_with?("http")
 
         "https://#{registry}"
