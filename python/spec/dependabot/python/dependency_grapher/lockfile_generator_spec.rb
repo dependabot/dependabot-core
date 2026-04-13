@@ -94,6 +94,19 @@ RSpec.describe Dependabot::Python::DependencyGrapher::LockfileGenerator do
           .with("pyenv exec poetry lock --no-interaction",
                 fingerprint: "pyenv exec poetry lock --no-interaction")
       end
+
+      it "invokes the poetry plugin installer" do
+        plugin_installer = instance_double(
+          Dependabot::Python::PoetryPluginInstaller,
+          install_required_plugins: nil
+        )
+        allow(Dependabot::Python::PoetryPluginInstaller)
+          .to receive(:from_dependency_files).and_return(plugin_installer)
+
+        generator.generate
+
+        expect(plugin_installer).to have_received(:install_required_plugins)
+      end
     end
 
     context "when poetry lock fails" do

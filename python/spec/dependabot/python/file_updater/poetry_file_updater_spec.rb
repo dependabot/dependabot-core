@@ -957,6 +957,40 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "plugin installation during update" do
+    it "invokes the poetry plugin installer" do
+      plugin_installer = instance_double(
+        Dependabot::Python::PoetryPluginInstaller,
+        install_required_plugins: nil
+      )
+      allow(Dependabot::Python::PoetryPluginInstaller)
+        .to receive(:from_dependency_files).and_return(plugin_installer)
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+      allow(updater).to receive_messages(
+        write_temporary_dependency_files: nil,
+        add_auth_env_vars: nil
+      )
+
+      language_version_manager = instance_double(
+        Dependabot::Python::LanguageVersionManager,
+        install_required_python: nil
+      )
+      allow(updater).to receive(:language_version_manager).and_return(language_version_manager)
+
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with("poetry.lock").and_return("lock content")
+
+      begin
+        updater.updated_dependency_files
+      rescue StandardError
+        nil
+      end
+
+      expect(plugin_installer).to have_received(:install_required_plugins)
+    end
+  end
+
   describe "#prepared_project_file" do
     subject(:prepared_project) { updater.send(:prepared_pyproject) }
 

@@ -665,4 +665,32 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
   end
+
+  describe "plugin installation during resolution" do
+    it "invokes the poetry plugin installer" do
+      plugin_installer = instance_double(
+        Dependabot::Python::PoetryPluginInstaller,
+        install_required_plugins: nil
+      )
+      allow(Dependabot::Python::PoetryPluginInstaller)
+        .to receive(:from_dependency_files).and_return(plugin_installer)
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+      language_version_manager = instance_double(
+        Dependabot::Python::LanguageVersionManager,
+        install_required_python: nil
+      )
+      allow(resolver).to receive(:language_version_manager).and_return(language_version_manager)
+      allow(resolver).to receive(:write_temporary_dependency_files).and_return(nil)
+
+      begin
+        resolver.latest_resolvable_version(requirement: "*")
+      rescue StandardError
+        nil
+      end
+
+      expect(plugin_installer).to have_received(:install_required_plugins)
+    end
+  end
 end
