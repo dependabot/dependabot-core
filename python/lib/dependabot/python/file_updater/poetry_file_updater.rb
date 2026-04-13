@@ -108,7 +108,7 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(String) }
         def replace_dep(dep, content, new_r, old_r)
-          return update_git_tag(dep, content, new_r, old_r) if git_dependency?(new_r) && git_dependency?(old_r)
+          return update_git_ref(dep, content, new_r, old_r) if git_dependency?(new_r) && git_dependency?(old_r)
 
           replace_poetry_dep(dep, content, new_r, old_r) ||
             replace_poetry_table_dep(dep, content, new_r, old_r) ||
@@ -159,11 +159,24 @@ module Dependabot
         end
 
         sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(String) }
-        def update_git_tag(dep, content, new_r, old_r)
-          old_tag = old_r.dig(:source, :ref)
-          new_tag = new_r.dig(:source, :ref)
+        def update_git_ref(dep, content, new_r, old_r)
+          old_ref = old_r.dig(:source, :ref)
+          new_ref = new_r.dig(:source, :ref)
 
-          return content if old_tag == new_tag
+          return content if old_ref == new_ref
+
+          old_branch = old_r.dig(:source, :branch)
+
+          if old_branch
+            update_git_branch(dep, content, old_branch, new_r.dig(:source, :branch) || new_ref)
+          else
+            update_git_tag(dep, content, old_ref, new_ref)
+          end
+        end
+
+        sig { params(dep: Dependabot::Dependency, content: String, old_tag: T.nilable(String), new_tag: T.nilable(String)).returns(String) }
+        def update_git_tag(dep, content, old_tag, new_tag)
+          return content if old_tag.nil? || new_tag.nil?
 
           # Match git dependency declaration with tag
           # Example: fastapi = { git = "...", extras = ["all"], tag = "0.110.0" }
@@ -175,6 +188,23 @@ module Dependabot
           content.gsub(git_dep_regex) do
             match_data = T.must(Regexp.last_match)
             "#{match_data[1]}#{dep.name}#{match_data[2]}\"#{new_tag}\"#{match_data[3]}"
+          end
+        end
+
+        sig { params(dep: Dependabot::Dependency, content: String, old_branch: String, new_branch: T.nilable(String)).returns(String) }
+        def update_git_branch(dep, content, old_branch, new_branch)
+          return content if new_branch.nil?
+
+          # Match git dependency declaration with branch
+          # Example: toml = { git = "...", branch = "master" }
+          git_dep_regex = /
+            ^(\s*)#{Regexp.escape(dep.name)}(\s*=\s*\{[^}]*branch\s*=\s*)
+            ["']#{Regexp.escape(old_branch)}["']([^}]*\})
+          /mx
+
+          content.gsub(git_dep_regex) do
+            match_data = T.must(Regexp.last_match)
+            "#{match_data[1]}#{dep.name}#{match_data[2]}\"#{new_branch}\"#{match_data[3]}"
           end
         end
 

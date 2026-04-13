@@ -1440,4 +1440,64 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
   end
+
+  describe "Git dependencies with branch" do
+    let(:pyproject_fixture_name) { "git_dependency_with_branch.toml" }
+    let(:dependency_files) { [pyproject] }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "toml",
+        version: nil,
+        previous_version: nil,
+        package_manager: "pip",
+        requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          source: {
+            type: "git",
+            url: "https://github.com/uiri/toml",
+            ref: "develop",
+            branch: "develop"
+          },
+          groups: ["dependencies"]
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          file: "pyproject.toml",
+          source: {
+            type: "git",
+            url: "https://github.com/uiri/toml",
+            ref: "master",
+            branch: "master"
+          },
+          groups: ["dependencies"]
+        }]
+      )
+    end
+
+    describe "#updated_dependency_files" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      it "updates only the pyproject.toml file" do
+        expect(updated_files.map(&:name)).to eq(["pyproject.toml"])
+      end
+
+      it "updates the git branch in the pyproject file" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('branch = "develop"')
+        expect(updated_pyproject.content).not_to include('branch = "master"')
+      end
+
+      it "preserves the git URL" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('git = "https://github.com/uiri/toml"')
+      end
+
+      it "does not add a version field to the git dependency" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        toml_line = updated_pyproject.content.lines.find { |l| l.include?("toml") }
+        expect(toml_line).not_to include("version")
+      end
+    end
+  end
 end
