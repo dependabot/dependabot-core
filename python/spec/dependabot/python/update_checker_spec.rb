@@ -1818,6 +1818,39 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               .to have_been_made.once
           end
         end
+
+        context "when PyPI request raises Excon::Error::Timeout" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Timeout.new("connection timeout"))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
+
+        context "when PyPI request raises Excon::Error::Socket" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
+
+        context "when PyPI request raises URI::InvalidURIError" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(URI::InvalidURIError.new("bad URI"))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
       end
 
       context "when updating a dependency in an additional requirements file" do
