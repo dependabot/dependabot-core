@@ -208,8 +208,9 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
           .to receive(:new).and_return(branch_finder)
       end
 
-      it "returns nil when no newer branch exists" do
-        expect(checker.latest_version).to be_nil
+      it "falls back to commit tracking" do
+        allow(checker).to receive(:fetch_latest_version_for_commit).and_return("ddd444")
+        expect(checker.latest_version).to eq("ddd444")
       end
     end
   end

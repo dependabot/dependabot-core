@@ -64,7 +64,7 @@ module Dependabot
         if ref_pinned_to_version_tag?
           fetch_latest_version_for_tag
         elsif ref_is_versioned_branch?
-          fetch_latest_version_for_versioned_branch
+          fetch_latest_version_for_versioned_branch || fetch_latest_version_for_commit
         else
           fetch_latest_version_for_commit
         end
