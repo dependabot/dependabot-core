@@ -322,6 +322,10 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
+        # Registry URLs are expected to be well-formed HTTPS URLs from credential configuration.
+        # We do not perform character escaping here; if a registry URL contains unsafe characters
+        # (spaces, #, ?), it will generate an invalid HTTP request and fail at the HTTP layer.
+        # This is preferable to silently escaping the URL, which could mask configuration errors.
         # Remove trailing slashes to avoid double slashes when appending dependency name
         registry_url = registry_url&.gsub(%r{/+$}, "")
 
