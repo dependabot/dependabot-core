@@ -15,11 +15,12 @@ module Dependabot
       class VersionedBranchFinder
         extend T::Sig
 
-        # Matches branch names ending with a YY.MM version segment.
-        # Captures the prefix (including the separator) and the version.
-        # Examples: "nixos-24.11" => prefix="nixos-", version="24.11"
-        #           "release-24.11" => prefix="release-", version="24.11"
-        VERSIONED_BRANCH_PATTERN = /\A(.+[.\-_])(\d{2}\.\d{2})\z/
+        # Matches branch names with a YY.MM version segment and optional suffix.
+        # Captures: prefix (including separator), version, and optional suffix.
+        # Examples: "nixos-24.11" => prefix="nixos-", version="24.11", suffix=nil
+        #           "nixos-24.11-small" => prefix="nixos-", version="24.11", suffix="-small"
+        #           "release-24.11-aarch64" => prefix="release-", version="24.11", suffix="-aarch64"
+        VERSIONED_BRANCH_PATTERN = /\A(.+[.\-_])(\d{2}\.\d{2})(-[a-zA-Z0-9]+)?\z/
         private_constant :VERSIONED_BRANCH_PATTERN
 
         sig do
@@ -52,8 +53,8 @@ module Dependabot
           current_version = parse_version(T.must(match[2]))
           return unless current_version
 
-          best = find_latest_branch(T.must(prefix), current_version)
-          best
+          suffix = match[3] # nil if no suffix, e.g. "-small" if present
+          find_latest_branch(T.must(prefix), current_version, suffix)
         end
 
         private
@@ -75,12 +76,19 @@ module Dependabot
           )
         end
 
-        sig { params(prefix: String, current_version: T::Array[Integer]).returns(T.nilable(T::Hash[Symbol, String])) }
-        def find_latest_branch(prefix, current_version)
+        sig do
+          params(
+            prefix: String,
+            current_version: T::Array[Integer],
+            suffix: T.nilable(String)
+          ).returns(T.nilable(T::Hash[Symbol, String]))
+        end
+        def find_latest_branch(prefix, current_version, suffix)
           candidates = remote_branches.filter_map do |ref|
             branch_match = VERSIONED_BRANCH_PATTERN.match(ref.name)
             next unless branch_match
             next unless branch_match[1] == prefix
+            next unless branch_match[3] == suffix
 
             version = parse_version(T.must(branch_match[2]))
             next unless version

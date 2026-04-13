@@ -82,6 +82,24 @@ RSpec.describe Dependabot::Nix::UpdateChecker::VersionedBranchFinder do
 
       it { expect(finder.versioned_branch?).to be true }
     end
+
+    context "with nixos-24.11-small" do
+      let(:current_ref) { "nixos-24.11-small" }
+
+      it { expect(finder.versioned_branch?).to be true }
+    end
+
+    context "with nixpkgs-24.11-darwin" do
+      let(:current_ref) { "nixpkgs-24.11-darwin" }
+
+      it { expect(finder.versioned_branch?).to be true }
+    end
+
+    context "with nixos-unstable-small" do
+      let(:current_ref) { "nixos-unstable-small" }
+
+      it { expect(finder.versioned_branch?).to be false }
+    end
   end
 
   describe "#latest_versioned_branch" do
@@ -173,6 +191,25 @@ RSpec.describe Dependabot::Nix::UpdateChecker::VersionedBranchFinder do
 
       it "returns nil" do
         expect(finder.latest_versioned_branch).to be_nil
+      end
+    end
+
+    context "with a suffixed branch (nixos-24.11-small)" do
+      let(:current_ref) { "nixos-24.11-small" }
+
+      let(:remote_branches) do
+        [
+          Dependabot::GitRef.new(name: "nixos-24.11", commit_sha: "aaa111", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-24.11-small", commit_sha: "bbb222", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-25.05", commit_sha: "ccc333", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-25.05-small", commit_sha: "ddd444", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-25.05-aarch64", commit_sha: "eee555", ref_type: Dependabot::RefType::Head)
+        ]
+      end
+
+      it "only matches branches with the same suffix" do
+        result = finder.latest_versioned_branch
+        expect(result).to eq({ branch: "nixos-25.05-small", commit_sha: "ddd444" })
       end
     end
   end

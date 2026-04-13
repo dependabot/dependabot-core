@@ -23,6 +23,14 @@ module Dependabot
       }x
       private_constant :FLAKE_URL_PATTERN
 
+      # Matches indirect/registry shorthand URLs: nixpkgs/nixos-24.11
+      # These have no scheme prefix (no ":") and resolve via the nix flake registry.
+      INDIRECT_URL_PATTERN = %r{
+        \A(?<id>[a-zA-Z0-9_\-]+)
+        /(?<ref>[a-zA-Z0-9_\-\./]+)\z
+      }x
+      private_constant :INDIRECT_URL_PATTERN
+
       # Matches an input URL assignment tied to a specific input name.
       # Covers the common syntactic forms:
       #   inputs.NAME.url = "URL";
@@ -53,16 +61,33 @@ module Dependabot
         return unless match
 
         url_str = match[:url]
+
+        # Try shorthand scheme first (github:, gitlab:, sourcehut:)
         url_match = FLAKE_URL_PATTERN.match(url_str)
-        return unless url_match
+        if url_match
+          return InputUrl.new(
+            full_url: url_str,
+            scheme: T.must(url_match[:scheme]),
+            owner: T.must(url_match[:owner]),
+            repo: T.must(url_match[:repo]),
+            ref: url_match[:ref],
+            query: url_match[:query],
+            match_start: match[:url_start],
+            match_end: match[:url_end]
+          )
+        end
+
+        # Try indirect/registry shorthand (e.g. nixpkgs/nixos-24.11)
+        indirect_match = INDIRECT_URL_PATTERN.match(url_str)
+        return unless indirect_match
 
         InputUrl.new(
           full_url: url_str,
-          scheme: T.must(url_match[:scheme]),
-          owner: T.must(url_match[:owner]),
-          repo: T.must(url_match[:repo]),
-          ref: url_match[:ref],
-          query: url_match[:query],
+          scheme: "indirect",
+          owner: T.must(indirect_match[:id]),
+          repo: "",
+          ref: indirect_match[:ref],
+          query: nil,
           match_start: match[:url_start],
           match_end: match[:url_end]
         )
@@ -155,8 +180,12 @@ module Dependabot
 
       sig { params(input_url: InputUrl, new_ref: String).returns(String) }
       def build_updated_url(input_url, new_ref)
-        base = "#{input_url.scheme}:#{input_url.owner}/#{input_url.repo}/#{new_ref}"
-        input_url.query ? "#{base}?#{input_url.query}" : base
+        if input_url.scheme == "indirect"
+          "#{input_url.owner}/#{new_ref}"
+        else
+          base = "#{input_url.scheme}:#{input_url.owner}/#{input_url.repo}/#{new_ref}"
+          input_url.query ? "#{base}?#{input_url.query}" : base
+        end
       end
 
       # Represents a parsed flake input URL from flake.nix

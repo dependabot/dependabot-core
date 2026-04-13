@@ -211,6 +211,26 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
         expect(result.ref).to eq("nixos-unstable")
       end
     end
+
+    context "with indirect/shorthand URL" do
+      let(:content) do
+        <<~NIX
+          {
+            inputs.nixpkgs.url = "nixpkgs/nixos-24.11";
+            outputs = { ... }: { };
+          }
+        NIX
+      end
+
+      it "parses the indirect URL" do
+        result = described_class.find_input_url(content, "nixpkgs")
+
+        expect(result).not_to be_nil
+        expect(result.scheme).to eq("indirect")
+        expect(result.owner).to eq("nixpkgs")
+        expect(result.ref).to eq("nixos-24.11")
+      end
+    end
   end
 
   describe ".update_input_ref" do
@@ -281,6 +301,24 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       it "returns nil" do
         updated = described_class.update_input_ref(content, "nonexistent", "v1.0")
         expect(updated).to be_nil
+      end
+    end
+
+    context "with indirect/shorthand URL" do
+      let(:content) do
+        <<~NIX
+          {
+            inputs.nixpkgs.url = "nixpkgs/nixos-24.11";
+            outputs = { ... }: { };
+          }
+        NIX
+      end
+
+      it "rewrites the ref in the indirect URL" do
+        updated = described_class.update_input_ref(content, "nixpkgs", "nixos-25.05")
+
+        expect(updated).to include('"nixpkgs/nixos-25.05"')
+        expect(updated).not_to include("nixos-24.11")
       end
     end
   end
