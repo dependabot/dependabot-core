@@ -287,7 +287,37 @@ module Dependabot
 
           File.write(PackageManager::MANIFEST_FILENAME, locked_composer_json_content)
           File.write(PackageManager::LOCKFILE_FILENAME, lockfile.content)
-          File.write(PackageManager::AUTH_FILENAME, T.must(auth_json).content) if auth_json
+          write_auth_file
+        end
+
+        sig { void }
+        def write_auth_file
+          content = merged_auth_json_content
+          File.write(PackageManager::AUTH_FILENAME, JSON.dump(content)) unless content.empty?
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def merged_auth_json_content
+          base = auth_json ? JSON.parse(T.must(auth_json).content) : {}
+
+          http_basic = credentials
+                       .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
+                       .select { |cred| cred["password"] }
+                       .to_h do |cred|
+                         [cred["registry"], {
+                           "username" => cred["username"],
+                           "password" => cred["password"]
+                         }]
+                       end
+
+          if http_basic.any?
+            base["http-basic"] ||= {}
+            base["http-basic"].merge!(http_basic)
+          end
+
+          base
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, T.must(auth_json).path
         end
 
         sig { returns(String) }
@@ -523,7 +553,29 @@ module Dependabot
         def registry_credentials
           credentials
             .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
-            .select { |cred| cred["password"] }
+            .select { |cred| cred["password"] } +
+            auth_json_credentials
+        end
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        def auth_json_credentials
+          json = auth_json
+          return [] unless json
+
+          parsed_auth_json = JSON.parse(T.must(json.content))
+          parsed_auth_json.fetch("http-basic", {}).map do |reg, details|
+            Dependabot::Credential.new(
+              {
+                "registry" => reg,
+                "username" => details["username"],
+                "password" => details["password"]
+              }
+            )
+          end
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, json.path if json
+
+          raise Dependabot::DependencyFileNotParseable, "Unknown path"
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

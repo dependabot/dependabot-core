@@ -804,4 +804,172 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
   end
+
+  describe "#registry_credentials" do
+    subject(:registry_credentials) { updater.send(:registry_credentials) }
+
+    context "with auth.json credentials in dependency files" do
+      let(:project_name) { "private_registry_with_auth_json" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dependabot/dummy-pkg-a",
+          version: "2.0.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.0",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      end
+
+      it "includes credentials from auth.json" do
+        expect(registry_credentials.map { |c| c["registry"] }).to include("php.fury.io")
+      end
+
+      it "includes the correct username and password from auth.json" do
+        cred = registry_credentials.find { |c| c["registry"] == "php.fury.io" }
+        expect(cred["username"]).to eq("user")
+        expect(cred["password"]).to eq("pass")
+      end
+    end
+
+    context "with composer_repository credentials" do
+      it "includes credentials from dependabot.yml" do
+        credentials_with_registry = credentials + [{
+          "type" => "composer_repository",
+          "registry" => "registry.example.com",
+          "username" => "user",
+          "password" => "pass"
+        }]
+        updater_with_creds = described_class.new(
+          dependency_files: files,
+          dependencies: [dependency],
+          credentials: credentials_with_registry
+        )
+        result = updater_with_creds.send(:registry_credentials)
+        expect(result.map { |c| c["registry"] }).to include("registry.example.com")
+      end
+    end
+  end
+
+  describe "#merged_auth_json_content" do
+    subject(:merged_content) { updater.send(:merged_auth_json_content) }
+
+    context "without auth.json or registry credentials" do
+      it "returns empty hash" do
+        expect(merged_content).to eq({})
+      end
+    end
+
+    context "with auth.json credentials in dependency files" do
+      let(:project_name) { "private_registry_with_auth_json" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dependabot/dummy-pkg-a",
+          version: "2.0.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.0",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      end
+
+      it "includes credentials from auth.json" do
+        expect(merged_content.dig("http-basic", "php.fury.io")).to include(
+          "username" => "user",
+          "password" => "pass"
+        )
+      end
+    end
+
+    context "with composer_repository credentials and no auth.json" do
+      let(:credentials_with_registry) do
+        credentials + [{
+          "type" => "composer_repository",
+          "registry" => "registry.example.com",
+          "username" => "user",
+          "password" => "pass"
+        }]
+      end
+
+      it "generates auth.json content from registry credentials" do
+        result = described_class.new(
+          dependency_files: files,
+          dependencies: [dependency],
+          credentials: credentials_with_registry
+        ).send(:merged_auth_json_content)
+        expect(result.dig("http-basic", "registry.example.com")).to include(
+          "username" => "user",
+          "password" => "pass"
+        )
+      end
+    end
+
+    context "with unparseable auth.json" do
+      let(:project_name) { "private_registry_with_unparseable_auth_json" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "dependabot/dummy-pkg-a",
+          version: "2.0.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.0",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { merged_content }
+          .to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("auth.json")
+          end
+      end
+    end
+  end
 end
