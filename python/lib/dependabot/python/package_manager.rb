@@ -94,7 +94,7 @@ module Dependabot
         super
         return unless requirement
         return unless version
-        return if T.must(requirement).satisfied_by?(T.must(version))
+        return if T.cast(T.must(requirement).satisfied_by?(T.must(version)), T::Boolean)
 
         raise Dependabot::ToolVersionNotSupported.new(
           NAME,

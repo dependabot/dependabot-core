@@ -11,11 +11,13 @@ require "dependabot/requirements_update_strategy"
 module Dependabot
   module Python
     class UpdateChecker
+      # rubocop:disable Metrics/ClassLength
       class RequirementsUpdater
         extend T::Sig
 
         PYPROJECT_OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
         PYPROJECT_SEPARATOR = T.let(/#{PYPROJECT_OR_SEPARATOR}|,/, Regexp)
+        LOWER_BOUND_OPS = T.let(%w(> >=).freeze, T::Array[String])
 
         class UnfixableRequirement < StandardError; end
 
@@ -111,13 +113,25 @@ module Dependabot
         def updated_pyproject_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
-          return req if new_version_satisfies?(req) && !has_lockfile
+          return req if skip_pyproject_update?(req)
 
+          pyproject_update_for_strategy(req)
+        rescue UnfixableRequirement
+          req.merge(requirement: :unfixable)
+        end
+
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        def skip_pyproject_update?(req)
+          new_version_satisfies?(req) && !has_lockfile &&
+            update_strategy != RequirementsUpdateStrategy::BumpVersions
+        end
+
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        def pyproject_update_for_strategy(req)
           # If the requirement uses || syntax then we always want to widen it
           return widen_pyproject_requirement(req) if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
 
-          # If the requirement is a development dependency we always want to
-          # bump it
+          # If the requirement is a development dependency we always want to bump it
           return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
@@ -126,37 +140,40 @@ module Dependabot
           when RequirementsUpdateStrategy::BumpVersionsIfNecessary then update_pyproject_version_if_needed(req)
           else raise "Unexpected update strategy: #{update_strategy}"
           end
-        rescue UnfixableRequirement
-          req.merge(requirement: :unfixable)
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_pyproject_version_if_needed(req)
           return req if new_version_satisfies?(req)
 
-          update_pyproject_version(req)
+          update_pyproject_version_core(req, bump_lower_bound: false)
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_pyproject_version(req)
+          return req if req[:requirement] == "*"
+
+          update_pyproject_version_core(req, bump_lower_bound: true)
+        end
+
+        sig do
+          params(
+            req: T::Hash[Symbol, T.untyped],
+            bump_lower_bound: T::Boolean
+          ).returns(T::Hash[Symbol, T.untyped])
+        end
+        def update_pyproject_version_core(req, bump_lower_bound:)
           requirement_strings = req[:requirement].split(",").map(&:strip)
 
           new_requirement =
             if requirement_strings.any? { |r| r.match?(/^=|^\d/) }
-              # If there is an equality operator, just update that. It must
-              # be binding and any other requirements will be being ignored
               find_and_update_equality_match(requirement_strings)
             elsif requirement_strings.any? { |r| r.start_with?("~", "^") }
-              # If a compatibility operator is being used, just bump its
-              # version (and remove any other requirements)
               v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
               bump_version(v_req, latest_resolvable_version.to_s)
-            elsif new_version_satisfies?(req)
-              # Otherwise we're looking at a range operator. No change
-              # required if it's already satisfied
-              req.fetch(:requirement)
+            elsif bump_lower_bound
+              bump_requirements_range(requirement_strings)
             else
-              # But if it's not, update it
               update_requirements_range(requirement_strings)
             end
 
@@ -344,6 +361,58 @@ module Dependabot
             .sort_by { |r| requirement_class.new(r).requirements.first.last }.join(",").delete(" ")
         end
 
+        # Bumps the lower bound of a range requirement to the latest version
+        # Used by BumpVersions strategy to increase the minimum version
+        sig { params(requirement_strings: T::Array[String]).returns(String) }
+        def bump_requirements_range(requirement_strings)
+          ruby_requirements = requirement_strings.map { |r| requirement_class.new(r) }
+
+          validate_lower_bounds_not_too_high(ruby_requirements)
+
+          updated_requirement_strings = ruby_requirements.map { |r| bump_single_requirement(r) }
+
+          updated_requirement_strings
+            .sort_by { |r| requirement_class.new(r).requirements.first.last }.join(",").delete(" ")
+        end
+
+        sig { params(ruby_requirements: T::Array[Dependabot::Python::Requirement]).void }
+        def validate_lower_bounds_not_too_high(ruby_requirements)
+          ruby_requirements.each do |r|
+            op, version = r.requirements.first
+            raise UnfixableRequirement if LOWER_BOUND_OPS.include?(op) && version > T.must(latest_resolvable_version)
+          end
+        end
+
+        sig { params(req: Dependabot::Python::Requirement).returns(String) }
+        def bump_single_requirement(req)
+          op, version = req.requirements.first
+
+          case op
+          when ">=" then ">=" + T.must(latest_resolvable_version).to_s
+          # Convert strict lower bound to inclusive since we're pinning to the exact latest version
+          when ">" then ">=" + T.must(latest_resolvable_version).to_s
+          when "<" then bump_upper_bound_less_than(req, version)
+          when "<=" then bump_upper_bound_less_or_equal(req)
+          # Tilde requirements should be handled by caller, but handle gracefully if passed
+          when "~>", "~=" then bump_version(req.to_s, T.must(latest_resolvable_version).to_s)
+          else req.to_s
+          end
+        end
+
+        sig { params(req: Dependabot::Python::Requirement, version: Gem::Version).returns(String) }
+        def bump_upper_bound_less_than(req, version)
+          return req.to_s if req.satisfied_by?(T.must(latest_resolvable_version))
+
+          "<" + update_greatest_version(version, T.must(latest_resolvable_version))
+        end
+
+        sig { params(req: Dependabot::Python::Requirement).returns(String) }
+        def bump_upper_bound_less_or_equal(req)
+          return req.to_s if req.satisfied_by?(T.must(latest_resolvable_version))
+
+          "<=" + T.must(latest_resolvable_version).to_s
+        end
+
         # Updates the version in a constraint to be the given version
         sig { params(req_string: String, version_to_be_permitted: String).returns(String) }
         def bump_version(req_string, version_to_be_permitted)
@@ -448,6 +517,7 @@ module Dependabot
           Python::Requirement
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
