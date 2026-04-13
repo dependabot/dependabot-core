@@ -680,9 +680,7 @@ module Dependabot
             )
           end
         rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, json.path if json
-
-          raise Dependabot::DependencyFileNotParseable, "Unknown path"
+          raise Dependabot::DependencyFileNotParseable, T.must(json).path
         end
       end
     end
