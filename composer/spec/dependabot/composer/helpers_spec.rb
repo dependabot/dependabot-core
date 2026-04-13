@@ -75,14 +75,14 @@ RSpec.describe Dependabot::Composer::Helpers do
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
 
-      it "uses '2' when lockfile has a nil major version in plugin-api-version" do
+      it "uses '2' and does not log a warning when lockfile major version is nil" do
         composer_json = JSON.parse(composer_v2_content)
         parsed_lockfile = { "plugin-api-version" => "0.0.1" }
 
-        version = Dependabot::Composer::Version.new("0.0.1")
-        allow(version).to receive(:canonical_segments).and_return([nil])
+        version = instance_double(Dependabot::Composer::Version, canonical_segments: [nil])
         allow(Dependabot::Composer::Version).to receive(:new).with("0.0.1").and_return(version)
 
+        expect(Dependabot.logger).not_to receive(:warn)
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
     end
