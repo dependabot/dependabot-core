@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Nix::FileUpdater do
             source: {
               type: "git",
               url: "https://github.com/cachix/devenv",
-              branch: "v0.6.2",
+              branch: nil,
               ref: "v0.6.2"
             },
             groups: []

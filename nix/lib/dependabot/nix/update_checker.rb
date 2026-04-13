@@ -81,7 +81,7 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: new_tag[:tag], branch: new_tag[:tag]))
+          req.merge(source: source.merge(ref: new_tag[:tag], branch: nil))
         end
       end
 
@@ -110,7 +110,7 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:branch], branch: result[:branch]))
+          req.merge(source: source.merge(ref: result[:branch], branch: nil))
         end
       end
 

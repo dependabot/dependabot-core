@@ -49,7 +49,13 @@ module Dependabot
         return unless old_ref
         return if old_ref == new_ref
 
-        FlakeNixParser.update_input_ref(T.must(flake_nix.content), dependency.name, new_ref)
+        updated_content =
+          FlakeNixParser.update_input_ref(T.must(flake_nix.content), dependency.name, new_ref)
+        return updated_content if updated_content
+
+        raise Dependabot::DependabotError,
+              "Unable to update flake.nix for #{dependency.name}: " \
+              "could not find input URL to rewrite from #{old_ref} to #{new_ref}"
       end
 
       sig { params(updated_nix_content: T.nilable(String)).returns(String) }

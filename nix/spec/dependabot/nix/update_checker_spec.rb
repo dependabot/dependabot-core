@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
       it "returns updated requirements with the new tag" do
         updated = checker.updated_requirements
         expect(updated.first[:source][:ref]).to eq("v0.6.2")
-        expect(updated.first[:source][:branch]).to eq("v0.6.2")
+        expect(updated.first[:source][:branch]).to be_nil
       end
     end
 
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
       it "returns updated requirements with the new branch" do
         updated = checker.updated_requirements
         expect(updated.first[:source][:ref]).to eq("nixos-25.05")
-        expect(updated.first[:source][:branch]).to eq("nixos-25.05")
+        expect(updated.first[:source][:branch]).to be_nil
       end
     end
   end
