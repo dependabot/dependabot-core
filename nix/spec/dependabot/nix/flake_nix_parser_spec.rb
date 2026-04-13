@@ -173,6 +173,44 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
         expect(result.repo).to eq("nixpkgs")
       end
     end
+
+    context "with commented-out input" do
+      let(:content) do
+        <<~NIX
+          {
+            # inputs.nixpkgs.url = "github:NixOS/nixpkgs/old-ref";
+            inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+            outputs = { ... }: { };
+          }
+        NIX
+      end
+
+      it "skips the commented line and finds the real input" do
+        result = described_class.find_input_url(content, "nixpkgs")
+
+        expect(result).not_to be_nil
+        expect(result.ref).to eq("nixos-unstable")
+      end
+    end
+
+    context "with block-commented input" do
+      let(:content) do
+        <<~NIX
+          {
+            /* inputs.nixpkgs.url = "github:NixOS/nixpkgs/old-ref"; */
+            inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+            outputs = { ... }: { };
+          }
+        NIX
+      end
+
+      it "skips the block comment and finds the real input" do
+        result = described_class.find_input_url(content, "nixpkgs")
+
+        expect(result).not_to be_nil
+        expect(result.ref).to eq("nixos-unstable")
+      end
+    end
   end
 
   describe ".update_input_ref" do

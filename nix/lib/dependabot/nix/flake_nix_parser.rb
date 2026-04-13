@@ -103,16 +103,43 @@ module Dependabot
         # Pattern 1: inputs.NAME.url = "URL";
         # Pattern 2: NAME.url = "URL";  (inside inputs block)
         url_assignment = /(?:inputs\.)?#{bounded_name}\.url\s*=\s*"(?<url>[^"]+)"/
-        match = url_assignment.match(content)
+        match = find_uncommented_match(url_assignment)
         return url_match_hash(match) if match
 
         # Pattern 3: NAME = { ... url = "URL"; ... }
         # Use a non-greedy match to find the url inside the attribute set
         attr_set = /#{bounded_name}\s*=\s*\{[^}]*?\burl\s*=\s*"(?<url>[^"]+)"/m
-        match = attr_set.match(content)
+        match = find_uncommented_match(attr_set)
         return url_match_hash(match) if match
 
         nil
+      end
+
+      # Finds the first match that isn't inside a Nix comment (# or /* */).
+      sig { params(pattern: Regexp).returns(T.nilable(MatchData)) }
+      def find_uncommented_match(pattern)
+        content.to_enum(:scan, pattern).each do
+          match = T.must(Regexp.last_match)
+          next if inside_comment?(match.begin(0))
+
+          return match
+        end
+        nil
+      end
+
+      sig { params(pos: Integer).returns(T::Boolean) }
+      def inside_comment?(pos)
+        # Check for single-line comment: # at start of line before pos
+        line_start = content.rindex("\n", pos)&.+(1) || 0
+        line_before_pos = content[line_start...pos]
+        return true if line_before_pos&.match?(/(?:^|[^&])#/)
+
+        # Check for block comment: /* before pos without a closing */ between them
+        last_open = content.rindex("/*", pos)
+        return false unless last_open
+
+        last_close = content.rindex("*/", pos)
+        last_open > (last_close || -1)
       end
 
       sig { params(match: MatchData).returns(T::Hash[Symbol, T.untyped]) }
