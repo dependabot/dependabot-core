@@ -1,9 +1,9 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "time"
+require "uri"
 require "sorbet-runtime"
 
 require "dependabot/metadata_finders"
@@ -113,8 +113,8 @@ module Dependabot
         # Early return for common case: most npm usernames contain only safe characters
         return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
 
-        # CGI.escape encodes spaces as + (form encoding), but URL paths should use %20
-        CGI.escape(releaser).gsub("+", "%20")
+        # URI.encode_uri_component properly encodes for URL paths (%20 for spaces)
+        URI.encode_uri_component(releaser)
       end
 
       sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
