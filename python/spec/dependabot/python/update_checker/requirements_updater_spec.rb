@@ -611,6 +611,34 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                     )
                   end
                 end
+
+                context "with a strict lower bound (>)" do
+                  let(:pyproject_req_string) { ">1.0.0, <2.0.0" }
+
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        ">=1.5.0,<2.0.0"
+                      else
+                        ">1.0.0, <2.0.0"
+                      end
+                    )
+                  end
+                end
+
+                context "with a != exclusion alongside a range" do
+                  let(:pyproject_req_string) { "!=1.4.0, >=1.3.0, <2.0.0" }
+
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        "!=1.4.0,>=1.5.0,<2.0.0"
+                      else
+                        "!=1.4.0, >=1.3.0, <2.0.0"
+                      end
+                    )
+                  end
+                end
               end
             end
 

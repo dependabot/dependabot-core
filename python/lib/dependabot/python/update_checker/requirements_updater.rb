@@ -389,12 +389,13 @@ module Dependabot
 
           case op
           when ">=" then ">=" + T.must(latest_resolvable_version).to_s
-          # Convert strict lower bound to inclusive since we're pinning to the exact latest version
+          # Strict lower bound becomes inclusive because the resolved version
+          # is the exact target — using ">" would exclude it.
           when ">" then ">=" + T.must(latest_resolvable_version).to_s
           when "<" then bump_upper_bound_less_than(req, version)
           when "<=" then bump_upper_bound_less_or_equal(req)
-          # Tilde requirements should be handled by caller, but handle gracefully if passed
           when "~>", "~=" then bump_version(req.to_s, T.must(latest_resolvable_version).to_s)
+          when "!=" then req.to_s
           else req.to_s
           end
         end

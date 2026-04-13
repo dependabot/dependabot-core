@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Python::PoetryPluginInstaller do
         fixture("pyproject_files", "requires_plugins.toml")
       end
 
-      it "raises a DependabotError with a clear message" do
+      it "logs a warning and continues without raising" do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "Could not find a matching version of package poetry-plugin-export",
@@ -127,10 +127,11 @@ RSpec.describe Dependabot::Python::PoetryPluginInstaller do
           )
         )
 
-        expect { installer.install_required_plugins }.to raise_error(
-          Dependabot::DependabotError,
+        expect(Dependabot.logger).to receive(:warn).with(
           /Failed to install Poetry plugin poetry-plugin-export/
         )
+
+        expect { installer.install_required_plugins }.not_to raise_error
       end
     end
 

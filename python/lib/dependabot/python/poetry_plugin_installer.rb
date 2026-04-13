@@ -86,8 +86,9 @@ module Dependabot
           fingerprint: "pyenv exec poetry self add <plugin_name>@<constraint>"
         )
       rescue SharedHelpers::HelperSubprocessFailed => e
-        raise Dependabot::DependabotError,
-              "Failed to install Poetry plugin #{name}@#{constraint}: #{e.message}"
+        Dependabot.logger.warn(
+          "Failed to install Poetry plugin #{name}@#{constraint}: #{e.message}"
+        )
       end
     end
   end
