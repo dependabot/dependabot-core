@@ -681,8 +681,10 @@ RSpec.describe namespace::PoetryVersionResolver do
         Dependabot::Python::LanguageVersionManager,
         install_required_python: nil
       )
-      allow(resolver).to receive(:language_version_manager).and_return(language_version_manager)
-      allow(resolver).to receive(:write_temporary_dependency_files).and_return(nil)
+      allow(resolver).to receive_messages(
+        language_version_manager: language_version_manager,
+        write_temporary_dependency_files: nil
+      )
 
       begin
         resolver.latest_resolvable_version(requirement: "*")
