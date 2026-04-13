@@ -47,6 +47,7 @@ module Dependabot
         return unless npm_listing.dig("time", dependency.version)
         return if previous_releasers&.include?(npm_releaser)
 
+        # Safe: npm_releaser is non-nil after the guard clause above
         encoded_releaser = encode_npm_releaser(T.must(npm_releaser))
         "This version was pushed to npm by " \
           "[#{npm_releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
@@ -321,8 +322,6 @@ module Dependabot
             new_source&.fetch(:url)
           end
 
-        # Encode spaces in registry URL for proper HTTP requests
-        registry_url = registry_url&.gsub(" ", "%20")
         # Remove trailing slashes to avoid double slashes when appending dependency name
         registry_url = registry_url&.gsub(%r{/+$}, "")
 

@@ -418,7 +418,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
     end
 
-    context "when there is a space in the package resolved URL" do
+    context "when the registry URL has trailing slashes" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) { nil }
       let(:dependency_name) { "@etag/etag" }
@@ -434,7 +434,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
               groups: [],
               source: {
                 type: "registry",
-                url: "https://npm.example.com/registry with spaces"
+                url: "https://npm.example.com/registry///"
               }
             }
           ],
@@ -443,19 +443,19 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       before do
-        # the URL reported above has spaces, but we only stub the escaped versions
+        # the URL has trailing slashes, which should be removed before appending dependency name
         stub_request(
-          :get, "https://npm.example.com/registry%20with%20spaces/@etag%2Fetag/latest"
+          :get, "https://npm.example.com/registry/@etag%2Fetag/latest"
         ).to_return(status: 404, body: '{"error":"Not found"}').times(2)
 
-        stub_request(:get, "https://npm.example.com/registry%20with%20spaces/@etag%2Fetag")
+        stub_request(:get, "https://npm.example.com/registry/@etag%2Fetag")
           .to_return(
             status: 200,
             body: fixture("gemfury_responses", "gemfury_response_etag.json")
           )
       end
 
-      it "escapes the spaces before querying the content" do
+      it "removes trailing slashes before querying the content" do
         expect(source_url).to eq("https://github.com/jshttp/etag")
       end
     end
