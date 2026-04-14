@@ -33,8 +33,8 @@ module Dependabot
         #   "name[extras] ; marker"                  — no specifiers
         sig { params(entry: String, name_pattern: String, version: String).returns(String) }
         def self.pin_pep508_entry(entry, name_pattern, version)
-          prefix   = "(?<pre>#{name_pattern}(?:\\[.*?\\])?)"
-          extras   = "(?:\\[.*?\\])?"
+          prefix   = "(?<pre>#{name_pattern}(?:\\[[^\\]]*\\])?)"
+          extras   = "(?:\\[[^\\]]*\\])?"
           marker   = "(?<rest>\\s*(?:;.*)?)"
           operator = "[><=!~]"
 
@@ -91,7 +91,7 @@ module Dependabot
           name_pattern = pep508_name_pattern(dep.name)
           dep_arrays.each do |arr|
             arr.each_with_index do |entry, i|
-              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[(><=!~;,])/i)
+              next unless entry.match?(/\A#{name_pattern}(\[[^\]]*\])?\s*(\z|[(><=!~;,])/i)
 
               arr[i] = pin_pep508_entry(entry, name_pattern, T.must(dep.version))
             end
