@@ -819,8 +819,8 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
     context "with registry URL containing multiple spaces" do
       let(:registry_url) { "https://my  registry  com" }
 
-      it "encodes all spaces as %20" do
-        expect(normalized).to eq("https://my%20%20registry%20%20com")
+      it "encodes consecutive spaces as single %20" do
+        expect(normalized).to eq("https://my%20registry%20com")
       end
     end
 
@@ -835,8 +835,8 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
     context "with registry URL with mixed whitespace (spaces and tabs)" do
       let(:registry_url) { "https://my\t registry.com" }
 
-      it "encodes all whitespace as %20" do
-        expect(normalized).to eq("https://my%20%20registry.com")
+      it "encodes consecutive whitespace as single %20" do
+        expect(normalized).to eq("https://my%20registry.com")
       end
     end
 
