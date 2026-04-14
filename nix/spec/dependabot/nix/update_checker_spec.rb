@@ -7,7 +7,6 @@ require "dependabot/nix/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Nix::UpdateChecker do
-  let(:branch) { "nixos-unstable" }
   let(:url) { "https://github.com/NixOS/nixpkgs" }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -17,7 +16,7 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         file: "flake.lock",
         requirement: nil,
         groups: [],
-        source: { type: "git", url: url, branch: branch, ref: branch }
+        source: { type: "git", url: url, branch: nil, ref: "nixos-unstable" }
       }],
       package_manager: "nix"
     )
@@ -40,6 +39,12 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
+    before do
+      git_checker = instance_double(Dependabot::GitCommitChecker)
+      allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+      allow(git_checker).to receive_messages(git_dependency?: true, pinned_ref_looks_like_version?: false)
+    end
+
     context "when the dependency is outdated" do
       before { allow(checker).to receive(:latest_version).and_return("new_sha") }
 
@@ -57,9 +62,244 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
     end
   end
 
+  describe "#latest_version" do
+    context "with a tag-pinned input" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "devenv",
+          version: "abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/cachix/devenv", branch: nil, ref: "v0.5" }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: true,
+          local_tag_for_latest_version: {
+            tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
+          }
+        )
+      end
+
+      it "returns the commit SHA of the latest tag" do
+        expect(checker.latest_version).to eq("def456")
+      end
+
+      it "reports as updatable" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be true
+      end
+    end
+
+    context "with a tag-pinned input already at latest" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "devenv",
+          version: "def456",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/cachix/devenv", branch: nil, ref: "v0.6.2" }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: true,
+          local_tag_for_latest_version: {
+            tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
+          }
+        )
+      end
+
+      it "returns the current version" do
+        expect(checker.latest_version).to eq("def456")
+      end
+
+      it "reports as not updatable" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be false
+      end
+    end
+
+    context "with a versioned branch input" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/NixOS/nixpkgs", branch: nil, ref: "nixos-24.11" }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: false
+        )
+
+        branch_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::VersionedBranchFinder,
+          versioned_branch?: true,
+          latest_versioned_branch: { branch: "nixos-25.05", commit_sha: "ccc333" }
+        )
+        allow(Dependabot::Nix::UpdateChecker::VersionedBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+      end
+
+      it "returns the commit SHA of the latest branch" do
+        expect(checker.latest_version).to eq("ccc333")
+      end
+
+      it "reports as updatable" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be true
+      end
+    end
+
+    context "with a versioned branch already at latest" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "ccc333",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/NixOS/nixpkgs", branch: nil, ref: "nixos-25.05" }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: false
+        )
+
+        branch_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::VersionedBranchFinder,
+          versioned_branch?: true,
+          latest_versioned_branch: nil
+        )
+        allow(Dependabot::Nix::UpdateChecker::VersionedBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+      end
+
+      it "falls back to commit tracking" do
+        allow(checker).to receive(:fetch_latest_version_for_commit).and_return("ddd444")
+        expect(checker.latest_version).to eq("ddd444")
+      end
+    end
+  end
+
   describe "#updated_requirements" do
-    it "returns the existing requirements unchanged" do
-      expect(checker.updated_requirements).to eq(dependency.requirements)
+    context "with a branch-tracking input" do
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(git_dependency?: true, pinned_ref_looks_like_version?: false)
+      end
+
+      it "returns the existing requirements unchanged" do
+        allow(checker).to receive(:latest_version).and_return("new_sha")
+        expect(checker.updated_requirements).to eq(dependency.requirements)
+      end
+    end
+
+    context "with a tag-pinned input" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "devenv",
+          version: "abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/cachix/devenv", branch: nil, ref: "v0.5" }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: true,
+          local_tag_for_latest_version: {
+            tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
+          }
+        )
+      end
+
+      it "returns updated requirements with the new tag" do
+        updated = checker.updated_requirements
+        expect(updated.first[:source][:ref]).to eq("v0.6.2")
+        expect(updated.first[:source][:branch]).to be_nil
+      end
+    end
+
+    context "with a versioned branch input" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/NixOS/nixpkgs", branch: nil, ref: "nixos-24.11" }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: false
+        )
+
+        branch_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::VersionedBranchFinder,
+          versioned_branch?: true,
+          latest_versioned_branch: { branch: "nixos-25.05", commit_sha: "ccc333" }
+        )
+        allow(Dependabot::Nix::UpdateChecker::VersionedBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+      end
+
+      it "returns updated requirements with the new branch" do
+        updated = checker.updated_requirements
+        expect(updated.first[:source][:ref]).to eq("nixos-25.05")
+        expect(updated.first[:source][:branch]).to be_nil
+      end
     end
   end
 end

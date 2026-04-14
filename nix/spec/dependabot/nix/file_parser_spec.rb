@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Nix::FileParser do
             source: {
               type: "git",
               url: "https://github.com/NixOS/nixpkgs",
-              branch: "nixos-unstable",
+              branch: nil,
               ref: "nixos-unstable"
             },
             groups: []
