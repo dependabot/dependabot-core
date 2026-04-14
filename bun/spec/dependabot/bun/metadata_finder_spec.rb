@@ -772,4 +772,80 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       end
     end
   end
+
+  describe "#normalize_registry_url (private helper)" do
+    subject(:normalized) { finder.send(:normalize_registry_url, registry_url) }
+
+    context "with nil input" do
+      let(:registry_url) { nil }
+
+      it "returns nil" do
+        expect(normalized).to be_nil
+      end
+    end
+
+    context "with registry URL without protocol" do
+      let(:registry_url) { "my.registry.com" }
+
+      it "adds https:// prefix" do
+        expect(normalized).to eq("https://my.registry.com")
+      end
+    end
+
+    context "with registry URL with https protocol" do
+      let(:registry_url) { "https://my.registry.com" }
+
+      it "returns unchanged" do
+        expect(normalized).to eq("https://my.registry.com")
+      end
+    end
+
+    context "with registry URL with http protocol" do
+      let(:registry_url) { "http://my.registry.com" }
+
+      it "returns unchanged" do
+        expect(normalized).to eq("http://my.registry.com")
+      end
+    end
+
+    context "with registry URL containing spaces" do
+      let(:registry_url) { "https://my registry.com" }
+
+      it "encodes spaces as %20" do
+        expect(normalized).to eq("https://my%20registry.com")
+      end
+    end
+
+    context "with registry URL containing multiple spaces" do
+      let(:registry_url) { "https://my  registry  com" }
+
+      it "encodes all spaces as %20" do
+        expect(normalized).to eq("https://my%20%20registry%20%20com")
+      end
+    end
+
+    context "with registry URL with leading/trailing whitespace" do
+      let(:registry_url) { "  https://my.registry.com  " }
+
+      it "strips whitespace and returns URL unchanged" do
+        expect(normalized).to eq("https://my.registry.com")
+      end
+    end
+
+    context "with registry URL with mixed whitespace (spaces and tabs)" do
+      let(:registry_url) { "https://my\t registry.com" }
+
+      it "encodes all whitespace as %20" do
+        expect(normalized).to eq("https://my%20%20registry.com")
+      end
+    end
+
+    context "with registry URL with nested spaces and no protocol" do
+      let(:registry_url) { "my registry.com" }
+
+      it "encodes spaces and adds https://" do
+        expect(normalized).to eq("https://my%20registry.com")
+      end
+    end
+  end
 end

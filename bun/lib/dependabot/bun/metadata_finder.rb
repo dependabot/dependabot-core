@@ -244,7 +244,7 @@ module Dependabot
         # separate concern when standardizing URL handling across all ecosystems.
         # NOTE: URI::DEFAULT_PARSER.escape is deprecated and should be replaced with URI.encode_uri_component
         # or a similar approach.
-        # Remove trailing slashes and escape spaces for proper URL formatting
+        # URI::DEFAULT_PARSER.escape encodes many characters; then remove trailing slashes
         registry_url = URI::DEFAULT_PARSER.escape(registry_url)&.gsub(%r{/+$}, "")
 
         # NPM registries expect slashes to be escaped
