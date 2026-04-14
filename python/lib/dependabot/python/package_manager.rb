@@ -87,6 +87,8 @@ module Dependabot
         false
       end
 
+      # Poetry supports requires-poetry constraints in pyproject.toml;
+      # other Python package managers don't have an equivalent mechanism.
       sig { override.void }
       def raise_if_unsupported!
         super

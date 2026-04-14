@@ -848,6 +848,47 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "constraint-only update with unchanged lockfile" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [pyproject, lockfile] }
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "poetry.lock",
+        content: fixture("poetry_locks", lockfile_fixture_name)
+      )
+    end
+    let(:pyproject_fixture_name) { "caret_version.toml" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "2.18.0",
+        previous_version: "1.0.0",
+        package_manager: "pip",
+        requirements: [{
+          requirement: "^2.18.0",
+          file: "pyproject.toml",
+          source: nil,
+          groups: ["dependencies"]
+        }],
+        previous_requirements: [{
+          requirement: "^1.0.0",
+          file: "pyproject.toml",
+          source: nil,
+          groups: ["dependencies"]
+        }]
+      )
+    end
+
+    it "returns only the updated pyproject without raising" do
+      # Stub lockfile generation to return the original lockfile content
+      # simulating the case where bumping a lower bound doesn't affect resolution
+      allow(updater).to receive(:updated_lockfile_content).and_return(lockfile.content)
+
+      expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+    end
+  end
+
   describe "hybrid Poetry v2 projects" do
     let(:dependency_files) { [pyproject] }
 
@@ -956,6 +997,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           expect(poetry_req).to eq({ "source" => "private-source" })
         end
       end
+    end
+  end
+
+  describe "plugin installation during update" do
+    it "invokes the poetry plugin installer" do
+      plugin_installer = instance_double(
+        Dependabot::Python::PoetryPluginInstaller,
+        install_required_plugins: nil
+      )
+      allow(Dependabot::Python::PoetryPluginInstaller)
+        .to receive(:from_dependency_files).and_return(plugin_installer)
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+      allow(updater).to receive_messages(
+        write_temporary_dependency_files: nil,
+        add_auth_env_vars: nil
+      )
+
+      language_version_manager = instance_double(
+        Dependabot::Python::LanguageVersionManager,
+        install_required_python: nil,
+        python_version: "3.12.0"
+      )
+      allow(updater).to receive(:language_version_manager).and_return(language_version_manager)
+
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with("poetry.lock").and_return("lock content")
+
+      begin
+        updater.updated_dependency_files
+      rescue StandardError
+        nil
+      end
+
+      expect(plugin_installer).to have_received(:install_required_plugins)
     end
   end
 
@@ -1120,6 +1197,43 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
       pysocks_line = updated_pyproject.content.lines.find { |l| l.include?("PySocks") }
       expect(pysocks_line).to include("'PySocks")
+    end
+  end
+
+  describe "PEP 621 fallback without source_requirement metadata" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [pyproject] }
+
+    context "when source_requirement is absent (e.g. after DependencySet merge)" do
+      let(:pyproject_fixture_name) { "pep621_project_dependencies.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.14.0",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.14.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.13.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: {}
+        )
+      end
+
+      it "updates using the normalized requirement as fallback" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.14.0,<3.0"')
+        expect(updated_pyproject.content).not_to include('"requests>=2.13.0,<3.0"')
+      end
     end
   end
 
