@@ -226,7 +226,7 @@ module Dependabot
         def dynamic_fields
           @dynamic_fields ||= T.let(
             parsed_pyproject.dig("project", "dynamic") || [],
-            T.nilable(T::Array[String])
+            T::Array[String]
           )
         end
 
