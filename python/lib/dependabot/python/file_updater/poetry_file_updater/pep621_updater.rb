@@ -52,7 +52,7 @@ module Dependabot
 
                 replacements << {
                   operator: operator,
-                  old_version: T.must(old_version),
+                  old_version: old_version,
                   new_version: T.must(new_version)
                 }
               end
@@ -60,8 +60,9 @@ module Dependabot
 
             result = source_req.dup
             replacements.each do |replacement|
-              pattern = /(#{Regexp.escape(T.must(replacement[:operator]))}\s*)#{Regexp.escape(T.must(replacement[:old_version]))}/
-              result = result.sub(pattern, "\\1#{replacement[:new_version]}")
+              op = Regexp.escape(T.must(replacement[:operator]))
+              ver = Regexp.escape(T.must(replacement[:old_version]))
+              result = result.sub(/(#{op}\s*)#{ver}/, "\\1#{replacement[:new_version]}")
             end
             result
           end
@@ -71,8 +72,8 @@ module Dependabot
             specifiers.each_with_object(
               T.let({}, T::Hash[String, T::Array[String]])
             ) do |specifier, grouped_versions|
-              operator = specifier[:operator]
-              version = specifier[:version]
+              operator = T.must(specifier[:operator])
+              version = T.must(specifier[:version])
 
               grouped_versions[operator] ||= []
               T.must(grouped_versions[operator]) << version

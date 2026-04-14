@@ -25,6 +25,7 @@ module Dependabot
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
+          @dynamic_fields = T.let(nil, T.nilable(T::Array[String]))
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -224,10 +225,7 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def dynamic_fields
-          @dynamic_fields ||= T.let(
-            parsed_pyproject.dig("project", "dynamic") || [],
-            T::Array[String]
-          )
+          @dynamic_fields ||= parsed_pyproject.dig("project", "dynamic") || []
         end
 
         sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
