@@ -16,6 +16,80 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
+        # Builds a regex pattern that matches a PEP 508 package name,
+        # treating hyphens, underscores, and dots as interchangeable per PEP 508.
+        sig { params(name: String).returns(String) }
+        def self.pep508_name_pattern(name)
+          Regexp.escape(name).gsub("\\-", "[-_.]").gsub("_", "[-_.]").gsub("\\.", "[-_.]")
+        end
+        private_class_method :pep508_name_pattern
+
+        # Pins a single PEP 508 dependency entry string to a specific version,
+        # preserving extras and environment markers.
+        sig { params(entry: String, name_pattern: String, version: String).returns(String) }
+        def self.pin_pep508_entry(entry, name_pattern, version)
+          if entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~]/i)
+            entry.sub(
+              /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
+              "\\k<pre>==#{version}"
+            )
+          else
+            entry.sub(
+              /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
+              "\\k<pre>==#{version}\\k<rest>"
+            )
+          end
+        end
+        private_class_method :pin_pep508_entry
+
+        # Freezes PEP 621 dependencies in-place within a parsed pyproject object.
+        # Replaces version specifiers with ==dep.version for each matching dep.
+        # Accepts an optional block to filter which dependencies to freeze.
+        sig do
+          params(
+            pyproject_object: T::Hash[String, T.untyped],
+            deps: T::Array[Dependabot::Dependency],
+            blk: T.nilable(T.proc.params(dep: Dependabot::Dependency).returns(T::Boolean))
+          ).void
+        end
+        def self.freeze_pep621_deps!(pyproject_object, deps, &blk)
+          dep_arrays = collect_pep621_dep_arrays(pyproject_object)
+          return if dep_arrays.empty?
+
+          deps.each do |dep|
+            next if blk && !yield(dep)
+            next unless dep.version
+
+            pin_pep621_dep_in_arrays!(dep_arrays, dep)
+          end
+        end
+
+        sig { params(pyproject_object: T::Hash[String, T.untyped]).returns(T::Array[T::Array[String]]) }
+        def self.collect_pep621_dep_arrays(pyproject_object)
+          project_object = pyproject_object["project"]
+          return [] unless project_object
+
+          dep_arrays = [project_object["dependencies"]]
+          project_object["optional-dependencies"]&.each_value { |opt| dep_arrays << opt }
+          dep_arrays.compact!
+          dep_arrays.select! { |arr| arr.is_a?(Array) && arr.all?(String) }
+          dep_arrays
+        end
+        private_class_method :collect_pep621_dep_arrays
+
+        sig { params(dep_arrays: T::Array[T::Array[String]], dep: Dependabot::Dependency).void }
+        def self.pin_pep621_dep_in_arrays!(dep_arrays, dep)
+          name_pattern = pep508_name_pattern(dep.name)
+          dep_arrays.each do |arr|
+            arr.each_with_index do |entry, i|
+              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[><=!~;,])/i)
+
+              arr[i] = pin_pep508_entry(entry, name_pattern, T.must(dep.version))
+            end
+          end
+        end
+        private_class_method :pin_pep621_dep_in_arrays!
+
         sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
@@ -109,6 +183,9 @@ module Dependabot
             end
           end
 
+          # Freeze PEP 621 project.dependencies and project.optional-dependencies
+          freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
+
           TomlRB.dump(pyproject_object)
         end
         # rubocop:enable Metrics/AbcSize
@@ -121,6 +198,38 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
+        def freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
+          project_object = pyproject_object["project"]
+          return unless project_object
+
+          freeze_pep621_dep_array!(project_object["dependencies"], excluded_names)
+
+          project_object["optional-dependencies"]&.each_value do |opt_deps|
+            freeze_pep621_dep_array!(opt_deps, excluded_names)
+          end
+        end
+
+        sig { params(dep_array: T.nilable(T::Array[String]), excluded_names: T::Array[String]).void }
+        def freeze_pep621_dep_array!(dep_array, excluded_names)
+          return unless dep_array
+
+          dep_array.each_with_index do |entry, index|
+            # Extract dependency name from PEP 508 string
+            match = entry.match(/\A([a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)/i)
+            next unless match
+
+            dep_name = normalise(T.must(match[1]))
+            next if excluded_names.include?(dep_name)
+
+            locked_details = locked_details(dep_name)
+            next unless (locked_version = locked_details&.fetch("version"))
+
+            name_pattern = self.class.send(:pep508_name_pattern, T.must(match[1]))
+            dep_array[index] = self.class.send(:pin_pep508_entry, entry, name_pattern, locked_version)
+          end
+        end
 
         sig { params(dep_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
         def locked_details(dep_name)

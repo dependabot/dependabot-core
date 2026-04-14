@@ -1,0 +1,10 @@
+[tool.poetry]
+name = "test-project"
+version = "1.0.0"
+description = "A test project"
+authors = ["Test <test@example.com>"]
+requires-poetry = ">=2.0"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.28"

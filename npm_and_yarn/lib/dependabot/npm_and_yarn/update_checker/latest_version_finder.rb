@@ -332,9 +332,11 @@ module Dependabot
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
             next false if req[:requirement].nil?
-            next false unless req[:requirement].match?(/^[A-Za-z]/)
 
-            !req[:requirement].match?(/^v\d/i)
+            req_string = req[:requirement].sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+            next false unless req_string.match?(/^[A-Za-z]/)
+
+            !req_string.match?(/^v\d/i)
           end
         end
 
@@ -357,7 +359,9 @@ module Dependabot
           dependency.requirements.any? do |req|
             next false unless req[:requirement]
 
-            req_version = req[:requirement].sub(/^\^|~|>=?/, "")
+            req_version = req[:requirement]
+                          .sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+                          .sub(/^\^|~|>=?/, "")
             next false unless version_class.correct?(req_version)
 
             version_class.new(req_version) > version
