@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
       requirements: [
         { file: "package.json", requirement: "^1.0", groups: [], source: nil }
       ],
-      package_manager: "npm_and_yarn"
+      package_manager: "bun"
     )
   end
 
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               ref: "master"
             }
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
                 url: "https://npm.fury.io/dependabot"
               }
             }],
-            package_manager: "npm_and_yarn"
+            package_manager: "bun"
           )
         end
 
@@ -395,7 +395,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -437,7 +437,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
             groups: [],
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -540,7 +540,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
             groups: [],
             source: nil
           }],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
       let(:npm_all_versions_response) do
@@ -568,7 +568,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
           requirements: [
             { file: "package.json", requirement: "^1.0", groups: [], source: nil }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
@@ -676,7 +676,7 @@ RSpec.describe Dependabot::Bun::MetadataFinder do
               source: { type: "registry", url: "https://npm.fury.io/dependabot" }
             }
           ],
-          package_manager: "npm_and_yarn"
+          package_manager: "bun"
         )
       end
 
