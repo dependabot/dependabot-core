@@ -465,6 +465,23 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Time).to receive(:now).and_return(Time.parse("2019-08-06 18:29:44 -0400"))
+
+          # Mock GitCommitChecker to return tag data for cooldown_filter
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_wrap_original do |method, **kwargs|
+            instance = method.call(**kwargs)
+
+            allow(instance).to receive_messages(
+              refs_for_tag_with_detail: [
+                Dependabot::GitTagWithDetail.new(tag: "v1.0.1", release_date: "2019-01-01T00:00:00+00:00"),
+                Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2019-07-20T00:00:00+00:00")
+              ],
+              local_tags_for_allowed_versions: [
+                { tag: "v1.0.1", version: Dependabot::GithubActions::Version.new("1.0.1") },
+                { tag: "v1.1.0", version: Dependabot::GithubActions::Version.new("1.1.0") }
+              ]
+            )
+            instance
+          end
         end
 
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
@@ -505,6 +522,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
         end
 
+        before do
+          # Stub commit_metadata_details to return a date outside cooldown
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-06-01T00:00:00+00:00")
+        end
+
         it "returns the expected value" do
           expect(latest_version).to eq(latest_commit_in_main)
         end
@@ -522,6 +545,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
         let(:update_cooldown) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        before do
+          # Stub commit_metadata_details to return a recent date (within cooldown)
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-09-05T00:00:00+00:00")
         end
 
         it "returns the current version" do
@@ -543,19 +572,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
         end
 
+        before do
+          # Stub commit_metadata_details to return a date outside cooldown
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-06-01T00:00:00+00:00")
+        end
+
         it "returns the expected value" do
           expect(latest_version).to eq(latest_commit_in_devel)
-        end
-      end
-
-      context "when pinned to an out of date commit in a non default branch with cooldown enabled" do
-        let(:update_cooldown) do
-          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
-        end
-        let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
-
-        it "returns the expected value" do
-          expect(latest_version).to eq("96e7dec17bbeed08477b9edab6c3a573614b829d")
         end
       end
 
@@ -571,6 +595,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
         let(:update_cooldown) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        before do
+          # Stub commit_metadata_details to return a recent date (within cooldown)
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-09-05T00:00:00+00:00")
         end
 
         it "returns the expected value" do
