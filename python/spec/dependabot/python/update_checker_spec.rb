@@ -1775,10 +1775,22 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
@@ -1804,6 +1816,39 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             # Verify PyPI was only called once (memoization working)
             expect(a_request(:get, "https://pypi.org/pypi/pendulum/json/"))
               .to have_been_made.once
+          end
+        end
+
+        context "when PyPI request raises Excon::Error::Timeout" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Timeout.new("connection timeout"))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
+
+        context "when PyPI request raises Excon::Error::Socket" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
+
+        context "when PyPI request raises URI::InvalidURIError" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(URI::InvalidURIError.new("bad URI"))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
           end
         end
       end
@@ -1855,10 +1900,22 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
@@ -1912,10 +1969,22 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
