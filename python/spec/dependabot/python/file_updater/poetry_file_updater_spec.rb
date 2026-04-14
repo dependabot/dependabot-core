@@ -848,6 +848,47 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "constraint-only update with unchanged lockfile" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [pyproject, lockfile] }
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "poetry.lock",
+        content: fixture("poetry_locks", lockfile_fixture_name)
+      )
+    end
+    let(:pyproject_fixture_name) { "caret_version.toml" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "2.18.0",
+        previous_version: "1.0.0",
+        package_manager: "pip",
+        requirements: [{
+          requirement: "^2.18.0",
+          file: "pyproject.toml",
+          source: nil,
+          groups: ["dependencies"]
+        }],
+        previous_requirements: [{
+          requirement: "^1.0.0",
+          file: "pyproject.toml",
+          source: nil,
+          groups: ["dependencies"]
+        }]
+      )
+    end
+
+    it "returns only the updated pyproject without raising" do
+      # Stub lockfile generation to return the original lockfile content
+      # simulating the case where bumping a lower bound doesn't affect resolution
+      allow(updater).to receive(:updated_lockfile_content).and_return(lockfile.content)
+
+      expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+    end
+  end
+
   describe "hybrid Poetry v2 projects" do
     let(:dependency_files) { [pyproject] }
 
