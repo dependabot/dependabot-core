@@ -479,6 +479,14 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
             expect(dep.requirements.first[:groups]).to eq(["dependencies"])
           end
         end
+
+        it "does not duplicate deps from PEP 621 when dynamic" do
+          # Each dep should appear only once (from Poetry), not duplicated from [project].dependencies
+          requests_deps = dependencies.select { |d| d.name == "requests" }
+          django_deps = dependencies.select { |d| d.name == "django" }
+          expect(requests_deps.length).to eq(1)
+          expect(django_deps.length).to eq(1)
+        end
       end
 
       context "with dynamic optional-dependencies in Poetry project" do
