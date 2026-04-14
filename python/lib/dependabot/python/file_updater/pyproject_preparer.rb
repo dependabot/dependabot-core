@@ -16,38 +16,28 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
-        # Builds a regex pattern that matches a PEP 508 package name,
-        # treating hyphens, underscores, and dots as interchangeable per PEP 508.
-        sig { params(name: String).returns(String) }
-        def self.pep508_name_pattern(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]").gsub("_", "[-_.]").gsub("\\.", "[-_.]")
-        end
-        private_class_method :pep508_name_pattern
+        # Fixed regex for extracting the name+extras prefix from a PEP 508 entry.
+        # Does not interpolate library input, avoiding polynomial backtracking.
+        PEP508_PREFIX = T.let(
+          /\A(?<prefix>(?<name>[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)(?:\[[^\]]*\])?)/i,
+          Regexp
+        )
 
         # Pins a single PEP 508 dependency entry string to a specific version,
         # preserving extras and environment markers.
-        #
-        # Handles three PEP 508 forms:
-        #   "name[extras] (>=1.0,<2.0) ; marker"   — parenthesized specifiers
-        #   "name[extras]>=1.0,<2.0 ; marker"       — bare specifiers
-        #   "name[extras] ; marker"                  — no specifiers
-        sig { params(entry: String, name_pattern: String, version: String).returns(String) }
-        def self.pin_pep508_entry(entry, name_pattern, version)
-          prefix   = "(?<pre>#{name_pattern}(?:\\[[^\\]]*\\])?)"
-          extras   = "(?:\\[[^\\]]*\\])?"
-          marker   = "(?<rest>\\s*(?:;.*)?)"
-          operator = "[><=!~]"
+        sig { params(entry: String, version: String).returns(String) }
+        def self.pin_pep508_entry(entry, version)
+          m = entry.match(PEP508_PREFIX)
+          return entry unless m
 
-          if entry.match?(/\A#{name_pattern}#{extras}\s*\(#{operator}/i)
-            # Parenthesized specifiers: strip the (...) block entirely
-            entry.sub(/#{prefix}\s*\(#{operator}[^)]*\)#{marker}/i, "\\k<pre>==#{version}\\k<rest>")
-          elsif entry.match?(/\A#{name_pattern}#{extras}\s*#{operator}/i)
-            # Bare specifiers: strip everything up to the marker
-            entry.sub(/#{prefix}\s*#{operator}[^;]*?(?=\s*;|\s*\z)/i, "\\k<pre>==#{version}")
-          else
-            # No specifiers: just pin after the name
-            entry.sub(/#{prefix}#{marker}/i, "\\k<pre>==#{version}\\k<rest>")
-          end
+          prefix = T.must(m[:prefix])
+          rest = T.must(entry[prefix.length..])
+
+          # Extract the environment marker ("; ..." suffix) if present
+          marker_match = rest.match(/(\s*;.*)/)
+          marker = marker_match ? marker_match[1] : ""
+
+          "#{prefix}==#{version}#{marker}"
         end
         private_class_method :pin_pep508_entry
 
@@ -88,12 +78,14 @@ module Dependabot
 
         sig { params(dep_arrays: T::Array[T::Array[String]], dep: Dependabot::Dependency).void }
         def self.pin_pep621_dep_in_arrays!(dep_arrays, dep)
-          name_pattern = pep508_name_pattern(dep.name)
+          normalised_name = NameNormaliser.normalise(dep.name)
           dep_arrays.each do |arr|
             arr.each_with_index do |entry, i|
-              next unless entry.match?(/\A#{name_pattern}(\[[^\]]*\])?\s*(\z|[(><=!~;,])/i)
+              match = entry.match(PEP508_PREFIX)
+              next unless match
+              next unless NameNormaliser.normalise(T.must(match[:name])) == normalised_name
 
-              arr[i] = pin_pep508_entry(entry, name_pattern, T.must(dep.version))
+              arr[i] = pin_pep508_entry(entry, T.must(dep.version))
             end
           end
         end
@@ -238,8 +230,7 @@ module Dependabot
             locked_details = locked_details(dep_name)
             next unless (locked_version = locked_details&.fetch("version"))
 
-            name_pattern = self.class.send(:pep508_name_pattern, T.must(match[1]))
-            dep_array[index] = self.class.send(:pin_pep508_entry, entry, name_pattern, locked_version)
+            dep_array[index] = self.class.send(:pin_pep508_entry, entry, locked_version)
           end
         end
 
