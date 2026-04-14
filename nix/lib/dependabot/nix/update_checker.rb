@@ -178,7 +178,8 @@ module Dependabot
           VersionedBranchFinder.new(
             current_ref: ref,
             dependency: dependency,
-            credentials: credentials
+            credentials: credentials,
+            ignored_versions: ignored_versions
           ),
           T.nilable(VersionedBranchFinder)
         )

@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/nix/update_checker"
+require "dependabot/nix/requirement"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
 
@@ -27,13 +28,15 @@ module Dependabot
           params(
             current_ref: String,
             dependency: Dependabot::Dependency,
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            ignored_versions: T::Array[String]
           ).void
         end
-        def initialize(current_ref:, dependency:, credentials:)
+        def initialize(current_ref:, dependency:, credentials:, ignored_versions: [])
           @current_ref = current_ref
           @dependency = dependency
           @credentials = credentials
+          @ignored_versions = ignored_versions
         end
 
         # Returns true if the current ref looks like a versioned branch.
@@ -68,6 +71,9 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+
         sig { returns(T.nilable(MatchData)) }
         def branch_version_match
           @branch_version_match ||= T.let(
@@ -85,22 +91,44 @@ module Dependabot
         end
         def find_latest_branch(prefix, current_version, suffix)
           candidates = remote_branches.filter_map do |ref|
-            branch_match = VERSIONED_BRANCH_PATTERN.match(ref.name)
-            next unless branch_match
-            next unless branch_match[1] == prefix
-            next unless branch_match[3] == suffix
-
-            version = parse_version(T.must(branch_match[2]))
-            next unless version
-            next unless (version <=> current_version) == 1
-
-            { branch: ref.name, commit_sha: ref.commit_sha, version: version }
+            build_candidate(ref, prefix, current_version, suffix)
           end
 
           latest = candidates.max_by { |c| c[:version] }
           return unless latest
 
           { branch: latest[:branch].to_s, commit_sha: latest[:commit_sha].to_s }
+        end
+
+        sig do
+          params(
+            ref: Dependabot::GitRef,
+            prefix: String,
+            current_version: T::Array[Integer],
+            suffix: T.nilable(String)
+          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        end
+        def build_candidate(ref, prefix, current_version, suffix)
+          branch_match = VERSIONED_BRANCH_PATTERN.match(ref.name)
+          return unless branch_match
+          return unless branch_match[1] == prefix
+          return unless branch_match[3] == suffix
+
+          version_str = T.must(branch_match[2])
+          version = parse_version(version_str)
+          return unless version
+          return unless (version <=> current_version) == 1
+          return if version_ignored?(version_str)
+
+          { branch: ref.name, commit_sha: ref.commit_sha, version: version }
+        end
+
+        sig { params(version_str: String).returns(T::Boolean) }
+        def version_ignored?(version_str)
+          return false if ignore_requirements.empty?
+
+          gem_version = Gem::Version.new(version_str)
+          ignore_requirements.any? { |req| req.satisfied_by?(gem_version) }
         end
 
         # Parses "YY.MM" into [year, month] for comparison.
@@ -116,6 +144,18 @@ module Dependabot
           [year, month]
         rescue ArgumentError
           nil
+        end
+
+        sig { returns(T::Array[Gem::Requirement]) }
+        def ignore_requirements
+          @ignore_requirements ||= T.let(
+            ignored_versions.flat_map do |req|
+              Dependabot::Nix::Requirement.requirements_array(req)
+            rescue Gem::Requirement::BadRequirementError
+              []
+            end,
+            T.nilable(T::Array[Gem::Requirement])
+          )
         end
 
         sig { returns(T::Array[Dependabot::GitRef]) }

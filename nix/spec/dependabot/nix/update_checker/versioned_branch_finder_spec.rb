@@ -212,5 +212,82 @@ RSpec.describe Dependabot::Nix::UpdateChecker::VersionedBranchFinder do
         expect(result).to eq({ branch: "nixos-25.05-small", commit_sha: "ddd444" })
       end
     end
+
+    context "with ignored_versions filtering branches" do
+      let(:current_ref) { "nixos-23.05" }
+
+      let(:remote_branches) do
+        [
+          Dependabot::GitRef.new(name: "nixos-23.05", commit_sha: "aaa111", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-23.11", commit_sha: "bbb222", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-24.05", commit_sha: "ccc333", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-24.11", commit_sha: "ddd444", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-25.05", commit_sha: "eee555", ref_type: Dependabot::RefType::Head)
+        ]
+      end
+
+      let(:finder_with_ignored) do
+        described_class.new(
+          current_ref: current_ref,
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: [">= 24"]
+        )
+      end
+
+      it "filters out branches matching the ignore requirement" do
+        result = finder_with_ignored.latest_versioned_branch
+        expect(result).to eq({ branch: "nixos-23.11", commit_sha: "bbb222" })
+      end
+    end
+
+    context "with ignored_versions filtering all newer branches" do
+      let(:current_ref) { "nixos-24.11" }
+
+      let(:remote_branches) do
+        [
+          Dependabot::GitRef.new(name: "nixos-24.11", commit_sha: "aaa111", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-25.05", commit_sha: "bbb222", ref_type: Dependabot::RefType::Head)
+        ]
+      end
+
+      let(:finder_with_ignored) do
+        described_class.new(
+          current_ref: current_ref,
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: [">= 25"]
+        )
+      end
+
+      it "returns nil when all newer branches are ignored" do
+        expect(finder_with_ignored.latest_versioned_branch).to be_nil
+      end
+    end
+
+    context "with malformed ignored_versions" do
+      let(:current_ref) { "nixos-24.11" }
+
+      let(:remote_branches) do
+        [
+          Dependabot::GitRef.new(name: "nixos-24.11", commit_sha: "aaa111", ref_type: Dependabot::RefType::Head),
+          Dependabot::GitRef.new(name: "nixos-25.05", commit_sha: "bbb222", ref_type: Dependabot::RefType::Head)
+        ]
+      end
+
+      let(:finder_with_ignored) do
+        described_class.new(
+          current_ref: current_ref,
+          dependency: dependency,
+          credentials: credentials,
+          ignored_versions: ["> abc123invalid"]
+        )
+      end
+
+      it "gracefully ignores malformed requirements and still finds branches" do
+        result = finder_with_ignored.latest_versioned_branch
+        expect(result).to eq({ branch: "nixos-25.05", commit_sha: "bbb222" })
+      end
+    end
   end
 end
