@@ -135,8 +135,8 @@ RSpec.describe namespace::LatestVersionFinder do
       let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
       let(:reference) { tip_of_master }
 
-      it "considers the commit itself as the latest version" do
-        expect(latest_release_version).to eq(tip_of_master)
+      it "returns the latest tagged version" do
+        expect(latest_release_version).to eq(Gem::Version.new("1.1.0"))
       end
     end
 

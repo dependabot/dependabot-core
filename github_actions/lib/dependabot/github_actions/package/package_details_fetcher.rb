@@ -65,7 +65,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def release_list_for_git_dependency
           # TODO: Support Docker sources
@@ -82,14 +81,13 @@ module Dependabot
           end
 
           if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-            return latest_version_tag.fetch(:version)
+            return T.must(latest_version_tag).fetch(:version)
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version or a commit SHA then there's nothing we can do.
           nil
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def lowest_security_fix_version_tag
