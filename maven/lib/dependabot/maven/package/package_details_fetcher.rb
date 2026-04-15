@@ -72,11 +72,6 @@ module Dependabot
           fetch.releases
         end
 
-        sig { params(version: Dependabot::Version).returns(T::Boolean) }
-        def released?(version)
-          super
-        end
-
         # Assembles the list of Maven repositories to search: credential repos + POM repos.
         sig { override.returns(T::Array[T::Hash[String, T.untyped]]) }
         def repositories
