@@ -142,6 +142,20 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         it "parses correctly with no metadata" do
           expect { parser.dependency_set }.not_to raise_error
         end
+
+        it "includes production dependencies" do
+          expect(dependencies.map(&:name)).to include("requests")
+          expect(dependencies.map(&:name)).to include("geopy")
+        end
+
+        it "includes dev dependencies" do
+          expect(dependencies.map(&:name)).to include("pytest")
+          expect(dependencies.map(&:name)).to include("black")
+        end
+
+        it "excludes the python dependency" do
+          expect(dependencies.map(&:name)).not_to include("python")
+        end
       end
     end
 

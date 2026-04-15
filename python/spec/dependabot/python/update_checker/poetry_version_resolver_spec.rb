@@ -98,6 +98,22 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
+    context "with a non-package mode project" do
+      let(:pyproject_fixture_name) { "poetry_non_package_mode_simple.toml" }
+      let(:lockfile_fixture_name) { "version_not_specified.lock" }
+      let(:dependency_version) { "2.18.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "*",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
     context "with a lockfile" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }
