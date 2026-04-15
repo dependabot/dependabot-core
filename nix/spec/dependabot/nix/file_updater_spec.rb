@@ -108,11 +108,15 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         expect(updated_files.first.name).to eq("flake.lock")
       end
 
-      it "calls nix flake update with the input name" do
+      it "calls nix flake update with the input name and credentials" do
         updated_files
         expect(Dependabot::SharedHelpers)
           .to have_received(:run_shell_command)
-          .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_name>")
+          .with(
+            "nix flake update nixpkgs",
+            env: { "NIX_CONFIG" => "access-tokens = github.com=token" },
+            fingerprint: "nix flake update <input_name>"
+          )
       end
     end
 
@@ -221,6 +225,80 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         nix_file = updated_files.find { |f| f.name == "flake.nix" }
         expect(nix_file.content).to include('"github:NixOS/nixpkgs/nixos-25.05"')
         expect(nix_file.content).not_to include("nixos-24.11")
+      end
+    end
+  end
+
+  describe "#nix_access_tokens_env" do
+    context "with a single git_source credential" do
+      it "returns NIX_CONFIG with the access token" do
+        env = updater.send(:nix_access_tokens_env)
+        expect(env).to eq({ "NIX_CONFIG" => "access-tokens = github.com=token" })
+      end
+    end
+
+    context "with multiple git_source credentials" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: [flake_nix, flake_lock],
+          dependencies: [dependency],
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "gh-token"
+            },
+            {
+              "type" => "git_source",
+              "host" => "gitlab.example.com",
+              "username" => "oauth2",
+              "password" => "gl-token"
+            }
+          ]
+        )
+      end
+
+      it "includes all credentials" do
+        env = updater.send(:nix_access_tokens_env)
+        expect(env["NIX_CONFIG"]).to include("github.com=gh-token")
+        expect(env["NIX_CONFIG"]).to include("gitlab.example.com=gl-token")
+      end
+    end
+
+    context "with no git_source credentials" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: [flake_nix, flake_lock],
+          dependencies: [dependency],
+          credentials: []
+        )
+      end
+
+      it "returns an empty hash" do
+        env = updater.send(:nix_access_tokens_env)
+        expect(env).to eq({})
+      end
+    end
+
+    context "with credentials missing a password" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: [flake_nix, flake_lock],
+          dependencies: [dependency],
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token"
+            }
+          ]
+        )
+      end
+
+      it "skips credentials without a password" do
+        env = updater.send(:nix_access_tokens_env)
+        expect(env).to eq({})
       end
     end
   end
