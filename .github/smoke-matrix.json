@@ -80,6 +80,11 @@
     "ecosystem": "maven"
   },
   {
+    "core": "mise",
+    "test": "mise",
+    "ecosystem": "mise"
+  },
+  {
     "core": "nix",
     "test": "nix",
     "ecosystem": "nix"

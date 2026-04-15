@@ -35,6 +35,7 @@
 # - helm
 # - hex
 # - maven
+# - mise
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
@@ -79,6 +80,7 @@ $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
+$LOAD_PATH << "./mise/lib"
 $LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
@@ -137,6 +139,7 @@ require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
 require "dependabot/maven"
+require "dependabot/mise"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/pre_commit"
@@ -380,6 +383,7 @@ valid_package_managers = %w(
   helm
   hex
   maven
+  mise
   npm_and_yarn
   nuget
   pip

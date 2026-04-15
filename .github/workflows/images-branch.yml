@@ -81,6 +81,7 @@ jobs:
           - { name: hex, ecosystem: mix }
           - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
+          - { name: mise, ecosystem: mise }
           - { name: nix, ecosystem: nix }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }

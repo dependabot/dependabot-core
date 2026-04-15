@@ -47,6 +47,9 @@ hex:
 maven:
   - *common
   - 'maven/**'
+mise:
+  - *common
+  - 'mise/**'
 nix:
   - *common
   - 'nix/**'

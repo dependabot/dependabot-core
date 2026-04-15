@@ -40,6 +40,7 @@ jobs:
           - { path: hex, name: hex, ecosystem: mix }
           - { path: julia, name: julia, ecosystem: julia }
           - { path: maven, name: maven, ecosystem: maven }
+          - { path: mise, name: mise, ecosystem: mise }
           - { path: nix, name: nix, ecosystem: nix }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
