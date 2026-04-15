@@ -34,6 +34,8 @@ module Dependabot
         sig { abstract.returns(T::Array[T::Hash[String, T.untyped]]) }
         def repositories; end
 
+        # -- URL Construction --
+
         # Splits the dependency name (group_id:artifact_id) into [group_path, artifact_id].
         #
         # Example:
@@ -49,6 +51,9 @@ module Dependabot
         end
 
         # Base URL for a dependency: repo_url/group_path/artifact_id
+        #
+        # Example:
+        #   "https://repo.maven.apache.org/maven2/com/google/guava/guava"
         sig { params(repository_url: String).returns(String) }
         def dependency_base_url(repository_url)
           group_path, artifact_id = dependency_parts
@@ -62,6 +67,9 @@ module Dependabot
         end
 
         # URL for a specific artifact file (JAR/POM).
+        #
+        # Example:
+        #   "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
         sig { params(repository_url: String, version: Dependabot::Version).returns(String) }
         def dependency_files_url(repository_url, version)
           _, artifact_id = dependency_parts
@@ -72,6 +80,8 @@ module Dependabot
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
+
+        # -- Metadata Fetching (XML) --
 
         # Fetches and parses maven-metadata.xml from a repository.
         sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
@@ -108,6 +118,9 @@ module Dependabot
              .map { |version| { version: version, source_url: url } }
         end
 
+        # -- Metadata Fetching (HTML directory listing) --
+
+        # Fetches an HTML directory listing page from a repository.
         sig do
           params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::HTML::Document))
         end
@@ -130,6 +143,7 @@ module Dependabot
           nil
         end
 
+        # Parses release dates from an HTML directory listing page.
         sig do
           params(html_doc: Nokogiri::HTML::Document)
             .returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
@@ -157,6 +171,9 @@ module Dependabot
           versions_detail_hash
         end
 
+        # -- Response Checking & Error Handling --
+
+        # Tracks forbidden URLs when receiving 401/403 responses (except for central repo).
         sig { params(response: Excon::Response, repository_url: String).void }
         def check_response(response, repository_url)
           return unless [401, 403].include?(response.status)
@@ -166,6 +183,7 @@ module Dependabot
           forbidden_urls << repository_url
         end
 
+        # Raises RegistryError for failures hitting the central repo.
         sig do
           params(
             url: String,
@@ -185,6 +203,8 @@ module Dependabot
 
           raise RegistryError.new(response_status, response_body)
         end
+
+        # -- Release Check --
 
         # Checks whether a specific version of the dependency has been published
         # by issuing HEAD requests to each repository.
@@ -211,6 +231,9 @@ module Dependabot
             end
         end
 
+        # -- Credential & Repository Helpers --
+
+        # Builds repository details from credentials of type "maven_repository".
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def credentials_repository_details
           credentials
@@ -224,6 +247,8 @@ module Dependabot
             end
         end
 
+        # The default central repo URL. Subclasses may override (e.g., if credentials
+        # provide a replacement base repo).
         sig { returns(String) }
         def central_repo_url
           DEFAULT_CENTRAL_REPO_URL
@@ -241,6 +266,8 @@ module Dependabot
           @forbidden_urls ||= T.let([], T.nilable(T::Array[String]))
         end
 
+        # -- Auth --
+
         sig { params(maven_repo_url: String).returns(T::Hash[String, String]) }
         def auth_headers(maven_repo_url)
           auth_headers_finder.auth_headers(maven_repo_url)
@@ -250,6 +277,8 @@ module Dependabot
         def auth_headers_finder
           @auth_headers_finder ||= T.let(Utils::AuthHeadersFinder.new(credentials), T.nilable(Utils::AuthHeadersFinder))
         end
+
+        # -- Metadata Caching --
 
         # Fetches and caches XML metadata per repository.
         sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
@@ -280,6 +309,8 @@ module Dependabot
           @dependency_metadata_from_html[repository_key] ||= html_document if html_document
           @dependency_metadata_from_html[repository_key]
         end
+
+        # -- Version Class --
 
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
