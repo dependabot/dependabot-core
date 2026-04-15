@@ -573,28 +573,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     context "when a git commit SHA not pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
 
-      context "when it's in the current (default) branch" do
-        it "can update to the latest version" do
-          expect(latest_version).to eq(Gem::Version.new("1.1.0"))
-        end
-      end
-
-      context "when it's on a different branch" do
-        it "can update to the latest version" do
-          expect(latest_version).to eq(Gem::Version.new("1.1.0"))
-        end
-      end
-
-      context "when multiple branches include it and the current (default) branch among them" do
-        it "can update to the latest version" do
-          expect(latest_version).to eq(Gem::Version.new("1.1.0"))
-        end
-      end
-
-      context "when multiple branches include it and the current (default) branch NOT among them" do
-        it "can update to the latest version" do
-          expect(latest_version).to eq(Gem::Version.new("1.1.0"))
-        end
+      it "returns the latest tagged version regardless of which branch contains the SHA" do
+        expect(latest_version).to eq(Gem::Version.new("1.1.0"))
       end
     end
   end
