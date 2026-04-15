@@ -120,9 +120,11 @@ RSpec.describe Dependabot::Composer::Package::PackageDetailsFetcher do
       end
 
       it "does not raise an error" do
-        expect { fetch }.not_to raise_error
-        expect(fetch).to be_a(Dependabot::Package::PackageDetails)
-        expect(fetch.releases).not_to be_empty
+        package_details = nil
+
+        expect { package_details = fetch }.not_to raise_error
+        expect(package_details).to be_a(Dependabot::Package::PackageDetails)
+        expect(package_details.releases).not_to be_empty
       end
     end
   end
