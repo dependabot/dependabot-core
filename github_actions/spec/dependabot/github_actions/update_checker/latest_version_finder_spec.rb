@@ -284,6 +284,97 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
 
+    describe "#latest_version_tag_respecting_cooldown" do
+      subject(:latest_version_tag_respecting_cooldown) { finder.latest_version_tag_respecting_cooldown }
+
+      context "when cooldown filters out the latest major tag" do
+        let(:dependency_name) { "actions/checkout" }
+        let(:upload_pack_fixture) { "checkout" }
+        let(:reference) { "v2" }
+        let(:dependency_version) { "2" }
+        let(:dependency_source) do
+          {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2",
+            branch: nil
+          }
+        end
+        let(:finder) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: github_credentials,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+          )
+        end
+
+        before do
+          allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+            tags_with_dates.filter_map do |tag|
+              tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+              tag_name if tag_name.start_with?("v3")
+            end
+          end
+        end
+
+        it "returns the tag hash for the selected cooled-down release" do
+          expect(latest_version_tag_respecting_cooldown).to include(
+            tag: "v2.7.0",
+            commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5",
+            version: Dependabot::GithubActions::Version.new("2.7.0")
+          )
+        end
+      end
+
+      context "when latest version tag is outside cooldown" do
+        let(:dependency_name) { "actions/checkout" }
+        let(:upload_pack_fixture) { "checkout" }
+        let(:reference) { "v2" }
+        let(:dependency_version) { "2" }
+        let(:dependency_source) do
+          {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2",
+            branch: nil
+          }
+        end
+        let(:finder) do
+          described_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: github_credentials,
+            security_advisories: security_advisories,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+          )
+        end
+
+        before do
+          allow(finder).to receive(:select_version_tags_in_cooldown_period).and_return([])
+        end
+
+        it "returns the same tag as latest_version_tag" do
+          expect(latest_version_tag_respecting_cooldown).to eq(finder.latest_version_tag)
+        end
+      end
+
+      context "when the selected release is a SHA" do
+        before do
+          allow(finder).to receive(:latest_release_version).and_return("deadbeef")
+        end
+
+        it "returns nil" do
+          expect(latest_version_tag_respecting_cooldown).to be_nil
+        end
+      end
+    end
+
     describe "#select_version_tags_in_cooldown_period" do
       subject(:selected_tags) { finder.send(:select_version_tags_in_cooldown_period) }
 
