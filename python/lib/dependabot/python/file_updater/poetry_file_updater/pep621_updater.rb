@@ -38,21 +38,46 @@ module Dependabot
             old_specifiers = parse_specifiers(old_req)
             new_specifiers = parse_specifiers(new_req)
 
-            version_map = {}
-            old_specifiers.each_with_index do |old_spec, i|
-              new_spec = new_specifiers[i]
-              next unless new_spec && old_spec[:operator] == new_spec[:operator]
-              next if old_spec[:version] == new_spec[:version]
+            old_versions_by_op = group_versions_by_operator(old_specifiers)
+            new_versions_by_op = group_versions_by_operator(new_specifiers)
 
-              version_map[[old_spec[:operator], old_spec[:version]]] = new_spec[:version]
+            replacements = T.let([], T::Array[T::Hash[Symbol, String]])
+            new_versions_by_op.each do |operator, new_versions|
+              old_versions = old_versions_by_op[operator]
+              next unless old_versions
+              next unless old_versions.length == new_versions.length
+
+              old_versions.zip(new_versions).each do |old_version, new_version|
+                next if old_version == new_version
+
+                replacements << {
+                  operator: operator,
+                  old_version: old_version,
+                  new_version: T.must(new_version)
+                }
+              end
             end
 
             result = source_req.dup
-            version_map.each do |(operator, old_version), new_version|
-              pattern = /(#{Regexp.escape(operator)}\s*)#{Regexp.escape(old_version)}/
-              result = result.sub(pattern, "\\1#{new_version}")
+            replacements.each do |replacement|
+              op = Regexp.escape(T.must(replacement[:operator]))
+              ver = Regexp.escape(T.must(replacement[:old_version]))
+              result = result.sub(/(#{op}\s*)#{ver}/, "\\1#{replacement[:new_version]}")
             end
             result
+          end
+
+          sig { params(specifiers: T::Array[T::Hash[Symbol, String]]).returns(T::Hash[String, T::Array[String]]) }
+          def group_versions_by_operator(specifiers)
+            specifiers.each_with_object(
+              T.let({}, T::Hash[String, T::Array[String]])
+            ) do |specifier, grouped_versions|
+              operator = T.must(specifier[:operator])
+              version = T.must(specifier[:version])
+
+              grouped_versions[operator] ||= []
+              T.must(grouped_versions[operator]) << version
+            end
           end
 
           sig { params(req: String).returns(T::Array[T::Hash[Symbol, String]]) }
