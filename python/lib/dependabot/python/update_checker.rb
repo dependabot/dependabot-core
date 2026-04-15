@@ -409,14 +409,18 @@ module Dependabot
       def check_pypi_for_library_match
         return false unless updating_pyproject? && library_details && !T.must(library_details)["name"].nil?
 
+        # If the project has a description in its pyproject.toml metadata, treat it as a
+        # library when PyPI is unavailable or the package isn't published there yet.
+        has_library_metadata = !T.must(library_details)["description"].nil?
+
         response = Dependabot::RegistryClient.get(
           url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
         )
-        return false unless response.status == 200
+        return has_library_metadata unless response.status == 200
 
         (JSON.parse(response.body)["info"] || {})["summary"] == T.must(library_details)["description"]
       rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
-        false
+        has_library_metadata
       end
 
       sig { returns(T::Boolean) }

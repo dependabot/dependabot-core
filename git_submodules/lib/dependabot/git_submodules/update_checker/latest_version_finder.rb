@@ -7,6 +7,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/git_submodules/update_checker"
@@ -53,10 +54,11 @@ module Dependabot
           end
 
           days = cooldown_days
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(release.released_at), days)
 
-          if passed_days < days
+          if in_cooldown
+            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Filtered #{release.tag}, Released on: " \
               "#{T.must(release.released_at).strftime('%Y-%m-%d')} " \
@@ -64,7 +66,7 @@ module Dependabot
             )
           end
 
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
 
         sig do

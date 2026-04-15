@@ -1618,6 +1618,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(366) }
       end
 
+      context "with a JSR dependency (short form)" do
+        subject(:parsed_file) { parser.parse }
+
+        let(:files) { project_dependency_files("pnpm/jsr_dependency") }
+
+        it "parses the JSR dependency with a JSR registry source" do
+          dep = parsed_file.find { |d| d.name == "@arendjr/text-clipper" }
+          expect(dep).not_to be_nil
+          expect(dep.requirements).to contain_exactly(
+            {
+              requirement: "jsr:^3.0.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://npm.jsr.io" }
+            }
+          )
+        end
+      end
+
+      context "with a JSR dependency (long form)" do
+        subject(:parsed_file) { parser.parse }
+
+        let(:files) { project_dependency_files("pnpm/jsr_dependency_long_form") }
+
+        it "parses the JSR dependency with a JSR registry source" do
+          dep = parsed_file.find { |d| d.name == "@arendjr/text-clipper" }
+          expect(dep).not_to be_nil
+          expect(dep.requirements).to contain_exactly(
+            {
+              requirement: "jsr:@arendjr/text-clipper@^3.0.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://npm.jsr.io" }
+            }
+          )
+        end
+      end
+
       context "with a package-lock.json" do
         let(:files) { project_dependency_files("npm6/blank_requirement") }
 

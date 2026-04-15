@@ -220,5 +220,96 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
       it { is_expected.to include("subdirectory = \"python\"\n") }
     end
+
+    context "with PEP 621 project.dependencies" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "pep621_hybrid_version_in_both.toml" }
+      let(:poetry_lock_fixture_name) { "caret_version.lock" }
+
+      it "freezes PEP 621 dependencies to their locked versions" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        project_deps = parsed.dig("project", "dependencies")
+        requests_dep = project_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==1.2.3")
+      end
+
+      it "also freezes tool.poetry.dependencies" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+        expect(poetry_req["version"]).to eq("1.2.3")
+      end
+
+      context "when excluding a dependency" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "2.19.1",
+              package_manager: "pip",
+              requirements: []
+            )
+          ]
+        end
+
+        it "does not freeze the excluded PEP 621 dependency" do
+          result = freeze_top_level_dependencies_except
+          parsed = TomlRB.parse(result)
+          project_deps = parsed.dig("project", "dependencies")
+          requests_dep = project_deps.find { |d| d.start_with?("requests") }
+          expect(requests_dep).to eq("requests>=2.13.0")
+        end
+      end
+    end
+
+    context "with PEP 621 dependencies containing environment markers" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "pep621_hybrid_with_markers.toml" }
+      let(:poetry_lock_fixture_name) { "caret_version.lock" }
+
+      it "freezes the version while preserving markers" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        project_deps = parsed.dig("project", "dependencies")
+        requests_dep = project_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==1.2.3 ; python_version >= '3.7'")
+      end
+    end
+
+    context "with PEP 621 project.optional-dependencies" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "pep621_hybrid_optional_deps.toml" }
+      let(:poetry_lock_fixture_name) { "caret_version.lock" }
+
+      it "freezes optional dependencies to their locked versions" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        opt_deps = parsed.dig("project", "optional-dependencies", "networking")
+        requests_dep = opt_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==1.2.3")
+      end
+
+      context "when excluding a dependency" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "2.19.1",
+              package_manager: "pip",
+              requirements: []
+            )
+          ]
+        end
+
+        it "does not freeze the excluded optional dependency" do
+          result = freeze_top_level_dependencies_except
+          parsed = TomlRB.parse(result)
+          opt_deps = parsed.dig("project", "optional-dependencies", "networking")
+          requests_dep = opt_deps.find { |d| d.start_with?("requests") }
+          expect(requests_dep).to eq("requests>=2.13.0")
+        end
+      end
+    end
   end
 end

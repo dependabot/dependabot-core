@@ -491,6 +491,7 @@ module Dependabot
       end
       def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
+        return jsr_registry_source if requirement.start_with?("jsr:")
 
         resolved_url = lockfile_details&.fetch("resolved", nil)
 
@@ -538,6 +539,11 @@ module Dependabot
           branch: nil,
           ref: details["ref"]
         }
+      end
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      def jsr_registry_source
+        { type: "registry", url: NpmAndYarn::Requirement::JSR_REGISTRY }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
