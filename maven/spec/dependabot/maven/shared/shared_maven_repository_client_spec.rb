@@ -564,8 +564,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
       other_metadata_url = "#{other_repo}/com/google/guava/guava/maven-metadata.xml"
       other_details = { "url" => other_repo, "auth_headers" => {} }
 
+      other_body = "<metadata><versioning><versions>" \
+                   "<version>1.0</version>" \
+                   "</versions></versioning></metadata>"
       stub_request(:get, other_metadata_url)
-        .to_return(status: 200, body: "<metadata><versioning><versions><version>1.0</version></versions></versioning></metadata>")
+        .to_return(status: 200, body: other_body)
 
       result1 = client.dependency_metadata(repository_details)
       result2 = client.dependency_metadata(other_details)
