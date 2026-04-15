@@ -862,6 +862,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
         expect(requests["version"]).to eq("2.19.1")
         expect(pytest["version"]).to eq("3.5.0")
+
+        expect(lockfile_obj["metadata"]["content-hash"])
+          .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
       end
     end
   end
