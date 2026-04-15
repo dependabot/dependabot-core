@@ -27,10 +27,10 @@ module Dependabot
         # preserving extras and environment markers.
         sig { params(entry: String, version: String).returns(String) }
         def self.pin_pep508_entry(entry, version)
-          m = entry.match(PEP508_PREFIX)
-          return entry unless m
+          prefix_match = entry.match(PEP508_PREFIX)
+          return entry unless prefix_match
 
-          prefix = T.must(m[:prefix])
+          prefix = T.must(prefix_match[:prefix])
           rest = T.must(entry[prefix.length..])
 
           # Extract the environment marker ("; ..." suffix) if present
