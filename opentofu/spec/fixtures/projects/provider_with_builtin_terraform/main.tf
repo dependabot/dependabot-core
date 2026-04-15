@@ -6,6 +6,10 @@ terraform {
       source  = "terraform.io/builtin/terraform"
     }
 
+    opentofu_builtin = {
+      source  = "opentofu.org/builtin/example"
+    }
+
     http = {
       source  = "hashicorp/http"
       version = "~> 2.0"

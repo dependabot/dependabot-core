@@ -986,13 +986,14 @@ RSpec.describe Dependabot::Opentofu::FileParser do
       end
     end
 
-    context "with a terraform.io/builtin/terraform provider" do
+    context "with built-in providers" do
       let(:files) { project_dependency_files("provider_with_builtin_terraform") }
 
-      it "skips the builtin/terraform provider" do
+      it "skips providers in built-in namespaces" do
         expect(dependencies.length).to eq(2)
-        # Should not include builtin/terraform provider
+        # Should not include any built-in provider (terraform.io/builtin/* or opentofu.org/builtin/*)
         expect(dependencies.find { |d| d.name == "builtin/terraform" }).to be_nil
+        expect(dependencies.find { |d| d.name == "builtin/example" }).to be_nil
         # Should include other providers
         expect(dependencies.find { |d| d.name == "hashicorp/http" }).not_to be_nil
         expect(dependencies.find { |d| d.name == "hashicorp/aws" }).not_to be_nil

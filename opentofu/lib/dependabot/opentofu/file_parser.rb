@@ -30,6 +30,18 @@ module Dependabot
       # https://opentofu.org/docs/language/providers/requirements/#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
 
+      # Namespaces reserved for providers bundled with the OpenTofu/Terraform
+      # binary. Providers in these namespaces cannot be updated independently
+      # because their version tracks the binary itself.
+      # See: https://pkg.go.dev/github.com/opentofu/registry-address/v2#Provider.IsBuiltIn
+      BUILTIN_PROVIDER_NAMESPACES = T.let(
+        %w(
+          terraform.io/builtin
+          opentofu.org/builtin
+        ).freeze,
+        T::Array[String]
+      )
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
@@ -56,8 +68,18 @@ module Dependabot
 
       private
 
+      sig { params(details: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
+      def builtin_provider?(details)
+        return false unless details.is_a?(Hash)
+
+        source_address = details["source"]
+        return false unless source_address.is_a?(String)
+
+        normalized = source_address.downcase
+        BUILTIN_PROVIDER_NAMESPACES.any? { |ns| normalized.start_with?("#{ns}/") }
+      end
+
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/MethodLength
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_opentofu_files(dependency_set)
         opentofu_files.each do |file|
@@ -94,20 +116,17 @@ module Dependabot
             required_providers = opentofu.fetch("required_providers", {})
             required_providers.each do |provider|
               provider.each do |name, details|
-                Dependabot.logger.info("Building provider dependency for #{name} in #{file.name}")
-                dep = build_provider_dependency(file, name, details)
-                if dep.name == "builtin/terraform"
-                  Dependabot.logger.info("Skipping builtin/terraform provider as it's not possible to update it")
+                if builtin_provider?(details)
+                  Dependabot.logger.info("Skipping built-in provider #{name} in #{file.name}")
                   next
                 end
 
-                dependency_set << dep
+                dependency_set << build_provider_dependency(file, name, details)
               end
             end
           end
         end
       end
-      # rubocop:enable Metrics/MethodLength
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
