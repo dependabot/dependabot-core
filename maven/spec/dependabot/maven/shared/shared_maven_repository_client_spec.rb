@@ -7,7 +7,6 @@ require "dependabot/dependency"
 require "dependabot/maven/shared/shared_maven_repository_client"
 require "dependabot/maven/version"
 
-# Concrete test subclass that implements the abstract methods.
 class TestMavenRepositoryClient < Dependabot::Maven::Shared::SharedMavenRepositoryClient
   attr_reader :dependency
   attr_reader :credentials
@@ -128,6 +127,29 @@ RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
         expect(url).to eq("#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre-sources.jar")
       end
     end
+
+    context "without packaging_type metadata" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [{
+            requirement: "23.3-jre",
+            file: "pom.xml",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: {}
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "defaults to jar" do
+        url = client.dependency_files_url(maven_central, version)
+
+        expect(url).to eq("#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+      end
+    end
   end
 
   describe "#extract_metadata_from_xml" do
@@ -236,6 +258,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
         <<~HTML
           <html><body><pre>
           <a href="23.0/" title="23.0/">23.0/</a>                    2017-08-04 12:00         -
+          <a href="not-a-version!/" title="not-a-version!/">not-a-version!/</a>  2017-09-01 10:00         -
           </pre></body></html>
         HTML
       end
@@ -244,6 +267,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
         results = client.extract_version_details_from_html(html)
 
         expect(results).to have_key("23.0")
+        expect(results).not_to have_key("not-a-version!")
       end
     end
   end
@@ -470,6 +494,19 @@ RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
         second_result = client.released?(version)
 
         expect(first_result).to eq(second_result)
+      end
+    end
+
+    context "when the result is false" do
+      before do
+        stub_request(:head, artifact_url).to_return(status: 404)
+      end
+
+      it "caches false results without re-requesting" do
+        expect(client.released?(version)).to be(false)
+        # Remove the stub — second call should use cache, not network
+        WebMock.reset!
+        expect(client.released?(version)).to be(false)
       end
     end
 
