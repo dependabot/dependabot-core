@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "dependabot/shared/shared_file_parser"
 require "dependabot/docker/package_manager"
 
@@ -10,6 +11,8 @@ module Dependabot
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      JSON_REGEXP = /^[^\.].*\.json$/i
+      MANIFEST_REGEXP = /^[^\.].*\.(ya?ml|json)$/i
       FROM = /FROM/i
       PLATFORM = /--platform\=(?<platform>\S+)/
       TAG_NO_PREFIX = /(?<tag>[\w][\w.-]{0,127})/
@@ -73,22 +76,26 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def dockerfiles
-        # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
-        dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+        # The Docker file fetcher fetches Dockerfiles, YAML, and JSON files. Reject manifest files.
+        dependency_files.reject { |f| f.type == "file" && f.name.match?(MANIFEST_REGEXP) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
-        dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+        dependency_files.select { |f| f.type == "file" && f.name.match?(MANIFEST_REGEXP) }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        resources = T.must(file.content).split(/^---$/).map(&:strip).reject(&:empty?)
-        resources.flat_map do |resource|
-          json = YAML.safe_load(resource, aliases: true)
+        parsed_resources = if file.name.match?(JSON_REGEXP)
+                             parse_json_resources(file)
+                           else
+                             parse_yaml_resources(file)
+                           end
+
+        parsed_resources.flat_map do |json|
           images = deep_fetch_images(json).uniq
 
           images.each do |string|
@@ -107,8 +114,29 @@ module Dependabot
 
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
-        Dependabot.logger.error("Failed to parse file #{file.path}: #{e.message}")
+        Dependabot.logger.error("Failed to parse YAML file #{file.path}: #{e.message}")
         raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      rescue JSON::ParserError => e
+        Dependabot.logger.error("Failed to parse JSON file #{file.path}: #{e.message}")
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T.untyped]) }
+      def parse_yaml_resources(file)
+        T.must(file.content).split(/^---$/).map(&:strip).reject(&:empty?).map do |resource|
+          YAML.safe_load(resource, aliases: true)
+        end
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T.untyped]) }
+      def parse_json_resources(file)
+        json = JSON.parse(T.must(file.content))
+        # A JSON Kubernetes manifest may contain a List with items, or be a single resource
+        if json.is_a?(Hash) && json["kind"]&.end_with?("List") && json["items"].is_a?(Array)
+          json["items"]
+        else
+          [json]
+        end
       end
 
       sig { params(json_obj: T.anything).returns(T::Array[String]) }

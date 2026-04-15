@@ -18,13 +18,13 @@ module Dependabot
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a Dockerfile, Containerfile, or Kubernetes YAML files."
+        "Repo must contain a Dockerfile, Containerfile, or Kubernetes manifest files (YAML/JSON)."
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
-          filenames.any? { |f| f.match?(YAML_REGEXP) }
+          filenames.any? { |f| f.match?(MANIFEST_REGEXP) }
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

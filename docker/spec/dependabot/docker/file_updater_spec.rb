@@ -1409,6 +1409,106 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         its(:content) { is_expected.to include "kind: Pod" }
       end
     end
+
+    context "with a JSON Kubernetes manifest" do
+      let(:json_dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.json",
+            source: { tag: "17.10" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.json",
+            source: { tag: "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:jsonfile_body) { fixture("kubernetes", "json", "multiple.json") }
+      let(:jsonfile) do
+        Dependabot::DependencyFile.new(
+          content: jsonfile_body,
+          name: "multiple.json"
+        )
+      end
+      let(:json_files) { [jsonfile] }
+      let(:json_updater) do
+        described_class.new(
+          dependency_files: json_files,
+          dependencies: [json_dependency],
+          credentials: credentials
+        )
+      end
+
+      subject(:updated_files) { json_updater.updated_dependency_files }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated JSON file" do
+        subject(:updated_jsonfile) do
+          updated_files.find { |f| f.name == "multiple.json" }
+        end
+
+        its(:content) { is_expected.to include '"image": "ubuntu:17.10"' }
+        its(:content) { is_expected.to include '"image": "nginx:1.14.2"' }
+        its(:content) { is_expected.to include '"kind": "Pod"' }
+      end
+
+      context "with a digest update" do
+        let(:jsonfile_body) { fixture("kubernetes", "json", "digest_and_tag.json") }
+        let(:jsonfile) do
+          Dependabot::DependencyFile.new(
+            content: jsonfile_body,
+            name: "digest_and_tag.json"
+          )
+        end
+        let(:json_dependency) do
+          Dependabot::Dependency.new(
+            name: "ubuntu",
+            version: "17.10",
+            previous_version: "12.04.5",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "digest_and_tag.json",
+              source: {
+                tag: "17.10",
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                        "ca97eba880ebf600d68608"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "digest_and_tag.json",
+              source: {
+                tag: "12.04.5",
+                digest: "18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                        "dfc38288cf73aa07485005"
+              }
+            }],
+            package_manager: "docker"
+          )
+        end
+
+        describe "the updated JSON file" do
+          subject(:updated_jsonfile) do
+            updated_files.find { |f| f.name == "digest_and_tag.json" }
+          end
+
+          its(:content) do
+            is_expected.to include '"image": "ubuntu:17.10@sha256:3ea1ca1aa'
+          end
+        end
+      end
+    end
   end
 
   describe "#updated_dependency_files" do

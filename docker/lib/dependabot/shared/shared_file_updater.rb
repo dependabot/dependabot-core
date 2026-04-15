@@ -168,10 +168,15 @@ module Dependabot
         modified_content = content
 
         old_images.each do |old_image|
-          old_image_regex = /^\s*(?:-\s)?image:\s+#{old_image}(?=\s|$)/
-          modified_content = modified_content&.gsub(old_image_regex) do |old_img|
+          escaped_image = Regexp.escape(old_image)
+          # Match YAML format: image: value
+          yaml_image_regex = /^\s*(?:-\s)?image:\s+#{escaped_image}(?=\s|$)/
+          # Match JSON format: "image": "value"
+          json_image_regex = /(?<="image":\s")#{escaped_image}(?=")/
+          modified_content = modified_content&.gsub(yaml_image_regex) do |old_img|
             old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
           end
+          modified_content = modified_content&.gsub(json_image_regex, new_yaml_image(file).to_s)
         end
         modified_content
       end

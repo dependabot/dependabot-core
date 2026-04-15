@@ -1152,6 +1152,188 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
   end
 
+  describe "JSON parse" do
+    let(:json_parser) { described_class.new(dependency_files: jsonfiles, source: source) }
+    let(:jsonfile_fixture_name) { "pod.json" }
+    let(:jsonfile_body) do
+      fixture("kubernetes", "json", jsonfile_fixture_name)
+    end
+    let(:jsonfile) do
+      Dependabot::DependencyFile.new(name: jsonfile_fixture_name, content: jsonfile_body)
+    end
+    let(:jsonfiles) { [jsonfile] }
+
+    subject(:dependencies) { json_parser.parse }
+
+    its(:length) { is_expected.to eq(1) }
+
+    describe "the first dependency" do
+      subject(:dependency) { dependencies.first }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "pod.json",
+          source: { tag: "1.14.2" }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("nginx")
+        expect(dependency.version).to eq("1.14.2")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with a namespace" do
+      let(:jsonfile_fixture_name) { "namespace.json" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "namespace.json",
+            source: { tag: "1.14.2" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("my-repo/nginx")
+          expect(dependency.version).to eq("1.14.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a digest and tag" do
+      subject(:dependency) { dependencies.first }
+
+      let(:jsonfile_fixture_name) { "digest_and_tag.json" }
+
+      it "determines the correct version" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("ubuntu")
+        expect(dependency.version).to eq("12.04.5")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            file: "digest_and_tag.json",
+            source: {
+              tag: "12.04.5",
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }]
+        )
+      end
+    end
+
+    context "with multiple images" do
+      let(:jsonfile_fixture_name) { "multiple.json" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.json",
+            source: { tag: "17.04" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "multiple.json",
+            source: { tag: "1.14.2" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.14.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a Kubernetes List" do
+      let(:jsonfile_fixture_name) { "list.json" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.2.34")
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("20.04.2")
+        end
+      end
+    end
+
+    context "with a private registry" do
+      let(:jsonfile_fixture_name) { "private_tag.json" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "private_tag.json",
+            source: {
+              registry: "registry-host.io:5000",
+              tag: "17.04"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("myreg/ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+  end
+
   describe "YAML parse" do
     subject(:dependencies) { helm_parser.parse }
 

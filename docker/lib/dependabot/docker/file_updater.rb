@@ -12,6 +12,7 @@ module Dependabot
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      MANIFEST_REGEXP = /^[^\.].*\.(ya?ml|json)$/i
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       sig { override.returns(String) }
@@ -21,7 +22,7 @@ module Dependabot
 
       sig { override.returns(Regexp) }
       def yaml_file_pattern
-        YAML_REGEXP
+        MANIFEST_REGEXP
       end
 
       sig { override.returns(Regexp) }

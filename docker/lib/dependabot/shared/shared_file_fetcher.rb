@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -15,6 +16,8 @@ module Dependabot
       abstract!
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
+      JSON_REGEXP = /^[^\.].*\.json$/i
+      MANIFEST_REGEXP = /^[^\.].*\.(ya?ml|json)$/i
 
       sig { abstract.returns(Regexp) }
       def self.filename_regex; end
@@ -42,8 +45,24 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def correctly_encoded_jsonfiles
+        candidate_files = jsonfiles.select { |f| f.content&.valid_encoding? }
+        candidate_files.select do |f|
+          content = JSON.parse(T.must(f.content))
+          likely_kubernetes_resource?(content)
+        rescue JSON::ParserError
+          false
+        end
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def incorrectly_encoded_yamlfiles
         yamlfiles.reject { |f| f.content&.valid_encoding? }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def incorrectly_encoded_jsonfiles
+        jsonfiles.reject { |f| f.content&.valid_encoding? }
       end
 
       sig do
@@ -54,14 +73,20 @@ module Dependabot
       def raise_appropriate_error(
         incorrectly_encoded_files = []
       )
-        if incorrectly_encoded_files.none? && incorrectly_encoded_yamlfiles.none?
+        if incorrectly_encoded_files.none? && incorrectly_encoded_yamlfiles.none? && incorrectly_encoded_jsonfiles.none?
           raise Dependabot::DependencyFileNotFound.new(
             File.join(directory, "Dockerfile"),
-            "No Dockerfiles nor Kubernetes YAML found in #{directory}"
+            "No Dockerfiles nor Kubernetes manifests (YAML/JSON) found in #{directory}"
           )
         end
 
-        invalid_files = incorrectly_encoded_files.any? ? incorrectly_encoded_files : incorrectly_encoded_yamlfiles
+        invalid_files = if incorrectly_encoded_files.any?
+                          incorrectly_encoded_files
+                        elsif incorrectly_encoded_yamlfiles.any?
+                          incorrectly_encoded_yamlfiles
+                        else
+                          incorrectly_encoded_jsonfiles
+                        end
         raise Dependabot::DependencyFileNotParseable, T.must(invalid_files.first).path
       end
 
@@ -81,10 +106,24 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[DependencyFile]) }
+      def jsonfiles
+        @jsonfiles ||= T.let(
+          repo_contents(raise_errors: false)
+            .select { |f| f.type == "file" && f.name.match?(JSON_REGEXP) }
+            .map do |f|
+              fetched = fetch_file_from_host(f.name)
+              fetched.content = T.must(fetched.content)[1..-1] if fetched.content&.start_with?("\uFEFF")
+              fetched
+            end,
+          T.nilable(T::Array[DependencyFile])
+        )
+      end
+
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
-        fetched_files + correctly_encoded_yamlfiles
+        fetched_files + correctly_encoded_yamlfiles + correctly_encoded_jsonfiles
       end
 
       private
