@@ -4,6 +4,8 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
+require "dependabot/security_advisory"
+require "dependabot/composer/package_manager"
 require "dependabot/composer/package/package_details_fetcher"
 
 RSpec.describe Dependabot::Composer::Package::PackageDetailsFetcher do
@@ -77,6 +79,50 @@ RSpec.describe Dependabot::Composer::Package::PackageDetailsFetcher do
         expect(first_result.released_at).to eq(latest_release.released_at)
         expect(first_result.url).to eq(latest_release.url)
         expect(first_result.package_type).to eq(latest_release.package_type)
+      end
+    end
+
+    context "with VCS credentials missing registry field" do
+      let(:project_name) { "package_details_fetcher_with_vcs" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "composer_repository",
+              "registry" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token123"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "composer_repository",
+              "url" => "git@github.com:org/private-package.git",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, json_url)
+          .to_return(
+            status: 200,
+            body: fixture("packagist_responses", "illuminate-support-response.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "does not raise an error" do
+        expect { fetch }.not_to raise_error
+        expect(fetch).to be_a(Dependabot::Package::PackageDetails)
+        expect(fetch.releases).not_to be_empty
       end
     end
   end
