@@ -194,6 +194,45 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
+      describe "Poetry v2 lock file groups and markers" do
+        it "includes packages with groups field" do
+          # appdirs has groups = ["dev"] in the v2 lock file
+          appdirs = dependencies.find { |d| d.name == "appdirs" }
+          expect(appdirs).to be_a(Dependabot::Dependency)
+          expect(appdirs.version).to eq("1.4.3")
+        end
+
+        it "includes packages belonging to multiple groups" do
+          # certifi has groups = ["main", "dev"] in the v2 lock file
+          certifi = dependencies.find { |d| d.name == "certifi" }
+          expect(certifi).to be_a(Dependabot::Dependency)
+          expect(certifi.version).to eq("2018.4.16")
+        end
+
+        it "includes packages with markers field" do
+          # colorama has markers = 'sys_platform == "win32"' in the v2 lock file
+          colorama = dependencies.find { |d| d.name == "colorama" }
+          expect(colorama).to be_a(Dependabot::Dependency)
+          expect(colorama.version).to eq("0.3.9")
+        end
+
+        it "preserves groups and markers in parsed TOML" do
+          parsed = TomlRB.parse(poetry_lock_body)
+          packages = parsed.fetch("package", [])
+
+          colorama_pkg = packages.find { |p| p["name"] == "colorama" }
+          expect(colorama_pkg["groups"]).to eq(["dev"])
+          expect(colorama_pkg["markers"]).to eq("sys_platform == \"win32\"")
+
+          certifi_pkg = packages.find { |p| p["name"] == "certifi" }
+          expect(certifi_pkg["groups"]).to eq(%w(main dev))
+          expect(certifi_pkg).not_to have_key("markers")
+
+          appdirs_pkg = packages.find { |p| p["name"] == "appdirs" }
+          expect(appdirs_pkg["groups"]).to eq(["dev"])
+        end
+      end
+
       context "with a path dependency" do
         subject(:dependency_names) { dependencies.map(&:name) }
 
