@@ -416,8 +416,8 @@ module Dependabot
         )
         return has_library_metadata unless response.status == 200
 
-        # If the package exists on PyPI but the local description is nil (e.g. declared
-        # as dynamic in pyproject.toml), trust that the package is a library.
+        # If the package exists on PyPI but the local description is unavailable,
+        # trust that the package is a library.
         local_description = T.must(library_details)["description"]
         return true if local_description.nil?
 
