@@ -425,11 +425,14 @@ module Dependabot
         def pyproject_index_env_vars
           env_vars = {}
 
-          credentials
-            .select { |cred| cred["type"] == "python_index" }
-            .filter_map { |cred| [cred, find_index_name_for_credential(cred)] }
-            .reject { |_cred, index_name| index_name.nil? }
-            .each do |cred, index_name|
+          matched_credentials = credentials
+                                .select { |cred| cred["type"] == "python_index" }
+                                .filter_map do |cred|
+                                  index_name = find_index_name_for_credential(cred)
+                                  [cred, index_name] if index_name
+                                end
+
+          matched_credentials.each do |cred, index_name|
             env_name = T.must(index_name).upcase.gsub(/[^A-Z0-9]/, "_")
 
             env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
