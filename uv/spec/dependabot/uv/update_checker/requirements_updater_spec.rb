@@ -586,7 +586,15 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
               context "without a lockfile" do
                 let(:has_lockfile) { false }
 
-                its([:requirement]) { is_expected.to eq("^1.3.0") }
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      "^1.5.0"
+                    else
+                      "^1.3.0"
+                    end
+                  )
+                end
 
                 context "when needing an update" do
                   let(:latest_resolvable_version) { "2.5.0" }
