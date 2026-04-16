@@ -846,6 +846,27 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
     end
+
+    context "with a non-package mode project" do
+      let(:pyproject_fixture_name) { "poetry_non_package_mode_simple.toml" }
+      let(:lockfile_fixture_name) { "version_not_specified.lock" }
+
+      it "updates the lockfile successfully" do
+        expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
+
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+        lockfile_obj = TomlRB.parse(updated_lockfile.content)
+        requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
+        pytest = lockfile_obj["package"].find { |d| d["name"] == "pytest" }
+
+        expect(requests["version"]).to eq("2.19.1")
+        expect(pytest["version"]).to eq("3.5.0")
+
+        expect(lockfile_obj["metadata"]["content-hash"])
+          .to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
+      end
+    end
   end
 
   describe "constraint-only update with unchanged lockfile" do
