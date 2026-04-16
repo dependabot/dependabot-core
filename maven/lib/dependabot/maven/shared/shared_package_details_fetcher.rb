@@ -11,7 +11,7 @@ require "dependabot/maven/utils/auth_headers_finder"
 module Dependabot
   module Maven
     module Shared
-      class SharedMavenRepositoryClient
+      class SharedPackageDetailsFetcher
         extend T::Sig
         extend T::Helpers
 
@@ -202,6 +202,88 @@ module Dependabot
                           end
 
           raise RegistryError.new(response_status, response_body)
+        end
+
+        # -- Version Aggregation --
+
+        # Aggregates version details from XML metadata and enriches with
+        # release dates from HTML directory listings. Returns a sorted array
+        # of version detail hashes.
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def versions
+          @version_details = T.let(@version_details, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+          return @version_details if @version_details
+
+          @version_details = versions_details_from_xml
+
+          begin
+            versions_details_hash = versions_details_hash_from_html if @version_details.any?
+
+            if versions_details_hash
+              @version_details = @version_details.map do |vd|
+                html_details = versions_details_hash[vd[:version].to_s]
+
+                next vd unless html_details
+
+                release_date = html_details[:release_date]
+
+                next vd unless release_date
+
+                vd.merge(
+                  release_date: html_details[:release_date],
+                  source_url: vd[:source_url]
+                )
+              end
+            end
+          rescue StandardError => e
+            Dependabot.logger.error(
+              "Error fetching version details from HTML: #{e.message}"
+            )
+          end
+
+          @version_details = @version_details.sort_by { |d| d.fetch(:version) }
+          @version_details
+        end
+
+        # Fetches version details from maven-metadata.xml across all repositories.
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def versions_details_from_xml
+          forbidden_urls.clear
+          version_details = repositories.flat_map do |repository_details|
+            url = repository_details.fetch(URL_KEY)
+            xml = dependency_metadata(repository_details)
+            next [] if xml.nil?
+
+            extract_metadata_from_xml(xml, url)
+          end
+
+          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
+
+          version_details
+        end
+
+        # Fetches version details (release dates) from HTML directory listings.
+        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+        def versions_details_hash_from_html
+          forbidden_urls.clear
+
+          versions_detail_hash = T.let(
+            {}, T::Hash[String, T::Hash[Symbol, T.untyped]]
+          )
+          repositories.each do |repository_details|
+            html = dependency_metadata_from_html(repository_details)
+            next if html.nil?
+
+            versions_detail_hash = extract_version_details_from_html(html)
+            break if versions_detail_hash.any?
+          end
+
+          if versions_detail_hash.any? && forbidden_urls.any?
+            raise PrivateSourceAuthenticationFailure,
+                  forbidden_urls.first
+          end
+
+          versions_detail_hash
         end
 
         # -- Release Check --

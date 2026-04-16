@@ -4,10 +4,10 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"
-require "dependabot/maven/shared/shared_maven_repository_client"
+require "dependabot/maven/shared/shared_package_details_fetcher"
 require "dependabot/maven/version"
 
-class TestMavenRepositoryClient < Dependabot::Maven::Shared::SharedMavenRepositoryClient
+class TestMavenRepositoryClient < Dependabot::Maven::Shared::SharedPackageDetailsFetcher
   attr_reader :dependency
   attr_reader :credentials
 
@@ -22,7 +22,7 @@ class TestMavenRepositoryClient < Dependabot::Maven::Shared::SharedMavenReposito
   end
 end
 
-RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
+RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
   subject(:client) do
     TestMavenRepositoryClient.new(
       dependency: dependency,
@@ -629,6 +629,142 @@ RSpec.describe Dependabot::Maven::Shared::SharedMavenRepositoryClient do
       second_result = client.dependency_metadata_from_html(repository_details)
 
       expect(first_result).to equal(second_result)
+    end
+  end
+
+  describe "#versions" do
+    let(:metadata_url) { "#{maven_central}/com/google/guava/guava/maven-metadata.xml" }
+    let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+
+    before do
+      stub_request(:get, metadata_url)
+        .to_return(
+          status: 200,
+          body: fixture("maven_central_metadata", "with_release.xml")
+        )
+      stub_request(:get, base_url)
+        .to_return(
+          status: 200,
+          body: fixture("maven_central_metadata", "with_release.html")
+        )
+    end
+
+    it "returns a sorted array of version detail hashes" do
+      result = client.versions
+
+      expect(result).to be_an(Array)
+      expect(result.first[:version]).to be_a(Dependabot::Maven::Version)
+    end
+
+    it "enriches XML versions with HTML release dates" do
+      result = client.versions
+      entry_with_date = result.find do |v|
+        v[:version].to_s == "23.6-jre"
+      end
+
+      expect(entry_with_date).not_to be_nil
+      expect(entry_with_date[:release_date]).to be_a(Time)
+    end
+
+    it "caches the result" do
+      first = client.versions
+      WebMock.reset!
+      second = client.versions
+
+      expect(first).to equal(second)
+    end
+
+    context "when HTML fetch fails" do
+      before do
+        stub_request(:get, base_url).to_raise(StandardError.new("boom"))
+      end
+
+      it "still returns versions from XML" do
+        result = client.versions
+
+        expect(result).not_to be_empty
+        expect(result.first[:version]).to be_a(Dependabot::Maven::Version)
+      end
+    end
+  end
+
+  describe "#versions_details_from_xml" do
+    let(:metadata_url) { "#{maven_central}/com/google/guava/guava/maven-metadata.xml" }
+
+    context "when the repository returns valid XML" do
+      before do
+        stub_request(:get, metadata_url)
+          .to_return(
+            status: 200,
+            body: fixture("maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "returns version hashes with :version and :source_url" do
+        result = client.versions_details_from_xml
+
+        expect(result).to be_an(Array)
+        expect(result).not_to be_empty
+        expect(result.first).to have_key(:version)
+        expect(result.first).to have_key(:source_url)
+      end
+    end
+
+    context "when all repositories return 403" do
+      let(:repositories) do
+        [{
+          "url" => "https://private.repo.example.com/maven2",
+          "auth_headers" => {}
+        }]
+      end
+
+      before do
+        stub_request(
+          :get,
+          "https://private.repo.example.com/maven2" \
+          "/com/google/guava/guava/maven-metadata.xml"
+        ).to_return(status: 403)
+      end
+
+      it "raises PrivateSourceAuthenticationFailure" do
+        expect { client.versions_details_from_xml }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+  end
+
+  describe "#versions_details_hash_from_html" do
+    let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+
+    context "when the repository returns valid HTML" do
+      before do
+        stub_request(:get, base_url)
+          .to_return(
+            status: 200,
+            body: fixture("maven_central_metadata", "with_release.html")
+          )
+      end
+
+      it "returns a hash mapping version strings to detail hashes" do
+        result = client.versions_details_hash_from_html
+
+        expect(result).to be_a(Hash)
+        expect(result).not_to be_empty
+        sample = result.values.first
+        expect(sample).to have_key(:release_date)
+      end
+    end
+
+    context "when no HTML data is found" do
+      before do
+        stub_request(:get, base_url).to_return(status: 404)
+      end
+
+      it "returns an empty hash" do
+        result = client.versions_details_hash_from_html
+
+        expect(result).to eq({})
+      end
     end
   end
 

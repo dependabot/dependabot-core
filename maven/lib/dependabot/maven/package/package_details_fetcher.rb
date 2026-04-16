@@ -10,13 +10,13 @@ require "dependabot/package/package_details"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
-require "dependabot/maven/shared/shared_maven_repository_client"
+require "dependabot/maven/shared/shared_package_details_fetcher"
 require "sorbet-runtime"
 
 module Dependabot
   module Maven
     module Package
-      class PackageDetailsFetcher < Dependabot::Maven::Shared::SharedMavenRepositoryClient
+      class PackageDetailsFetcher < Dependabot::Maven::Shared::SharedPackageDetailsFetcher
         extend T::Sig
 
         sig do
@@ -34,7 +34,6 @@ module Dependabot
           @pom_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @repository_finder = T.let(nil, T.nilable(Maven::FileParser::RepositoriesFinder))
           @repositories_cache = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @version_details = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
         end
 
@@ -93,84 +92,6 @@ module Dependabot
         end
 
         private
-
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def versions
-          return @version_details if @version_details
-
-          @version_details = versions_details_from_xml
-
-          begin
-            versions_details_hash = versions_details_hash_from_html if @version_details.any?
-
-            if versions_details_hash
-              @version_details = @version_details.map do |version_details|
-                version = version_details[:version].to_s
-                version_details_hash = versions_details_hash[version]
-
-                next version_details unless version_details_hash
-
-                release_date = version_details_hash[:release_date]
-
-                next version_details unless release_date
-
-                version_details.merge(
-                  release_date: version_details_hash[:release_date],
-                  source_url: version_details[:source_url]
-                )
-              end
-            end
-          rescue StandardError => e
-            Dependabot.logger.error("Error fetching version details from HTML: #{e.message}")
-          end
-
-          @version_details = @version_details.sort_by { |details| details.fetch(:version) }
-          @version_details
-        end
-
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def versions_details_from_xml
-          forbidden_urls.clear
-          version_details = repositories.flat_map do |repository_details|
-            url = repository_details.fetch(URL_KEY)
-            xml = dependency_metadata(repository_details)
-            next [] if xml.nil?
-
-            extract_metadata_from_xml(xml, url)
-          end
-
-          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
-
-          version_details
-        end
-
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
-        def versions_details_hash_from_html
-          forbidden_urls.clear
-
-          # Iterate over repositories and fetch the first valid result
-          versions_detail_hash = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
-          repositories.each do |repository_details|
-            html = dependency_metadata_from_html(repository_details)
-
-            # Skip if no HTML data is found
-            next if html.nil?
-
-            # Break and return result from the first valid HTML
-            versions_detail_hash = extract_version_details_from_html(html)
-
-            break if versions_detail_hash.any?
-          end
-
-          # If no version details were found, but there are forbidden URLs, raise an error
-          if versions_detail_hash.any? && forbidden_urls.any?
-            raise PrivateSourceAuthenticationFailure,
-                  forbidden_urls.first
-          end
-
-          # Return the populated version details hash (may be empty if no valid repositories)
-          versions_detail_hash
-        end
 
         sig { returns(Maven::FileParser::RepositoriesFinder) }
         def repository_finder
