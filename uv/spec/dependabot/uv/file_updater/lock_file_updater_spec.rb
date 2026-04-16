@@ -703,8 +703,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
-  describe "#explicit_index_env_vars" do
-    subject(:explicit_index_env_vars) { updater.send(:explicit_index_env_vars) }
+  describe "#pyproject_index_env_vars" do
+    subject(:pyproject_index_env_vars) { updater.send(:pyproject_index_env_vars) }
 
     context "with an explicit index requiring authentication" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
@@ -724,7 +724,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables for explicit index authentication" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
         )
@@ -748,7 +748,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables with token as password" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "secret_token"
         )
       end
@@ -771,7 +771,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables for matching pyproject.toml index" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "token"
         )
       end
@@ -794,7 +794,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns empty hash" do
-        expect(explicit_index_env_vars).to eq({})
+        expect(pyproject_index_env_vars).to eq({})
       end
     end
 
@@ -823,10 +823,10 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables for all indices defined in pyproject.toml" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "explicit_token"
         )
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_FALLBACK_PYPI_PASSWORD" => "fallback_token"
         )
       end
@@ -850,7 +850,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables for replaces-base credentials matching pyproject.toml indices" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
         )
@@ -875,7 +875,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "matches URLs ignoring trailing slashes for env var generation" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
         )
