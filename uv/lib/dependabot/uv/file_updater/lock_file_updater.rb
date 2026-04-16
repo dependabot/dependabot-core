@@ -433,7 +433,7 @@ module Dependabot
                                 end
 
           matched_credentials.each do |cred, index_name|
-            env_name = T.must(index_name).upcase.gsub(/[^A-Z0-9]/, "_")
+            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
 
             env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
 
