@@ -357,7 +357,7 @@ module Dependabot
         def lock_index_options
           credentials
             .select { |cred| cred["type"] == "python_index" }
-            .reject { |cred| explicit_index?(cred) }
+            .reject { |cred| defined_in_pyproject?(cred) }
             .map do |cred|
             authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
@@ -377,6 +377,14 @@ module Dependabot
           uv_indices.any? do |_name, config|
             config["explicit"] == true && normalize_index_url(config["url"].to_s) == cred_url
           end
+        end
+
+        # Checks if a credential's index URL matches any index defined in pyproject.toml.
+        # When true, authentication is provided via env vars so uv uses the pyproject.toml URL,
+        # preserving URL format alignment between pyproject.toml and uv.lock.
+        sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
+        def defined_in_pyproject?(credential)
+          !find_index_name_for_credential(credential).nil?
         end
 
         sig { params(url: String).returns(String) }
@@ -419,7 +427,7 @@ module Dependabot
 
           credentials
             .select { |cred| cred["type"] == "python_index" }
-            .select { |cred| explicit_index?(cred) }
+            .select { |cred| defined_in_pyproject?(cred) }
             .each do |cred|
             index_name = find_index_name_for_credential(cred)
             next unless index_name
