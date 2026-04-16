@@ -1785,7 +1785,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when the project is on PyPI but description is not in pyproject.toml" do
-          let(:pyproject_fixture_name) { "poetry_dynamic_description.toml" }
+          let(:pyproject_fixture_name) { "poetry_missing_description.toml" }
 
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
@@ -2007,7 +2007,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when the project is on PyPI but description is dynamic" do
-          let(:pyproject_fixture_name) { "standard_python_dynamic_description.toml" }
+          let(:pyproject_fixture_name) { "build_system_dynamic_description.toml" }
 
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
