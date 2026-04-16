@@ -499,7 +499,15 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
             context "when a range requirement was specified" do
               let(:pyproject_req_string) { ">=1.3.0" }
 
-              it { is_expected.to eq(pyproject_req) }
+              its([:requirement]) do
+                is_expected.to eq(
+                  if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                    ">=1.5.0"
+                  else
+                    ">=1.3.0"
+                  end
+                )
+              end
 
               context "when the requirement version is too high" do
                 let(:pyproject_req_string) { ">=2.0.0" }
@@ -510,18 +518,42 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
               context "when the requirement had a local version" do
                 let(:pyproject_req_string) { ">=1.3.0+gc.1" }
 
-                it { is_expected.to eq(pyproject_req) }
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      ">=1.5.0"
+                    else
+                      ">=1.3.0+gc.1"
+                    end
+                  )
+                end
               end
 
               context "with an upper bound" do
                 let(:pyproject_req_string) { ">=1.3.0, <=1.5.0" }
 
-                it { is_expected.to eq(pyproject_req) }
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      ">=1.5.0,<=1.5.0"
+                    else
+                      ">=1.3.0, <=1.5.0"
+                    end
+                  )
+                end
 
                 context "when needing an update" do
                   let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                  its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        ">=1.5.0,<1.6"
+                      else
+                        ">=1.3.0,<1.6"
+                      end
+                    )
+                  end
                 end
               end
             end
