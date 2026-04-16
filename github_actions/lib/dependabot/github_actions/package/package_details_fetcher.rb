@@ -65,7 +65,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def release_list_for_git_dependency
           # TODO: Support Docker sources
@@ -82,17 +81,13 @@ module Dependabot
           end
 
           if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
-            return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
-
-            return latest_version
+            return T.must(latest_version_tag).fetch(:version)
           end
 
           # If the dependency is pinned to a tag that doesn't look like a
           # version or a commit SHA then there's nothing we can do.
           nil
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def lowest_security_fix_version_tag
@@ -206,54 +201,6 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Version)) }
         def current_version
           @current_version ||= T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
-        end
-
-        sig { returns(T.nilable(String)) }
-        def latest_commit_for_pinned_ref
-          @latest_commit_for_pinned_ref ||= T.let(
-            begin
-              head_commit_for_ref_sha = git_commit_checker.head_commit_for_pinned_ref
-              if head_commit_for_ref_sha
-                head_commit_for_ref_sha
-              else
-                url = git_commit_checker.dependency_source_details&.fetch(:url)
-                source = T.must(Source.from_url(url))
-
-                SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-                  repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-
-                  SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
-
-                  Dir.chdir(repo_contents_path) do
-                    ref_branch = find_container_branch(git_commit_checker.dependency_source_details&.fetch(:ref))
-                    git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
-                  end
-                end
-              end
-            end,
-            T.nilable(String)
-          )
-        end
-
-        sig { params(sha: String).returns(T.nilable(String)) }
-        def find_container_branch(sha)
-          branches_including_ref = SharedHelpers.run_shell_command(
-            "git branch --remotes --contains #{sha}",
-            fingerprint: "git branch --remotes --contains <sha>"
-          ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-          return if branches_including_ref.empty?
-
-          current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-          if current_branch
-            current_branch.delete_prefix("HEAD -> ")
-          elsif branches_including_ref.size > 1
-            # If there are multiple non default branches including the pinned SHA,
-            # then it's unclear how we should proceed
-            raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-          else
-            branches_including_ref.first
-          end
         end
 
         sig do

@@ -156,8 +156,8 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
       let(:reference) { tip_of_master }
 
-      it "considers the commit itself as the latest version" do
-        expect(latest_version).to eq(tip_of_master)
+      it "returns the latest tagged version" do
+        expect(latest_version).to eq(Dependabot::GithubActions::Version.new("1.1"))
       end
     end
 
@@ -176,36 +176,37 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       let(:latest_commit_in_main) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
       let(:latest_commit_in_devel) { "c7563454dd4fbe0ea69095188860a62a19658a04" }
+      let(:latest_tagged_version) { Dependabot::GithubActions::Version.new("1.5.1") }
 
       context "when pinned to an up to date commit in the default branch" do
         let(:reference) { latest_commit_in_main }
 
-        it "returns the expected value" do
-          expect(latest_version).to eq(latest_commit_in_main)
+        it "returns the latest tagged version" do
+          expect(latest_version).to eq(latest_tagged_version)
         end
       end
 
       context "when pinned to an out of date commit in the default branch" do
         let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
 
-        it "returns the expected value" do
-          expect(latest_version).to eq(latest_commit_in_main)
+        it "returns the latest tagged version" do
+          expect(latest_version).to eq(latest_tagged_version)
         end
       end
 
       context "when pinned to an up to date commit in a non default branch" do
         let(:reference) { latest_commit_in_devel }
 
-        it "returns the expected value" do
-          expect(latest_version).to eq(latest_commit_in_devel)
+        it "returns the latest tagged version" do
+          expect(latest_version).to eq(latest_tagged_version)
         end
       end
 
       context "when pinned to an out of date commit in a non default branch" do
         let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
 
-        it "returns the expected value" do
-          expect(latest_version).to eq(latest_commit_in_devel)
+        it "returns the latest tagged version" do
+          expect(latest_version).to eq(latest_tagged_version)
         end
       end
     end
