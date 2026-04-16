@@ -357,7 +357,7 @@ module Dependabot
         def lock_index_options
           credentials
             .select { |cred| cred["type"] == "python_index" }
-            .reject { |cred| defined_in_pyproject?(cred) }
+            .reject { |cred| cred.replaces_base? ? defined_in_pyproject?(cred) : explicit_index?(cred) }
             .map do |cred|
             authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 

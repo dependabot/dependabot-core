@@ -606,9 +606,9 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "does not include CLI flags for indices defined in pyproject.toml" do
+      it "includes --index flag for non-explicit indices defined in pyproject.toml" do
         options = lock_index_options.join(" ")
-        expect(options).not_to include("--index")
+        expect(options).to include("--index https://token@private-pypi.example.com/simple")
         expect(options).not_to include("--default-index")
       end
     end
