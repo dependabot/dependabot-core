@@ -229,12 +229,27 @@ RSpec.describe Dependabot::Nix::FileUpdater do
     end
   end
 
-  describe "#nix_access_tokens_env" do
-    context "with a single git_source credential" do
-      it "returns NIX_CONFIG with the access token" do
-        env = updater.send(:nix_access_tokens_env)
-        expect(env).to eq({ "NIX_CONFIG" => "access-tokens = github.com=token" })
-      end
+  describe "#updated_dependency_files credential forwarding" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:updated_lock_content) do
+      flake_lock_content.gsub(
+        "3030f185ba6a4bf4f18b87f345f104e6a6961f34",
+        "new_sha_abc123"
+      )
+    end
+
+    before do
+      allow(Dependabot::SharedHelpers)
+        .to receive(:in_a_temporary_repo_directory)
+        .and_yield
+      allow(Dependabot::SharedHelpers)
+        .to receive(:run_shell_command)
+      allow(File).to receive(:write).and_call_original
+      allow(File).to receive(:write).with("flake.nix", anything)
+      allow(File).to receive(:write).with("flake.lock", anything)
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with("flake.lock").and_return(updated_lock_content)
     end
 
     context "with multiple git_source credentials" do
@@ -259,10 +274,44 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         )
       end
 
-      it "includes all credentials" do
-        env = updater.send(:nix_access_tokens_env)
-        expect(env["NIX_CONFIG"]).to include("github.com=gh-token")
-        expect(env["NIX_CONFIG"]).to include("gitlab.example.com=gl-token")
+      it "forwards NIX_CONFIG with all access tokens to nix flake update" do
+        updated_files
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command) do |_cmd, **kwargs|
+          expect(kwargs[:env]["NIX_CONFIG"]).to include("github.com=gh-token")
+          expect(kwargs[:env]["NIX_CONFIG"]).to include("gitlab.example.com=gl-token")
+        end
+      end
+    end
+
+    context "with duplicate credentials for the same host" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: [flake_nix, flake_lock],
+          dependencies: [dependency],
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "first-token"
+            },
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "second-token"
+            }
+          ]
+        )
+      end
+
+      it "dedupes by host, keeping the first credential" do
+        updated_files
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "nix flake update nixpkgs",
+          env: { "NIX_CONFIG" => "access-tokens = github.com=first-token" },
+          fingerprint: "nix flake update <input_name>"
+        )
       end
     end
 
@@ -275,9 +324,13 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         )
       end
 
-      it "returns an empty hash" do
-        env = updater.send(:nix_access_tokens_env)
-        expect(env).to eq({})
+      it "passes an empty env hash" do
+        updated_files
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "nix flake update nixpkgs",
+          env: {},
+          fingerprint: "nix flake update <input_name>"
+        )
       end
     end
 
@@ -297,8 +350,37 @@ RSpec.describe Dependabot::Nix::FileUpdater do
       end
 
       it "skips credentials without a password" do
-        env = updater.send(:nix_access_tokens_env)
-        expect(env).to eq({})
+        updated_files
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "nix flake update nixpkgs",
+          env: {},
+          fingerprint: "nix flake update <input_name>"
+        )
+      end
+    end
+
+    context "with credentials missing a host" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: [flake_nix, flake_lock],
+          dependencies: [dependency],
+          credentials: [
+            {
+              "type" => "git_source",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ]
+        )
+      end
+
+      it "skips credentials without a host" do
+        updated_files
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "nix flake update nixpkgs",
+          env: {},
+          fingerprint: "nix flake update <input_name>"
+        )
       end
     end
   end

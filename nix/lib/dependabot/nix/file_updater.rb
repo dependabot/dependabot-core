@@ -77,9 +77,17 @@ module Dependabot
       # out of the process command line.
       sig { returns(T::Hash[String, String]) }
       def nix_access_tokens_env
-        tokens = credentials
-                 .select { |c| c["type"] == "git_source" && c["password"] }
-                 .map { |c| "#{c['host']}=#{c['password']}" }
+        host_token_pairs = credentials.filter_map do |credential|
+          next unless credential["type"] == "git_source"
+
+          host = credential["host"]
+          password = credential["password"]
+          next if host.to_s.empty? || password.to_s.empty?
+
+          [host, password]
+        end
+
+        tokens = host_token_pairs.uniq(&:first).map { |host, password| "#{host}=#{password}" }
 
         return {} if tokens.empty?
 

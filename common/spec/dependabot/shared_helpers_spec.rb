@@ -769,5 +769,17 @@ RSpec.describe Dependabot::SharedHelpers do
       sanitized = described_class.sanitize_env_for_logging(env)
       expect(sanitized).to eq({})
     end
+
+    it "redacts NIX_CONFIG which may embed access tokens" do
+      env = {
+        "NIX_CONFIG" => "access-tokens = github.com=ghp_secrettoken",
+        "PATH" => "/usr/bin"
+      }
+
+      sanitized = described_class.sanitize_env_for_logging(env)
+
+      expect(sanitized["NIX_CONFIG"]).to eq("<redacted>")
+      expect(sanitized["PATH"]).to eq("/usr/bin")
+    end
   end
 end
