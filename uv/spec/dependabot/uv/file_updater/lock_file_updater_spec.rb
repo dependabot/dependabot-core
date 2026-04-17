@@ -606,12 +606,14 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "includes --index flag for non-explicit indices" do
-        expect(lock_index_options).to include("--index https://token@private-pypi.example.com/simple")
+      it "includes --index flag for non-explicit indices defined in pyproject.toml" do
+        options = lock_index_options.join(" ")
+        expect(options).to include("--index https://token@private-pypi.example.com/simple")
+        expect(options).not_to include("--default-index")
       end
     end
 
-    context "with replaces-base credential matching an explicit index" do
+    context "with replaces-base credential matching a pyproject.toml index" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
 
       let(:credentials) do
@@ -627,8 +629,33 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "still uses --default-index when replaces-base is true, ignoring explicit flag" do
-        expect(lock_index_options).to include("--default-index https://secret_token@private-pypi.example.com/simple")
+      it "does not include CLI flags when credential matches a pyproject.toml index" do
+        options = lock_index_options.join(" ")
+        expect(options).not_to include("--default-index")
+        expect(options).not_to include("--index")
+      end
+    end
+
+    context "with replaces-base credential with trailing slash matching pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple/",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "matches URLs ignoring trailing slashes for replaces-base credentials" do
+        options = lock_index_options.join(" ")
+        expect(options).not_to include("--default-index")
+        expect(options).not_to include("--index")
       end
     end
 
@@ -676,8 +703,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
-  describe "#explicit_index_env_vars" do
-    subject(:explicit_index_env_vars) { updater.send(:explicit_index_env_vars) }
+  describe "#pyproject_index_env_vars" do
+    subject(:pyproject_index_env_vars) { updater.send(:pyproject_index_env_vars) }
 
     context "with an explicit index requiring authentication" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
@@ -697,7 +724,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables for explicit index authentication" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
         )
@@ -721,13 +748,13 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables with token as password" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "secret_token"
         )
       end
     end
 
-    context "with no explicit indices" do
+    context "with no explicit indices but matching pyproject.toml index" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
 
       let(:credentials) do
@@ -743,8 +770,31 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
+      it "returns environment variables for matching pyproject.toml index" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "token"
+        )
+      end
+    end
+
+    context "with no matching pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://unrelated-pypi.example.com/simple",
+              "token" => "token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
       it "returns empty hash" do
-        expect(explicit_index_env_vars).to eq({})
+        expect(pyproject_index_env_vars).to eq({})
       end
     end
 
@@ -772,11 +822,63 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "returns environment variables only for explicit indices" do
-        expect(explicit_index_env_vars).to include(
+      it "returns environment variables for all indices defined in pyproject.toml" do
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "explicit_token"
         )
-        expect(explicit_index_env_vars).not_to have_key("UV_INDEX_FALLBACK_PYPI_PASSWORD")
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_FALLBACK_PYPI_PASSWORD" => "fallback_token"
+        )
+      end
+    end
+
+    context "with replaces-base credential matching a pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "username" => "my_user",
+              "password" => "my_password",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "returns environment variables for replaces-base credentials matching pyproject.toml indices" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
+        )
+      end
+    end
+
+    context "with replaces-base credential with trailing slash matching pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple/",
+              "username" => "my_user",
+              "password" => "my_password",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "matches URLs ignoring trailing slashes for env var generation" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
+        )
       end
     end
   end
