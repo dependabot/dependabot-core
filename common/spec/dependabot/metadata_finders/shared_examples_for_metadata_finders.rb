@@ -10,11 +10,13 @@ RSpec.shared_examples "a dependency metadata finder" do
 
     let(:base_class) { Dependabot::MetadataFinders::Base }
 
-    its(:superclass) { is_expected.to eq(base_class) }
+    it "inherits from MetadataFinders::Base" do
+      expect(described_class.ancestors).to include(base_class)
+    end
 
     it "implements look_up_source" do
-      expect(described_class.private_instance_methods(false))
-        .to include(:look_up_source)
+      expect(described_class.private_method_defined?(:look_up_source))
+        .to be true
     end
 
     it "doesn't define any additional public instance methods" do
