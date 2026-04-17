@@ -174,7 +174,7 @@ module Dependabot
                              .find { |r| r.fetch(:source) }&.fetch(:source)
 
           source&.fetch(:url, nil) ||
-            source&.fetch("url") ||
+            source&.fetch("url", nil) ||
             central_repo_url
         end
 

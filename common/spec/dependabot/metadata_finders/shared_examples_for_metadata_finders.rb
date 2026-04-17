@@ -15,8 +15,8 @@ RSpec.shared_examples "a dependency metadata finder" do
     end
 
     it "implements look_up_source" do
-      expect(described_class.private_method_defined?(:look_up_source))
-        .to be true
+      expect(described_class.instance_method(:look_up_source).owner)
+        .not_to eq(base_class)
     end
 
     it "doesn't define any additional public instance methods" do

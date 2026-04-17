@@ -6,11 +6,13 @@ require "dependabot/dependency"
 require "dependabot/maven/shared/shared_metadata_finder"
 require "dependabot/maven/file_parser"
 
-class TestSharedMetadataFinder < Dependabot::Maven::Shared::SharedMetadataFinder; end
-
 RSpec.describe Dependabot::Maven::Shared::SharedMetadataFinder do
   subject(:finder) do
-    TestSharedMetadataFinder.new(dependency: dependency, credentials: credentials)
+    finder_class.new(dependency: dependency, credentials: credentials)
+  end
+
+  let(:finder_class) do
+    stub_const("TestSharedMetadataFinder", Class.new(described_class))
   end
 
   let(:dependency_source) do
