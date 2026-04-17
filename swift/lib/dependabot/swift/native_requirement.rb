@@ -11,7 +11,10 @@ module Dependabot
       extend T::Sig
 
       # TODO: Support pinning to specific revisions
-      REGEXP = T.let(/(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"|exact.*|\.exact.*)/, Regexp)
+      REGEXP = T.let(
+        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"\s*,?|exact.*|\.exact.*)/,
+        Regexp
+      )
 
       sig { returns(String) }
       attr_reader :declaration
@@ -112,7 +115,7 @@ module Dependabot
 
       sig { params(separator: String).returns(T::Array[String]) }
       def parse_range(separator)
-        declaration.split(separator).map { |str| unquote(str.strip) }
+        declaration.delete_suffix(",").split(separator).map { |str| unquote(str.strip) }
       end
 
       sig { returns(T::Boolean) }
