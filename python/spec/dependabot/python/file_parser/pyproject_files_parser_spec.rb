@@ -142,6 +142,20 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         it "parses correctly with no metadata" do
           expect { parser.dependency_set }.not_to raise_error
         end
+
+        it "includes production dependencies" do
+          expect(dependencies.map(&:name)).to include("requests")
+          expect(dependencies.map(&:name)).to include("geopy")
+        end
+
+        it "includes dev dependencies" do
+          expect(dependencies.map(&:name)).to include("pytest")
+          expect(dependencies.map(&:name)).to include("black")
+        end
+
+        it "excludes the python dependency" do
+          expect(dependencies.map(&:name)).not_to include("python")
+        end
       end
     end
 
@@ -177,6 +191,45 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: true }])
+        end
+      end
+
+      describe "Poetry v2 lock file groups and markers" do
+        it "includes packages with groups field" do
+          # appdirs has groups = ["dev"] in the v2 lock file
+          appdirs = dependencies.find { |d| d.name == "appdirs" }
+          expect(appdirs).to be_a(Dependabot::Dependency)
+          expect(appdirs.version).to eq("1.4.3")
+        end
+
+        it "includes packages belonging to multiple groups" do
+          # certifi has groups = ["main", "dev"] in the v2 lock file
+          certifi = dependencies.find { |d| d.name == "certifi" }
+          expect(certifi).to be_a(Dependabot::Dependency)
+          expect(certifi.version).to eq("2018.4.16")
+        end
+
+        it "includes packages with markers field" do
+          # colorama has markers = 'sys_platform == "win32"' in the v2 lock file
+          colorama = dependencies.find { |d| d.name == "colorama" }
+          expect(colorama).to be_a(Dependabot::Dependency)
+          expect(colorama.version).to eq("0.3.9")
+        end
+
+        it "preserves groups and markers in parsed TOML" do
+          parsed = TomlRB.parse(poetry_lock_body)
+          packages = parsed.fetch("package", [])
+
+          colorama_pkg = packages.find { |p| p["name"] == "colorama" }
+          expect(colorama_pkg["groups"]).to eq(["dev"])
+          expect(colorama_pkg["markers"]).to eq("sys_platform == \"win32\"")
+
+          certifi_pkg = packages.find { |p| p["name"] == "certifi" }
+          expect(certifi_pkg["groups"]).to eq(%w(main dev))
+          expect(certifi_pkg).not_to have_key("markers")
+
+          appdirs_pkg = packages.find { |p| p["name"] == "appdirs" }
+          expect(appdirs_pkg["groups"]).to eq(["dev"])
         end
       end
 
@@ -462,6 +515,50 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           pydantic = dependencies.find { |d| d.name == "pydantic" }
           expect(pydantic.version).to eq("2.8.2")
           expect(pydantic.requirements.first[:groups]).to eq(["dependencies"])
+        end
+      end
+
+      context "with dynamic dependencies in Poetry project" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pep621_dynamic_dependencies.toml" }
+
+        it "skips PEP 621 dependencies when dependencies is dynamic" do
+          dep_names = dependencies.map(&:name)
+          # Poetry deps are parsed but PEP 621 [project] dependencies are not
+          # since they are marked as dynamic and managed by Poetry
+          expect(dep_names).to include("requests", "django")
+          dependencies.each do |dep|
+            expect(dep.requirements.first[:groups]).to eq(["dependencies"])
+          end
+        end
+
+        it "does not duplicate deps from PEP 621 when dynamic" do
+          # Each dep should appear only once (from Poetry), not duplicated from [project].dependencies
+          requests_deps = dependencies.select { |d| d.name == "requests" }
+          django_deps = dependencies.select { |d| d.name == "django" }
+          expect(requests_deps.length).to eq(1)
+          expect(django_deps.length).to eq(1)
+        end
+      end
+
+      context "with dynamic optional-dependencies in Poetry project" do
+        subject(:dependencies) { parser.dependency_set.dependencies }
+
+        let(:pyproject_fixture_name) { "pep621_dynamic_optional_dependencies.toml" }
+
+        it "skips PEP 621 optional deps but keeps non-dynamic deps" do
+          dep_names = dependencies.map(&:name)
+          # requests comes from [project] dependencies (not dynamic)
+          expect(dep_names).to include("requests")
+          req = dependencies.find { |d| d.name == "requests" }
+          expect(req.requirements.first[:groups]).to eq(["dependencies"])
+        end
+
+        it "does not duplicate optional deps from PEP 621 when dynamic" do
+          pysocks_deps = dependencies.select { |d| d.name == "pysocks" }
+          # Should only appear once (from Poetry), not duplicated from PEP 621
+          expect(pysocks_deps.length).to eq(1)
         end
       end
     end

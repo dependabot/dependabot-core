@@ -263,6 +263,28 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       end
     end
 
+    context "with PEP 621 dependencies containing direct references" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "pep621_hybrid_direct_ref.toml" }
+      let(:poetry_lock_fixture_name) { "caret_version.lock" }
+
+      it "preserves direct references unchanged" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        project_deps = parsed.dig("project", "dependencies")
+        git_dep = project_deps.find { |d| d.include?("ffmpeg-python") }
+        expect(git_dep).to eq("ffmpeg-python @ git+https://github.com/example/ffmpeg-python")
+      end
+
+      it "still freezes normal version-specifier dependencies" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        project_deps = parsed.dig("project", "dependencies")
+        requests_dep = project_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==1.2.3")
+      end
+    end
+
     context "with PEP 621 dependencies containing environment markers" do
       let(:dependencies) { [] }
       let(:pyproject_fixture_name) { "pep621_hybrid_with_markers.toml" }

@@ -736,6 +736,40 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
   end
 
+  describe "#latest_commit_sha" do
+    let(:source_checker) do
+      instance_double(Dependabot::GitCommitChecker, local_tag_for_pinned_sha: local_tag_for_pinned_sha)
+    end
+    let(:local_tag_for_pinned_sha) { false }
+    let(:latest_version_tag) { nil }
+
+    before do
+      allow(checker).to receive_messages(
+        latest_version_finder: instance_double(
+          Dependabot::GithubActions::UpdateChecker::LatestVersionFinder,
+          latest_version_tag: latest_version_tag
+        ),
+        latest_commit_for_pinned_ref: "branch-head-sha"
+      )
+    end
+
+    context "when no latest version tag is available" do
+      it "returns nil instead of falling back to branch head" do
+        expect(checker.send(:latest_commit_sha, source_checker)).to be_nil
+      end
+    end
+
+    context "when latest version tag exists and current SHA is not tag-resolvable" do
+      let(:latest_version_tag) do
+        { tag: "v2.7.0", commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5" }
+      end
+
+      it "falls back to branch head commit behavior" do
+        expect(checker.send(:latest_commit_sha, source_checker)).to eq("branch-head-sha")
+      end
+    end
+  end
+
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
 
@@ -1054,6 +1088,54 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "when cooldown filters out the latest major for a version tag reference" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:reference) { "v2" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        finder = checker.send(:latest_version_finder)
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name if tag_name.start_with?("v3")
+          end
+        end
+      end
+
+      it "keeps metadata and rewritten version tag aligned to cooled-down target" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2.7.0")
+      end
+    end
+
+    context "when cooldown filters out the latest major for a tag-resolvable SHA reference" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:reference) { "8f4b7f84864484a7bf31766abe9204da3cbe65b3" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        finder = checker.send(:latest_version_finder)
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name if tag_name.start_with?("v3")
+          end
+        end
+      end
+
+      it "rewrites SHA to the cooled-down tag commit, not the uncooldowned latest tag commit" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("ee0669bd1cc54295c223e0bb666b733df41de1c5")
       end
     end
 
