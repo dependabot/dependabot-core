@@ -320,8 +320,14 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         var normalizedProjectPaths = projectPaths.SelectMany(p => PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(p, repoRootPath) ?? []).Distinct().ToImmutableArray();
 
         // Find all MSBuild files that may contain special imports
-        var msbuildExtensions = new[] { ".props", ".targets", ".csproj", ".vbproj", ".fsproj" };
-        var filesToPatch = Directory.GetFiles(repoRootPath, "*.*", SearchOption.AllDirectories)
+        var enumerationOptions = new EnumerationOptions()
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+        };
+        var msbuildExtensions = new[] { ".props", ".targets", ".proj", ".csproj", ".vbproj", ".fsproj" };
+        var filesToPatch = Directory.GetFiles(repoRootPath, "*.*", enumerationOptions)
             .Where(f => msbuildExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
             .ToImmutableArray();
 
