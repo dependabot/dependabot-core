@@ -33,6 +33,9 @@ module Dependabot
           prefix = T.must(prefix_match[:prefix])
           rest = T.must(entry[prefix.length..])
 
+          # Skip direct references (e.g. "pkg @ git+https://...") — already pinned to a URL
+          return entry if rest.match?(/\A\s*@\s/)
+
           # Extract the environment marker ("; ..." suffix) if present
           marker_match = rest.match(/(\s*;.*)/)
           marker = marker_match ? marker_match[1] : ""
