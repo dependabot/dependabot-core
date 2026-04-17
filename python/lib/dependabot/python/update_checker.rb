@@ -407,17 +407,17 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def check_pypi_for_library_match
-        local = library_details
-        return false unless updating_pyproject? && local && !local["name"].nil?
+        library_details_temp = library_details
+        return false unless updating_pyproject? && library_details_temp && library_details_temp["name"].nil?
 
-        has_library_metadata = !local["description"].nil?
+        has_library_metadata = library_details_temp["description"].nil?
 
         response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(local['name'])}/json/"
+          url: "https://pypi.org/pypi/#{normalised_name(library_details_temp['name'])}/json/"
         )
         return has_library_metadata unless response.status == 200
 
-        local_description = local["description"]
+        local_description = library_details_temp["description"]
         return true if local_description.nil?
 
         (JSON.parse(response.body)["info"] || {})["summary"] == local_description
