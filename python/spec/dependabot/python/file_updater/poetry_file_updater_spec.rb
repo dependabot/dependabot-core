@@ -1021,6 +1021,392 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
   end
 
+  describe "Poetry v2 fixtures (manifest updates)" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [pyproject] }
+
+    context "with a PEP 621 only project" do
+      let(:pyproject_fixture_name) { "poetry_v2_pep621_only.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0,<3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0,<3.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0,<3.0"')
+        expect(updated_pyproject.content).not_to include('"requests>=2.28.0,<3.0"')
+      end
+
+      it "preserves the poetry-core>=2.0 build backend" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("build-system", "requires")).to eq(["poetry-core>=2.0.0,<3.0.0"])
+      end
+
+      it "preserves the untouched urllib3 dependency" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"urllib3>=1.26.0"')
+      end
+    end
+
+    context "with a hybrid PEP 621 + tool.poetry enrichment project" do
+      let(:pyproject_fixture_name) { "poetry_v2_hybrid.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [
+            {
+              requirement: ">=2.31.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            },
+            {
+              requirement: "^2.31",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: ">=2.28.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            },
+            {
+              requirement: "^2.28",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          metadata: { source_requirement: ">=2.28.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0"')
+        expect(updated_pyproject.content).not_to include('"requests>=2.28.0"')
+      end
+
+      it "updates the version in tool.poetry.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+        expect(poetry_req["version"]).to eq("^2.31")
+      end
+
+      it "preserves the private-source enrichment on the dependency" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+        expect(poetry_req["source"]).to eq("private-source")
+      end
+
+      it "preserves the [[tool.poetry.source]] block" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        sources = parsed.dig("tool", "poetry", "source")
+        expect(sources.first["name"]).to eq("private-source")
+        expect(sources.first["url"]).to eq("https://private.example.com/simple")
+      end
+    end
+
+    context "with dynamic dependencies managed by Poetry" do
+      let(:pyproject_fixture_name) { "poetry_v2_dynamic.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "django",
+          version: "5.1.0",
+          previous_version: "5.0.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "^5.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "^5.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: "^5.0.0" }
+        )
+      end
+
+      it "updates the version in tool.poetry.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("tool", "poetry", "dependencies", "django")).to eq("^5.1")
+      end
+
+      it "preserves the dynamic marker in project metadata" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("project", "dynamic")).to eq(["dependencies"])
+      end
+    end
+
+    context "with a requires-poetry constraint" do
+      let(:pyproject_fixture_name) { "poetry_v2_requires_poetry.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0"')
+      end
+
+      it "preserves the requires-poetry constraint" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("tool", "poetry", "requires-poetry")).to eq(">=2.0")
+      end
+    end
+
+    context "with requires-plugins declared" do
+      let(:pyproject_fixture_name) { "poetry_v2_requires_plugins.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0"')
+      end
+
+      it "preserves requires-plugins and its version constraints" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        plugins = parsed.dig("tool", "poetry", "requires-plugins")
+        expect(plugins["poetry-plugin-export"]).to eq(">=1.8.0")
+      end
+    end
+
+    context "with package-mode = false" do
+      let(:pyproject_fixture_name) { "poetry_v2_package_mode_false.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0"')
+      end
+
+      it "preserves package-mode = false" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("tool", "poetry", "package-mode")).to be(false)
+      end
+    end
+
+    context "with dependency groups and markers" do
+      let(:pyproject_fixture_name) { "poetry_v2_groups_markers.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0"')
+      end
+
+      it "preserves [dependency-groups] dev and docs groups" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        groups = parsed["dependency-groups"]
+        expect(groups["dev"]).to include("pytest>=7.0", "black>=23.0")
+        expect(groups["docs"]).to eq(["sphinx>=6.0"])
+      end
+
+      it "preserves the conditional colorama marker line" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include("colorama>=0.4.6")
+        expect(updated_pyproject.content).to include("sys_platform == 'win32'")
+      end
+    end
+
+    context "with project.optional-dependencies" do
+      let(:pyproject_fixture_name) { "poetry_v2_optional_deps.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "cryptography",
+          version: "42.0.0",
+          previous_version: "41.0.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=42.0.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["security"]
+          }],
+          previous_requirements: [{
+            requirement: ">=41.0.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["security"]
+          }],
+          metadata: { source_requirement: ">=41.0.0" }
+        )
+      end
+
+      it "updates the version in the security optional group" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"cryptography>=42.0.0"')
+        expect(updated_pyproject.content).not_to include('"cryptography>=41.0.0"')
+      end
+
+      it "leaves the unrelated socks extras untouched" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("project", "optional-dependencies", "socks"))
+          .to eq(["PySocks>=1.5.6,!=1.5.7"])
+      end
+
+      it "leaves the main project.dependencies untouched" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.28.0"')
+      end
+    end
+
+    context "with a legacy poetry-core>=1.0 build system" do
+      let(:pyproject_fixture_name) { "poetry_v2_legacy_build_system.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.31.0",
+          previous_version: "2.28.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: ">=2.31.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: ">=2.28.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.28.0" }
+        )
+      end
+
+      it "updates the version in project.dependencies" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.31.0"')
+      end
+
+      it "preserves the legacy poetry-core>=1.0 build-system requires" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        parsed = TomlRB.parse(updated_pyproject.content)
+        expect(parsed.dig("build-system", "requires")).to eq(["poetry-core>=1.0.0"])
+      end
+    end
+  end
+
   describe "plugin installation during update" do
     it "invokes the poetry plugin installer" do
       plugin_installer = instance_double(
