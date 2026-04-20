@@ -329,6 +329,17 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
     end
 
+    context "with a group that has no dependencies key" do
+      subject(:dependency_names) { dependencies.map(&:name) }
+
+      let(:pyproject_fixture_name) { "poetry_group_without_dependencies.toml" }
+
+      it "does not raise and parses the other dependencies" do
+        expect(dependency_names).to include("requests")
+        expect(dependency_names).to include("pytest")
+      end
+    end
+
     context "with package specify source" do
       subject(:dependency) { dependencies.find { |f| f.name == "black" } }
 

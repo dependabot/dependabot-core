@@ -302,7 +302,7 @@ module Dependabot
           write_temporary_manifest_files
           write_temporary_path_dependency_files
 
-          File.write(lockfile.name, lockfile.content)
+          File.write(lockfile.name, replace_ssh_urls(T.must(lockfile.content)))
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
           config_file = config
           return unless config_file

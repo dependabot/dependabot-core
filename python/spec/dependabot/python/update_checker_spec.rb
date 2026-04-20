@@ -1867,6 +1867,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
+        context "when the project is on PyPI but description is not in pyproject.toml" do
+          let(:pyproject_fixture_name) { "poetry_missing_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
         context "when dealing with a non-library" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
@@ -1992,6 +2006,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
+        context "when the project is on PyPI but description is dynamic" do
+          let(:pyproject_fixture_name) { "standard_python_dynamic_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
         context "when dealing with a non-library" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
@@ -2056,6 +2084,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the project is on PyPI but description is dynamic" do
+          let(:pyproject_fixture_name) { "build_system_dynamic_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
           end
 
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
