@@ -42,9 +42,6 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "myproj.csproj",
-                            Properties = [
-                                new("TargetFramework", "net46", "myproj.csproj")
-                            ],
                             TargetFrameworks = ["net46"],
                             Dependencies = [
                                 new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
@@ -97,7 +94,6 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "myproj.csproj",
-                            Properties = [new("TargetFramework", "net46", "src/myproj.csproj")],
                             TargetFrameworks = ["net46"],
                             Dependencies = [
                                 new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
@@ -165,7 +161,6 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "project1.csproj",
-                            Properties = [],
                             TargetFrameworks = ["net48"],
                             Dependencies = [
                                 new("Some.Package", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net48"]),

@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Xml.Linq;
-using System.Xml.XPath;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
@@ -482,9 +481,6 @@ internal static class SdkProjectDiscovery
             }
 
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
-            var doc = XDocument.Load(projectPath);
-            var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
-            var projectPropertyNames = localPropertyDefinitionElements.Select(e => e.Name.LocalName).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var projectRelativePath = Path.GetRelativePath(workspacePath, projectPath);
 
             var propertiesForProject = resolvedProperties.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
@@ -611,11 +607,6 @@ internal static class SdkProjectDiscovery
 
             // others
             var projectProperties = resolvedProperties[projectPath];
-            var properties = projectProperties
-                .Where(pkvp => projectPropertyNames.Contains(pkvp.Key))
-                .Select(pkvp => new Property(pkvp.Key, pkvp.Value, Path.GetRelativePath(repoRootPath, projectPath).NormalizePathToUnix()))
-                .OrderBy(p => p.Name)
-                .ToImmutableArray();
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
                 .OrderBy(p => p)
@@ -640,7 +631,6 @@ internal static class SdkProjectDiscovery
                 FilePath = projectRelativePath,
                 Dependencies = dependencies,
                 TargetFrameworks = tfms,
-                Properties = properties,
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
