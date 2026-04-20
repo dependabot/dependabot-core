@@ -538,7 +538,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "poetry_v2_package_mode_false.toml" }
         let(:poetry_lock_fixture_name) { "poetry_v2_package_mode_false.lock" }
 
-        it "parses dependencies without requiring project metadata" do
+        it "parses dependencies when package-mode = false" do
           expect { parser.dependency_set }.not_to raise_error
           expect(dependencies.map(&:name)).to include("requests", "click")
         end
