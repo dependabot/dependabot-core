@@ -6,6 +6,8 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/devcontainers/file_parser"
 require "dependabot/devcontainers/requirement"
+require "dependabot/workspace"
+require "dependabot/workspace/git"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Devcontainers::FileParser do
@@ -74,6 +76,68 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
             {
               requirement: "1",
               file: ".devcontainer.json",
+              groups: ["feature"],
+              source: nil
+            }
+          ],
+          metadata: {}
+        }
+      ].freeze
+    end
+
+    it_behaves_like "parse"
+  end
+
+  context "with a devcontainer.json in a .devcontainer folder and an active workspace" do
+    let(:project_name) { "config_in_dot_devcontainer_folder" }
+    let(:directory) { "/" }
+
+    let(:workspace_path) { Pathname.new(repo_contents_path).expand_path }
+    let(:workspace) { Dependabot::Workspace::Git.new(workspace_path) }
+
+    before do
+      allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
+    end
+
+    after do
+      allow(Dependabot::Workspace).to receive(:active_workspace).and_return(nil)
+    end
+
+    let(:expectations) do
+      [
+        {
+          name: "ghcr.io/codspace/versioning/foo",
+          version: "1.1.0",
+          requirements: [
+            {
+              requirement: "1",
+              file: ".devcontainer/devcontainer.json",
+              groups: ["feature"],
+              source: nil
+            }
+          ],
+          metadata: {}
+        },
+        {
+          name: "ghcr.io/codspace/versioning/bar",
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: "1",
+              file: ".devcontainer/devcontainer.json",
+              groups: ["feature"],
+              source: nil
+            }
+          ],
+          metadata: {}
+        },
+        {
+          name: "ghcr.io/codspace/versioning/baz",
+          version: "1.0.0",
+          requirements: [
+            {
+              requirement: "1.0",
+              file: ".devcontainer/devcontainer.json",
               groups: ["feature"],
               source: nil
             }

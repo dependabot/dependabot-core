@@ -31,7 +31,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def parse
-          SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(config_dependency_file.directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               parse_cli_json(evaluate_with_cli)
             end

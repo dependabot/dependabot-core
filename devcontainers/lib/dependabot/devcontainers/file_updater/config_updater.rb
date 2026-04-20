@@ -37,7 +37,7 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def update
-          SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(manifest.directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               update_manifests(
                 target_requirement: requirement,

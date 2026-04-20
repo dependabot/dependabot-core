@@ -6,6 +6,8 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/devcontainers/file_updater"
 require "dependabot/devcontainers/requirement"
+require "dependabot/workspace"
+require "dependabot/workspace/git"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Devcontainers::FileUpdater do
@@ -106,6 +108,52 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       end
 
       it "updates the version in both manifests" do
+        expect(updated_dependency_files.size).to eq(1)
+
+        config = updated_dependency_files.first
+        expect(config.name).to eq(".devcontainer/devcontainer.json")
+        expect(config.content).to include("ghcr.io/codspace/versioning/baz:2.0\"")
+      end
+    end
+
+    context "when there are multiple manifests with an active workspace" do
+      let(:project_name) { "multiple_configs" }
+
+      let(:workspace_path) { Pathname.new(repo_contents_path).expand_path }
+      let(:workspace) { Dependabot::Workspace::Git.new(workspace_path) }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
+      end
+
+      after do
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(nil)
+      end
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "ghcr.io/codspace/versioning/baz",
+            version: "2.0.0",
+            previous_version: "1.1.0",
+            requirements: [{
+              requirement: "2.0",
+              groups: ["feature"],
+              file: ".devcontainer/devcontainer.json",
+              source: nil
+            }],
+            previous_requirements: [{
+              requirement: "1.0",
+              groups: ["feature"],
+              file: ".devcontainer/devcontainer.json",
+              source: nil
+            }],
+            package_manager: "devcontainers"
+          )
+        ]
+      end
+
+      it "updates the version in the subdirectory manifest" do
         expect(updated_dependency_files.size).to eq(1)
 
         config = updated_dependency_files.first
