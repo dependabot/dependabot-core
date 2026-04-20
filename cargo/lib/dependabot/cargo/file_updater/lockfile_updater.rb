@@ -100,16 +100,11 @@ module Dependabot
 
         sig { params(error: StandardError).returns(T.noreturn) }
         def handle_cargo_error(error)
-          raise_registry_download_error(error) if registry_download_error?(error.message)
+          raise_registry_download_error(error) if Helpers.registry_download_error?(error.message)
           raise unless resolvable_cargo_error?(error.message)
           raise if error.message.include?("`#{dependency.name} ")
 
           extract_binary_path_error(error.message)
-        end
-
-        sig { params(message: String).returns(T::Boolean) }
-        def registry_download_error?(message)
-          Helpers.registry_download_error?(message)
         end
 
         sig { params(error: StandardError).returns(T.noreturn) }

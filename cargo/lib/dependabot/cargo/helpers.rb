@@ -42,7 +42,7 @@ module Dependabot
       sig { params(message: String).returns(String) }
       def self.extract_registry_url(message)
         match = REGISTRY_FETCH_FAILED_REGEX.match(message)
-        match ? T.must(match.named_captures.fetch("url")) : CRATES_IO_DEFAULT_REGISTRY
+        match ? T.must(match[:url]) : CRATES_IO_DEFAULT_REGISTRY
       end
 
       # Strip per-registry `credential-provider` settings from .cargo/config.toml.
