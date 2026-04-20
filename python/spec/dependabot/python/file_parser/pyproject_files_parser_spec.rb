@@ -396,6 +396,24 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           parsed = TomlRB.parse(fixture("poetry_locks", poetry_lock_fixture_name))
           expect(parsed.dig("metadata", "lock-version")).to eq("2.0")
         end
+
+        it "preserves the requirement strings from project.dependencies" do
+          requests = dependencies.find { |d| d.name == "requests" }
+          urllib3 = dependencies.find { |d| d.name == "urllib3" }
+          expect(requests.requirements.first[:requirement]).to eq("<3.0,>=2.28.0")
+          expect(urllib3.requirements.first[:requirement]).to eq(">=1.26.0")
+        end
+
+        it "requires poetry-core>=2.0 as the build backend" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          expect(parsed.dig("build-system", "requires")).to eq(["poetry-core>=2.0.0,<3.0.0"])
+          expect(parsed.dig("build-system", "build-backend")).to eq("poetry.core.masonry.api")
+        end
+
+        it "does not include tool.poetry in the manifest" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          expect(parsed.dig("tool", "poetry")).to be_nil
+        end
       end
 
       context "with a hybrid PEP 621 + tool.poetry enrichment project" do
@@ -415,6 +433,26 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(requests.version).to eq("2.31.0")
           expect(flask.version).to eq("3.0.2")
         end
+
+        it "preserves private source enrichment from tool.poetry" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          sources = parsed.dig("tool", "poetry", "source")
+          expect(sources).to be_an(Array)
+          expect(sources.first["name"]).to eq("private-source")
+          expect(sources.first["url"]).to eq("https://private.example.com/simple")
+          expect(sources.first["priority"]).to eq("supplemental")
+        end
+
+        it "preserves extras enrichment from tool.poetry" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          flask_enrichment = parsed.dig("tool", "poetry", "dependencies", "flask")
+          expect(flask_enrichment["extras"]).to eq(["async"])
+        end
+
+        it "includes transitive dependencies from the lock file" do
+          names = dependencies.map(&:name)
+          expect(names).to include("jinja2", "werkzeug", "markupsafe")
+        end
       end
 
       context "with dynamic dependencies managed by Poetry" do
@@ -430,6 +468,23 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           django = dependencies.find { |d| d.name == "django" }
           expect(django.version).to eq("5.0.3")
         end
+
+        it "declares dynamic in project metadata" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          expect(parsed.dig("project", "dynamic")).to eq(["dependencies"])
+        end
+
+        it "does not duplicate deps between project and tool.poetry" do
+          requests_deps = dependencies.select { |d| d.name == "requests" }
+          django_deps = dependencies.select { |d| d.name == "django" }
+          expect(requests_deps.length).to eq(1)
+          expect(django_deps.length).to eq(1)
+        end
+
+        it "includes transitive django dependencies from the lock file" do
+          names = dependencies.map(&:name)
+          expect(names).to include("asgiref", "sqlparse")
+        end
       end
 
       context "with a requires-poetry constraint" do
@@ -444,6 +499,11 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         it "preserves the requires-poetry metadata in the TOML" do
           parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
           expect(parsed.dig("tool", "poetry", "requires-poetry")).to eq(">=2.0")
+        end
+
+        it "resolves click to the locked version" do
+          click = dependencies.find { |d| d.name == "click" }
+          expect(click.version).to eq("8.1.7")
         end
       end
 
@@ -461,6 +521,17 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           plugins = parsed.dig("tool", "poetry", "requires-plugins")
           expect(plugins).to include("poetry-plugin-export")
         end
+
+        it "preserves plugin version constraints" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          plugins = parsed.dig("tool", "poetry", "requires-plugins")
+          expect(plugins["poetry-plugin-export"]).to eq(">=1.8.0")
+        end
+
+        it "does not include poetry plugins as project dependencies" do
+          names = dependencies.map(&:name)
+          expect(names).not_to include("poetry-plugin-export")
+        end
       end
 
       context "with package-mode = false" do
@@ -475,6 +546,11 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         it "preserves package-mode = false in the TOML" do
           parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
           expect(parsed.dig("tool", "poetry", "package-mode")).to be(false)
+        end
+
+        it "still resolves locked versions" do
+          requests = dependencies.find { |d| d.name == "requests" }
+          expect(requests.version).to eq("2.31.0")
         end
       end
 
@@ -514,6 +590,23 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           colorama_pkg = parsed["package"].find { |p| p["name"] == "colorama" }
           expect(colorama_pkg["markers"]).to eq("sys_platform == \"win32\"")
         end
+
+        it "preserves [dependency-groups] in the manifest" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          groups = parsed["dependency-groups"]
+          expect(groups["dev"]).to include("pytest>=7.0", "black>=23.0")
+          expect(groups["docs"]).to eq(["sphinx>=6.0"])
+        end
+
+        it "parses transitive dependencies of dev group packages" do
+          names = dependencies.map(&:name)
+          expect(names).to include("pathspec", "platformdirs", "packaging")
+        end
+
+        it "includes conditional main dependencies with markers" do
+          colorama = dependencies.find { |d| d.name == "colorama" }
+          expect(colorama).to be_a(Dependabot::Dependency)
+        end
       end
 
       context "with project.optional-dependencies" do
@@ -541,6 +634,19 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(crypto_pkg["optional"]).to be(true)
           expect(crypto_pkg["markers"]).to eq("extra == \"security\"")
         end
+
+        it "preserves optional-dependency extras groupings in the manifest" do
+          parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
+          optional = parsed.dig("project", "optional-dependencies")
+          expect(optional["socks"]).to eq(["PySocks>=1.5.6,!=1.5.7"])
+          expect(optional["security"]).to eq(["cryptography>=41.0.0"])
+        end
+
+        it "parses transitive deps for optional extras" do
+          names = dependencies.map(&:name)
+          # cffi / pycparser are transitive deps of cryptography
+          expect(names).to include("cffi", "pycparser")
+        end
       end
 
       context "with a legacy poetry-core>=1.0 build system" do
@@ -556,6 +662,49 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           parsed = TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name))
           requires = parsed.dig("build-system", "requires")
           expect(requires).to eq(["poetry-core>=1.0.0"])
+        end
+
+        it "emits a v2-format lock file despite the legacy build backend" do
+          parsed = TomlRB.parse(fixture("poetry_locks", poetry_lock_fixture_name))
+          expect(parsed.dig("metadata", "lock-version")).to eq("2.0")
+          expect(parsed["package"]).to all(have_key("groups"))
+        end
+      end
+
+      describe "cross-fixture invariants" do
+        %w(
+          poetry_v2_pep621_only
+          poetry_v2_hybrid
+          poetry_v2_dynamic
+          poetry_v2_requires_poetry
+          poetry_v2_requires_plugins
+          poetry_v2_package_mode_false
+          poetry_v2_groups_markers
+          poetry_v2_optional_deps
+          poetry_v2_legacy_build_system
+        ).each do |name|
+          context "with the #{name} fixture" do
+            let(:pyproject_fixture_name) { "#{name}.toml" }
+            let(:poetry_lock_fixture_name) { "#{name}.lock" }
+
+            it "uses lock-version 2.0" do
+              parsed = TomlRB.parse(fixture("poetry_locks", poetry_lock_fixture_name))
+              expect(parsed.dig("metadata", "lock-version")).to eq("2.0")
+            end
+
+            it "declares a non-empty groups array on every package" do
+              parsed = TomlRB.parse(fixture("poetry_locks", poetry_lock_fixture_name))
+              parsed["package"].each do |pkg|
+                expect(pkg["groups"]).to be_an(Array), "#{pkg['name']} is missing groups"
+                expect(pkg["groups"]).not_to be_empty
+              end
+            end
+
+            it "parses the manifest as valid TOML" do
+              expect { TomlRB.parse(fixture("pyproject_files", pyproject_fixture_name)) }
+                .not_to raise_error
+            end
+          end
         end
       end
     end
