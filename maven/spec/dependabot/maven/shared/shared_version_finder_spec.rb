@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/maven/shared/shared_version_finder"
 require "dependabot/maven/version"
+require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
   let(:finder) do
@@ -697,6 +698,147 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           end
         end
       end
+    end
+  end
+
+  describe "#filter_date_based_versions" do
+    subject { finder.send(:filter_date_based_versions, releases) }
+
+    let(:releases) do
+      versions.map { |v| Dependabot::Package::PackageRelease.new(version: version_class.new(v)) }
+    end
+
+    context "when the current version is date-based (>= 100)" do
+      let(:dependency_version) { "20230101" }
+      let(:versions) { %w(20230101 20230202 20230303) }
+
+      it "does not filter any versions" do
+        expect(subject.map { |r| r.version.to_s }).to eq(%w(20230101 20230202 20230303))
+      end
+    end
+
+    context "when the current version is NOT date-based (< 100)" do
+      let(:dependency_version) { "23.3-jre" }
+      let(:versions) { %w(23.3 23.6 20230101 1901) }
+
+      it "filters out versions > 1900" do
+        expect(subject.map { |r| r.version.to_s }).to eq(%w(23.3 23.6))
+      end
+    end
+
+    context "when no versions exceed 1900" do
+      let(:dependency_version) { "1.0.0" }
+      let(:versions) { %w(1.0.0 1.1.0 2.0.0) }
+
+      it "returns all versions" do
+        expect(subject.map { |r| r.version.to_s }).to eq(%w(1.0.0 1.1.0 2.0.0))
+      end
+    end
+
+    context "when the dependency has no version" do
+      let(:dependency_version) { nil }
+      let(:versions) { %w(1.0.0 20230101) }
+
+      it "filters out date-based versions" do
+        expect(subject.map { |r| r.version.to_s }).to eq(%w(1.0.0))
+      end
+    end
+  end
+
+  describe "#filter_version_types" do
+    subject { finder.send(:filter_version_types, releases) }
+
+    let(:releases) do
+      versions.map { |v| Dependabot::Package::PackageRelease.new(version: version_class.new(v)) }
+    end
+
+    context "when the dependency has a jre suffix" do
+      let(:dependency_version) { "23.3-jre" }
+      let(:versions) { %w(23.4-jre 23.4-android 23.5-jre 23.5) }
+
+      it "keeps only versions with compatible suffixes" do
+        result = subject.map { |r| r.version.to_s }
+        expect(result).to include("23.4-jre", "23.5-jre")
+        expect(result).not_to include("23.4-android")
+      end
+    end
+
+    context "when the dependency has no suffix" do
+      let(:dependency_version) { "1.0.0" }
+      let(:versions) { %w(1.1.0 1.2.0-jre8 1.3.0) }
+
+      it "keeps versions without suffixes" do
+        result = subject.map { |r| r.version.to_s }
+        expect(result).to include("1.1.0", "1.3.0")
+        expect(result).not_to include("1.2.0-jre8")
+      end
+    end
+
+    context "when all versions match the type" do
+      let(:dependency_version) { "1.0.0" }
+      let(:versions) { %w(1.1.0 1.2.0 2.0.0) }
+
+      it "returns all versions" do
+        expect(subject.map { |r| r.version.to_s }).to eq(%w(1.1.0 1.2.0 2.0.0))
+      end
+    end
+  end
+
+  describe "#wants_prerelease?" do
+    subject { finder.send(:wants_prerelease?) }
+
+    context "when the dependency version is a prerelease" do
+      let(:dependency_version) { "1.0.0-RC1" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency version is a stable release" do
+      let(:dependency_version) { "1.0.0" }
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no version" do
+      let(:dependency_version) { nil }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#wants_date_based_version?" do
+    subject { finder.send(:wants_date_based_version?) }
+
+    context "when the dependency version is >= 100" do
+      let(:dependency_version) { "20230101" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency version is exactly 100" do
+      let(:dependency_version) { "100" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency version is < 100" do
+      let(:dependency_version) { "23.3-jre" }
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no version" do
+      let(:dependency_version) { nil }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#version_class" do
+    subject { finder.send(:version_class) }
+
+    it "returns the dependency's version class" do
+      expect(subject).to eq(Dependabot::Maven::Version)
     end
   end
 end
