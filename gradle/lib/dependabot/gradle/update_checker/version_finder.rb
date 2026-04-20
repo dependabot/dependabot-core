@@ -148,28 +148,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-        def filter_date_based_versions(possible_versions)
-          return possible_versions if wants_date_based_version?
-
-          filtered = possible_versions.reject { |release| release.version > version_class.new(1900) }
-          if possible_versions.count > filtered.count
-            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
-          end
-          filtered
-        end
-
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-        def filter_version_types(possible_versions)
-          filtered = possible_versions.select { |release| matches_dependency_version_type?(release.version) }
-          if possible_versions.count > filtered.count
-            diff = possible_versions.count - filtered.count
-            classifier = T.must(dependency.version).split(/[.\-]/).last
-            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
-          end
-          filtered
-        end
-
         sig { params(version: T::Array[T.untyped]).returns(T::Array[Dependabot::Package::PackageRelease]) }
         def package_release(version)
           package_releases = []
@@ -280,24 +258,6 @@ module Dependabot
           in_cooldown
         end
 
-        sig { returns(T::Boolean) }
-        def wants_prerelease?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version).prerelease?
-        end
-
-        sig { returns(T::Boolean) }
-        def wants_date_based_version?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version) >= version_class.new(100)
-        end
-
-        sig { returns(T.class_of(Dependabot::Version)) }
-        def version_class
-          dependency.version_class
-        end
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
       end
