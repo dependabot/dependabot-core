@@ -37,14 +37,14 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def update
-          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               update_manifests(
                 target_requirement: requirement,
                 target_version: version
               )
 
-              [File.read(manifest_name), File.read(lockfile_name)].compact
+              [File.read(manifest_file_path), File.read(lockfile_path)].compact
             end
           end
         end
@@ -52,18 +52,15 @@ module Dependabot
         private
 
         sig { returns(String) }
-        def base_dir
-          File.dirname(manifest.path)
+        def manifest_file_path
+          manifest.name
         end
 
         sig { returns(String) }
-        def manifest_name
-          File.basename(manifest.path)
-        end
-
-        sig { returns(String) }
-        def lockfile_name
-          Utils.expected_lockfile_name(manifest_name)
+        def lockfile_path
+          dir = File.dirname(manifest.name)
+          lockfile_basename = Utils.expected_lockfile_name(File.basename(manifest.name))
+          Pathname.new(File.join(dir, lockfile_basename)).cleanpath.to_path
         end
 
         sig do
@@ -78,8 +75,8 @@ module Dependabot
           run_devcontainer_upgrade(target_version)
 
           # Now replace specific version back with target requirement
-          force_target_requirement(manifest_name, from: target_version, to: target_requirement)
-          force_target_requirement(lockfile_name, from: target_version, to: target_requirement)
+          force_target_requirement(manifest_file_path, from: target_version, to: target_requirement)
+          force_target_requirement(lockfile_path, from: target_version, to: target_requirement)
         end
 
         sig { params(file_name: String, from: String, to: T.any(String, Dependabot::Devcontainers::Version)).void }
@@ -92,7 +89,7 @@ module Dependabot
           cmd = "devcontainer upgrade " \
                 "--workspace-folder . " \
                 "--feature #{feature} " \
-                "--config #{manifest_name} " \
+                "--config #{manifest_file_path} " \
                 "--target-version #{target_version}"
 
           Dependabot.logger.info("Running command: `#{cmd}`")
