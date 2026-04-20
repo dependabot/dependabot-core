@@ -122,14 +122,6 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       let(:workspace_path) { Pathname.new(repo_contents_path).expand_path }
       let(:workspace) { Dependabot::Workspace::Git.new(workspace_path) }
 
-      before do
-        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
-      end
-
-      after do
-        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(nil)
-      end
-
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -151,6 +143,14 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
             package_manager: "devcontainers"
           )
         ]
+      end
+
+      before do
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
+      end
+
+      after do
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(nil)
       end
 
       it "updates the version in the subdirectory manifest" do
