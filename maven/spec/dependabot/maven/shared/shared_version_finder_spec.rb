@@ -702,7 +702,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
   end
 
   describe "#filter_date_based_versions" do
-    subject { finder.send(:filter_date_based_versions, releases) }
+    subject(:filtered_versions) { finder.send(:filter_date_based_versions, releases) }
 
     let(:releases) do
       versions.map { |v| Dependabot::Package::PackageRelease.new(version: version_class.new(v)) }
@@ -713,7 +713,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(20230101 20230202 20230303) }
 
       it "does not filter any versions" do
-        expect(subject.map { |r| r.version.to_s }).to eq(%w(20230101 20230202 20230303))
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(20230101 20230202 20230303))
       end
     end
 
@@ -722,7 +722,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(23.3 23.6 20230101 1901) }
 
       it "filters out versions > 1900" do
-        expect(subject.map { |r| r.version.to_s }).to eq(%w(23.3 23.6))
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(23.3 23.6))
       end
     end
 
@@ -731,7 +731,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(1.0.0 1.1.0 2.0.0) }
 
       it "returns all versions" do
-        expect(subject.map { |r| r.version.to_s }).to eq(%w(1.0.0 1.1.0 2.0.0))
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(1.0.0 1.1.0 2.0.0))
       end
     end
 
@@ -740,13 +740,13 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(1.0.0 20230101) }
 
       it "filters out date-based versions" do
-        expect(subject.map { |r| r.version.to_s }).to eq(%w(1.0.0))
+        expect(filtered_versions.map { |r| r.version.to_s }).to eq(%w(1.0.0))
       end
     end
   end
 
   describe "#filter_version_types" do
-    subject { finder.send(:filter_version_types, releases) }
+    subject(:filtered_versions_by_type) { finder.send(:filter_version_types, releases) }
 
     let(:releases) do
       versions.map { |v| Dependabot::Package::PackageRelease.new(version: version_class.new(v)) }
@@ -757,7 +757,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(23.4-jre 23.4-android 23.5-jre 23.5) }
 
       it "keeps only versions with compatible suffixes" do
-        result = subject.map { |r| r.version.to_s }
+        result = filtered_versions_by_type.map { |r| r.version.to_s }
         expect(result).to include("23.4-jre", "23.5-jre")
         expect(result).not_to include("23.4-android")
       end
@@ -768,7 +768,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(1.1.0 1.2.0-jre8 1.3.0) }
 
       it "keeps versions without suffixes" do
-        result = subject.map { |r| r.version.to_s }
+        result = filtered_versions_by_type.map { |r| r.version.to_s }
         expect(result).to include("1.1.0", "1.3.0")
         expect(result).not_to include("1.2.0-jre8")
       end
@@ -779,7 +779,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:versions) { %w(1.1.0 1.2.0 2.0.0) }
 
       it "returns all versions" do
-        expect(subject.map { |r| r.version.to_s }).to eq(%w(1.1.0 1.2.0 2.0.0))
+        expect(filtered_versions_by_type.map { |r| r.version.to_s }).to eq(%w(1.1.0 1.2.0 2.0.0))
       end
     end
   end
@@ -835,10 +835,10 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
   end
 
   describe "#version_class" do
-    subject { finder.send(:version_class) }
+    subject(:resolved_version_class) { finder.send(:version_class) }
 
     it "returns the dependency's version class" do
-      expect(subject).to eq(Dependabot::Maven::Version)
+      expect(resolved_version_class).to eq(Dependabot::Maven::Version)
     end
   end
 end
