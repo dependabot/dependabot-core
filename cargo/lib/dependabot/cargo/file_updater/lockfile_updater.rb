@@ -9,6 +9,7 @@ require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/helpers"
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 module Dependabot
   module Cargo
@@ -99,10 +100,21 @@ module Dependabot
 
         sig { params(error: StandardError).returns(T.noreturn) }
         def handle_cargo_error(error)
+          raise_registry_download_error(error) if registry_download_error?(error.message)
           raise unless resolvable_cargo_error?(error.message)
           raise if error.message.include?("`#{dependency.name} ")
 
           extract_binary_path_error(error.message)
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def registry_download_error?(message)
+          Helpers.registry_download_error?(message)
+        end
+
+        sig { params(error: StandardError).returns(T.noreturn) }
+        def raise_registry_download_error(error)
+          raise Dependabot::PrivateSourceBadResponse, Helpers.extract_registry_url(error.message)
         end
 
         sig { params(message: String).returns(T::Boolean) }

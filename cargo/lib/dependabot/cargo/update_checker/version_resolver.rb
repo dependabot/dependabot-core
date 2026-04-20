@@ -247,6 +247,7 @@ module Dependabot
           handle_git_authentication_errors(error)
           handle_git_reference_errors(error)
           handle_toolchain_errors(error)
+          handle_registry_download_errors(error)
           handle_resolvability_errors(error)
 
           raise
@@ -325,6 +326,13 @@ module Dependabot
           return unless using_old_toolchain?(error.message)
 
           raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+        end
+
+        sig { params(error: StandardError).void }
+        def handle_registry_download_errors(error)
+          return unless Helpers.registry_download_error?(error.message)
+
+          raise Dependabot::PrivateSourceBadResponse, Helpers.extract_registry_url(error.message)
         end
 
         sig { params(error: StandardError).void }

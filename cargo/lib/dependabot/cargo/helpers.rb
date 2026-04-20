@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "dependabot/errors"
 
 module Dependabot
   module Cargo
@@ -20,6 +21,28 @@ module Dependabot
       sig { void }
       def self.bypass_cargo_credential_providers
         ENV["CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS"] ||= ""
+      end
+
+      # Matches the URL in Cargo registry fetch failure messages, e.g.:
+      #   failed to download from `https://index.crates.io/li/ba/libadwaita`
+      REGISTRY_FETCH_FAILED_REGEX = T.let(/failed to download from `(?<url>[^`]+)`/, Regexp)
+
+      # Fallback registry name used when no URL can be extracted from the error message
+      CRATES_IO_DEFAULT_REGISTRY = T.let("index.crates.io", String)
+
+      # Returns true when a Cargo error message indicates a transient HTTP protocol
+      # error from the registry (curl error 8 "Weird server reply" / "Invalid status line").
+      sig { params(message: String).returns(T::Boolean) }
+      def self.registry_download_error?(message)
+        message.include?("Weird server reply") || message.include?("Invalid status line")
+      end
+
+      # Extracts the registry URL from a Cargo registry fetch failure message,
+      # falling back to the default crates.io registry URL when no URL is found.
+      sig { params(message: String).returns(String) }
+      def self.extract_registry_url(message)
+        match = REGISTRY_FETCH_FAILED_REGEX.match(message)
+        match ? T.must(match.named_captures.fetch("url")) : CRATES_IO_DEFAULT_REGISTRY
       end
 
       # Strip per-registry `credential-provider` settings from .cargo/config.toml.

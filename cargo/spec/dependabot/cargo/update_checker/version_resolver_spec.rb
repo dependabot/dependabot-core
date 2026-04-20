@@ -220,6 +220,43 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when the registry returns a bad response" do
+      it "raises PrivateSourceBadResponse with the registry URL" do
+        error_message = <<~ERROR
+          error: failed to get `libadwaita` as a dependency of package `app v0.11.0`
+
+          Caused by:
+            download of li/ba/libadwaita failed
+
+          Caused by:
+            failed to download from `https://index.crates.io/li/ba/libadwaita`
+
+          Caused by:
+            [8] Weird server reply (Invalid status line)
+        ERROR
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+
+        expect { resolver.send(:handle_cargo_errors, error) }
+          .to raise_error(Dependabot::PrivateSourceBadResponse) do |raised_error|
+            expect(raised_error.source).to eq("https://index.crates.io/li/ba/libadwaita")
+          end
+      end
+
+      it "raises PrivateSourceBadResponse for Invalid status line without a URL" do
+        error_message = "failed to update\n\nCaused by:\n  [8] Invalid status line"
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {}
+        )
+
+        expect { resolver.send(:handle_cargo_errors, error) }
+          .to raise_error(Dependabot::PrivateSourceBadResponse)
+      end
+    end
+
     context "with a dependency that doesn't exist" do
       let(:unprepared_dependency_files) { [manifest] }
       let(:manifest_fixture_name) { "non_existent_package" }
