@@ -1019,6 +1019,129 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
     end
+
+    context "when a security update modifies both project.dependencies and tool.poetry.dependencies" do
+      let(:pyproject_fixture_name) { "pep621_hybrid_version_in_both.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.13.1",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [
+            {
+              requirement: ">=2.13.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            },
+            {
+              requirement: "^2.13",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: ">=2.13.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            },
+            {
+              requirement: "^2.13",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          metadata: { source_requirement: ">=2.13.0" }
+        )
+      end
+
+      describe "#updated_dependency_files" do
+        subject(:updated_files) { updater.updated_dependency_files }
+
+        it "updates the PEP 508 string in project.dependencies to the security fix version" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          expect(updated_pyproject.content).to include('"requests>=2.13.1"')
+          expect(updated_pyproject.content).not_to include('"requests>=2.13.0"')
+        end
+
+        it "preserves the tool.poetry.dependencies version unchanged when caret range still covers it" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          parsed = TomlRB.parse(updated_pyproject.content)
+          poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+          expect(poetry_req["version"]).to eq("^2.13")
+        end
+
+        it "preserves enrichment metadata in tool.poetry.dependencies" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          parsed = TomlRB.parse(updated_pyproject.content)
+          poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+          expect(poetry_req["source"]).to eq("private-source")
+        end
+      end
+    end
+
+    context "when a security update targets an optional dependency in a hybrid project" do
+      let(:pyproject_fixture_name) { "pep621_hybrid_optional_deps.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.13.1",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [
+            {
+              requirement: ">=2.13.1",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["networking"]
+            },
+            {
+              requirement: "^2.13",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          previous_requirements: [
+            {
+              requirement: ">=2.13.0",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["networking"]
+            },
+            {
+              requirement: "^2.13",
+              file: "pyproject.toml",
+              source: nil,
+              groups: ["dependencies"]
+            }
+          ],
+          metadata: { source_requirement: ">=2.13.0" }
+        )
+      end
+
+      describe "#updated_dependency_files" do
+        subject(:updated_files) { updater.updated_dependency_files }
+
+        it "updates the PEP 508 string in project.optional-dependencies" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          expect(updated_pyproject.content).to include('"requests>=2.13.1"')
+          expect(updated_pyproject.content).not_to include('"requests>=2.13.0"')
+        end
+
+        it "preserves the tool.poetry.dependencies enrichment" do
+          updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+          parsed = TomlRB.parse(updated_pyproject.content)
+          poetry_req = parsed.dig("tool", "poetry", "dependencies", "requests")
+          expect(poetry_req["source"]).to eq("private-source")
+        end
+      end
+    end
   end
 
   describe "plugin installation during update" do
@@ -1179,6 +1302,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         expect(updated_pyproject.content).not_to include('"cachecontrol[filecache]>=0.14.0"')
       end
     end
+
+    context "with a security update (minimal version bump)" do
+      let(:pyproject_fixture_name) { "pep621_project_dependencies.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.13.1",
+          previous_version: "2.13.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "<3.0,>=2.13.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "<3.0,>=2.13.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          metadata: { source_requirement: ">=2.13.0,<3.0" }
+        )
+      end
+
+      it "updates only the vulnerable lower bound" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"requests>=2.13.1,<3.0"')
+        expect(updated_pyproject.content).not_to include('"requests>=2.13.0,<3.0"')
+      end
+
+      it "preserves other dependencies unchanged" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"urllib3>=1.21.1"')
+      end
+    end
   end
 
   describe "PEP 621 project.optional-dependencies" do
@@ -1218,6 +1377,41 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
       pysocks_line = updated_pyproject.content.lines.find { |l| l.include?("PySocks") }
       expect(pysocks_line).to include("'PySocks")
+    end
+
+    context "with a security update for an optional dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pysocks",
+          version: "1.5.8",
+          previous_version: "1.5.6",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "!=1.5.7,<2,>=1.5.8",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["socks"]
+          }],
+          previous_requirements: [{
+            requirement: "!=1.5.7,<2,>=1.5.6",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["socks"]
+          }],
+          metadata: { source_requirement: ">= 1.5.6, != 1.5.7, < 2" }
+        )
+      end
+
+      it "updates the lower bound to the minimum safe version" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include("'PySocks >= 1.5.8, != 1.5.7, < 2'")
+        expect(updated_pyproject.content).not_to include("'PySocks >= 1.5.6, != 1.5.7, < 2'")
+      end
+
+      it "preserves other optional dependency groups unchanged" do
+        updated_pyproject = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_pyproject.content).to include('"pytest >= 7.0, < 8"')
+      end
     end
   end
 

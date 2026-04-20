@@ -390,6 +390,24 @@ RSpec.describe namespace::PoetryVersionResolver do
         end
       end
     end
+
+    context "when checking a security fix version" do
+      context "when the fix version is resolvable" do
+        let(:version) { Gem::Version.new("2.18.1") }
+
+        it "confirms the security fix can be applied" do
+          expect(resolvable).to be(true)
+        end
+      end
+
+      context "when the fix version is too high for transitive constraints" do
+        let(:version) { Gem::Version.new("99.0.0") }
+
+        it "indicates the security fix is not installable" do
+          expect(resolvable).to be(false)
+        end
+      end
+    end
   end
 
   describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do

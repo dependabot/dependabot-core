@@ -187,6 +187,37 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
     end
+
+    context "with a Poetry project" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.18.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "2.18.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) { fixture("pypi", "pypi_simple_response_requests.html") }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.19.0"]
+          )
+        ]
+      end
+
+      it "finds the lowest non-vulnerable version from the registry" do
+        expect(lowest_fix_version).to eq(Gem::Version.new("2.19.1"))
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -1601,6 +1632,58 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
+      end
+
+      context "with a Poetry project" do
+        let(:dependency_files) { [pyproject, poetry_lock] }
+        let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "exact_version.lock")
+          )
+        end
+        let(:dependency_name) { "requests" }
+        let(:dependency_version) { "2.18.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "pyproject.toml",
+            requirement: "2.18.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:pypi_url) { "https://pypi.org/simple/requests/" }
+        let(:pypi_response) { fixture("pypi", "pypi_simple_response_requests.html") }
+
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "pip",
+              vulnerable_versions: ["<= 2.19.0"]
+            )
+          ]
+        end
+
+        it "returns the lowest security fix version via the Poetry resolver" do
+          dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new).and_return(dummy_resolver)
+          allow(dummy_resolver).to receive(:resolvable?).with(version: Gem::Version.new("2.19.1"))
+                                                        .and_return(true)
+
+          expect(checker.preferred_resolvable_version).to eq(Gem::Version.new("2.19.1"))
+        end
+
+        context "when the fix version is not resolvable" do
+          it "falls back to nil" do
+            dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+            allow(described_class::PoetryVersionResolver).to receive(:new).and_return(dummy_resolver)
+            allow(dummy_resolver).to receive(:resolvable?).and_return(false)
+
+            expect(checker.preferred_resolvable_version).to be_nil
+          end
+        end
       end
     end
   end
