@@ -1115,6 +1115,28 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "when all v1.x.x releases are in cooldown and the dependency is pinned to a major-only tag" do
+      let(:upload_pack_fixture) { "setup-node" }
+      let(:reference) { "v1" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        finder = checker.send(:latest_version_finder)
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name if tag_name.start_with?("v1")
+          end
+        end
+      end
+
+      it "does not propose upgrading from the major-only tag to an older specific version" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("1"))
+      end
+    end
+
     context "when cooldown filters out the latest major for a tag-resolvable SHA reference" do
       let(:dependency_name) { "actions/checkout" }
       let(:upload_pack_fixture) { "checkout" }

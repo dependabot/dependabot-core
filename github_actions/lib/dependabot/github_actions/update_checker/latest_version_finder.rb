@@ -182,6 +182,12 @@ module Dependabot
 
           Dependabot.logger.info("Initializing cooldown filter")
 
+          # If the proposed release is the same as the current version (e.g. a major-only tag like
+          # @v1 where shortened_semver_eq? matched), there is no actual update to filter — return as-is.
+          # Without this guard, the fallback loop below could incorrectly propose a more precise version
+          # (e.g. v1.4.0) that was never intended as an upgrade target.
+          return release if release == current_version
+
           # If the proposed release is a commit SHA (String), check its date against cooldown
           if release.is_a?(String)
             Dependabot.logger.info("Checking cooldown for commit SHA: #{release}")
