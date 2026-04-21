@@ -1,0 +1,12 @@
+[package]
+name = "dependabot"
+version = "0.1.0"
+authors = ["support@dependabot.com"]
+
+[features]
+extended = ["dep:utf8-ranges", "utf8-ranges/extra"]
+
+[dependencies]
+time = "0.1.12"
+utf8-ranges = { git = "ssh://git@github.com/BurntSushi/utf8-ranges", optional = true }
+utf8-ranges-parent = { git = "ssh://git@github.com/dependabot-fixtures/utf8-ranges" }

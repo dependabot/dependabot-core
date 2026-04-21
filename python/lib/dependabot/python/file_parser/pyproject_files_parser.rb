@@ -69,7 +69,10 @@ module Dependabot
 
           groups = T.must(poetry_root)["group"] || {}
           groups.each do |group, group_spec|
-            dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
+            deps = group_spec["dependencies"]
+            next unless deps
+
+            dependencies += parse_poetry_dependency_group(group, deps)
           end
           dependencies
         end
