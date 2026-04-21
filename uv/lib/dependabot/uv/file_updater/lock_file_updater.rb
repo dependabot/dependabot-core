@@ -429,18 +429,24 @@ module Dependabot
           return -1 unless credential_uri.host == registry_uri.host
           return -1 unless credential_uri.port == registry_uri.port
 
-          credential_path = credential_uri.path.to_s
-          registry_path = registry_uri.path.to_s
+          credential_path = normalized_uri_path(credential_uri)
+          registry_path = normalized_uri_path(registry_uri)
+
+          return 1 if credential_path == "/"
 
           if registry_path.start_with?(credential_path.chomp("/") + "/")
             credential_path.length
-          elsif credential_path == "/"
-            1
           else
-            0
+            -1
           end
         rescue URI::InvalidURIError
           -1
+        end
+
+        sig { params(uri: URI::Generic).returns(String) }
+        def normalized_uri_path(uri)
+          path = uri.path.to_s
+          path.empty? ? "/" : path
         end
 
         sig { returns(T::Array[String]) }
@@ -553,9 +559,9 @@ module Dependabot
 
         sig { params(options: String).returns(String) }
         def lock_options_fingerprint(options)
-          options.sub(
+          options.gsub(
             /--default-index\s+\S+/, "--default-index <default_index>"
-          ).sub(
+          ).gsub(
             /--index\s+\S+/, "--index <index>"
           )
         end

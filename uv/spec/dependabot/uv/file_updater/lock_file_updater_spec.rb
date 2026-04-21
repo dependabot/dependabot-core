@@ -765,6 +765,90 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(lock_index_options).to eq(["--index https://token@private-pypi.example.com/simple"])
       end
     end
+
+    context "when credentials share host but paths do not match the registry" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.example.com/pypi" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/repo-a",
+              "token" => "token_a",
+              "replaces-base" => false
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/repo-b",
+              "token" => "token_b",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "does not apply an unrelated credential token to the lockfile registry URL" do
+        options = lock_index_options.join(" ")
+
+        expect(options).not_to include("@pypi.example.com/pypi")
+        expect(options).to include("--index https://token_a@pypi.example.com/repo-a")
+        expect(options).to include("--index https://token_b@pypi.example.com/repo-b")
+      end
+    end
+
+    context "when a root-scoped credential and a non-matching scoped credential share a host" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.example.com/pypi" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/repo-a",
+              "token" => "token_a",
+              "replaces-base" => false
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/",
+              "token" => "root_token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "prefers the root-scoped credential for registry paths not under other scopes" do
+        expect(lock_index_options).to include("--index https://root_token@pypi.example.com/pypi")
+      end
+    end
   end
 
   describe "#pyproject_index_env_vars" do
@@ -995,6 +1079,18 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
     it "replaces sensitive information in the fingerprint with placeholders" do
       expect(lock_options_fingerprint).to eq("--default-index <default_index> --index <index>")
+    end
+
+    context "when multiple index options are present" do
+      let(:options) do
+        "--index https://token1@example.com/simple --index https://token2@example.com/simple " \
+          "--default-index https://token3@default.example.com/simple"
+      end
+
+      it "redacts all index URLs" do
+        expect(lock_options_fingerprint)
+          .to eq("--index <index> --index <index> --default-index <default_index>")
+      end
     end
   end
 
