@@ -130,35 +130,27 @@ module Dependabot
       directories.each do |directory|
         @current_directory = directory
 
-        if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
-          # add the existing dependencies in the group so individual updates don't try to update them
-          dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
+        # add the existing dependencies in the group so individual updates don't try to update them
+        dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
 
-          dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
-            # When grouping by name, include deps from all directories; otherwise filter by current directory
-            group_by_name || !dep["directory"] || dep["directory"] == directory
-          end
-
-          # also add dependencies that might be in the group, as a rebase would add them;
-          # this avoids individual PR creation that immediately is superseded by a group PR supersede
-          current_dependencies = group.dependencies.map(&:name).reject do |dep|
-            excluding_dependencies[directory]&.include?(dep)
-          end
-
-          add_handled_dependencies(
-            current_dependencies.concat(
-              dependencies_in_existing_prs.filter_map do |dep|
-                dep["dependency-name"]
-              end
-            )
-          )
-        else
-          # add the existing dependencies in the group so individual updates don't try to update them
-          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
-          # also add dependencies that might be in the group, as a rebase would add them;
-          # this avoids individual PR creation that immediately is superseded by a group PR supersede
-          add_handled_dependencies(group.dependencies.map(&:name))
+        dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
+          # When grouping by name, include deps from all directories; otherwise filter by current directory
+          group_by_name || !dep["directory"] || dep["directory"] == directory
         end
+
+        # also add dependencies that might be in the group, as a rebase would add them;
+        # this avoids individual PR creation that immediately is superseded by a group PR supersede
+        current_dependencies = group.dependencies.map(&:name).reject do |dep|
+          excluding_dependencies[directory]&.include?(dep)
+        end
+
+        add_handled_dependencies(
+          current_dependencies.concat(
+            dependencies_in_existing_prs.filter_map do |dep|
+              dep["dependency-name"]
+            end
+          )
+        )
       end
     end
     # rubocop:enable Metrics/PerceivedComplexity
