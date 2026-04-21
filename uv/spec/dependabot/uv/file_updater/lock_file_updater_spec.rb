@@ -701,6 +701,70 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(options).not_to include("--index")
       end
     end
+
+    context "when uv.lock registry URLs differ from credential index-url paths" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.example.com/pypi" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/",
+              "token" => "token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "uses uv.lock registry URLs for --index and applies credential auth" do
+        expect(lock_index_options).to eq(["--index https://token@pypi.example.com/pypi"])
+      end
+    end
+
+    context "when uv.lock has no matching registry for a credential" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.org/simple" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "token" => "token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "falls back to the credential URL" do
+        expect(lock_index_options).to eq(["--index https://token@private-pypi.example.com/simple"])
+      end
+    end
   end
 
   describe "#pyproject_index_env_vars" do

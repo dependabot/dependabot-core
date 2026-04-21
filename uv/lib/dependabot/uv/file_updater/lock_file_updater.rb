@@ -3,6 +3,7 @@
 
 require "toml-rb"
 require "open3"
+require "uri"
 require "dependabot/dependency"
 require "dependabot/shared_helpers"
 require "dependabot/uv/language_version_manager"
@@ -355,18 +356,110 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def lock_index_options
-          credentials
-            .select { |cred| cred["type"] == "python_index" }
-            .reject { |cred| cred.replaces_base? ? defined_in_pyproject?(cred) : explicit_index?(cred) }
-            .map do |cred|
-            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+          filtered_credentials = credentials
+                                 .select { |cred| cred["type"] == "python_index" }
+                                 .reject do |cred|
+                                   cred.replaces_base? ? defined_in_pyproject?(cred) : explicit_index?(cred)
+                                 end
 
-            if cred.replaces_base?
-              "--default-index #{authed_url}"
-            else
-              "--index #{authed_url}"
-            end
+          options = T.let([], T::Array[String])
+          used_credential_urls = T.let([], T::Array[String])
+
+          uv_lock_registry_urls.each do |registry_url|
+            credential = best_credential_for_registry_url(filtered_credentials, registry_url)
+            next unless credential
+
+            used_credential_urls << credential["index-url"].to_s
+            options << option_for_credential_url(credential, authed_registry_url(credential, registry_url))
           end
+
+          # Fall back to credential URLs for indices not represented in uv.lock.
+          filtered_credentials.each do |credential|
+            next if used_credential_urls.include?(credential["index-url"].to_s)
+
+            authed_url = AuthedUrlBuilder.authed_url(credential: credential)
+            options << option_for_credential_url(credential, authed_url)
+          end
+
+          options.uniq
+        end
+
+        sig { params(credential: Dependabot::Credential, url: String).returns(String) }
+        def option_for_credential_url(credential, url)
+          if credential.replaces_base?
+            "--default-index #{url}"
+          else
+            "--index #{url}"
+          end
+        end
+
+        sig { params(credential: Dependabot::Credential, registry_url: String).returns(String) }
+        def authed_registry_url(credential, registry_url)
+          lock_credential = Dependabot::Credential.new(credential.to_h.merge("index-url" => registry_url))
+          AuthedUrlBuilder.authed_url(credential: lock_credential)
+        end
+
+        sig do
+          params(credentials: T::Array[Dependabot::Credential], registry_url: String)
+            .returns(T.nilable(Dependabot::Credential))
+        end
+        def best_credential_for_registry_url(credentials, registry_url)
+          credential_scores = credentials.map do |credential|
+            [credential, credential_match_score(credential["index-url"].to_s, registry_url)]
+          end
+          best_match = credential_scores.max_by { |_, score| score }
+
+          return nil unless best_match
+          return nil if best_match[1].negative?
+
+          best_match[0]
+        end
+
+        sig { params(credential_url: String, registry_url: String).returns(Integer) }
+        def credential_match_score(credential_url, registry_url)
+          normalized_credential_url = normalize_index_url(credential_url)
+          normalized_registry_url = normalize_index_url(registry_url)
+
+          return 100_000 if normalized_credential_url == normalized_registry_url
+
+          credential_uri = URI.parse(normalized_credential_url)
+          registry_uri = URI.parse(normalized_registry_url)
+
+          return -1 unless credential_uri.scheme == registry_uri.scheme
+          return -1 unless credential_uri.host == registry_uri.host
+          return -1 unless credential_uri.port == registry_uri.port
+
+          credential_path = credential_uri.path.to_s
+          registry_path = registry_uri.path.to_s
+
+          if registry_path.start_with?(credential_path.chomp("/") + "/")
+            credential_path.length
+          elsif credential_path == "/"
+            1
+          else
+            0
+          end
+        rescue URI::InvalidURIError
+          -1
+        end
+
+        sig { returns(T::Array[String]) }
+        def uv_lock_registry_urls
+          return [] unless lockfile&.content
+
+          parsed = TomlRB.parse(T.must(lockfile).content)
+          packages = parsed["package"]
+          return [] unless packages.is_a?(Array)
+
+          packages.filter_map do |package|
+            source = package["source"]
+            next unless source.is_a?(Hash)
+
+            registry = source["registry"]
+            registry if registry.is_a?(String)
+          end.uniq
+        rescue TomlRB::ParseError
+          []
         end
 
         sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
