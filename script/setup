@@ -15,4 +15,4 @@ fi
 
 # Log into GPR to pull downstream images
 echo "$GPR_TOKEN" | docker login docker.pkg.github.com -u x --password-stdin
-docker_build
+docker_build "$1"
