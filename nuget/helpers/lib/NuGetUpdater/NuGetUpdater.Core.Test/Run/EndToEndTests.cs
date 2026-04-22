@@ -12,8 +12,8 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-using TestFile = (string Path, string Content);
 using RawTestFile = (string Path, byte[] Content);
+using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
