@@ -57,9 +57,19 @@ module Dependabot
 
       LOCKFILE_NAME = "poetry.lock"
 
-      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+      POETRY_V1 = "1"
+      POETRY_V2 = "2"
 
-      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+      # Keep versions in ascending order
+      SUPPORTED_VERSIONS = T.let(
+        [
+          Version.new(POETRY_V1),
+          Version.new(POETRY_V2)
+        ].freeze,
+        T::Array[Dependabot::Version]
+      )
+
+      DEPRECATED_VERSIONS = T.let([Version.new(POETRY_V1)].freeze, T::Array[Dependabot::Version])
 
       sig do
         params(
@@ -68,25 +78,19 @@ module Dependabot
         ).void
       end
       def initialize(raw_version, requirement = nil)
+        version = Version.new(raw_version)
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          detected_version: Version.new(T.must(version.segments.first).to_s),
+          version: version,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement,
        )
       end
 
-      sig { override.returns(T::Boolean) }
-      def deprecated?
-        false
-      end
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        false
-      end
-
+      # Poetry supports requires-poetry constraints in pyproject.toml;
+      # other Python package managers don't have an equivalent mechanism.
       sig { override.void }
       def raise_if_unsupported!
         super

@@ -16,29 +16,31 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
-        # Builds a regex pattern that matches a PEP 508 package name,
-        # treating hyphens, underscores, and dots as interchangeable per PEP 508.
-        sig { params(name: String).returns(String) }
-        def self.pep508_name_pattern(name)
-          Regexp.escape(name).gsub("\\-", "[-_.]").gsub("_", "[-_.]").gsub("\\.", "[-_.]")
-        end
-        private_class_method :pep508_name_pattern
+        # Fixed regex for extracting the name+extras prefix from a PEP 508 entry.
+        # Does not interpolate library input, avoiding polynomial backtracking.
+        PEP508_PREFIX = T.let(
+          /\A(?<prefix>(?<name>[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)(?:\[[^\]]*\])?)/i,
+          Regexp
+        )
 
         # Pins a single PEP 508 dependency entry string to a specific version,
         # preserving extras and environment markers.
-        sig { params(entry: String, name_pattern: String, version: String).returns(String) }
-        def self.pin_pep508_entry(entry, name_pattern, version)
-          if entry.match?(/\A#{name_pattern}(\[.*?\])?\s*[><=!~]/i)
-            entry.sub(
-              /(?<pre>#{name_pattern}(?:\[.*?\])?)\s*[><=!~][^;]*?(?=\s*;|\s*\z)/i,
-              "\\k<pre>==#{version}"
-            )
-          else
-            entry.sub(
-              /(?<pre>#{name_pattern}(?:\[.*?\])?)(?<rest>\s*(?:;.*)?)/i,
-              "\\k<pre>==#{version}\\k<rest>"
-            )
-          end
+        sig { params(entry: String, version: String).returns(String) }
+        def self.pin_pep508_entry(entry, version)
+          prefix_match = entry.match(PEP508_PREFIX)
+          return entry unless prefix_match
+
+          prefix = T.must(prefix_match[:prefix])
+          rest = T.must(entry[prefix.length..])
+
+          # Skip direct references (e.g. "pkg @ git+https://...") — already pinned to a URL
+          return entry if rest.match?(/\A\s*@\s/)
+
+          # Extract the environment marker ("; ..." suffix) if present
+          marker_match = rest.match(/(\s*;.*)/)
+          marker = marker_match ? marker_match[1] : ""
+
+          "#{prefix}==#{version}#{marker}"
         end
         private_class_method :pin_pep508_entry
 
@@ -79,12 +81,14 @@ module Dependabot
 
         sig { params(dep_arrays: T::Array[T::Array[String]], dep: Dependabot::Dependency).void }
         def self.pin_pep621_dep_in_arrays!(dep_arrays, dep)
-          name_pattern = pep508_name_pattern(dep.name)
+          normalised_name = NameNormaliser.normalise(dep.name)
           dep_arrays.each do |arr|
             arr.each_with_index do |entry, i|
-              next unless entry.match?(/\A#{name_pattern}(\[.*?\])?\s*(\z|[><=!~;,])/i)
+              match = entry.match(PEP508_PREFIX)
+              next unless match
+              next unless NameNormaliser.normalise(T.must(match[:name])) == normalised_name
 
-              arr[i] = pin_pep508_entry(entry, name_pattern, T.must(dep.version))
+              arr[i] = pin_pep508_entry(entry, T.must(dep.version))
             end
           end
         end
@@ -138,8 +142,8 @@ module Dependabot
             .gsub('#{', "{")
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
+        UNSUPPORTED_SOURCE_TYPES = T.let(%w(directory file url).freeze, T::Array[String])
+
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
         def freeze_top_level_dependencies_except(dependencies)
           return pyproject_content unless lockfile
@@ -154,32 +158,10 @@ module Dependabot
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
-            source_types = %w(directory file url)
             poetry_object.fetch(key).each do |dep_name, _|
               next if excluded_names.include?(normalise(dep_name))
 
-              locked_details = locked_details(dep_name)
-
-              next unless (locked_version = locked_details&.fetch("version"))
-
-              next if source_types.include?(locked_details.dig("source", "type"))
-
-              if locked_details.dig("source", "type") == "git"
-                poetry_object[key][dep_name] = {
-                  "git" => locked_details.dig("source", "url"),
-                  "rev" => locked_details.dig("source", "reference")
-                }
-                subdirectory = locked_details.dig("source", "subdirectory")
-                poetry_object[key][dep_name]["subdirectory"] = subdirectory if subdirectory
-              elsif poetry_object[key][dep_name].is_a?(Hash)
-                poetry_object[key][dep_name]["version"] = locked_version
-              elsif poetry_object[key][dep_name].is_a?(Array)
-                # if it has multiple-constraints, locking to a single version is
-                # going to result in a bad lockfile, ignore
-                next
-              else
-                poetry_object[key][dep_name] = locked_version
-              end
+              freeze_poetry_dep!(poetry_object[key], dep_name)
             end
           end
 
@@ -188,8 +170,6 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -198,6 +178,33 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :lockfile
+
+        sig { params(deps_hash: T::Hash[String, T.untyped], dep_name: String).void }
+        def freeze_poetry_dep!(deps_hash, dep_name)
+          details = locked_details(dep_name)
+          return unless (locked_version = details&.fetch("version"))
+
+          source_type = details.dig("source", "type")
+          return if UNSUPPORTED_SOURCE_TYPES.include?(source_type)
+
+          if source_type == "git"
+            freeze_git_dep!(deps_hash, dep_name, details)
+          elsif deps_hash[dep_name].is_a?(Hash)
+            deps_hash[dep_name]["version"] = locked_version
+          elsif !deps_hash[dep_name].is_a?(Array)
+            deps_hash[dep_name] = locked_version
+          end
+        end
+
+        sig { params(deps_hash: T::Hash[String, T.untyped], dep_name: String, details: T::Hash[String, T.untyped]).void }
+        def freeze_git_dep!(deps_hash, dep_name, details)
+          deps_hash[dep_name] = {
+            "git" => details.dig("source", "url"),
+            "rev" => details.dig("source", "reference")
+          }
+          subdirectory = details.dig("source", "subdirectory")
+          deps_hash[dep_name]["subdirectory"] = subdirectory if subdirectory
+        end
 
         sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
         def freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
@@ -226,8 +233,7 @@ module Dependabot
             locked_details = locked_details(dep_name)
             next unless (locked_version = locked_details&.fetch("version"))
 
-            name_pattern = self.class.send(:pep508_name_pattern, T.must(match[1]))
-            dep_array[index] = self.class.send(:pin_pep508_entry, entry, name_pattern, locked_version)
+            dep_array[index] = self.class.send(:pin_pep508_entry, entry, locked_version)
           end
         end
 
