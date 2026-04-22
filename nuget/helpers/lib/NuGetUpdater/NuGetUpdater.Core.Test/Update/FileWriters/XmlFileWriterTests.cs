@@ -1997,4 +1997,38 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task NewReference_ItemGroupWithExistingPackageReferences_IsAdded()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Package.Not.Related" Version="1.2.3" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <AdditionalFiles Include="some-resource.json" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["This.Package.Gets.Pinned/4.5.5"],
+            requiredDependencyStrings: ["This.Package.Gets.Pinned/4.5.6"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Package.Not.Related" Version="1.2.3" />
+                        <PackageReference Include="This.Package.Gets.Pinned" Version="4.5.6" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <AdditionalFiles Include="some-resource.json" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }
