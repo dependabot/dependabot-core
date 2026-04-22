@@ -1999,7 +1999,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task NewReferenceIsAddedToItemGroupWithExistingPackageReferences()
+    public async Task NewReference_ItemGroupWithExistingPackageReferences_IsAdded()
     {
         await TestAsync(
             files: [
