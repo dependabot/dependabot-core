@@ -3,6 +3,7 @@
 
 require "toml-rb"
 require "open3"
+require "uri"
 require "dependabot/dependency"
 require "dependabot/shared_helpers"
 require "dependabot/uv/language_version_manager"
@@ -358,9 +359,7 @@ module Dependabot
         def lock_index_options
           filtered_credentials = credentials
                                  .select { |cred| cred["type"] == "python_index" }
-                                 .reject do |cred|
-                                   cred.replaces_base? ? defined_in_pyproject?(cred) : explicit_index?(cred)
-                                 end
+                                 .reject { |cred| defined_in_pyproject?(cred) }
 
           options = T.let([], T::Array[String])
           used_credential_urls = T.let([], T::Array[String])
@@ -419,16 +418,6 @@ module Dependabot
           []
         end
 
-        sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
-        def explicit_index?(credential)
-          return false if credential.replaces_base?
-
-          cred_url = normalize_index_url(credential["index-url"].to_s)
-          uv_indices.any? do |_name, config|
-            config["explicit"] == true && normalize_index_url(config["url"].to_s) == cred_url
-          end
-        end
-
         # Checks if a credential's index URL matches any index defined in pyproject.toml.
         # When true, authentication is provided via env vars so uv uses the pyproject.toml URL,
         # preserving URL format alignment between pyproject.toml and uv.lock.
@@ -437,8 +426,15 @@ module Dependabot
           !find_index_name_for_credential(credential).nil?
         end
 
+        # Strips trailing slashes and any embedded userinfo so a pyproject.toml URL like
+        # https://oauth2accesstoken@host/path matches a credential URL like https://host/path.
         sig { params(url: String).returns(String) }
         def normalize_index_url(url)
+          uri = URI.parse(url.chomp("/"))
+          uri.user = nil
+          uri.password = nil
+          uri.to_s
+        rescue URI::InvalidURIError
           url.chomp("/")
         end
 
@@ -460,8 +456,7 @@ module Dependabot
             next unless name
 
             result[name] = {
-              "url" => index["url"],
-              "explicit" => index["explicit"] == true
+              "url" => index["url"]
             }
           end
         rescue TomlRB::ParseError
