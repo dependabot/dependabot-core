@@ -108,7 +108,7 @@ jobs:
 
       - name: Stabilize Poetry transitive certifi
         run: |
-          bash .github/scripts/apply_smoke_overrides.sh smoke.yaml "${{ matrix.suite.name }}"
+          ruby .github/scripts/apply_smoke_overrides.rb smoke.yaml "${{ matrix.suite.name }}"
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
       # Allowed to fail to get out of chicken and egg situations, for example, when adding a new ecosystem.
