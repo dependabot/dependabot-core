@@ -62,6 +62,12 @@ internal static class SdkProjectDiscovery
         "GenerateBuildDependencyFile"
     ];
 
+    // these targets are required to evaluate a legacy project with a single operation
+    private static readonly ImmutableArray<string> LegacyProjectSingleRestoreTargetNames = ["ResolveProjectReferences"];
+
+    // this property evaluates to a version number in an SDK-style project and is unset or empty otherwise
+    private const string NETCoreSdkVersionPropertyName = "NETCoreSdkVersion";
+
     // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
     private const int MaximumParallelTargetFrameworkRestores = 2;
 
@@ -137,20 +143,39 @@ internal static class SdkProjectDiscovery
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // when using single restore, we can directly invoke the relevant targets
+                // when using single restore, we can directly invoke the relevant targets...
                 var args = new List<string>() { "msbuild", startingProjectPath };
-                var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-                var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
+
+                // ...but determining what the relevant targets are can be complicated
+
+                // For SDK-style projects  the targets `Restore`, `ResolveProjectReferences`, and `GenerateBuildDependencyFile`
+                // are necessary.  If the project has a single target framework, those magic targets will all be present and can
+                // be directly invoked, but if the project has multiple target frameworks, those targets will _NOT_ be directly
+                // present and we instead have to invoke the `Build` target and specify the three magic values as `InnerTargets`.
+
+                // If the project is legacy then those three magic targets will not be present, but we shouldn't use the `Build`
+                // and `InnerTargets` trick because that's an SDK-only mechanism, so we instead only need to invoke
+                // `ResolveProjectReferences` to gather all `PackageReference` items and further down we re-build the transitive
+                // dependency set.  Without the legacy project check, we could incorrectly invoke `Build` which eventually tries
+                // to call `csc.exe` which is unnecessary and can be slow.
+                var netCoreSdkVersionValue = await MSBuildHelper.GetProjectPropertyAsync(startingProjectPath, NETCoreSdkVersionPropertyName, logger);
+                var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
+                var requiredTargets = isLegacyProject
+                    ? LegacyProjectSingleRestoreTargetNames
+                    : SingleRestoreTargetNames;
+
+                var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
+                var useDirectRestore = requiredTargets.All(actualTargets.Contains);
                 if (useDirectRestore || isIndividualTfmRestore)
                 {
                     // directly call the required targets
-                    args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
+                    args.Add($"/t:{string.Join(",", requiredTargets)}");
                 }
                 else
                 {
                     // delegate to the inner build and call those targets
                     args.Add("/t:Build");
-                    args.Add($"/p:InnerTargets=\"{string.Join(";", SingleRestoreTargetNames)}\"");
+                    args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
                 }
 
                 // inject various props and targets to help with discovery
@@ -384,7 +409,7 @@ internal static class SdkProjectDiscovery
         foreach (var projectPath in resolvedProperties.Keys)
         {
             var projectProperties = resolvedProperties[projectPath];
-            var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
+            var isProjectLegacy = !projectProperties.ContainsKey(NETCoreSdkVersionPropertyName); // legacy projects don't contain this property
             if (isProjectLegacy)
             {
                 logger.Info($"Project {projectPath} is legacy");
