@@ -34,11 +34,14 @@ module Dependabot
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
         dependency.requirements.map do |requirement|
-          required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
-          updated_requirement = remove_precision_changes(
-            T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version]),
-            required_version
-          ).last
+          req_string = requirement[:requirement]
+          updated_requirement = unless req_string.nil? || req_string.empty?
+                                  required_version = T.cast(version_class.new(req_string), Dependabot::Devcontainers::Version)
+                                  remove_precision_changes(
+                                    T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version]),
+                                    required_version
+                                  ).last
+                                end
           {
             file: requirement[:file],
             requirement: updated_requirement,
