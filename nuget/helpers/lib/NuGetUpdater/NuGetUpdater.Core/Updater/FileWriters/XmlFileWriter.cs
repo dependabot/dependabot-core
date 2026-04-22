@@ -150,29 +150,35 @@ public class XmlFileWriter : IFileWriter
                 // find last `<ItemGroup>` in the project...
                 Action addItemGroup = () => { }; // adding an ItemGroup to the project isn't always necessary, but it's much easier to prepare for it here
                 var projectDocument = filesAndContents[projectRelativePath];
-                var lastItemGroup = projectDocument.RootSyntax.Elements
-                    .LastOrDefault(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
-                if (lastItemGroup is null)
+                var indentation = GetDocumentIndentationCharacters(projectDocument);
+                var itemGroups = projectDocument.RootSyntax.Elements
+                    .Where(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+                var itemGroupsWithPackageReferences = itemGroups
+                    .Where(e => e.Elements.Any(c => c.Name.Equals(PackageReferenceElementName, StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+                var itemGroupForInsertion = itemGroupsWithPackageReferences.LastOrDefault() ?? itemGroups.LastOrDefault();
+                if (itemGroupForInsertion is null)
                 {
                     _logger.Info($"No `<{ItemGroupElementName}>` element found in project; adding one.");
-                    lastItemGroup = XmlExtensions.CreateOpenCloseXmlElementSyntax(ItemGroupElementName,
-                        new SyntaxList<SyntaxNode>([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia("  ")]),
+                    itemGroupForInsertion = XmlExtensions.CreateOpenCloseXmlElementSyntax(ItemGroupElementName,
+                        new SyntaxList<SyntaxNode>([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia(indentation)]),
                         insertIntermediateNewline: false);
                     addItemGroup = () =>
                     {
                         // add the new element
-                        var updatedRootSyntax = projectDocument.RootSyntax.AddChild(lastItemGroup);
+                        var updatedRootSyntax = projectDocument.RootSyntax.AddChild(itemGroupForInsertion);
                         var updatedProjectDocument = projectDocument.ReplaceNode(projectDocument.RootSyntax.AsNode, updatedRootSyntax.AsNode);
 
                         // reset well-known variables
                         projectDocument = updatedProjectDocument;
                         filesAndContents[projectRelativePath] = updatedProjectDocument;
-                        lastItemGroup = updatedProjectDocument.RootSyntax.Elements.Last(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
+                        itemGroupForInsertion = updatedProjectDocument.RootSyntax.Elements.Last(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase));
                     };
                 }
 
                 // ...find where the new item should go...
-                var elementsBeforeNew = GetOrderedElementsBeforeSpecified(lastItemGroup, PackageReferenceElementName, [IncludeAttributeName, UpdateAttributeName], requiredPackageVersion.Name);
+                var elementsBeforeNew = GetOrderedElementsBeforeSpecified(itemGroupForInsertion, PackageReferenceElementName, [IncludeAttributeName, UpdateAttributeName], requiredPackageVersion.Name);
 
                 // ...prepare a new `<PackageReference>` element...
                 var newElement = XmlExtensions.CreateSingleLineXmlElementSyntax(PackageReferenceElementName, leadingTrivia: new SyntaxList<SyntaxNode>())
@@ -221,18 +227,18 @@ public class XmlFileWriter : IFileWriter
                     else
                     {
                         // no prior package references; add to the front
-                        var itemGroupTrivia = lastItemGroup.AsNode.GetLeadingTrivia().ToList();
+                        var itemGroupTrivia = itemGroupForInsertion.AsNode.GetLeadingTrivia().ToList();
                         var priorEolIndex = itemGroupTrivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
                         var indentTrivia = itemGroupTrivia
                             .Skip(priorEolIndex + 1)
                             .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
                             .ToArray();
-                        var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia("  "), .. indentTrivia]);
+                        var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia(indentation), .. indentTrivia]);
                         newElement = (IXmlElementSyntax)newElement.AsNode.WithLeadingTrivia(newTrivia);
                         var updatedItemGroup = (IXmlElementSyntax)ReplaceNode(
                             projectRelativePath,
-                            lastItemGroup.AsNode,
-                            lastItemGroup.InsertChild(newElement, 0).AsNode
+                            itemGroupForInsertion.AsNode,
+                            itemGroupForInsertion.InsertChild(newElement, 0).AsNode
                         );
                         newElement = (IXmlElementSyntax)updatedItemGroup.Content[0];
                     }
@@ -353,7 +359,9 @@ public class XmlFileWriter : IFileWriter
                                 .Skip(priorEolIndex + 1)
                                 .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
                                 .ToArray();
-                            var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia("  "), .. indentTrivia]);
+                            var packageVersionDocument = filesAndContents[filePath];
+                            var packageVersionIndentation = GetDocumentIndentationCharacters(packageVersionDocument);
+                            var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia(packageVersionIndentation), .. indentTrivia]);
                             newVersionElement = (IXmlElementSyntax)newVersionElement.AsNode.WithLeadingTrivia(newTrivia).WithoutTrailingTrivia();
                             var insertionIndex = 0;
                             var replacementPackageVersionGroup = packageVersionGroup
@@ -581,7 +589,7 @@ public class XmlFileWriter : IFileWriter
         return elementsBeforeNew;
     }
 
-    private static async Task<XmlDocumentSyntax> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
+    internal static async Task<XmlDocumentSyntax> ReadFileContentsAsync(DirectoryInfo repoContentsPath, string path)
     {
         var fullPath = Path.Join(repoContentsPath.FullName, path);
         var contents = await File.ReadAllTextAsync(fullPath);
@@ -695,5 +703,24 @@ public class XmlFileWriter : IFileWriter
         }
 
         return newRange.ToString();
+    }
+
+    public static string GetDocumentIndentationCharacters(XmlDocumentSyntax document)
+    {
+        // find the first element with leading whitespace and assume that's the document indentation
+        var nodeLeadingLineTrivias = document.DescendantNodes()
+            .Select(n => n.GetLeadingTrivia().ToList())
+            .Select(l =>
+            {
+                var priorEolIndex = l.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
+                var leadingTriviaParts = l.Skip(priorEolIndex + 1)
+                    .Select(t => t.ToFullString());
+                var leadingTrivia = string.Concat(leadingTriviaParts);
+                return leadingTrivia;
+            })
+            .ToArray();
+        var nodeLeadingLineTrivia = nodeLeadingLineTrivias
+            .FirstOrDefault(t => !string.IsNullOrEmpty(t));
+        return nodeLeadingLineTrivia ?? "  ";
     }
 }

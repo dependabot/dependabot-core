@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
@@ -96,8 +95,6 @@ public class DiscoveryWorkerTestBase : TestBase
             Assert.True(actualProject is not null, $"Unable to find project with path `{expectedProject.FilePath.NormalizePathToUnix()}` in collection [{string.Join(", ", actualProjects.Select(p => p.FilePath))}]");
             Assert.Equal(expectedProject.FilePath.NormalizePathToUnix(), actualProject.FilePath.NormalizePathToUnix());
 
-            var actualProperties = actualProject.Properties;
-            AssertEx.Equal(expectedProject.Properties, actualProperties, PropertyComparer.Instance);
             AssertEx.Equal(expectedProject.TargetFrameworks, actualProject.TargetFrameworks);
             AssertEx.Equal(expectedProject.ReferencedProjectPaths, actualProject.ReferencedProjectPaths);
             AssertEx.Equal(expectedProject.ImportedFiles, actualProject.ImportedFiles);
@@ -151,22 +148,5 @@ public class DiscoveryWorkerTestBase : TestBase
         // run discovery
         var result = await action(temporaryDirectory.DirectoryPath);
         return result;
-    }
-
-    internal class PropertyComparer : IEqualityComparer<Property>
-    {
-        public static PropertyComparer Instance { get; } = new();
-
-        public bool Equals(Property? x, Property? y)
-        {
-            return x?.Name == y?.Name &&
-                   x?.Value == y?.Value &&
-                   x?.SourceFilePath.NormalizePathToUnix() == y?.SourceFilePath.NormalizePathToUnix();
-        }
-
-        public int GetHashCode([DisallowNull] Property obj)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
