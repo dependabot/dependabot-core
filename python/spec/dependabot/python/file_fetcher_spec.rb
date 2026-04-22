@@ -234,6 +234,18 @@ RSpec.describe Dependabot::Python::FileFetcher do
               .to match_array(%w(todo.txt requirements.txt))
           end
         end
+
+        context "when python_requirements_file_name_filtering is enabled" do
+          before do
+            Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
+          end
+
+          it "skips the non-requirements txt file" do
+            expect(file_fetcher_instance.files.count).to eq(1)
+            expect(file_fetcher_instance.files.map(&:name))
+              .to eq(["requirements.txt"])
+          end
+        end
       end
 
       context "when dealing with a todo.txt can't be encoded to UTF-8" do
@@ -653,6 +665,30 @@ RSpec.describe Dependabot::Python::FileFetcher do
               requirements/typing.in
             )
           )
+      end
+
+      context "when python_requirements_file_name_filtering is enabled" do
+        before do
+          Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
+        end
+
+        it "still fetches requirements files from subdirectories using the full path for filtering" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(
+                requirements.txt
+                setup.py
+                requirements/coverage.txt
+                requirements/test.txt
+                requirements/tools.txt
+                requirements/typing.txt
+                requirements/coverage.in
+                requirements/test.in
+                requirements/tools.in
+                requirements/typing.in
+              )
+            )
+        end
       end
     end
 
