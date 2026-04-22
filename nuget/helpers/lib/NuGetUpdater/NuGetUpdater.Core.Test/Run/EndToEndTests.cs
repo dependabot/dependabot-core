@@ -379,7 +379,6 @@ public class EndToEndTests
                         FilePath = p.FilePath,
                         ImportedFiles = p.ImportedFiles,
                         IsSuccess = p.IsSuccess,
-                        Properties = p.Properties,
                         ReferencedProjectPaths = p.ReferencedProjectPaths,
                         TargetFrameworks = p.TargetFrameworks,
                     }).ToImmutableArray()
