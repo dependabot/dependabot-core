@@ -146,7 +146,7 @@ internal static class SdkProjectDiscovery
                 // when using single restore, we can directly invoke the relevant targets...
                 var args = new List<string>() { "msbuild", startingProjectPath };
 
-                // ...but determining what the the relevant targets are can be complicated
+                // ...but determining what the relevant targets are can be complicated
 
                 // For SDK-style projects  the targets `Restore`, `ResolveProjectReferences`, and `GenerateBuildDependencyFile`
                 // are necessary.  If the project has a single target framework, those magic targets will all be present and can
