@@ -89,6 +89,7 @@ internal static partial class MSBuildHelper
 
     internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ILogger logger)
     {
+        var projectPathDir = Path.GetDirectoryName(projectPath)!;
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
 
@@ -112,7 +113,7 @@ internal static partial class MSBuildHelper
             .Select(package => new PackageToUpdate
             {
                 PackageName = package.Name,
-                NewVersion = package.Version.ToString()
+                NewVersion = package.Version!.ToString()
             })
             .ToList();
 
@@ -148,12 +149,12 @@ internal static partial class MSBuildHelper
                 packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, projectPathDir, logger);
 
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, projectPathDir, logger);
                 }
             }
 
@@ -164,12 +165,12 @@ internal static partial class MSBuildHelper
                 packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, projectPathDir, logger);
 
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, projectPathDir, logger);
                 }
             }
 
@@ -257,7 +258,7 @@ internal static partial class MSBuildHelper
     {
         try
         {
-            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath)!;
             var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
             var packageSourceProvider = new PackageSourceProvider(settings);
             return packageSourceProvider.LoadPackageSources();
