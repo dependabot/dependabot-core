@@ -711,6 +711,8 @@ public partial class DiscoveryWorkerTests
                             <TargetFramework>net8.0</TargetFramework>
                             <!-- the SDK turns `<TargetFramework>net8.0</TargetFramework>` into the following -->
                             <TargetFrameworkMoniker>.NETCoreApp,Version=8.0</TargetFrameworkMoniker>
+                            <!-- the SDK sets this property but we need to fake it so it appears to be an SDK-style project -->
+                            <NETCoreSdkVersion>10.0.100</NETCoreSdkVersion>
                           </PropertyGroup>
 
                           <ItemGroup>

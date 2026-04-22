@@ -546,13 +546,13 @@ internal static partial class MSBuildHelper
         return targets;
     }
 
-    internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
+    internal static async Task<string?> GetProjectPropertyAsync(string projectPath, string propertyName, ILogger logger)
     {
         var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
         if (extension == ".sln" || extension == ".slnx")
         {
-            // solution files don't specify target frameworks, so we can skip the process invocation
-            return [];
+            // solution files don't specify properties, so we can skip the process invocation
+            return null;
         }
 
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
@@ -560,17 +560,28 @@ internal static partial class MSBuildHelper
         {
             "msbuild",
             projectPath,
-            "-getProperty:TargetFrameworks"
+            $"-getProperty:{propertyName}"
         };
 
         var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
         if (exitCode != 0)
         {
-            logger.Warn($"Unable to determine target frameworks for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return null;
+        }
+
+        return stdOut.Trim();
+    }
+
+    internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
+    {
+        var rawValue = await GetProjectPropertyAsync(projectPath, "TargetFrameworks", logger);
+        if (rawValue is null)
+        {
             return [];
         }
 
-        var tfms = Regex.Replace(stdOut, "@[\r\n\t ]", "")
+        var tfms = Regex.Replace(rawValue, "@[\r\n\t ]", "")
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .OrderBy(t => t)
             .ToImmutableArray();
