@@ -184,5 +184,41 @@ RSpec.describe Dependabot::Uv::FileUpdater do
         end
       end
     end
+
+    context "with only a uv.toml file (uv version update)" do
+      let(:dependency_files) { [uv_toml] }
+      let(:uv_toml) do
+        Dependabot::DependencyFile.new(
+          name: "uv.toml",
+          content: fixture("uv_toml_files", "required_version_exact.toml")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "uv:required-version",
+          version: "0.7.0",
+          requirements: [{
+            file: "uv.toml",
+            requirement: "==0.7.0",
+            groups: ["uv-required-version"],
+            source: nil
+          }],
+          previous_version: "0.6.12",
+          previous_requirements: [{
+            file: "uv.toml",
+            requirement: "==0.6.12",
+            groups: ["uv-required-version"],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      it "updates the uv.toml required-version field" do
+        expect(updated_files.length).to eq(1)
+        expect(updated_files.first.name).to eq("uv.toml")
+        expect(updated_files.first.content).to include('required-version = "==0.7.0"')
+      end
+    end
   end
 end

@@ -16,7 +16,7 @@ module Dependabot
     class FileFetcher < Dependabot::Python::SharedFileFetcher
       extend T::Sig
 
-      ECOSYSTEM_SPECIFIC_FILES = T.let(%w(uv.lock).freeze, T::Array[String])
+      ECOSYSTEM_SPECIFIC_FILES = T.let(%w(uv.lock uv.toml).freeze, T::Array[String])
 
       REQUIREMENT_FILE_PATTERNS = T.let(
         {
@@ -34,13 +34,12 @@ module Dependabot
 
       sig { override.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files
-        # uv.lock is not a standalone required file - it requires pyproject.toml
-        []
+        %w(uv.toml)
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a requirements.txt, uv.lock, requirements.in, or pyproject.toml"
+        "Repo must contain a requirements.txt, uv.lock, uv.toml, requirements.in, or pyproject.toml"
       end
 
       private
@@ -51,6 +50,7 @@ module Dependabot
         files += readme_files
         files += license_files
         files += uv_lock_files
+        files += uv_toml_files
         files += workspace_member_files
         files += version_source_files
         files
@@ -259,6 +259,12 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def child_uv_lock_files
         child_requirement_files.select { |f| f.name.end_with?("uv.lock") }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def uv_toml_files
+        file = fetch_file_if_present("uv.toml")
+        file ? [file] : []
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

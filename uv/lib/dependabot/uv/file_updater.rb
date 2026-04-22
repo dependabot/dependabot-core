@@ -15,11 +15,13 @@ module Dependabot
       require_relative "file_updater/compile_file_updater"
       require_relative "file_updater/lock_file_updater"
       require_relative "file_updater/requirement_file_updater"
+      require_relative "file_updater/uv_version_file_updater"
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = updated_pip_compile_based_files
         updated_files += updated_uv_lock_files
+        updated_files += updated_uv_version_files
 
         if updated_files.none? ||
            updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
@@ -38,10 +40,17 @@ module Dependabot
         :pip_compile if pip_compile_files.any?
       end
 
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def package_dependencies
+        dependencies.reject { |dep| dep.name == "uv:required-version" }
+      end
+
       sig { returns(T::Array[DependencyFile]) }
       def updated_pip_compile_based_files
+        return [] if package_dependencies.empty?
+
         CompileFileUpdater.new(
-          dependencies: dependencies,
+          dependencies: package_dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
           index_urls: pip_compile_index_urls
@@ -50,8 +59,10 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def updated_requirement_based_files
+        return [] if package_dependencies.empty?
+
         RequirementFileUpdater.new(
-          dependencies: dependencies,
+          dependencies: package_dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
           index_urls: pip_compile_index_urls
@@ -60,12 +71,22 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def updated_uv_lock_files
+        return [] if package_dependencies.empty?
+
         LockFileUpdater.new(
-          dependencies: dependencies,
+          dependencies: package_dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
           index_urls: pip_compile_index_urls,
           repo_contents_path: repo_contents_path
+        ).updated_dependency_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def updated_uv_version_files
+        UvVersionFileUpdater.new(
+          dependencies: dependencies,
+          dependency_files: dependency_files
         ).updated_dependency_files
       end
 
@@ -86,6 +107,7 @@ module Dependabot
         filenames = dependency_files.map(&:name)
         return if filenames.any? { |name| name.end_with?(".txt", ".in") }
         return if pyproject
+        return if uv_toml
 
         raise "Missing required files!"
       end
@@ -93,6 +115,11 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pyproject
         @pyproject ||= T.let(get_original_file("pyproject.toml"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def uv_toml
+        @uv_toml ||= T.let(get_original_file("uv.toml"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T::Array[DependencyFile]) }
