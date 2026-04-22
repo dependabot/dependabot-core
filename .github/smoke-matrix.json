@@ -125,6 +125,11 @@
     "ecosystem": "rust-toolchain"
   },
   {
+    "core": "sbt",
+    "test": "sbt",
+    "ecosystem": "sbt"
+  },
+  {
     "core": "swift",
     "test": "swift",
     "ecosystem": "swift"
