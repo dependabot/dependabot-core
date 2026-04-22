@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;NU1510</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
