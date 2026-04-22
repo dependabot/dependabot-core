@@ -52,6 +52,7 @@ Sentry.init do |config|
     pub|
     python|
     rust_toolchain|
+    sbt|
     silent|
     swift|
     terraform|
