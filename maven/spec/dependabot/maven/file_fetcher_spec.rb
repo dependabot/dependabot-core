@@ -639,4 +639,54 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       end
     end
   end
+
+  context "with a maven wrapper" do
+    before do
+      stub_request(:get, File.join(url, "pom.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+    end
+
+    context "when the maven_wrapper_updater experiment is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_wrapper_updater).and_return(false)
+
+        stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.properties?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "maven-wrapper.properties.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "does not fetch wrapper files" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
+    end
+
+    context "when the maven_wrapper_updater experiment is enabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_wrapper_updater).and_return(true)
+      end
+
+      context "when maven-wrapper.properties is absent" do
+        it "fetches only pom.xml" do
+          expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+        end
+      end
+    end
+  end
 end
