@@ -27,7 +27,7 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true),
+            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"]),
             new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
             new("Package.C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
             new("Package.D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
@@ -105,7 +105,7 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.1A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+            new("Package.1A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
             new("Package.1B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
@@ -122,7 +122,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.1O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+            new("Package.1R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
             new("Package.1S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
@@ -131,7 +131,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.1X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.1Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+            new("Package.2A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
             new("Package.2B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.2C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.2D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
@@ -148,7 +148,7 @@ public class MSBuildHelperTests : TestBase
             new("Package.2O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.2P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.2Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
+            new("Package.2R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
             new("Package.2S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.2T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
             new("Package.2U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
@@ -196,8 +196,8 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-            new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
         ];
         var packages = new[]
         {
@@ -269,7 +269,7 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
+            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
             new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
         ];
 

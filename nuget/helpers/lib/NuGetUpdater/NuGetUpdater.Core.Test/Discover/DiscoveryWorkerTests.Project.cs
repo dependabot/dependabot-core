@@ -49,8 +49,8 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
+                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
+                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
                             ReferencedProjectPaths = [],
@@ -112,8 +112,8 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -163,7 +163,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Global.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Global.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -225,9 +225,9 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Global.Package", "7.8.9", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
+                                new("Global.Package", "7.8.9", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
                             ],
                             TargetFrameworks = ["net7.0"],
                             ReferencedProjectPaths = [],
@@ -278,7 +278,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -347,7 +347,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -390,7 +390,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
+                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"]),
                                 new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net7.0", "net8.0"], IsTransitive: true),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
@@ -447,7 +447,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "unit-tests.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                                 new("Package.B", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
                             ],
                             ReferencedProjectPaths = [
@@ -461,7 +461,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "../src/helpers.csproj",
                             Dependencies = [
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -523,7 +523,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "../projects/library.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -563,7 +563,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Os.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true)
+                                new("Some.Os.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"])
                             ],
                             TargetFrameworks = ["net9.0-windows"],
                             ReferencedProjectPaths = [],
@@ -605,7 +605,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"], IsDirect: true),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"]),
                             ],
                             TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"],
                             ReferencedProjectPaths = [],
@@ -650,7 +650,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -819,7 +819,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
                                 new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTransitive: true),
                             ],
                             TargetFrameworks = ["net48"],
@@ -878,7 +878,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
                                 new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTransitive: true),
                             ],
                             TargetFrameworks = ["net48"],

@@ -123,7 +123,6 @@ public class DiscoveryWorkerTestBase : TestBase
                 return d.Name == expectedDependency.Name
                     && d.Type == expectedDependency.Type
                     && d.Version == expectedDependency.Version
-                    && d.IsDirect == expectedDependency.IsDirect
                     && d.IsTransitive == expectedDependency.IsTransitive
                     && d.TargetFrameworks.SequenceEqual(expectedDependency.TargetFrameworks);
             }).ToArray();
@@ -132,7 +131,6 @@ public class DiscoveryWorkerTestBase : TestBase
                     Name: {expectedDependency.Name}
                     Type: {expectedDependency.Type}
                     Version: {expectedDependency.Version}
-                    IsDirect: {expectedDependency.IsDirect}
                     IsTransitive: {expectedDependency.IsTransitive}
                     TargetFrameworks: {string.Join(", ", expectedDependency.TargetFrameworks ?? [])}
                 Found:{"\n\t"}{string.Join("\n\t", actualDependencies)}

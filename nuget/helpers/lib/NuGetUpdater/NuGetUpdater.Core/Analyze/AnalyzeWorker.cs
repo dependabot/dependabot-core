@@ -149,12 +149,12 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             else if (dotnetToolsHasDependency)
             {
                 var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependencyInfo.Name, updatedVersion.ToNormalizedString(), CancellationToken.None);
-                updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.DotNetTool, IsDirect: true, InfoUrl: infoUrl)];
+                updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.DotNetTool, InfoUrl: infoUrl)];
             }
             else if (globalJsonHasDependency)
             {
                 var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependencyInfo.Name, updatedVersion.ToNormalizedString(), CancellationToken.None);
-                updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.MSBuildSdk, IsDirect: true, InfoUrl: infoUrl)];
+                updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.MSBuildSdk, InfoUrl: infoUrl)];
             }
             else
             {
