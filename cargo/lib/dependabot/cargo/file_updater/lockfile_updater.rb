@@ -293,9 +293,7 @@ module Dependabot
 
           # Detect rustup installation failures for old toolchains (e.g. "syncing channel updates for 1.67-x86_64-...")
           rustup_channel = /syncing channel updates for (?<version>\d+\.\d+)-/.match(message)
-          if rustup_channel
-            return version_class.new(rustup_channel[:version]) < version_class.new("1.68")
-          end
+          return version_class.new(rustup_channel[:version]) < version_class.new("1.68") if rustup_channel
 
           version_log = /rust version (?<version>\d.\d+)/.match(message)
           return false unless version_log
