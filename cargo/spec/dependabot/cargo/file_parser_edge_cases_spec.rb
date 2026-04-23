@@ -280,4 +280,36 @@ RSpec.describe Dependabot::Cargo::FileParser do
       end
     end
   end
+
+  context "with TOML 1.1 multiline inline tables" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Cargo.toml",
+          content: <<~TOML
+            [package]
+            name = "toml11"
+            version = "0.1.0"
+
+            [dependencies]
+            windows-sys = {
+              version = "0.61.2",
+              features = [
+                "Win32_System_Environment",
+                "Win32_Storage_FileSystem",
+                "Win32_System_Memory",
+              ],
+            }
+          TOML
+        )
+      ]
+    end
+
+    it "parses dependency declarations defined with multiline inline tables" do
+      dependency = parser.parse.find { |dep| dep.name == "windows-sys" }
+
+      expect(dependency).not_to be_nil
+      expect(T.must(dependency).requirements.first[:requirement]).to eq("0.61.2")
+    end
+  end
 end

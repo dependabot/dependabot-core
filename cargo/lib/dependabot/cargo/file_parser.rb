@@ -13,6 +13,7 @@ require "dependabot/errors"
 require "dependabot/cargo/registry_fetcher"
 require "dependabot/cargo/language"
 require "dependabot/cargo/package_manager"
+require "dependabot/cargo/toml_parser"
 
 # Relevant Cargo docs can be found at:
 # - https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -402,7 +403,7 @@ module Dependabot
       sig { params(file: DependencyFile).returns(T.untyped) }
       def parsed_file(file)
         @parsed_file ||= T.let({}, T.untyped)
-        @parsed_file[file.name] ||= TomlRB.parse(file.content)
+        @parsed_file[file.name] ||= TomlParser.parse(T.must(file.content))
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end

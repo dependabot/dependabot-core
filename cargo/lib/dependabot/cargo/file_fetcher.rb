@@ -9,6 +9,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
 require "dependabot/cargo/file_parser"
+require "dependabot/cargo/toml_parser"
 
 # Docs on Cargo workspaces:
 # https://doc.rust-lang.org/cargo/reference/manifest.html#the-workspace-section
@@ -31,7 +32,7 @@ module Dependabot
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         channel = if rust_toolchain
-                    TomlRB.parse(T.must(rust_toolchain).content).dig("toolchain", "channel")
+                    TomlParser.parse(T.must(T.must(rust_toolchain).content)).dig("toolchain", "channel")
                   else
                     "default"
                   end
@@ -413,7 +414,7 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Hash[T.untyped, T.untyped]) }
       def parsed_file(file)
-        TomlRB.parse(file.content)
+        TomlParser.parse(T.must(file.content))
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end

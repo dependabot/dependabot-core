@@ -808,6 +808,30 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a Cargo.toml using TOML 1.1 multiline inline tables" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_lockfile.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_manifest_toml_1_1_multiline_inline_table.json"),
+          headers: json_header
+        )
+    end
+
+    it "does not raise a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.files }
+        .not_to raise_error
+    end
+  end
+
   context "without a Cargo.toml" do
     before do
       stub_request(:get, url + "?ref=sha")

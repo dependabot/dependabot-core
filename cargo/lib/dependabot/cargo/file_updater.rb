@@ -8,6 +8,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
+require "dependabot/cargo/toml_parser"
 
 module Dependabot
   module Cargo
@@ -98,7 +99,7 @@ module Dependabot
       def workspace_root_manifest?(file)
         return false unless file.name == "Cargo.toml"
 
-        parsed_file = TomlRB.parse(file.content)
+        parsed_file = TomlParser.parse(file.content)
         parsed_file.key?("workspace") && parsed_file["workspace"].key?("dependencies")
       rescue TomlRB::ParseError
         false

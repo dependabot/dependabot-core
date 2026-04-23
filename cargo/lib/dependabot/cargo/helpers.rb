@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "dependabot/cargo/toml_parser"
 
 module Dependabot
   module Cargo
@@ -33,7 +34,7 @@ module Dependabot
       # transparently, we remove these so Cargo makes plain unauthenticated requests that the proxy can intercept.
       sig { params(config_content: String).returns(String) }
       def self.sanitize_cargo_config(config_content)
-        parsed = TomlRB.parse(config_content)
+        parsed = TomlParser.parse(config_content)
         return config_content unless parsed.is_a?(Hash)
 
         registries = parsed["registries"]

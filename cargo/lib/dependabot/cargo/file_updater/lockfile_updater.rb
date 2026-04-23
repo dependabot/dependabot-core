@@ -10,6 +10,7 @@ require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/helpers"
 require "dependabot/shared_helpers"
+require "dependabot/cargo/toml_parser"
 module Dependabot
   module Cargo
     class FileUpdater
@@ -192,11 +193,11 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def git_previous_version
-          TomlRB.parse(lockfile.content)
-                .fetch("package", [])
-                .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.previous_version) }
-                &.fetch("version")
+          TomlParser.parse(lockfile.content)
+                    .fetch("package", [])
+                    .select { |p| p["name"] == dependency.name }
+                    .find { |p| p["source"].end_with?(dependency.previous_version) }
+                    &.fetch("version")
         end
 
         sig { returns(T.nilable(String)) }
@@ -370,7 +371,7 @@ module Dependabot
 
         sig { params(content: String).returns(String) }
         def pin_version(content)
-          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest = TomlParser.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
             next unless (req = parsed_manifest.dig(type, dependency.name))
@@ -419,14 +420,14 @@ module Dependabot
 
         sig { params(content: String).returns(String) }
         def remove_binary_specifications(content)
-          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest = TomlParser.parse(content)
           parsed_manifest.delete("bin")
           TomlRB.dump(parsed_manifest)
         end
 
         sig { params(content: String).returns(String) }
         def remove_default_run_specification(content)
-          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest = TomlParser.parse(content)
           parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
@@ -448,7 +449,7 @@ module Dependabot
           @git_ssh_requirements_to_swap = {}
 
           [*manifest_files, *path_dependency_files].each do |manifest|
-            parsed_manifest = TomlRB.parse(manifest.content)
+            parsed_manifest = TomlParser.parse(manifest.content)
 
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
               (parsed_manifest[type] || {}).each do |_, details|

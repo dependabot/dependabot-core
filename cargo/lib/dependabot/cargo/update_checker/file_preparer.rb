@@ -7,6 +7,7 @@ require "toml-rb"
 require "dependabot/dependency_file"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/update_checker"
+require "dependabot/cargo/toml_parser"
 
 module Dependabot
   module Cargo
@@ -101,7 +102,7 @@ module Dependabot
         # we're only using the manifest to find the latest resolvable version
         sig { params(content: String, filename: String).returns(String) }
         def replace_version_constraint(content, filename)
-          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest = TomlParser.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
             dependency_names_for_type(parsed_manifest, type).each do |name|
@@ -169,7 +170,7 @@ module Dependabot
 
         sig { params(content: String).returns(String) }
         def replace_git_pin(content)
-          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest = TomlParser.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
             dependency_names_for_type(parsed_manifest, type).each do |name|
@@ -219,7 +220,7 @@ module Dependabot
 
         sig { params(content: String).returns(String) }
         def replace_ssh_urls(content)
-          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest = TomlParser.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
             (parsed_manifest[type] || {}).each do |_, details|
@@ -283,11 +284,11 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(T.must(lockfile).content)
-                .fetch("package", [])
-                .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.version) }
-                .fetch("version")
+          TomlParser.parse(T.must(lockfile).content)
+                    .fetch("package", [])
+                    .select { |p| p["name"] == dependency.name }
+                    .find { |p| p["source"].end_with?(dependency.version) }
+                    .fetch("version")
         end
 
         sig { params(parsed_manifest: T::Hash[String, T.untyped], type: String).returns(T::Array[String]) }

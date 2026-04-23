@@ -9,6 +9,7 @@ require "dependabot/cargo/update_checker"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/version"
 require "dependabot/errors"
+require "dependabot/cargo/toml_parser"
 module Dependabot
   module Cargo
     class UpdateChecker
@@ -102,8 +103,8 @@ module Dependabot
         def fetch_version_from_new_lockfile
           check_rust_workspace_root unless File.exist?("Cargo.lock")
           lockfile_content = File.read("Cargo.lock")
-          versions = TomlRB.parse(lockfile_content).fetch("package")
-                           .select { |p| p["name"] == dependency.name }
+          versions = TomlParser.parse(lockfile_content).fetch("package")
+                               .select { |p| p["name"] == dependency.name }
 
           updated_version =
             if dependency.top_level?
@@ -227,7 +228,7 @@ module Dependabot
           cargo_toml = original_dependency_files
                        .select { |f| f.name.end_with?("../Cargo.toml") }
                        .max_by { |f| f.name.length }
-          return unless TomlRB.parse(T.must(cargo_toml).content)["workspace"]
+          return unless TomlParser.parse(T.must(cargo_toml).content)["workspace"]
 
           msg = "This project is part of a Rust workspace but is not the " \
                 "workspace root." \
@@ -446,7 +447,7 @@ module Dependabot
           return false unless message.include?("native library")
 
           library_count = T.must(prepared_manifest_files).count do |file|
-            package_name = TomlRB.parse(file.content).dig("package", "name")
+            package_name = TomlParser.parse(file.content).dig("package", "name")
             next false unless package_name
 
             message.include?("depended on by `#{package_name} ")
@@ -484,11 +485,11 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          TomlRB.parse(T.must(lockfile).content)
-                .fetch("package", [])
-                .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.version) }
-                .fetch("version")
+          TomlParser.parse(T.must(lockfile).content)
+                    .fetch("package", [])
+                    .select { |p| p["name"] == dependency.name }
+                    .find { |p| p["source"].end_with?(dependency.version) }
+                    .fetch("version")
         end
 
         sig { returns(T.nilable(String)) }
@@ -505,7 +506,7 @@ module Dependabot
 
         sig { params(content: String).returns(String) }
         def sanitized_manifest_content(content)
-          object = TomlRB.parse(content)
+          object = TomlParser.parse(content)
 
           object.delete("bin")
 
