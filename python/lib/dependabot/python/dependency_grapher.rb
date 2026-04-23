@@ -88,7 +88,11 @@ module Dependabot
         )
 
         ephemeral_lockfile = generator.generate
-        return unless ephemeral_lockfile
+        unless ephemeral_lockfile
+          # Set the degraded flag since we won't have all dependencies.
+          errored_fetching_subdependencies!
+          return
+        end
 
         inject_ephemeral_lockfile(ephemeral_lockfile)
         @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
@@ -96,7 +100,9 @@ module Dependabot
         Dependabot.logger.info(
           "Successfully generated ephemeral #{ephemeral_lockfile.name} for dependency graphing"
         )
-      rescue StandardError => e
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        errored_fetching_subdependencies!
+        @subdependency_error = e
         Dependabot.logger.warn(
           "Failed to generate ephemeral lockfile: #{e.message}. " \
           "Dependency versions may not be resolved."

@@ -100,16 +100,35 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
       def safe_fetch_subdependencies(dependency)
-        return [] if @errored_fetching_subdependencies
+        return [] if errored_fetching_subdependencies
 
         fetch_subdependencies(dependency).filter_map do |dependency_name|
           dependencies_by_name[dependency_name]
         end
       rescue StandardError => e
-        @errored_fetching_subdependencies = true
+        errored_fetching_subdependencies!
         @subdependency_error = T.let(e, T.nilable(StandardError))
         Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
         []
+      end
+
+      # TODO(brrygrdn): Replace this with a `degraded` flag and a `reason` string/enum
+      #
+      # Nearly all failure modes we have so far amount to 'we couldn't get the full tree for some reason' which is
+      # semantically the same as failing to fetch subdependences, but it is elides some specific information we
+      # could use to improve user-facing errors in future, e.g.
+      # - Auth failure doing a necessary operation; fix your auth please
+      # - Auth failure generating an ephemeral lockfile; fix your auth -or- check in your lockfile
+      #
+      # The reason this isn't precise enough is that in some ecosystems, the degradation from an ephemeral lockfile
+      # goes further and we cannot actually tell versions of top-level dependencies either.
+      #
+      # To reflect this properly as we expand our ecosystems, setting a generic degraded flag along with user
+      # guidance from the ecosystem-specific implementation will allow us to be clearer on remediation in UIs
+      # in addition to the job logs.
+      sig { void }
+      def errored_fetching_subdependencies!
+        @errored_fetching_subdependencies = true
       end
 
       # Each grapher is expected to implement a method to look up the parents of a given dependency.
