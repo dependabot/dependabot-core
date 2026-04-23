@@ -104,12 +104,13 @@ module Dependabot
           end
 
           if lockfile && !build_system_only_dependency?
-            # Use updated_lockfile_content which might raise if the lockfile doesn't change
             new_content = updated_lockfile_content
 
-            raise "Expected lockfile to change!" if T.must(lockfile).content == new_content
-
-            updated_files << updated_file(file: T.must(lockfile), content: new_content)
+            if T.must(lockfile).content == new_content
+              Dependabot.logger.info("Lockfile content unchanged for #{T.must(dependency).name}; skipping")
+            else
+              updated_files << updated_file(file: T.must(lockfile), content: new_content)
+            end
           end
 
           updated_files

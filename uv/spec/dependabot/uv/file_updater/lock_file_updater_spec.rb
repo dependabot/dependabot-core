@@ -163,8 +163,14 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         allow(updater).to receive(:updated_lockfile_content).and_return(lockfile_content)
       end
 
-      it "raises an error" do
-        expect { updated_files }.to raise_error("Expected lockfile to change!")
+      it "does not include the lockfile in updated files" do
+        lockfile_names = updated_files.map(&:name).select { |n| n.end_with?("uv.lock") }
+        expect(lockfile_names).to be_empty
+      end
+
+      it "still includes the updated pyproject.toml" do
+        pyproject_files = updated_files.select { |f| f.name.end_with?("pyproject.toml") }
+        expect(pyproject_files.length).to eq(1)
       end
     end
 
