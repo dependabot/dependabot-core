@@ -6,11 +6,12 @@ Terraform support for [`dependabot-core`][core-repo].
 
 1. Start a development shell
 
-  ```
-  $ bin/docker-dev-shell terraform
-  ```
+   ```
+   $ bin/docker-dev-shell terraform
+   ```
 
 2. Run tests
+
    ```
    [dependabot-core-dev] ~ $ cd terraform && rspec
    ```
