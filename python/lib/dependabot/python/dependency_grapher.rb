@@ -88,12 +88,6 @@ module Dependabot
         )
 
         ephemeral_lockfile = generator.generate
-        unless ephemeral_lockfile
-          # Set the degraded flag since we won't have all dependencies.
-          errored_fetching_subdependencies!
-          return
-        end
-
         inject_ephemeral_lockfile(ephemeral_lockfile)
         @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
 
