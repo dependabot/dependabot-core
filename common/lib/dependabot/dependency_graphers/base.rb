@@ -115,7 +115,7 @@ module Dependabot
       # TODO(brrygrdn): Replace this with a `degraded` flag and a `reason` string/enum
       #
       # Nearly all failure modes we have so far amount to 'we couldn't get the full tree for some reason' which is
-      # semantically the same as failing to fetch subdependences, but it is elides some specific information we
+      # semantically the same as failing to fetch subdependencies, but it is elides some specific information we
       # could use to improve user-facing errors in future, e.g.
       # - Auth failure doing a necessary operation; fix your auth please
       # - Auth failure generating an ephemeral lockfile; fix your auth -or- check in your lockfile
