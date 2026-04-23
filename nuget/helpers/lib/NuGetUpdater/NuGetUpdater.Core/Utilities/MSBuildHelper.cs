@@ -199,7 +199,6 @@ internal static partial class MSBuildHelper
                 null,
                 false,
                 false,
-                false,
                 false
             ))
             .ToList();

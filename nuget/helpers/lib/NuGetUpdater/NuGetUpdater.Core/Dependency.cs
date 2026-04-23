@@ -12,7 +12,6 @@ public sealed record Dependency(
     ImmutableArray<string>? TargetFrameworks = null,
     bool IsDirect = false,
     bool IsTransitive = false,
-    bool IsOverride = false,
     bool IsUpdate = false,
     string? InfoUrl = null) : IEquatable<Dependency>
 {
@@ -35,7 +34,6 @@ public sealed record Dependency(
                TargetFrameworks.SequenceEqual(other.TargetFrameworks) &&
                IsDirect == other.IsDirect &&
                IsTransitive == other.IsTransitive &&
-               IsOverride == other.IsOverride &&
                IsUpdate == other.IsUpdate &&
                InfoUrl == other.InfoUrl;
     }
@@ -50,7 +48,6 @@ public sealed record Dependency(
         hash.Add(TargetFrameworks);
         hash.Add(IsDirect);
         hash.Add(IsTransitive);
-        hash.Add(IsOverride);
         hash.Add(IsUpdate);
         hash.Add(InfoUrl);
         return hash.ToHashCode();

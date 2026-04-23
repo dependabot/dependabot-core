@@ -62,7 +62,7 @@ public class ProjectBuildFileTests
             new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
             new("GuiLabs.Language.Xml", "1.2.60", DependencyType.PackageReference),
             new("Microsoft.CodeAnalysis.CSharp", null, DependencyType.PackageReference),
-            new("Newtonsoft.Json", "13.0.3", DependencyType.PackageReference, IsUpdate: true, IsOverride: true)
+            new("Newtonsoft.Json", "13.0.3", DependencyType.PackageReference, IsUpdate: true)
         };
 
         var buildFile = GetBuildFile(ProjectCsProj, "Project.csproj");
@@ -95,7 +95,7 @@ public class ProjectBuildFileTests
         var expectedDependencies = new List<Dependency>
         {
             new("Microsoft.CodeAnalysis.Common", "$(RoslynVersion)", DependencyType.GlobalPackageReference),
-            new("Newtonsoft.Json", "13.0.1", DependencyType.PackageVersion, IsOverride: true)
+            new("Newtonsoft.Json", "13.0.1", DependencyType.PackageVersion)
         };
 
         var buildFile = GetBuildFile(DirectoryPackagesProps, "Directory.Packages.props");
