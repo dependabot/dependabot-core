@@ -10,7 +10,6 @@ public sealed record Dependency(
     DependencyType Type,
     EvaluationResult? EvaluationResult = null,
     ImmutableArray<string>? TargetFrameworks = null,
-    bool IsDevDependency = false,
     bool IsDirect = false,
     bool IsTransitive = false,
     bool IsOverride = false,
@@ -34,7 +33,6 @@ public sealed record Dependency(
                Type == other.Type &&
                EvaluationResult == other.EvaluationResult &&
                TargetFrameworks.SequenceEqual(other.TargetFrameworks) &&
-               IsDevDependency == other.IsDevDependency &&
                IsDirect == other.IsDirect &&
                IsTransitive == other.IsTransitive &&
                IsOverride == other.IsOverride &&
@@ -50,7 +48,6 @@ public sealed record Dependency(
         hash.Add(Type);
         hash.Add(EvaluationResult);
         hash.Add(TargetFrameworks);
-        hash.Add(IsDevDependency);
         hash.Add(IsDirect);
         hash.Add(IsTransitive);
         hash.Add(IsOverride);
