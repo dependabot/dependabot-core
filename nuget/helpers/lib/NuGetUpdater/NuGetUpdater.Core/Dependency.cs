@@ -10,7 +10,7 @@ public sealed record Dependency(
     DependencyType Type,
     EvaluationResult? EvaluationResult = null,
     ImmutableArray<string>? TargetFrameworks = null,
-    bool IsTransitive = false,
+    bool IsTopLevel = true,
     bool IsUpdate = false,
     string? InfoUrl = null) : IEquatable<Dependency>
 {
@@ -31,7 +31,7 @@ public sealed record Dependency(
                Type == other.Type &&
                EvaluationResult == other.EvaluationResult &&
                TargetFrameworks.SequenceEqual(other.TargetFrameworks) &&
-               IsTransitive == other.IsTransitive &&
+               IsTopLevel == other.IsTopLevel &&
                IsUpdate == other.IsUpdate &&
                InfoUrl == other.InfoUrl;
     }
@@ -44,7 +44,7 @@ public sealed record Dependency(
         hash.Add(Type);
         hash.Add(EvaluationResult);
         hash.Add(TargetFrameworks);
-        hash.Add(IsTransitive);
+        hash.Add(IsTopLevel);
         hash.Add(IsUpdate);
         hash.Add(InfoUrl);
         return hash.ToHashCode();

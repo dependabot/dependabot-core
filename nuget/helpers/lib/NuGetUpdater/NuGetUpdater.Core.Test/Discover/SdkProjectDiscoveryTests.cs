@@ -44,7 +44,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     Dependencies =
                     [
                         new("Top.Level.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
-                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                     ],
                     ImportedFiles = [],
                     TargetFrameworks = ["net8.0"],
@@ -92,7 +92,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         // dependencies come from `Directory.Build.targets`, but it's through the evaluation of `src/library.csproj` that it's found
                         new("Top.Level.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
-                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                     ],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
@@ -150,7 +150,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     Dependencies =
                     [
                         new("Top.Level.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
-                        new("Dependency.From.Other.Project", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                        new("Dependency.From.Other.Project", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                     ],
                     ImportedFiles = [],
                     ReferencedProjectPaths = [
@@ -217,8 +217,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     Dependencies =
                     [
                         // these are all transitive through the ProjectReference
-                        new("Top.Level.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                        new("Top.Level.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                     ],
                     ImportedFiles = [],
                     ReferencedProjectPaths = [
@@ -233,7 +233,7 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     Dependencies =
                     [
                         new("Top.Level.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
-                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                     ],
                     ImportedFiles = [],
                     TargetFrameworks = ["net8.0"],
@@ -524,8 +524,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     Dependencies =
                     [
                         new("Some.Dependency", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
-                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
-                        new("Super.Transitive.Dependency", "7.8.9", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                        new("Transitive.Dependency", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false),
+                        new("Super.Transitive.Dependency", "7.8.9", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false),
                     ],
                     ImportedFiles = [],
                     TargetFrameworks = ["net9.0"],

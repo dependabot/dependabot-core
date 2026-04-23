@@ -27,7 +27,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         {
             // this package ships with the SDK and is automatically added for F# projects but should be manually added here to make the test consistent
             // only direct package discovery finds this, though
-            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true));
+            expectedDependencies.Add(new Dependency("FSharp.Core", MockNuGetPackage.FSharpCorePackageVersion.Value, DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false));
         }
 
         await TestDiscoveryAsync(
@@ -644,7 +644,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "project.csproj",
                         TargetFrameworks = ["net9.0"],
                         Dependencies = [
-                            new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                            new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -1629,7 +1629,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net9.0"],
                         Dependencies = [
                             new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
-                            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true),
+                            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1701,7 +1701,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             FilePath = "src/project.csproj",
             Dependencies = [
                 new("Package.A", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]), // duplicate package; latest wins
-                new("Package.B", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTransitive: true)
+                new("Package.B", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsTopLevel: false)
             ],
             IsSuccess = true,
             Error = null,
@@ -1720,13 +1720,13 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         Assert.Equal("Package.A", merged.Dependencies[0].Name);
         Assert.Equal("2.0.0", merged.Dependencies[0].Version);
         Assert.Equal(DependencyType.PackageReference, merged.Dependencies[0].Type);
-        Assert.False(merged.Dependencies[0].IsTransitive);
+        Assert.True(merged.Dependencies[0].IsTopLevel);
         AssertEx.Equal(["net9.0"], merged.Dependencies[0].TargetFrameworks);
 
         Assert.Equal("Package.B", merged.Dependencies[1].Name);
         Assert.Equal("3.0.0", merged.Dependencies[1].Version);
         Assert.Equal(DependencyType.Unknown, merged.Dependencies[1].Type);
-        Assert.True(merged.Dependencies[1].IsTransitive);
+        Assert.False(merged.Dependencies[1].IsTopLevel);
         AssertEx.Equal(["net9.0"], merged.Dependencies[1].TargetFrameworks);
 
         Assert.True(merged.IsSuccess);

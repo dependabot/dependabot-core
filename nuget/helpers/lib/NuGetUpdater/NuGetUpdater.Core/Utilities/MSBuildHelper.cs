@@ -197,7 +197,7 @@ internal static partial class MSBuildHelper
                 DependencyType.Unknown,
                 null,
                 null,
-                false,
+                true,
                 false
             ))
             .ToList();

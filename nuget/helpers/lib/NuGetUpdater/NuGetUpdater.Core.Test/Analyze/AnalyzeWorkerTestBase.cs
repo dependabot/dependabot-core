@@ -73,7 +73,7 @@ public class AnalyzeWorkerTestBase : TestBase
                 Assert.Equal(expectedDependency.Version, actualDependency.Version);
                 Assert.Equal(expectedDependency.Type, actualDependency.Type);
                 AssertEx.Equal(expectedDependency.TargetFrameworks, actualDependency.TargetFrameworks);
-                Assert.Equal(expectedDependency.IsTransitive, actualDependency.IsTransitive);
+                Assert.Equal(expectedDependency.IsTopLevel, actualDependency.IsTopLevel);
                 Assert.Equal(expectedDependency.InfoUrl, actualDependency.InfoUrl);
             }
         }

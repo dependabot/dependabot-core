@@ -84,7 +84,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             .Select(NuGetFramework.Parse)
             .ToImmutableArray();
         var propertyBasedDependencies = discovery.Projects.SelectMany(p
-            => p.Dependencies.Where(d => !d.IsTransitive &&
+            => p.Dependencies.Where(d => d.IsTopLevel &&
                 d.EvaluationResult?.RootPropertyName is not null)
             ).ToImmutableArray();
         var dotnetToolsHasDependency = discovery.DotNetToolsJson?.Dependencies.Any(d => d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase)) == true;
@@ -193,11 +193,11 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             return true;
         }
 
-        // Since the dependency is not vulnerable, we only need to update if it is not transitive.
+        // Since the dependency is not vulnerable, we only need to update if it is a top-level dependency.
         return projectsWithDependency.Any(p =>
             p.Dependencies.Any(d =>
                 d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase) &&
-                !d.IsTransitive));
+                d.IsTopLevel));
     }
 
     private static Task<WorkspaceDiscoveryResult> DeserializeWorkspaceDiscoveryResultFileAsync(string path)
@@ -392,7 +392,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         // When updating peer dependencies, we only need to consider top-level dependencies.
         var projectDependencyNames = projectsWithDependency
             .SelectMany(p => p.Dependencies)
-            .Where(d => !d.IsTransitive)
+            .Where(d => d.IsTopLevel)
             .Select(d => d.Name)
             .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -427,7 +427,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     {
         var packageDeclarationsUsingProperty = discovery.Projects
             .SelectMany(p =>
-                p.Dependencies.Where(d => !d.IsTransitive &&
+                p.Dependencies.Where(d => d.IsTopLevel &&
                     d.Name.Equals(packageId, StringComparison.OrdinalIgnoreCase) &&
                     d.EvaluationResult?.RootPropertyName is not null)
             ).ToImmutableArray();
