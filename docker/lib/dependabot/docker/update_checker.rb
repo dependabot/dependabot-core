@@ -391,6 +391,25 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
+      rescue DockerRegistry2::NotFound => e
+        # Multi-arch / OCI images expose a manifest-list digest that is not directly
+        # addressable via the blobs endpoint, so the HEAD request returns 404. In that
+        # case we cannot determine the tag's publication date; log and return nil so
+        # the cooldown check falls back gracefully instead of crashing the whole job.
+        Dependabot.logger.warn(
+          "Could not determine publication date for #{docker_repo_name}:#{tag.name} " \
+          "(registry returned 404 for blob or manifest): #{e.message}"
+        )
+        nil
+      rescue DockerRegistry2::RegistryAuthenticationException, RestClient::Forbidden => e
+        # Some registries (e.g. lscr.io) deny unauthenticated access to certain blob
+        # endpoints used for cooldown verification. Treat this as "unknown publication
+        # date" rather than failing the entire update job.
+        Dependabot.logger.warn(
+          "Could not determine publication date for #{docker_repo_name}:#{tag.name} " \
+          "(registry denied access): #{e.message}"
+        )
+        nil
       end
 
       sig do
