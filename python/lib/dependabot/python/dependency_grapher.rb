@@ -94,7 +94,7 @@ module Dependabot
         Dependabot.logger.info(
           "Successfully generated ephemeral #{ephemeral_lockfile.name} for dependency graphing"
         )
-      rescue SharedHelpers::HelperSubprocessFailed => e
+      rescue StandardError => e
         errored_fetching_subdependencies!
         @subdependency_error = e
         Dependabot.logger.warn(
