@@ -826,9 +826,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         )
     end
 
-    it "does not raise a DependencyFileNotParseable error" do
-      expect { file_fetcher_instance.files }
-        .not_to raise_error
+    it "fetches files successfully" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to include("Cargo.toml")
     end
   end
 

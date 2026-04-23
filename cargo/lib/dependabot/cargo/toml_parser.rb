@@ -114,7 +114,6 @@ module Dependabot
       end
 
       # This parser is intentionally a character-level state machine.
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(content: String).returns(String) }
       def self.squish_whitespace_outside_strings(content)
         output = +""
@@ -122,24 +121,20 @@ module Dependabot
         quote_char = T.let(nil, T.nilable(String))
         escaped = T.let(false, T::Boolean)
         pending_space = T.let(false, T::Boolean)
+        index = T.let(0, Integer)
 
-        content.each_char do |char|
+        while index < content.length
+          char = T.must(content[index])
+
           if in_string
             output << char
-            if escaped
-              escaped = false
-            elsif char == "\\"
-              escaped = true
-            elsif char == quote_char
-              in_string = false
-            end
+            escaped, in_string = update_string_state(char, quote_char, escaped, in_string)
+            index += 1
             next
           end
 
-          if char.match?(/\s/)
-            pending_space = true
-            next
-          end
+          index, pending_space, consumed = consume_comment_or_whitespace(content, index, char, pending_space)
+          next if consumed
 
           output << " " if pending_space && !output.empty?
           pending_space = false
@@ -150,11 +145,51 @@ module Dependabot
           end
 
           output << char
+          index += 1
         end
 
         output
       end
-      # rubocop:enable Metrics/PerceivedComplexity
+
+      sig do
+        params(
+          char: String,
+          quote_char: T.nilable(String),
+          escaped: T::Boolean,
+          in_string: T::Boolean
+        ).returns([T::Boolean, T::Boolean])
+      end
+      def self.update_string_state(char, quote_char, escaped, in_string)
+        if escaped
+          [false, in_string]
+        elsif char == "\\"
+          [true, in_string]
+        elsif char == quote_char
+          [false, false]
+        else
+          [false, in_string]
+        end
+      end
+
+      sig do
+        params(
+          content: String,
+          index: Integer,
+          char: String,
+          pending_space: T::Boolean
+        ).returns([Integer, T::Boolean, T::Boolean])
+      end
+      def self.consume_comment_or_whitespace(content, index, char, pending_space)
+        if char == "#"
+          next_newline = content.index("\n", index)
+          new_index = next_newline ? next_newline + 1 : content.length
+          return [new_index, true, true]
+        end
+
+        return [index + 1, true, true] if char.match?(/\s/)
+
+        [index, pending_space, false]
+      end
     end
   end
 end

@@ -228,7 +228,7 @@ module Dependabot
           cargo_toml = original_dependency_files
                        .select { |f| f.name.end_with?("../Cargo.toml") }
                        .max_by { |f| f.name.length }
-          return unless TomlParser.parse(T.must(cargo_toml).content)["workspace"]
+          return unless TomlParser.parse(T.must(T.must(cargo_toml).content))["workspace"]
 
           msg = "This project is part of a Rust workspace but is not the " \
                 "workspace root." \
@@ -447,7 +447,7 @@ module Dependabot
           return false unless message.include?("native library")
 
           library_count = T.must(prepared_manifest_files).count do |file|
-            package_name = TomlParser.parse(file.content).dig("package", "name")
+            package_name = TomlParser.parse(T.must(file.content)).dig("package", "name")
             next false unless package_name
 
             message.include?("depended on by `#{package_name} ")
@@ -485,7 +485,7 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          TomlParser.parse(T.must(lockfile).content)
+          TomlParser.parse(T.must(T.must(lockfile).content))
                     .fetch("package", [])
                     .select { |p| p["name"] == dependency.name }
                     .find { |p| p["source"].end_with?(dependency.version) }

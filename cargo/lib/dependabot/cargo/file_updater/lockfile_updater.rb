@@ -193,7 +193,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def git_previous_version
-          TomlParser.parse(lockfile.content)
+          TomlParser.parse(T.must(lockfile.content))
                     .fetch("package", [])
                     .select { |p| p["name"] == dependency.name }
                     .find { |p| p["source"].end_with?(dependency.previous_version) }
@@ -449,7 +449,7 @@ module Dependabot
           @git_ssh_requirements_to_swap = {}
 
           [*manifest_files, *path_dependency_files].each do |manifest|
-            parsed_manifest = TomlParser.parse(manifest.content)
+            parsed_manifest = TomlParser.parse(T.must(manifest.content))
 
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
               (parsed_manifest[type] || {}).each do |_, details|

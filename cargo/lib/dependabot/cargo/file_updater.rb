@@ -99,7 +99,7 @@ module Dependabot
       def workspace_root_manifest?(file)
         return false unless file.name == "Cargo.toml"
 
-        parsed_file = TomlParser.parse(file.content)
+        parsed_file = TomlParser.parse(T.must(file.content))
         parsed_file.key?("workspace") && parsed_file["workspace"].key?("dependencies")
       rescue TomlRB::ParseError
         false

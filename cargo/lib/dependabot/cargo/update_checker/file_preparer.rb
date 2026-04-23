@@ -284,7 +284,7 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          TomlParser.parse(T.must(lockfile).content)
+          TomlParser.parse(T.must(T.must(lockfile).content))
                     .fetch("package", [])
                     .select { |p| p["name"] == dependency.name }
                     .find { |p| p["source"].end_with?(dependency.version) }
