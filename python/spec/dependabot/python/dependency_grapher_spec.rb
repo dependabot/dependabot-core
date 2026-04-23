@@ -253,10 +253,18 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
 
     context "when poetry.lock is not present" do
+      let(:ephemeral_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
       let(:lockfile_generator) do
         instance_double(
           Dependabot::Python::DependencyGrapher::LockfileGenerator,
-          generate: nil
+          generate: ephemeral_lockfile
         )
       end
 
@@ -273,32 +281,6 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
             credentials: []
           )
         expect(lockfile_generator).to have_received(:generate)
-      end
-
-      context "when lockfile generation fails" do
-        it "sets the errored_fetching_subdependencies flag" do
-          grapher.resolved_dependencies
-
-          expect(grapher.errored_fetching_subdependencies).to be(true)
-        end
-
-        it "returns dependencies without relationship data" do
-          resolved_dependencies = grapher.resolved_dependencies
-
-          resolved_dependencies.each_value do |dep|
-            expect(dep.dependencies).to eq([])
-          end
-        end
-
-        it "returns PURLs without resolved versions" do
-          resolved_dependencies = grapher.resolved_dependencies
-
-          expect(resolved_dependencies.keys).to include(
-            "pkg:pypi/flask",
-            "pkg:pypi/requests",
-            "pkg:pypi/ruff"
-          )
-        end
       end
 
       context "when lockfile generation raises an error" do
@@ -326,6 +308,16 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
           expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
           expect(grapher.subdependency_error.message).to include("poetry lock failed")
+        end
+
+        it "returns PURLs without resolved versions" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies.keys).to include(
+            "pkg:pypi/flask",
+            "pkg:pypi/requests",
+            "pkg:pypi/ruff"
+          )
         end
 
         it "returns dependencies without relationship data" do
