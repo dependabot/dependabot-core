@@ -44,7 +44,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_generation_error(e)
-          nil
+          raise
         end
 
         private
@@ -80,8 +80,8 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def read_generated_lockfile
           unless File.exist?(LOCKFILE_NAME)
-            Dependabot.logger.warn("#{LOCKFILE_NAME} was not generated")
-            return nil
+            Dependabot.logger.error("#{LOCKFILE_NAME} was not generated")
+            raise Dependabot::DependencyFileNotEvaluatable.new("#{LOCKFILE_NAME} was not generated")
           end
 
           content = File.read(LOCKFILE_NAME)
