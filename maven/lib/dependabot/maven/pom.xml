@@ -5,12 +5,13 @@
   This build is not used directly within the native helper.
   The goal is to help automate the maintenance overhead of keeping the version of maven-dependency-plugin up to date.
 
-    1. We read the maven-dependency-plugin.version version dynamically from the native_helper
+    1. We read the versions dynamically from the native_helper
     2. We use Dependabot keep the version up to date
   -->
 
   <properties>
     <maven-dependency-plugin.version>3.10.0</maven-dependency-plugin.version>
+    <maven-wrapper-plugin.version>3.3.4</maven-wrapper-plugin.version>
   </properties>
 
   <dependencies>
@@ -18,6 +19,11 @@
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-dependency-plugin</artifactId>
       <version>${maven-dependency-plugin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-wrapper-plugin</artifactId>
+      <version>${maven-wrapper-plugin.version}</version>
     </dependency>
   </dependencies>
 </project>

@@ -175,6 +175,10 @@ updates:
       time: "16:00"
   - package-ecosystem: "maven"
     directory: "/maven/lib/dependabot/maven/"
+    groups:
+      maven-plugins:
+        patterns:
+          - "org.apache.maven.plugins:*"
     schedule:
       interval: "weekly"
       day: "sunday"

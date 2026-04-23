@@ -1,0 +1,18 @@
+{
+  "name": "maven-wrapper.jar",
+  "path": ".mvn/wrapper/maven-wrapper.jar",
+  "sha": "fgh678ij9012fgh678ij9012fgh678ij9012fgh6",
+  "size": 51441,
+  "url": "https://api.github.com/repos/gocardless/business/contents/.mvn/wrapper/maven-wrapper.jar?ref=master",
+  "html_url": "https://github.com/gocardless/business/blob/master/.mvn/wrapper/maven-wrapper.jar",
+  "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/fgh678ij9012fgh678ij9012fgh678ij9012fgh6",
+  "download_url": "https://raw.githubusercontent.com/gocardless/business/master/.mvn/wrapper/maven-wrapper.jar",
+  "type": "file",
+  "content": "UEsDBBQAAAAIAAAAAAAAAAAAAAAAAAAAAAoAAABtZXRhLWluZg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/business/contents/.mvn/wrapper/maven-wrapper.jar?ref=master",
+    "git": "https://api.github.com/repos/gocardless/business/git/blobs/fgh678ij9012fgh678ij9012fgh678ij9012fgh6",
+    "html": "https://github.com/gocardless/business/blob/master/.mvn/wrapper/maven-wrapper.jar"
+  }
+}
