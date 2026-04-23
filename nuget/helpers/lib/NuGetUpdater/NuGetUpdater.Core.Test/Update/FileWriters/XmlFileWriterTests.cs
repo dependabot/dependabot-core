@@ -2031,4 +2031,34 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    [Fact]
+    public async Task NewReference_AtStartOfItemGroup_HonorsIndentation()
+    {
+        // this test requires tabs and rather than deal with various editor states, a tab character is explicitly included
+        var tb = '\t';
+        await TestAsync(
+            files: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    {tb}<ItemGroup>
+                    {tb}{tb}<AdditionalFiles Include="some-resource.json" />
+                    {tb}</ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["This.Package.Gets.Pinned/4.5.5"],
+            requiredDependencyStrings: ["This.Package.Gets.Pinned/4.5.6"],
+            expectedFiles: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    {tb}<ItemGroup>
+                    {tb}{tb}<PackageReference Include="This.Package.Gets.Pinned" Version="4.5.6" />
+                    {tb}{tb}<AdditionalFiles Include="some-resource.json" />
+                    {tb}</ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }

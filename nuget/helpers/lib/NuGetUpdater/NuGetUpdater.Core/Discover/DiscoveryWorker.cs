@@ -318,7 +318,20 @@ public partial class DiscoveryWorker : IDiscoveryWorker
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
         var normalizedProjectPaths = projectPaths.SelectMany(p => PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(p, repoRootPath) ?? []).Distinct().ToImmutableArray();
-        var disposables = normalizedProjectPaths.Select(p => new SpecialImportsConditionPatcher(p)).ToImmutableArray();
+
+        // Find all MSBuild files that may contain special imports
+        var enumerationOptions = new EnumerationOptions()
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+        };
+        var msbuildExtensions = new[] { ".props", ".targets", ".proj", ".csproj", ".vbproj", ".fsproj" };
+        var filesToPatch = Directory.GetFiles(repoRootPath, "*.*", enumerationOptions)
+            .Where(f => msbuildExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+            .ToImmutableArray();
+
+        var disposables = filesToPatch.Select(p => new SpecialImportsConditionPatcher(p)).ToImmutableArray();
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
 
         try
@@ -411,10 +424,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         var mergedDependencies = mergedDependenciesSet.Values
             .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
             .ToImmutableArray();
-        var mergedProperties = result1.Properties.Concat(result2.Properties)
-            .DistinctBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(p => p.Name)
-            .ToImmutableArray();
         var mergedTargetFrameworks = result1.TargetFrameworks.Concat(result2.TargetFrameworks)
             .Select(t =>
             {
@@ -450,7 +459,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             Dependencies = mergedDependencies,
             IsSuccess = result1.IsSuccess && result2.IsSuccess,
             Error = result1.Error ?? result2.Error,
-            Properties = mergedProperties,
             TargetFrameworks = mergedTargetFrameworks,
             ReferencedProjectPaths = mergedReferencedProjects,
             ImportedFiles = mergedImportedFiles,

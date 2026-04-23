@@ -41,7 +41,6 @@ public class UpdatedDependencyListTests
                         new("Microsoft.Extensions.DependencyModel", "6.0.0", DependencyType.PackageReference, TargetFrameworks: ["net6.0"]),
                     ],
                     IsSuccess = true,
-                    Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
@@ -53,7 +52,6 @@ public class UpdatedDependencyListTests
                     Dependencies = [
                     ],
                     IsSuccess = true,
-                    Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
@@ -67,7 +65,6 @@ public class UpdatedDependencyListTests
                         new("Newtonsoft.Json", "13.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net6.0"]),
                     ],
                     IsSuccess = true,
-                    Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],

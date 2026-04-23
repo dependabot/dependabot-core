@@ -60,10 +60,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = Path.GetFileName(projectPath),
                         TargetFrameworks = ["net8.0"],
                         Dependencies = expectedDependencies.ToImmutableArray(),
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", projectPath),
-                            new("TargetFramework", "net8.0", projectPath),
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -105,9 +101,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net472"],
                         Dependencies = [
                             new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net472"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net472", "src/project.csproj"),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -152,10 +145,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
-                            new("TargetFramework", "net8.0", "src/project.csproj"),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -203,10 +192,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
-                            new("TargetFramework", "net8.0", "src/project.csproj"),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -293,9 +278,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                         ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/test/project1/project1.csproj"),
-                        ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
                     },
@@ -306,9 +288,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ReferencedProjectPaths = [],
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/TEST/project2/project2.csproj"),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -355,10 +334,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
-                            new("TargetFramework", "net8.0", "src/project.csproj"),
                         ],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -414,7 +389,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                         ],
-                        Properties = [],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [
@@ -472,9 +446,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/project.csproj")
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -587,9 +558,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
                         ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj")
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
                             "../Directory.Build.props",
@@ -678,9 +646,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
                         ],
-                        Properties = [
-                            new("TargetFramework", "net9.0", "src/project.csproj")
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
                             "../Directory.Build.props",
@@ -767,9 +732,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net9.0"],
                         Dependencies = [
                             new("Transitive.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net9.0", "src/project.csproj")
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -860,9 +822,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "client/client.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [new("Package.A", "1.2.3", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net8.0"])],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/client/client.csproj"),
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -872,9 +831,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "server/server.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [new("Package.B", "4.5.6", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net8.0"])],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "src/server/server.csproj"),
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -925,9 +881,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net7.0"],
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0", "src/project.csproj")
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1008,9 +961,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net7.0", "net8.0"],
                         Dependencies = [
                             new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [
@@ -1094,9 +1044,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", @"src/supported.csproj"),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1436,9 +1383,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
                         ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "project.csproj"),
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -1571,10 +1515,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
                         ],
-                        Properties = [
-                            new("RestoreUseStaticGraphEvaluation", "true", "project.csproj"),
-                            new("TargetFramework", "net8.0", "project.csproj"),
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -1645,11 +1585,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                             new("Package1", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
                             new("Package2", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
                         ],
-                        Properties = [
-                            new("MSBuildTreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
-                            new("TargetFramework", "net9.0", "src/project.csproj"),
-                            new("TreatWarningsAsErrors", "false", "src/project.csproj"), // this was specifically overridden by discovery
-                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = ["Directory.Packages.props"],
                         AdditionalFiles = [],
@@ -1695,9 +1630,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"], IsDirect: true),
                             new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net9.0"], IsDirect: false, IsTransitive: true),
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net9.0", "src/project.csproj"),
                         ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
@@ -1758,7 +1690,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             Dependencies = [new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net9.0"], IsDirect: true)],
             IsSuccess = true,
             Error = null,
-            Properties = [new("PropertyA", "Uno", "src/project.csproj")],
             TargetFrameworks = ["net8.0"],
             ReferencedProjectPaths = ["referenced/a.csproj"],
             ImportedFiles = ["imported/a.props"],
@@ -1774,7 +1705,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ],
             IsSuccess = true,
             Error = null,
-            Properties = [new("PropertyB", "Dos", "src/project.csproj")],
             TargetFrameworks = ["net9.0"],
             ReferencedProjectPaths = ["referenced/b.csproj"],
             ImportedFiles = ["imported/b.props"],
@@ -1803,13 +1733,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
 
         Assert.True(merged.IsSuccess);
         Assert.Null(merged.Error);
-
-        AssertEx.Equal(
-            [
-                new("PropertyA", "Uno", "src/project.csproj"),
-                new("PropertyB", "Dos", "src/project.csproj"),
-            ],
-            merged.Properties);
 
         AssertEx.Equal(["net8.0", "net9.0"], merged.TargetFrameworks);
         AssertEx.Equal(["referenced/a.csproj", "referenced/b.csproj"], merged.ReferencedProjectPaths);
