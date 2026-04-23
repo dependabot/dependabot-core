@@ -6,6 +6,8 @@ require "rexml/document"
 require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/experiments"
+require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
@@ -14,31 +16,57 @@ module Dependabot
 
       require_relative "file_updater/declaration_finder"
       require_relative "file_updater/property_value_updater"
+      require_relative "file_updater/wrapper_updater"
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
+        all_updated = collect_wrapper_updates + collect_pom_updates
+        raise "No files changed!" if all_updated.none?
 
+        all_updated
+      end
+
+      private
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def collect_wrapper_updates
+        return [] unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+
+        buildfile = dependency_files.find { |f| f.name == "pom.xml" }
+        return [] unless buildfile
+
+        updated = T.let([], T::Array[Dependabot::DependencyFile])
+        dependencies.each do |dependency|
+          next unless Distributions.distribution_requirements?(dependency.requirements)
+
+          wu = WrapperUpdater.new(
+            dependency_files: dependency_files,
+            dependency: dependency,
+            credentials: credentials
+          )
+          updated += wu.update_files(buildfile)
+        end
+        updated
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def collect_pom_updates
         # Loop through each of the changed requirements, applying changes to
         # all pom and extensions files for that change. Note that the logic
         # is different here to other package managers because Maven has property
         # inheritance across files
+        updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
         dependencies.each do |dependency|
+          next if Distributions.distribution_requirements?(dependency.requirements)
+
           updated_files = update_files_for_dependency(
             original_files: updated_files,
             dependency: dependency
           )
         end
-
-        updated_files.select! { |f| f.name.end_with?(".xml") }
-        updated_files.reject! { |f| dependency_files.include?(f) }
-
-        raise "No files changed!" if updated_files.none?
-
-        updated_files
+        updated_files.select { |f| f.name.end_with?(".xml") }
+                     .reject { |f| dependency_files.include?(f) }
       end
-
-      private
 
       sig { override.void }
       def check_required_files
