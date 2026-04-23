@@ -1,0 +1,6 @@
+github.com/dependabot/vgotest v1.0.0 h1:YGGJqd4TlbIZYhPR8VVnRDVIJd/XHBZ2rM7nQrWr8Y=
+github.com/dependabot/vgotest v1.0.0/go.mod h1:sLKRsKnLMZA6QVdJmV4VQz8eiuJz9hQdXZV5j7QKsQ=
+rsc.io/quote v1.5.2 h1:w5fcysjrx7yqtD/aO+QwRjYZOKnaM9Uh2b40tElTs3Y=
+rsc.io/quote v1.5.2/go.mod h1:LzX7hefJvL54yjefDEDHNONDjII0t9xZLPXsUe+TKr0=
+rsc.io/sampler v1.3.0 h1:7uVkIFmeBqHfdjD+gZwtXXI+RODJ2Wc4O7MPEh/QiW4=
+rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=

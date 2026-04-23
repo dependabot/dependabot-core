@@ -39,7 +39,11 @@ module Dependabot
       def updated_dependency_files
         updated_files = []
 
-        if go_mod && dependency_changed?(T.must(go_mod))
+        if workspace?
+          # Handle workspace mode - update all workspace module files
+          updated_files.concat(updated_workspace_module_files)
+        elsif go_mod && dependency_changed?(T.must(go_mod))
+          # Single module mode
           updated_files <<
             updated_file(
               file: T.must(go_mod),
@@ -75,9 +79,9 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        return if go_mod
+        return if go_mod || go_work
 
-        raise "No go.mod!"
+        raise "No go.mod or go.work!"
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -88,6 +92,52 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_sum
         @go_sum ||= T.let(get_original_file("go.sum"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_workspace_module_files
+        updated = []
+        workspace_files = file_updater.updated_workspace_files
+
+        # Process each workspace module's files
+        # Keys are actual file paths (e.g., "tools/go.mod")
+        workspace_files.each do |file_path, content|
+          # Find the original file by its path
+          original = dependency_files.find { |f| f.name == file_path }
+          next unless original
+
+          # Only include if content changed
+          updated << updated_file(file: original, content: content) if original.content != content
+        end
+
+        # Also handle root go.mod and go.sum if present
+        if go_mod && file_updater.updated_go_mod_content &&
+           T.must(go_mod).content != file_updater.updated_go_mod_content
+          updated << updated_file(
+            file: T.must(go_mod),
+            content: T.must(file_updater.updated_go_mod_content)
+          )
+        end
+
+        if go_sum && file_updater.updated_go_sum_content &&
+           T.must(go_sum).content != file_updater.updated_go_sum_content
+          updated << updated_file(
+            file: T.must(go_sum),
+            content: T.must(file_updater.updated_go_sum_content)
+          )
+        end
+
+        updated
       end
 
       sig { returns(T.nilable(String)) }

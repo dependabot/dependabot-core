@@ -1,0 +1,4 @@
+github.com/dependabot/vgotest v1.0.0 h1:YGGJqd4TlbIZYhPR8VVnRDVIJd/XHBZ2rM7nQrWr8Y=
+github.com/dependabot/vgotest v1.0.0/go.mod h1:sLKRsKnLMZA6QVdJmV4VQz8eiuJz9hQdXZV5j7QKsQ=
+golang.org/x/tools v0.1.0 h1:po9/4sTYwZU9lPhi1tOrb4hCv3qrhiQ77LZfGa2OjwY=
+golang.org/x/tools v0.1.0/go.mod h1:xkSsbof2nBLbhDlRMhhhyNLN/zl3eTqcnHD5viDpcZ0=
