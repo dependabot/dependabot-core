@@ -276,6 +276,12 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
 
       context "when lockfile generation fails" do
+        it "sets the errored_fetching_subdependencies flag" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
         it "returns dependencies without relationship data" do
           resolved_dependencies = grapher.resolved_dependencies
 
@@ -292,6 +298,42 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
             "pkg:pypi/requests",
             "pkg:pypi/ruff"
           )
+        end
+      end
+
+      context "when lockfile generation raises an error" do
+        let(:lockfile_generator) do
+          instance_double(
+            Dependabot::Python::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "poetry lock failed: authentication required",
+                error_context: {}
+              )
+            )
+          end
+        end
+
+        it "sets the error flag for degraded status" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
+        it "preserves the original error as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect(grapher.subdependency_error.message).to include("poetry lock failed")
+        end
+
+        it "returns dependencies without relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          resolved_dependencies.each_value do |dep|
+            expect(dep.dependencies).to eq([])
+          end
         end
       end
 
