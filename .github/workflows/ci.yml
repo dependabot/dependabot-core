@@ -48,7 +48,6 @@ jobs:
           - { path: python, name: python_slow, ecosystem: pip }
           - { path: python, name: python, ecosystem: pip }
           - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
-          - { path: sbt, name: sbt, ecosystem: sbt }
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
           - { path: opentofu, name: opentofu, ecosystem: opentofu }
