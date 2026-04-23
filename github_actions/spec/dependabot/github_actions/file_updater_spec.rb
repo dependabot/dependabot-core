@@ -688,6 +688,118 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/second/exec@exec/2.0.0\n" }
       end
+
+      context "with multiple path based actions pinned to distinct shas" do
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_monorepo_path_based_sha_comments.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "grafana/shared-workflows",
+            version: "0.2.2",
+            previous_version: "0.2.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "ae92934a14a48b94494dbc06d74a81d47fe08a40",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/create-github-app-token@ae92934a14a48b94494dbc06d74a81d47fe08a40"
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "f1614b210386ac420af6807a997ac7f6d96e477a",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "eb02241ed0a92aff205feab8ac3afcdf51c757c8",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/create-github-app-token@eb02241ed0a92aff205feab8ac3afcdf51c757c8"
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/grafana/shared-workflows",
+                ref: "9f37f656e063f0ad0b0bfc38d49894b57d363936",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936"
+              }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha) do |ref|
+            case ref
+            when "eb02241ed0a92aff205feab8ac3afcdf51c757c8"
+              ["create-github-app-token/v0.2.0"]
+            when "9f37f656e063f0ad0b0bfc38d49894b57d363936"
+              ["get-vault-secrets/v1.2.1"]
+            else
+              []
+            end
+          end
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            case ref
+            when "ae92934a14a48b94494dbc06d74a81d47fe08a40"
+              "create-github-app-token/v0.2.2"
+            when "f1614b210386ac420af6807a997ac7f6d96e477a"
+              "get-vault-secrets/v1.3.1"
+            end
+          end
+        end
+
+        it "updates each declaration independently" do
+          expect(updated_workflow_file.content).to include(
+            "grafana/shared-workflows/actions/create-github-app-token@ae92934a14a48b94494dbc06d74a81d47fe08a40"
+          )
+          expect(updated_workflow_file.content).to include(
+            "# create-github-app-token/v0.2.2"
+          )
+          expect(updated_workflow_file.content).to include(
+            "grafana/shared-workflows/actions/get-vault-secrets@f1614b210386ac420af6807a997ac7f6d96e477a"
+          )
+          expect(updated_workflow_file.content).to include(
+            "# get-vault-secrets/v1.3.1"
+          )
+          expect(updated_workflow_file.content).not_to include("# get-vault-secrets/v0.2.2")
+        end
+      end
     end
   end
 end
