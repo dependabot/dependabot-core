@@ -10,6 +10,7 @@ require "dependabot/requirements_updater/base"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
+require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
@@ -53,6 +54,14 @@ module Dependabot
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
+            # Wrapper property requirements (distributionUrl, wrapperVersion,
+            # wrapperUrl) live in maven-wrapper.properties, not in a pom.xml.
+            # They must not go through POM XML update logic
+            # instead, only the version inside the requirement is updated.
+            if req.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
+              next req.merge(requirement: T.must(latest_version).to_s)
+            end
+
             next req if req.fetch(:requirement).nil?
             next req if req.fetch(:requirement).include?(",")
 

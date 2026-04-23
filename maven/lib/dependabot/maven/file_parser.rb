@@ -24,6 +24,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/wrapper_mojo"
 
       # The following "dependencies" are candidates for updating:
       # - The project's parent
@@ -93,6 +94,17 @@ module Dependabot
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
+
+        if Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+          wrapper_properties_files.each do |properties_file|
+            dir = File.dirname(properties_file.name).sub(%r{/\.mvn/wrapper$}, "")
+            scripts = wrapper_script_files_for(dir)
+            FileParser::WrapperMojo.resolve_dependencies(properties_file, script_files: scripts).each do |dep|
+              dependency_set << dep
+            end
+          end
+        end
+
         dependency_set.dependencies
       end
 
@@ -468,6 +480,22 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".target") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_properties_files
+        @wrapper_properties_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("maven-wrapper.properties") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_script_files_for(dir)
+        script_names = %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).map do |s|
+          dir == "." ? s : "#{dir}/#{s}"
+        end
+        dependency_files.select { |f| script_names.include?(f.name) }
       end
 
       sig { returns(T::Array[String]) }
