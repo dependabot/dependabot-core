@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::LockfileGenerator do
       end
 
       it "propagates the error" do
-        expect{ generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
 
       it "logs the error" do
@@ -141,7 +141,8 @@ RSpec.describe Dependabot::Python::DependencyGrapher::LockfileGenerator do
 
         begin
           generator.generate
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+        rescue StandardError
+          nil
         end
 
         expect(Dependabot.logger).to have_received(:error).with(/Failed to generate poetry\.lock/)
@@ -169,7 +170,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::LockfileGenerator do
       end
 
       it "raises Dependabot::DependencyFileNotEvaluatable" do
-        expect{ generator.generate }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
 
       it "logs an error" do
@@ -178,6 +179,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::LockfileGenerator do
         begin
           generator.generate
         rescue Dependabot::DependencyFileNotEvaluatable
+          nil
         end
 
         expect(Dependabot.logger).to have_received(:error).with("poetry.lock was not generated")

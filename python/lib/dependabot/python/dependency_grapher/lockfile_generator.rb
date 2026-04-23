@@ -81,7 +81,7 @@ module Dependabot
         def read_generated_lockfile
           unless File.exist?(LOCKFILE_NAME)
             Dependabot.logger.error("#{LOCKFILE_NAME} was not generated")
-            raise Dependabot::DependencyFileNotEvaluatable.new("#{LOCKFILE_NAME} was not generated")
+            raise Dependabot::DependencyFileNotEvaluatable, "#{LOCKFILE_NAME} was not generated"
           end
 
           content = File.read(LOCKFILE_NAME)
