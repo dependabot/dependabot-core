@@ -49,7 +49,6 @@ class RakeHelpers
       pub/dependabot-pub.gemspec
       python/dependabot-python.gemspec
       rust_toolchain/dependabot-rust_toolchain.gemspec
-      sbt/dependabot-sbt.gemspec
       silent/dependabot-silent.gemspec
       swift/dependabot-swift.gemspec
       terraform/dependabot-terraform.gemspec
