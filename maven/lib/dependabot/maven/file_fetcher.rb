@@ -1,12 +1,15 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "base64"
 require "nokogiri"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
+require "dependabot/experiments"
+require "dependabot/maven/file_parser/wrapper_mojo"
 
 module Dependabot
   module Maven
@@ -16,6 +19,14 @@ module Dependabot
 
       MODULE_SELECTOR = "project > modules > module, " \
                         "profile > modules > module"
+
+      WRAPPER_PROPERTIES_RELATIVE = ".mvn/wrapper/maven-wrapper.properties"
+      WRAPPER_JAR_RELATIVE        = ".mvn/wrapper/maven-wrapper.jar"
+      WRAPPER_DOWNLOADER_RELATIVE = ".mvn/wrapper/MavenWrapperDownloader.java"
+
+      WRAPPER_UNIX_SCRIPTS    = %w(mvnw mvnwDebug).freeze
+      WRAPPER_WINDOWS_SCRIPTS = %w(mvnw.cmd mvnwDebug.cmd).freeze
+      WRAPPER_ALL_SCRIPTS     = T.let((WRAPPER_UNIX_SCRIPTS + WRAPPER_WINDOWS_SCRIPTS).freeze, T::Array[String])
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -31,10 +42,13 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files << pom
-        fetched_files += child_poms
+        poms = child_poms
+        fetched_files += poms
         fetched_files += relative_path_parents(fetched_files)
         fetched_files += targetfiles
         fetched_files << extensions if extensions
+        # Pass already-fetched poms so all_wrapper_files does not re-fetch them.
+        fetched_files += all_wrapper_files([T.must(pom)] + poms)
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
@@ -45,6 +59,60 @@ module Dependabot
       end
 
       private
+
+      sig { params(dir: String).returns(T::Array[DependencyFile]) }
+      def wrapper_files_for_dir(dir)
+        return [] unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+
+        # Strip leading "./" from root-level paths
+        properties_path = File.join(dir, WRAPPER_PROPERTIES_RELATIVE).delete_prefix("./")
+        properties = fetch_file_if_present(properties_path)
+        return [] unless properties
+
+        files = T.let([properties], T::Array[DependencyFile])
+        WRAPPER_ALL_SCRIPTS.each do |script|
+          script_path = dir == "." ? script : File.join(dir, script)
+          f = fetch_file_if_present(script_path)
+          files << f if f
+        end
+
+        dist_type = FileParser::WrapperMojo.distribution_type(T.must(properties.content))
+        files + fetch_wrapper_artifact_files(dir, dist_type)
+      rescue Dependabot::DependencyFileNotFound
+        []
+      end
+
+      sig { params(dir: String, dist_type: String).returns(T::Array[DependencyFile]) }
+      def fetch_wrapper_artifact_files(dir, dist_type)
+        case dist_type
+        when "bin", "script"
+          jar_path = File.join(dir, WRAPPER_JAR_RELATIVE).delete_prefix("./")
+          jar = fetch_file_if_present(jar_path)
+          return [] unless jar
+
+          jar.content = Base64.encode64(T.must(jar.content)) if jar.content
+          jar.content_encoding = DependencyFile::ContentEncoding::BASE64
+          [jar]
+        when "source"
+          dl_path = File.join(dir, WRAPPER_DOWNLOADER_RELATIVE).delete_prefix("./")
+          downloader = fetch_file_if_present(dl_path)
+          downloader ? [downloader] : []
+        else
+          []
+        end
+      end
+
+      sig { params(poms: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
+      def all_wrapper_files(poms)
+        seen_dirs = T.let(Set.new, T::Set[String])
+        poms.filter_map do |pom_file|
+          dir = File.dirname(pom_file.name)
+          next if seen_dirs.include?(dir)
+
+          seen_dirs << dir
+          wrapper_files_for_dir(dir)
+        end.flatten
+      end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pom
