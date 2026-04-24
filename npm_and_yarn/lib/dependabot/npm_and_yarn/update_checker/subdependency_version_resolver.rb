@@ -236,23 +236,45 @@ module Dependabot
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                begin
-                  NativeHelpers.run_pnpm_audit_fix_command
-                  Helpers.run_pnpm_command(
-                    "install --lockfile-only",
-                    fingerprint: "install --lockfile-only"
-                  )
-                  dependency.metadata[:audit_fix_used] = true
-                rescue SharedHelpers::HelperSubprocessFailed
-                  Dependabot.logger.info(
-                    "pnpm audit --fix failed or partially fixed — continuing with any changes made"
-                  )
-                end
+                run_pnpm_audit_fix_fallback(lockfile_name, original_content)
                 updated_content = File.read(lockfile_name)
               end
 
               { lockfile_name => updated_content }
             end
+          end
+        end
+
+        # Runs `pnpm audit --fix` as a fallback when `pnpm update` is a no-op.
+        # `pnpm audit --fix` adds `overrides` to `package.json`, but this method
+        # only returns the lockfile. If audit-fix modifies any package.json we
+        # revert both the manifest(s) and lockfile so no inconsistent state is
+        # surfaced upstream.
+        sig { params(lockfile_name: String, original_content: String).void }
+        def run_pnpm_audit_fix_fallback(lockfile_name, original_content)
+          package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
+
+          begin
+            NativeHelpers.run_pnpm_audit_fix_command
+            Helpers.run_pnpm_command(
+              "install --lockfile-only",
+              fingerprint: "install --lockfile-only"
+            )
+
+            manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }
+            if manifest_changed
+              Dependabot.logger.info(
+                "pnpm audit --fix modified package.json (overrides) — reverting fallback"
+              )
+              package_json_snapshots.each { |f, c| File.write(f, c) }
+              File.write(lockfile_name, original_content)
+            else
+              dependency.metadata[:audit_fix_used] = true
+            end
+          rescue SharedHelpers::HelperSubprocessFailed
+            Dependabot.logger.info(
+              "pnpm audit --fix failed or partially fixed — continuing with any changes made"
+            )
           end
         end
 
