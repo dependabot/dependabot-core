@@ -32,11 +32,13 @@ module Dependabot
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
-            target_dependency_file: T.nilable(Dependabot::DependencyFile)
+            target_dependency_file: T.nilable(Dependabot::DependencyFile),
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency_files:, target_dependency_file:)
+        def initialize(dependency_files:, target_dependency_file:, credentials: [])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
           raise "No target file!" unless target_dependency_file
 
           @target_dependency_file = T.let(target_dependency_file, Dependabot::DependencyFile)
@@ -57,13 +59,16 @@ module Dependabot
 
           return repository_urls unless repository_urls.empty?
 
-          [CENTRAL_REPO_URL]
+          [central_repo_url]
         end
 
         private
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
 
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :target_dependency_file
@@ -143,7 +148,7 @@ module Dependabot
           repository_blocks.each do |block|
             repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle\(/)
 
-            repository_urls << CENTRAL_REPO_URL if block.match?(/\smavenCentral\(/)
+            repository_urls << central_repo_url if block.match?(/\smavenCentral\(/)
 
             repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
 
@@ -158,6 +163,15 @@ module Dependabot
             .map { |url| url.strip.gsub(%r{/$}, "") }
             .select { |url| valid_url?(url) }
             .uniq
+        end
+
+        sig { returns(String) }
+        def central_repo_url
+          base_credential = credentials.find do |cred|
+            cred["type"] == "maven_repository" && cred.replaces_base? && cred["url"]
+          end
+
+          base_credential ? T.must(base_credential["url"]).gsub(%r{/+$}, "") : CENTRAL_REPO_URL
         end
 
         sig { params(string: String).returns(Integer) }
