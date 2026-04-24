@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'main' }}
+  SMOKE_TEST_BRANCH: maven-wrapper
 permissions: {}
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
           cat filtered.json
 
           # Curl the smoke-test tests directory to get a list of tests to run
-          URL=https://api.github.com/repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
+          URL=https://api.github.com/repos/${{ vars.SMOKE_TEST_REPO || 'yeikel/smoke-tests' }}/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $URL > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
@@ -97,7 +97,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          gh api "repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}" -H "Accept: application/vnd.github.raw" > smoke.yaml
+          gh api "repos/${{ vars.SMOKE_TEST_REPO || 'yeikel/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=maven-wrapper" -H "Accept: application/vnd.github.raw" > smoke.yaml
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
@@ -117,7 +117,7 @@ jobs:
           CACHE=${CACHE%.yaml}
           CACHE=${CACHE%.yml}
 
-          gh run download --repo dependabot/smoke-tests --name cache-$CACHE --dir cache
+          gh run download --repo yeikel/smoke-tests --name cache-$CACHE --dir cache
         continue-on-error: true
 
       - name: Build ecosystem image
