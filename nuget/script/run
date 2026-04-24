@@ -1,4 +1,5 @@
 #!/bin/bash
 # shellcheck disable=all
 
+export DEPENDABOT_VERSION=$(cat "$DEPENDABOT_HOME/.dependabot-version")
 pwsh "$DEPENDABOT_HOME/dependabot-updater/bin/main.ps1" $*
