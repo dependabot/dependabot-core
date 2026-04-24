@@ -126,9 +126,17 @@ module Dependabot
             requirements = parse_requirements_from(req, type)
             next if requirements.empty?
 
+            # For git dependencies, use the resolved commit SHA as the version so
+            # the update checker can compare SHAs to detect new commits on a branch.
+            version = if git_requirement?(requirements)
+                        resolved_reference_from_lockfile(name) || version_from_lockfile(name)
+                      else
+                        version_from_lockfile(name)
+                      end
+
             dependencies << Dependency.new(
               name: normalise(name),
-              version: version_from_lockfile(name),
+              version: version,
               requirements: requirements,
               package_manager: "pip"
             )
@@ -158,20 +166,17 @@ module Dependabot
           [req].flatten.compact.filter_map do |requirement|
             # Skip unsupported dependency types (path, url), but allow git
             next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
-            # Skip git dependencies without tags (e.g., with branch, rev)
-            next if requirement.is_a?(Hash) && requirement["git"] && !requirement["tag"]
+            # Skip git dependencies without a recognized ref type (tag, branch, or rev)
+            next if requirement.is_a?(Hash) && requirement["git"] &&
+                    !requirement["tag"] && !requirement["branch"] && !requirement["rev"]
 
-            # Handle git dependencies with tags
-            if requirement.is_a?(Hash) && requirement["git"] && requirement["tag"]
+            # Handle git dependencies with tags, branches, or revs
+            if requirement.is_a?(Hash) && requirement["git"]
+              git_source = git_source_for(requirement)
               {
                 requirement: nil,
                 file: T.must(pyproject).name,
-                source: {
-                  type: "git",
-                  url: requirement["git"],
-                  ref: requirement["tag"],
-                  branch: nil
-                },
+                source: git_source,
                 groups: [type]
               }
             elsif requirement.is_a?(String)
@@ -329,6 +334,31 @@ module Dependabot
           parsed_lockfile.fetch("package", [])
                          .find { |p| normalise(p.fetch("name")) == normalise(dep_name) }
                          &.fetch("version", nil)
+        end
+
+        sig { params(requirement: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.nilable(String)]) }
+        def git_source_for(requirement)
+          if requirement["tag"]
+            { type: "git", url: requirement["git"], ref: requirement["tag"], branch: nil }
+          elsif requirement["branch"]
+            { type: "git", url: requirement["git"], ref: requirement["branch"], branch: requirement["branch"] }
+          else
+            { type: "git", url: requirement["git"], ref: requirement["rev"], branch: nil }
+          end
+        end
+
+        sig { params(requirements: T::Array[T::Hash[Symbol, T.nilable(String)]]).returns(T::Boolean) }
+        def git_requirement?(requirements)
+          requirements.any? { |r| r.dig(:source, :type) == "git" }
+        end
+
+        sig { params(dep_name: String).returns(T.nilable(String)) }
+        def resolved_reference_from_lockfile(dep_name)
+          return unless parsed_lockfile
+
+          parsed_lockfile.fetch("package", [])
+                         .find { |p| normalise(p.fetch("name")) == normalise(dep_name) }
+                         &.dig("source", "resolved_reference")
         end
 
         sig { params(req: T.untyped).returns(T::Array[Dependabot::Python::Requirement]) }
