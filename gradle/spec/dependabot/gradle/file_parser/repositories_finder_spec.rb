@@ -9,12 +9,14 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
   let(:finder) do
     described_class.new(
       dependency_files: dependency_files,
-      target_dependency_file: target_dependency_file
+      target_dependency_file: target_dependency_file,
+      credentials: credentials
     )
   end
 
   let(:dependency_files) { [buildfile] }
   let(:target_dependency_file) { buildfile }
+  let(:credentials) { [] }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
@@ -30,6 +32,24 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
       let(:buildfile_fixture_name) { "basic_build.gradle" }
 
       it { is_expected.to eq(["https://repo.maven.apache.org/maven2"]) }
+
+      context "with a replaces-base credential" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "maven_repository",
+                "url" => "https://registry.example.com/maven/",
+                "username" => "hello",
+                "password" => "world",
+                "replaces-base" => true
+              }
+            )
+          ]
+        end
+
+        it { is_expected.to eq(["https://registry.example.com/maven"]) }
+      end
     end
 
     context "when there are repository declarations" do
@@ -177,6 +197,31 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
               https://java-constructor.com
             )
           )
+        end
+      end
+
+      context "when the declaration uses mavenCentral" do
+        let(:buildfile_fixture_name) { "shortform_build.gradle" }
+
+        context "with a replaces-base credential" do
+          let(:credentials) do
+            [
+              Dependabot::Credential.new(
+                {
+                  "type" => "maven_repository",
+                  "url" => "https://registry.example.com/maven/",
+                  "username" => "hello",
+                  "password" => "world",
+                  "replaces-base" => true
+                }
+              )
+            ]
+          end
+
+          it "maps mavenCentral to the replacement registry" do
+            expect(repository_urls).to include("https://registry.example.com/maven")
+            expect(repository_urls).not_to include("https://repo.maven.apache.org/maven2")
+          end
         end
       end
 
