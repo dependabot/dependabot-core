@@ -254,8 +254,23 @@ module Dependabot
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
+          original_content = File.read(yarn_lock.name)
           Helpers.run_yarn_commands(*commands)
-          { yarn_lock.name => File.read(yarn_lock.name) }
+
+          updated_content = File.read(yarn_lock.name)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            begin
+              NativeHelpers.run_yarn_audit_fix_command
+              dep.metadata[:audit_fix_used] = true
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info(
+                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+              )
+            end
+            updated_content = File.read(yarn_lock.name)
+          end
+
+          { yarn_lock.name => updated_content }
         end
 
         sig { returns(String) }
