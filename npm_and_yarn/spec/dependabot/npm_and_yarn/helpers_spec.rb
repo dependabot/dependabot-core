@@ -493,6 +493,42 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
+  describe "::activate_yarn_berry_if_needed" do
+    context "when yarn berry is already active" do
+      before do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version").and_return("3.5.0\n")
+      end
+
+      it "does not activate via corepack" do
+        expect(described_class).not_to receive(:package_manager_activate)
+        described_class.activate_yarn_berry_if_needed
+      end
+    end
+
+    context "when yarn v1 is active" do
+      before do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version").and_return("1.22.19\n")
+        allow(described_class).to receive(:package_manager_activate)
+          .and_return("Preparing yarn@3 for immediate activation...")
+      end
+
+      it "activates yarn berry via corepack" do
+        expect(described_class).to receive(:package_manager_activate)
+          .with("yarn", "3")
+        described_class.activate_yarn_berry_if_needed
+      end
+
+      it "logs a message about the activation" do
+        expect(Dependabot.logger).to receive(:info).with(
+          "Yarn classic (v1) is active but a berry command was requested. Activating Yarn berry via corepack."
+        )
+        described_class.activate_yarn_berry_if_needed
+      end
+    end
+  end
+
   describe "::parse_npm8?" do
     let(:lockfile_with_v3) do
       Dependabot::DependencyFile.new(name: "package-lock.json", content: { lockfileVersion: 3 }.to_json)
