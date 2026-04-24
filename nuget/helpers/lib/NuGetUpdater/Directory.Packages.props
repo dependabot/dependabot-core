@@ -27,6 +27,7 @@
     <PackageVersion Include="OpenTelemetry" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+    <PackageVersion Include="packageurl-dotnet" Version="2.0.0" />
     <PackageVersion Include="Semver" Version="3.0.0" />
     <PackageVersion Include="System.CommandLine" Version="2.0.3" />
     <PackageVersion Include="System.ComponentModel.Composition" Version="10.0.3" />

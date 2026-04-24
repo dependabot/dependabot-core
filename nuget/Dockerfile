@@ -87,5 +87,8 @@ RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
 # .NET install targeting packs
 RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
 
+# Extract the Dependabot gem version for runtime use
+RUN sed -n 's/.*VERSION = "\(.*\)"/\1/p' $DEPENDABOT_HOME/common/lib/dependabot.rb > $DEPENDABOT_HOME/.dependabot-version
+
 # Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
 ENV NBGV_GitEngine=Disabled
