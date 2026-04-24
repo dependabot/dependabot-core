@@ -33,6 +33,11 @@ module Dependabot
           # checksum is updated atomically with the version.
           const :distribution_sha256_sum, T.nilable(String)
 
+          # Value of wrapperSha256Sum, or nil when the property is absent.
+          # Used to verify the wrapper JAR download; updated alongside the
+          # wrapper version when the WrapperUpdater fetches the new checksum.
+          const :wrapper_sha256_sum, T.nilable(String)
+
           # Version of the Maven Wrapper tooling, e.g. "3.3.4". Sourced from
           # the first strategy that succeeds: wrapperVersion property (>=3.3.1),
           # version segment of wrapperUrl JAR filename (<3.3.0), or version
@@ -98,6 +103,7 @@ module Dependabot
             distribution_url: props.distribution_url,
             distribution_replace: props.distribution_replace,
             distribution_sha256_sum: props.distribution_sha256_sum,
+            wrapper_sha256_sum: props.wrapper_sha256_sum,
             wrapper_version: load_wrapper_version_from_scripts(script_files),
             wrapper_replace: nil,
             distribution_type: props.distribution_type
@@ -194,14 +200,16 @@ module Dependabot
           \s*\z
         /x
 
+        SHA256_SUM_REGEX = /\A(?<prop>distribution|wrapper)Sha256Sum\s*=\s*(?<v>\S+)\s*\z/
+
         sig { params(content: String).returns(WrapperProperties) }
         def self.load_properties(content)
           distribution_url     = T.let(nil, T.nilable(String))
           distribution_replace = T.let(nil, T.nilable(String))
-          distribution_sha256_sum = T.let(nil, T.nilable(String))
           wrapper_version      = T.let(nil, T.nilable(String))
           wrapper_replace      = T.let(nil, T.nilable(String))
           distribution_type    = T.let("bin", String)
+          distribution_sha256_sum, wrapper_sha256_sum = parse_sha256_sums(content)
 
           content.lines.each do |raw_line|
             line = raw_line.strip
@@ -209,11 +217,6 @@ module Dependabot
             if (m = line.match(DISTRIBUTION_URL_REGEX))
               distribution_replace = m[:replaceString]
               distribution_url     = m[:replaceString]&.gsub("\\:", ":")
-              next
-            end
-
-            if (m = line.match(/\AdistributionSha256Sum\s*=\s*(?<v>\S+)\s*\z/))
-              distribution_sha256_sum = m[:v]
               next
             end
 
@@ -233,10 +236,30 @@ module Dependabot
             distribution_url: distribution_url,
             distribution_replace: distribution_replace,
             distribution_sha256_sum: distribution_sha256_sum,
+            wrapper_sha256_sum: wrapper_sha256_sum,
             wrapper_version: wrapper_version,
             wrapper_replace: wrapper_replace,
             distribution_type: distribution_type
           )
+        end
+
+        # Scans +content+ for distributionSha256Sum and wrapperSha256Sum
+        # properties and returns their values (or nil when absent).
+        sig { params(content: String).returns([T.nilable(String), T.nilable(String)]) }
+        def self.parse_sha256_sums(content)
+          dist_sum = T.let(nil, T.nilable(String))
+          wrap_sum = T.let(nil, T.nilable(String))
+          content.lines.each do |raw_line|
+            m = raw_line.strip.match(SHA256_SUM_REGEX)
+            next unless m
+
+            if m[:prop] == "distribution"
+              dist_sum = m[:v]
+            else
+              wrap_sum = m[:v]
+            end
+          end
+          [dist_sum, wrap_sum]
         end
 
         WRAPPER_VERSION_REGEX = /
@@ -367,6 +390,7 @@ module Dependabot
 
         private_class_method :load_wrapper_version_from_scripts
         private_class_method :parse_wrapper_version_line
+        private_class_method :parse_sha256_sums
       end
     end
   end

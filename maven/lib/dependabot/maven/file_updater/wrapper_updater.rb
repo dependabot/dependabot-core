@@ -2,9 +2,10 @@
 # frozen_string_literal: true
 
 require "base64"
+require "digest"
 require "fileutils"
 require "sorbet-runtime"
-
+require 'net/http'
 require "dependabot/shared_helpers"
 require "dependabot/dependency_file"
 require "dependabot/maven/distributions"
@@ -73,8 +74,24 @@ module Dependabot
             # Replace the property file.
             update_properties_file_directly
 
-            # Run the native wrapper command to regenerate shell scripts.
+            # Drop both SHA-256 checksum properties before invoking the native
+            # command.  If they remain, Maven verifies the old checksum against
+            # the new download and aborts.  They are recomputed and re-added by
+            # update_checksum_properties once the download completes.
+            strip_checksum_properties
+
+            # Run the native wrapper command to regenerate shell scripts and
+            # download the Maven distribution into the local wrapper cache
+            # (~/.m2/wrapper/dists/ by default).
             run_wrapper_command(props)
+
+            # Maven Central only publishes SHA-512 checksums
+            # But the wrapper only supports SHA-256 validation
+            # We need compute the SHA-256 digest
+            # directly from the artifact
+            # and write it into the regenerated properties file.
+            update_checksum_properties(props)
+
             collect_updated_files(props.distribution_type)
           end
         end
@@ -133,6 +150,113 @@ module Dependabot
             # nothing to substitute in the properties file — let wrapper:wrapper handle it.
             nil
           end
+        end
+
+        # Removes distributionSha256Sum and wrapperSha256Sum from the on-disk
+        # properties file so that the wrapper:wrapper command can download the
+        # new artifact without Maven aborting on a stale checksum mismatch.
+        sig { void }
+        def strip_checksum_properties
+          return unless File.exist?(WRAPPER_PROPERTIES_RELATIVE)
+
+          content = File.read(WRAPPER_PROPERTIES_RELATIVE)
+          stripped = content.lines.reject { |l| l.match?(/\A(?:distribution|wrapper)Sha256Sum\s*=/) }.join
+          File.write(WRAPPER_PROPERTIES_RELATIVE, stripped)
+        end
+
+        # Computes a fresh digest from the updated artifact
+        # This is needed because Maven Central only publishes SHA-512 checksums,
+        # while the wrapper only supports validations for the SHA-256
+        #
+        # Raises if an expected artifact cannot be found in the cache, because
+        # a stale or missing checksum would silently weaken integrity checking.
+        sig { params(props: FileParser::WrapperMojo::WrapperProperties).void }
+        def update_checksum_properties(props)
+          return unless props.distribution_sha256_sum || props.wrapper_sha256_sum
+          return unless File.exist?(WRAPPER_PROPERTIES_RELATIVE)
+
+          content = File.read(WRAPPER_PROPERTIES_RELATIVE)
+
+          if props.distribution_sha256_sum
+            url = new_url_for_property("distributionUrl")
+            if url
+              sha256 = calculate_sha256_from_url(url)
+              raise "Could not find downloaded distribution to compute distributionSha256Sum: #{url}" unless sha256
+
+              content = set_checksum_property(content, "distributionSha256Sum", sha256)
+            end
+          end
+
+          if props.wrapper_sha256_sum
+            url = new_url_for_property("wrapperUrl")
+            if url
+              sha256 = calculate_sha256_from_url(url)
+              raise "Could not find downloaded wrapper JAR to compute wrapperSha256Sum: #{url}" unless sha256
+
+              content = set_checksum_property(content, "wrapperSha256Sum", sha256)
+            end
+          end
+
+          File.write(WRAPPER_PROPERTIES_RELATIVE, content)
+        end
+
+        #TODO: Use registry client
+        sig { params(url: String).returns(T.nilable(String)) }
+        def calculate_sha256_from_url(url)
+          uri = URI.parse(url)
+          sha256 = Digest::SHA256.new
+          Dependabot.logger.debug "Downloading Maven distribution: #{url}"
+          Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+            request = Net::HTTP::Get.new(uri)
+            http.request(request) do |response|
+              unless response.is_a?(Net::HTTPSuccess)
+                Dependabot.logger.error "HTTP Error: #{response.code}"
+                return nil
+              end
+
+              # Stream the body to avoid loading it all in memory
+              response.read_body do |chunk|
+                sha256 << chunk
+              end
+            end
+          end
+
+          hash = sha256.hexdigest
+          Dependabot.logger.debug "Computed SHA-256: #{hash}"
+          hash
+        rescue => e
+          Dependabot.logger.error "Type-safe checksum failed: #{e.message}"
+          nil
+        end
+
+        # Updates +key+ in +content+ if the property already exists; appends
+        # it otherwise.  Returns the modified string.
+        sig { params(content: String, key: String, value: String).returns(String) }
+        def set_checksum_property(content, key, value)
+          pattern = /^(#{Regexp.escape(key)}\s*=\s*)\S+/
+          if content.match?(pattern)
+            content.gsub(pattern, "\\1#{value}")
+          else
+            "#{content.rstrip}\n#{key}=#{value}\n"
+          end
+        end
+
+        # Derives the updated (unescaped) URL for the given wrapper property by
+        # substituting the old version string with the new one from the
+        # updated requirements. Returns nil when the property is absent from
+        # either requirement set.
+        sig { params(property: String).returns(T.nilable(String)) }
+        def new_url_for_property(property)
+          new_req = dependency.requirements.find { |r| r.dig(:source, :property) == property }
+          old_req = dependency.previous_requirements&.find { |r| r.dig(:source, :property) == property }
+          return nil unless new_req && old_req
+
+          old_replace = old_req.dig(:source, :replace_string)
+          old_version = old_req.fetch(:requirement, nil)
+          new_version = new_req.fetch(:requirement)
+          return nil unless old_replace && old_version
+
+          old_replace.gsub(old_version, new_version).gsub("\\:", ":")
         end
 
         sig { params(props: FileParser::WrapperMojo::WrapperProperties).void }
