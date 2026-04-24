@@ -10,6 +10,7 @@ require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/helpers"
 require "dependabot/composer/update_checker/version_resolver"
+require "dependabot/composer/credential_helpers"
 require "sorbet-runtime"
 
 # rubocop:disable Metrics/ClassLength
@@ -287,7 +288,18 @@ module Dependabot
 
           File.write(PackageManager::MANIFEST_FILENAME, locked_composer_json_content)
           File.write(PackageManager::LOCKFILE_FILENAME, lockfile.content)
-          File.write(PackageManager::AUTH_FILENAME, T.must(auth_json).content) if auth_json
+          write_auth_file
+        end
+
+        sig { void }
+        def write_auth_file
+          content = merged_auth_json_content
+          File.write(PackageManager::AUTH_FILENAME, JSON.dump(content)) unless content.empty?
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def merged_auth_json_content
+          CredentialHelpers.merged_auth_json_content(auth_json, credentials)
         end
 
         sig { returns(String) }
@@ -523,7 +535,13 @@ module Dependabot
         def registry_credentials
           credentials
             .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
-            .select { |cred| cred["password"] }
+            .select { |cred| cred["password"] } +
+            auth_json_credentials
+        end
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        def auth_json_credentials
+          CredentialHelpers.auth_json_credentials(auth_json)
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }
