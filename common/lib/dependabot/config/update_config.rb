@@ -93,18 +93,23 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :include
 
+        sig { returns(T.nilable(T::Array[T::Hash[String, String]])) }
+        attr_reader :substitutions
+
         sig do
           params(
             prefix: T.nilable(String),
             prefix_development: T.nilable(String),
-            include: T.nilable(String)
+            include: T.nilable(String),
+            substitutions: T.nilable(T::Array[T::Hash[String, String]])
           )
             .void
         end
-        def initialize(prefix:, prefix_development:, include:)
+        def initialize(prefix:, prefix_development:, include:, substitutions: nil)
           @prefix = prefix
           @prefix_development = prefix_development
           @include = include
+          @substitutions = substitutions
         end
 
         sig { returns(T::Boolean) }
@@ -112,12 +117,13 @@ module Dependabot
           @include == "scope"
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[Symbol, T.untyped]) }
         def to_h
           {
             prefix: @prefix,
             prefix_development: @prefix_development,
-            include_scope: include_scope?
+            include_scope: include_scope?,
+            substitutions: @substitutions
           }
         end
       end
