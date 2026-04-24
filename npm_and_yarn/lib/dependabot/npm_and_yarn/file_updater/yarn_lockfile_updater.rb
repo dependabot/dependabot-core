@@ -445,8 +445,8 @@ module Dependabot
               yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
               File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
             end
-          else
-            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          elsif yarnrc_specifies_private_reg?
+            File.write(".yarnrc", yarnrc_content)
           end
           File.write(".npmrc", npmrc_content)
 
