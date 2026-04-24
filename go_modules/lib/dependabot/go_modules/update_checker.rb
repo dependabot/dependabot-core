@@ -29,6 +29,21 @@ module Dependabot
         latest_resolvable_version
       end
 
+      sig { returns(T::Boolean) }
+      def vulnerable?
+        return false if security_advisories.none?
+        return false unless dependency.version
+
+        # Pseudo-versions encode a commit SHA and timestamp rather than a proper
+        # release version. When an advisory's fix is in a different major version
+        # than the pseudo-version's base, the comparison is unreliable because
+        # the module may have moved past the fix without updating its import path
+        # (e.g., a v3.x module without /v3 suffix gets a v1.x pseudo-version).
+        return pseudo_version_active_advisories.any? if GoModules::Version.pseudo_version?(dependency.version)
+
+        super
+      end
+
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
@@ -87,6 +102,36 @@ module Dependabot
       sig { returns(T::Boolean) }
       def existing_version_is_sha?
         false
+      end
+
+      # Returns advisories that reliably apply to the current pseudo-version.
+      # Excludes advisories whose fix versions are all in a different major
+      # version, since pseudo-version semver is unreliable across major versions.
+      sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+      def pseudo_version_active_advisories
+        current = current_version
+        return [] unless current
+
+        pseudo_major = current.segments.first
+
+        active_advisories.reject do |advisory|
+          advisory_fix_requires_different_major?(advisory, pseudo_major)
+        end
+      end
+
+      # Checks whether all of an advisory's safe (fix) versions are in a
+      # different major version than the given major. When true, the advisory
+      # likely doesn't apply to the pseudo-version because the module may
+      # have already moved past the fix via a non-standard import path.
+      sig { params(advisory: Dependabot::SecurityAdvisory, pseudo_major: T.nilable(Integer)).returns(T::Boolean) }
+      def advisory_fix_requires_different_major?(advisory, pseudo_major)
+        return false if advisory.safe_versions.empty?
+
+        advisory.safe_versions.all? do |req|
+          req.requirements.all? do |_op, version|
+            version.segments.first != pseudo_major
+          end
+        end
       end
 
       sig { params(tag: T.nilable(T::Hash[Symbol, String])).returns(T.untyped) }

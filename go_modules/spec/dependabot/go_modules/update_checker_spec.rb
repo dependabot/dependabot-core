@@ -195,6 +195,90 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
         expect(vulnerable?).to be(true)
       end
     end
+
+    context "when it's a pseudo-version with a cross-major advisory fix" do
+      # When a module doesn't follow Go's /vN import path convention (e.g.,
+      # github.com/hyperledger/fabric has v3.x tags but no /v3 path), Go
+      # generates pseudo-versions anchored to the highest v1.x tag. The
+      # synthetic v1.x semver should not be compared against advisories
+      # whose fix is in a different major version (e.g., >= v2.2.14).
+      let(:dependency_version) { "1.4.0-rc1.0.20250929141436-dad09ab05b71" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 2.2.14"],
+            safe_versions: [">= 2.2.14"]
+          )
+        ]
+      end
+
+      it "returns false" do
+        expect(vulnerable?).to be(false)
+      end
+    end
+
+    context "when it's a pseudo-version with a same-major advisory fix" do
+      # When the advisory's fix version is in the same major as the
+      # pseudo-version base, the comparison is reliable.
+      let(:dependency_version) { "1.2.0-0.20200101000000-abcdefabcdef" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 1.3.0"],
+            safe_versions: [">= 1.3.0"]
+          )
+        ]
+      end
+
+      it "returns true" do
+        expect(vulnerable?).to be(true)
+      end
+    end
+
+    context "when it's a pseudo-version with an advisory that has no safe versions" do
+      # When an advisory only specifies vulnerable_versions without
+      # safe_versions, we conservatively treat the pseudo-version as
+      # vulnerable since we can't determine the fix version's major.
+      let(:dependency_version) { "1.4.0-rc1.0.20250929141436-dad09ab05b71" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 2.2.14"]
+          )
+        ]
+      end
+
+      it "returns true" do
+        expect(vulnerable?).to be(true)
+      end
+    end
+
+    context "when it's a pseudo-version with a multi-stream advisory" do
+      # When an advisory has safe versions in multiple major versions
+      # (e.g., >= 1.5.0 OR >= 2.2.14), and one matches the pseudo-version's
+      # major, the advisory should still apply.
+      let(:dependency_version) { "1.2.0-0.20200101000000-abcdefabcdef" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 1.5.0"],
+            safe_versions: [">= 1.5.0", ">= 2.2.14"]
+          )
+        ]
+      end
+
+      it "returns true" do
+        expect(vulnerable?).to be(true)
+      end
+    end
   end
 
   describe "with cooldown options" do
