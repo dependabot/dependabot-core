@@ -1,6 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
 # This cannot be inlined below (e.g., COPY --from=maven:...) because Dependabot does not support that syntax yet
-FROM maven:3.9.14 as maven
+FROM maven:3.9.14 AS maven
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 
