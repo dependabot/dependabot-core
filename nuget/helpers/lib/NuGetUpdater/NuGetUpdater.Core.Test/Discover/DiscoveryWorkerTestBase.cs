@@ -28,7 +28,8 @@ public class DiscoveryWorkerTestBase : TestBase
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath, includeCommonPackages: includeCommonPackages);
 
             repoContentsPath ??= directoryPath;
-            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
+            var logger = new StringLogger();
+            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, logger);
             var result = await worker.RunWithErrorHandlingAsync(repoContentsPath, workspacePath);
             return result;
         });
