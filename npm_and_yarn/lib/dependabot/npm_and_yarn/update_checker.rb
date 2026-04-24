@@ -268,21 +268,17 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T::Array[Dependabot::Dependency]) }
       def conflicting_updated_dependencies
         top_level_dependencies = top_level_dependency_lookup
 
-        updated_deps = []
-        vulnerability_audit["fix_updates"].each do |update|
-          dependency_name = update["dependency_name"]
-          requirements = if top_level_dependencies[dependency_name]&.version == update["current_version"]
-                           top_level_dependencies[dependency_name]&.requirements || []
-                         else
-                           []
-                         end
+        updated_deps = vulnerability_audit["fix_updates"].filter_map do |update|
+          next log_skipped_fix_update(update) if update["target_version"] == update["current_version"]
 
-          updated_deps << build_updated_dependency(
+          dependency_name = update["dependency_name"]
+          requirements = requirements_for_update(top_level_dependencies, update)
+
+          build_updated_dependency(
             dependency: Dependency.new(
               name: dependency_name,
               package_manager: "npm_and_yarn",
@@ -305,7 +301,8 @@ module Dependabot
             version: target_version,
             previous_version: dependency.version,
             removed: target_version.nil?,
-            metadata: { information_only: true } # Instruct updater to not directly update this dependency
+            # Mark as information_only only when a parent update exists
+            metadata: updated_deps.any? ? { information_only: true } : {}
           )
         end
 
@@ -313,7 +310,30 @@ module Dependabot
         updated_deps.select { |dep| dep.name == dependency.name } +
           updated_deps.reject { |dep| dep.name == dependency.name }
       end
-      # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { params(update: T::Hash[String, T.untyped]).returns(NilClass) }
+      def log_skipped_fix_update(update)
+        Dependabot.logger.info(
+          "#{update['dependency_name']} is already at the target version " \
+          "(#{update['current_version']}), no update needed"
+        )
+        nil
+      end
+
+      sig do
+        params(
+          top_level_dependencies: T::Hash[String, Dependabot::Dependency],
+          update: T::Hash[String, T.untyped]
+        ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+      end
+      def requirements_for_update(top_level_dependencies, update)
+        dependency_name = update["dependency_name"]
+        if top_level_dependencies[dependency_name]&.version == update["current_version"]
+          top_level_dependencies[dependency_name]&.requirements || []
+        else
+          []
+        end
+      end
 
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
       def top_level_dependency_lookup
@@ -544,7 +564,7 @@ module Dependabot
         sources =
           updated_dependency
           .requirements.map { |r| r.fetch(:source) }
-          .uniq.compact
+                       .uniq.compact
           .sort_by do |source|
             Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0
           end

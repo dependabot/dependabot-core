@@ -3,6 +3,17 @@ export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
 
+function ensure_compatible_docker_api_version() {
+  # When the CLI is newer than the daemon, pin to the server API version.
+  if [ -z "$DOCKER_API_VERSION" ]; then
+    local server_api_version
+    server_api_version=$(docker version --format '{{.Server.APIVersion}}' 2>/dev/null || true)
+    if [ -n "$server_api_version" ]; then
+      export DOCKER_API_VERSION="$server_api_version"
+    fi
+  fi
+}
+
 function set_tag() {
     case $ECOSYSTEM in
       docker_compose)
@@ -19,6 +30,9 @@ function set_tag() {
         ;;
       npm_and_yarn)
         TAG=npm
+        ;;
+      pre_commit)
+        TAG=pre-commit
         ;;
       python)
         TAG=pip
@@ -40,6 +54,7 @@ function set_tag() {
 
 function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
+  ensure_compatible_docker_api_version
   ECOSYSTEM="$1"
   set_tag
 
@@ -68,6 +83,17 @@ function docker_build() {
 
   # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
   unset DOCKER_CONTENT_TRUST
+
+  # pre_commit depends on go_modules and bundler images, so build them first
+  # Use a guard variable to prevent infinite recursion when called recursively
+  if [[ "$ECOSYSTEM" == "pre_commit" && -z "$BUILDING_DEPENDENCY" ]]; then
+    echo "Building pre_commit dependencies: go_modules and bundler..."
+    BUILDING_DEPENDENCY=1 docker_build "go_modules"
+    BUILDING_DEPENDENCY=1 docker_build "bundler"
+    # Restore ecosystem and tag for pre_commit
+    ECOSYSTEM="pre_commit"
+    set_tag
+  fi
 
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 

@@ -71,6 +71,21 @@ module Dependabot
         )
       end
 
+      sig { override.params(command: String).returns(String) }
+      def run_in_parsed_context(command)
+        SharedHelpers.in_a_temporary_directory do
+          dependency_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
+
+          setup_python_environment
+
+          SharedHelpers.run_shell_command(command)
+        end
+      end
+
       # Normalize dependency names to match the PyPI index normalization
       sig { params(name: String, extras: T::Array[String]).returns(String) }
       def self.normalize_dependency_name(name, extras = [])
@@ -94,8 +109,7 @@ module Dependabot
       def python_requirement_parser
         @python_requirement_parser ||= T.let(
           PythonRequirementParser.new(
-            dependency_files:
-                                                     dependency_files
+            dependency_files: dependency_files
           ),
           T.nilable(PythonRequirementParser)
         )

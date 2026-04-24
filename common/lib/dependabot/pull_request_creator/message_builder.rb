@@ -24,6 +24,7 @@ module Dependabot
       require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
       require_relative "message_builder/link_and_mention_sanitizer"
+      require_relative "message_builder/title_builder"
       require_relative "pr_name_prefixer"
 
       sig { returns(Dependabot::Source) }
@@ -130,8 +131,10 @@ module Dependabot
       sig { returns(String) }
       def pr_name
         name = dependency_group ? group_pr_name : solo_pr_name
-        name[0] = T.must(name[0]).capitalize if pr_name_prefixer.capitalize_first_word?
-        "#{pr_name_prefix}#{name}"
+        MessageBuilder::TitleBuilder.new(
+          base_title: name,
+          prefixer: pr_name_prefixer
+        ).build
       end
 
       sig { returns(String) }
@@ -263,10 +266,26 @@ module Dependabot
 
       sig { returns(String) }
       def group_pr_name
+        return dependency_name_group_pr_name if dependency_group&.group_by_dependency_name?
+
         if source.directories
           grouped_directory_name
         else
           grouped_name
+        end
+      end
+
+      sig { returns(String) }
+      def dependency_name_group_pr_name
+        dep = T.must(dependencies.first)
+        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+
+        if directories.count > 1
+          "bump #{dep.name} across #{directories.count} directories"
+        elsif directories.one?
+          "bump #{dep.name} in #{directories.first}"
+        else
+          "bump #{dep.name}"
         end
       end
 
@@ -411,6 +430,8 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       sig { returns(String) }
       def version_commit_message_intro
+        return dependency_name_group_intro if dependency_group&.group_by_dependency_name? && source.directories
+
         return multi_directory_group_intro if dependency_group && source.directories
 
         return group_intro if dependency_group
@@ -545,6 +566,33 @@ module Dependabot
         msg
       end
       # rubocop:enable Metrics/AbcSize
+
+      sig { returns(String) }
+      def dependency_name_group_intro
+        dep = T.must(dependencies.first)
+        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+
+        msg = "Bumps #{dependency_links.first}"
+
+        if directories.count > 1
+          msg += " across #{directories.count} directories:\n\n"
+          msg += directories.map do |dir|
+            prev_version = dep.humanized_previous_version || "unknown"
+            new_version = dep.humanized_version || "unknown"
+            "- `#{dir}`: #{prev_version} → #{new_version}"
+          end.join("\n")
+        elsif directories.one?
+          msg += " in `#{directories.first}`"
+          msg += " #{from_version_msg(dep.humanized_previous_version)}"
+          msg += "to #{dep.humanized_version}."
+        else
+          msg += " #{from_version_msg(dep.humanized_previous_version)}"
+          msg += "to #{dep.humanized_version}."
+        end
+
+        msg += "\n"
+        msg
+      end
 
       sig { returns(String) }
       def group_intro

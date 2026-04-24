@@ -14,6 +14,10 @@ module Dependabot
     )
     @display_name_builders = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
     @name_normalisers = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
+    @humanized_previous_version_builders = T.let(
+      {},
+      T::Hash[String, T.proc.params(arg0: Dependency).returns(T.nilable(String))]
+    )
 
     sig do
       params(package_manager: String).returns(T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean))
@@ -59,6 +63,25 @@ module Dependabot
     end
     def self.register_name_normaliser(package_manager, name_builder)
       @name_normalisers[package_manager] = name_builder
+    end
+
+    sig do
+      params(
+        package_manager: String
+      ).returns(T.nilable(T.proc.params(arg0: Dependency).returns(T.nilable(String))))
+    end
+    def self.humanized_previous_version_builder_for_package_manager(package_manager)
+      @humanized_previous_version_builders[package_manager]
+    end
+
+    sig do
+      params(
+        package_manager: String,
+        builder: T.proc.params(arg0: Dependency).returns(T.nilable(String))
+      ).void
+    end
+    def self.register_humanized_previous_version_builder(package_manager, builder)
+      @humanized_previous_version_builders[package_manager] = builder
     end
 
     sig { returns(String) }
@@ -225,24 +248,10 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def humanized_previous_version
-      # If we don't have a previous version, we *may* still be able to figure
-      # one out if a ref was provided and has been changed (in which case the
-      # previous ref was essentially the version).
-      if previous_version.nil?
-        return ref_changed? ? previous_ref : nil
-      end
+      custom_version = custom_humanized_previous_version
+      return custom_version if custom_version
 
-      if T.must(previous_version).match?(/^[0-9a-f]{40}/)
-        return previous_ref if ref_changed? && previous_ref
-
-        "`#{T.must(previous_version)[0..6]}`"
-      elsif version == previous_version &&
-            package_manager == "docker"
-        digest = docker_digest_from_reqs(T.must(previous_requirements))
-        "`#{T.must(T.must(digest).split(':').last)[0..6]}`"
-      else
-        previous_version
-      end
+      default_humanized_previous_version
     end
 
     sig { returns(T.nilable(String)) }
@@ -390,6 +399,40 @@ module Dependabot
     end
 
     private
+
+    sig { returns(T.nilable(String)) }
+    def custom_humanized_previous_version
+      builder = self.class.humanized_previous_version_builder_for_package_manager(package_manager)
+      return nil unless builder
+
+      builder.call(self)
+    end
+
+    sig { returns(T.nilable(String)) }
+    def default_humanized_previous_version
+      # If we don't have a previous version, we *may* still be able to figure
+      # one out if a ref was provided and has been changed (in which case the
+      # previous ref was essentially the version).
+      return (ref_changed? ? previous_ref : nil) if previous_version.nil?
+
+      return humanized_sha_previous_version if T.must(previous_version).match?(/^[0-9a-f]{40}/)
+      return humanized_docker_previous_version if version == previous_version && package_manager == "docker"
+
+      previous_version
+    end
+
+    sig { returns(T.nilable(String)) }
+    def humanized_sha_previous_version
+      return previous_ref if ref_changed? && previous_ref
+
+      "`#{T.must(previous_version)[0..6]}`"
+    end
+
+    sig { returns(String) }
+    def humanized_docker_previous_version
+      digest = docker_digest_from_reqs(T.must(previous_requirements))
+      "`#{T.must(T.must(digest).split(':').last)[0..6]}`"
+    end
 
     sig { void }
     def check_values

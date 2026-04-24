@@ -445,8 +445,23 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Time).to receive(:now).and_return(Time.parse("2019-08-06 18:29:44 -0400"))
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_shared_helpers_command_timeout).and_return(true)
+
+          # Mock GitCommitChecker to return tag data for cooldown_filter
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_wrap_original do |method, **kwargs|
+            instance = method.call(**kwargs)
+
+            allow(instance).to receive_messages(
+              refs_for_tag_with_detail: [
+                Dependabot::GitTagWithDetail.new(tag: "v1.0.1", release_date: "2019-01-01T00:00:00+00:00"),
+                Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2019-07-20T00:00:00+00:00")
+              ],
+              local_tags_for_allowed_versions: [
+                { tag: "v1.0.1", version: Dependabot::GithubActions::Version.new("1.0.1") },
+                { tag: "v1.1.0", version: Dependabot::GithubActions::Version.new("1.1.0") }
+              ]
+            )
+            instance
+          end
         end
 
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
@@ -471,8 +486,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       before do
         allow(Time).to receive(:now).and_return(Time.parse("2022-09-07 23:33:35 +0100"))
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(true)
       end
 
       context "when pinned to an up to date commit in the default branch" do
@@ -487,6 +500,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { latest_commit_in_main }
         let(:update_cooldown) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        before do
+          # Stub commit_metadata_details to return a date outside cooldown
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-06-01T00:00:00+00:00")
         end
 
         it "returns the expected value" do
@@ -508,6 +527,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
         end
 
+        before do
+          # Stub commit_metadata_details to return a recent date (within cooldown)
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-09-05T00:00:00+00:00")
+        end
+
         it "returns the current version" do
           expect(latest_version).to eq("f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465")
         end
@@ -527,19 +552,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
         end
 
+        before do
+          # Stub commit_metadata_details to return a date outside cooldown
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-06-01T00:00:00+00:00")
+        end
+
         it "returns the expected value" do
           expect(latest_version).to eq(latest_commit_in_devel)
-        end
-      end
-
-      context "when pinned to an out of date commit in a non default branch with cooldown enabled" do
-        let(:update_cooldown) do
-          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
-        end
-        let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
-
-        it "returns the expected value" do
-          expect(latest_version).to eq("96e7dec17bbeed08477b9edab6c3a573614b829d")
         end
       end
 
@@ -557,6 +577,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
         end
 
+        before do
+          # Stub commit_metadata_details to return a recent date (within cooldown)
+          finder = checker.send(:latest_version_finder)
+          allow(finder).to receive(:commit_metadata_details).and_return("2022-09-05T00:00:00+00:00")
+        end
+
         it "returns the expected value" do
           expect(latest_version).to eq("96e7dec17bbeed08477b9edab6c3a573614b829d")
         end
@@ -565,7 +591,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when a git commit SHA not pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
-      let(:exit_status) { double(success?: true) }
 
       before do
         checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
@@ -576,16 +601,18 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         allow(Dir).to receive(:chdir).and_yield
 
-        allow(Open3).to receive(:capture2e)
-          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}, anything)
-          .and_return(["", exit_status])
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
       end
 
       context "when it's in the current (default) branch" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/HEAD -> origin/master\n  origin/master")
         end
 
         it "can update to the latest version" do
@@ -597,9 +624,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:tip_of_releases_v1) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
 
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/releases/v1\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/releases/v1\n")
         end
 
         it "can update to the latest version" do
@@ -609,9 +637,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when multiple branches include it and the current (default) branch among them" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n")
         end
 
         it "can update to the latest version" do
@@ -621,9 +650,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "when multiple branches include it and the current (default) branch NOT among them" do
         before do
-          allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}", anything)
-            .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_return("  origin/3.3-stable\n  origin/production\n")
         end
 
         it "raises an error" do
@@ -704,6 +734,40 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     end
 
     it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
+  end
+
+  describe "#latest_commit_sha" do
+    let(:source_checker) do
+      instance_double(Dependabot::GitCommitChecker, local_tag_for_pinned_sha: local_tag_for_pinned_sha)
+    end
+    let(:local_tag_for_pinned_sha) { false }
+    let(:latest_version_tag) { nil }
+
+    before do
+      allow(checker).to receive_messages(
+        latest_version_finder: instance_double(
+          Dependabot::GithubActions::UpdateChecker::LatestVersionFinder,
+          latest_version_tag: latest_version_tag
+        ),
+        latest_commit_for_pinned_ref: "branch-head-sha"
+      )
+    end
+
+    context "when no latest version tag is available" do
+      it "returns nil instead of falling back to branch head" do
+        expect(checker.send(:latest_commit_sha, source_checker)).to be_nil
+      end
+    end
+
+    context "when latest version tag exists and current SHA is not tag-resolvable" do
+      let(:latest_version_tag) do
+        { tag: "v2.7.0", commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5" }
+      end
+
+      it "falls back to branch head commit behavior" do
+        expect(checker.send(:latest_commit_sha, source_checker)).to eq("branch-head-sha")
+      end
+    end
   end
 
   describe "#updated_requirements" do
@@ -1027,6 +1091,54 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "when cooldown filters out the latest major for a version tag reference" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:reference) { "v2" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        finder = checker.send(:latest_version_finder)
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name if tag_name.start_with?("v3")
+          end
+        end
+      end
+
+      it "keeps metadata and rewritten version tag aligned to cooled-down target" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2.7.0")
+      end
+    end
+
+    context "when cooldown filters out the latest major for a tag-resolvable SHA reference" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:reference) { "8f4b7f84864484a7bf31766abe9204da3cbe65b3" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+
+      before do
+        finder = checker.send(:latest_version_finder)
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name if tag_name.start_with?("v3")
+          end
+        end
+      end
+
+      it "rewrites SHA to the cooled-down tag commit, not the uncooldowned latest tag commit" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("ee0669bd1cc54295c223e0bb666b733df41de1c5")
+      end
+    end
+
     context "with multiple requirement sources" do
       include_context "with multiple git sources"
 
@@ -1189,6 +1301,94 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "updates all source refs to the target ref" do
+        expect(updated_requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with mixed tag and SHA requirements across files" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          version: "2",
+          package_manager: "github_actions",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow1.yml",
+            metadata: { declaration_string: "actions/checkout@v2" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v2",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow2.yml",
+            metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow3.yml",
+            metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
+              branch: nil
+            }
+          }]
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow1.yml",
+          metadata: { declaration_string: "actions/checkout@v2" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v3",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow2.yml",
+          metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow3.yml",
+          metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }]
+      end
+
+      it "updates tag ref to latest version and SHA refs to latest version SHA" do
         expect(updated_requirements).to eq(expected_requirements)
       end
     end

@@ -59,7 +59,6 @@ module Dependabot
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
-    # TODO: Determine if we should regenerate the PR message within core for updates
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def update_pull_request(dependency_change, base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("update_pull_request", kind: :internal) do |span|
@@ -68,14 +67,15 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::DEPENDENCY_NAMES, dependency_change.humanized)
 
         api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/update_pull_request"
-        body = {
-          data: {
-            "dependency-names": dependency_change.updated_dependencies.map(&:name),
-            "updated-dependency-files": dependency_change.updated_dependency_files_hash,
-            "base-commit-sha": base_commit_sha
-          }
+        data = {
+          "dependency-names": dependency_change.updated_dependencies.map(&:name),
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
+          "base-commit-sha": base_commit_sha,
+          "commit-message": dependency_change.pr_message.commit_message,
+          "pr-title": dependency_change.pr_message.pr_name,
+          "pr-body": dependency_change.pr_message.pr_message
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = http_client.post(path: api_url, body: { data: data }.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -308,46 +308,32 @@ module Dependabot
 
     sig { params(ecosystem: T.nilable(Ecosystem)).void }
     def record_ecosystem_meta(ecosystem)
-      return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
-
       return if ecosystem.nil?
 
-      begin
-        ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
-          api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_meta"
+      ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/record_ecosystem_meta"
 
-          body = {
-            data: [
-              {
-                ecosystem: {
-                  name: ecosystem.name,
-                  package_manager: version_manager_json(ecosystem.package_manager),
-                  language: version_manager_json(ecosystem.language)
-                }
+        body = {
+          data: [
+            {
+              ecosystem: {
+                name: ecosystem.name,
+                package_manager: version_manager_json(ecosystem.package_manager),
+                language: version_manager_json(ecosystem.language)
               }
-            ]
-          }
+            }
+          ]
+        }
 
-          retry_count = 0
-
-          begin
-            response = http_client.post(path: api_url, body: body.to_json)
-            raise ApiError, response.body if response.status >= 400
-          rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
-            retry_count += 1
-            if retry_count <= MAX_REQUEST_RETRIES
-              sleep(rand(3.0..10.0))
-              retry
-            else
-              Dependabot.logger.error(
-                "Failed to record ecosystem meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
-              )
-            end
-          end
+        response = http_client.post(path: api_url, body: body.to_json)
+        if response.status >= 400
+          Dependabot.logger.error(
+            "Failed to record ecosystem meta. Status: #{response.status}, body: #{response.body}"
+          )
         end
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
       end
+    rescue StandardError => e
+      Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
     end
 
     # rubocop:disable Metrics/MethodLength

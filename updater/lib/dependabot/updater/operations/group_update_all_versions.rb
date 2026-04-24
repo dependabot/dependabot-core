@@ -85,9 +85,9 @@ module Dependabot
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
           # the rest of the groups. This prevents multiple PRs from being created for the same dependency.
           groups_without_pr = dependency_snapshot.groups.filter_map do |group|
-            if pr_exists_for_dependency_group?(group)
-              existing_pr = job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }
-              pr_number = existing_pr["pr_number"] if existing_pr
+            existing_pr = find_existing_group_pr(group)
+            if existing_pr
+              pr_number = existing_pr["pr_number"]
 
               Dependabot.logger.info(
                 "Detected existing pull request ##{pr_number} for the dependency group '#{group.name}'."

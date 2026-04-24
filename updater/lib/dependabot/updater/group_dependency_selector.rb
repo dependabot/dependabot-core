@@ -151,7 +151,25 @@ module Dependabot
 
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_by_name_only(changes_by_dir)
-        deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+        directories_by_name = T.let({}, T::Hash[String, T::Array[String]])
+
+        # Collect all directories per dependency name before deduplication
+        changes_by_dir.each do |change|
+          directory = change.job.source.directory || "."
+          Array(change.updated_dependencies).each do |dep|
+            directories_by_name[dep.name] ||= []
+            T.must(directories_by_name[dep.name]) << directory
+          end
+        end
+
+        merged = deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+
+        # Annotate each surviving dependency with all directories where it was updated
+        merged.each do |dep|
+          dep.metadata[:updated_directories] = T.must(directories_by_name[dep.name]).uniq
+        end
+
+        merged
       end
 
       sig do
@@ -261,25 +279,6 @@ module Dependabot
         return nil unless @group.respond_to?(:applies_to)
 
         T.unsafe(@group).applies_to
-      end
-
-      sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
-      def update_type_for_dependency(dep)
-        prev_str = dep.respond_to?(:previous_version) ? dep.previous_version&.to_s : nil
-        curr_str = dep.respond_to?(:version) ? dep.version&.to_s : nil
-        return nil unless prev_str && curr_str
-
-        version_class = version_class_for(dep)
-        return nil unless version_class
-
-        update_type = update_type_from_class(version_class, prev_str, curr_str)
-        return update_type if update_type
-
-        versions = build_versions(version_class, prev_str, curr_str)
-        return nil unless versions
-
-        prev_ver, curr_ver = versions
-        classify_semver_update(prev_ver, curr_ver)
       end
 
       sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }

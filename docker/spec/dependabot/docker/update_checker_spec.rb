@@ -1446,8 +1446,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:tags_fixture_name) { "owasp.json" }
       let(:repo_url) { "https://registry.hub.docker.com/v2/owasp/modsecurity-crs/" }
 
-      new_headers =
+      let(:new_headers) do
         fixture("docker", "registry_manifest_headers", "generic.json")
+      end
 
       before do
         tags_url = repo_url + "/tags/list"
@@ -1566,6 +1567,1093 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "still returns the latest version instead of crashing" do
         expect(latest_version).to eq("17.10")
       end
+    end
+
+    context "when the dependency has a compound suffix with alpine version" do
+      let(:dependency_name) { "golang" }
+      let(:version) { "1.26.0-alpine3.23" }
+      let(:tags_fixture_name) { "golang.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/golang/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      it "updates to the latest version with the same exact suffix" do
+        expect(checker.latest_version).to eq("1.27.0-alpine3.23")
+      end
+    end
+
+    context "when node has alpine suffix with version" do
+      let(:dependency_name) { "node" }
+      let(:version) { "18.0.0-alpine3.18" }
+      let(:tags_fixture_name) { "node_alpine.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/node/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      it "updates to the latest node version keeping the same alpine suffix" do
+        expect(checker.latest_version).to eq("22.0.0-alpine3.18")
+      end
+    end
+
+    context "when the dependency has an architecture-specific suffix" do
+      let(:dependency_name) { "nginx" }
+      let(:tags_fixture_name) { "architecture.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/nginx/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      context "when using arm64 architecture" do
+        let(:version) { "1.25.3-alpine-arm64" }
+
+        it "updates to the latest version with the same arm64 suffix" do
+          expect(checker.latest_version).to eq("1.25.4-alpine-arm64")
+        end
+      end
+
+      context "when using amd64 architecture" do
+        let(:version) { "1.25.3-alpine-amd64" }
+
+        it "updates to the latest version with the same amd64 suffix" do
+          expect(checker.latest_version).to eq("1.25.4-alpine-amd64")
+        end
+      end
+
+      context "when using the multi-arch tag (no architecture suffix)" do
+        let(:version) { "1.25.3-alpine" }
+
+        it "updates to the latest version without an architecture suffix" do
+          expect(checker.latest_version).to eq("1.25.4-alpine")
+        end
+      end
+
+      context "when docker_created_timestamp_validation is enabled" do
+        before do
+          Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+          allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        end
+
+        after { Dependabot::Experiments.reset! }
+
+        context "when using arm64 architecture with newer timestamps on other architectures" do
+          let(:version) { "1.25.3-alpine-arm64" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+              case tag_name
+              when "1.25.3-alpine-arm64"
+                Time.parse("2024-01-01T10:00:00Z")
+              when "1.25.4-alpine-arm64"
+                Time.parse("2024-03-01T10:00:00Z")
+              when "1.25.4-alpine-amd64"
+                Time.parse("2024-04-01T10:00:00Z")
+              when "1.25.4-alpine"
+                Time.parse("2024-05-01T10:00:00Z")
+              end
+            end
+          end
+
+          it "updates to the latest arm64 tag, not a different architecture" do
+            expect(checker.latest_version).to eq("1.25.4-alpine-arm64")
+          end
+        end
+
+        context "when using amd64 architecture with newer timestamps on other architectures" do
+          let(:version) { "1.25.3-alpine-amd64" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+              case tag_name
+              when "1.25.3-alpine-amd64"
+                Time.parse("2024-01-01T10:00:00Z")
+              when "1.25.4-alpine-amd64"
+                Time.parse("2024-03-01T10:00:00Z")
+              when "1.25.4-alpine-arm64"
+                Time.parse("2024-06-01T10:00:00Z")
+              when "1.25.4-alpine"
+                Time.parse("2024-05-01T10:00:00Z")
+              end
+            end
+          end
+
+          it "updates to the latest amd64 tag, not a different architecture" do
+            expect(checker.latest_version).to eq("1.25.4-alpine-amd64")
+          end
+        end
+
+        context "when using multi-arch tag with newer timestamps on arch-specific tags" do
+          let(:version) { "1.25.3-alpine" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+              case tag_name
+              when "1.25.3-alpine"
+                Time.parse("2024-01-01T10:00:00Z")
+              when "1.25.4-alpine"
+                Time.parse("2024-03-01T10:00:00Z")
+              when "1.25.4-alpine-arm64"
+                Time.parse("2024-06-01T10:00:00Z")
+              when "1.25.4-alpine-amd64"
+                Time.parse("2024-06-01T10:00:00Z")
+              end
+            end
+          end
+
+          it "updates to the latest multi-arch tag, not an arch-specific tag" do
+            expect(checker.latest_version).to eq("1.25.4-alpine")
+          end
+        end
+
+        context "when timestamp fetch fails for architecture-specific tags" do
+          let(:version) { "1.25.3-alpine-arm64" }
+
+          before do
+            allow(checker).to receive(:fetch_image_config_created).and_return(nil)
+          end
+
+          it "still updates to the correct architecture tag" do
+            expect(checker.latest_version).to eq("1.25.4-alpine-arm64")
+          end
+        end
+      end
+    end
+
+    context "when a date-embedded tag has a higher semver but is actually older (timestamp validation)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Timestamps based on actual MCR values:
+        # 4.8.1 and 4.8.1-20251014 are the same build (2026-02-10)
+        # 4.8-20250909 and 4.8 are the same build (2025-09-09)
+        created_timestamps = {
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-windowsservercore-ltsc2019" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8-windowsservercore-ltsc2019" => Time.parse("2025-09-09T18:06:45Z")
+        }
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          created_timestamps[tag_name]
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "does not suggest upgrading to the older date-tagged version" do
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when upgrading from a date-tagged version to another (both have dates in tag)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub manifest digest requests needed by precision comparison
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "6gc93c3")))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+        stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "4ea71a1")))
+
+        # Timestamps based on actual MCR values
+        created_timestamps = {
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z")
+        }
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          created_timestamps[tag_name]
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "rejects the older dated tag despite higher semver" do
+        # With the experiment flag enabled, numeric_version strips the date component
+        # from dated tags. 4.8-20250909 therefore compares as "4.8", while
+        # 4.8.1-20251014 compares as "4.8.1". remove_version_downgrades rejects
+        # 4.8-20250909 as a downgrade from 4.8.1, so even though its raw tag looks
+        # "higher" when the date is included, no upgrade is suggested.
+        expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation is disabled (flag off)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, false)
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "falls back to semver-based ordering (existing behavior with date inflation)" do
+        # Without timestamp validation, dated/non-dated split is inactive and
+        # dates inflate semver: Gem::Version("4.8.20250909") > Gem::Version("4.8.1")
+        # This is the broken behavior that the experiment flag fixes.
+        expect(checker.latest_version).to eq("4.8-20250909-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation is enabled (flag on) for the same scenario" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "stays on current version because dated tags are excluded" do
+        # With timestamp validation enabled, the dated/non-dated split is active:
+        # 4.8-20250909 (dated) is not comparable to 4.8.1 (non-dated).
+        # No false upgrade is suggested.
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation cannot fetch config (graceful fallback)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        allow(checker).to receive(:fetch_image_config_created).and_return(nil)
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "stays on current version since dated tags are not comparable" do
+        # Even when timestamp fetch fails, the dated/non-dated split prevents
+        # 4.8-20250909 (dated) from being considered as an upgrade for 4.8.1 (non-dated)
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when timestamp validation with a manifest list (multi-arch image)" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub at the fetch_image_config_created level to avoid interfering with tag listing
+        # Timestamps based on actual MCR values
+        created_timestamps = {
+          "4.8-20250909-windowsservercore-ltsc2022" => Time.parse("2025-09-09T18:06:45Z"),
+          "4.8.1-20251014-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z"),
+          "4.8.1-windowsservercore-ltsc2022" => Time.parse("2026-02-10T20:17:06Z")
+        }
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          created_timestamps[tag_name]
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "validates timestamps and rejects older candidates" do
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when all non-dated candidate tags are genuinely newer by timestamp" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+
+        # Stub manifest digest requests needed by precision comparison
+        stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "6gc93c3")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          if tag_name == "4.8-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          else
+            Time.parse("2026-02-10T20:17:06Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "returns the highest non-dated tag since dated tags are excluded" do
+        # 4.8-20250909 is excluded because it's a dated tag and 4.8 is non-dated.
+        # The only comparable non-dated upgrade is 4.8.1.
+        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when a dated tag has no newer dated tag available" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+        # Stub manifest digest requests
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+
+        # Timestamps: non-dated tag has the newest timestamp, but should still
+        # be excluded because the current tag is dated
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8-20250909-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          when "4.8.1-20251014-windowsservercore-ltsc2022"
+            Time.parse("2026-02-10T20:17:06Z")
+          when "4.8.1-windowsservercore-ltsc2022"
+            # Non-dated tag has the newest timestamp — but it should NOT be picked
+            Time.parse("2026-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "stays on current version, ignoring non-dated tags even with newer timestamps" do
+        # 4.8.1-windowsservercore-ltsc2022 (non-dated, newest timestamp) is excluded.
+        # 4.8.1-20251014-windowsservercore-ltsc2022 is already the highest semver among dated tags
+        # No upgrade available.
+        expect(checker.latest_version).to eq("4.8.1-20251014-windowsservercore-ltsc2022")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.up_to_date?).to be(true)
+      end
+    end
+
+    context "when a dated tag updates to a newer dated tag with the same base version" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet_with_future_dates.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+
+        # Stub manifest digest requests needed by precision comparison
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.1-20990301-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8.1-20251014-windowsservercore-ltsc2022"
+            Time.parse("2025-10-14T18:06:45Z")
+          when "4.8.1-20990301-windowsservercore-ltsc2022"
+            Time.parse("2099-03-01T20:17:06Z")
+          when "4.8-20250909-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          when "4.8.1-windowsservercore-ltsc2022"
+            # Non-dated tag — should NOT be picked even though it exists
+            Time.parse("2026-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "updates to the newer dated tag with the same base version" do
+        # Both are dated, same base version, and timestamp confirms it's newer.
+        # Non-dated 4.8.1-windowsservercore-ltsc2022 is excluded from comparison.
+        expect(checker.latest_version).to eq("4.8.1-20990301-windowsservercore-ltsc2022")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.up_to_date?).to be(false)
+      end
+    end
+
+    context "when a non-dated tag updates to a newer non-dated version, ignoring dated tags" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet_with_future_tags.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+
+        stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.2-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "8ie15e5")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8.1-windowsservercore-ltsc2022"
+            Time.parse("2026-02-10T20:17:06Z")
+          when "4.8.2-windowsservercore-ltsc2022"
+            Time.parse("2026-03-01T10:00:00Z")
+          when "4.8.2-20990301-windowsservercore-ltsc2022"
+            # Dated tag has an even newer timestamp — but should NOT be picked
+            Time.parse("2099-03-01T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "picks the non-dated 4.8.2, not the dated 4.8.2-20990301" do
+        expect(checker.latest_version).to eq("4.8.2-windowsservercore-ltsc2022")
+      end
+    end
+
+    context "when a dated tag updates to a newer dated version, ignoring non-dated tags" do
+      let(:dependency_name) { "dotnet/framework/aspnet" }
+      let(:version) { "4.8.1-20251014-windowsservercore-ltsc2022" }
+      let(:tags_fixture_name) { "aspnet_with_future_tags.json" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/dotnet/framework/aspnet/" }
+      let(:source) { { tag: version } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+
+        stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/4.8.2-20990301-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "9jf26f6")))
+        stub_request(:head, repo_url + "manifests/4.8.1-20990301-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "7hd04d4")))
+        stub_request(:head, repo_url + "manifests/4.8-20250909-windowsservercore-ltsc2022")
+          .and_return(status: 200, body: "", headers: JSON.parse(headers_response.gsub("3ea1ca1", "5fb82b2")))
+
+        allow(checker).to receive(:fetch_image_config_created) do |tag_name|
+          case tag_name
+          when "4.8.1-20251014-windowsservercore-ltsc2022"
+            Time.parse("2025-10-14T18:06:45Z")
+          when "4.8.1-20990301-windowsservercore-ltsc2022"
+            Time.parse("2099-03-01T10:00:00Z")
+          when "4.8.2-20990301-windowsservercore-ltsc2022"
+            Time.parse("2099-03-01T10:00:00Z")
+          when "4.8-20250909-windowsservercore-ltsc2022"
+            Time.parse("2025-09-09T18:06:45Z")
+          when "4.8.2-windowsservercore-ltsc2022"
+            # Non-dated tag has an even newer timestamp — but should NOT be picked
+            Time.parse("2099-03-15T12:00:00Z")
+          end
+        end
+      end
+
+      after { Dependabot::Experiments.reset! }
+
+      it "picks the dated 4.8.2-20990301, not the non-dated 4.8.2" do
+        expect(checker.latest_version).to eq("4.8.2-20990301-windowsservercore-ltsc2022")
+      end
+    end
+  end
+
+  describe "multi-platform validation" do
+    let(:dependency_name) { "nginx" }
+    let(:repo_url) { "https://registry.hub.docker.com/v2/library/nginx/" }
+    let(:tags_fixture_name) { "multi_platform.json" }
+    let(:source) { { tag: version } }
+
+    before do
+      Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+    end
+
+    after { Dependabot::Experiments.reset! }
+
+    context "when candidate has all platforms with valid timestamps" do
+      let(:version) { "1.25.3" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+        candidate_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(candidate_platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "updates to the candidate tag" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when candidate is missing a platform from current" do
+      let(:version) { "1.25.3" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+        # 1.25.4 missing s390x
+        candidate_1254_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+        # 1.25.2 has all platforms
+        candidate_1252_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(candidate_1254_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(candidate_1252_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.1").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.0").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(current_platforms)
+
+        all_timestamps = {
+          "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+          "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z"),
+          "linux/s390x" => Time.parse("2024-03-01T11:00:00Z")
+        }
+        allow(checker).to receive(:fetch_all_platform_timestamps).and_return(all_timestamps)
+      end
+
+      it "skips the candidate missing a platform and falls back to current" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when candidate platform was built before current (beyond 3h tolerance)" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+        # candidate arm64 is older than current arm64 by more than 3 hours
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-02T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T05:00:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.2").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.1").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-02-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-02-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.24.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-12-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-12-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "skips the stale candidate and falls back to current" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when candidate platform timestamps are within 3h tolerance" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+        # candidate arm64 is 2h older than current arm64 — within 3h tolerance
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-02T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T08:30:00Z")
+          }
+        )
+      end
+
+      it "accepts the candidate since timestamps are within tolerance" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when current tag is single-platform (not a manifest list)" do
+      let(:version) { "1.25.3" }
+
+      before do
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(nil)
+
+        # Falls back to simple timestamp comparison
+        allow(checker).to receive(:fetch_image_config_created).with("1.25.3")
+                                                              .and_return(Time.parse("2024-01-01T10:00:00Z"))
+        allow(checker).to receive(:fetch_image_config_created).with("1.25.4")
+                                                              .and_return(Time.parse("2024-03-01T10:00:00Z"))
+      end
+
+      it "skips multi-platform validation and uses simple timestamp comparison" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when candidate is single-platform but current is multi-platform" do
+      let(:version) { "1.25.3" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.1").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.0").and_return(nil)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(nil)
+      end
+
+      it "rejects the single-platform candidate" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when timestamps are unavailable for all platforms" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive_messages(
+          fetch_manifest_platforms: platforms,
+          fetch_all_platform_timestamps: {
+            "linux/amd64" => nil,
+            "linux/arm64/v8" => nil
+          }
+        )
+      end
+
+      it "trusts semver ordering (both timestamps nil)" do
+        expect(checker.latest_version).to eq("1.25.4")
+      end
+    end
+
+    context "when only candidate timestamp is unavailable for a platform" do
+      let(:version) { "1.25.3" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).and_return(platforms)
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => nil
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.2").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.1").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-12-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-12-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-11-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-11-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.24.0").and_return(
+          {
+            "linux/amd64" => Time.parse("2023-10-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2023-10-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "conservatively rejects the candidate and falls back" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when first candidate fails validation but second passes" do
+      let(:version) { "1.25.2" }
+
+      before do
+        platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+        missing_platform = [
+          { "os" => "linux", "architecture" => "amd64" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(platforms)
+        # 1.25.4 missing arm64
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(missing_platform)
+        # 1.25.3 has all platforms
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(platforms)
+
+        all_timestamps = {
+          "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+          "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+        }
+        allow(checker).to receive(:fetch_all_platform_timestamps).and_return(all_timestamps)
+      end
+
+      it "skips the first candidate and returns the second" do
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+    end
+
+    context "when all candidates fail validation" do
+      let(:version) { "1.25.2" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+        # All candidates missing s390x
+        candidate_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.2").and_return(current_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.4").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.3").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.1").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.25.0").and_return(candidate_platforms)
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(candidate_platforms)
+      end
+
+      it "returns the current tag" do
+        expect(checker.latest_version).to eq("1.25.2")
+      end
+    end
+
+    context "when more candidates fail than MAX_PLATFORM_VALIDATION_ATTEMPTS" do
+      let(:tags_fixture_name) { "multi_platform_many_tags.json" }
+      let(:version) { "1.24.0" }
+
+      before do
+        current_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" },
+          { "os" => "linux", "architecture" => "s390x" }
+        ]
+        # All candidates missing s390x — every validation will fail
+        candidate_platforms = [
+          { "os" => "linux", "architecture" => "amd64" },
+          { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+        ]
+
+        allow(checker).to receive(:fetch_manifest_platforms).with("1.24.0").and_return(current_platforms)
+        # Stub all candidates to fail validation
+        %w(1.25.7 1.25.6 1.25.5 1.25.4 1.25.3 1.25.2 1.25.1 1.25.0).each do |tag|
+          allow(checker).to receive(:fetch_manifest_platforms).with(tag).and_return(candidate_platforms)
+        end
+      end
+
+      it "stops validating after MAX_PLATFORM_VALIDATION_ATTEMPTS and accepts the next candidate" do
+        # With 8 candidates above 1.24.0 and a cap of 5, the 6th candidate (1.25.2)
+        # is accepted without timestamp validation
+        expect(checker.latest_version).to eq("1.25.2")
+      end
+
+      it "does not call fetch_manifest_platforms more than MAX_PLATFORM_VALIDATION_ATTEMPTS times for candidates" do
+        checker.latest_version
+
+        # The cap should prevent validation of candidates beyond the limit.
+        # 5 candidates validated (1.25.7..1.25.3) + 1 current tag fetch = at most 6 calls
+        # for unique tags, but the 6th candidate (1.25.2) is accepted without validation.
+        failed_candidate_tags = %w(1.25.7 1.25.6 1.25.5 1.25.4 1.25.3)
+        failed_candidate_tags.each do |tag|
+          expect(checker).to have_received(:fetch_manifest_platforms).with(tag)
+        end
+        # Tags beyond the cap should NOT have been validated
+        expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.1")
+        expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.0")
+      end
+    end
+  end
+
+  describe "#version_related_pattern?" do
+    context "when docker_created_timestamp_validation is disabled (legacy patterns)" do
+      it "filters mixed alphanumeric identifiers with digits via broad regex" do
+        expect(checker.send(:version_related_pattern?, "alpine3")).to be true
+        expect(checker.send(:version_related_pattern?, "ltsc2022")).to be true
+        expect(checker.send(:version_related_pattern?, "ltsc2019")).to be true
+        expect(checker.send(:version_related_pattern?, "nanoserver1809")).to be true
+        expect(checker.send(:version_related_pattern?, "rc1")).to be true
+        expect(checker.send(:version_related_pattern?, "beta2")).to be true
+        expect(checker.send(:version_related_pattern?, "alpha3")).to be true
+      end
+
+      it "filters rc and jre as known versioning tokens" do
+        expect(checker.send(:version_related_pattern?, "rc")).to be true
+        expect(checker.send(:version_related_pattern?, "jre")).to be true
+      end
+
+      it "does not filter pure-letter identifiers without digits" do
+        expect(checker.send(:version_related_pattern?, "alpha")).to be false
+        expect(checker.send(:version_related_pattern?, "dev")).to be false
+        expect(checker.send(:version_related_pattern?, "preview")).to be false
+        expect(checker.send(:version_related_pattern?, "nightly")).to be false
+        expect(checker.send(:version_related_pattern?, "snapshot")).to be false
+        expect(checker.send(:version_related_pattern?, "canary")).to be false
+        expect(checker.send(:version_related_pattern?, "ea")).to be false
+      end
+
+      it "filters purely numeric parts" do
+        expect(checker.send(:version_related_pattern?, "123")).to be true
+        expect(checker.send(:version_related_pattern?, "20250909")).to be true
+      end
+
+      it "filters structural version patterns" do
+        expect(checker.send(:version_related_pattern?, "1.2")).to be true
+        expect(checker.send(:version_related_pattern?, "v2")).to be true
+        expect(checker.send(:version_related_pattern?, "KB4505057")).to be true
+        expect(checker.send(:version_related_pattern?, "kb4487017")).to be true
+        expect(checker.send(:version_related_pattern?, "0a1")).to be true
+        expect(checker.send(:version_related_pattern?, "0b1")).to be true
+        expect(checker.send(:version_related_pattern?, "0rc1")).to be true
+      end
+
+      it "does not filter pure-letter platform names" do
+        expect(checker.send(:version_related_pattern?, "bookworm")).to be false
+        expect(checker.send(:version_related_pattern?, "bullseye")).to be false
+        expect(checker.send(:version_related_pattern?, "windowsservercore")).to be false
+        expect(checker.send(:version_related_pattern?, "alpine")).to be false
+        expect(checker.send(:version_related_pattern?, "slim")).to be false
+        expect(checker.send(:version_related_pattern?, "nanoserver")).to be false
+      end
+    end
+
+    context "when docker_created_timestamp_validation is enabled" do
+      before { Dependabot::Experiments.register(:docker_created_timestamp_validation, true) }
+      after { Dependabot::Experiments.reset! }
+
+      it "does not filter platform identifiers that contain digits" do
+        expect(checker.send(:version_related_pattern?, "alpine3")).to be false
+        expect(checker.send(:version_related_pattern?, "ltsc2022")).to be false
+        expect(checker.send(:version_related_pattern?, "ltsc2019")).to be false
+        expect(checker.send(:version_related_pattern?, "nanoserver1809")).to be false
+      end
+
+      it "does not filter non-structural identifiers (handled by suffix matching instead)" do
+        expect(checker.send(:version_related_pattern?, "rc1")).to be false
+        expect(checker.send(:version_related_pattern?, "beta2")).to be false
+        expect(checker.send(:version_related_pattern?, "alpha")).to be false
+        expect(checker.send(:version_related_pattern?, "alpha3")).to be false
+        expect(checker.send(:version_related_pattern?, "dev")).to be false
+        expect(checker.send(:version_related_pattern?, "preview")).to be false
+        expect(checker.send(:version_related_pattern?, "nightly")).to be false
+        expect(checker.send(:version_related_pattern?, "snapshot")).to be false
+        expect(checker.send(:version_related_pattern?, "canary")).to be false
+        expect(checker.send(:version_related_pattern?, "ea")).to be false
+        expect(checker.send(:version_related_pattern?, "rc")).to be false
+        expect(checker.send(:version_related_pattern?, "jre")).to be false
+      end
+
+      it "filters purely numeric parts" do
+        expect(checker.send(:version_related_pattern?, "123")).to be true
+        expect(checker.send(:version_related_pattern?, "20250909")).to be true
+      end
+
+      it "filters structural version patterns" do
+        expect(checker.send(:version_related_pattern?, "1.2")).to be true
+        expect(checker.send(:version_related_pattern?, "v2")).to be true
+        expect(checker.send(:version_related_pattern?, "KB4505057")).to be true
+        expect(checker.send(:version_related_pattern?, "kb4487017")).to be true
+        expect(checker.send(:version_related_pattern?, "0a1")).to be true
+        expect(checker.send(:version_related_pattern?, "0b1")).to be true
+        expect(checker.send(:version_related_pattern?, "0rc1")).to be true
+      end
+
+      it "does not filter pure-letter platform names" do
+        expect(checker.send(:version_related_pattern?, "bookworm")).to be false
+        expect(checker.send(:version_related_pattern?, "bullseye")).to be false
+        expect(checker.send(:version_related_pattern?, "windowsservercore")).to be false
+        expect(checker.send(:version_related_pattern?, "alpine")).to be false
+        expect(checker.send(:version_related_pattern?, "slim")).to be false
+        expect(checker.send(:version_related_pattern?, "nanoserver")).to be false
+      end
+    end
+  end
+
+  describe "#cooldown_period?" do
+    let(:version) { "1.0.0" }
+    let(:update_cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 5,
+        semver_major_days: 14,
+        semver_minor_days: 7,
+        semver_patch_days: 2
+      )
+    end
+    let(:release_date) { Time.now - (8 * 24 * 60 * 60) }
+
+    it "uses semver_major_days for major updates" do
+      candidate_tag = Dependabot::Docker::Tag.new("2.0.0")
+
+      expect(checker.send(:cooldown_period?, release_date, candidate_tag)).to be true
+    end
+
+    it "uses semver_minor_days for minor updates" do
+      candidate_tag = Dependabot::Docker::Tag.new("1.1.0")
+
+      expect(checker.send(:cooldown_period?, release_date, candidate_tag)).to be false
+    end
+
+    it "uses semver_patch_days for patch updates" do
+      candidate_tag = Dependabot::Docker::Tag.new("1.0.1")
+
+      expect(checker.send(:cooldown_period?, release_date, candidate_tag)).to be false
     end
   end
 

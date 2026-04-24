@@ -806,6 +806,19 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to be(true) }
       end
+
+      context "when the source reference uses compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20260408"
+          }
+        end
+
+        it { is_expected.to be(true) }
+      end
     end
 
     context "with a non-version pin" do
@@ -819,6 +832,19 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it { is_expected.to be(false) }
+
+      context "when the pin looks like invalid compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20261399"
+          }
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
 
     context "with no ref" do
@@ -1112,6 +1138,25 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("tags/v1.13.0") }
         end
       end
+
+      # Repos with mixed version schemes (semver and date-based tags) should only
+      # match tags with the same versioning scheme.
+      context "when repo has mixed version schemes (semver and date-based tags)" do
+        let(:repo_url) { "https://github.com/norwoodj/helm-docs.git" }
+        let(:upload_pack_fixture) { "helm-docs" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/norwoodj/helm-docs",
+            branch: "master",
+            ref: "v1.14.2"
+          }
+        end
+
+        it "only considers tags with matching prefix (excludes date-based tags)" do
+          expect(local_tag_for_latest_version[:tag]).to eq("v1.14.2")
+        end
+      end
     end
   end
 
@@ -1242,6 +1287,67 @@ RSpec.describe Dependabot::GitCommitChecker do
         it { is_expected.to be_nil }
       end
     end
+
+    context "with compact CalVer tags pinned to compact CalVer" do
+      let(:upload_pack_fixture) { "no_tags" }
+      let(:version) { "20260408" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: version
+        }
+      end
+
+      let(:compact_calver_refs) do
+        [
+          Dependabot::GitRef.new(
+            name: "20260408",
+            ref_sha: "a" * 40,
+            commit_sha: "a" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "20260409",
+            ref_sha: "b" * 40,
+            commit_sha: "b" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "20260410",
+            ref_sha: "c" * 40,
+            commit_sha: "c" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "2026.04.11",
+            ref_sha: "d" * 40,
+            commit_sha: "d" * 40,
+            ref_type: Dependabot::RefType::Tag
+          )
+        ]
+      end
+
+      let(:latest_compact_calver) do
+        {
+          commit_sha: "c" * 40,
+          tag: "20260410",
+          tag_sha: "c" * 40,
+          version: anything
+        }
+      end
+
+      before do
+        allow(checker).to receive_messages(
+          local_tag_for_pinned_sha: nil,
+          local_refs: compact_calver_refs
+        )
+      end
+
+      it { is_expected.to match(latest_compact_calver) }
+    end
   end
 
   describe "#local_ref_for_latest_version_lower_precision" do
@@ -1369,6 +1475,94 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it { is_expected.to match(latest_minor_tag) }
+      end
+    end
+  end
+
+  describe "#all_version_tags" do
+    subject(:all_version_tags) { checker.all_version_tags }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:upload_pack_fixture) { "gatsby" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "when pinned to a commit SHA in a monorepo with multiple tag prefixes" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      end
+
+      it "returns all version tags without prefix filtering" do
+        tag_names = all_version_tags.map(&:name)
+        # Should include tags from ALL prefixes since it doesn't filter by prefix
+        expect(tag_names).to include("0.2.0")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.40")
+      end
+
+      it "includes more tags than allowed_version_tags when SHA doesn't match a tag" do
+        # allowed_version_tags would filter by prefix based on local_tag_for_pinned_sha
+        # which returns nil for an unknown SHA, allowing all tags or filtering by wrong prefix
+        # all_version_tags should consistently return all version tags
+        expect(all_version_tags.length).to be >= checker.allowed_version_tags.length
+      end
+    end
+
+    context "when pinned to a version-looking ref in a monorepo" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "gatsby-transformer-sqip@2.0.39"
+        }
+      end
+
+      it "returns all version tags without prefix filtering" do
+        tag_names = all_version_tags.map(&:name)
+        expect(tag_names).to include("0.2.0")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.40")
+      end
+
+      it "returns more tags than allowed_version_tags (which filters by prefix)" do
+        expect(all_version_tags.length).to be > checker.allowed_version_tags.length
+      end
+    end
+
+    context "with ignored versions" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      end
+      let(:ignored_versions) { [">= 2.0.40"] }
+
+      it "excludes ignored versions but keeps all prefixes" do
+        tag_names = all_version_tags.map(&:name)
+        # Should still include tags from all prefixes
+        expect(tag_names).to include("0.2.0")
+        expect(tag_names).to include("gatsby-transformer-sqip@2.0.39")
+        # But filter out ignored versions
+        expect(tag_names).not_to include("gatsby-transformer-sqip@2.0.40")
       end
     end
   end

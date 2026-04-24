@@ -628,11 +628,23 @@ public class MSBuildHelperTests : TestBase
             // output
             """
             Output:
-            Using Msbuild from '/usr/local/dotnet/current/sdk/9.0.307'.
+            Using Msbuild from '/usr/local/dotnet/current/sdk/9.0.311'.
             Found multiple project files for '/home/dependabot/dependabot-updater/repo/path/to/packages.config'.
             """,
             // expectedError
             new UnknownError(new Exception("Multiple project files found for single packages.config"), "TEST-JOB-ID"),
+        ];
+
+        yield return
+        [
+            // output
+            """
+            Error parsing packages.config file at /path/to/packages.config: Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it. Line 1, position 5.
+
+            ^^^ this blank line is necessary to force a newline at the end of the output
+            """,
+            // expectedError
+            new DependencyFileNotParseable("/path/to/packages.config", "Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it. Line 1, position 5.")
         ];
     }
 }

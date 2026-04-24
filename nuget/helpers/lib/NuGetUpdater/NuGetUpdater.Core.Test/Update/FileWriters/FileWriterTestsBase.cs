@@ -24,7 +24,7 @@ public abstract class FileWriterTestsBase
         var requiredDependencies = requiredDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
         var addPackageReferenceElementForPinnedPackages = !useCentralPackageTransitivePinning;
         var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, addPackageReferenceElementForPinnedPackages);
-        Assert.True(success);
+        Assert.True(success, "Expected UpdatePackageVersionsAsync to succeed.");
 
         var expectedFileNames = expectedFiles.Select(f => f.path).ToHashSet();
         var actualFiles = (await tempDir.ReadFileContentsAsync(expectedFileNames)).ToDictionary(f => f.Path, f => f.Contents);

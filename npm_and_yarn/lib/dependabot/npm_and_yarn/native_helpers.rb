@@ -10,7 +10,7 @@ module Dependabot
 
       sig { returns(String) }
       def self.helper_path
-        "node #{File.join(native_helpers_root, 'run.js')}"
+        "node #{File.join(native_helpers_root, 'dist', 'run.js')}"
       end
 
       sig { returns(String) }

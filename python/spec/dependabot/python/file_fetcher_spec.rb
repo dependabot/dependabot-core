@@ -234,6 +234,18 @@ RSpec.describe Dependabot::Python::FileFetcher do
               .to match_array(%w(todo.txt requirements.txt))
           end
         end
+
+        context "when python_requirements_file_name_filtering is enabled" do
+          before do
+            Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
+          end
+
+          it "skips the non-requirements txt file" do
+            expect(file_fetcher_instance.files.count).to eq(1)
+            expect(file_fetcher_instance.files.map(&:name))
+              .to eq(["requirements.txt"])
+          end
+        end
       end
 
       context "when dealing with a todo.txt can't be encoded to UTF-8" do
@@ -654,6 +666,30 @@ RSpec.describe Dependabot::Python::FileFetcher do
             )
           )
       end
+
+      context "when python_requirements_file_name_filtering is enabled" do
+        before do
+          Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
+        end
+
+        it "still fetches requirements files from subdirectories using the full path for filtering" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(
+                requirements.txt
+                setup.py
+                requirements/coverage.txt
+                requirements/test.txt
+                requirements/tools.txt
+                requirements/typing.txt
+                requirements/coverage.in
+                requirements/test.in
+                requirements/tools.in
+                requirements/typing.in
+              )
+            )
+        end
+      end
     end
 
     context "with a cascading requirement" do
@@ -836,6 +872,59 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with a constraint (-c) reference in a .in file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_requirements_with_in_file.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "requirements.in?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_in_with_constraint.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      context "when fetchable" do
+        before do
+          stub_request(:get, url + "constraints.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "python_constraints_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the constraints file referenced from the .in file" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to include("constraints.txt")
+        end
+      end
+
+      context "when an unfetchable path is present" do
+        before do
+          stub_request(:get, url + "constraints.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+        end
+
+        it "raises a DependencyFileNotFound error with details" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+    end
+
     context "with a path-based dependency that it's not fetchable" do
       let(:directory) { "/requirements" }
 
@@ -910,6 +999,33 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
 
       it "does not raise an error when the sdist/wheel file is missing" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
+      end
+    end
+
+    context "with a path-based .whl dependency with environment markers" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_whl_env_marker.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "lib/aiortc-1.4.0-py3-none-any.whl?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, url + "lib?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "strips environment markers and does not raise an error" do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).to eq(["requirements.txt"])
       end

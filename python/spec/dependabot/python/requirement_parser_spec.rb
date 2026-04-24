@@ -354,4 +354,107 @@ RSpec.describe Dependabot::Python::RequirementParser do
       end
     end
   end
+
+  describe ".parse class method" do
+    subject(:result) { described_class.parse(dependency_string) }
+
+    context "with an exact pin" do
+      let(:dependency_string) { "types-requests==2.31.0.10" }
+
+      it "returns the parsed dependency" do
+        expect(result).to eq(
+          name: "types-requests",
+          normalised_name: "types-requests",
+          version: "2.31.0.10",
+          requirement: "==2.31.0.10",
+          extras: nil,
+          markers: nil
+        )
+      end
+    end
+
+    context "with extras" do
+      let(:dependency_string) { "requests[security]==2.28.0" }
+
+      it "returns extras in the result" do
+        expect(result[:name]).to eq("requests")
+        expect(result[:extras]).to eq("security")
+        expect(result[:version]).to eq("2.28.0")
+        expect(result[:requirement]).to eq("==2.28.0")
+      end
+    end
+
+    context "with multiple extras" do
+      let(:dependency_string) { "package[extra1,extra2]==1.0.0" }
+
+      it "returns all extras" do
+        expect(result[:extras]).to eq("extra1,extra2")
+        expect(result[:version]).to eq("1.0.0")
+      end
+    end
+
+    context "with a lower-bound range" do
+      let(:dependency_string) { "pydantic>=2.5.3,<3.0" }
+
+      it "extracts the lower bound as version" do
+        expect(result[:name]).to eq("pydantic")
+        expect(result[:normalised_name]).to eq("pydantic")
+        expect(result[:version]).to eq("2.5.3")
+        expect(result[:requirement]).to eq(">=2.5.3,<3.0")
+      end
+    end
+
+    context "with a compatible release operator" do
+      let(:dependency_string) { "black~=23.0" }
+
+      it "extracts the version" do
+        expect(result[:name]).to eq("black")
+        expect(result[:version]).to eq("23.0")
+      end
+    end
+
+    context "with no version constraint" do
+      let(:dependency_string) { "requests" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with an empty string" do
+      let(:dependency_string) { "" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with name normalization" do
+      let(:dependency_string) { "Types_PyYAML==6.0.12.12" }
+
+      it "normalises underscores and case" do
+        expect(result[:name]).to eq("Types_PyYAML")
+        expect(result[:normalised_name]).to eq("types-pyyaml")
+        expect(result[:version]).to eq("6.0.12.12")
+      end
+    end
+
+    context "with markers" do
+      let(:dependency_string) { 'urllib3>=1.21.1,<2 ; python_version >= "3.6"' }
+
+      it "includes markers" do
+        expect(result[:name]).to eq("urllib3")
+        expect(result[:version]).to eq("1.21.1")
+        expect(result[:markers]).to include("python_version")
+      end
+    end
+
+    context "with only upper bound" do
+      let(:dependency_string) { "requests<3.0" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with only != constraint" do
+      let(:dependency_string) { "requests!=2.0" }
+
+      it { is_expected.to be_nil }
+    end
+  end
 end

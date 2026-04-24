@@ -82,9 +82,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
   end
 
   it_behaves_like "an update checker"
@@ -189,6 +186,37 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+    end
+
+    context "with a Poetry project" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.18.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "2.18.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) { fixture("pypi", "pypi_simple_response_requests.html") }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.19.0"]
+          )
+        ]
+      end
+
+      it "finds the lowest non-vulnerable version from the registry" do
+        expect(lowest_fix_version).to eq(Gem::Version.new("2.19.1"))
+      end
     end
   end
 
@@ -485,6 +513,1062 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             .to eq(Gem::Version.new("2.5.0"))
         end
       end
+
+      context "when urllib3 is pinned via constraints and botocore is incompatible" do
+        let(:dependency_name) { "urllib3" }
+        let(:constraints_pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: <<~TOML
+              [project]
+              name = "dependabot-test"
+              version = "0.1.0"
+
+              dependencies = [
+                  "requests==2.31.0",
+              ]
+
+              [tool.pip]
+              constraints = "constraints.txt"
+            TOML
+          )
+        end
+        let(:dependency_version) { "1.26.0" }
+        let(:pypi_url) { "https://pypi.org/simple/urllib3/" }
+        let(:pypi_response) do
+          <<~HTML
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <a href="https://files.pythonhosted.org/packages/source/u/urllib3/urllib3-1.26.0.tar.gz">urllib3-1.26.0.tar.gz</a>
+                <a href="https://files.pythonhosted.org/packages/source/u/urllib3/urllib3-2.6.3.tar.gz">urllib3-2.6.3.tar.gz</a>
+              </body>
+            </html>
+          HTML
+        end
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: <<~TOML
+              [project]
+              name = "dependabot-test"
+              version = "0.1.0"
+
+              dependencies = [
+                  "requests==2.31.0",
+                  "botocore==1.29.0",
+              ]
+
+              [tool.pip]
+              constraints = "constraints.txt"
+            TOML
+          )
+        end
+        let(:constraints_file) do
+          Dependabot::DependencyFile.new(
+            name: "constraints.txt",
+            content: "urllib3==1.26.0\n"
+          )
+        end
+        let(:dependency_files) { [pyproject, constraints_file] }
+        let(:botocore_requires_dist) do
+          [
+            "urllib3 (<1.27,>=1.25.4)",
+            "jmespath (<2.0.0,>=0.7.1)"
+          ]
+        end
+        let(:dependency_requirements) do
+          [{
+            file: "constraints.txt",
+            requirement: "==1.26.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        before do
+          stub_request(:get, "https://pypi.org/pypi/botocore/1.29.0/json/")
+            .to_return(
+              status: 200,
+              body: {
+                info: {
+                  requires_dist: botocore_requires_dist
+                }
+              }.to_json
+            )
+
+          stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+            .to_return(
+              status: 200,
+              body: {
+                info: {
+                  requires_dist: [
+                    "urllib3 (<3,>=1.21.1)",
+                    "idna (<4,>=2.5)"
+                  ]
+                }
+              }.to_json
+            )
+        end
+
+        it "does not propose an update that is incompatible with pinned botocore" do
+          expect(latest_resolvable_version).to be_nil
+        end
+
+        context "when pinned direct dependency includes extras" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore[crt]==1.29.0",
+                ]
+
+                [tool.pip]
+                constraints = "constraints.txt"
+              TOML
+            )
+          end
+
+          it "still blocks incompatible update candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when constraints file does not start with constraints" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+
+                [tool.pip]
+                constraints = "pins.txt"
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_requirements) do
+            [{
+              file: "pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "still applies the conflict guard" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when constraints file uses legacy constraints naming without explicit declaration" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "constraints.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_requirements) do
+            [{
+              file: "constraints.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "keeps applying the guard for legacy constraints projects" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when constraints file is referenced from requirements file" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, requirements_file, constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          context "when referenced using --constraint" do
+            let(:requirements_file) do
+              Dependabot::DependencyFile.new(
+                name: "requirements.in",
+                content: "--constraint pins.txt\nurllib3\n"
+              )
+            end
+
+            it "discovers constraints file from requirements and applies the guard" do
+              expect(latest_resolvable_version).to be_nil
+            end
+          end
+
+          context "when referenced using --constraint=" do
+            let(:requirements_file) do
+              Dependabot::DependencyFile.new(
+                name: "requirements.in",
+                content: "--constraint=pins.txt\nurllib3\n"
+              )
+            end
+
+            it "discovers constraints file from equals-style syntax" do
+              expect(latest_resolvable_version).to be_nil
+            end
+          end
+
+          context "when referenced using -c" do
+            let(:requirements_file) do
+              Dependabot::DependencyFile.new(
+                name: "requirements.in",
+                content: "-c pins.txt\nurllib3\n"
+              )
+            end
+
+            it "discovers constraints file from short-form syntax" do
+              expect(latest_resolvable_version).to be_nil
+            end
+          end
+
+          context "when referenced using -c=" do
+            let(:requirements_file) do
+              Dependabot::DependencyFile.new(
+                name: "requirements.in",
+                content: "-c=pins.txt\nurllib3\n"
+              )
+            end
+
+            it "discovers constraints file from short-form equals-style syntax" do
+              expect(latest_resolvable_version).to be_nil
+            end
+          end
+
+          context "when referenced with a quoted path containing spaces" do
+            let(:constraints_file) do
+              Dependabot::DependencyFile.new(
+                name: "my pins.txt",
+                content: "urllib3==1.26.0\n"
+              )
+            end
+            let(:dependency_requirements) do
+              [{
+                file: "my pins.txt",
+                requirement: "==1.26.0",
+                groups: [],
+                source: nil
+              }]
+            end
+
+            context "when referenced using --constraint with double quotes" do
+              let(:requirements_file) do
+                Dependabot::DependencyFile.new(
+                  name: "requirements.in",
+                  content: "--constraint \"my pins.txt\"\nurllib3\n"
+                )
+              end
+
+              it "discovers constraints file from quoted long-form syntax" do
+                expect(latest_resolvable_version).to be_nil
+              end
+            end
+
+            context "when referenced using -c= with single quotes" do
+              let(:requirements_file) do
+                Dependabot::DependencyFile.new(
+                  name: "requirements.in",
+                  content: "-c='my pins.txt'\nurllib3\n"
+                )
+              end
+
+              it "discovers constraints file from quoted short-form equals syntax" do
+                expect(latest_resolvable_version).to be_nil
+              end
+            end
+          end
+        end
+
+        context "when constraints file is referenced from a non-requirements manifest" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:manifest_file) do
+            Dependabot::DependencyFile.new(
+              name: "base.in",
+              content: "-c pins.txt\nurllib3\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, manifest_file, constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "does not infer constraints from non-requirements manifests" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when non-requirements files include constraint-looking content" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:notes_file) do
+            Dependabot::DependencyFile.new(
+              name: "docs/notes.md",
+              content: "--constraint pins.txt\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, constraints_file, notes_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "does not infer constraints from non-requirements files" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+
+          context "when a non-requirements txt file includes --constraint" do
+            let(:notes_file) do
+              Dependabot::DependencyFile.new(
+                name: "docs/notes.txt",
+                content: "--constraint pins.txt\n"
+              )
+            end
+
+            it "does not infer constraints from arbitrary txt files" do
+              expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+            end
+          end
+
+          context "when a non-requirements in file includes -c" do
+            let(:notes_file) do
+              Dependabot::DependencyFile.new(
+                name: "docs/notes.in",
+                content: "-c pins.txt\n"
+              )
+            end
+
+            it "does not infer constraints from arbitrary in files" do
+              expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+            end
+          end
+        end
+
+        context "when requires_dist uses a python_full_version marker" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_full_version >= '3.0.0'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "evaluates marker and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker is parenthesized" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; (python_version >= '3.0')",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "evaluates the marker expression and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker has nested boolean expression" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; " \
+              "(python_version < '3.0' or python_full_version >= '3.11.0') and extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "evaluates nested python marker terms and still applies the python constraint" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker mixes python and non-python terms with or" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version < '3.0' or extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "does not treat non-python markers as satisfying python marker checks" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when requires_dist marker mixes python and non-python terms with and" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version >= '3.0' and extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "still applies the python constraint" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist has an unsupported python marker operator" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version ~= '3.0'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "treats the python marker as applicable and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist has malformed python marker syntax" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version >= '3.0",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "fails open for python markers and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker uses unary not for python condition" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; not python_version < '3.0'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "applies the inverted python condition and blocks incompatible candidates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker combines unary not with non-python terms" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; not python_version < '3.0' and not extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "still uses only python marker semantics for compatibility checks" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when requires_dist marker has unary not on non-python term in or expression" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<1.27,>=1.25.4) ; python_version < '3.0' or not extra == 'crt'",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          it "does not treat non-python unary not term as satisfying python marker checks" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when selecting lowest resolvable security fix" do
+          let(:security_advisories) do
+            [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: dependency_name,
+                package_manager: "pip",
+                vulnerable_versions: ["<= 2.6.2"]
+              )
+            ]
+          end
+
+          it "does not return an incompatible security fix version" do
+            expect(checker.lowest_resolvable_security_fix_version).to be_nil
+          end
+        end
+
+        context "when metadata for a pinned dependency is unavailable" do
+          let(:botocore_requires_dist) do
+            [
+              "urllib3 (<3,>=1.25.4)",
+              "jmespath (<2.0.0,>=0.7.1)"
+            ]
+          end
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_raise(Excon::Error::Timeout.new("timeout"))
+          end
+
+          it "blocks update candidates when compatibility cannot be fully evaluated" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata endpoint is unavailable but request succeeds" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(status: 404, body: "")
+          end
+
+          it "does not block candidates when endpoint response indicates metadata is unsupported" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+        end
+
+        context "when metadata returns multiple requirements for the same target dependency" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(
+                status: 200,
+                body: {
+                  info: {
+                    requires_dist: [
+                      "urllib3 (<3,>=1.21.1)",
+                      "urllib3 (<2)",
+                      "idna (<4,>=2.5)"
+                    ]
+                  }
+                }.to_json
+              )
+          end
+
+          it "applies all matching requirements before allowing the candidate" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata includes an invalid requirement with a valid one" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(
+                status: 200,
+                body: {
+                  info: {
+                    requires_dist: [
+                      "urllib3 (<2)",
+                      "urllib3 (this is not valid)"
+                    ]
+                  }
+                }.to_json
+              )
+          end
+
+          it "still enforces valid requirements" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata response body is malformed JSON" do
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(status: 200, body: "{\"info\":")
+          end
+
+          it "blocks update candidates when compatibility cannot be fully evaluated" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata responses differ across multiple registries" do
+          let(:requirements_file) do
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: <<~REQS
+                --index-url https://pypi.org/simple/
+                --extra-index-url https://mirror.example.com/simple/
+              REQS
+            )
+          end
+          let(:dependency_files) { [pyproject, constraints_file, requirements_file] }
+          let(:pyproject) { constraints_pyproject }
+
+          before do
+            stub_request(:get, "https://mirror.example.com/simple/urllib3/")
+              .to_return(status: 200, body: pypi_response)
+          end
+
+          context "when one registry times out and another returns 404" do
+            before do
+              stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+                .to_raise(Excon::Error::Timeout.new("timeout"))
+              stub_request(:get, "https://mirror.example.com/pypi/requests/2.31.0/json/")
+                .to_return(status: 404, body: "")
+            end
+
+            it "fails closed because metadata availability is uncertain" do
+              expect(latest_resolvable_version).to be_nil
+            end
+          end
+
+          context "when one registry is unauthorized but another returns metadata" do
+            before do
+              stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+                .to_return(status: 401, body: "")
+              stub_request(:get, "https://mirror.example.com/pypi/requests/2.31.0/json/")
+                .to_return(
+                  status: 200,
+                  body: {
+                    info: {
+                      requires_dist: [
+                        "urllib3 (<3,>=1.21.1)",
+                        "idna (<4,>=2.5)"
+                      ]
+                    }
+                  }.to_json
+                )
+            end
+
+            it "uses successful metadata from another registry" do
+              expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+            end
+          end
+        end
+
+        context "when constraints path is a URL" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+
+                [tool.pip]
+                constraints = "https://example.com/pins.txt"
+              TOML
+            )
+          end
+          let(:dependency_requirements) do
+            [{
+              file: "https://example.com/pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "applies the guard when requirements reference URL constraints" do
+            expect(latest_resolvable_version).to be_nil
+          end
+
+          context "when requirement references a local file with same basename" do
+            let(:dependency_requirements) do
+              [{
+                file: "pins.txt",
+                requirement: "==1.26.0",
+                groups: [],
+                source: nil
+              }]
+            end
+
+            it "does not apply the guard via basename matching" do
+              expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+            end
+          end
+        end
+
+        context "when metadata endpoint returns unauthorized" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(status: 401, body: "")
+          end
+
+          it "blocks candidates when metadata cannot be trusted" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when metadata endpoint returns a server error" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/requests/2.31.0/json/")
+              .to_return(status: 500, body: "")
+          end
+
+          it "blocks candidates when metadata endpoint is unstable" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when multiple constraints files share the same basename" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "dependabot-test"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+
+                [tool.pip]
+                constraints = "../shared/pins.txt"
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "services/shared/pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:other_constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "other/pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, constraints_file, other_constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "other/pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "uses path-aware matching and does not apply guard for unrelated files" do
+            expect(latest_resolvable_version).to be > Gem::Version.new("1.26.0")
+          end
+
+          context "when requirement file matches the declared nested constraints path" do
+            let(:dependency_requirements) do
+              [{
+                file: "services/shared/pins.txt",
+                requirement: "==1.26.0",
+                groups: [],
+                source: nil
+              }]
+            end
+
+            it "applies the guard for the pyproject that declared the matching path" do
+              expect(latest_resolvable_version).to be_nil
+            end
+          end
+        end
+
+        context "when legacy constraints naming is used in a single nested-pyproject repo" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "service-project"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/constraints.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "services/api/constraints.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "still applies the guard for the only available nested pyproject" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when constraints are inferred in a single nested-pyproject repo" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "service-project"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:manifest_file) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/requirements.in",
+              content: "-c pins.txt\nurllib3\n"
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, manifest_file, constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "services/api/pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "uses the only nested pyproject and blocks incompatible updates" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when constraints apply in a multi-pyproject repo but pyproject ownership is ambiguous" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "root-project"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:service_pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "service-project"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "pins.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:manifest_file) do
+            Dependabot::DependencyFile.new(
+              name: "requirements.in",
+              content: "-c pins.txt\nurllib3\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, service_pyproject, manifest_file, constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "pins.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "fails closed instead of proposing a potentially conflicting update" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+
+        context "when legacy constraints naming is used in a multi-pyproject repo" do
+          let(:pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "root-project"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:service_pyproject) do
+            Dependabot::DependencyFile.new(
+              name: "services/api/pyproject.toml",
+              content: <<~TOML
+                [project]
+                name = "service-project"
+                version = "0.1.0"
+
+                dependencies = [
+                    "requests==2.31.0",
+                    "botocore==1.29.0",
+                ]
+              TOML
+            )
+          end
+          let(:constraints_file) do
+            Dependabot::DependencyFile.new(
+              name: "constraints.txt",
+              content: "urllib3==1.26.0\n"
+            )
+          end
+          let(:dependency_files) { [pyproject, service_pyproject, constraints_file] }
+          let(:dependency_requirements) do
+            [{
+              file: "constraints.txt",
+              requirement: "==1.26.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it "fails closed rather than defaulting to the root pyproject" do
+            expect(latest_resolvable_version).to be_nil
+          end
+        end
+      end
     end
   end
 
@@ -548,6 +1632,58 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
+      end
+
+      context "with a Poetry project" do
+        let(:dependency_files) { [pyproject, poetry_lock] }
+        let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("poetry_locks", "exact_version.lock")
+          )
+        end
+        let(:dependency_name) { "requests" }
+        let(:dependency_version) { "2.18.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "pyproject.toml",
+            requirement: "2.18.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:pypi_url) { "https://pypi.org/simple/requests/" }
+        let(:pypi_response) { fixture("pypi", "pypi_simple_response_requests.html") }
+
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "pip",
+              vulnerable_versions: ["<= 2.19.0"]
+            )
+          ]
+        end
+
+        it "returns the lowest security fix version via the Poetry resolver" do
+          dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new).and_return(dummy_resolver)
+          allow(dummy_resolver).to receive(:resolvable?).with(version: Gem::Version.new("2.19.1"))
+                                                        .and_return(true)
+
+          expect(checker.preferred_resolvable_version).to eq(Gem::Version.new("2.19.1"))
+        end
+
+        context "when the fix version is not resolvable" do
+          it "falls back to nil" do
+            dummy_resolver = instance_double(described_class::PoetryVersionResolver)
+            allow(described_class::PoetryVersionResolver).to receive(:new).and_return(dummy_resolver)
+            allow(dummy_resolver).to receive(:resolvable?).and_return(false)
+
+            expect(checker.preferred_resolvable_version).to be_nil
+          end
+        end
       end
     end
   end
@@ -722,10 +1858,36 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the project is on PyPI but description is not in pyproject.toml" do
+          let(:pyproject_fixture_name) { "poetry_missing_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~2.19.1") }
@@ -751,6 +1913,39 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             # Verify PyPI was only called once (memoization working)
             expect(a_request(:get, "https://pypi.org/pypi/pendulum/json/"))
               .to have_been_made.once
+          end
+        end
+
+        context "when PyPI request raises Excon::Error::Timeout" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Timeout.new("connection timeout"))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
+
+        context "when PyPI request raises Excon::Error::Socket" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
+          end
+        end
+
+        context "when PyPI request raises URI::InvalidURIError" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(URI::InvalidURIError.new("bad URI"))
+          end
+
+          it "treats the project as a library based on metadata" do
+            expect(checker.send(:library?)).to be true
           end
         end
       end
@@ -802,10 +1997,36 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the project is on PyPI but description is dynamic" do
+          let(:pyproject_fixture_name) { "standard_python_dynamic_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
@@ -859,10 +2080,36 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the project is on PyPI but description is dynamic" do
+          let(:pyproject_fixture_name) { "build_system_dynamic_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }

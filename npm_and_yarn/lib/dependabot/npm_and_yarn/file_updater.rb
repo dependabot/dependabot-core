@@ -46,14 +46,11 @@ module Dependabot
                            updated_lockfiles
                          end
 
-        if updated_files.none?
-          if original_pnpm_locks.any?
-            raise_tool_not_supported_for_pnpm_if_transitive
-            raise_miss_configured_tooling_if_pnpm_subdirectory
-          end
+        handle_pnpm_support_file_no_change!(updated_files)
 
+        if updated_files.none?
           raise NoChangeError.new(
-            message: "No files were updated!",
+            message: "No files were updated! Package manager: #{detected_package_manager}",
             error_context: error_context(updated_files: updated_files)
           )
         end
@@ -61,7 +58,7 @@ module Dependabot
         sorted_updated_files = updated_files.sort_by(&:name)
         if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
           raise NoChangeError.new(
-            message: "Updated files are unchanged!",
+            message: "Updated files are unchanged! Package manager: #{detected_package_manager}",
             error_context: error_context(updated_files: updated_files)
           )
         end
@@ -71,9 +68,23 @@ module Dependabot
 
       private
 
+      sig { params(updated_files: T::Array[DependencyFile]).void }
+      def handle_pnpm_support_file_no_change!(updated_files)
+        # Also handle all-support-file updates for pnpm workspaces — this can
+        # happen when pnpm-workspace.yaml and pnpm-lock.yaml are fetched from a
+        # parent directory (marked support_file=true by
+        # fetch_file_from_parent_directories). In that case the updated files
+        # would be filtered out by DependencyChangeBuilder, so we surface the
+        # underlying pnpm misconfiguration.
+        return unless original_pnpm_locks.any?
+        return unless updated_files.none? || updated_files.all?(&:support_file?)
+
+        raise_tool_not_supported_for_pnpm_if_transitive
+        raise_miss_configured_tooling_if_pnpm_subdirectory
+      end
+
       sig { void }
       def raise_tool_not_supported_for_pnpm_if_transitive
-        # ✅ Ensure there are dependencies and check if all are transitive
         return if dependencies.empty? || dependencies.any?(&:top_level?)
 
         raise ToolFeatureNotSupported.new(
@@ -89,17 +100,16 @@ module Dependabot
         workspace_files = original_pnpm_workspace
         lockfiles = original_pnpm_locks
 
-        # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
         return if workspace_files.empty?
         return if workspace_files.any? { |f| f.directory == "/" }
-        return unless workspace_files.all? { |f| f.name.end_with?("../pnpm-workspace.yaml") }
+        return unless workspace_files.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-workspace\.yaml\z}) }
 
-        # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
         return if lockfiles.empty?
         return if lockfiles.any? { |f| f.directory == "/" }
-        return unless lockfiles.all? { |f| f.name.end_with?("../pnpm-lock.yaml") }
+        return unless lockfiles.all? { |f| f.name.match?(%r{\A(\.\./)+pnpm-lock\.yaml\z}) }
 
-        # ❌ Raise error → Updating inside a subdirectory is misconfigured
+        # Updating a workspace from a subdirectory is unsupported when both
+        # pnpm files are sourced from parent directories.
         raise MisconfiguredTooling.new(
           "pnpm",
           "Updating workspaces from inside a workspace subdirectory is not supported. " \
@@ -216,8 +226,18 @@ module Dependabot
         {
           dependencies: dependencies.map(&:to_h),
           updated_files: updated_files.map(&:name),
-          dependency_files: dependency_files.map(&:name)
+          dependency_files: dependency_files.map(&:name),
+          package_manager: detected_package_manager
         }
+      end
+
+      sig { returns(String) }
+      def detected_package_manager
+        return "npm" if package_locks.any?
+        return "yarn" if yarn_locks.any?
+        return "pnpm" if pnpm_locks.any?
+
+        "unknown"
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -286,11 +306,32 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_files
         @package_files ||= T.let(
-          filtered_dependency_files.select do |f|
-            f.name.end_with?("package.json")
+          begin
+            files = filtered_dependency_files.select { |f| f.name.end_with?("package.json") }
+
+            if files.empty? && dependencies.none?(&:top_level?)
+              files = dependency_files
+                      .select { |f| f.name.end_with?("package.json") }
+                      .select { |f| package_json_has_override_for_deps?(f) }
+            end
+
+            files
           end,
           T.nilable(T::Array[DependencyFile])
         )
+      end
+
+      sig { params(package_json: Dependabot::DependencyFile).returns(T::Boolean) }
+      def package_json_has_override_for_deps?(package_json)
+        parsed = JSON.parse(T.must(package_json.content))
+        entries = parsed["resolutions"] || parsed["overrides"] || parsed.dig("pnpm", "overrides") || {}
+        return false unless entries.is_a?(Hash)
+
+        dependencies.any? do |dep|
+          entries.any? { |k, v| v.is_a?(String) && (k == dep.name || k.end_with?("/#{dep.name}")) }
+        end
+      rescue JSON::ParserError
+        false
       end
 
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -349,12 +390,10 @@ module Dependabot
         updated_files.concat(update_pnpm_locks)
 
         package_locks.each do |package_lock|
-          next unless package_lock_changed?(package_lock)
+          lockfile_updates = updated_lockfile_files(package_lock)
+          next if lockfile_updates.empty?
 
-          updated_files << updated_file(
-            file: package_lock,
-            content: T.must(updated_lockfile_content(package_lock))
-          )
+          updated_files.concat(lockfile_updates)
         end
 
         shrinkwraps.each do |shrinkwrap|
@@ -367,6 +406,27 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_lockfile_files(file)
+        return [] unless package_lock_changed?(file)
+
+        updated_file_set = [updated_file(
+          file: file,
+          content: T.must(updated_lockfile_content(file))
+        )]
+
+        already_updated_names = updated_manifest_files.to_set(&:name)
+
+        workspace_package_json_updates(file).each do |manifest_file, updated_content|
+          next if updated_content == manifest_file.content
+          next if already_updated_names.include?(manifest_file.name)
+
+          updated_file_set << updated_file(file: manifest_file, content: updated_content)
+        end
+
+        updated_file_set
       end
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
       def updated_yarn_lock_content(yarn_lock)
@@ -411,16 +471,31 @@ module Dependabot
         )
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(NpmLockfileUpdater) }
+      def npm_lockfile_updater_for(file)
+        @npm_lockfile_updaters ||= T.let(
+          {},
+          T.nilable(T::Hash[String, NpmLockfileUpdater])
+        )
+        @npm_lockfile_updaters[file.name] ||= NpmLockfileUpdater.new(
+          lockfile: file,
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials
+        )
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_lockfile_content(file)
-        @updated_lockfile_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_lockfile_content[file.name] ||=
-          NpmLockfileUpdater.new(
-            lockfile: file,
-            dependencies: dependencies,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).updated_lockfile.content
+        npm_lockfile_updater_for(file).updated_lockfile.content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T::Hash[Dependabot::DependencyFile, String])
+      end
+      def workspace_package_json_updates(file)
+        npm_lockfile_updater_for(file).updated_package_json_files
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }

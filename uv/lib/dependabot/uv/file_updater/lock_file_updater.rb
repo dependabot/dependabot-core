@@ -24,16 +24,9 @@ module Dependabot
         require_relative "pyproject_preparer"
         require_relative "version_config_parser"
         require_relative "lock_file_error_handler"
+        require_relative "lock_index_credential_matcher"
 
         REQUIRED_FILES = %w(pyproject.toml uv.lock).freeze # At least one of these files should be present
-
-        UV_UNRESOLVABLE_REGEX = T.let(/× No solution found when resolving dependencies.*[\s\S]*$/, Regexp)
-        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
-        UV_BUILD_FAILED_REGEX = T.let(/× Failed to build.*[\s\S]*$/, Regexp)
-        UV_REQUIRED_VERSION_REGEX = T.let(
-          /Required uv version `(?<required>[^`]+)` does not match the running version `(?<running>[^`]+)`/,
-          Regexp
-        )
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :dependencies
@@ -270,43 +263,6 @@ module Dependabot
           error_handler.handle_uv_error(e)
         end
 
-        sig { params(error_message: String).returns(T::Boolean) }
-        def resolution_error?(error_message)
-          ["No solution found when resolving dependencies", "Failed to build"].any? do |pattern|
-            error_message.include?(pattern)
-          end
-        end
-
-        sig { params(error_message: String).returns(T.noreturn) }
-        def handle_resolution_error(error_message)
-          match_unresolvable = error_message.scan(UV_UNRESOLVABLE_REGEX).last
-          match_build_failed = error_message.scan(UV_BUILD_FAILED_REGEX).last
-
-          if match_unresolvable
-            formatted_error = Array(match_unresolvable).join
-            conflicting_deps = extract_conflicting_dependencies(formatted_error)
-            raise Dependabot::UpdateNotPossible, conflicting_deps if conflicting_deps.any?
-
-            raise Dependabot::DependencyFileNotResolvable, formatted_error
-          end
-
-          formatted_error = match_build_failed ? Array(match_build_failed).join : error_message
-          raise Dependabot::DependencyFileNotResolvable, formatted_error
-        end
-
-        sig { params(error_message: String).returns(T::Array[String]) }
-        def extract_conflicting_dependencies(error_message)
-          # Extract conflicting dependency names from the error message
-          # Pattern: "Because <pkg>==<ver> depends on <dep>>=<ver> and your project depends on <dep>==<ver>"
-          normalized_message = error_message.gsub(/\s+/, " ")
-          conflict_pattern = /Because (\S+)==\S+ depends on (\S+)[><=!]+\S+ and your project depends on \2==\S+/
-
-          match = normalized_message.match(conflict_pattern)
-          return [] unless match
-
-          [T.must(match[1]), T.must(match[2])].uniq
-        end
-
         sig { returns(LockFileErrorHandler) }
         def error_handler
           @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
@@ -330,7 +286,7 @@ module Dependabot
           command = "pyenv exec uv lock --upgrade-package #{package_spec} #{options}"
           fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> #{options_fingerprint}"
 
-          env_vars = explicit_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
+          env_vars = pyproject_index_env_vars.merge(setuptools_scm_pretend_version_env_vars)
 
           run_command(command, fingerprint: fingerprint, env: env_vars)
         end
@@ -400,18 +356,67 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def lock_index_options
-          credentials
-            .select { |cred| cred["type"] == "python_index" }
-            .reject { |cred| explicit_index?(cred) }
-            .map do |cred|
-            authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+          filtered_credentials = credentials
+                                 .select { |cred| cred["type"] == "python_index" }
+                                 .reject do |cred|
+                                   cred.replaces_base? ? defined_in_pyproject?(cred) : explicit_index?(cred)
+                                 end
 
-            if cred.replaces_base?
-              "--default-index #{authed_url}"
-            else
-              "--index #{authed_url}"
-            end
+          options = T.let([], T::Array[String])
+          used_credential_urls = T.let([], T::Array[String])
+          credential_matcher = LockIndexCredentialMatcher.new(credentials: filtered_credentials)
+
+          uv_lock_registry_urls.each do |registry_url|
+            credential = credential_matcher.best_credential_for_registry_url(registry_url)
+            next unless credential
+
+            used_credential_urls << credential["index-url"].to_s
+            options << option_for_credential_url(credential, authed_registry_url(credential, registry_url))
           end
+
+          # Fall back to credential URLs for indices not represented in uv.lock.
+          filtered_credentials.each do |credential|
+            next if used_credential_urls.include?(credential["index-url"].to_s)
+
+            authed_url = AuthedUrlBuilder.authed_url(credential: credential)
+            options << option_for_credential_url(credential, authed_url)
+          end
+
+          options.uniq
+        end
+
+        sig { params(credential: Dependabot::Credential, url: String).returns(String) }
+        def option_for_credential_url(credential, url)
+          if credential.replaces_base?
+            "--default-index #{url}"
+          else
+            "--index #{url}"
+          end
+        end
+
+        sig { params(credential: Dependabot::Credential, registry_url: String).returns(String) }
+        def authed_registry_url(credential, registry_url)
+          lock_credential = Dependabot::Credential.new(credential.to_h.merge("index-url" => registry_url))
+          AuthedUrlBuilder.authed_url(credential: lock_credential)
+        end
+
+        sig { returns(T::Array[String]) }
+        def uv_lock_registry_urls
+          return [] unless lockfile&.content
+
+          parsed = TomlRB.parse(T.must(lockfile).content)
+          packages = parsed["package"]
+          return [] unless packages.is_a?(Array)
+
+          packages.filter_map do |package|
+            source = package["source"]
+            next unless source.is_a?(Hash)
+
+            registry = source["registry"]
+            registry if registry.is_a?(String)
+          end.uniq
+        rescue TomlRB::ParseError
+          []
         end
 
         sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
@@ -422,6 +427,14 @@ module Dependabot
           uv_indices.any? do |_name, config|
             config["explicit"] == true && normalize_index_url(config["url"].to_s) == cred_url
           end
+        end
+
+        # Checks if a credential's index URL matches any index defined in pyproject.toml.
+        # When true, authentication is provided via env vars so uv uses the pyproject.toml URL,
+        # preserving URL format alignment between pyproject.toml and uv.lock.
+        sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
+        def defined_in_pyproject?(credential)
+          !find_index_name_for_credential(credential).nil?
         end
 
         sig { params(url: String).returns(String) }
@@ -459,16 +472,17 @@ module Dependabot
         # (the proxy handles authentication). This is for those running Dependabot
         # themselves and for dry-run.
         sig { returns(T::Hash[String, String]) }
-        def explicit_index_env_vars
+        def pyproject_index_env_vars
           env_vars = {}
 
-          credentials
-            .select { |cred| cred["type"] == "python_index" }
-            .select { |cred| explicit_index?(cred) }
-            .each do |cred|
-            index_name = find_index_name_for_credential(cred)
-            next unless index_name
+          matched_credentials = credentials
+                                .select { |cred| cred["type"] == "python_index" }
+                                .filter_map do |cred|
+                                  index_name = find_index_name_for_credential(cred)
+                                  [cred, index_name] if index_name
+                                end
 
+          matched_credentials.each do |cred, index_name|
             env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
 
             env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
@@ -496,17 +510,31 @@ module Dependabot
 
         sig { params(options: String).returns(String) }
         def lock_options_fingerprint(options)
-          options.sub(
+          options.gsub(
             /--default-index\s+\S+/, "--default-index <default_index>"
-          ).sub(
+          ).gsub(
             /--index\s+\S+/, "--index <index>"
           )
         end
 
         sig { params(name: T.any(String, Symbol)).returns(String) }
         def escape_package_name(name)
-          # Per PEP 503, Python package names normalize -, _, and . to the same character
-          Regexp.escape(name).gsub(/\\[-_.]/, "[-_.]")
+          name_str = name.to_s
+          match = name_str.match(/\A([^\[]+)\[([^\]]+)\]\z/)
+
+          # Handle extras: "pkg[extra1,extra2]" needs flexible matching for
+          # whitespace around commas and any ordering of extras in source file
+          if match
+            base = Regexp.escape(T.must(match[1])).gsub(/\\[-_.]/, "[-_.]")
+            extras = T.must(match[2]).split(",").map(&:strip)
+            extras_patterns = extras.map { |e| Regexp.escape(e).gsub(/\\[-_.]/, "[-_.]") }
+            # Use lookaheads so extras match in any order
+            lookaheads = extras_patterns.map { |e| "(?=[^\\]]*#{e})" }.join
+            "#{base}\\[#{lookaheads}[^\\]]+\\]"
+          else
+            # Per PEP 503, Python package names normalize -, _, and . to the same character
+            Regexp.escape(name_str).gsub(/\\[-_.]/, "[-_.]")
+          end
         end
 
         sig { params(file: T.nilable(DependencyFile)).returns(T::Boolean) }

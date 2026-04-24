@@ -62,11 +62,11 @@ module Dependabot
         sig { override.returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
-        sig { returns(Dependabot::Package::PackageDetails) }
+        sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def fetch
           case source_type
           when GIT, OTHER
-            package_details([])
+            nil
           else
             rubygems_versions
           end
@@ -130,27 +130,7 @@ module Dependabot
         # ]
         sig { returns(Dependabot::Package::PackageDetails) }
         def rubygems_versions
-          registry_url = get_url_from_dependency(dependency) || "https://rubygems.org"
-
-          # TODO: Github private registry support
-          # registry_url = "https://rubygems.pkg.github.com/#{OWNER_NAME}"
-          # Corresponding API URL:
-          # curl  -H "Accept: application/json" \
-          #       -H "Authorization: Bearer <<TOKEN>>" \
-          #       https://api.github.com/orgs/dsp-testing/packages/rubygems/json/version
-
-          validate_and_check_registry(registry_url)
-        end
-
-        sig { params(registry_url: String).returns(Dependabot::Package::PackageDetails) }
-        def validate_and_check_registry(registry_url)
-          parsed_url = begin
-            URI.parse(registry_url)
-          rescue URI::InvalidURIError
-            raise "Invalid registry URL: #{registry_url}"
-          end
-
-          return github_packages_versions(registry_url) if parsed_url.host == "rubygems.pkg.github.com"
+          registry_url = get_url_from_dependency(dependency) || replaces_base_registry_url || "https://rubygems.org"
 
           fetch_and_process_rubygems_response(registry_url)
         end
@@ -216,6 +196,20 @@ module Dependabot
           Dependabot.logger.info(message)
         end
 
+        sig { returns(T.nilable(String)) }
+        def replaces_base_registry_url
+          credential = credentials.find do |cred|
+            cred["type"] == "rubygems_server" && cred.replaces_base?
+          end
+          return nil unless credential
+
+          host = credential.fetch("host", nil)
+          return nil unless host.is_a?(String) && !host.empty?
+
+          url = "https://#{host}"
+          url.end_with?("/") ? url.chop : url
+        end
+
         sig { params(dependency: T.untyped).returns(T.nilable(String)) }
         def get_url_from_dependency(dependency)
           return nil unless dependency&.requirements&.any?
@@ -237,61 +231,6 @@ module Dependabot
             url: url,
             headers: { "Accept" => APPLICATION_JSON }
           )
-        end
-
-        sig { params(registry_url: String).returns(Dependabot::Package::PackageDetails) }
-        def github_packages_versions(registry_url)
-          # Extract org name from URL like "https://rubygems.pkg.github.com/dsp-testing/"
-          org_name = registry_url.split("/").last
-
-          # GitHub Packages API endpoint for RubyGems packages
-          api_url = "https://api.github.com/orgs/#{org_name}/packages/rubygems/#{dependency.name}/versions"
-
-          response = Dependabot::RegistryClient.get(
-            url: api_url,
-            headers: {
-              "Accept" => "application/vnd.github.v3+json",
-              "Authorization" => "Bearer #{github_token}"
-            }
-          )
-
-          unless response.status == 200
-            error_details = "Status: #{response.status}"
-            error_details += " (Package not found in GitHub Registry)" if response.status == 404
-            error_message = "Failed to fetch versions for '#{dependency.name}' from GitHub Packages. #{error_details}"
-            Dependabot.logger.info(error_message)
-            return package_details([])
-          end
-
-          begin
-            versions_data = JSON.parse(response.body)
-            package_releases = versions_data.map do |version_info|
-              # GitHub Packages API returns different structure than RubyGems
-              version_number = version_info["name"] # GitHub uses "name" for version
-              created_at = version_info["created_at"]
-
-              package_release(
-                version: version_number,
-                released_at: Time.parse(created_at),
-                downloads: 0, # GitHub Packages doesn't provide download counts
-                url: "#{registry_url}/gems/#{dependency.name}-#{version_number}.gem",
-                ruby_version: nil # GitHub Packages API doesn't provide ruby version requirements
-              )
-            end
-
-            package_details(package_releases)
-          rescue JSON::ParserError => e
-            Dependabot.logger.info("Failed to parse GitHub Packages response: #{e.message}")
-            package_details([])
-          end
-        end
-
-        sig { returns(T.nilable(String)) }
-        def github_token
-          github_credential = credentials.find do |cred|
-            cred["type"] == "rubygems_server" && cred["host"] == "rubygems.pkg.github.com"
-          end
-          github_credential&.fetch("token", nil)
         end
 
         sig { params(req_string: String).returns(Requirement) }

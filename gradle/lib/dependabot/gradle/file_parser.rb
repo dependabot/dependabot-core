@@ -60,10 +60,8 @@ module Dependabot
         script_plugin_files.each do |plugin_file|
           dependency_set += buildfile_dependencies(plugin_file)
         end
-        if Experiments.enabled?(:gradle_wrapper_updater)
-          wrapper_properties_file.each do |properties_file|
-            dependency_set += wrapper_properties_dependencies(properties_file)
-          end
+        wrapper_properties_file.each do |properties_file|
+          dependency_set += wrapper_properties_dependencies(properties_file)
         end
         version_catalog_file.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)

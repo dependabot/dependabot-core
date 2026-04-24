@@ -27,7 +27,7 @@ module Dependabot
         if lockfile.nil?
           Dependabot.logger.info("No lockfile found, generating ephemeral lockfile for dependency graphing")
           generate_ephemeral_lockfile!
-          emit_missing_lockfile_warning!
+          emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
       end
@@ -106,6 +106,7 @@ module Dependabot
         # Inject the ephemeral lockfile into the dependency files
         # so the file parser can use it
         inject_ephemeral_lockfile(ephemeral_lockfile)
+        @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
 
         Dependabot.logger.info(
           "Successfully generated ephemeral #{ephemeral_lockfile.name} for dependency graphing"
@@ -122,7 +123,7 @@ module Dependabot
         dependency_files << ephemeral_lockfile
 
         # Clear our cached lockfile reference so it picks up the new one
-        @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
+        remove_instance_variable(:@lockfile) if instance_variable_defined?(:@lockfile)
 
         # Clear the FileParser's memoized lockfile references so it will
         # find the newly injected lockfile when parse is called
@@ -140,9 +141,8 @@ module Dependabot
         Dependabot.logger.warn(
           "No lockfile was found in this repository. " \
           "Dependabot generated a temporary lockfile to determine exact dependency versions.\n\n" \
-          "To ensure consistent builds and security scanning, we recommend:\n" \
-          "  - Committing your package-lock.json (npm), yarn.lock (yarn), or pnpm-lock.yaml (pnpm)\n" \
-          "  - Setting up a scheduled Dependabot graph job to periodically scan for changes\n\n" \
+          "To ensure consistent builds and security scanning, we recommend committing your " \
+          "package-lock.json (npm), yarn.lock (yarn), or pnpm-lock.yaml (pnpm). " \
           "Without a committed lockfile, resolved dependency versions may change between scans " \
           "due to new package releases."
         )

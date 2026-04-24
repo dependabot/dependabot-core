@@ -26,6 +26,19 @@ module Dependabot
       DEPENDENCY_TYPES = T.let(%w(packages dev-packages).freeze, T::Array[String])
       MAX_FILE_SIZE = T.let(500_000, Integer)
 
+      # Regex patterns for detecting Python requirements.txt manifest variants.
+      # Ported from github/dependency-snapshots-api.
+      #
+      # Matches "requirements" preceded by a hyphen, period, underscore, start-of-string, or slash,
+      # followed by non-whitespace chars and ".txt".
+      # Examples: requirements.txt, requirements.prod.txt, requirements/production.txt
+      REQUIREMENTS_TXT_REGEX = T.let(%r{(?:[-._]|^|/)requirements[^\s]*\.txt$}i, Regexp)
+
+      # More lenient: matches "require" with optional prefix (no dots/whitespace)
+      # and optional hyphen/underscore/slash suffix. Does not match "require" as a substring.
+      # Examples: require.txt, require-test.txt, py3-require.txt, pyenv_require_e2e.txt
+      REQUIRE_TXT_REGEX = T.let(%r{[^\s|.]*require(?:[-_/][^\s|.]*)?\.txt$}i, Regexp)
+
       sig { abstract.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files; end
 
@@ -169,7 +182,7 @@ module Dependabot
 
             repo_contents
               .select { |f| f.type == "file" }
-              .select { |f| f.name.end_with?(".txt", ".in") }
+              .select { |f| potential_requirements_file?(f.name) }
               .reject { |f| f.size > MAX_FILE_SIZE }
               .map { |f| fetch_file_from_host(f.name) }
               .select { |f| requirements_file?(f) }
@@ -193,7 +206,7 @@ module Dependabot
 
         repo_contents(dir: relative_reqs_dir)
           .select { |f| f.type == "file" }
-          .select { |f| f.name.end_with?(".txt", ".in") }
+          .select { |f| potential_requirements_file?(File.join(relative_reqs_dir, f.name)) }
           .reject { |f| f.size > MAX_FILE_SIZE }
           .map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }
           .select { |f| requirements_file?(f) }
@@ -238,7 +251,8 @@ module Dependabot
         content = file.content
         return [] if content.nil?
 
-        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten
+        paths = content.scan(CHILD_REQUIREMENT_REGEX).flatten +
+                content.scan(CONSTRAINT_REGEX).flatten
         current_dir = File.dirname(file.name)
 
         paths.flat_map do |path|
@@ -268,7 +282,8 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def constraints_files
         all_requirement_files = requirements_txt_files +
-                                child_requirement_txt_files
+                                child_requirement_txt_files +
+                                requirements_in_files
 
         constraints_paths = all_requirement_files.map do |req_file|
           current_dir = File.dirname(req_file.name)
@@ -283,7 +298,10 @@ module Dependabot
           end
         end.flatten.uniq
 
-        constraints_paths.map { |path| fetch_file_from_host(path) }
+        already_fetched_names = child_requirement_files.map(&:name)
+        constraints_paths
+          .reject { |path| already_fetched_names.include?(path) }
+          .map { |path| fetch_file_from_host(path) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -355,7 +373,7 @@ module Dependabot
 
         uneditable_reqs =
           content
-          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n]*))/)
+          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name } unless p.to_s.include?("://")
@@ -363,7 +381,7 @@ module Dependabot
 
         editable_reqs =
           content
-          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n]*))/)
+          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             unless p.to_s.include?("://") || p.to_s.include?("git@")
@@ -372,6 +390,24 @@ module Dependabot
           end
 
         uneditable_reqs + editable_reqs
+      end
+
+      # Checks if a filename matches known Python requirements.txt naming patterns.
+      sig { params(path: String).returns(T::Boolean) }
+      def requirements_txt_filename?(path)
+        path.match?(REQUIREMENTS_TXT_REGEX) || path.match?(REQUIRE_TXT_REGEX)
+      end
+
+      # When the feature flag is enabled, only considers .txt files whose names match
+      # requirements patterns (plus all .in files). When disabled, falls back to the
+      # original behavior of accepting any .txt or .in file.
+      sig { params(path: String).returns(T::Boolean) }
+      def potential_requirements_file?(path)
+        unless Dependabot::Experiments.enabled?(:python_requirements_file_name_filtering)
+          return path.end_with?(".txt", ".in")
+        end
+
+        path.end_with?(".in") || requirements_txt_filename?(path)
       end
 
       sig { params(path: String).returns(String) }

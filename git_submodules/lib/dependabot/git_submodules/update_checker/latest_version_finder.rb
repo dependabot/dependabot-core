@@ -7,6 +7,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/git_submodules/update_checker"
@@ -19,27 +20,18 @@ module Dependabot
         extend T::Sig
 
         sig do
-          params(
-            dependency: Dependabot::Dependency,
-            credentials: T::Array[Dependabot::Credential],
-            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
-          ).void
+          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
+            .returns(T.nilable(String))
         end
-        def initialize(dependency:, credentials:, cooldown_options:)
-          @dependency = dependency
-          @credentials = credentials
-          @cooldown_options = cooldown_options
-        end
-
-        sig { returns(T.nilable(String)) }
-        def latest_tag
+        def latest_tag(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
           releases = version_list
 
           releases = filter_by_cooldown(T.must(releases))
+          releases = filter_ignored_versions(releases)
 
           # if there are no releases after applying filters, we fallback to the current tag to avoid empty results
           releases = apply_post_fetch_latest_versions_filter(releases)
-          releases.first&.tag
+          releases.max_by(&:version)&.tag
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
@@ -62,10 +54,11 @@ module Dependabot
           end
 
           days = cooldown_days
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(release.released_at), days)
 
-          if passed_days < days
+          if in_cooldown
+            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Filtered #{release.tag}, Released on: " \
               "#{T.must(release.released_at).strftime('%Y-%m-%d')} " \
@@ -73,7 +66,7 @@ module Dependabot
             )
           end
 
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
 
         sig do
@@ -109,21 +102,12 @@ module Dependabot
           end
 
           releases << Dependabot::Package::PackageRelease.new(
-            version: GitSubmodules::Version.new("1.0.0"),
+            version: GitSubmodules::Version.new("0.0.0-0.0"), # Lower than versions from package_details_fetcher
             tag: dependency.version
           )
 
           releases
         end
-
-        sig { returns(Dependabot::Dependency) }
-        attr_reader :dependency
-
-        sig { returns(T::Array[Dependabot::Credential]) }
-        attr_reader :credentials
-
-        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
-        attr_reader :cooldown_options
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end

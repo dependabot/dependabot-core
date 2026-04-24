@@ -381,8 +381,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
   describe "#latest_version with cooldown options" do
     context "when there's a newer major version and release date is still in cooldown" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(false)
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
 
@@ -415,8 +413,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
     context "when there's a newer major version and release date is out of cooldown" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(false)
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
 
@@ -449,8 +445,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
     context "when there's a newer major version and fetching release date is not successful" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(false)
         allow(Dependabot::SharedHelpers)
           .to receive(:run_shell_command).and_call_original
       end
