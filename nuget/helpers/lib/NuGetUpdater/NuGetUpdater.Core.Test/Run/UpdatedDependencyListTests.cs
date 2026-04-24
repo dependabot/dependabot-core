@@ -186,7 +186,7 @@ public class UpdatedDependencyListTests
         {
             var fullFilePath = Path.Join(tempDir.DirectoryPath, testFile);
             Directory.CreateDirectory(Path.GetDirectoryName(fullFilePath)!);
-            await File.WriteAllTextAsync(fullFilePath, "");
+            await File.WriteAllTextAsync(fullFilePath, "", TestContext.Current.CancellationToken);
         }
         var discovery = new WorkspaceDiscoveryResult()
         {
