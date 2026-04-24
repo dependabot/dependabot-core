@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
-      repo: "example/bazel-project",
+      repo: "example/sbt-project",
       directory: "/"
     )
   end
@@ -26,15 +26,12 @@ RSpec.describe Dependabot::Sbt::FileParser do
 
   let(:module_file) do
     Dependabot::DependencyFile.new(
-      name: "MODULE.bazel",
+      name: "build.sbt",
       content: module_file_content
     )
   end
 
-  let(:module_file_content) do
-    <<~SBT
-    SBT
-  end
+  let(:module_file_content) { "" }
 
   it_behaves_like "a dependency file parser"
 

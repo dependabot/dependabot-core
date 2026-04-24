@@ -34,9 +34,5 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
-  # TODO: Add test cases
-  # Example:
-  # it "fetches manifest files" do
-  #   # Test implementation
-  # end
+  it_behaves_like "a dependency file fetcher"
 end

@@ -19,3 +19,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.register_version_class("sbt", Dependabot::Sbt::Version)

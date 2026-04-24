@@ -6,9 +6,5 @@ require "dependabot/sbt/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Sbt::MetadataFinder do
-  # TODO: Add test cases
-  # Example:
-  # it "finds package source" do
-  #   # Test implementation
-  # end
+  it_behaves_like "a dependency metadata finder"
 end
