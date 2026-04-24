@@ -276,6 +276,10 @@ module Dependabot
         end
       end
 
+      # Activates yarn berry via corepack when yarn v1 is detected.
+      # This handles the scenario where a project's lockfile has migrated from
+      # v1 to berry format but lacks explicit berry configuration
+      # (.yarnrc.yml yarnPath or packageManager in package.json).
       sig { void }
       def self.activate_yarn_berry_if_needed
         return if yarn_major_version >= YARN_V2
