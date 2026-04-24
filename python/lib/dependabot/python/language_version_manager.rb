@@ -47,7 +47,9 @@ module Dependabot
       sig { returns(String) }
       def python_requirement_string
         if user_specified_python_version
-          if user_specified_python_version.start_with?(/\d/)
+          if explicit_exact_patch_pin?(user_specified_python_version)
+            user_specified_python_version
+          elsif user_specified_python_version.start_with?(/\d/)
             parts = user_specified_python_version.split(".")
             parts.fill("*", (parts.length)..2).join(".")
           else
@@ -88,12 +90,15 @@ module Dependabot
       sig { returns(String) }
       def python_version_from_supported_versions
         requirement_string = python_requirement_string
+        exact_patch_pin = explicit_exact_patch_pin?(requirement_string)
 
         # If the requirement string isn't already a range (eg ">3.10"), coerce it to "major.minor.*".
         # The patch version is ignored because a non-matching patch version is unlikely to affect resolution.
-        requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if /^\d/.match?(requirement_string)
+        unless exact_patch_pin
+          requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if /^\d/.match?(requirement_string)
+        end
 
-        requirement_string = normalize_python_exact_version(requirement_string)
+        requirement_string = normalize_python_exact_version(requirement_string) unless exact_patch_pin
 
         if requirement_string.nil? || requirement_string.strip.empty?
           return Language::PRE_INSTALLED_HIGHEST_VERSION.to_s
@@ -135,6 +140,13 @@ module Dependabot
             req.satisfied_by?(version)
           end
         end.to_s
+      end
+
+      sig { params(requirement_string: T.nilable(String)).returns(T::Boolean) }
+      def explicit_exact_patch_pin?(requirement_string)
+        return false if requirement_string.nil?
+
+        requirement_string.strip.match?(/^={1,3}\s*\d+\.\d+\.\d+(-[a-z0-9.-]+)?$/i)
       end
     end
   end
