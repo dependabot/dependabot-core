@@ -1667,7 +1667,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 </Project>
                 """)
         );
-        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager()))
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger()))
             .Select(p => p.NormalizePathToUnix())
             .ToArray();
         var expectedEntryPoints = new[]
