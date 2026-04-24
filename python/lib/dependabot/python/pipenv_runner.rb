@@ -129,11 +129,11 @@ module Dependabot
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
-        deps = updated_lockfile[lockfile_section]
-        return nil unless deps.is_a?(Hash)
+        section_data = updated_lockfile[lockfile_section]
+        return nil unless section_data.is_a?(Hash)
 
-        deps.dig(dependency_name, "version")
-            &.gsub(/^==/, "")
+        section_data.dig(dependency_name, "version")
+                    &.gsub(/^==/, "")
       end
 
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
