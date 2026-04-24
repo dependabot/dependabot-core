@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
         context "when a range requirement was specified" do
           let(:requirement_txt_req_string) { ">=1.3.0" }
 
-          it { is_expected.to eq(requirement_txt_req) }
+          it { is_expected.to eq(requirement_txt_req.merge(requirement: ">=1.5.0")) }
 
           context "when requirement version is too high" do
             let(:requirement_txt_req_string) { ">=2.0.0" }
@@ -135,24 +135,24 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
           context "when requirement had a local version" do
             let(:requirement_txt_req_string) { ">=1.3.0+gc.1" }
 
-            it { is_expected.to eq(requirement_txt_req) }
+            it { is_expected.to eq(requirement_txt_req.merge(requirement: ">=1.5.0")) }
           end
 
           context "with an upper bound" do
             let(:requirement_txt_req_string) { ">=1.3.0, <=1.5.0" }
 
-            it { is_expected.to eq(requirement_txt_req) }
+            it { is_expected.to eq(requirement_txt_req.merge(requirement: ">=1.5.0,<=1.5.0")) }
 
             context "when needing an update" do
               let(:requirement_txt_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+              it { is_expected.to eq(requirement_txt_req.merge(requirement: ">=1.5.0,<1.6")) }
 
               context "when requirement version has more digits than the new version" do
                 let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
                 let(:latest_resolvable_version) { "1.10" }
 
-                its([:requirement]) { is_expected.to eq(">=1.9,<=1.10") }
+                it { is_expected.to eq(requirement_txt_req.merge(requirement: "<=1.10,>=1.10")) }
               end
             end
           end
