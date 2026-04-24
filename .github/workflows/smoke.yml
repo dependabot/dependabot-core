@@ -97,7 +97,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          gh api "repos/${{ vars.SMOKE_TEST_REPO || 'dependabot/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}" -H "Accept: application/vnd.github.raw" > smoke.yaml
+          gh api "repos/${{ vars.SMOKE_TEST_REPO || 'yeikel/smoke-tests' }}/contents/tests/${{ matrix.suite.name }}?ref=maven-wrapper" -H "Accept: application/vnd.github.raw" > smoke.yaml
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
