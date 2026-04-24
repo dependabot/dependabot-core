@@ -250,6 +250,11 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
+        # Ensure yarn berry is active. This handles the case where the lockfile
+        # format changed from v1 to berry but the project lacks explicit berry
+        # configuration (.yarnrc.yml yarnPath or packageManager in package.json).
+        activate_yarn_berry_if_needed
+
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         run_single_yarn_command("config set enableImmutableInstalls false")
         # Do not generate a cache if offline cache disabled. Otherwise side effects may confuse further checks
@@ -269,6 +274,16 @@ module Dependabot
         else
           run_single_yarn_command("config set caFilePath #{ca_file_path}")
         end
+      end
+
+      sig { void }
+      def self.activate_yarn_berry_if_needed
+        return if yarn_major_version >= YARN_V2
+
+        Dependabot.logger.info(
+          "Yarn classic (v1) is active but a berry command was requested. Activating Yarn berry via corepack."
+        )
+        package_manager_activate(YarnPackageManager::NAME, YARN_DEFAULT_VERSION.to_s)
       end
 
       # Run any number of yarn commands while ensuring that `enableScripts` is
