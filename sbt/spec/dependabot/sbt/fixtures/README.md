@@ -7,8 +7,10 @@ Add sample manifest files, lockfiles, and other test data here.
 Example structure:
 ```
 fixtures/
-├── manifest.json
-├── lockfile.lock
+├── build.sbt
+├── project/
+│   ├── build.properties
+│   └── plugins.sbt
 └── projects/
     ├── simple/
     └── complex/

@@ -13,21 +13,16 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      # Add custom requirement parsing logic if needed
-      # If standard Gem::Requirement is sufficient, delete this file
-
-      # This abstract method must be implemented
       sig do
         override
-        .params(requirement_string: T.nilable(String))
-        .returns(T::Array[Dependabot::Requirement])
+          .params(requirement_string: T.nilable(String))
+          .returns(T::Array[Dependabot::Requirement])
       end
       def self.requirements_array(requirement_string)
-        # TODO: Implement requirement parsing logic
-        # Example: Parse requirement_string and return array of requirements
-        # For now, use the default implementation
-        super
+        [new(requirement_string)]
       end
     end
   end
 end
+
+Dependabot::Utils.register_requirement_class("sbt", Dependabot::Sbt::Requirement)

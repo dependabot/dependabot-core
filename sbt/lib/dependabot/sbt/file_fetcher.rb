@@ -15,9 +15,9 @@ module Dependabot
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames)
+      def self.required_files_in?(filenames) # rubocop:disable Lint/UnusedMethodArgument
         # TODO: Implement logic to check if required files are present
-        # Example: filenames.any? { |name| name == "manifest.json" }
+        # Example: filenames.any? { |name| name == "build.sbt" }
         false
       end
 
@@ -27,11 +27,12 @@ module Dependabot
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             nil,
-            "Sbt support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it."
+            "Sbt support is currently in beta. Enable the beta ecosystems experiment to use it " \
+            "(for example, run bin/dry-run.rb --enable-beta-ecosystems)."
           )
         end
 
-        fetched_files = []
+        fetched_files = T.let([], T::Array[DependencyFile])
 
         # TODO: Implement file fetching logic
         # Example:
