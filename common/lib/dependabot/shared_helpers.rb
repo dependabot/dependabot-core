@@ -541,8 +541,10 @@ module Dependabot
       return nil if env.nil?
 
       env.transform_keys(&:to_s).each_with_object({}) do |(key, value), result|
-        # Only redact if the key contains "TOKEN" (case-insensitive)
-        result[key] = if key.match?(/TOKEN/i)
+        # Redact keys that contain "TOKEN" (case-insensitive) or carry
+        # configuration that may embed credentials (e.g. NIX_CONFIG's
+        # access-tokens setting).
+        result[key] = if key.match?(/TOKEN/i) || key == "NIX_CONFIG"
                         "<redacted>"
                       else
                         value

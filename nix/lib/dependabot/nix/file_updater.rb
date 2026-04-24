@@ -63,11 +63,35 @@ module Dependabot
 
           SharedHelpers.run_shell_command(
             "nix flake update #{dependency.name}",
+            env: nix_access_tokens_env,
             fingerprint: "nix flake update <input_name>"
           )
 
           File.read("flake.lock")
         end
+      end
+
+      # Builds NIX_CONFIG with access-tokens from git_source credentials so
+      # nix flake update can authenticate against private repositories.
+      # Uses NIX_CONFIG rather than --extra-access-tokens to keep tokens
+      # out of the process command line.
+      sig { returns(T::Hash[String, String]) }
+      def nix_access_tokens_env
+        host_token_pairs = credentials.filter_map do |credential|
+          next unless credential["type"] == "git_source"
+
+          host = credential["host"]
+          password = credential["password"]
+          next if host.to_s.empty? || password.to_s.empty?
+
+          [host, password]
+        end
+
+        tokens = host_token_pairs.uniq(&:first).map { |host, password| "#{host}=#{password}" }
+
+        return {} if tokens.empty?
+
+        { "NIX_CONFIG" => "access-tokens = #{tokens.join(' ')}" }
       end
 
       sig { returns(T.nilable(String)) }
