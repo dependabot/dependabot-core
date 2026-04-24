@@ -375,12 +375,12 @@ module Dependabot
         first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
-        blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+        manifest_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           client = docker_registry_client
-          client.dohead "v2/#{docker_repo_name}/blobs/#{first_digest}"
+          client.dohead "v2/#{docker_repo_name}/manifests/#{first_digest}"
         end
 
-        last_modified = blob_info.headers[:last_modified]
+        last_modified = manifest_info.headers[:last_modified]
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(
