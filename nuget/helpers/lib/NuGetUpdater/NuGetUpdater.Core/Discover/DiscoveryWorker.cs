@@ -215,6 +215,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     case ".csproj":
                     case ".fsproj":
                     case ".vbproj":
+                    case ".sqlproj":
                         return true;
                     default:
                         return false;
@@ -274,6 +275,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     case ".csproj":
                     case ".vbproj":
                     case ".fsproj":
+                    case ".sqlproj":
                         expandedProjects.Add(candidateEntryPoint);
                         break;
                     default:
