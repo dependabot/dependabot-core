@@ -345,7 +345,9 @@ module Dependabot
         candidate_tags.reverse_each do |tag|
           details = publication_detail(tag)
 
-          next if !details || !details.released_at
+          # If we can't determine publication details, skip cooldown for this tag and use it
+          # rather than blocking the update when the registry doesn't support the required API calls
+          return [tag] if !details || !details.released_at
 
           return [tag] unless cooldown_period?(T.must(details.released_at), tag)
 
@@ -360,7 +362,7 @@ module Dependabot
         return publication_details[candidate_tag.name] if publication_details.key?(candidate_tag.name)
 
         details = get_tag_publication_details(candidate_tag)
-        publication_details[candidate_tag.name] = T.cast(details, Dependabot::Package::PackageRelease)
+        publication_details[candidate_tag.name] = details
 
         details
       end
@@ -391,6 +393,15 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
+      rescue *transient_docker_errors,
+             DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden,
+             RestClient::TooManyRequests => e
+        Dependabot.logger.warn(
+          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
+          "skipping cooldown: #{e.class} - #{e.message}"
+        )
+        nil
       end
 
       sig do
