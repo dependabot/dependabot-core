@@ -250,6 +250,7 @@ GEM
     benchmark (0.5.0)
     bigdecimal (4.0.1)
     citrus (3.0.2)
+    commonmarker (2.6.3-aarch64-linux)
     commonmarker (2.6.3-arm64-darwin)
     commonmarker (2.6.3-x86_64-linux)
     crack (1.0.1)
@@ -318,6 +319,8 @@ GEM
     net-http (0.9.1)
       uri (>= 0.11.1)
     netrc (0.11.0)
+    nokogiri (1.19.1-aarch64-linux-gnu)
+      racc (~> 1.4)
     nokogiri (1.19.1-arm64-darwin)
       racc (~> 1.4)
     nokogiri (1.19.1-x86_64-linux-gnu)
@@ -426,6 +429,7 @@ GEM
     sorbet (0.6.12977)
       sorbet-static (= 0.6.12977)
     sorbet-runtime (0.6.12977)
+    sorbet-static (0.6.12977-aarch64-linux)
     sorbet-static (0.6.12977-universal-darwin)
     sorbet-static (0.6.12977-x86_64-linux)
     sorbet-static-and-runtime (0.6.12977)
@@ -479,6 +483,7 @@ GEM
     zeitwerk (2.7.5)
 
 PLATFORMS
+  aarch64-linux
   arm64-darwin-25
   x86_64-linux
 
@@ -546,6 +551,7 @@ CHECKSUMS
   benchmark (0.5.0) sha256=465df122341aedcb81a2a24b4d3bd19b6c67c1530713fd533f3ff034e419236c
   bigdecimal (4.0.1) sha256=8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
+  commonmarker (2.6.3-aarch64-linux)
   commonmarker (2.6.3-arm64-darwin) sha256=d6c1e4955619da3f68fed22de99dec49a24925611770c039bf870823846c8b21
   commonmarker (2.6.3-x86_64-linux) sha256=e861ba1812721113725ebd8e46e4fee20dc732842f5555db2cfb8dcd74056583
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
@@ -616,6 +622,7 @@ CHECKSUMS
   multi_xml (0.8.1) sha256=addba0290bac34e9088bfe73dc4878530297a82a7bbd66cb44dcd0a4b86edf5a
   net-http (0.9.1) sha256=25ba0b67c63e89df626ed8fac771d0ad24ad151a858af2cc8e6a716ca4336996
   netrc (0.11.0) sha256=de1ce33da8c99ab1d97871726cba75151113f117146becbe45aa85cb3dabee3f
+  nokogiri (1.19.1-aarch64-linux-gnu)
   nokogiri (1.19.1-arm64-darwin) sha256=dfe2d337e6700eac47290407c289d56bcf85805d128c1b5a6434ddb79731cb9e
   nokogiri (1.19.1-x86_64-linux-gnu) sha256=1a4902842a186b4f901078e692d12257678e6133858d0566152fe29cdb98456a
   octokit (10.0.0) sha256=82e99a539b7637b7e905e6d277bb0c1a4bed56735935cc33db6da7eae49a24e8
@@ -661,6 +668,7 @@ CHECKSUMS
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
   sorbet (0.6.12977) sha256=bf1477d3b3f01ca728eba25573aa2d390da9a946a986c39567dbf97778d75a03
   sorbet-runtime (0.6.12977) sha256=67e659fd940cd3ea8022548fb49256e3d87f3353ea8657c5bd26110f54478387
+  sorbet-static (0.6.12977-aarch64-linux)
   sorbet-static (0.6.12977-universal-darwin) sha256=79e38754fcdfda662bd27d511ecf7b2f1ee256fffe3bd28b4f98b5379627cfbb
   sorbet-static (0.6.12977-x86_64-linux) sha256=9b2abd604d4cea5d829fb9144a70c3f2fd6be29311fad9e87b44d52b5a43134a
   sorbet-static-and-runtime (0.6.12977) sha256=98a46d7fe866b07a3e6dae7385550d64f1cc1a5a19f80ca066b3d17ca1c5b302

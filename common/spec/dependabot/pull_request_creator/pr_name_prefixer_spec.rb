@@ -236,6 +236,30 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       end
     end
 
+    context "when using fix(deps) conventional commits" do
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_conventional_fix_prefix.json"),
+                     headers: json_header)
+      end
+
+      it { is_expected.to eq("fix(deps): ") }
+
+      context "when capitalizing them" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits?per_page=100")
+            .to_return(
+              status: 200,
+              body: fixture("github", "commits_conventional_fix_prefix_capitalized.json"),
+              headers: json_header
+            )
+        end
+
+        it { is_expected.to eq("fix(deps): ") }
+      end
+    end
+
     context "when using eslint commits" do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
