@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
       content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
-  let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+  let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
       name: "requirements.txt",
