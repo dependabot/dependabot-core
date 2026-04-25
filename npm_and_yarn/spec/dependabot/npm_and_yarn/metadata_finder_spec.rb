@@ -526,6 +526,36 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         )
       end
     end
+
+    context "when the maintainer name contains spaces" do
+      let(:dependency_name) { "npm-package-json-lint" }
+      let(:npm_url) { "https://registry.npmjs.org/npm-package-json-lint" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "10.0.0",
+          previous_version: "9.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^10.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:npm_all_versions_response) do
+        fixture("npm_responses", "npm-package-json-lint.json")
+      end
+
+      it "properly URL-encodes the maintainer name in the link" do
+        expect(maintainer_changes).to eq(
+          "This version was pushed to npm by " \
+          "[GitHub Actions](https://www.npmjs.com/~GitHub%20Actions), a new releaser " \
+          "for npm-package-json-lint since your current version."
+        )
+      end
+    end
   end
 
   describe "#install_script_changes" do

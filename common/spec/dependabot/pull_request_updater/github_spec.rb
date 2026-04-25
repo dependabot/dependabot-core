@@ -418,6 +418,68 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
     end
 
+    context "with a custom commit message" do
+      subject(:updater) do
+        described_class.new(
+          source: source,
+          base_commit: base_commit,
+          old_commit: old_commit,
+          files: files,
+          credentials: credentials,
+          pull_request_number: pull_request_number,
+          commit_message: "chore: Bump business from 1.4.0 to 1.6.0\n\nUpdated commit message"
+        )
+      end
+
+      it "uses the custom commit message instead of the old one" do
+        updater.update
+
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
+          .with(
+            body: {
+              parents: ["basecommitsha"],
+              tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+              message: "chore: Bump business from 1.4.0 to 1.6.0\n\nUpdated commit message"
+            }
+          )
+      end
+    end
+
+    context "with an empty custom commit message" do
+      subject(:updater) do
+        described_class.new(
+          source: source,
+          base_commit: base_commit,
+          old_commit: old_commit,
+          files: files,
+          credentials: credentials,
+          pull_request_number: pull_request_number,
+          commit_message: ""
+        )
+      end
+
+      it "falls back to the old commit message" do
+        updater.update
+
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
+          .with(
+            body: {
+              parents: ["basecommitsha"],
+              tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+              message: "Bump business from 1.4.0 to 1.5.0\n\n" \
+                       "Bumps [business](https://github.com/gocardless/business)" \
+                       " from 1.4.0 to 1.5.0.\n" \
+                       "- [Changelog](https://github.com/gocardless/business/blo" \
+                       "b/master/CHANGELOG.md)\n" \
+                       "- [Commits](https://github.com/gocardless/business/compa" \
+                       "re/v3.0.0...v1.5.0)"
+            }
+          )
+      end
+    end
+
     context "when the default branch has changed" do
       before do
         stub_request(:get, pull_request_url)

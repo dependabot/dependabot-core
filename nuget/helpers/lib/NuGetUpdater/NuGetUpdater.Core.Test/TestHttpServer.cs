@@ -2,8 +2,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-using NuGet.Versioning;
 using NuGet;
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Test

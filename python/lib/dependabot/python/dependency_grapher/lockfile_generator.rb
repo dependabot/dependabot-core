@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/language_version_manager"
+require "dependabot/python/poetry_plugin_installer"
 
 module Dependabot
   module Python
@@ -33,6 +34,10 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_files
               language_version_manager.install_required_python
+
+              # Install any required Poetry plugins declared in pyproject.toml
+              poetry_plugin_installer.install_required_plugins
+
               run_poetry_lock
               read_generated_lockfile
             end
@@ -116,6 +121,14 @@ module Dependabot
               dependency_files: dependency_files
             ),
             T.nilable(FileParser::PythonRequirementParser)
+          )
+        end
+
+        sig { returns(PoetryPluginInstaller) }
+        def poetry_plugin_installer
+          @poetry_plugin_installer ||= T.let(
+            PoetryPluginInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryPluginInstaller)
           )
         end
 

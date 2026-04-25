@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         source: {
           type: "git",
           url: "https://github.com/NixOS/nixpkgs",
-          branch: "nixos-unstable",
+          branch: nil,
           ref: "nixos-unstable"
         },
         groups: []
@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         source: {
           type: "git",
           url: "https://github.com/NixOS/nixpkgs",
-          branch: "nixos-unstable",
+          branch: nil,
           ref: "nixos-unstable"
         },
         groups: []
@@ -102,19 +102,126 @@ RSpec.describe Dependabot::Nix::FileUpdater do
       allow(File).to receive(:read).with("flake.lock").and_return(updated_lock_content)
     end
 
-    it "returns one updated file" do
-      expect(updated_files.length).to eq(1)
+    context "with a branch-tracking input (ref unchanged)" do
+      it "returns only the updated flake.lock" do
+        expect(updated_files.length).to eq(1)
+        expect(updated_files.first.name).to eq("flake.lock")
+      end
+
+      it "calls nix flake update with the input name" do
+        updated_files
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_name>")
+      end
     end
 
-    it "returns the updated flake.lock" do
-      expect(updated_files.first.name).to eq("flake.lock")
+    context "with a tag-pinned input (ref changed)" do
+      let(:flake_nix_content) { fixture("flake_with_tag.nix") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "devenv",
+          version: "new_sha_def456",
+          previous_version: "old_sha_abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "git",
+              url: "https://github.com/cachix/devenv",
+              branch: nil,
+              ref: "v0.6.2"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "git",
+              url: "https://github.com/cachix/devenv",
+              branch: nil,
+              ref: "v0.5"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      let(:updated_lock_content) { '{"updated": true}' }
+
+      it "returns both flake.nix and flake.lock" do
+        expect(updated_files.length).to eq(2)
+        expect(updated_files.map(&:name)).to contain_exactly("flake.nix", "flake.lock")
+      end
+
+      it "rewrites the tag in flake.nix" do
+        nix_file = updated_files.find { |f| f.name == "flake.nix" }
+        expect(nix_file.content).to include('"github:cachix/devenv/v0.6.2"')
+        expect(nix_file.content).not_to include('"github:cachix/devenv/v0.5"')
+      end
+
+      it "preserves other inputs in flake.nix" do
+        nix_file = updated_files.find { |f| f.name == "flake.nix" }
+        expect(nix_file.content).to include('"github:NixOS/nixpkgs/nixos-unstable"')
+        expect(nix_file.content).to include('"github:numtide/flake-utils"')
+      end
+
+      it "writes the updated flake.nix before running nix" do
+        updated_files
+        expect(File).to have_received(:write)
+          .with("flake.nix", a_string_including("github:cachix/devenv/v0.6.2"))
+      end
     end
 
-    it "calls nix flake update with the input name" do
-      updated_files
-      expect(Dependabot::SharedHelpers)
-        .to have_received(:run_shell_command)
-        .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_name>")
+    context "with a versioned branch input (ref changed)" do
+      let(:flake_nix_content) { fixture("flake_with_versioned_branch.nix") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "new_sha_def456",
+          previous_version: "old_sha_abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "git",
+              url: "https://github.com/NixOS/nixpkgs",
+              branch: nil,
+              ref: "nixos-25.05"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "git",
+              url: "https://github.com/NixOS/nixpkgs",
+              branch: nil,
+              ref: "nixos-24.11"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      let(:updated_lock_content) { '{"updated": true}' }
+
+      it "returns both flake.nix and flake.lock" do
+        expect(updated_files.length).to eq(2)
+        expect(updated_files.map(&:name)).to contain_exactly("flake.nix", "flake.lock")
+      end
+
+      it "rewrites the branch in flake.nix" do
+        nix_file = updated_files.find { |f| f.name == "flake.nix" }
+        expect(nix_file.content).to include('"github:NixOS/nixpkgs/nixos-25.05"')
+        expect(nix_file.content).not_to include("nixos-24.11")
+      end
     end
   end
 end
