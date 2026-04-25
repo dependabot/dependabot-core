@@ -392,19 +392,19 @@ module Dependabot
           .returns(T.nilable(T::Hash[String, T.untyped]))
       end
       def update_linked_paths(repo, path, commit, github_response)
-        case T.unsafe(github_response).type
+        case github_response[:type]
         when "submodule"
-          sub_source = Source.from_url(T.unsafe(github_response).submodule_git_url)
+          sub_source = Source.from_url(github_response[:submodule_git_url])
           return unless sub_source
 
           @linked_paths[path] = {
             repo: sub_source.repo,
             provider: sub_source.provider,
-            commit: T.unsafe(github_response).sha,
+            commit: github_response[:sha],
             path: "/"
           }
         when "symlink"
-          updated_path = File.join(File.dirname(path), T.unsafe(github_response).target)
+          updated_path = File.join(File.dirname(path), github_response[:target])
           @linked_paths[path] = {
             repo: repo,
             provider: "github",
@@ -563,10 +563,10 @@ module Dependabot
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _github_repo_contents(repo, path, commit)
         path = path.gsub(" ", "%20")
-        github_response = T.unsafe(github_client).contents(repo, path: path, ref: commit)
+        github_response = github_client.contents(repo, path: path, ref: commit)
 
         if github_response.respond_to?(:type)
-          update_linked_paths(repo, path, commit, github_response)
+          update_linked_paths(repo, path, commit, T.unsafe(github_response))
           raise Octokit::NotFound
         end
 
@@ -628,18 +628,20 @@ module Dependabot
       sig { params(file: Sawyer::Resource).returns(RepositoryContent) }
       def _build_github_file_struct(file)
         RepositoryContent.new(
-          name: T.unsafe(file).name,
-          path: T.unsafe(file).path,
-          type: T.unsafe(file).type,
-          sha: T.unsafe(file).sha,
-          size: T.unsafe(file).size
+          name: file[:name],
+          path: file[:path],
+          type: file[:type],
+          sha: file[:sha],
+          size: file[:size]
         )
       end
 
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _gitlab_repo_contents(repo, path, commit)
-        T.unsafe(gitlab_client)
-         .repo_tree(repo, path: path, ref: commit, per_page: 100)
+        T.unsafe(
+          gitlab_client
+                   .repo_tree(repo, path: path, ref: commit, per_page: 100)
+        )
          .map do |file|
           # GitLab API essentially returns the output from `git ls-tree`
           type = case file.type
@@ -680,12 +682,12 @@ module Dependabot
 
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _bitbucket_repo_contents(repo, path, commit)
-        response = T.unsafe(bitbucket_client)
-                    .fetch_repo_contents(
-                      repo,
-                      commit,
-                      path
-                    )
+        response = bitbucket_client
+                   .fetch_repo_contents(
+                     repo,
+                     commit,
+                     path
+                   )
 
         response.map do |file|
           type = case file.fetch("type")
@@ -774,12 +776,12 @@ module Dependabot
         when "github"
           _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
-          tmp = T.unsafe(gitlab_client).get_file(repo, path, commit).content
+          tmp = T.unsafe(gitlab_client.get_file(repo, path, commit)).content
           decode_binary_string(tmp)
         when "azure"
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
-          T.unsafe(bitbucket_client).fetch_file_contents(repo, commit, path)
+          bitbucket_client.fetch_file_contents(repo, commit, path)
         when "codecommit"
           codecommit_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
@@ -789,30 +791,30 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       sig { params(path: String, repo: String, commit: String).returns(String) }
       def _fetch_file_content_from_github(path, repo, commit)
-        tmp = T.unsafe(github_client).contents(repo, path: path, ref: commit)
+        tmp = github_client.contents(repo, path: path, ref: commit)
 
         raise Octokit::NotFound if tmp.is_a?(Array)
 
-        if tmp.type == "symlink"
+        if T.unsafe(tmp).type == "symlink"
           @linked_paths[path] = {
             repo: repo,
             provider: "github",
             commit: commit,
-            path: Pathname.new(tmp.target).cleanpath.to_path
+            path: Pathname.new(T.unsafe(tmp).target).cleanpath.to_path
           }
-          tmp = T.unsafe(github_client).contents(
+          tmp = github_client.contents(
             repo,
-            path: Pathname.new(tmp.target).cleanpath.to_path,
+            path: Pathname.new(T.unsafe(tmp).target).cleanpath.to_path,
             ref: commit
           )
         end
 
-        if tmp.content == ""
+        if T.unsafe(tmp).content == ""
           # The file may have exceeded the 1MB limit
           # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
-          T.unsafe(github_client).contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
+          T.unsafe(github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw"))
         else
-          decode_binary_string(tmp.content)
+          decode_binary_string(T.unsafe(tmp).content)
         end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
@@ -824,10 +826,10 @@ module Dependabot
         file_details = repo_contents(dir: dir).find { |f| f.name == basename }
         raise unless file_details
 
-        tmp = T.unsafe(github_client).blob(repo, file_details.sha)
-        return tmp.content if tmp.encoding == "utf-8"
+        tmp = github_client.blob(repo, file_details.sha)
+        return T.unsafe(tmp).content if T.unsafe(tmp).encoding == "utf-8"
 
-        decode_binary_string(tmp.content)
+        decode_binary_string(T.unsafe(tmp).content)
       end
       # rubocop:enable Metrics/AbcSize
 

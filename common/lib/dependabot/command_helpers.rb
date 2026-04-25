@@ -89,7 +89,7 @@ module Dependabot
       stdout = T.let("", String)
       stderr = T.let("", String)
       status = T.let(nil, T.nilable(ProcessStatus))
-      pid = T.let(nil, T.untyped)
+      pid = T.let(nil, T.nilable(Integer))
       start_time = Time.now
 
       begin

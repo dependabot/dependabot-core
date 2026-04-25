@@ -14,11 +14,11 @@ module Dependabot
       class PathDependencyBuilder
         extend T::Sig
 
-        sig { params(path: String, directory: String, lockfile: T.untyped).void }
+        sig { params(path: String, directory: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(path:, directory:, lockfile:)
           @path = T.let(path, String)
           @directory = T.let(directory, String)
-          @lockfile = T.let(lockfile, T.untyped)
+          @lockfile = T.let(lockfile, T.nilable(Dependabot::DependencyFile))
           @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         end
 

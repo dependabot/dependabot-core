@@ -345,7 +345,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_gitlab_commit_messages
         @recent_gitlab_commit_messages ||=
-          T.unsafe(gitlab_client_for_source).commits(source.repo)
+          gitlab_client_for_source.commits(source.repo)
 
         @recent_gitlab_commit_messages
           .reject { |c| c.author_email == dependabot_email }
@@ -429,7 +429,7 @@ module Dependabot
       def recent_github_commits
         @recent_github_commits ||=
           T.let(
-            T.unsafe(github_client_for_source).commits(source.repo, per_page: 100),
+            github_client_for_source.commits(source.repo, per_page: 100),
             T.untyped
           )
       rescue Octokit::Conflict, Octokit::NotFound
@@ -440,7 +440,7 @@ module Dependabot
       def last_gitlab_dependabot_commit_message
         @recent_gitlab_commit_messages ||=
           T.let(
-            T.unsafe(gitlab_client_for_source).commits(source.repo),
+            gitlab_client_for_source.commits(source.repo),
             T.untyped
           )
 

@@ -55,7 +55,7 @@ module Dependabot
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def poetry_dependencies
-          @poetry_dependencies ||= T.let(parse_poetry_dependencies, T.untyped)
+          @poetry_dependencies ||= T.let(parse_poetry_dependencies, T.nilable(Dependabot::FileParsers::Base::DependencySet))
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -372,16 +372,19 @@ module Dependabot
           }
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_pyproject
-          @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.untyped)
+          @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.nilable(T::Hash[String, T.untyped]))
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_poetry_lock
-          @parsed_poetry_lock ||= T.let(TomlRB.parse(T.must(poetry_lock).content), T.untyped)
+          @parsed_poetry_lock ||= T.let(
+            TomlRB.parse(T.must(poetry_lock).content),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).path
         end

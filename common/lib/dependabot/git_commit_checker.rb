@@ -463,7 +463,7 @@ module Dependabot
                .for_github_dot_com(credentials: credentials)
 
       # TODO: create this method instead of relying on method_missing
-      T.unsafe(client).compare(listing_source_repo, ref1, ref2).status
+      T.unsafe(client.compare(T.must(listing_source_repo), ref1, ref2)).status
     end
 
     sig { params(ref1: String, ref2: String).returns(String) }
@@ -471,10 +471,10 @@ module Dependabot
       client = Clients::GitlabWithRetries
                .for_gitlab_dot_com(credentials: credentials)
 
-      comparison = T.unsafe(client).compare(listing_source_repo, ref1, ref2)
+      comparison = client.compare(T.must(listing_source_repo), ref1, ref2)
 
-      if comparison.commits.none? then "behind"
-      elsif comparison.compare_same_ref then "identical"
+      if T.unsafe(comparison).commits.none? then "behind"
+      elsif T.unsafe(comparison).compare_same_ref then "identical"
       else
         "ahead"
       end
@@ -489,7 +489,7 @@ module Dependabot
       client = Clients::BitbucketWithRetries
                .for_bitbucket_dot_org(credentials: credentials)
 
-      response = T.unsafe(client).get(url)
+      response = client.get(url)
 
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)
@@ -688,7 +688,7 @@ module Dependabot
             source: T.must(source),
             credentials: credentials
           )
-          T.unsafe(client).releases(T.must(source).repo, per_page: 100)
+          client.releases(T.must(source).repo, per_page: 100)
         rescue Octokit::Error
           []
         end,
