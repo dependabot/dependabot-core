@@ -106,7 +106,7 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -127,7 +127,7 @@ jobs:
           echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
