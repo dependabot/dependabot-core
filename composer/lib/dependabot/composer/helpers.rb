@@ -11,6 +11,8 @@ module Dependabot
 
       V1 = T.let("1", String)
       V2 = T.let("2", String)
+
+      @v1_warning_issued = T.let(false, T::Boolean)
       # If we are updating a project with no lock file then the default should be the newest version
       DEFAULT = T.let(V2, String)
 
@@ -54,7 +56,8 @@ module Dependabot
           version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY])
           major_version = version.canonical_segments.first
 
-          if major_version && major_version <= 1
+          if major_version && major_version <= 1 && !@v1_warning_issued
+            @v1_warning_issued = true
             plugin_api_version = parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
             Dependabot.logger.warn(
               "Composer V1 lockfile detected (plugin-api-version: #{plugin_api_version}). " \
@@ -195,6 +198,11 @@ module Dependabot
         url.to_s
       end
       private_class_method :clean_dependency_url
+
+      sig { void }
+      def self.reset_v1_warning!
+        @v1_warning_issued = false
+      end
     end
   end
 end
