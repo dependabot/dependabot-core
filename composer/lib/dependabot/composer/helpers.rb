@@ -199,10 +199,6 @@ module Dependabot
       end
       private_class_method :clean_dependency_url
 
-      sig { void }
-      def self.reset_v1_warning!
-        @v1_warning_issued = false
-      end
     end
   end
 end

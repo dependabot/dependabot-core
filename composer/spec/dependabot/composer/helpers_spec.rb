@@ -8,7 +8,7 @@ require "dependabot/composer/helpers"
 
 RSpec.describe Dependabot::Composer::Helpers do
   describe ".composer_version" do
-    before { described_class.reset_v1_warning! }
+    before { described_class.instance_variable_set(:@v1_warning_issued, false) }
 
     let(:composer_v2_content) do
       <<~JSON
@@ -66,6 +66,7 @@ RSpec.describe Dependabot::Composer::Helpers do
         composer_json = JSON.parse(composer_v2_content)
         parsed_lockfile = { "plugin-api-version" => "2.6.0" }
 
+        expect(Dependabot.logger).not_to receive(:warn)
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
 
