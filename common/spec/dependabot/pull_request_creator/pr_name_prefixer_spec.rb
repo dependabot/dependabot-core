@@ -79,6 +79,28 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
     end
 
     it { is_expected.to be false }
+
+    context "when last dependabot commit used fix(deps) with lowercase" do
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_conventional_fix_prefix.json"),
+                     headers: json_header)
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when last dependabot commit used fix(deps) with uppercase" do
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_conventional_fix_prefix_capitalized.json"),
+                     headers: json_header)
+      end
+
+      it { is_expected.to be true }
+    end
   end
 
   describe "#pr_name_prefix" do
@@ -211,6 +233,30 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         let(:dependencies) { [development_dependency] }
 
         it { is_expected.to eq("chore(deps-dev): ") }
+      end
+    end
+
+    context "when using fix(deps) conventional commits" do
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100")
+          .to_return(status: 200,
+                     body: fixture("github", "commits_conventional_fix_prefix.json"),
+                     headers: json_header)
+      end
+
+      it { is_expected.to eq("fix(deps): ") }
+
+      context "when capitalizing them" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits?per_page=100")
+            .to_return(
+              status: 200,
+              body: fixture("github", "commits_conventional_fix_prefix_capitalized.json"),
+              headers: json_header
+            )
+        end
+
+        it { is_expected.to eq("fix(deps): ") }
       end
     end
 

@@ -45,8 +45,9 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }
 
+  let(:metadata_base_url) { "https://repo.maven.apache.org/maven2" }
   let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
+    "#{metadata_base_url}/" \
       "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
@@ -80,6 +81,72 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
+      end
+    end
+
+    context "with a replaces-base credential" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
+    context "with multiple private registry credentials" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) do
+        "https://mirror.example.com/maven/" \
+          "com/google/guava/guava/maven-metadata.xml"
+      end
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://mirror.example.com/maven/",
+              "username" => "hello",
+              "password" => "world"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, mirror_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
       end
     end
 
