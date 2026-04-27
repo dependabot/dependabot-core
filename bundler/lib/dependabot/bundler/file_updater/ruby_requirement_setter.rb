@@ -1,7 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "parser/current"
+require "parser"
+require "prism"
 require "sorbet-runtime"
 
 require "dependabot/bundler/file_updater"
@@ -34,7 +35,7 @@ module Dependabot
 
           buffer = Parser::Source::Buffer.new("(gemfile_content)")
           buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
+          ast = Prism::Translation::ParserCurrent.new.parse(buffer)
 
           if declares_ruby_version?(ast)
             GemfileRewriter.new(
@@ -87,7 +88,7 @@ module Dependabot
         # rubocop:disable Security/Eval
         sig { returns(T.untyped) }
         def ruby_requirement
-          ast = Parser::CurrentRuby.parse(gemspec.content)
+          ast = Prism::Translation::ParserCurrent.parse(gemspec.content)
           requirement_node = find_ruby_requirement_node(ast)
           return unless requirement_node
 
