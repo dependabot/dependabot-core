@@ -219,19 +219,19 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
         let(:todo_fixture_name) { "requirements_content.json" }
 
-        it "fetches the unexpectedly named file" do
-          expect(file_fetcher_instance.files.count).to eq(2)
+        it "skips the non-requirements txt file" do
+          expect(file_fetcher_instance.files.count).to eq(1)
           expect(file_fetcher_instance.files.map(&:name))
-            .to match_array(%w(todo.txt requirements.txt))
+            .to eq(["requirements.txt"])
         end
 
         context "when including comments" do
           let(:todo_fixture_name) { "requirements_with_comments.json" }
 
-          it "fetches the unexpectedly named file" do
-            expect(file_fetcher_instance.files.count).to eq(2)
+          it "skips the non-requirements txt file" do
+            expect(file_fetcher_instance.files.count).to eq(1)
             expect(file_fetcher_instance.files.map(&:name))
-              .to match_array(%w(todo.txt requirements.txt))
+              .to eq(["requirements.txt"])
           end
         end
 
@@ -240,10 +240,10 @@ RSpec.describe Dependabot::Python::FileFetcher do
             Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
           end
 
-          it "skips the non-requirements txt file" do
-            expect(file_fetcher_instance.files.count).to eq(1)
+          it "fetches the unexpectedly named file (legacy permissive behavior)" do
+            expect(file_fetcher_instance.files.count).to eq(2)
             expect(file_fetcher_instance.files.map(&:name))
-              .to eq(["requirements.txt"])
+              .to match_array(%w(todo.txt requirements.txt))
           end
         end
       end
@@ -672,7 +672,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
           Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
         end
 
-        it "still fetches requirements files from subdirectories using the full path for filtering" do
+        it "fetches all requirements files from subdirectories using permissive (legacy) behavior" do
           expect(file_fetcher_instance.files.map(&:name))
             .to match_array(
               %w(

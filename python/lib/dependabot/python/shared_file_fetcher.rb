@@ -398,12 +398,12 @@ module Dependabot
         path.match?(REQUIREMENTS_TXT_REGEX) || path.match?(REQUIRE_TXT_REGEX)
       end
 
-      # When the feature flag is enabled, only considers .txt files whose names match
-      # requirements patterns (plus all .in files). When disabled, falls back to the
-      # original behavior of accepting any .txt or .in file.
+      # When the feature flag is enabled, accepts any .txt or .in file (the original/legacy behavior).
+      # When disabled, applies stricter filename filtering: only .in files and .txt files whose
+      # names match requirements patterns (REQUIREMENTS_TXT_REGEX / REQUIRE_TXT_REGEX).
       sig { params(path: String).returns(T::Boolean) }
       def potential_requirements_file?(path)
-        unless Dependabot::Experiments.enabled?(:python_requirements_file_name_filtering)
+        if Dependabot::Experiments.enabled?(:python_requirements_file_name_filtering)
           return path.end_with?(".txt", ".in")
         end
 
