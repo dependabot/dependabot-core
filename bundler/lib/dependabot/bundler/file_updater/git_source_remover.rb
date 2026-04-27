@@ -1,7 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "parser/current"
+require "parser"
+require "prism"
 require "sorbet-runtime"
 
 require "dependabot/bundler/file_updater"
@@ -24,7 +25,7 @@ module Dependabot
         def rewrite(content)
           buffer = Parser::Source::Buffer.new("(gemfile_content)")
           buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
+          ast = Prism::Translation::ParserCurrent.new.parse(buffer)
 
           Rewriter.new(dependency: dependency).rewrite(buffer, ast)
         end
