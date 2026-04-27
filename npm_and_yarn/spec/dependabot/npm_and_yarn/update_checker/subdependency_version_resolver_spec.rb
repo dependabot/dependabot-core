@@ -210,6 +210,19 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         latest_resolvable_version
       end
 
+      it "tries pnpm update --depth Infinity before pnpm audit --fix" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive_messages(run_pnpm_deep_update_command: "", run_pnpm_audit_fix_command: "")
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_pnpm_deep_update_command).once.ordered
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_pnpm_audit_fix_command).once.ordered
+
+        latest_resolvable_version
+      end
+
       context "when pnpm audit --fix fails" do
         it "logs and continues without raising" do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")

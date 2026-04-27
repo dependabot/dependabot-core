@@ -168,6 +168,11 @@ module Dependabot
 
               updated_content = File.read(pnpm_lock.name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                run_pnpm_deep_update_fallback
+                updated_content = File.read(pnpm_lock.name)
+              end
+
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
                 updated_content = File.read(pnpm_lock.name)
               end
@@ -193,6 +198,23 @@ module Dependabot
         def run_pnpm_install
           Helpers.run_pnpm_command(
             "install --lockfile-only"
+          )
+        end
+
+        # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
+        # first-tier fallback when the regular update is a no-op (typically
+        # transitive deps not listed in any package.json). Unlike `audit --fix`
+        # this does not write `overrides` to package.json.
+        sig { void }
+        def run_pnpm_deep_update_fallback
+          recursive = workspace_files.any?
+          dependencies.each do |dep|
+            NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            dep.metadata[:deep_update_used] = true
+          end
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
           )
         end
 

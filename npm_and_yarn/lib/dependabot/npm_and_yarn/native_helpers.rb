@@ -69,6 +69,20 @@ module Dependabot
         )
       end
 
+      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
+      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+        # `pnpm update --depth Infinity <dep>` traverses the full dependency
+        # graph, allowing transitive dependencies to be updated in the lockfile
+        # without modifying any package.json (unlike `pnpm audit --fix`).
+        # `-r --include-workspace-root` is required for workspace repos so the
+        # update is applied across all packages.
+        flags = recursive ? "-r --include-workspace-root " : ""
+        Helpers.run_pnpm_command(
+          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only",
+          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        )
+      end
+
       sig { returns(String) }
       def self.run_yarn_audit_fix_command
         # Fallback for transitive dependencies where `yarn up -R` is a no-op.
