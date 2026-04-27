@@ -8,6 +8,8 @@ require "dependabot/composer/helpers"
 
 RSpec.describe Dependabot::Composer::Helpers do
   describe ".composer_version" do
+    before { described_class.reset_v1_warning! }
+
     let(:composer_v2_content) do
       <<~JSON
         {
@@ -75,15 +77,21 @@ RSpec.describe Dependabot::Composer::Helpers do
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
       end
 
-      it "uses '2' and does not log a warning when lockfile major version is nil" do
+      it "uses '2' and does not log a warning when lockfile is missing plugin-api-version" do
         composer_json = JSON.parse(composer_v2_content)
-        parsed_lockfile = { "plugin-api-version" => "0.0.1" }
-
-        version = instance_double(Dependabot::Composer::Version, canonical_segments: [nil])
-        allow(Dependabot::Composer::Version).to receive(:new).with("0.0.1").and_return(version)
+        parsed_lockfile = {}
 
         expect(Dependabot.logger).not_to receive(:warn)
         expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
+      end
+
+      it "only logs the V1 warning once across multiple calls" do
+        composer_json = JSON.parse(composer_v2_content)
+        parsed_lockfile = { "plugin-api-version" => "1.1.0" }
+
+        expect(Dependabot.logger).to receive(:warn).with(/Composer V1 lockfile detected/).once
+        described_class.composer_version(composer_json, parsed_lockfile)
+        described_class.composer_version(composer_json, parsed_lockfile)
       end
     end
   end
