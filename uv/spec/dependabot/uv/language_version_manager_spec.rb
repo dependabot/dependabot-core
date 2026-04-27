@@ -35,9 +35,15 @@ RSpec.describe Dependabot::Uv::LanguageVersionManager do
 
     context "when .python-version pins an exact patch version" do
       let(:user_specified_requirements) { ["3.12.2"] }
+      let(:expected_version) do
+        Dependabot::Python::Language::PRE_INSTALLED_PYTHON_VERSIONS
+          .map(&:to_s)
+          .select { |version| version.start_with?("3.12.") }
+          .max_by { |version| Gem::Version.new(version) }
+      end
 
       it "uses the newest supported patch in that minor line" do
-        expect(manager.python_version).to eq("3.12.12")
+        expect(manager.python_version).to eq(expected_version)
       end
     end
   end

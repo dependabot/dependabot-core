@@ -93,9 +93,9 @@ module Dependabot
         exact_patch_pin = explicit_exact_patch_pin?(requirement_string)
 
         # If the requirement string isn't already a range (eg ">3.10"), coerce it to "major.minor.*".
-        # The patch version is ignored because a non-matching patch version is unlikely to affect resolution.
-        unless exact_patch_pin
-          requirement_string = requirement_string.gsub(/\.\d+$/, ".*") if /^\d/.match?(requirement_string)
+        # Ignore patch versions unless the requirement is an explicit exact patch pin (for example ==3.12.2).
+        if !exact_patch_pin && /^\d/.match?(requirement_string)
+          requirement_string = requirement_string.gsub(/\.\d+$/, ".*")
         end
 
         requirement_string = normalize_python_exact_version(requirement_string) unless exact_patch_pin
