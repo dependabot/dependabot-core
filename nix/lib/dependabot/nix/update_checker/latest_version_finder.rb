@@ -14,6 +14,43 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        # All Nix versions are pseudo-versions with prerelease segments (0.0.0-0.N),
+        # so we must always include prereleases to avoid filtering everything out.
+        sig { override.returns(T::Boolean) }
+        def wants_prerelease?
+          true
+        end
+
+        protected
+
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_by_cooldown(releases)
+          return releases unless cooldown_enabled?
+          return releases unless cooldown_options
+
+          filtered = releases.reject { |release| in_cooldown_period?(release) }
+
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} versions due to cooldown")
+          end
+
+          if filtered.empty? && !releases.empty? && dependency.version
+            Dependabot.logger.info(
+              "All versions filtered by cooldown for #{dependency.name}, " \
+              "falling back to current version #{dependency.version}"
+            )
+
+            return [current_dependency_release]
+          end
+
+          filtered
+        end
+
+        private
+
         sig do
           override.params(releases: T::Array[Dependabot::Package::PackageRelease])
                   .returns(T::Array[Dependabot::Package::PackageRelease])
@@ -25,21 +62,10 @@ module Dependabot
           end
 
           # Fallback so the current version is always in the candidate set
-          releases << Dependabot::Package::PackageRelease.new(
-            version: Nix::Version.new("0.0.0-0.0"),
-            tag: dependency.version
-          )
+          current_release = current_dependency_release
+          releases << current_release unless releases.any? { |r| r.version == current_release.version }
           releases
         end
-
-        # All Nix versions are pseudo-versions with prerelease segments (0.0.0-0.N),
-        # so we must always include prereleases to avoid filtering everything out.
-        sig { override.returns(T::Boolean) }
-        def wants_prerelease?
-          true
-        end
-
-        private
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
@@ -52,6 +78,14 @@ module Dependabot
               ).available_versions || []
             ),
             T.nilable(Dependabot::Package::PackageDetails)
+          )
+        end
+
+        sig { returns(Dependabot::Package::PackageRelease) }
+        def current_dependency_release
+          Dependabot::Package::PackageRelease.new(
+            version: Nix::Version.new("0.0.0-0.0"),
+            tag: dependency.version
           )
         end
       end
