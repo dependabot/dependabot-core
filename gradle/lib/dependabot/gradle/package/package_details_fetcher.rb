@@ -118,13 +118,9 @@ module Dependabot
         def fetch_version_details(repository_details)
           url = repository_details.fetch("url")
 
-          if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
-            return distribution_version_details || []
-          end
+          return distribution_version_details || [] if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
 
-          if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
-            return google_version_details || []
-          end
+          return google_version_details || [] if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
 
           dependency_metadata(repository_details).css("versions > version")
                                                  .select { |node| version_class.correct?(node.content) }
@@ -192,12 +188,13 @@ module Dependabot
           xpath = "/#{group_id}/#{artifact_id}"
           return unless @google_metadata.at_xpath(xpath)
 
-          @google_metadata.at_xpath(xpath)
-                                 .attributes.fetch("versions")
-                                 .value.split(",")
-                                 .select { |v| version_class.correct?(v) }
-                                 .map { |v| version_class.new(v) }
-                                 .map { |version| { version: version, source_url: url } }
+          @google_metadata
+            .at_xpath(xpath)
+            .attributes.fetch("versions")
+            .value.split(",")
+            .select { |v| version_class.correct?(v) }
+            .map { |v| version_class.new(v) }
+            .map { |version| { version: version, source_url: url } }
         rescue Nokogiri::XML::XPath::SyntaxError
           nil
         end
