@@ -621,7 +621,7 @@ internal static class SdkProjectDiscovery
                     }
 
                     var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
-                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsDirect: isTopLevel, IsTransitive: !isTopLevel);
+                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsTopLevel: isTopLevel);
                 }
             }
 
