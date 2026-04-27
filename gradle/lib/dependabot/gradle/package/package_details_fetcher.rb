@@ -269,7 +269,7 @@ module Dependabot
                 credentials: credentials
               ).repository_urls
                                                     .map do |url|
-                { "url" => url, "auth_headers" => {} }
+                { "url" => url, "auth_headers" => auth_headers(url) }
               end
             end.uniq
         end

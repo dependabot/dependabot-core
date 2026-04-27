@@ -168,10 +168,19 @@ module Dependabot
         sig { returns(String) }
         def central_repo_url
           base_credential = credentials.find do |cred|
-            cred["type"] == "maven_repository" && cred.replaces_base? && cred["url"]
+            cred["type"] == "maven_repository" && replaces_base?(cred) && cred["url"]
           end
 
           base_credential ? T.must(base_credential["url"]).gsub(%r{/+$}, "") : CENTRAL_REPO_URL
+        end
+
+        sig { params(credential: T.untyped).returns(T::Boolean) }
+        def replaces_base?(credential)
+          if credential.respond_to?(:replaces_base?)
+            credential.replaces_base?
+          else
+            credential["replaces-base"] == true
+          end
         end
 
         sig { params(string: String).returns(Integer) }

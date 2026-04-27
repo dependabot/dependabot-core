@@ -50,6 +50,32 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
 
         it { is_expected.to eq(["https://registry.example.com/maven"]) }
       end
+
+      context "with multiple private registry credentials" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "maven_repository",
+                "url" => "https://mirror.example.com/maven/",
+                "username" => "hello",
+                "password" => "world"
+              }
+            ),
+            Dependabot::Credential.new(
+              {
+                "type" => "maven_repository",
+                "url" => "https://registry.example.com/maven/",
+                "username" => "hello",
+                "password" => "world",
+                "replaces-base" => true
+              }
+            )
+          ]
+        end
+
+        it { is_expected.to eq(["https://registry.example.com/maven"]) }
+      end
     end
 
     context "when there are repository declarations" do

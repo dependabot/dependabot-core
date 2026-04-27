@@ -109,6 +109,47 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
       end
     end
 
+    context "with multiple private registry credentials" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) do
+        "https://mirror.example.com/maven/" \
+          "com/google/guava/guava/maven-metadata.xml"
+      end
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://mirror.example.com/maven/",
+              "username" => "hello",
+              "password" => "world"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, mirror_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
     context "with a plugin" do
       let(:dependency_requirements) do
         [{
