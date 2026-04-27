@@ -24,7 +24,7 @@
     - docker/lib/dependabot/docker_compose/**
     - docker/lib/dependabot/shared/**
     - docker/spec/dependabot/docker_compose/**
-    - docker/spec/dependabot/shared/**
+    - docker/dependabot-docker_compose.gemspec
 
 "L: dotnet:dotnet-sdk":
 - changed-files:
