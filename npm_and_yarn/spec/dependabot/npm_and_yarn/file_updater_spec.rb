@@ -68,6 +68,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_audit_fix_fallback).and_return(false)
   end
 
   after do
