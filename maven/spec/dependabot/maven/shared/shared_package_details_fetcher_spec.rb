@@ -410,10 +410,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         stub_request(:get, /bad%20url/).to_raise(URI::InvalidURIError)
       end
 
-      it "returns nil" do
-        result = client.fetch_dependency_metadata(repository_details)
-
-        expect(result).to be_nil
+      it "raises a helpful error" do
+        expect { client.fetch_dependency_metadata(repository_details) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to start_with("bad URI (is not URI?)")
+        end
       end
     end
   end

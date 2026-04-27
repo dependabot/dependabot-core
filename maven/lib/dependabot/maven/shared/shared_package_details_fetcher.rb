@@ -4,6 +4,7 @@
 require "time"
 require "excon"
 require "nokogiri"
+require "uri"
 require "sorbet-runtime"
 require "dependabot/registry_client"
 require "dependabot/maven/utils/auth_headers_finder"
@@ -96,7 +97,8 @@ module Dependabot
           return unless response.status < 400
 
           Nokogiri::XML(response.body)
-        rescue URI::InvalidURIError
+        rescue URI::InvalidURIError => e
+          raise_if_repository_url_invalid!(url, e)
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
@@ -135,7 +137,8 @@ module Dependabot
           return unless response.status < 400
 
           Nokogiri::HTML(response.body)
-        rescue URI::InvalidURIError
+        rescue URI::InvalidURIError => e
+          raise_if_repository_url_invalid!(url, e)
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
@@ -204,6 +207,13 @@ module Dependabot
           raise RegistryError.new(response_status, response_body)
         end
 
+        sig { params(repository_url: String, error: URI::InvalidURIError).void }
+        def raise_if_repository_url_invalid!(repository_url, error)
+          URI.parse(repository_url)
+        rescue URI::InvalidURIError
+          raise DependencyFileNotResolvable, error.message
+        end
+
         # -- Version Aggregation --
 
         # Aggregates version details from XML metadata and enriches with
@@ -217,7 +227,9 @@ module Dependabot
           @version_details = versions_details_from_xml
 
           begin
-            versions_details_hash = versions_details_hash_from_html if @version_details.any?
+            versions_details_hash = if @version_details.any? && @selected_repository_details
+                                      versions_details_hash_from_html([@selected_repository_details])
+                                    end
 
             if versions_details_hash
               @version_details = @version_details.map do |vd|
@@ -245,32 +257,44 @@ module Dependabot
           @version_details
         end
 
-        # Fetches version details from maven-metadata.xml across all repositories.
+        # Fetches version details from maven-metadata.xml, returning the first
+        # non-empty result from the configured repositories in priority order.
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def versions_details_from_xml
           forbidden_urls.clear
-          version_details = repositories.flat_map do |repository_details|
+          @selected_repository_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+
+          repositories.each do |repository_details|
             url = repository_details.fetch(URL_KEY)
             xml = dependency_metadata(repository_details)
-            next [] if xml.nil?
+            next if xml.nil?
 
-            extract_metadata_from_xml(xml, url)
+            version_details = extract_metadata_from_xml(xml, url)
+            next if version_details.empty?
+
+            @selected_repository_details = repository_details
+            return version_details
           end
 
-          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
+          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if forbidden_urls.any?
 
-          version_details
+          []
         end
 
         # Fetches version details (release dates) from HTML directory listings.
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
-        def versions_details_hash_from_html
+        sig do
+          params(
+            target_repositories: T.nilable(T::Array[T::Hash[String, T.untyped]])
+          ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+        end
+        def versions_details_hash_from_html(target_repositories = nil)
           forbidden_urls.clear
+          active_repositories = target_repositories || repositories
 
           versions_detail_hash = T.let(
             {}, T::Hash[String, T::Hash[Symbol, T.untyped]]
           )
-          repositories.each do |repository_details|
+          active_repositories.each do |repository_details|
             html = dependency_metadata_from_html(repository_details)
             next if html.nil?
 
@@ -296,8 +320,13 @@ module Dependabot
           @released_check ||= {}
           return T.must(@released_check[version]) if @released_check.key?(version)
 
+          target_repositories = T.let(
+            @selected_repository_details ? [@selected_repository_details] : repositories,
+            T::Array[T::Hash[String, T.untyped]]
+          )
+
           @released_check[version] =
-            repositories.any? do |repository_details|
+            target_repositories.any? do |repository_details|
               url = repository_details.fetch(URL_KEY)
               headers = repository_details.fetch(AUTH_HEADERS_KEY)
               response = Dependabot::RegistryClient.head(
