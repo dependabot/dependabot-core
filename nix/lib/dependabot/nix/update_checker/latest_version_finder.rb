@@ -18,21 +18,6 @@ module Dependabot
           override.params(releases: T::Array[Dependabot::Package::PackageRelease])
                   .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def apply_post_fetch_latest_versions_filter(releases)
-          if releases.empty?
-            Dependabot.logger.info("No releases found for #{dependency.name} after applying filters.")
-            return releases
-          end
-
-          # Fallback so the current version is always in the candidate set
-          releases << current_dependency_release
-          releases
-        end
-
-        sig do
-          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
-                  .returns(T::Array[Dependabot::Package::PackageRelease])
-        end
         def filter_by_cooldown(releases)
           return releases unless cooldown_enabled?
           return releases unless cooldown_options
@@ -63,6 +48,21 @@ module Dependabot
         end
 
         private
+
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          if releases.empty?
+            Dependabot.logger.info("No releases found for #{dependency.name} after applying filters.")
+            return releases
+          end
+
+          # Fallback so the current version is always in the candidate set
+          releases << current_dependency_release
+          releases
+        end
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
