@@ -100,7 +100,6 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
           end
         end
       end
-
     end
 
     context "with a pyproject exact requires-python pin" do
