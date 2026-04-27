@@ -159,6 +159,12 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://registry.example.com/maven")
         end
       end
+
+      it "falls through to the next configured registry when an earlier one times out" do
+        stub_request(:get, mirror_metadata_url).to_raise(Excon::Error::Timeout)
+
+        expect(versions.first).to include(source_url: "https://registry.example.com/maven")
+      end
     end
 
     context "with a plugin" do

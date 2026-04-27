@@ -39,7 +39,7 @@ module Dependabot
           @forbidden_urls = forbidden_urls
 
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @google_metadata = T.let(nil, T.nilable(Nokogiri::XML::Document))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
         end
 
@@ -56,11 +56,9 @@ module Dependabot
         attr_reader :forbidden_urls
 
         # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-        sig do
-          returns(T::Array[T::Hash[String, T.untyped]])
-        end
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def fetch_available_versions
-          package_releases = T.let([], T::Array[T::Hash[String, T.untyped]])
+          package_releases = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
           selected_repository = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           version_details = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
@@ -121,13 +119,11 @@ module Dependabot
           url = repository_details.fetch("url")
 
           if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
-            distribution_details = distribution_version_details
-            return distribution_details ? T.cast(distribution_details, T::Array[T::Hash[Symbol, T.untyped]]) : []
+            return distribution_version_details || []
           end
 
           if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
-            google_details = google_version_details
-            return google_details ? T.cast(google_details, T::Array[T::Hash[Symbol, T.untyped]]) : []
+            return google_version_details || []
           end
 
           dependency_metadata(repository_details).css("versions > version")
@@ -159,7 +155,7 @@ module Dependabot
             end
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def distribution_version_details
           DistributionsFetcher.available_versions.map do |info|
             release_date = begin
@@ -178,7 +174,7 @@ module Dependabot
           nil
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def google_version_details
           url = Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
           group_id, artifact_id = group_and_artifact_ids
@@ -187,16 +183,16 @@ module Dependabot
                                     "#{T.must(group_id).tr('.', '/')}/" \
                                     "group-index.xml"
 
-          @google_version_details ||=
+          @google_metadata ||=
             begin
               response = Dependabot::RegistryClient.get(url: dependency_metadata_url)
               Nokogiri::XML(response.body)
             end
 
           xpath = "/#{group_id}/#{artifact_id}"
-          return unless @google_version_details.at_xpath(xpath)
+          return unless @google_metadata.at_xpath(xpath)
 
-          @google_version_details.at_xpath(xpath)
+          @google_metadata.at_xpath(xpath)
                                  .attributes.fetch("versions")
                                  .value.split(",")
                                  .select { |v| version_class.correct?(v) }

@@ -4,6 +4,7 @@
 require "time"
 require "excon"
 require "nokogiri"
+require "uri"
 require "sorbet-runtime"
 require "dependabot/registry_client"
 require "dependabot/maven/utils/auth_headers_finder"
@@ -96,7 +97,8 @@ module Dependabot
           return unless response.status < 400
 
           Nokogiri::XML(response.body)
-        rescue URI::InvalidURIError
+        rescue URI::InvalidURIError => e
+          raise_if_repository_url_invalid!(url, e)
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
@@ -135,7 +137,8 @@ module Dependabot
           return unless response.status < 400
 
           Nokogiri::HTML(response.body)
-        rescue URI::InvalidURIError
+        rescue URI::InvalidURIError => e
+          raise_if_repository_url_invalid!(url, e)
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
@@ -204,6 +207,13 @@ module Dependabot
           raise RegistryError.new(response_status, response_body)
         end
 
+        sig { params(repository_url: String, error: URI::InvalidURIError).void }
+        def raise_if_repository_url_invalid!(repository_url, error)
+          URI.parse(repository_url)
+        rescue URI::InvalidURIError
+          raise DependencyFileNotResolvable, error.message
+        end
+
         # -- Version Aggregation --
 
         # Aggregates version details from XML metadata and enriches with
@@ -247,7 +257,8 @@ module Dependabot
           @version_details
         end
 
-        # Fetches version details from maven-metadata.xml across all repositories.
+        # Fetches version details from maven-metadata.xml, returning the first
+        # non-empty result from the configured repositories in priority order.
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def versions_details_from_xml
           forbidden_urls.clear
