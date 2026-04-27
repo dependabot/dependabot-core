@@ -70,7 +70,7 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -212,7 +212,7 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, "src/Directory.Packages.props"), "updated contents");
 
@@ -725,7 +725,7 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -759,6 +759,99 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                     }
                 },
                 new PullRequestExistsForSecurityUpdate([new("Some.Dependency", "2.0.0", DependencyType.Unknown)]),
+                new MarkAsProcessed("TEST-COMMIT-SHA"),
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task ErrantFileUpdatesDoNotCauseCallToCreatePullRequest()
+    {
+        // if an external tool inadvertently updates files on disk without reporting any update operations, don't try
+        // to create a PR
+        await TestAsync(
+            job: new Job()
+            {
+                Dependencies = ["Some.Dependency"],
+                SecurityAdvisories = [new() { DependencyName = "Some.Dependency", AffectedVersions = [Requirement.Parse("= 1.0.0")] }],
+                SecurityUpdatesOnly = true,
+                Source = CreateJobSource("/src"),
+            },
+            files: [
+                ("src/project.csproj", "initial project contents"),
+                ("src/packages.config", "initial packages contents"),
+            ],
+            discoveryWorker: TestDiscoveryWorker.FromResults(
+                ("/src", new WorkspaceDiscoveryResult()
+                {
+                    Path = "/src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            ImportedFiles = [],
+                            AdditionalFiles = ["packages.config"],
+                        }
+                    ],
+                })
+            ),
+            analyzeWorker: new TestAnalyzeWorker(async input =>
+            {
+                var repoRoot = input.Item1;
+                var discovery = input.Item2;
+                var dependencyInfo = input.Item3;
+                if (dependencyInfo.Name != "Some.Dependency")
+                {
+                    throw new NotImplementedException($"Test didn't expect to update dependency {dependencyInfo.Name}");
+                }
+
+                // no update possible but a file was touched on disk
+                var projectPath = Path.Join(repoRoot, discovery.Path, discovery.Projects.Single().FilePath);
+                var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath), "packages.config");
+                await File.WriteAllTextAsync(packagesConfigPath, "updated packages contents");
+
+                return new AnalysisResult()
+                {
+                    CanUpdate = false,
+                    UpdatedVersion = "1.0.0",
+                    UpdatedDependencies = [],
+                };
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                return new UpdateOperationResult()
+                {
+                    UpdateOperations = [],
+                };
+            }),
+            expectedUpdateHandler: CreateSecurityUpdatePullRequestHandler.Instance,
+            expectedApiMessages: [
+                new UpdatedDependencyList()
+                {
+                    Dependencies = [
+                        new()
+                        {
+                            Name = "Some.Dependency",
+                            Version = "1.0.0",
+                            Requirements = [
+                                new() { Requirement = "1.0.0", File = "/src/project.csproj", Groups = ["dependencies"] },
+                            ],
+                        },
+                    ],
+                    DependencyFiles = ["/src/packages.config", "/src/project.csproj"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "create_security_pr",
+                    }
+                },
+                new SecurityUpdateNotFound("Some.Dependency", "1.0.0"),
                 new MarkAsProcessed("TEST-COMMIT-SHA"),
             ]
         );

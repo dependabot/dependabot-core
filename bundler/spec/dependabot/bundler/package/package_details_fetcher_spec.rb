@@ -93,11 +93,10 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
           }
         end
 
-        it "returns an empty result" do
+        it "returns nil" do
           result = fetch
 
-          expect(result).to be_a(Dependabot::Package::PackageDetails)
-          expect(result.releases).to be_empty
+          expect(result).to be_nil
           expect(a_request(:get, json_url)).not_to have_been_made
         end
       end
@@ -180,273 +179,44 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
       end
     end
 
-    describe "GitHub Package Registry support" do
-      let(:dependency_name) { "json" }
+    context "when registry does not support versions API" do
+      let(:dependency_name) { "my-private-gem" }
       let(:source) do
         {
           type: "rubygems",
-          url: "https://rubygems.pkg.github.com/dsp-testing/"
+          url: "https://gems.private-registry.example.com/"
         }
       end
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            {
-              "type" => "rubygems_server",
-              "host" => "rubygems.pkg.github.com",
-              "token" => "ghp_test_token_123"
-            }
-          )
-        ]
-      end
-      let(:github_api_url) { "https://api.github.com/orgs/dsp-testing/packages/rubygems/json/versions" }
-
-      context "when package exists in GitHub registry" do
-        let(:github_api_response) do
-          [
-            {
-              "id" => 123,
-              "name" => "2.12.2",
-              "created_at" => "2023-09-01T10:00:00Z",
-              "updated_at" => "2023-09-01T10:00:00Z"
-            },
-            {
-              "id" => 122,
-              "name" => "2.12.1",
-              "created_at" => "2023-08-15T09:30:00Z",
-              "updated_at" => "2023-08-15T09:30:00Z"
-            },
-            {
-              "id" => 121,
-              "name" => "2.11.0",
-              "created_at" => "2023-07-01T08:00:00Z",
-              "updated_at" => "2023-07-01T08:00:00Z"
-            }
-          ]
-        end
-
-        before do
-          stub_request(:get, github_api_url)
-            .with(
-              headers: {
-                "Accept" => "application/vnd.github.v3+json",
-                "Authorization" => "Bearer ghp_test_token_123"
-              }
-            )
-            .to_return(
-              status: 200,
-              body: github_api_response.to_json,
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
-
-        it "returns package details with all versions" do
-          result = fetch
-
-          expect(result).to be_a(Dependabot::Package::PackageDetails)
-          expect(result.releases.length).to eq(3)
-
-          # Check versions are in correct order (oldest first)
-          versions = result.releases.map { |release| release.version.to_s }
-          expect(versions).to eq(["2.12.2", "2.12.1", "2.11.0"])
-        end
-
-        it "creates package releases with correct GitHub attributes" do
-          result = fetch
-          latest_release = result.releases.first
-
-          expect(latest_release.version.to_s).to eq("2.12.2")
-          expect(latest_release.released_at).to eq(Time.parse("2023-09-01T10:00:00Z"))
-          expect(latest_release.downloads).to eq(0) # GitHub doesn't provide download counts
-          expect(latest_release.url).to eq("https://rubygems.pkg.github.com/dsp-testing/gems/json-2.12.2.gem")
-          expect(latest_release.yanked).to be false
-          expect(latest_release.package_type).to eq("gem")
-          expect(latest_release.language.name).to eq("ruby")
-          expect(latest_release.language.requirement).to be_nil # GitHub doesn't provide ruby version
-        end
-
-        it "makes authenticated request to GitHub API" do
-          fetch
-
-          expect(
-            a_request(:get, github_api_url)
-                        .with(
-                          headers: {
-                            "Accept" => "application/vnd.github.v3+json",
-                            "Authorization" => "Bearer ghp_test_token_123"
-                          }
-                        )
-          ).to have_been_made.once
-        end
+      let(:private_versions_url) do
+        "https://gems.private-registry.example.com/api/v1/versions/my-private-gem.json"
       end
 
-      context "when package is not found in GitHub registry" do
-        before do
-          stub_request(:get, github_api_url)
-            .with(
-              headers: {
-                "Accept" => "application/vnd.github.v3+json",
-                "Authorization" => "Bearer ghp_test_token_123"
-              }
-            )
-            .to_return(status: 404, body: "Not Found")
-        end
-
-        it "returns empty package details" do
-          result = fetch
-
-          expect(result).to be_a(Dependabot::Package::PackageDetails)
-          expect(result.releases).to be_empty
-        end
-
-        it "logs package not found error" do
-          expect(Dependabot.logger).to receive(:info)
-            .with("Failed to fetch versions for 'json' from GitHub Packages. " \
-                  "Status: 404 (Package not found in GitHub Registry)")
-
-          fetch
-        end
+      before do
+        stub_request(:get, private_versions_url)
+          .to_return(status: 404, body: "Not Found")
       end
 
-      context "when GitHub API returns server error" do
-        before do
-          stub_request(:get, github_api_url)
-            .to_return(status: 500, body: "Internal Server Error")
-        end
+      it "returns empty package details" do
+        result = fetch
 
-        it "returns empty package details" do
-          result = fetch
-
-          expect(result).to be_a(Dependabot::Package::PackageDetails)
-          expect(result.releases).to be_empty
-        end
-
-        it "logs server error" do
-          expect(Dependabot.logger).to receive(:info)
-            .with("Failed to fetch versions for 'json' from GitHub Packages. Status: 500")
-
-          fetch
-        end
-      end
-
-      context "when GitHub API returns invalid JSON" do
-        before do
-          stub_request(:get, github_api_url)
-            .to_return(
-              status: 200,
-              body: "invalid json{",
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
-
-        it "returns empty package details" do
-          result = fetch
-
-          expect(result).to be_a(Dependabot::Package::PackageDetails)
-          expect(result.releases).to be_empty
-        end
-
-        it "logs JSON parsing error" do
-          expect(Dependabot.logger).to receive(:info)
-            .with(/Failed to parse GitHub Packages response:/)
-
-          fetch
-        end
-      end
-
-      context "when no GitHub token is provided" do
-        let(:credentials) { [] }
-
-        before do
-          stub_request(:get, github_api_url)
-            .with(
-              headers: {
-                "Accept" => "application/vnd.github.v3+json",
-                "Authorization" => "Bearer "
-              }
-            )
-            .to_return(status: 401, body: "Unauthorized")
-        end
-
-        it "makes request with empty authorization header" do
-          fetch
-
-          expect(
-            a_request(:get, github_api_url)
-                        .with(
-                          headers: {
-                            "Accept" => "application/vnd.github.v3+json",
-                            "Authorization" => "Bearer "
-                          }
-                        )
-          ).to have_been_made.once
-        end
-      end
-    end
-
-    describe "#github_token" do
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            {
-              "type" => "rubygems_server",
-              "host" => "rubygems.pkg.github.com",
-              "token" => "ghp_test_token_123"
-            }
-          )
-        ]
-      end
-
-      it "extracts token from rubygems_server credentials" do
-        expect(fetcher.send(:github_token)).to eq("ghp_test_token_123")
-      end
-
-      context "when no matching credentials" do
-        let(:credentials) { [] }
-
-        it "returns nil" do
-          expect(fetcher.send(:github_token)).to be_nil
-        end
-      end
-
-      context "with multiple credential types" do
-        let(:credentials) do
-          [
-            Dependabot::Credential.new(
-              {
-                "type" => "git_source",
-                "host" => "github.com",
-                "token" => "different_token"
-              }
-            ),
-            Dependabot::Credential.new(
-              {
-                "type" => "rubygems_server",
-                "host" => "rubygems.pkg.github.com",
-                "token" => "correct_token"
-              }
-            )
-          ]
-        end
-
-        it "returns the correct GitHub Package Registry token" do
-          expect(fetcher.send(:github_token)).to eq("correct_token")
-        end
+        expect(result).to be_a(Dependabot::Package::PackageDetails)
+        expect(result.releases).to be_empty
+        expect(a_request(:get, private_versions_url)).to have_been_made.once
       end
     end
 
     describe "#get_url_from_dependency" do
-      context "with GitHub Package Registry source URL" do
+      context "with a source URL with trailing slash" do
         let(:source) do
           {
             type: "rubygems",
-            url: "https://rubygems.pkg.github.com/dsp-testing/"
+            url: "https://gems.private-registry.example.com/"
           }
         end
 
         it "returns URL without trailing slash" do
           expect(fetcher.send(:get_url_from_dependency, dependency))
-            .to eq("https://rubygems.pkg.github.com/dsp-testing")
+            .to eq("https://gems.private-registry.example.com")
         end
       end
 
@@ -455,6 +225,128 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
 
         it "returns nil" do
           expect(fetcher.send(:get_url_from_dependency, dependency)).to be_nil
+        end
+      end
+    end
+
+    describe "replaces_base credential support" do
+      let(:private_registry_url) { "https://gems.example.com/api/v1/versions/#{dependency_name}.json" }
+
+      context "when a replaces_base rubygems_server credential exists" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "rubygems_server",
+                "host" => "gems.example.com",
+                "token" => "secret",
+                "replaces-base" => true
+              }
+            )
+          ]
+        end
+
+        context "when dependency has no source in requirements" do
+          let(:source) { nil }
+
+          before do
+            stub_request(:get, private_registry_url)
+              .to_return(
+                status: 200,
+                body: fixture("releases_api", "dependabot_common.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "queries the private registry instead of rubygems.org" do
+            result = fetch
+
+            expect(result).to be_a(Dependabot::Package::PackageDetails)
+            expect(result.releases).not_to be_empty
+            expect(a_request(:get, private_registry_url)).to have_been_made.once
+            expect(a_request(:get, json_url)).not_to have_been_made
+          end
+        end
+
+        context "when dependency has explicit source in requirements" do
+          let(:source) do
+            {
+              type: "rubygems",
+              url: "https://other-registry.example.com"
+            }
+          end
+
+          let(:explicit_url) { "https://other-registry.example.com/api/v1/versions/#{dependency_name}.json" }
+
+          before do
+            stub_request(:get, explicit_url)
+              .to_return(
+                status: 200,
+                body: fixture("releases_api", "dependabot_common.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "uses the explicit source URL over the replaces_base credential" do
+            result = fetch
+
+            expect(result).to be_a(Dependabot::Package::PackageDetails)
+            expect(a_request(:get, explicit_url)).to have_been_made.once
+            expect(a_request(:get, private_registry_url)).not_to have_been_made
+          end
+        end
+      end
+
+      context "when no replaces_base credential exists" do
+        let(:credentials) { [] }
+        let(:source) { nil }
+
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: fixture("releases_api", "dependabot_common.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "falls back to rubygems.org" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(a_request(:get, json_url)).to have_been_made.once
+        end
+      end
+
+      context "when a non-replaces_base rubygems_server credential exists" do
+        let(:credentials) do
+          [
+            Dependabot::Credential.new(
+              {
+                "type" => "rubygems_server",
+                "host" => "gems.example.com",
+                "token" => "secret"
+              }
+            )
+          ]
+        end
+        let(:source) { nil }
+
+        before do
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: fixture("releases_api", "dependabot_common.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        it "falls back to rubygems.org" do
+          result = fetch
+
+          expect(result).to be_a(Dependabot::Package::PackageDetails)
+          expect(a_request(:get, json_url)).to have_been_made.once
+          expect(a_request(:get, private_registry_url)).not_to have_been_made
         end
       end
     end

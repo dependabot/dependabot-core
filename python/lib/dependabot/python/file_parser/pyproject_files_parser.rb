@@ -19,11 +19,13 @@ module Dependabot
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
-        UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
+        # Git dependencies with tags are now supported for version tracking
+        UNSUPPORTED_DEPENDENCY_TYPES = %w(path url).freeze
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
+          @dynamic_fields = T.let(nil, T.nilable(T::Array[String]))
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -45,11 +47,7 @@ module Dependabot
         def pyproject_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
-          # Parse Poetry dependencies if [tool.poetry] section exists
           dependencies += poetry_dependencies if using_poetry?
-
-          # Parse PEP 621/735 dependencies if those sections exist
-          # This handles hybrid projects that have both Poetry and PEP 621 sections
           dependencies += pep621_pep735_dependencies if using_pep621? || using_pep735?
 
           dependencies
@@ -71,7 +69,10 @@ module Dependabot
 
           groups = T.must(poetry_root)["group"] || {}
           groups.each do |group, group_spec|
-            dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
+            deps = group_spec["dependencies"]
+            next unless deps
+
+            dependencies += parse_poetry_dependency_group(group, deps)
           end
           dependencies
         end
@@ -87,20 +88,11 @@ module Dependabot
           return dependencies if using_pdm?
 
           parse_pep621_pep735_dependencies.each do |dep|
-            # If a requirement has a `<` or `<=` marker then updating it is
-            # probably blocked. Ignore it.
-            next if dep["markers"]&.include?("<")
-
-            # If no requirement, don't add it
-            next if dep["requirement"].empty?
-
-            # Skip build-system.requires dependencies when using Poetry
-            # Poetry manages its own build system dependencies
-            next if using_poetry? && dep["requirement_type"] == "build-system.requires"
+            next if skip_pep621_dep?(dep)
 
             dependencies <<
               Dependency.new(
-                name: normalised_name(dep["name"], dep["extras"]),
+                name: normalise(dep["name"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
@@ -108,7 +100,10 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]].compact
                 }],
-                package_manager: "pip"
+                package_manager: "pip",
+                metadata: extras_metadata(dep["extras"]).merge(
+                  source_requirement: dep["source_requirement"]
+                ).compact
               )
           end
 
@@ -146,15 +141,41 @@ module Dependabot
           NameNormaliser.normalise_including_extras(name, extras)
         end
 
+        # Build metadata hash storing extras as a comma-separated string.
+        # Stored in metadata so the file updater can reconstruct the full
+        # PEP 621 declaration (e.g. "cachecontrol[filecache]>=0.14.0").
+        sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+        def extras_metadata(extras)
+          return {} if extras.empty?
+
+          { extras: extras.join(",") }
+        end
+
         # @param req can be an Array, Hash or String that represents the constraints for a dependency
         sig { params(req: T.untyped, type: String).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        # rubocop:disable Metrics/PerceivedComplexity
         def parse_requirements_from(req, type)
           [req].flatten.compact.filter_map do |requirement|
+            # Skip unsupported dependency types (path, url), but allow git
             next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
+            # Skip git dependencies without tags (e.g., with branch, rev)
+            next if requirement.is_a?(Hash) && requirement["git"] && !requirement["tag"]
 
-            check_requirements(requirement)
-
-            if requirement.is_a?(String)
+            # Handle git dependencies with tags
+            if requirement.is_a?(Hash) && requirement["git"] && requirement["tag"]
+              {
+                requirement: nil,
+                file: T.must(pyproject).name,
+                source: {
+                  type: "git",
+                  url: requirement["git"],
+                  ref: requirement["tag"],
+                  branch: nil
+                },
+                groups: [type]
+              }
+            elsif requirement.is_a?(String)
+              check_requirements(requirement)
               {
                 requirement: requirement,
                 file: T.must(pyproject).name,
@@ -162,15 +183,21 @@ module Dependabot
                 groups: [type]
               }
             else
+              check_requirements(requirement)
+              # String sources are registry name references (e.g., "custom") that reference
+              # [[tool.poetry.source]] definitions. Resolve them to proper hashes.
+              source_value = requirement.fetch("source", nil)
+              source = resolve_source(source_value)
               {
                 requirement: requirement["version"],
                 file: T.must(pyproject).name,
-                source: requirement.fetch("source", nil),
+                source: source,
                 groups: [type]
               }
             end
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(T::Boolean)) }
         def using_poetry?
@@ -197,6 +224,43 @@ module Dependabot
         sig { returns(T.untyped) }
         def using_pdm?
           using_pep621? && pdm_lock
+        end
+
+        sig { returns(T::Array[String]) }
+        def dynamic_fields
+          @dynamic_fields ||= parsed_pyproject.dig("project", "dynamic") || []
+        end
+
+        sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
+        def skip_pep621_dep?(dep)
+          # If a requirement has a `<` or `<=` marker then updating it is
+          # probably blocked. Ignore it.
+          return true if dep["markers"]&.include?("<")
+
+          # If no requirement, don't add it
+          return true if dep["requirement"].empty?
+
+          # Skip build-system.requires dependencies when using Poetry
+          # Poetry manages its own build system dependencies
+          return true if using_poetry? && dep["requirement_type"] == "build-system.requires"
+
+          # When dependencies or optional-dependencies are listed in project.dynamic,
+          # they are managed by the build backend (e.g. Poetry) — skip the PEP 621 path
+          dynamic_pep621_dep?(dep["requirement_type"])
+        end
+
+        sig { params(requirement_type: T.nilable(String)).returns(T::Boolean) }
+        def dynamic_pep621_dep?(requirement_type)
+          return false unless using_poetry?
+          return false unless requirement_type
+
+          if requirement_type == "dependencies"
+            dynamic_fields.include?("dependencies")
+          elsif parsed_pyproject.dig("project", "optional-dependencies")&.key?(requirement_type)
+            dynamic_fields.include?("optional-dependencies")
+          else
+            false
+          end
         end
 
         # Create a DependencySet where each element has no requirement. Any
@@ -278,6 +342,34 @@ module Dependabot
         sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        sig { params(source_value: T.untyped).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def resolve_source(source_value)
+          # Return nil if no source specified
+          return nil if source_value.nil?
+
+          # If already a hash, return as-is (handles git sources)
+          return source_value if source_value.is_a?(Hash)
+
+          # String sources are references to [[tool.poetry.source]] definitions
+          # Look up the source definition and create a hash
+          return nil unless source_value.is_a?(String)
+
+          source_name = source_value
+          poetry_sources = parsed_pyproject.dig("tool", "poetry", "source") || []
+          source_def = poetry_sources.find { |s| s["name"] == source_name }
+
+          # If source definition not found, return nil
+          return nil unless source_def
+
+          # Create a hash with type and url from the source definition
+          # Use "registry" as the type since these are package index sources
+          {
+            type: "registry",
+            url: source_def["url"],
+            name: source_name
+          }
         end
 
         sig { returns(T.untyped) }

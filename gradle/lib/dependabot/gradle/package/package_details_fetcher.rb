@@ -137,8 +137,6 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
         def distribution_version_details
-          return nil unless Experiments.enabled?(:gradle_wrapper_updater)
-
           DistributionsFetcher.available_versions.map do |info|
             release_date = begin
               Time.parse(info[:build_time])
@@ -267,10 +265,11 @@ module Dependabot
             requirement_files.flat_map do |target_file|
               Gradle::FileParser::RepositoriesFinder.new(
                 dependency_files: dependency_files,
-                target_dependency_file: target_file
+                target_dependency_file: target_file,
+                credentials: credentials
               ).repository_urls
                                                     .map do |url|
-                { "url" => url, "auth_headers" => {} }
+                { "url" => url, "auth_headers" => auth_headers(url) }
               end
             end.uniq
         end

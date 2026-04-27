@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
         context "when a range requirement was specified" do
           let(:requirement_txt_req_string) { ">=1.3.0" }
 
-          it { is_expected.to eq(requirement_txt_req) }
+          its([:requirement]) { is_expected.to eq(">=1.5.0") }
 
           context "when requirement version is too high" do
             let(:requirement_txt_req_string) { ">=2.0.0" }
@@ -135,26 +135,33 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when requirement had a local version" do
             let(:requirement_txt_req_string) { ">=1.3.0+gc.1" }
 
-            it { is_expected.to eq(requirement_txt_req) }
+            its([:requirement]) { is_expected.to eq(">=1.5.0") }
           end
 
           context "with an upper bound" do
             let(:requirement_txt_req_string) { ">=1.3.0, <=1.5.0" }
 
-            it { is_expected.to eq(requirement_txt_req) }
+            its([:requirement]) { is_expected.to eq(">=1.5.0,<=1.5.0") }
 
             context "when needing an update" do
               let(:requirement_txt_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+              its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
 
               context "when requirement version has more digits than the new version" do
                 let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
                 let(:latest_resolvable_version) { "1.10" }
 
-                its([:requirement]) { is_expected.to eq(">=1.9,<=1.10") }
+                its([:requirement]) { is_expected.to eq("<=1.10,>=1.10") }
               end
             end
+          end
+
+          context "with an upper bound and bump_versions strategy" do
+            let(:requirement_txt_req_string) { ">=1.9.2, <2" }
+            let(:latest_resolvable_version) { "1.10.1" }
+
+            its([:requirement]) { is_expected.to eq(">=1.10.1,<2") }
           end
         end
 
@@ -540,7 +547,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when a range requirement was specified" do
               let(:pyproject_req_string) { ">=1.3.0" }
 
-              it { is_expected.to eq(pyproject_req) }
+              its([:requirement]) do
+                is_expected.to eq(
+                  if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                    ">=1.5.0"
+                  else
+                    ">=1.3.0"
+                  end
+                )
+              end
 
               context "when the requirement version is too high" do
                 let(:pyproject_req_string) { ">=2.0.0" }
@@ -551,18 +566,85 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "when the requirement had a local version" do
                 let(:pyproject_req_string) { ">=1.3.0+gc.1" }
 
-                it { is_expected.to eq(pyproject_req) }
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      ">=1.5.0"
+                    else
+                      ">=1.3.0+gc.1"
+                    end
+                  )
+                end
               end
 
               context "with an upper bound" do
                 let(:pyproject_req_string) { ">=1.3.0, <=1.5.0" }
 
-                it { is_expected.to eq(pyproject_req) }
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      ">=1.5.0,<=1.5.0"
+                    else
+                      ">=1.3.0, <=1.5.0"
+                    end
+                  )
+                end
 
                 context "when needing an update" do
                   let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                  its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        ">=1.5.0,<1.6"
+                      else
+                        ">=1.3.0,<1.6"
+                      end
+                    )
+                  end
+                end
+
+                context "with a major version upper bound" do
+                  # This matches the issue scenario: deps like ">=1.0.0,<2" should bump the lower bound
+                  let(:pyproject_req_string) { ">=1.0.0, <2" }
+
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        ">=1.5.0,<2"
+                      else
+                        ">=1.0.0, <2"
+                      end
+                    )
+                  end
+                end
+
+                context "with a strict lower bound (>)" do
+                  let(:pyproject_req_string) { ">1.0.0, <2.0.0" }
+
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        ">=1.5.0,<2.0.0"
+                      else
+                        ">1.0.0, <2.0.0"
+                      end
+                    )
+                  end
+                end
+
+                context "with a != exclusion alongside a range" do
+                  let(:pyproject_req_string) { "!=1.4.0, >=1.3.0, <2.0.0" }
+
+                  its([:requirement]) do
+                    is_expected.to eq(
+                      if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                        "!=1.4.0,>=1.5.0,<2.0.0"
+                      else
+                        "!=1.4.0, >=1.3.0, <2.0.0"
+                      end
+                    )
+                  end
                 end
               end
             end
@@ -609,7 +691,15 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "without a lockfile" do
                 let(:has_lockfile) { false }
 
-                its([:requirement]) { is_expected.to eq("^1.3.0") }
+                its([:requirement]) do
+                  is_expected.to eq(
+                    if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
+                      "^1.5.0"
+                    else
+                      "^1.3.0"
+                    end
+                  )
+                end
 
                 context "when needing an update" do
                   let(:latest_resolvable_version) { "2.5.0" }
@@ -779,6 +869,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 let(:latest_resolvable_version) { "0.0.5" }
 
                 its([:requirement]) { is_expected.to eq(">=0.0.3,<0.0.6") }
+              end
+
+              context "when the version is all zeros" do
+                let(:pyproject_req_string) { "^0.0.0" }
+                let(:latest_resolvable_version) { "0.0.2" }
+
+                its([:requirement]) { is_expected.to eq(">=0.0.0,<0.0.3") }
               end
 
               context "when dealing with a development dependency" do

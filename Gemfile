@@ -25,6 +25,7 @@ gem "dependabot-maven", path: "maven"
 gem "dependabot-npm_and_yarn", path: "npm_and_yarn"
 gem "dependabot-nuget", path: "nuget"
 gem "dependabot-opentofu", path: "opentofu"
+gem "dependabot-pre_commit", path: "pre_commit"
 gem "dependabot-pub", path: "pub"
 gem "dependabot-python", path: "python"
 gem "dependabot-rust_toolchain", path: "rust_toolchain"
@@ -33,9 +34,6 @@ gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
 gem "dependabot-uv", path: "uv"
 gem "dependabot-vcpkg", path: "vcpkg"
-
-# HTTP client (used by updater module)
-gem "http", "~> 5.1"
 
 # Sorbet
 gem "sorbet", "~> 0.6", group: :development

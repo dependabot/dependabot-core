@@ -30,6 +30,14 @@ module Dependabot
 
         GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(/git clone --filter=blob:none --quiet (?<url>[^\s]+).* /, Regexp)
         GIT_REFERENCE_NOT_FOUND_REGEX = T.let(/Did not find branch or tag '(?<tag>[^\n"]+)'/m, Regexp)
+        GIT_CREDENTIALS_ERROR_REGEX = T.let(
+          /could not read Username for '(?<url>[^']+)'/,
+          Regexp
+        )
+        GIT_DEPENDENCY_URL_FROM_UV_REGEX = T.let(
+          %r{git\+(?<url>https?://[^\s@#]+)},
+          Regexp
+        )
         NATIVE_COMPILATION_ERROR = T.let(
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
           String
@@ -210,6 +218,7 @@ module Dependabot
                    .named_captures.fetch("url")
             raise GitDependenciesNotReachable, T.must(url)
           end
+          handle_git_credentials_error(message)
 
           raise Dependabot::OutOfDisk if message.end_with?("[Errno 28] No space left on device")
 
@@ -428,6 +437,25 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
           T.must(T.cast(message.scan(ERROR_REGEX), T::Array[String]).last)
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def extract_git_url_from_message(message)
+          # Try to extract the full repository URL from UV's git dependency reference (git+https://...)
+          if (url_match = message.match(GIT_DEPENDENCY_URL_FROM_UV_REGEX))
+            return url_match.named_captures.fetch("url")
+          end
+
+          # Fall back to the URL from the "could not read Username" error
+          message.match(GIT_CREDENTIALS_ERROR_REGEX)&.named_captures&.fetch("url")
+        end
+
+        sig { params(message: String).void }
+        def handle_git_credentials_error(message)
+          return unless message.match?(GIT_CREDENTIALS_ERROR_REGEX)
+
+          url = extract_git_url_from_message(message)
+          raise GitDependenciesNotReachable, T.must(url)
         end
 
         sig { returns(T::Array[String]) }

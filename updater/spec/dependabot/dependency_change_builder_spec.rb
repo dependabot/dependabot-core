@@ -59,30 +59,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
   end
 
   let(:updated_dependencies) do
-    [
-      Dependabot::Dependency.new(
-        name: "dummy-pkg-b",
-        package_manager: "bundler",
-        version: "1.2.0",
-        previous_version: "1.1.0",
-        requirements: [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.2.0",
-            groups: [],
-            source: nil
-          }
-        ],
-        previous_requirements: [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.1.0",
-            groups: [],
-            source: nil
-          }
-        ]
-      )
-    ]
+    [build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0")]
   end
 
   describe "::create_from" do
@@ -91,26 +68,65 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         job: job,
         dependency_files: dependency_files,
         updated_dependencies: updated_dependencies,
-        change_source: change_source
+        change_source: change_source,
+        notices: notices
       )
     end
 
-    context "when the source is a lead dependency" do
-      let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
+    let(:notices) { [] }
+    let(:lead_dependency_change_source) { build_dependency(name: "dummy-pkg-b", version: "1.1.0") }
+    let(:single_dependency_info) { "dummy-pkg-b (1.1.0 → 1.2.0)" }
+    let(:file_updater_class) { class_double(Dependabot::Bundler::FileUpdater) }
+
+    def stub_file_updater(updated_dependency_files:, notices: [])
+      file_updater = instance_double(
+        Dependabot::Bundler::FileUpdater,
+        updated_dependency_files: updated_dependency_files,
+        notices: notices
+      )
+
+      allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+        .with("bundler")
+        .and_return(file_updater_class)
+      allow(file_updater_class).to receive(:new).and_return(file_updater)
+    end
+
+    def build_dependency(name:, version:, previous_version: nil)
+      requirement = {
+        file: "Gemfile",
+        requirement: "~> #{version}",
+        groups: [],
+        source: nil
+      }
+
+      dependency_args = {
+        name: name,
+        package_manager: "bundler",
+        version: version,
+        requirements: [requirement]
+      }
+
+      if previous_version
+        previous_requirement = {
+          file: "Gemfile",
+          requirement: "~> #{previous_version}",
+          groups: [],
+          source: nil
+        }
+
+        dependency_args[:previous_version] = previous_version
+        dependency_args[:previous_requirements] = [previous_requirement]
       end
+
+      Dependabot::Dependency.new(**dependency_args)
+    end
+
+    def dependency_group_source
+      Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
+    end
+
+    context "when the source is a lead dependency" do
+      let(:change_source) { lead_dependency_change_source }
 
       it "creates a new DependencyChange with the updated files" do
         dependency_change = create_change
@@ -128,9 +144,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       it "does not include support files in the updated files" do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater)
-          .to receive(:updated_dependency_files)
-          .and_return(dependency_files)
+        stub_file_updater(updated_dependency_files: dependency_files)
 
         dependency_change = described_class.create_from(
           job: job,
@@ -145,9 +159,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     end
 
     context "when the source is a dependency group" do
-      let(:change_source) do
-        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
-      end
+      let(:change_source) { dependency_group_source }
 
       it "creates a new DependencyChange flagged as a grouped update" do
         dependency_change = create_change
@@ -158,28 +170,117 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
     end
 
     context "when there are no file changes" do
-      let(:change_source) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
-        )
-      end
+      let(:change_source) { lead_dependency_change_source }
 
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+        stub_file_updater(updated_dependency_files: [])
       end
 
-      it "raises an exception" do
-        expect { create_change }.to raise_error(Dependabot::DependabotError)
+      it "raises an exception with diagnostic dependency details" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
+          )
+      end
+    end
+
+    context "when multiple dependencies have no file changes" do
+      let(:updated_dependencies) do
+        [
+          build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0"),
+          build_dependency(name: "dummy-pkg-a", version: "2.0.0", previous_version: "1.9.0")
+        ]
+      end
+
+      let(:change_source) { dependency_group_source }
+
+      before do
+        stub_file_updater(updated_dependency_files: [])
+      end
+
+      it "raises an exception listing dependency names" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
+          )
+      end
+    end
+
+    context "when duplicate dependency names have no file changes" do
+      let(:updated_dependencies) do
+        [
+          build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0"),
+          build_dependency(name: "dummy-pkg-b", version: "1.3.0", previous_version: "1.2.0")
+        ]
+      end
+
+      let(:change_source) { dependency_group_source }
+
+      before do
+        stub_file_updater(updated_dependency_files: [])
+      end
+
+      it "raises an exception with unique dependency names" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b"
+          )
+      end
+    end
+
+    context "when only support files are returned" do
+      let(:change_source) { lead_dependency_change_source }
+      let(:support_files) { dependency_files.select(&:support_file?) }
+      let(:updated_support_files) { [support_files.last, support_files.first, support_files.last] }
+      let(:updater_notices) { [instance_double(Dependabot::Notice)] }
+
+      before do
+        stub_file_updater(updated_dependency_files: updated_support_files, notices: updater_notices)
+      end
+
+      it "raises a generic no-files error" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
+          )
+      end
+
+      it "collects notices before raising" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
+          )
+
+        expect(notices).to eq(updater_notices)
+      end
+    end
+
+    context "when grouped updates return only support files" do
+      let(:updated_dependencies) do
+        [
+          build_dependency(name: "dummy-pkg-b", version: "1.2.0", previous_version: "1.1.0"),
+          build_dependency(name: "dummy-pkg-a", version: "2.0.0", previous_version: "1.9.0"),
+          build_dependency(name: "dummy-pkg-b", version: "1.3.0", previous_version: "1.2.0")
+        ]
+      end
+      let(:change_source) { dependency_group_source }
+      let(:support_files) { dependency_files.select(&:support_file?) }
+
+      before do
+        stub_file_updater(updated_dependency_files: support_files)
+      end
+
+      it "raises a no-files error listing sorted and unique dependency names" do
+        expect { create_change }
+          .to raise_error(
+            Dependabot::DependabotError,
+            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
+          )
       end
     end
   end

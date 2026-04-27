@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.6.0]")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.9.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.6.0]")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.9.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -266,6 +266,39 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+      end
+    end
+
+    context "with a dev-prefixed path source" do
+      let(:project_name) { "path_source_with_dev_prefix" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/monolog",
+          version: "1.22.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.22.*",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "successfully updates the item without a version mismatch" do
+        updated_dep = JSON.parse(updated_lockfile_content)
+                          .fetch("packages")
+                          .find { |p| p["name"] == "monolog/monolog" }
+
+        expect(updated_dep.fetch("version")).to eq("1.22.1")
       end
     end
 

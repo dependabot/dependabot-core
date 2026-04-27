@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/job"
 
 require "github_api/dependency_submission"
+require "github_api/ecosystem_mapper"
 
 RSpec.shared_examples "dependency_submission" do |empty|
   subject(:dependency_submission) do
@@ -110,6 +111,11 @@ RSpec.shared_examples "dependency_submission" do |empty|
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
       expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
+
+      # Check dependabot-specific metadata keys
+      expect(payload[:metadata][:status]).to eql("ok")
+      expect(payload[:metadata][:reason]).to be_nil
+      expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
     end
 
     it "affixes to use the updater sha if available" do
@@ -164,6 +170,9 @@ RSpec.shared_examples "dependency_submission" do |empty|
       lockfile = payload[:manifests].fetch("/Gemfile.lock")
       expect(lockfile[:name]).to eq("/Gemfile.lock")
       expect(lockfile[:file][:source_location]).to eq("Gemfile.lock")
+
+      # Ecosystem is mapped from the package manager
+      expect(lockfile[:metadata][:ecosystem]).to eq("rubygems")
 
       # Resolved dependencies are correct
       expect(lockfile[:resolved].length).to eq(2)

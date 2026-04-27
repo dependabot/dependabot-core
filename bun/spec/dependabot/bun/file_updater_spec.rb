@@ -57,14 +57,6 @@ RSpec.describe Dependabot::Bun::FileUpdater do
 
   before do
     FileUtils.mkdir_p(tmp_path)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:avoid_duplicate_updates_package_json).and_return(false)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
   end
 
   describe "#updated_dependency_files" do
@@ -188,6 +180,20 @@ RSpec.describe Dependabot::Bun::FileUpdater do
             .to include("is-number@2.1.0")
           expect(updated_bun_lock.content)
             .to include("etag@1.2.0")
+        end
+
+        it "runs bun install commands with --ignore-scripts" do
+          allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
+
+          updated_files
+
+          expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts$/),
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+          )
+          expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
+            "install --save-text-lockfile --ignore-scripts"
+          )
         end
       end
     end

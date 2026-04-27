@@ -371,6 +371,59 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when registry does not support versions API" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: current_version,
+          requirements: requirements,
+          package_manager: "bundler"
+        )
+      end
+      let(:dependency_name) { "business" }
+      let(:current_version) { "1.3" }
+      let(:requirements) do
+        [{ requirement: "1.3",
+           groups: [:default],
+           source: { type: "rubygems", url: "https://gems.private-registry.example.com/" },
+           file: "Gemfile" }]
+      end
+
+      let(:private_versions_url) do
+        "https://gems.private-registry.example.com/api/v1/versions/business.json"
+      end
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 60) }
+
+      before do
+        stub_request(:get, private_versions_url)
+          .to_return(status: 404, body: "Not Found")
+
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
+
+        allow(Dependabot::Bundler::NativeHelpers).to receive(:run_bundler_subprocess).and_return("rubygems")
+      end
+
+      context "with latest version details" do
+        subject(:result) { finder.latest_version_details }
+
+        it "falls back to bundler versions and resolves latest version" do
+          expect(result).to be_a(Hash)
+          expect(result).not_to be_empty
+          expect(result[:version]).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+        end
+      end
+
+      context "with latest version" do
+        subject(:result) { finder.latest_version }
+
+        it "resolves the latest version" do
+          expect(result).to eq(Dependabot::Bundler::Version.new("1.5.0"))
+        end
+      end
+    end
+
     context "with a private rubygems source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
       let(:subprocess_error) do

@@ -282,11 +282,11 @@ module Dependabot
           else
             version_for_requirement =
               dependency.requirements.map { |r| r[:requirement] }
-                        .reject { |req_string| req_string.start_with?("<") }
-                        .select { |req_string| req_string.match?(VERSION_REGEX) }
-                        .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
-                        .select { |version| Bundler::Version.correct?(version) }
-                        .max_by { |version| Bundler::Version.new(version) }
+                                     .reject { |req_string| req_string.start_with?("<") }
+                                     .select { |req_string| req_string.match?(VERSION_REGEX) }
+                                     .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
+                                     .select { |version| Bundler::Version.correct?(version) }
+                                     .max_by { |version| Bundler::Version.new(version) }
 
             ">= #{version_for_requirement || 0}"
           end

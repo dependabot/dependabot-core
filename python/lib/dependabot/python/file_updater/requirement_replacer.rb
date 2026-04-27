@@ -53,7 +53,7 @@ module Dependabot
               # ignore it, since it isn't actually a declaration
               next mtch if Regexp.last_match&.pre_match&.match?(/--.*\z/)
 
-              updated_dependency_declaration_string
+              updated_matched_declaration(mtch)
             end
 
           raise "Expected content to change!" if old_requirement != new_requirement && content == updated_content
@@ -98,29 +98,30 @@ module Dependabot
           new_req_string
         end
 
-        sig { returns(String) }
-        def updated_dependency_declaration_string
-          old_req = old_requirement
-          updated_string =
-            if old_req
-              original_dependency_declaration_string(old_req)
-                .sub(RequirementParser::REQUIREMENTS, updated_requirement_string || "")
-            else
-              original_dependency_declaration_string(old_req)
-                .sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
-                  (nm + (updated_requirement_string || ""))
-                end
-            end
+        # Builds updated declaration from the actual matched text, preserving
+        # whatever extras (or lack thereof) appeared in the original match.
+        sig { params(matched_declaration: String).returns(String) }
+        def updated_matched_declaration(matched_declaration)
+          updated = if old_requirement
+                      matched_declaration
+                        .sub(RequirementParser::REQUIREMENTS, updated_requirement_string || "")
+                    else
+                      matched_declaration
+                        .sub(RequirementParser::NAME_WITH_EXTRAS) { |nm| nm + (updated_requirement_string || "") }
+                    end
 
-          return updated_string unless update_hashes? && requirement_includes_hashes?(old_req)
+          return updated unless update_hashes? && matched_declaration.match?(RequirementParser::HASHES)
 
-          updated_string.sub(
+          algorithm = T.must(matched_declaration.match(RequirementParser::HASHES))
+                       .named_captures.fetch("algorithm")
+          separator = hash_separator(old_requirement)
+          updated.sub(
             RequirementParser::HASHES,
             package_hashes_for(
               name: dependency_name,
               version: new_hash_version,
-              algorithm: hash_algorithm(old_req)
-            ).join(hash_separator(old_req))
+              algorithm: algorithm
+            ).join(separator)
           )
         end
 
@@ -142,7 +143,14 @@ module Dependabot
         def original_declaration_replacement_regex
           original_string =
             original_dependency_declaration_string(old_requirement)
-          /(?<![\-\w\.\[])#{Regexp.escape(original_string)}(?![\-\w\.])/
+          match_data = T.must(original_string.match(RequirementParser::NAME_WITH_EXTRAS))
+          name_escaped = Regexp.escape(T.must(match_data[:name]))
+          # Everything after name+extras (the requirement/markers/hashes portion)
+          after_name_extras = T.must(original_string[T.must(match_data[0]).length..]).strip
+          after_escaped = Regexp.escape(after_name_extras)
+          # Match the dependency name with any extras (or none), followed by the requirement.
+          # This ensures a single gsub handles all extras variants of the same dependency.
+          /(?<![\-\w\.\[])#{name_escaped}\s*\\?\s*(?:\[[^\]]*\])?\s*\\?\s*#{after_escaped}(?![\-\w\.])/
         end
 
         sig { params(requirement: T.nilable(String)).returns(T::Boolean) }

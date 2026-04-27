@@ -3,13 +3,13 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # See https://github.com/opentofu/opentofu/releases
-ARG TOFU_VERSION=1.10.6
+ARG TOFU_VERSION=1.11.4
 
 # curl "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_SHA256SUMS" | grep "tofu_${TOFU_VERSION}_linux_amd64.zip"
-ARG TOFU_AMD64_CHECKSUM=15b7bed76420b50da3e121769c43341df8cd57d751ca14e6dbe9c850124c6dac
+ARG TOFU_AMD64_CHECKSUM=f3907e96b5a9f2fce311078ca273bcdf1e13980dac150b2549932c26b515c61b
 
 # curl "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_SHA256SUMS" | grep "tofu_${TOFU_VERSION}_linux_arm64.zip"
-ARG TOFU_ARM64_CHECKSUM=a32f653d686a8cad9b9be82101eb5b5e834fbfa8d095842fa1820c5d27fad967
+ARG TOFU_ARM64_CHECKSUM=f877d46cb911d40bc0b81818d1940afdd356f632bcac48ca19dd8f7802a86701
 
 
 RUN cd /tmp \

@@ -69,15 +69,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   let(:package_json) { { "packageManager" => "npm@7" } }
   let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_engine_version_detection)
-      .and_return(true)
-  end
-
   describe "#package_manager" do
     context "when npm lockfile exists" do
       it "returns an NpmPackageManager instance" do
@@ -206,12 +197,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         )
       end
 
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
-      end
-
       it "returns the unsupported package manager" do
         expect(package_manager.detected_version.to_s).to eq "6"
         expect(package_manager.unsupported?).to be true
@@ -245,12 +230,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
             }
           LOCKFILE
         )
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
       end
 
       it "returns the deprecated version" do
@@ -408,7 +387,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when the installed version matches the expected format" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack npm -v", fingerprint: "corepack npm -v").and_return("7.5.2")
+          .with("corepack npm -v", fingerprint: "corepack npm -v", env: nil).and_return("7.5.2")
       end
 
       it "returns the raw installed version" do
@@ -419,7 +398,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when the installed version not found returns inferred version" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack yarn -v", fingerprint: "corepack yarn -v")
+          .with("corepack yarn -v", fingerprint: "corepack yarn -v", env: nil)
           .and_return("1")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric).and_return(1)
       end
@@ -434,14 +413,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when memoization is in effect" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v").and_return("7.1.0")
+          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v", env: nil).and_return("7.1.0")
         # Pre-cache the result
         helper.installed_version("pnpm")
       end
 
       it "does not re-run the shell command and uses the cached version" do
         expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
-          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v")
+          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v", env: nil)
         expect(helper.installed_version("pnpm")).to eq("7.1.0")
       end
     end

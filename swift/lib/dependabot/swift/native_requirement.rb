@@ -11,7 +11,10 @@ module Dependabot
       extend T::Sig
 
       # TODO: Support pinning to specific revisions
-      REGEXP = T.let(/(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"|exact.*|\.exact.*)/, Regexp)
+      REGEXP = T.let(
+        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"\s*,?|exact.*|\.exact.*)/,
+        Regexp
+      )
 
       sig { returns(String) }
       attr_reader :declaration
@@ -85,23 +88,23 @@ module Dependabot
       sig { params(declaration: String).returns([String, String]) }
       def parse_declaration(declaration)
         if up_to_next_major?
-          min = declaration.gsub(/\Afrom\s*:\s*"(\S+)"\s*\z/, '\1')
+          min = declaration.gsub(/\Afrom\s*:\s*"(\S+?)"\s*(?:,\s*)?\z/, '\1')
           max = bump_major(min)
         elsif up_to_next_major_deprecated?
-          min = declaration.gsub(/\A\.upToNextMajor\s*\(\s*from\s*:\s*"(\S+)"\s*\)\z/, '\1')
+          min = declaration.gsub(/\A\.upToNextMajor\s*\(\s*from\s*:\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,\s*)?\z/, '\1')
           max = bump_major(min)
         elsif up_to_next_minor_deprecated?
-          min = declaration.gsub(/\A\.upToNextMinor\s*\(\s*from\s*:\s*"(\S+)"\s*\)\z/, '\1')
+          min = declaration.gsub(/\A\.upToNextMinor\s*\(\s*from\s*:\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,\s*)?\z/, '\1')
           max = bump_minor(min)
         elsif closed_range?
           min, max = parse_range("...")
         elsif range?
           min, max = parse_range("..<")
         elsif exact_version?
-          min = declaration.gsub(/\Aexact\s*:\s*"(\S+)"\s*\z/, '\1')
+          min = declaration.gsub(/\Aexact\s*:\s*"(\S+?)"\s*(?:,\s*)?\z/, '\1')
           max = min
         elsif exact_version_deprecated?
-          min = declaration.gsub(/\A\.exact\s*\(\s*"(\S+)"\s*\)\z/, '\1')
+          min = declaration.gsub(/\A\.exact\s*\(\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,\s*)?\z/, '\1')
           max = min
         else
           raise "Unsupported constraint: #{declaration}"
@@ -112,7 +115,7 @@ module Dependabot
 
       sig { params(separator: String).returns(T::Array[String]) }
       def parse_range(separator)
-        declaration.split(separator).map { |str| unquote(str.strip) }
+        declaration.delete_suffix(",").split(separator).map { |str| unquote(str.strip) }
       end
 
       sig { returns(T::Boolean) }

@@ -75,4 +75,63 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
       end
     end
   end
+
+  describe "#dependency_rubygems_uri" do
+    subject(:uri) { source.send(:dependency_rubygems_uri) }
+
+    context "without replaces_base credential" do
+      it "returns the rubygems.org URI" do
+        expect(uri).to eq("https://rubygems.org/api/v1/versions/irrelevant.json")
+      end
+    end
+
+    context "with a replaces_base rubygems_server credential" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          Dependabot::Credential.new(
+            {
+              "type" => "rubygems_server",
+              "host" => "gems.example.com",
+              "token" => "secret",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "returns the private registry URI" do
+        expect(uri).to eq("https://gems.example.com/api/v1/versions/irrelevant.json")
+      end
+    end
+
+    context "with a non-replaces_base rubygems_server credential" do
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          Dependabot::Credential.new(
+            {
+              "type" => "rubygems_server",
+              "host" => "gems.example.com",
+              "token" => "secret"
+            }
+          )
+        ]
+      end
+
+      it "returns the rubygems.org URI" do
+        expect(uri).to eq("https://rubygems.org/api/v1/versions/irrelevant.json")
+      end
+    end
+  end
 end

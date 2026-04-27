@@ -24,6 +24,7 @@ module Dependabot
 
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
+        require_relative "lock_file_error_handler"
 
         UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
         INCOMPATIBLE_VERSIONS_REGEX = T.let(
@@ -154,7 +155,7 @@ module Dependabot
             retry
           end
 
-          raise
+          error_handler.handle_uv_error(e)
         end
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
@@ -228,7 +229,7 @@ module Dependabot
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
           end
 
-          raise
+          error_handler.handle_uv_error(e)
         end
 
         sig { params(command: String, fingerprint: String, allow_unsafe_shell_command: T::Boolean).returns(String) }
@@ -259,6 +260,11 @@ module Dependabot
           end
 
           env
+        end
+
+        sig { returns(LockFileErrorHandler) }
+        def error_handler
+          @error_handler ||= T.let(LockFileErrorHandler.new, T.nilable(LockFileErrorHandler))
         end
 
         sig { void }

@@ -40,10 +40,12 @@ class RakeHelpers
       hex/dependabot-hex.gemspec
       julia/dependabot-julia.gemspec
       maven/dependabot-maven.gemspec
+      nix/dependabot-nix.gemspec
       npm_and_yarn/dependabot-npm_and_yarn.gemspec
       nuget/dependabot-nuget.gemspec
       omnibus/dependabot-omnibus.gemspec
       opentofu/dependabot-opentofu.gemspec
+      pre_commit/dependabot-pre_commit.gemspec
       pub/dependabot-pub.gemspec
       python/dependabot-python.gemspec
       rust_toolchain/dependabot-rust_toolchain.gemspec

@@ -67,12 +67,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:avoid_duplicate_updates_package_json).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
   end
 
@@ -118,6 +112,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { previous_requirements }
 
         specify { expect { updated_files }.to raise_error(/No files/) }
+      end
+
+      context "when non-pnpm updated files are marked as support files" do
+        before do
+          files.each { |file| file.support_file = true }
+        end
+
+        it "updates package.json" do
+          expect(updated_files.map(&:name)).to include("package.json")
+        end
       end
     end
 
@@ -1716,10 +1720,90 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(other_package.content).to include('"lodash": "^1.3.1"')
         end
 
-        context "with a dependency that doesn't appear in all the workspaces" do
+        context "when npm rewrites a workspace manifest but the requirement still satisfies the new version" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          # This scenario also covers the lockfile-only strategy: requirements
+          # are unchanged, but npm still rewrites workspace manifests as a side
+          # effect of `npm install dep@version --workspace=... --package-lock-only`.
+          it "keeps the workspace package.json update in the returned files" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
+        context "when a workspace manifest is in updated_manifest_files and npm also rewrites it (dedup path)" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          # Only packages/package1 has an explicit requirement change — it will
+          # appear in updated_manifest_files. other_package's requirement is
+          # unchanged so Dependabot won't include it in updated_manifest_files,
+          # but npm rewrites both workspace manifests when running the install.
+          # The dedup check must prevent packages/package1 from appearing twice.
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.3.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "includes each workspace manifest exactly once regardless of whether it came from Dependabot or npm" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            # packages/package1 sourced from updated_manifest_files (Dependabot's version)
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            # other_package sourced from npm's workspace manifest capture
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
+        context "when the dependency is only in one workspace and npm does not rewrite the other (partial workspace)" do
           let(:dependency_name) { "chalk" }
           let(:version) { "0.4.0" }
           let(:previous_version) { "0.3.0" }
+          # chalk exists only in packages/package1; other_package has no chalk entry.
+          # npm rewrites packages/package1/package.json for chalk but leaves
+          # other_package/package.json untouched — workspace_package_json_updates
+          # returns an empty hash for other_package (empty capture path).
           let(:requirements) do
             [{
               file: "packages/package1/package.json",
@@ -1737,13 +1821,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          it "updates the yarn.lock and the correct package_json" do
+          it "returns only the lockfile and the workspace manifest that changed, not all workspace manifests" do
             expect(updated_files.map(&:name))
               .to match_array(%w(package-lock.json packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "package-lock.json" }
-            parsed_lockfile = JSON.parse(lockfile.content)
-            expect(parsed_lockfile["dependencies"]["chalk"]["version"]).to eq("0.4.0")
+            expect(JSON.parse(lockfile.content)["dependencies"]["chalk"]["version"]).to eq("0.4.0")
           end
         end
 
@@ -1770,9 +1853,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          it "doesn't update any files and raises" do
+          it "doesn't update any files and raises with npm package manager" do
             expect { updated_files }.to raise_error(
-              described_class::NoChangeError, "No files were updated!"
+              described_class::NoChangeError,
+              /No files were updated! Package manager: npm/
             )
           end
         end
@@ -2670,6 +2754,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+        end
+      end
+
+      context "with npm overrides" do
+        let(:files) { project_dependency_files("npm8/simple_with_overrides") }
+        let(:repo_contents_path) { build_tmp_repo("npm8/simple_with_overrides", path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the override in the package.json" do
+          # The PackageJsonUpdater correctly updates both the devDependency
+          # declaration and the override entry in package.json
+          updater_instance = Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater.new(
+            package_json: files.find { |f| f.name == "package.json" },
+            dependencies: dependencies
+          )
+          parsed = JSON.parse(updater_instance.updated_package_json.content)
+          expect(parsed.dig("overrides", "lodash")).to eq("3.10.1")
+          expect(parsed.dig("devDependencies", "lodash")).to eq("^3.0")
+        end
+      end
+
+      context "with npm overrides for a sub-dependency" do
+        let(:files) { project_dependency_files("npm8/subdep_with_override") }
+
+        let(:dependency_name) { "undici" }
+        let(:version) { "6.24.1" }
+        let(:previous_version) { "6.23.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          lockfile = files.find { |f| f.name == "package-lock.json" }
+          updated_lockfile_content = lockfile.content.gsub("6.23.0", "6.24.1")
+          updated_lockfile = Dependabot::DependencyFile.new(
+            name: lockfile.name,
+            content: updated_lockfile_content
+          )
+          npm_updater = instance_double(
+            Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
+            updated_lockfile: updated_lockfile,
+            updated_package_json_files: {}
+          )
+          allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+            .to receive(:new).and_return(npm_updater)
+        end
+
+        it "includes both package.json and package-lock.json in updated_files" do
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+        end
+
+        it "updates the override in the package.json preserving the version prefix" do
+          parsed = JSON.parse(updated_package_json.content)
+          expect(parsed.dig("overrides", "undici")).to eq("^6.24.1")
         end
       end
     end
@@ -3825,6 +3975,60 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
+        context "when updating a scoped package dependency in a catalog" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "@tanstack/react-query" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "@tanstack/react-query",
+                version: "5.59.15",
+                required_version: "^5.62.0",
+                previous_required_version: "^5.59.15"
+              )
+            ]
+          end
+
+          it "updates the scoped package in the workspace" do
+            expect(updated_files.map(&:name)).to include("pnpm-workspace.yaml")
+            expect(updated_pnpm_workspace.content).to include('"@tanstack/react-query": ^5.62.0')
+          end
+        end
+
+        context "when all dependency files are support files (e.g. fetched from parent directory)" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "^3.4.2",
+                previous_required_version: "^3.3.3"
+              )
+            ]
+          end
+
+          before do
+            # Simulate pnpm-workspace.yaml and pnpm-lock.yaml fetched from a parent
+            # directory via fetch_file_from_parent_directories: names get a "../"
+            # prefix and directory is set to the subdirectory (not "/").
+            files.each do |f|
+              next unless f.name.end_with?("pnpm-workspace.yaml", "pnpm-lock.yaml")
+
+              f.name = "../#{f.name}"
+              f.directory = "/packages/app"
+              f.support_file = true
+            end
+          end
+
+          it "raises MisconfiguredTooling instead of DependabotError" do
+            expect { updated_files }.to raise_error(Dependabot::MisconfiguredTooling)
+          end
+        end
+
         context "when updating multiple dependencies in catalogs" do
           let(:project_name) { "pnpm/catalogs_all_examples" }
           let(:dependencies) do
@@ -3954,6 +4158,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
           end
         end
+      end
+    end
+  end
+
+  describe "#detected_package_manager" do
+    subject(:detected_manager) { updater.send(:detected_package_manager) }
+
+    context "with only npm lockfile" do
+      let(:files) { project_dependency_files("npm6/simple") }
+
+      it "returns npm" do
+        expect(detected_manager).to eq("npm")
+      end
+    end
+
+    context "with only yarn lockfile" do
+      let(:files) { project_dependency_files("yarn/simple") }
+
+      it "returns yarn" do
+        expect(detected_manager).to eq("yarn")
+      end
+    end
+
+    context "with only pnpm lockfile" do
+      let(:files) { project_dependency_files("pnpm/simple") }
+
+      it "returns pnpm" do
+        expect(detected_manager).to eq("pnpm")
+      end
+    end
+
+    context "with no lockfiles" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            content: '{"dependencies":{"fetch-factory":"^0.0.1"}}',
+            name: "package.json"
+          )
+        ]
+      end
+
+      it "returns unknown" do
+        expect(detected_manager).to eq("unknown")
       end
     end
   end

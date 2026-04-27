@@ -1,22 +1,70 @@
-Native JavaScript helpers
--------------------------
+## Native TypeScript helpers
 
-This directory contains helper functions for npm and yarn, natively written in
-Javascript so that we can utilize the package managers internal APIs and other
+This directory contains helper functions for npm, yarn, and pnpm, written in
+TypeScript, so that we can utilize the package managers' internal APIs and other
 native tooling for these ecosystems.
 
-These helpers are called from the Ruby code via `run.js`, they are passed
+These helpers are called from the Ruby code via `run.ts`, they are passed
 arguments via stdin and return JSON data to stdout.
 
-## Testing
+## Development
 
-When working on these helpers, it's convenient to write some high level tests in
-JavaScript to make it easier to debug the code.
-
-You can now run the tests from this directory by running:
+Install dependencies:
 
 ```
-yarn test path/to/test.js
+npm install
+```
+
+### Building
+
+The helpers are compiled from TypeScript to JavaScript before being used at
+runtime. To build:
+
+```
+npm run build
+```
+
+The compiled output goes to `dist/`.
+
+### Type checking
+
+Run the TypeScript compiler in check-only mode (no output):
+
+```
+npm run typecheck
+```
+
+### Linting
+
+ESLint is used for code quality checks:
+
+```
+npm run lint
+```
+
+### Formatting
+
+Prettier is used for code formatting. To check for formatting issues:
+
+```
+npm run format
+```
+
+To auto-fix formatting:
+
+```
+npm run format:fix
+```
+
+### Testing
+
+When working on these helpers, it's convenient to write some high level tests in
+TypeScript to make it easier to debug the code.
+
+Run the tests from this directory:
+
+```
+npm test
 ```
 
 ### Debugging

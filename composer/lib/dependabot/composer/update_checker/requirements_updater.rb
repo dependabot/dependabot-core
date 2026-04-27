@@ -85,16 +85,13 @@ module Dependabot
           raise "Unknown update strategy: #{update_strategy}"
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(req: T::Hash[Symbol, String]).returns(T::Hash[Symbol, String]) }
         def updated_requirement(req)
           req_string = T.must(req[:requirement]).strip
           or_string_reqs = req_string.split(OR_SEPARATOR)
           or_separator = req_string.match(OR_SEPARATOR)&.to_s || " || "
-          numeric_or_string_reqs = or_string_reqs
-                                   .reject { |r| r.strip.start_with?("dev-") }
-          branch_or_string_reqs = or_string_reqs
-                                  .select { |r| r.strip.start_with?("dev-") }
+          branch_or_string_reqs, numeric_or_string_reqs = or_string_reqs
+                                                          .partition { |r| r.strip.start_with?("dev-") }
 
           return req unless req_string.match?(/\d/)
           return req if numeric_or_string_reqs.none?
@@ -116,8 +113,6 @@ module Dependabot
             [new_req[:requirement], *branch_or_string_reqs].join(or_separator)
           new_req.merge(requirement: new_req_string)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-
         sig { params(req: T::Hash[Symbol, String]).returns(T::Hash[Symbol, String]) }
         def updated_alias(req)
           req_string = T.must(req[:requirement])

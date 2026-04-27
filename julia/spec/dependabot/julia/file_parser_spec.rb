@@ -116,6 +116,79 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(ecosystem.language.name).to eq("julia")
       end
     end
+
+    context "when workspace has multiple Project.toml files with same dependency" do
+      # This tests issue #13865: Julia: dependabot only updates top-level Project.toml
+      # if workspaces have different compat specifiers
+      let(:main_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: fixture("projects", "workspace_different_compat", "Project.toml")
+        )
+      end
+
+      let(:docs_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "docs/Project.toml",
+          content: fixture("projects", "workspace_different_compat", "docs", "Project.toml")
+        )
+      end
+
+      let(:test_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "test/Project.toml",
+          content: fixture("projects", "workspace_different_compat", "test", "Project.toml")
+        )
+      end
+
+      let(:workspace_manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Manifest.toml",
+          content: fixture("projects", "workspace_different_compat", "Manifest.toml")
+        )
+      end
+
+      let(:dependency_files) do
+        [main_project_file, docs_project_file, test_project_file, workspace_manifest_file]
+      end
+
+      it "parses dependencies from all Project.toml files" do
+        json_dep = dependencies.find { |d| d.name == "JSON" }
+        expect(json_dep).not_to be_nil
+
+        # Should have requirements from all 3 Project.toml files
+        expect(json_dep.requirements.length).to eq(3)
+
+        # Verify requirements point to the correct files
+        main_req = json_dep.requirements.find { |r| r[:file] == "Project.toml" }
+        expect(main_req).not_to be_nil
+        expect(main_req[:requirement]).to eq("0.21.4")
+
+        docs_req = json_dep.requirements.find { |r| r[:file] == "docs/Project.toml" }
+        expect(docs_req).not_to be_nil
+        expect(docs_req[:requirement]).to eq("0.21")
+
+        test_req = json_dep.requirements.find { |r| r[:file] == "test/Project.toml" }
+        expect(test_req).not_to be_nil
+        expect(test_req[:requirement]).to eq("0.21")
+      end
+
+      it "parses dependencies unique to specific Project.toml files" do
+        # Documenter should only be in docs/Project.toml
+        documenter_dep = dependencies.find { |d| d.name == "Documenter" }
+        expect(documenter_dep).not_to be_nil
+        expect(documenter_dep.requirements.length).to eq(1)
+        expect(documenter_dep.requirements.first[:file]).to eq("docs/Project.toml")
+        expect(documenter_dep.requirements.first[:requirement]).to eq("1")
+
+        # Test should only be in test/Project.toml (but has no compat entry)
+        test_dep = dependencies.find { |d| d.name == "Test" }
+        expect(test_dep).not_to be_nil
+        expect(test_dep.requirements.length).to eq(1)
+        expect(test_dep.requirements.first[:file]).to eq("test/Project.toml")
+        expect(test_dep.requirements.first[:requirement]).to be_nil # No compat entry
+      end
+    end
   end
 
   private

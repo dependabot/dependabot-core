@@ -454,6 +454,59 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "with repo_contents_path" do
+    let(:repo_contents_path) { "/tmp/test_repo" }
+    let(:updater) do
+      described_class.new(
+        dependencies: dependencies,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        index_urls: index_urls,
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    it "stores the repo_contents_path" do
+      expect(updater.repo_contents_path).to eq(repo_contents_path)
+    end
+
+    it "uses in_a_temporary_repo_directory with repo_contents_path" do
+      allow(updater).to receive(:updated_pyproject_content).and_return("updated content")
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory)
+        .and_yield
+      allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+      allow(updater).to receive(:write_temporary_dependency_files)
+      allow(updater).to receive(:setup_python_environment)
+      allow(updater).to receive(:run_update_command)
+      allow(File).to receive(:read).with("uv.lock").and_return("updated lockfile")
+
+      updater.send(:updated_lockfile_content_for, "test content")
+
+      expect(Dependabot::SharedHelpers).to have_received(:in_a_temporary_repo_directory)
+        .with("/", repo_contents_path)
+    end
+
+    context "when repo_contents_path is nil" do
+      let(:repo_contents_path) { nil }
+
+      it "passes nil to in_a_temporary_repo_directory" do
+        allow(updater).to receive(:updated_pyproject_content).and_return("updated content")
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_repo_directory)
+          .and_yield
+        allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+        allow(updater).to receive(:write_temporary_dependency_files)
+        allow(updater).to receive(:setup_python_environment)
+        allow(updater).to receive(:run_update_command)
+        allow(File).to receive(:read).with("uv.lock").and_return("updated lockfile")
+
+        updater.send(:updated_lockfile_content_for, "test content")
+
+        expect(Dependabot::SharedHelpers).to have_received(:in_a_temporary_repo_directory)
+          .with("/", nil)
+      end
+    end
+  end
+
   describe "#lock_index_options" do
     subject(:lock_index_options) { updater.send(:lock_index_options) }
 
@@ -553,12 +606,14 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "includes --index flag for non-explicit indices" do
-        expect(lock_index_options).to include("--index https://token@private-pypi.example.com/simple")
+      it "includes --index flag for non-explicit indices defined in pyproject.toml" do
+        options = lock_index_options.join(" ")
+        expect(options).to include("--index https://token@private-pypi.example.com/simple")
+        expect(options).not_to include("--default-index")
       end
     end
 
-    context "with replaces-base credential matching an explicit index" do
+    context "with replaces-base credential matching a pyproject.toml index" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
 
       let(:credentials) do
@@ -574,8 +629,33 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "still uses --default-index when replaces-base is true, ignoring explicit flag" do
-        expect(lock_index_options).to include("--default-index https://secret_token@private-pypi.example.com/simple")
+      it "does not include CLI flags when credential matches a pyproject.toml index" do
+        options = lock_index_options.join(" ")
+        expect(options).not_to include("--default-index")
+        expect(options).not_to include("--index")
+      end
+    end
+
+    context "with replaces-base credential with trailing slash matching pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple/",
+              "token" => "secret_token",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "matches URLs ignoring trailing slashes for replaces-base credentials" do
+        options = lock_index_options.join(" ")
+        expect(options).not_to include("--default-index")
+        expect(options).not_to include("--index")
       end
     end
 
@@ -621,10 +701,158 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(options).not_to include("--index")
       end
     end
+
+    context "when uv.lock registry URLs differ from credential index-url paths" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.example.com/pypi" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/",
+              "token" => "token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "uses uv.lock registry URLs for --index and applies credential auth" do
+        expect(lock_index_options).to eq(["--index https://token@pypi.example.com/pypi"])
+      end
+    end
+
+    context "when uv.lock has no matching registry for a credential" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.org/simple" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "token" => "token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "falls back to the credential URL" do
+        expect(lock_index_options).to eq(["--index https://token@private-pypi.example.com/simple"])
+      end
+    end
+
+    context "when credentials share host but paths do not match the registry" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.example.com/pypi" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/repo-a",
+              "token" => "token_a",
+              "replaces-base" => false
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/repo-b",
+              "token" => "token_b",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "does not apply an unrelated credential token to the lockfile registry URL" do
+        options = lock_index_options.join(" ")
+
+        expect(options).not_to include("@pypi.example.com/pypi")
+        expect(options).to include("--index https://token_a@pypi.example.com/repo-a")
+        expect(options).to include("--index https://token_b@pypi.example.com/repo-b")
+      end
+    end
+
+    context "when a root-scoped credential and a non-matching scoped credential share a host" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:lockfile_content) do
+        <<~LOCK
+          version = 1
+          revision = 1
+
+          [[package]]
+          name = "requests"
+          version = "2.32.3"
+          source = { registry = "https://pypi.example.com/pypi" }
+        LOCK
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/repo-a",
+              "token" => "token_a",
+              "replaces-base" => false
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.example.com/",
+              "token" => "root_token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "prefers the root-scoped credential for registry paths not under other scopes" do
+        expect(lock_index_options).to include("--index https://root_token@pypi.example.com/pypi")
+      end
+    end
   end
 
-  describe "#explicit_index_env_vars" do
-    subject(:explicit_index_env_vars) { updater.send(:explicit_index_env_vars) }
+  describe "#pyproject_index_env_vars" do
+    subject(:pyproject_index_env_vars) { updater.send(:pyproject_index_env_vars) }
 
     context "with an explicit index requiring authentication" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
@@ -644,7 +872,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables for explicit index authentication" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
         )
@@ -668,13 +896,13 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "returns environment variables with token as password" do
-        expect(explicit_index_env_vars).to include(
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "secret_token"
         )
       end
     end
 
-    context "with no explicit indices" do
+    context "with no explicit indices but matching pyproject.toml index" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
 
       let(:credentials) do
@@ -690,8 +918,31 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
+      it "returns environment variables for matching pyproject.toml index" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "token"
+        )
+      end
+    end
+
+    context "with no matching pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://unrelated-pypi.example.com/simple",
+              "token" => "token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
       it "returns empty hash" do
-        expect(explicit_index_env_vars).to eq({})
+        expect(pyproject_index_env_vars).to eq({})
       end
     end
 
@@ -719,11 +970,63 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "returns environment variables only for explicit indices" do
-        expect(explicit_index_env_vars).to include(
+      it "returns environment variables for all indices defined in pyproject.toml" do
+        expect(pyproject_index_env_vars).to include(
           "UV_INDEX_COMPANY_PYPI_PASSWORD" => "explicit_token"
         )
-        expect(explicit_index_env_vars).not_to have_key("UV_INDEX_FALLBACK_PYPI_PASSWORD")
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_FALLBACK_PYPI_PASSWORD" => "fallback_token"
+        )
+      end
+    end
+
+    context "with replaces-base credential matching a pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "username" => "my_user",
+              "password" => "my_password",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "returns environment variables for replaces-base credentials matching pyproject.toml indices" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
+        )
+      end
+    end
+
+    context "with replaces-base credential with trailing slash matching pyproject.toml index" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple/",
+              "username" => "my_user",
+              "password" => "my_password",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "matches URLs ignoring trailing slashes for env var generation" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_USERNAME" => "my_user",
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_password"
+        )
       end
     end
   end
@@ -777,6 +1080,18 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     it "replaces sensitive information in the fingerprint with placeholders" do
       expect(lock_options_fingerprint).to eq("--default-index <default_index> --index <index>")
     end
+
+    context "when multiple index options are present" do
+      let(:options) do
+        "--index https://token1@example.com/simple --index https://token2@example.com/simple " \
+          "--default-index https://token3@default.example.com/simple"
+      end
+
+      it "redacts all index URLs" do
+        expect(lock_options_fingerprint)
+          .to eq("--index <index> --index <index> --default-index <default_index>")
+      end
+    end
   end
 
   describe "#run_update_command" do
@@ -824,6 +1139,46 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       )
     end
 
+    context "when dependency has extras" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "yt-dlp[default,curl-cffi]",
+          version: "2025.6.9",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2025.6.9",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2024.7.25",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "2024.7.25",
+          package_manager: "uv"
+        )
+      end
+
+      it "strips extras from the package name in the command" do
+        expected_command = "pyenv exec uv lock --upgrade-package yt-dlp==2025.6.9 " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+        expected_fingerprint = "pyenv exec uv lock --upgrade-package <dependency_name> " \
+                               "--index <index> " \
+                               "--default-index <default_index>"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+    end
+
     context "when dependency version is nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -860,6 +1215,152 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           expected_command,
           fingerprint: expected_fingerprint,
           env: {}
+        )
+      end
+    end
+
+    context "with setuptools-scm dynamic versioning" do
+      let(:pyproject_content) { fixture("pyproject_files", "setuptools_scm_version_file.toml") }
+      let(:credentials) { [] }
+
+      it "passes setuptools_scm pretend version env vars to run_command" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_TOGGLE_DISPLAY_INPUT" => "0.0.0"
+          )
+        )
+      end
+    end
+
+    context "with package name containing hyphens using dynamic versioning" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "my-awesome-package"
+          dynamic = ["version"]
+
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+          fallback_version = "1.2.3"
+        TOML
+      end
+      let(:credentials) { [] }
+
+      it "replaces hyphens with underscores in env var name" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MY_AWESOME_PACKAGE" => "1.2.3"
+          )
+        )
+      end
+    end
+
+    context "with package name containing dots using dynamic versioning" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "namespace.sub.package"
+          dynamic = ["version"]
+
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+          fallback_version = "2.0.0"
+        TOML
+      end
+      let(:credentials) { [] }
+
+      it "replaces dots with underscores in env var name" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_NAMESPACE_SUB_PACKAGE" => "2.0.0"
+          )
+        )
+      end
+    end
+
+    context "with hatch-vcs dynamic versioning" do
+      let(:pyproject_content) { fixture("pyproject_files", "hatch_vcs_build_hook.toml") }
+      let(:credentials) { [] }
+
+      it "passes setuptools_scm pretend version env vars for hatch-vcs packages" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_P1" => "10.0.0"
+          )
+        )
+      end
+    end
+
+    context "with no fallback version in dynamic versioning config" do
+      let(:pyproject_content) do
+        <<~TOML
+          [project]
+          name = "no-fallback"
+          dynamic = ["version"]
+
+          [tool.setuptools_scm]
+          version_file = "src/_version.py"
+        TOML
+      end
+      let(:credentials) { [] }
+
+      it "uses default version 0.0.0" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_NO_FALLBACK" => "0.0.0"
+          )
+        )
+      end
+    end
+
+    context "with workspace members using dynamic versioning" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
+      let(:member_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "packages/subpkg/pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "sub-package"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "src/_version.py"
+            fallback_version = "3.0.0"
+          TOML
+        )
+      end
+      let(:dependency_files) { [pyproject_file, lockfile, member_pyproject] }
+      let(:credentials) { [] }
+
+      it "includes env vars for workspace members" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          anything,
+          fingerprint: anything,
+          env: hash_including(
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_SUB_PACKAGE" => "3.0.0"
+          )
         )
       end
     end
@@ -1100,6 +1601,129 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         end
       end
     end
+
+    context "with extras that have spaces in source file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aws-lambda-powertools[aws-sdk,tracer]",
+          version: "3.25.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.25.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.24.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "3.24.0",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: "~=3.25.0" } }
+      let(:old_req) { { requirement: "~=3.24.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "aws-lambda-powertools[aws-sdk, tracer]~=3.24.0",
+          ]
+        TOML
+      end
+
+      it "matches extras despite spaces in source" do
+        result = replace_dep
+        expect(result).to include('"aws-lambda-powertools[aws-sdk, tracer]~=3.25.0"')
+        expect(result).not_to include("~=3.24.0")
+      end
+    end
+
+    context "with extras in non-alphabetical order in source file" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aws-lambda-powertools[aws-sdk,tracer]",
+          version: "3.25.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.25.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.24.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "3.24.0",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: "~=3.25.0" } }
+      let(:old_req) { { requirement: "~=3.24.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "aws-lambda-powertools[tracer, aws-sdk]~=3.24.0",
+          ]
+        TOML
+      end
+
+      it "matches extras regardless of order" do
+        result = replace_dep
+        expect(result).to include('"aws-lambda-powertools[tracer, aws-sdk]~=3.25.0"')
+        expect(result).not_to include("~=3.24.0")
+      end
+    end
+
+    context "with extras matching exactly (no spaces, alphabetical)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aws-lambda-powertools[aws-sdk,tracer]",
+          version: "3.25.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.25.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "~=3.24.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "3.24.0",
+          package_manager: "uv"
+        )
+      end
+
+      let(:new_req) { { requirement: "~=3.25.0" } }
+      let(:old_req) { { requirement: "~=3.24.0" } }
+
+      let(:content) do
+        <<~TOML
+          [project]
+          dependencies = [
+              "aws-lambda-powertools[aws-sdk,tracer]~=3.24.0",
+          ]
+        TOML
+      end
+
+      it "still works when extras match exactly" do
+        result = replace_dep
+        expect(result).to include('"aws-lambda-powertools[aws-sdk,tracer]~=3.25.0"')
+        expect(result).not_to include("~=3.24.0")
+      end
+    end
   end
 
   describe "#requirements_match?" do
@@ -1161,7 +1785,34 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
 
   describe "#handle_uv_error" do
-    subject(:handle_uv_error) { updater.send(:handle_uv_error, error) }
+    subject(:handle_uv_error) { updater.send(:error_handler).handle_uv_error(error) }
+
+    context "when error contains a dependency conflict pattern" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: dependency_conflict_error,
+          error_context: {}
+        )
+      end
+
+      let(:dependency_conflict_error) do
+        <<~ERROR
+          × No solution found when resolving dependencies:
+            ╰─▶ Because pandas==2.3.3 depends on numpy>=1.26.0 and your project depends
+                on numpy==1.24.4, we can conclude that pandas==2.3.3 and your project
+                are incompatible.
+                And because your project depends on pandas==2.3.3, we can conclude that
+                your project's requirements are unsatisfiable.
+        ERROR
+      end
+
+      it "raises UpdateNotPossible with the conflicting dependencies" do
+        expect { handle_uv_error }.to raise_error(Dependabot::UpdateNotPossible) do |raised_error|
+          expect(raised_error.dependencies).to include("pandas")
+          expect(raised_error.dependencies).to include("numpy")
+        end
+      end
+    end
 
     context "when error contains 'No solution found when resolving dependencies'" do
       let(:error) do
@@ -1230,6 +1881,24 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           expect(raised_error.message).to include("Failed to build")
           expect(raised_error.message).to include("setuptools-scm was unable to detect version")
           expect(raised_error.message).to include("Make sure you're either building from a fully intact git repository")
+        end
+      end
+    end
+
+    context "when error contains a uv required-version mismatch" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "error: Required uv version `==0.9.11` does not match the running version `0.9.18`. " \
+                   "Update `uv` by running `uv self update 0.9.11`.",
+          error_context: {}
+        )
+      end
+
+      it "raises ToolVersionNotSupported with the required and running versions" do
+        expect { handle_uv_error }.to raise_error(Dependabot::ToolVersionNotSupported) do |raised_error|
+          expect(raised_error.tool_name).to eq("uv")
+          expect(raised_error.detected_version).to eq("==0.9.11")
+          expect(raised_error.supported_versions).to eq("0.9.18")
         end
       end
     end

@@ -38,11 +38,18 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
       "password" => "token"
     }]
   end
+  let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
+  let(:raise_on_ignored) { false }
   let(:checker) do
     described_class.new(
       dependency: dependency,
+      dependency_files: [],
       credentials: credentials,
-      cooldown_options: cooldown_options
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories,
+      cooldown_options: cooldown_options,
+      raise_on_ignored: raise_on_ignored
     )
   end
 
@@ -94,7 +101,7 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "NuGet",
-        version: "95a470a557091cdbdc9f68a178b60bd19329942c",
+        version: "7a84f1ecdb1df83034aa639e496f3b25a16d94ec",
         requirements: [{
           file: ".gitmodules",
           requirement: nil,
@@ -127,6 +134,59 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq("95a470a557091cdbdc9f68a178b60bd19329942c") }
+    end
+  end
+
+  describe "#latest_tag with ignored_versions" do
+    subject { checker.latest_tag }
+
+    let(:tagged_sha) { "3c96b37d962e02d37f6b66b63af104c44249544d" }
+    let(:untagged_sha) { "50581639a03761c649e09e9618e26d3beb6a4198" }
+    let(:releases) do
+      [
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::GitSubmodules::Version.new("1.2.3"),
+          tag: tagged_sha
+        ),
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::GitSubmodules::Version.new("0.0.0-0.5"),
+          tag: untagged_sha
+        )
+      ]
+    end
+
+    before do
+      allow(checker).to receive(:version_list).and_return(releases)
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 0.0.0"] }
+
+      it { is_expected.to eq(untagged_sha) }
+    end
+
+    context "when the user has ignored all versions" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:releases) do
+        [
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::GitSubmodules::Version.new("1.2.3"),
+            tag: tagged_sha
+          )
+        ]
+      end
+
+      it "returns nil" do
+        expect(checker.latest_tag).to be_nil
+      end
+
+      context "when raise_on_ignored is set" do
+        let(:raise_on_ignored) { true }
+
+        it "raises an error" do
+          expect { checker.latest_tag }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
   end
 end

@@ -171,10 +171,11 @@ public partial class DiscoveryWorker : IDiscoveryWorker
     {
         _logger.Info($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
         var entryPoints = FindEntryPoints(workspacePath);
+        _logger.Info($"    Entry points found: {string.Join(", ", entryPoints)}");
         ImmutableArray<string> projects;
         try
         {
-            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager);
+            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager, _logger);
         }
         catch (InvalidProjectFileException e)
         {
@@ -193,7 +194,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
         if (projects.IsEmpty)
         {
-            _logger.Info("  No project files found.");
+            _logger.Info("    No project files found.");
             return [];
         }
 
@@ -222,7 +223,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager)
+    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager, ILogger logger)
     {
         HashSet<string> expandedProjects = new(PathComparer.Instance);
         HashSet<string> seenProjects = new(PathComparer.Instance);
@@ -235,28 +236,34 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 string extension = Path.GetExtension(candidateEntryPoint).ToLowerInvariant();
                 if (extension == ".sln")
                 {
+                    logger.Info($"    Expanding solution: {candidateEntryPoint}:");
                     SolutionFile solution = SolutionFile.Parse(candidateEntryPoint);
                     foreach (ProjectInSolution project in solution.ProjectsInOrder)
                     {
+                        logger.Info($"      Expanded project: {project.AbsolutePath}");
                         filesToExpand.Push(project.AbsolutePath);
                     }
                 }
                 else if (extension == ".slnx")
                 {
+                    logger.Info($"    Expanding solution: {candidateEntryPoint}:");
                     SolutionModel solution = await SolutionSerializers.SlnXml.OpenAsync(candidateEntryPoint, CancellationToken.None);
                     string solutionPath = Path.GetDirectoryName(candidateEntryPoint) ?? string.Empty;
 
                     foreach (SolutionProjectModel project in solution.SolutionProjects)
                     {
                         string projectPath = Path.Combine(solutionPath, project.FilePath);
+                        logger.Info($"      Expanded project: {projectPath}");
                         filesToExpand.Push(projectPath);
                     }
                 }
                 else if (extension == ".proj")
                 {
+                    logger.Info($"    Expanding file: {candidateEntryPoint}:");
                     var foundProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectFile", "ProjectReference");
                     foreach (var foundProject in foundProjects)
                     {
+                        logger.Info($"      Expanded project: {foundProject}");
                         filesToExpand.Push(foundProject);
                     }
                 }
@@ -318,13 +325,26 @@ public partial class DiscoveryWorker : IDiscoveryWorker
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
         var normalizedProjectPaths = projectPaths.SelectMany(p => PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(p, repoRootPath) ?? []).Distinct().ToImmutableArray();
-        var disposables = normalizedProjectPaths.Select(p => new SpecialImportsConditionPatcher(p)).ToImmutableArray();
+
+        // Find all MSBuild files that may contain special imports
+        var enumerationOptions = new EnumerationOptions()
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+        };
+        var msbuildExtensions = new[] { ".props", ".targets", ".proj", ".csproj", ".vbproj", ".fsproj" };
+        var filesToPatch = Directory.GetFiles(repoRootPath, "*.*", enumerationOptions)
+            .Where(f => msbuildExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+            .ToImmutableArray();
+
+        var disposables = filesToPatch.Select(p => new SpecialImportsConditionPatcher(p)).ToImmutableArray();
         var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
 
         try
         {
             // get all packages.config results first
-            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager);
+            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager, _logger);
             foreach (var expandedProject in expandedProjects)
             {
                 var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, expandedProject, _logger);
@@ -368,51 +388,11 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
                 foreach (var projectResult in projectResults)
                 {
-                    // If we had packages.config dependencies, merge them with the project dependencies
+                    // If we had earlier dependencies, merge them with the latest
                     if (results.TryGetValue(projectResult.FilePath, out var packagesConfigResult))
                     {
-                        var packagesConfigDependencies = packagesConfigResult.Dependencies
-                            .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
-                            .ToImmutableArray();
-
-                        // merge SDK and packages.config results
-                        var mergedDependencies = projectResult.Dependencies.Concat(packagesConfigResult.Dependencies)
-                            .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(d => d.Name)
-                            .ToImmutableArray();
-                        var mergedTargetFrameworks = projectResult.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
-                            .Select(t =>
-                            {
-                                try
-                                {
-                                    var tfm = NuGetFramework.Parse(t);
-                                    return tfm.GetShortFolderName();
-                                }
-                                catch
-                                {
-                                    return string.Empty;
-                                }
-                            })
-                            .Where(tfm => !string.IsNullOrEmpty(tfm))
-                            .Distinct()
-                            .OrderBy(tfm => tfm)
-                            .ToImmutableArray();
-                        var mergedProperties = projectResult.Properties; // packages.config discovery doesn't produce properties
-                        var mergedImportedFiles = projectResult.ImportedFiles; // packages.config discovery doesn't produce imported files
-                        var mergedAdditionalFiles = projectResult.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(f => f)
-                            .ToImmutableArray();
-                        var mergedResult = new ProjectDiscoveryResult()
-                        {
-                            FilePath = projectResult.FilePath,
-                            Dependencies = mergedDependencies,
-                            TargetFrameworks = mergedTargetFrameworks,
-                            Properties = mergedProperties,
-                            ImportedFiles = mergedImportedFiles,
-                            AdditionalFiles = mergedAdditionalFiles,
-                        };
-                        results[projectResult.FilePath] = mergedResult;
+                        var merged = MergeProjectDiscovery(packagesConfigResult, projectResult);
+                        results[projectResult.FilePath] = merged;
                     }
                     else
                     {
@@ -432,6 +412,67 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         return [.. results.Values];
+    }
+
+    internal static ProjectDiscoveryResult MergeProjectDiscovery(ProjectDiscoveryResult result1, ProjectDiscoveryResult result2)
+    {
+        if (result1.FilePath != result2.FilePath)
+        {
+            throw new InvalidOperationException($"Cannot merge ProjectDiscoveryResult with different file paths: got [{result1.FilePath}] and [{result2.FilePath}]");
+        }
+
+        var mergedDependenciesSet = result1.Dependencies.ToDictionary(d => d.Name, StringComparer.OrdinalIgnoreCase);
+        foreach (var dep in result2.Dependencies)
+        {
+            // second result set wins conflicts
+            mergedDependenciesSet[dep.Name] = dep;
+        }
+
+        var mergedDependencies = mergedDependenciesSet.Values
+            .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray();
+        var mergedTargetFrameworks = result1.TargetFrameworks.Concat(result2.TargetFrameworks)
+            .Select(t =>
+            {
+                try
+                {
+                    var tfm = NuGetFramework.Parse(t);
+                    return tfm.GetShortFolderName();
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            })
+            .Where(tfm => !string.IsNullOrEmpty(tfm))
+            .Distinct()
+            .OrderBy(tfm => tfm)
+            .ToImmutableArray();
+        var mergedReferencedProjects = result1.ReferencedProjectPaths.Concat(result2.ReferencedProjectPaths)
+            .Distinct(PathComparer.Instance)
+            .OrderBy(p => p, PathComparer.Instance)
+            .ToImmutableArray();
+        var mergedImportedFiles = result1.ImportedFiles.Concat(result2.ImportedFiles)
+            .Distinct(PathComparer.Instance)
+            .OrderBy(p => p, PathComparer.Instance)
+            .ToImmutableArray();
+        var mergedAdditionalFiles = result1.AdditionalFiles.Concat(result2.AdditionalFiles)
+            .Distinct(PathComparer.Instance)
+            .OrderBy(f => f, PathComparer.Instance)
+            .ToImmutableArray();
+        var mergedResult = new ProjectDiscoveryResult()
+        {
+            FilePath = result2.FilePath,
+            Dependencies = mergedDependencies,
+            IsSuccess = result1.IsSuccess && result2.IsSuccess,
+            Error = result1.Error ?? result2.Error,
+            TargetFrameworks = mergedTargetFrameworks,
+            ReferencedProjectPaths = mergedReferencedProjects,
+            ImportedFiles = mergedImportedFiles,
+            AdditionalFiles = mergedAdditionalFiles,
+            CentralPackageTransitivePinningEnabled = result1.CentralPackageTransitivePinningEnabled || result2.CentralPackageTransitivePinningEnabled,
+        };
+        return mergedResult;
     }
 
     internal static async Task WriteResultsAsync(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)
