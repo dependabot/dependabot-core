@@ -967,9 +967,6 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           git_checker = method.call(**kwargs)
           declaration_string = dependency.requirements.first.dig(:metadata, :declaration_string)
 
-          allow(git_checker).to receive(:git_repo_reachable?).and_return(true)
-          allow(git_checker).to receive(:pinned?).and_return(true)
-
           resolved_version = case declaration_string
                              when /create-github-app-token/
                                Dependabot::GithubActions::Version.new("create-github-app-token/v0.2.0")
@@ -977,7 +974,11 @@ RSpec.describe Dependabot::GithubActions::FileParser do
                                Dependabot::GithubActions::Version.new("get-vault-secrets/v1.2.1")
                              end
 
-          allow(git_checker).to receive(:version_for_pinned_sha).and_return(resolved_version)
+          allow(git_checker).to receive_messages(
+            git_repo_reachable?: true,
+            pinned?: true,
+            version_for_pinned_sha: resolved_version
+          )
 
           git_checker
         end
@@ -985,10 +986,12 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       it "parses each path as a separate dependency" do
         expect(dependencies.count).to be(2)
-        expect(dependencies.map(&:name)).to eq([
-          "grafana/shared-workflows/actions/create-github-app-token",
-          "grafana/shared-workflows/actions/get-vault-secrets"
-        ])
+        expect(dependencies.map(&:name)).to eq(
+          [
+            "grafana/shared-workflows/actions/create-github-app-token",
+            "grafana/shared-workflows/actions/get-vault-secrets"
+          ]
+        )
       end
 
       describe "the create-github-app-token dependency" do
