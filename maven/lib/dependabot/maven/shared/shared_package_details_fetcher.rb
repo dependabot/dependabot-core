@@ -218,7 +218,7 @@ module Dependabot
 
           begin
             versions_details_hash = if @version_details.any? && @selected_repository_details
-                                      versions_details_hash_from_html([T.must(@selected_repository_details)])
+                                      versions_details_hash_from_html([@selected_repository_details])
                                     end
 
             if versions_details_hash
@@ -310,7 +310,7 @@ module Dependabot
           return T.must(@released_check[version]) if @released_check.key?(version)
 
           target_repositories = T.let(
-            @selected_repository_details ? [T.must(@selected_repository_details)] : repositories,
+            @selected_repository_details ? [@selected_repository_details] : repositories,
             T::Array[T::Hash[String, T.untyped]]
           )
 

@@ -60,7 +60,6 @@ module Dependabot
           returns(T::Array[T::Hash[String, T.untyped]])
         end
         def fetch_available_versions
-          T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
           package_releases = T.let([], T::Array[T::Hash[String, T.untyped]])
 
           selected_repository = T.let(nil, T.nilable(T::Hash[String, T.untyped]))

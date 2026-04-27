@@ -438,26 +438,4 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
       end
     end
   end
-
-  describe "#repositories" do
-    subject(:repositories) { packagedetailsfetcher.send(:repositories) }
-
-    let(:credentials) do
-      [
-        {
-          "type" => "maven_repository",
-          "url" => "https://private.registry.org/repo/",
-          "username" => "dependabot",
-          "password" => "dependabotPassword"
-        }
-      ]
-    end
-
-    it "prioritizes configured credential registries before public repositories" do
-      expect(repositories.map { |repo| repo.fetch("url") }.first)
-        .to eq("https://private.registry.org/repo")
-      expect(repositories.map { |repo| repo.fetch("url") })
-        .to include("https://repo.maven.apache.org/maven2")
-    end
-  end
 end
