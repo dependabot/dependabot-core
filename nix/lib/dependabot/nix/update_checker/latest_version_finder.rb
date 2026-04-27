@@ -14,6 +14,15 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        # All Nix versions are pseudo-versions with prerelease segments (0.0.0-0.N),
+        # so we must always include prereleases to avoid filtering everything out.
+        sig { override.returns(T::Boolean) }
+        def wants_prerelease?
+          true
+        end
+
+        protected
+
         sig do
           override.params(releases: T::Array[Dependabot::Package::PackageRelease])
                   .returns(T::Array[Dependabot::Package::PackageRelease])
@@ -40,13 +49,6 @@ module Dependabot
           filtered
         end
 
-        # All Nix versions are pseudo-versions with prerelease segments (0.0.0-0.N),
-        # so we must always include prereleases to avoid filtering everything out.
-        sig { override.returns(T::Boolean) }
-        def wants_prerelease?
-          true
-        end
-
         private
 
         sig do
@@ -60,7 +62,8 @@ module Dependabot
           end
 
           # Fallback so the current version is always in the candidate set
-          releases << current_dependency_release
+          current_release = current_dependency_release
+          releases << current_release unless releases.any? { |r| r.version == current_release.version }
           releases
         end
 
