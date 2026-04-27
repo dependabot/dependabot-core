@@ -308,6 +308,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
+      it "does not query public repositories when the first configured registry succeeds" do
+        latest_version_details
+
+        expect(
+          a_request(:get, maven_central_metadata_url)
+        ).not_to have_been_made
+      end
+
       context "when it is a gitlab maven repository" do
         let(:credentials) do
           [
@@ -445,6 +453,18 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
+      end
+
+      it "tries configured registries in order and stops on first success" do
+        latest_version_details
+
+        expect(
+          a_request(:get, private_registry_metadata_url)
+            .with(basic_auth: %w(dependabot dependabotPassword))
+        ).to have_been_made
+        expect(
+          a_request(:get, maven_central_metadata_url)
+        ).not_to have_been_made
       end
     end
 

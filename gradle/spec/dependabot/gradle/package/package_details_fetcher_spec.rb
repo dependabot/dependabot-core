@@ -107,6 +107,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://registry.example.com/maven")
         end
       end
+
+      it "does not query maven central when the first configured registry succeeds" do
+        public_maven_central_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml"
+        stub_request(:get, public_maven_central_url).to_return(status: 200, body: maven_central_releases)
+
+        versions
+
+        expect(
+          a_request(:get, public_maven_central_url)
+        ).not_to have_been_made
+      end
     end
 
     context "with multiple private registry credentials" do
@@ -425,6 +436,28 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           end
         end
       end
+    end
+  end
+
+  describe "#repositories" do
+    subject(:repositories) { packagedetailsfetcher.send(:repositories) }
+
+    let(:credentials) do
+      [
+        {
+          "type" => "maven_repository",
+          "url" => "https://private.registry.org/repo/",
+          "username" => "dependabot",
+          "password" => "dependabotPassword"
+        }
+      ]
+    end
+
+    it "prioritizes configured credential registries before public repositories" do
+      expect(repositories.map { |repo| repo.fetch("url") }.first)
+        .to eq("https://private.registry.org/repo")
+      expect(repositories.map { |repo| repo.fetch("url") })
+        .to include("https://repo.maven.apache.org/maven2")
     end
   end
 end

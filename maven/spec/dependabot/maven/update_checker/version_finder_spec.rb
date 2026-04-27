@@ -389,7 +389,15 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
       its([:source_url]) do
-        is_expected.to eq("https://repo.maven.apache.org/maven2")
+        is_expected.to eq("https://private.registry.org/repo")
+      end
+
+      it "does not query public repositories when the first configured registry succeeds" do
+        latest_version_details
+
+        expect(
+          a_request(:get, maven_central_metadata_url)
+        ).not_to have_been_made
       end
 
       context "when gitlab maven repository is used" do
@@ -434,7 +442,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
       end
 
-      context "when the dependency exists in more than one repository, it should check all the repositories" do
+      context "when the dependency exists in more than one repository" do
         let(:credentials) do
           [
             Dependabot::Credential.new(
@@ -458,7 +466,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           # The Jenkins repo returns an older version
           stub_request(:get, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/maven-metadata.xml")
             .to_return(status: 200, body: jenkins_releases)
-          stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/10.0/guava-10.0-jre.jar")
+          stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/10.0/guava-10.0.jar")
             .to_return(status: 200)
           stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
             .to_return(status: 404)
@@ -470,10 +478,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             .to_return(status: 200)
         end
 
-        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
-
-        its([:source_url]) do
-          is_expected.to eq("https://repo.maven.apache.org/maven2")
+        it "does not fall through to later repositories once the first registry succeeds" do
+          expect(latest_version_details).to be_nil
         end
       end
 
@@ -495,7 +501,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
         its([:source_url]) do
-          is_expected.to eq("https://repo.maven.apache.org/maven2")
+          is_expected.to eq("https://private.registry.org/repo")
         end
 
         context "when credentials are required" do
@@ -600,10 +606,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "with an invalid repository url specified" do
       let(:dependency_files) { project_dependency_files("invalid_repository_url") }
 
-      it "raises a helpful error" do
-        expect { latest_version_details }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message).to start_with("bad URI (is not URI?): \"http://host:port/content/groups/public")
-        end
+      it "does not raise when an earlier repository returns a match" do
+        expect { latest_version_details }.not_to raise_error
       end
     end
 

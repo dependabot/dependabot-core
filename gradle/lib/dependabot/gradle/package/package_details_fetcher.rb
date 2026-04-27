@@ -63,23 +63,20 @@ module Dependabot
           T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
           package_releases = T.let([], T::Array[T::Hash[String, T.untyped]])
 
-          version_details =
-            repositories.map do |repository_details|
-              url = repository_details.fetch("url")
+          selected_repository = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          version_details = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
-              next distribution_version_details if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
-              next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
+          repositories.each do |repository_details|
+            next_version_details = fetch_version_details(repository_details)
+            next if next_version_details.empty?
 
-              dependency_metadata(repository_details).css("versions > version")
-                                                     .select { |node| version_class.correct?(node.content) }
-                                                     .map { |node| version_class.new(node.content) }
-                                                     .map do |version|
-                { version: version, source_url: url }
-              end
-            end.flatten.compact
+            selected_repository = repository_details
+            version_details = next_version_details
+            break
+          end
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
-          release_date_info = release_details
+          release_date_info = selected_repository ? release_details([selected_repository]) : {}
 
           version_details.map do |info|
             version = info[:version]&.to_s
@@ -100,18 +97,46 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
-        def release_details
+        sig do
+          params(
+            target_repositories: T.nilable(T::Array[T::Hash[String, T.untyped]])
+          ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+        end
+        def release_details(target_repositories = nil)
+          active_repositories = target_repositories || repositories
+
           extractor = ReleaseDateExtractor.new(
             dependency_name: dependency.name,
             version_class: version_class
           )
 
           extractor.extract(
-            repositories: repositories,
+            repositories: active_repositories,
             dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
             release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
           )
+        end
+
+        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def fetch_version_details(repository_details)
+          url = repository_details.fetch("url")
+
+          if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
+            distribution_details = distribution_version_details
+            return distribution_details ? T.cast(distribution_details, T::Array[T::Hash[Symbol, T.untyped]]) : []
+          end
+
+          if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
+            google_details = google_version_details
+            return google_details ? T.cast(google_details, T::Array[T::Hash[Symbol, T.untyped]]) : []
+          end
+
+          dependency_metadata(repository_details).css("versions > version")
+                                                 .select { |node| version_class.correct?(node.content) }
+                                                 .map { |node| version_class.new(node.content) }
+                                                 .map do |version|
+            { version: version, source_url: url }
+          end
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -121,9 +146,9 @@ module Dependabot
           details = if distribution?
                       distribution_repository_details
                     elsif plugin?
-                      plugin_repository_details + credentials_repository_details
+                      credentials_repository_details + plugin_repository_details
                     else
-                      dependency_repository_details + credentials_repository_details
+                      credentials_repository_details + dependency_repository_details
                     end
 
           @repositories =
