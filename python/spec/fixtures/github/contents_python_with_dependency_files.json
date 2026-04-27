@@ -1,0 +1,82 @@
+[
+  {
+    "name": "dependencies",
+    "path": "dependencies",
+    "sha": "abc123",
+    "size": 0,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/dependencies?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/tree/sha/dependencies",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/abc123",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/dependencies?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/trees/abc123",
+      "html": "https://github.com/gocardless/bump/tree/sha/dependencies"
+    }
+  },
+  {
+    "name": "dependencies.txt",
+    "path": "dependencies.txt",
+    "sha": "abc124",
+    "size": 29,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/dependencies.txt?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/dependencies.txt",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc124",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/dependencies.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/dependencies.txt?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/abc124",
+      "html": "https://github.com/gocardless/bump/blob/sha/dependencies.txt"
+    }
+  },
+  {
+    "name": "depends.txt",
+    "path": "depends.txt",
+    "sha": "abc125",
+    "size": 29,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/depends.txt?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/depends.txt",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc125",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/depends.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/depends.txt?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/abc125",
+      "html": "https://github.com/gocardless/bump/blob/sha/depends.txt"
+    }
+  },
+  {
+    "name": "notes.txt",
+    "path": "notes.txt",
+    "sha": "abc126",
+    "size": 29,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/notes.txt?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/notes.txt",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc126",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/notes.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/notes.txt?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/abc126",
+      "html": "https://github.com/gocardless/bump/blob/sha/notes.txt"
+    }
+  },
+  {
+    "name": "requirements.txt",
+    "path": "requirements.txt",
+    "sha": "8d9a77a86256c11409622fd16d799d9718f1ff62",
+    "size": 29,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/requirements.txt?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/requirements.txt",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8d9a77a86256c11409622fd16d799d9718f1ff62",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/requirements.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/requirements.txt?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/8d9a77a86256c11409622fd16d799d9718f1ff62",
+      "html": "https://github.com/gocardless/bump/blob/sha/requirements.txt"
+    }
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "name": "ansible-lint.txt",
+    "path": "dependencies/ansible-lint.txt",
+    "sha": "def001",
+    "size": 29,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/dependencies/ansible-lint.txt?ref=sha",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/dependencies/ansible-lint.txt",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/def001",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/dependencies/ansible-lint.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/dependencies/ansible-lint.txt?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/def001",
+      "html": "https://github.com/gocardless/bump/blob/sha/dependencies/ansible-lint.txt"
+    }
+  }
+]

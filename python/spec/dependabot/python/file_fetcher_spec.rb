@@ -267,6 +267,89 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with dependency-style txt files (dependencies.txt, depends.txt)" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_with_dependency_files.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "dependencies.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "depends.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "notes.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "dependencies?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_python_dependencies_folder.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "dependencies/ansible-lint.txt?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "requirements_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches all .txt files without filtering" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(requirements.txt dependencies.txt depends.txt notes.txt dependencies/ansible-lint.txt))
+      end
+
+      context "when python_requirements_file_name_filtering is enabled" do
+        before do
+          Dependabot::Experiments.register(:python_requirements_file_name_filtering, true)
+        end
+
+        it "picks up dependencies.txt" do
+          expect(file_fetcher_instance.files.map(&:name)).to include("dependencies.txt")
+        end
+
+        it "picks up depends.txt" do
+          expect(file_fetcher_instance.files.map(&:name)).to include("depends.txt")
+        end
+
+        it "picks up .txt files in a dependencies/ subdirectory" do
+          expect(file_fetcher_instance.files.map(&:name)).to include("dependencies/ansible-lint.txt")
+        end
+
+        it "skips notes.txt which does not match any requirements pattern" do
+          expect(file_fetcher_instance.files.map(&:name)).not_to include("notes.txt")
+        end
+
+        it "fetches only files matching requirements or dependency patterns" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(requirements.txt dependencies.txt depends.txt dependencies/ansible-lint.txt))
+        end
+      end
+    end
+
     context "with only a setup.py file" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_setup.json")
