@@ -6,24 +6,31 @@ require "dependabot/maven/shared/shared_requirement"
 require "dependabot/maven/version"
 
 RSpec.describe Dependabot::Maven::Shared::SharedRequirement do
+  subject(:requirement) { test_requirement_class.new(requirement_string) }
+
+  let(:requirement_string) { ">=1.0.0" }
+
   # Define a concrete subclass inside the describe block to avoid superclass mismatch
   # when multiple spec files are loaded in the same process.
   let(:test_requirement_class) do
     quoted = Gem::Requirement::OPS.keys.map { |k| Regexp.quote k }.join("|")
     version_pattern = Dependabot::Maven::Version::VERSION_PATTERN
     pattern_raw = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
-    pattern = /\A#{pattern_raw}\z/
-    ruby_style_pattern = /\A\s*(#{quoted})\s*(#{version_pattern})\s*\z/
+    pat = /\A#{pattern_raw}\z/
+    rs_pattern = /\A\s*(#{quoted})\s*(#{version_pattern})\s*\z/
 
     Class.new(described_class) do
       const_set(:PATTERN_RAW, pattern_raw)
-      const_set(:PATTERN, pattern)
-      const_set(:RUBY_STYLE_PATTERN, ruby_style_pattern)
+      const_set(:PATTERN, pat)
+      const_set(:RUBY_STYLE_PATTERN, rs_pattern)
+
+      define_singleton_method(:pattern) { pat }
+      define_singleton_method(:ruby_style_pattern) { rs_pattern }
 
       define_singleton_method(:parse) do |obj|
         return ["=", Dependabot::Maven::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
-        unless (matches = const_get(:PATTERN).match(obj.to_s))
+        unless (matches = pat.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"
           raise Gem::Requirement::BadRequirementError, msg
         end
@@ -43,10 +50,6 @@ RSpec.describe Dependabot::Maven::Shared::SharedRequirement do
       end
     end
   end
-
-  subject(:requirement) { test_requirement_class.new(requirement_string) }
-
-  let(:requirement_string) { ">=1.0.0" }
 
   describe "OR_SYNTAX" do
     it "is defined on the shared class" do

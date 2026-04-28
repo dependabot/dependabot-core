@@ -16,6 +16,12 @@ module Dependabot
 
         OR_SYNTAX = T.let(/(?<=\]|\)),/, Regexp)
 
+        sig { abstract.returns(Regexp) }
+        def self.pattern; end
+
+        sig { abstract.returns(Regexp) }
+        def self.ruby_style_pattern; end
+
         sig { params(requirements: T.untyped).void }
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
@@ -54,16 +60,14 @@ module Dependabot
           end
 
           version_reqs = req_string.split(",").map(&:strip)
-          pattern = self.class.const_get(:PATTERN)
-          ruby_style_pattern = self.class.const_get(:RUBY_STYLE_PATTERN)
 
-          if version_reqs.length > 1 && !version_reqs.all? { |s| pattern.match?(s) }
+          if version_reqs.length > 1 && !version_reqs.all? { |s| self.class.pattern.match?(s) }
             return convert_java_range_to_ruby_range(req_string)
           end
 
           version_reqs.map do |r|
             # if an operator is already provided, use it
-            next r if r.match?(ruby_style_pattern)
+            next r if r.match?(self.class.ruby_style_pattern)
 
             convert_java_equals_req_to_ruby(r)
           end
@@ -72,24 +76,25 @@ module Dependabot
         sig { params(req_string: String).returns(T::Array[T.nilable(String)]) }
         def convert_java_range_to_ruby_range(req_string)
           parts = req_string.split(",").map(&:strip)
-          lower_b = T.let(parts[0], T.nilable(String))
-          upper_b = T.let(parts[1], T.nilable(String))
-
-          lower_b =
-            if lower_b && ["(", "["].include?(lower_b) then nil
-            elsif lower_b&.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
-            elsif lower_b
-              ">= #{lower_b.sub(/\[\s*/, '').strip}"
-            end
-
-          upper_b =
-            if upper_b && [")", "]"].include?(upper_b) then nil
-            elsif upper_b&.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
-            elsif upper_b
-              "<= #{upper_b.sub(/\s*\]/, '').strip}"
-            end
-
+          lower_b = parse_lower_bound(parts[0])
+          upper_b = parse_upper_bound(parts[1])
           [lower_b, upper_b].compact
+        end
+
+        sig { params(bound: T.nilable(String)).returns(T.nilable(String)) }
+        def parse_lower_bound(bound)
+          return nil if bound.nil? || ["(", "["].include?(bound)
+          return "> #{bound.sub(/\(\s*/, '')}" if bound.start_with?("(")
+
+          ">= #{bound.sub(/\[\s*/, '').strip}"
+        end
+
+        sig { params(bound: T.nilable(String)).returns(T.nilable(String)) }
+        def parse_upper_bound(bound)
+          return nil if bound.nil? || [")", "]"].include?(bound)
+          return "< #{bound.sub(/\s*\)/, '')}" if bound.end_with?(")")
+
+          "<= #{bound.sub(/\s*\]/, '').strip}"
         end
 
         sig { params(req_string: T.nilable(String)).returns(T.nilable(String)) }

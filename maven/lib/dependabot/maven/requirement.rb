@@ -19,6 +19,16 @@ module Dependabot
       # Like PATTERN, but the leading operator is required
       RUBY_STYLE_PATTERN = T.let(/\A\s*(#{quoted})\s*(#{Maven::Version::VERSION_PATTERN})\s*\z/, Regexp)
 
+      sig { override.returns(Regexp) }
+      def self.pattern
+        PATTERN
+      end
+
+      sig { override.returns(Regexp) }
+      def self.ruby_style_pattern
+        RUBY_STYLE_PATTERN
+      end
+
       sig { params(obj: T.any(String, Gem::Version)).returns(T::Array[T.any(String, T.untyped)]) }
       def self.parse(obj)
         return ["=", Maven::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)

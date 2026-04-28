@@ -19,6 +19,16 @@ module Dependabot
       # Like PATTERN, but the leading operator is required
       RUBY_STYLE_PATTERN = /\A\s*(#{quoted})\s*(#{Gradle::Version::VERSION_PATTERN})\s*\z/
 
+      sig { override.returns(Regexp) }
+      def self.pattern
+        PATTERN
+      end
+
+      sig { override.returns(Regexp) }
+      def self.ruby_style_pattern
+        RUBY_STYLE_PATTERN
+      end
+
       sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
         return ["=", Gradle::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
