@@ -73,7 +73,6 @@ module Dependabot
     def self.in_a_temporary_directory(directory = "/", &_block)
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
       tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
-      path = Pathname.new(File.join(tmp_dir, directory)).expand_path
 
       begin
         path = Pathname.new(File.join(tmp_dir, directory)).expand_path
