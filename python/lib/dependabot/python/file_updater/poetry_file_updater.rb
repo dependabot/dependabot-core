@@ -14,6 +14,7 @@ require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/python/poetry_version_installer"
 
 module Dependabot
   module Python
@@ -52,6 +53,7 @@ module Dependabot
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @updated_pyproject_content = T.let(nil, T.nilable(String))
           @poetry_plugin_installer = T.let(nil, T.nilable(PoetryPluginInstaller))
+          @poetry_version_installer = T.let(nil, T.nilable(PoetryVersionInstaller))
           @poetry_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
@@ -295,6 +297,7 @@ module Dependabot
               add_auth_env_vars
 
               language_version_manager.install_required_python
+              poetry_version_installer.install_required_version
               poetry_plugin_installer.install_required_plugins
 
               # use system git instead of the pure Python dulwich
@@ -423,6 +426,14 @@ module Dependabot
           @poetry_plugin_installer ||= T.let(
             PoetryPluginInstaller.from_dependency_files(dependency_files),
             T.nilable(PoetryPluginInstaller)
+          )
+        end
+
+        sig { returns(PoetryVersionInstaller) }
+        def poetry_version_installer
+          @poetry_version_installer ||= T.let(
+            PoetryVersionInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryVersionInstaller)
           )
         end
 
