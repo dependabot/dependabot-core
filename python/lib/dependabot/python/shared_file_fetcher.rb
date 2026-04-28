@@ -26,19 +26,6 @@ module Dependabot
       DEPENDENCY_TYPES = T.let(%w(packages dev-packages).freeze, T::Array[String])
       MAX_FILE_SIZE = T.let(500_000, Integer)
 
-      # Regex patterns for detecting Python requirements.txt manifest variants.
-      # Ported from github/dependency-snapshots-api.
-      #
-      # Matches "requirements" preceded by a hyphen, period, underscore, start-of-string, or slash,
-      # followed by non-whitespace chars and ".txt".
-      # Examples: requirements.txt, requirements.prod.txt, requirements/production.txt
-      REQUIREMENTS_TXT_REGEX = T.let(%r{(?:[-._]|^|/)requirements[^\s]*\.txt$}i, Regexp)
-
-      # More lenient: matches "require" with optional prefix (no dots/whitespace)
-      # and optional hyphen/underscore/slash suffix. Does not match "require" as a substring.
-      # Examples: require.txt, require-test.txt, py3-require.txt, pyenv_require_e2e.txt
-      REQUIRE_TXT_REGEX = T.let(%r{[^\s|.]*require(?:[-_/][^\s|.]*)?\.txt$}i, Regexp)
-
       sig { abstract.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files; end
 
@@ -182,7 +169,7 @@ module Dependabot
 
             repo_contents
               .select { |f| f.type == "file" }
-              .select { |f| potential_requirements_file?(f.name) }
+              .select { |f| f.name.end_with?(".txt", ".in") }
               .reject { |f| f.size > MAX_FILE_SIZE }
               .map { |f| fetch_file_from_host(f.name) }
               .select { |f| requirements_file?(f) }
@@ -206,7 +193,7 @@ module Dependabot
 
         repo_contents(dir: relative_reqs_dir)
           .select { |f| f.type == "file" }
-          .select { |f| potential_requirements_file?(File.join(relative_reqs_dir, f.name)) }
+          .select { |f| File.join(relative_reqs_dir, f.name).end_with?(".txt", ".in") }
           .reject { |f| f.size > MAX_FILE_SIZE }
           .map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }
           .select { |f| requirements_file?(f) }
@@ -390,24 +377,6 @@ module Dependabot
           end
 
         uneditable_reqs + editable_reqs
-      end
-
-      # Checks if a filename matches known Python requirements.txt naming patterns.
-      sig { params(path: String).returns(T::Boolean) }
-      def requirements_txt_filename?(path)
-        path.match?(REQUIREMENTS_TXT_REGEX) || path.match?(REQUIRE_TXT_REGEX)
-      end
-
-      # When the feature flag is enabled, only considers .txt files whose names match
-      # requirements patterns (plus all .in files). When disabled, falls back to the
-      # original behavior of accepting any .txt or .in file.
-      sig { params(path: String).returns(T::Boolean) }
-      def potential_requirements_file?(path)
-        unless Dependabot::Experiments.enabled?(:python_requirements_file_name_filtering)
-          return path.end_with?(".txt", ".in")
-        end
-
-        path.end_with?(".in") || requirements_txt_filename?(path)
       end
 
       sig { params(path: String).returns(String) }
