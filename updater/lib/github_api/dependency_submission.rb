@@ -174,8 +174,9 @@ module GithubApi
             source_location: manifest_file.path.gsub(%r{^/}, "")
           },
           metadata: {
-            ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager)
-          },
+            ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager),
+            blob_oid: manifest_file.blob_oid
+          }.compact,
           resolved: resolved_dependencies.transform_values do |resolved|
             {
               package_url: resolved.package_url,

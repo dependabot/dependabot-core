@@ -174,6 +174,9 @@ RSpec.shared_examples "dependency_submission" do |empty|
       # Ecosystem is mapped from the package manager
       expect(lockfile[:metadata][:ecosystem]).to eq("rubygems")
 
+      # Blob OID matches the Git blob SHA-1 of the fixture file
+      expect(lockfile[:metadata][:blob_oid]).to eq("1f21c435958a7c58ef0b4021e1f981017e6d49f2")
+
       # Resolved dependencies are correct
       expect(lockfile[:resolved].length).to eq(2)
 

@@ -370,6 +370,36 @@ RSpec.describe Dependabot::DependencyFile do
     end
   end
 
+  describe "#blob_oid" do
+    it "returns the Git blob SHA-1 matching git hash-object" do
+      # echo -n "a" | git hash-object --stdin
+      expect(file.blob_oid).to eq("2e65efe2a145dda7ee51d1741299f848e5bf752e")
+    end
+
+    context "when content is nil" do
+      let(:file) { described_class.new(name: "Gemfile", content: nil) }
+
+      it "returns nil" do
+        expect(file.blob_oid).to be_nil
+      end
+    end
+
+    context "when content is base64-encoded" do
+      let(:file) do
+        described_class.new(
+          name: "example.gem",
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+          content: "YWJj\n"
+        )
+      end
+
+      it "computes the blob OID from the decoded bytes" do
+        # echo -n "abc" | git hash-object --stdin
+        expect(file.blob_oid).to eq("f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f")
+      end
+    end
+  end
+
   describe "#vendored_file?" do
     it "is false by default" do
       expect(file.vendored_file?).to be false
