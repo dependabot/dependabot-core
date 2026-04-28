@@ -39,7 +39,7 @@ module Dependabot
           @forbidden_urls = forbidden_urls
 
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @google_metadata = T.let(nil, T.nilable(Nokogiri::XML::Document))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
         end
 
@@ -56,30 +56,24 @@ module Dependabot
         attr_reader :forbidden_urls
 
         # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-        sig do
-          returns(T::Array[T::Hash[String, T.untyped]])
-        end
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def fetch_available_versions
-          T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
-          package_releases = T.let([], T::Array[T::Hash[String, T.untyped]])
+          package_releases = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
-          version_details =
-            repositories.map do |repository_details|
-              url = repository_details.fetch("url")
+          selected_repository = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          version_details = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
-              next distribution_version_details if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
-              next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
+          repositories.each do |repository_details|
+            next_version_details = fetch_version_details(repository_details)
+            next if next_version_details.empty?
 
-              dependency_metadata(repository_details).css("versions > version")
-                                                     .select { |node| version_class.correct?(node.content) }
-                                                     .map { |node| version_class.new(node.content) }
-                                                     .map do |version|
-                { version: version, source_url: url }
-              end
-            end.flatten.compact
+            selected_repository = repository_details
+            version_details = next_version_details
+            break
+          end
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
-          release_date_info = release_details
+          release_date_info = selected_repository ? release_details([selected_repository]) : {}
 
           version_details.map do |info|
             version = info[:version]&.to_s
@@ -100,18 +94,40 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
-        def release_details
+        sig do
+          params(
+            target_repositories: T.nilable(T::Array[T::Hash[String, T.untyped]])
+          ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+        end
+        def release_details(target_repositories = nil)
+          active_repositories = target_repositories || repositories
+
           extractor = ReleaseDateExtractor.new(
             dependency_name: dependency.name,
             version_class: version_class
           )
 
           extractor.extract(
-            repositories: repositories,
+            repositories: active_repositories,
             dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
             release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
           )
+        end
+
+        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def fetch_version_details(repository_details)
+          url = repository_details.fetch("url")
+
+          return distribution_version_details || [] if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
+
+          return google_version_details || [] if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
+
+          dependency_metadata(repository_details).css("versions > version")
+                                                 .select { |node| version_class.correct?(node.content) }
+                                                 .map { |node| version_class.new(node.content) }
+                                                 .map do |version|
+            { version: version, source_url: url }
+          end
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -121,9 +137,9 @@ module Dependabot
           details = if distribution?
                       distribution_repository_details
                     elsif plugin?
-                      plugin_repository_details + credentials_repository_details
+                      credentials_repository_details + plugin_repository_details
                     else
-                      dependency_repository_details + credentials_repository_details
+                      credentials_repository_details + dependency_repository_details
                     end
 
           @repositories =
@@ -135,7 +151,7 @@ module Dependabot
             end
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def distribution_version_details
           DistributionsFetcher.available_versions.map do |info|
             release_date = begin
@@ -154,7 +170,7 @@ module Dependabot
           nil
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def google_version_details
           url = Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
           group_id, artifact_id = group_and_artifact_ids
@@ -163,21 +179,22 @@ module Dependabot
                                     "#{T.must(group_id).tr('.', '/')}/" \
                                     "group-index.xml"
 
-          @google_version_details ||=
+          @google_metadata ||=
             begin
               response = Dependabot::RegistryClient.get(url: dependency_metadata_url)
               Nokogiri::XML(response.body)
             end
 
           xpath = "/#{group_id}/#{artifact_id}"
-          return unless @google_version_details.at_xpath(xpath)
+          return unless @google_metadata.at_xpath(xpath)
 
-          @google_version_details.at_xpath(xpath)
-                                 .attributes.fetch("versions")
-                                 .value.split(",")
-                                 .select { |v| version_class.correct?(v) }
-                                 .map { |v| version_class.new(v) }
-                                 .map { |version| { version: version, source_url: url } }
+          @google_metadata
+            .at_xpath(xpath)
+            .attributes.fetch("versions")
+            .value.split(",")
+            .select { |v| version_class.correct?(v) }
+            .map { |v| version_class.new(v) }
+            .map { |version| { version: version, source_url: url } }
         rescue Nokogiri::XML::XPath::SyntaxError
           nil
         end

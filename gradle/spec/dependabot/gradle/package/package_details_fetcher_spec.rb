@@ -107,6 +107,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://registry.example.com/maven")
         end
       end
+
+      it "does not query maven central when the first configured registry succeeds" do
+        public_maven_central_url = "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml"
+        stub_request(:get, public_maven_central_url).to_return(status: 200, body: maven_central_releases)
+
+        versions
+
+        expect(
+          a_request(:get, public_maven_central_url)
+        ).not_to have_been_made
+      end
     end
 
     context "with multiple private registry credentials" do
@@ -147,6 +158,12 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         its([:source_url]) do
           is_expected.to eq("https://registry.example.com/maven")
         end
+      end
+
+      it "falls through to the next configured registry when an earlier one times out" do
+        stub_request(:get, mirror_metadata_url).to_raise(Excon::Error::Timeout)
+
+        expect(versions.first).to include(source_url: "https://registry.example.com/maven")
       end
     end
 
