@@ -16,6 +16,10 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
+      # RFC 3986 unreserved; others need encoding (explicit ASCII class avoids UTF-8 \w issues)
+      CHARS_REQUIRING_ENCODING = T.let(/[^A-Za-z0-9._~-]/, Regexp)
+      private_constant :CHARS_REQUIRING_ENCODING
+
       sig { override.returns(T.nilable(String)) }
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
@@ -28,16 +32,28 @@ module Dependabot
 
       sig { override.returns(T.nilable(String)) }
       def maintainer_changes
-        return unless npm_releaser
+        releaser = npm_releaser
+        return unless releaser
         return unless npm_listing.dig("time", dependency.version)
-        return if previous_releasers&.include?(npm_releaser)
+        return if previous_releasers&.include?(releaser)
 
+        encoded_releaser = encode_npm_releaser(releaser)
         "This version was pushed to npm by " \
-          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "[#{releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
           "releaser for #{dependency.name} since your current version."
       end
 
       private
+
+      # Percent-encodes npm releaser names for safe inclusion in npmjs.com profile URLs.
+      sig { params(releaser: String).returns(String) }
+      def encode_npm_releaser(releaser)
+        return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
+
+        releaser.gsub(CHARS_REQUIRING_ENCODING) do |char|
+          char.bytes.map { |byte| "%#{format('%02X', byte)}" }.join
+        end
+      end
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source

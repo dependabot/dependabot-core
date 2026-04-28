@@ -146,7 +146,7 @@ module Dependabot
       def requires_poetry_version_constraint
         return nil unless pyproject&.content
 
-        parsed = TomlRB.parse(T.must(pyproject&.content))
+        parsed = TomlRB.parse(T.must(pyproject).content)
         constraint = parsed.dig("tool", "poetry", "requires-poetry")
         return nil unless constraint.is_a?(String) && !constraint.strip.empty?
 

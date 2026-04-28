@@ -12,8 +12,8 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
-using TestFile = (string Path, string Content);
 using RawTestFile = (string Path, byte[] Content);
+using TestFile = (string Path, string Content);
 
 public class EndToEndTests
 {
@@ -379,7 +379,6 @@ public class EndToEndTests
                         FilePath = p.FilePath,
                         ImportedFiles = p.ImportedFiles,
                         IsSuccess = p.IsSuccess,
-                        Properties = p.Properties,
                         ReferencedProjectPaths = p.ReferencedProjectPaths,
                         TargetFrameworks = p.TargetFrameworks,
                     }).ToImmutableArray()

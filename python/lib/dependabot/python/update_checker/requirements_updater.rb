@@ -267,22 +267,34 @@ module Dependabot
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
         def update_requirement(req)
-          requirement_strings = req[:requirement].split(",").map(&:strip)
-
-          new_requirement =
-            if requirement_strings.any? { |r| r.match?(/^[=\d]/) }
-              find_and_update_equality_match(requirement_strings)
-            elsif requirement_strings.any? { |r| r.start_with?("~=") }
-              tw_req = requirement_strings.find { |r| r.start_with?("~=") }
-              bump_version(tw_req, latest_resolvable_version.to_s)
-            elsif new_version_satisfies?(req)
-              req.fetch(:requirement)
-            else
-              update_requirements_range(requirement_strings)
-            end
+          new_requirement = updated_requirement_string(req)
           req.merge(requirement: new_requirement)
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
+        end
+
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T.any(String, Symbol)) }
+        def updated_requirement_string(req)
+          requirement_strings = req[:requirement].split(",").map(&:strip)
+
+          if requirement_strings.any? { |r| r.match?(/^[=\d]/) }
+            find_and_update_equality_match(requirement_strings)
+          elsif requirement_strings.any? { |r| r.start_with?("~=") }
+            tw_req = requirement_strings.find { |r| r.start_with?("~=") }
+            bump_version(tw_req, latest_resolvable_version.to_s)
+          elsif bump_lower_bound?(requirement_strings)
+            bump_requirements_range(requirement_strings)
+          elsif new_version_satisfies?(req)
+            req.fetch(:requirement)
+          else
+            update_requirements_range(requirement_strings)
+          end
+        end
+
+        sig { params(requirement_strings: T::Array[String]).returns(T::Boolean) }
+        def bump_lower_bound?(requirement_strings)
+          update_strategy == RequirementsUpdateStrategy::BumpVersions &&
+            requirement_strings.any? { |r| r.strip.start_with?(">") }
         end
 
         sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
@@ -389,12 +401,13 @@ module Dependabot
 
           case op
           when ">=" then ">=" + T.must(latest_resolvable_version).to_s
-          # Convert strict lower bound to inclusive since we're pinning to the exact latest version
+          # Strict lower bound becomes inclusive because the resolved version
+          # is the exact target — using ">" would exclude it.
           when ">" then ">=" + T.must(latest_resolvable_version).to_s
           when "<" then bump_upper_bound_less_than(req, version)
           when "<=" then bump_upper_bound_less_or_equal(req)
-          # Tilde requirements should be handled by caller, but handle gracefully if passed
           when "~>", "~=" then bump_version(req.to_s, T.must(latest_resolvable_version).to_s)
+          when "!=" then req.to_s
           else req.to_s
           end
         end
