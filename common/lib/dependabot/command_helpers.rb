@@ -95,12 +95,14 @@ module Dependabot
       begin
         T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr| # rubocop:disable Metrics/BlockLength
           pid = wait_thr.pid
+          command_string = command_string_for_logging(env_cmd)
+          log_level = short_git_config_command?(command_string) ? :debug : :info
           sanitized_env_cmd = if env_cmd.first.is_a?(Hash)
                                 [SharedHelpers.send(:sanitize_env_for_logging, env_cmd.first), *env_cmd[1..]]
                               else
                                 env_cmd
                               end
-          Dependabot.logger.info("Started process PID: #{pid} with command: #{sanitized_env_cmd.join(' ')}")
+          Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{sanitized_env_cmd.join(' ')}")
 
           # Write to stdin if input data is provided
           begin
@@ -179,7 +181,7 @@ module Dependabot
           end
 
           status = ProcessStatus.new(wait_thr.value)
-          Dependabot.logger.info("Process PID: #{pid} completed with status: #{status}")
+          Dependabot.logger.public_send(log_level, "Process PID: #{pid} completed with status: #{status}")
         end
       rescue Timeout::Error => e
         Dependabot.logger.error("Process PID: #{pid} failed due to timeout: #{e.message}")
@@ -195,7 +197,8 @@ module Dependabot
       end
 
       elapsed_time = Time.now - start_time
-      Dependabot.logger.info("Total execution time: #{elapsed_time.round(2)} seconds")
+      log_level = short_git_config_command?(command_string_for_logging(env_cmd)) ? :debug : :info
+      Dependabot.logger.public_send(log_level, "Total execution time: #{elapsed_time.round(2)} seconds")
       [stdout, stderr, status, elapsed_time]
     end
     # rubocop:enable Metrics/AbcSize
@@ -249,5 +252,19 @@ module Dependabot
       command_parts = command.split.map(&:strip).reject(&:empty?)
       Shellwords.join(command_parts)
     end
+
+    sig { params(env_cmd: T::Array[T.any(T::Hash[String, String], String)]).returns(T.nilable(String)) }
+    def self.command_string_for_logging(env_cmd)
+      env_cmd.find { |item| item.is_a?(String) }
+    end
+    private_class_method :command_string_for_logging
+
+    sig { params(command: T.nilable(String)).returns(T::Boolean) }
+    def self.short_git_config_command?(command)
+      return false if command.nil?
+
+      command.start_with?("git config --global ")
+    end
+    private_class_method :short_git_config_command?
   end
 end

@@ -120,5 +120,35 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(elapsed_time).to be < 6 # confirms early termination
       end
     end
+
+    context "when logging subprocess lifecycle" do
+      let(:logger) { instance_double("Logger", info: nil, debug: nil, warn: nil, error: nil) }
+
+      before do
+        allow(Dependabot).to receive(:logger).and_return(logger)
+      end
+
+      it "logs git config commands at debug level" do
+        described_class.capture3_with_timeout(
+          ["git config --global --list"],
+          timeout: timeout
+        )
+
+        expect(logger).to have_received(:debug).with(a_string_including("Started process PID"))
+        expect(logger).to have_received(:debug).with(a_string_including("Process PID"))
+        expect(logger).to have_received(:debug).with(a_string_including("Total execution time"))
+      end
+
+      it "logs non-git-config commands at info level" do
+        described_class.capture3_with_timeout(
+          [success_cmd],
+          timeout: timeout
+        )
+
+        expect(logger).to have_received(:info).with(a_string_including("Started process PID"))
+        expect(logger).to have_received(:info).with(a_string_including("Process PID"))
+        expect(logger).to have_received(:info).with(a_string_including("Total execution time"))
+      end
+    end
   end
 end
