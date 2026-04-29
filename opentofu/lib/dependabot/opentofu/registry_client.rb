@@ -31,7 +31,12 @@ module Dependabot
         @api_base_url = T.let(API_BASE_URL, String)
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
-            memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
+            # Only Bearer-token shaped creds belong here; OCI-only entries
+            # (username/password) would otherwise store a nil token and
+            # trigger a malformed `Authorization: Bearer ` header.
+            next unless item["type"] == "opentofu_registry" && item["token"]
+
+            memo[item["host"]] = item["token"]
           end,
           T::Hash[String, String]
         )
