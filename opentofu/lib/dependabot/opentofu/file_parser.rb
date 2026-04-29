@@ -276,8 +276,10 @@ module Dependabot
         artifact_identifier, subdirectory = uri_part.split(%r{(?<!:)//}, 2)
 
         qs = CGI.parse(query_part)
-        tag = qs["tag"].first
-        digest = qs["digest"].first
+        # Treat `?tag=` or `?digest=` (empty value) the same as the param
+        # being absent, so we don't propagate "" as a usable version.
+        tag = qs["tag"].first&.then { |v| v.empty? ? nil : v }
+        digest = qs["digest"].first&.then { |v| v.empty? ? nil : v }
 
         if tag && digest
           raise DependencyFileNotEvaluatable,
@@ -288,9 +290,9 @@ module Dependabot
           type: "oci",
           artifact_identifier: artifact_identifier,
           subdirectory: subdirectory,
-          tag: tag || nil,
-          digest: digest || nil,
-          version: tag || digest || nil
+          tag: tag,
+          digest: digest,
+          version: tag || digest
         }
       end
 

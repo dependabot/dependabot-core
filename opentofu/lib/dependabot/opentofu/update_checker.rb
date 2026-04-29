@@ -227,6 +227,9 @@ module Dependabot
         # Digest pins are immutable; nothing to update to without a tag.
         return if dependency_source_details&.fetch(:digest)
 
+        @latest_oci_version = T.let(@latest_oci_version, T.nilable(Dependabot::Opentofu::Version))
+        return @latest_oci_version if @latest_oci_version
+
         identifier = T.must(dependency_source_details).fetch(:artifact_identifier)
         versions = RegistryClient.all_oci_tags(
           artifact_identifier: identifier,
@@ -234,7 +237,7 @@ module Dependabot
         )
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-        versions.max
+        @latest_oci_version = versions.max
       end
 
       sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }

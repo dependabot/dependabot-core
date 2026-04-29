@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "base64"
+require "uri"
 
 require "dependabot/dependency"
 require "dependabot/errors"
@@ -31,7 +32,12 @@ module Dependabot
         @api_base_url = T.let(API_BASE_URL, String)
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
-            memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
+            # Only Bearer-token shaped creds belong here; OCI-only entries
+            # (username/password) would otherwise store a nil token and
+            # trigger a malformed `Authorization: Bearer ` header.
+            next unless item["type"] == "opentofu_registry" && item["token"]
+
+            memo[item["host"]] = item["token"]
           end,
           T::Hash[String, String]
         )
@@ -227,9 +233,72 @@ module Dependabot
         headers = {}
         headers["Authorization"] = oci_auth_header(cred) if cred
 
-        Dependabot::RegistryClient.get(url: url, headers: headers)
+        response = Dependabot::RegistryClient.get(url: url, headers: headers)
+
+        # OCI Distribution Spec: on 401 without explicit credentials, attempt the
+        # WWW-Authenticate Bearer challenge to access public registries anonymously.
+        if response.status == 401 && cred.nil?
+          token = oci_anonymous_bearer_token(response.headers["WWW-Authenticate"])
+          if token
+            response = Dependabot::RegistryClient.get(
+              url: url,
+              headers: { "Authorization" => "Bearer #{token}" }
+            )
+          end
+        end
+
+        response
       end
       private_class_method :oci_get
+
+      sig { params(www_authenticate: T.nilable(String)).returns(T.nilable(String)) }
+      def self.oci_anonymous_bearer_token(www_authenticate)
+        token_url = oci_bearer_token_url(www_authenticate)
+        return nil unless token_url
+
+        cached = oci_token_cache[token_url]
+        return cached[:token] if cached && T.cast(cached[:expires_at], Float) > Time.now.to_f
+
+        token_response = Dependabot::RegistryClient.get(url: token_url, headers: {})
+        return nil unless token_response.status == 200
+
+        body = JSON.parse(token_response.body)
+        token = body["token"]
+        expires_in = body.fetch("expires_in", 60).to_i
+        oci_token_cache[token_url] = { token: token, expires_at: Time.now.to_f + expires_in - 10 } if token
+        token
+      rescue StandardError
+        nil
+      end
+      private_class_method :oci_anonymous_bearer_token
+
+      # Parses a `WWW-Authenticate: Bearer realm="...",service="...",scope="..."`
+      # challenge and returns the token endpoint URL, or nil if not a Bearer challenge.
+      sig { params(www_authenticate: T.nilable(String)).returns(T.nilable(String)) }
+      def self.oci_bearer_token_url(www_authenticate)
+        return nil unless www_authenticate&.start_with?("Bearer ")
+
+        realm   = www_authenticate[/realm="([^"]+)"/, 1]
+        service = www_authenticate[/service="([^"]+)"/, 1]
+        scope   = www_authenticate[/scope="([^"]+)"/, 1]
+        return nil unless realm
+
+        params = {}
+        params["service"] = service if service
+        params["scope"]   = scope   if scope
+        "#{realm}?#{URI.encode_www_form(params)}"
+      end
+      private_class_method :oci_bearer_token_url
+
+      sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+      def self.oci_token_cache
+        @oci_token_cache = T.let(
+          @oci_token_cache,
+          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
+        )
+        @oci_token_cache ||= {}
+      end
+      private_class_method :oci_token_cache
 
       # Basic for username/password pairs (OCI Distribution v2), Bearer for
       # token-only creds (existing OpenTofu HTTP registry behaviour).
