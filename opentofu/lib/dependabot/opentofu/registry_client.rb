@@ -35,7 +35,7 @@ module Dependabot
             # Only Bearer-token shaped creds belong here; OCI-only entries
             # (username/password) would otherwise store a nil token and
             # trigger a malformed `Authorization: Bearer ` header.
-            next unless item["type"] == "opentofu_registry" && item["token"]
+            next unless %w(opentofu_registry terraform_registry).include?(item["type"]) && item["token"]
 
             memo[item["host"]] = item["token"]
           end,
