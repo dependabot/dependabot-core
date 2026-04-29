@@ -58,6 +58,25 @@ RSpec.describe Dependabot::Sbt::Requirement do
         )
       end
     end
+
+    context "with a wildcard version ending in +" do
+      let(:requirement_string) { "1.0.+" }
+
+      it "converts to a pessimistic constraint" do
+        expect(requirement).to be_satisfied_by(Dependabot::Sbt::Version.new("1.0.1"))
+        expect(requirement).to be_satisfied_by(Dependabot::Sbt::Version.new("1.0.9"))
+        expect(requirement).not_to be_satisfied_by(Dependabot::Sbt::Version.new("1.1.0"))
+      end
+    end
+
+    context "with a bare wildcard +" do
+      let(:requirement_string) { "+" }
+
+      it "matches any version" do
+        expect(requirement).to be_satisfied_by(Dependabot::Sbt::Version.new("1.0.0"))
+        expect(requirement).to be_satisfied_by(Dependabot::Sbt::Version.new("99.0.0"))
+      end
+    end
   end
 
   describe ".requirements_array" do
@@ -66,16 +85,19 @@ RSpec.describe Dependabot::Sbt::Requirement do
     context "with a single requirement" do
       let(:requirement_string) { "1.0.0" }
 
-      it "returns an array with one requirement" do
+      it "returns an array with one equality requirement" do
         expect(requirements.length).to eq(1)
+        expect(requirements.first).to eq(Gem::Requirement.new("= 1.0.0"))
       end
     end
 
     context "with multiple OR requirements" do
       let(:requirement_string) { "[1.0,2.0),(3.0,4.0)" }
 
-      it "returns an array with multiple requirements" do
+      it "returns an array with the correct split requirements" do
         expect(requirements.length).to eq(2)
+        expect(requirements.first).to eq(Gem::Requirement.new(">= 1.0", "< 2.0"))
+        expect(requirements.last).to eq(Gem::Requirement.new("> 3.0", "< 4.0"))
       end
     end
   end
