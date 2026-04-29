@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/sbt"
+
+if ! [[ "$install_dir" =~ ^/ ]]; then
+  echo "$install_dir must be an absolute path"
+  exit 1
+fi
+
+mkdir -p "$install_dir/bin"
+
+# Coursier is installed system-wide in the Dockerfile.
+# Create a symlink so NativeHelpers can find it at a predictable path.
+ln -sf "$(which cs)" "$install_dir/bin/cs"
+
+# Verify Coursier is functional
+echo "Verifying Coursier installation..."
+cs --version
+
+# Verify JDK is accessible
+echo "Verifying JDK installation..."
+java -version
