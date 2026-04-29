@@ -19,7 +19,7 @@ module Dependabot
       require_relative "update_checker/latest_version_resolver"
 
       ELIGIBLE_SOURCE_TYPES = T.let(
-        %w(git provider registry).freeze,
+        %w(git provider registry oci).freeze,
         T::Array[String]
       )
 
@@ -27,6 +27,7 @@ module Dependabot
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
         return latest_version_for_registry_dependency if registry_dependency?
+        return latest_version_for_oci_dependency if oci_dependency?
 
         latest_version_for_provider_dependency if provider_dependency?
         # Other sources (mercurial, path dependencies) just return `nil`
@@ -211,6 +212,29 @@ module Dependabot
         return false if dependency_source_details.nil?
 
         dependency_source_details&.fetch(:type) == "provider"
+      end
+
+      sig { returns(T::Boolean) }
+      def oci_dependency?
+        return false if dependency_source_details.nil?
+
+        dependency_source_details&.fetch(:type) == "oci"
+      end
+
+      sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
+      def latest_version_for_oci_dependency
+        return unless oci_dependency?
+        # Digest pins are immutable; nothing to update to without a tag.
+        return if dependency_source_details&.fetch(:digest)
+
+        identifier = T.must(dependency_source_details).fetch(:artifact_identifier)
+        versions = RegistryClient.all_oci_tags(
+          artifact_identifier: identifier,
+          credentials: credentials
+        )
+        versions.reject!(&:prerelease?) unless wants_prerelease?
+        versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+        versions.max
       end
 
       sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
