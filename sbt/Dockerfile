@@ -18,10 +18,11 @@ RUN curl -fsSL "https://github.com/coursier/coursier/releases/download/${COURSIE
     chmod +x /usr/local/bin/cs
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-COPY sbt/helpers /opt/sbt/helpers
-RUN bash /opt/sbt/helpers/build
+COPY --chown=dependabot:dependabot sbt/helpers /opt/sbt/helpers
 
 USER dependabot
+
+RUN bash /opt/sbt/helpers/build
 
 COPY --chown=dependabot:dependabot --parents sbt maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
