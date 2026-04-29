@@ -205,7 +205,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       )
     end
 
-    context "when feature flag is enabled" do
+    context "when filtering dependencies" do
       before do
         allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
 

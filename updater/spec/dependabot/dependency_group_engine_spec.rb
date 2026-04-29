@@ -248,7 +248,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
-    context "with group membership enforcement experiment" do
+    context "with pattern specificity enforcement" do
       let(:dependency_groups_config) do
         [
           {
