@@ -20,27 +20,23 @@ module Dependabot
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_lockfiles(build_file)
-          local_lockfiles = dependency_files.select do |file|
-            file.directory == build_file.directory && file.name.end_with?(".lockfile")
-          end
+          lockfiles = dependency_files.select { |file| file.name.end_with?(".lockfile") }
 
           # If we don't have any lockfiles in the build files don't generate one
-          return dependency_files unless local_lockfiles.any?
+          return dependency_files unless lockfiles.any?
+
+          # Determine root directory for Gradle execution
+          root_dir = determine_root_dir(build_file)
 
           updated_files = dependency_files.dup
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
-            cwd = File.join(temp_dir, build_file.directory, build_file.name)
-            cwd = if build_file.path.end_with?("/gradle/libs.versions.toml")
-                    File.dirname(cwd, 2)
-                  else
-                    File.dirname(cwd)
-                  end
+
+            cwd = File.join(temp_dir, root_dir == "/" ? "" : root_dir.delete_prefix("/"))
 
             # Create gradle.properties file with proxy settings
             # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
-            write_properties_file(properties_filename)
+            write_properties_file(File.join(cwd, "gradle.properties"))
 
             command_parts = [
               "gradle",
@@ -52,9 +48,9 @@ module Dependabot
 
             Dir.chdir(cwd) do
               SharedHelpers.run_shell_command(command, cwd: cwd)
-              update_lockfiles_content(temp_dir, local_lockfiles, updated_files)
+              update_lockfiles_content(temp_dir, lockfiles, updated_files)
             rescue SharedHelpers::HelperSubprocessFailed => e
-              puts "Failed to update lockfiles: #{e.message}"
+              Dependabot.logger.error("Failed to update lockfiles: #{e.message}")
               return updated_files
             end
           end
@@ -64,13 +60,20 @@ module Dependabot
         sig do
           params(
             temp_dir: T.any(Pathname, String),
-            local_lockfiles: T::Array[Dependabot::DependencyFile],
+            lockfiles: T::Array[Dependabot::DependencyFile],
             updated_lockfiles: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
-          local_lockfiles.each do |file|
-            f_content = File.read(File.join(temp_dir, file.directory, file.name))
+        def update_lockfiles_content(temp_dir, lockfiles, updated_lockfiles)
+          lockfiles.each do |file|
+            lockfile_path = File.join(temp_dir, file.directory, file.name)
+            # Skip if lockfile wasn't regenerated (e.g., projects without resolvable dependencies)
+            next unless File.exist?(lockfile_path)
+
+            f_content = File.read(lockfile_path)
+            # Skip unchanged lockfiles to avoid unnecessary diffs
+            next if f_content == file.content
+
             tmp_file = file.dup
             tmp_file.content = f_content
             updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
@@ -108,6 +111,27 @@ systemProp.https.proxyPort=#{https_proxy_port}"
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(String) }
+        def determine_root_dir(build_file)
+          settings_file = find_settings_file
+          return settings_file.directory if settings_file
+
+          # Fallback: use build file's job directory since it is always the project root
+          build_file.directory
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def find_settings_file
+          settings_files = dependency_files.select do |f|
+            f.name == "settings.gradle" || f.name == "settings.gradle.kts"
+          end
+
+          # Prefer settings.gradle directly at job directory (File.dirname == directory)
+          # Otherwise choose shallowest by File.dirname depth (deterministic for composite builds)
+          settings_files.find { |f| File.dirname(f.path) == f.directory } ||
+            settings_files.min_by { |f| File.dirname(f.path).split("/").reject(&:empty?).length }
+        end
       end
     end
   end
