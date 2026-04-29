@@ -6,6 +6,21 @@ namespace NuGetUpdater.Core;
 public static class ProcessEx
 {
     /// <summary>
+    /// Run `dotnet msbuild` with the given additional arguments.  The argument `-noAutoResponse` is always appended to
+    /// suppress `Directory.Build.rsp` inclusion.  This new set of arguments is then passed to the function
+    /// `RunDotnetWithoutMSBuildEnvironmentVariablesAsync` to prevent MSBuild from inheriting certain environment
+    /// variables.
+    /// </summary>
+    public static Task<(int ExitCode, string Output, string Error)> RunDotNetMSBuildSafely(
+        IEnumerable<string> arguments,
+        string workingDirectory,
+        IEnumerable<(string Name, string? Value)>? extraEnvironmentVariables = null
+    )
+    {
+        return RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["msbuild", .. arguments, "-noAutoResponse"], workingDirectory, extraEnvironmentVariables);
+    }
+
+    /// <summary>
     /// Run the `dotnet` command with the given values.  This will exclude all `MSBuild*` environment variables from the execution.
     /// </summary>
     public static Task<(int ExitCode, string Output, string Error)> RunDotnetWithoutMSBuildEnvironmentVariablesAsync(

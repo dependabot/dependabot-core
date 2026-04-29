@@ -406,9 +406,8 @@ internal static partial class MSBuildHelper
         var (exitCode, stdOut, stdErr) = await HandleGlobalJsonAsync(projectDirectory, repoRoot, async () =>
         {
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(
                 [
-                    "msbuild",
                     projectPath,
                     "/t:ReportTargetFramework",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
@@ -524,11 +523,10 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var args = new[]
         {
-            "msbuild",
             projectPath,
             "-targets"
         };
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, projectDirectory);
         if (exitCode != 0)
         {
             logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
@@ -555,12 +553,11 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var args = new[]
         {
-            "msbuild",
             projectPath,
             $"-getProperty:{propertyName}"
         };
 
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, projectDirectory);
         if (exitCode != 0)
         {
             if (stdOut.Contains("error MSB1001: Unknown switch."))
@@ -580,12 +577,11 @@ internal static partial class MSBuildHelper
 
                     // do it
                     args = [
-                        "msbuild",
                         projectPath,
                         $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
                         "/t:_Dependabot_GetProperty",
                     ];
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, projectDirectory);
                     if (exitCode == 0)
                     {
                         var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);
