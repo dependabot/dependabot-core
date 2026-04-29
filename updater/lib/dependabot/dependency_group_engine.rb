@@ -196,10 +196,10 @@ module Dependabot
       # Groups with update-types rules are complementary, not competing.
       # Filter out groups with non-overlapping update-types so they don't
       # prevent each other from receiving dependencies during assignment.
-      current_update_types = group.rules["update-types"]
+      current_update_types = T.cast(group.rules["update-types"], T.nilable(T::Array[String]))
       eligible_groups = if current_update_types
                           @dependency_groups.reject do |other|
-                            other_update_types = other.rules["update-types"]
+                            other_update_types = T.cast(other.rules["update-types"], T.nilable(T::Array[String]))
                             next false unless other_update_types
 
                             !current_update_types.intersect?(other_update_types)
