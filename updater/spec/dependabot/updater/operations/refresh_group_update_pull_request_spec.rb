@@ -215,19 +215,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         stub_rubygems_calls
       end
 
-      it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-        # As per this implementation, if a dependency is part of overlapping groups
-        # Both the groups condition will be validated and the dependency will be updated in both the groups PRs.
-        # It is up to customer to decide which group should take precedence and update the dependency accordingly
-        expect(mock_service).not_to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+      it "closes the PR since the generic group has no dependencies after specificity filtering" do
+        # With pattern specificity enforcement always on, the '*' group gets no dependencies
+        # because all deps match more specific groups ('dummy-pkg-*' and 'dummy-pkg-d').
+        # The refresh operation detects the empty group and closes the PR.
+        expect(mock_service).to receive(:close_pull_request).with(anything, anything)
 
         refresh_group.perform
-
-        # It added all of the other existing grouped PRs to the handled list
-        expect(dependency_snapshot.handled_dependencies).to match_array(
-          %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
-             dummy-pkg-d)
-        )
       end
     end
 
@@ -305,6 +299,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
+        allow(mock_service).to receive(:close_pull_request)
         allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
         allow(job).to receive(:existing_group_pull_requests).and_return(
           [
@@ -343,13 +338,16 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         )
       end
 
-      it "marks the overlapping groups as handled" do
+      it "closes the PR since the generic group is empty after specificity filtering" do
+        # With specificity enforcement, the '*' group has no dependencies,
+        # so the refresh closes the PR rather than processing group dependencies.
         refresh_group.perform
 
-        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+        # The group is empty so mark_group_handled is never reached
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
           having_attributes(name: "overlapping-group"), anything
         )
-        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
           having_attributes(name: "something-else"), anything
         )
       end
@@ -366,6 +364,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
+        allow(mock_service).to receive(:close_pull_request)
         allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
         allow(job).to receive(:existing_group_pull_requests).and_return(
           [
@@ -392,13 +391,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         )
       end
 
-      it "treats the existing PRs as matches and marks the groups as handled" do
+      it "closes the PR since the generic group is empty after specificity filtering" do
+        # With specificity enforcement, the '*' group has no dependencies,
+        # so the refresh closes the PR rather than processing group dependencies.
         refresh_group.perform
 
-        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
           having_attributes(name: "overlapping-group"), anything
         )
-        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
           having_attributes(name: "something-else"), anything
         )
       end

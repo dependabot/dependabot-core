@@ -193,9 +193,11 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           dependency_group_engine.assign_to_groups!(dependencies: dependencies)
         end
 
-        it "adds dependencies to every group they match" do
+        it "assigns dependencies to the most specific matching group" do
           group_a = dependency_group_engine.find_group(name: "group-a")
-          expect(group_a.dependencies).to eql([dummy_pkg_a, dummy_pkg_c])
+          # dummy-pkg-c matches both groups but group-b has an exact pattern match,
+          # so with specificity enforcement it only goes to group-b
+          expect(group_a.dependencies).to eql([dummy_pkg_a])
 
           group_b = dependency_group_engine.find_group(name: "group-b")
           expect(group_b.dependencies).to eql([dummy_pkg_b, dummy_pkg_c])
