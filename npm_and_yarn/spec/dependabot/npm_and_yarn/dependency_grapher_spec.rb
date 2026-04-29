@@ -209,6 +209,11 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
           expect(Dependabot.logger).to have_received(:info).with(/No lockfile found/)
           expect(Dependabot.logger).to have_received(:warn).with(/No lockfile was found/)
         end
+
+        it "reports package.json as the relevant dependency file, not the ephemeral lockfile" do
+          grapher.resolved_dependencies
+          expect(grapher.relevant_dependency_file.name).to eq("package.json")
+        end
       end
     end
   end

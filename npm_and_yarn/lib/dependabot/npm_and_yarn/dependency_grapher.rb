@@ -18,7 +18,10 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        # Prefer lockfile if present, otherwise use package.json
+        # An ephemerally generated lockfile should not be reported as the
+        # relevant file since it doesn't exist in the repository.
+        return package_json if @ephemeral_lockfile_generated
+
         lockfile || package_json
       end
 
