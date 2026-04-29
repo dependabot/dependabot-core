@@ -1,21 +1,17 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
-# NOTE: This file was scaffolded automatically but is OPTIONAL.
-# If your ecosystem uses standard semantic versioning without special logic,
-# you can safely delete this file and remove the require from lib/dependabot/sbt.rb
+require "sorbet-runtime"
 
-require "dependabot/version"
+require "dependabot/maven/version"
 require "dependabot/utils"
 
 module Dependabot
   module Sbt
-    class Version < Dependabot::Version
+    # SBT resolves artifacts from Maven repositories and uses the same
+    # version ordering specification as Maven.
+    class Version < Dependabot::Maven::Version
       extend T::Sig
-
-      # TODO: Implement custom version comparison logic if needed
-      # Example: Handle pre-release versions, build metadata, etc.
-      # If standard semantic versioning is sufficient, delete this file
     end
   end
 end
