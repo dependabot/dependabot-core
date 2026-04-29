@@ -193,12 +193,27 @@ module Dependabot
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       applies_to = group.applies_to if group.respond_to?(:applies_to)
 
+      # Groups with update-types rules are complementary, not competing.
+      # Filter out groups with non-overlapping update-types so they don't
+      # prevent each other from receiving dependencies during assignment.
+      current_update_types = group.rules["update-types"]
+      eligible_groups = if current_update_types
+                          @dependency_groups.reject do |other|
+                            other_update_types = other.rules["update-types"]
+                            next false unless other_update_types
+
+                            !current_update_types.intersect?(other_update_types)
+                          end
+                        else
+                          @dependency_groups
+                        end
+
       Dependabot.logger.info(
         "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
 
       more_specific_group_name = specificity_calculator.find_most_specific_group_name(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
+        group, dependency, eligible_groups, contains_checker, dependency.directory, applies_to:
       )
 
       if more_specific_group_name
