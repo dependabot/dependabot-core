@@ -29,7 +29,7 @@ module Dependabot
         @api_base_url = T.let(API_BASE_URL, String)
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
-            memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
+            memo[item["host"]] = item["token"] if %w(opentofu_registry terraform_registry).include?(item["type"])
           end,
           T::Hash[String, String]
         )
