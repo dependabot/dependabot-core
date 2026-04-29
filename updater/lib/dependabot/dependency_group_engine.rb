@@ -190,8 +190,6 @@ module Dependabot
       ).returns(T::Boolean)
     end
     def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
-      return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       applies_to = group.applies_to if group.respond_to?(:applies_to)
 
