@@ -536,37 +536,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       stub_rubygems_calls
     end
 
-    context "when group membership enforcement is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement)
-          .and_return(false)
-      end
-
-      it "creates GroupDependencySelector but does not filter" do
-        # When feature flag is disabled, GroupDependencySelector is created but filtering is skipped internally
-        mock_selector = instance_double(Dependabot::Updater::GroupDependencySelector)
-        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
-          .and_return(mock_selector)
-        allow(mock_selector).to receive(:filter_to_group!) # No-op when feature flag disabled
-
-        refresh_group.send(:dependency_change)
-
-        expect(Dependabot::Updater::GroupDependencySelector).to have_received(:new)
-        expect(mock_selector).to have_received(:filter_to_group!)
-      end
-    end
-
-    context "when group membership enforcement is enabled" do
+    context "when filtering group dependencies" do
       let(:mock_selector) { instance_double(Dependabot::Updater::GroupDependencySelector) }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement)
-          .and_return(true)
-      end
 
       it "creates and uses GroupDependencySelector to filter dependencies" do
         allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
