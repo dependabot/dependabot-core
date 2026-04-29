@@ -12,6 +12,8 @@ module Dependabot
     # version ordering specification as Maven.
     class Version < Dependabot::Maven::Version
       extend T::Sig
+
+      VERSION_PATTERN = T.let(Dependabot::Maven::Version::VERSION_PATTERN, String)
     end
   end
 end
