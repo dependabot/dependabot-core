@@ -127,8 +127,11 @@ module Dependabot
         def fetch_dependency_metadata_from_html(repository_details)
           url = repository_details.fetch(URL_KEY)
           headers = repository_details.fetch(AUTH_HEADERS_KEY)
+          # Add trailing slash for directory listing
+          base_directory_url = dependency_base_url(url)
+          base_directory_url += "/" unless base_directory_url.end_with?("/")
           response = Dependabot::RegistryClient.get(
-            url: dependency_base_url(url),
+            url: base_directory_url,
             headers: headers
           )
           check_response(response, url)

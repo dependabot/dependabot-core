@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
   before do
     stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml")
       .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
-    stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava")
+    stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
       .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
     stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
       .to_return(status: 200)
