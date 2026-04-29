@@ -101,7 +101,6 @@ module Dependabot
         )
 
         ephemeral_lockfile = generator.generate
-        return unless ephemeral_lockfile
 
         # Inject the ephemeral lockfile into the dependency files
         # so the file parser can use it
@@ -112,6 +111,8 @@ module Dependabot
           "Successfully generated ephemeral #{ephemeral_lockfile.name} for dependency graphing"
         )
       rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = e
         Dependabot.logger.warn(
           "Failed to generate ephemeral lockfile: #{e.message}. " \
           "Dependency versions may not be resolved."

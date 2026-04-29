@@ -28,7 +28,7 @@ module Dependabot
           @credentials = credentials
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { returns(Dependabot::DependencyFile) }
         def generate
           SharedHelpers.in_a_temporary_directory do
             write_temporary_files
@@ -37,7 +37,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_generation_error(e)
-          nil
+          raise
         end
 
         private
@@ -145,13 +145,13 @@ module Dependabot
           Helpers.run_pnpm_command(command, fingerprint: command)
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { returns(Dependabot::DependencyFile) }
         def read_generated_lockfile
           lockfile_name = expected_lockfile_name
 
           unless File.exist?(lockfile_name)
-            Dependabot.logger.warn("Lockfile #{lockfile_name} was not generated")
-            return nil
+            Dependabot.logger.error("#{lockfile_name} was not generated")
+            raise Dependabot::DependencyFileNotEvaluatable, "#{lockfile_name} was not generated"
           end
 
           content = File.read(lockfile_name)

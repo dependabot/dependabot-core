@@ -63,11 +63,17 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
       before do
-        # Mock lockfile generation to avoid network calls
+        # Mock lockfile generation to simulate failure
         lockfile_generator = instance_double(
-          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-          generate: nil
-        )
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+        ).tap do |gen|
+          allow(gen).to receive(:generate).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "npm install failed",
+              error_context: {}
+            )
+          )
+        end
         allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
           .to receive(:new).and_return(lockfile_generator)
       end
@@ -99,11 +105,17 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
       before do
-        # Mock lockfile generation to avoid network calls
+        # Mock lockfile generation to simulate failure
         lockfile_generator = instance_double(
-          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-          generate: nil
-        )
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+        ).tap do |gen|
+          allow(gen).to receive(:generate).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "npm install failed",
+              error_context: {}
+            )
+          )
+        end
         allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
           .to receive(:new).and_return(lockfile_generator)
       end
@@ -125,9 +137,15 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       context "when lockfile generation fails" do
         before do
           lockfile_generator = instance_double(
-            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-            generate: nil
-          )
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "npm install failed: authentication required",
+                error_context: {}
+              )
+            )
+          end
           allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
             .to receive(:new).and_return(lockfile_generator)
         end
@@ -140,6 +158,27 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
 
           expect(Dependabot.logger).to have_received(:info).with(/No lockfile found/)
           expect(Dependabot.logger).not_to have_received(:warn).with(/No lockfile was found/)
+        end
+
+        it "sets the error flag for degraded status" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
+        it "preserves the original error as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect(grapher.subdependency_error.message).to include("npm install failed")
+        end
+
+        it "returns dependencies without relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          resolved_dependencies.each_value do |dep|
+            expect(dep.dependencies).to eq([])
+          end
         end
       end
 
@@ -197,9 +236,15 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
 
       before do
         lockfile_generator = instance_double(
-          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-          generate: nil
-        )
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+        ).tap do |gen|
+          allow(gen).to receive(:generate).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "npm install failed",
+              error_context: {}
+            )
+          )
+        end
         allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
           .to receive(:new).and_return(lockfile_generator)
       end
@@ -231,9 +276,15 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
 
       before do
         lockfile_generator = instance_double(
-          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-          generate: nil
-        )
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+        ).tap do |gen|
+          allow(gen).to receive(:generate).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "yarn install failed",
+              error_context: {}
+            )
+          )
+        end
         allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
           .to receive(:new).and_return(lockfile_generator)
       end
@@ -265,9 +316,15 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
 
       before do
         lockfile_generator = instance_double(
-          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
-          generate: nil
-        )
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+        ).tap do |gen|
+          allow(gen).to receive(:generate).and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "pnpm install failed",
+              error_context: {}
+            )
+          )
+        end
         allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
           .to receive(:new).and_return(lockfile_generator)
       end
