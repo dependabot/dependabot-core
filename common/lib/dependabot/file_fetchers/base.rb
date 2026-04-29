@@ -197,7 +197,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def commit
         resolved_cloned_commit = cloned_commit
-        return T.must(resolved_cloned_commit) if resolved_cloned_commit
+        return resolved_cloned_commit if resolved_cloned_commit
         return T.must(source.commit) if source.commit
 
         branch = target_branch || default_branch_for_repo

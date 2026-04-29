@@ -23,6 +23,13 @@ module Dependabot
       T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.untyped]))
     end
 
+    EnvCmdItem = T.type_alias do
+      T.any(
+        String,
+        T::Hash[T.any(String, Symbol), T.untyped]
+      )
+    end
+
     class ProcessStatus
       extend T::Sig
 
@@ -72,7 +79,7 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     sig do
       params(
-        env_cmd: T::Array[T.any(T::Hash[String, String], String)],
+        env_cmd: T::Array[EnvCmdItem],
         stdin_data: T.nilable(String),
         stderr_to_stdout: T::Boolean,
         timeout: Integer,
@@ -102,7 +109,8 @@ module Dependabot
                               else
                                 env_cmd
                               end
-          Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{sanitized_env_cmd.join(' ')}")
+          command_for_log = sanitized_env_cmd.join(" ")
+          Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{command_for_log}")
 
           # Write to stdin if input data is provided
           begin
@@ -253,9 +261,9 @@ module Dependabot
       Shellwords.join(command_parts)
     end
 
-    sig { params(env_cmd: T::Array[T.any(T::Hash[String, String], String)]).returns(T.nilable(String)) }
+    sig { params(env_cmd: T::Array[EnvCmdItem]).returns(T.nilable(String)) }
     def self.command_string_for_logging(env_cmd)
-      env_cmd.find { |item| item.is_a?(String) }
+      T.cast(env_cmd.find { |item| item.is_a?(String) }, T.nilable(String))
     end
     private_class_method :command_string_for_logging
 
