@@ -283,23 +283,23 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         specific_group = dependency_group_engine.find_group(name: "specific-group")
         very_specific_group = dependency_group_engine.find_group(name: "very-specific-group")
 
-          # dummy-pkg-a should only be in the most specific group (very-specific-group)
-          expect(very_specific_group.dependencies).to include(dummy_pkg_a)
-          expect(specific_group.dependencies).not_to include(dummy_pkg_a)
-          expect(generic_group.dependencies).not_to include(dummy_pkg_a)
+        # dummy-pkg-a should only be in the most specific group (very-specific-group)
+        expect(very_specific_group.dependencies).to include(dummy_pkg_a)
+        expect(specific_group.dependencies).not_to include(dummy_pkg_a)
+        expect(generic_group.dependencies).not_to include(dummy_pkg_a)
 
-          # dummy-pkg-b should be in specific-group (most specific match)
-          expect(specific_group.dependencies).to include(dummy_pkg_b)
-          expect(generic_group.dependencies).not_to include(dummy_pkg_b)
+        # dummy-pkg-b should be in specific-group (most specific match)
+        expect(specific_group.dependencies).to include(dummy_pkg_b)
+        expect(generic_group.dependencies).not_to include(dummy_pkg_b)
 
-          # ungrouped_pkg should be in generic-group (only match)
-          expect(generic_group.dependencies).to include(ungrouped_pkg)
-        end
+        # ungrouped_pkg should be in generic-group (only match)
+        expect(generic_group.dependencies).to include(ungrouped_pkg)
+      end
 
-        it "keeps dependencies ungrouped if they don't match any patterns" do
-          # All dependencies should be grouped in this test case
-          expect(dependency_group_engine.ungrouped_dependencies).to be_empty
-        end
+      it "keeps dependencies ungrouped if they don't match any patterns" do
+        # All dependencies should be grouped in this test case
+        expect(dependency_group_engine.ungrouped_dependencies).to be_empty
+      end
 
       describe "#should_skip_due_to_specificity?" do
         let(:generic_group) { dependency_group_engine.find_group(name: "generic-group") }

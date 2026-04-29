@@ -552,8 +552,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           end
 
           allow(generic_group).to receive_messages(contains?: true, dependencies: [])
-          allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?(\"docker\") }
-          allow(exact_group).to receive(:contains?) { |dep| dep.name == \"nginx\" }
+          allow(docker_group).to receive(:contains?) { |dep| dep.name.start_with?("docker") }
+          allow(exact_group).to receive(:contains?) { |dep| dep.name == "nginx" }
 
           allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
 
