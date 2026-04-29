@@ -213,12 +213,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
+        allow(mock_service).to receive(:close_pull_request)
       end
 
-      it "closes the PR since the generic group has no dependencies after specificity filtering" do
-        # With pattern specificity enforcement always on, the '*' group gets no dependencies
-        # because all deps match more specific groups ('dummy-pkg-*' and 'dummy-pkg-d').
-        # The refresh operation detects the empty group and closes the PR.
+      it "closes the PR since the generic group is empty after specificity filtering" do
+        # With specificity enforcement, the '*' group has no dependencies because
+        # all deps match the more specific 'dummy-pkg-*' and 'dummy-pkg-d' groups.
         expect(mock_service).to receive(:close_pull_request).with(anything, anything)
 
         refresh_group.perform
@@ -339,11 +339,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
 
       it "closes the PR since the generic group is empty after specificity filtering" do
-        # With specificity enforcement, the '*' group has no dependencies,
-        # so the refresh closes the PR rather than processing group dependencies.
+        # With specificity enforcement, the '*' group has no dependencies because
+        # all deps match the more specific 'dummy-pkg-*' and 'dummy-pkg-d' groups.
         refresh_group.perform
 
-        # The group is empty so mark_group_handled is never reached
         expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
           having_attributes(name: "overlapping-group"), anything
         )
