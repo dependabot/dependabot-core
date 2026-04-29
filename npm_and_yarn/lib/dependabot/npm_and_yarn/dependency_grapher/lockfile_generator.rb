@@ -159,8 +159,14 @@ module Dependabot
           Dependabot::DependencyFile.new(
             name: lockfile_name,
             content: content,
-            directory: "/"
+            directory: package_json_directory
           )
+        end
+
+        sig { returns(String) }
+        def package_json_directory
+          package_json = dependency_files.find { |f| f.name.end_with?("package.json") }
+          package_json&.directory || "/"
         end
 
         sig { returns(String) }
