@@ -156,8 +156,7 @@ module Dependabot
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        dependency_names = @dependencies.map(&:name)
-        package_relationships.fetch(dependency.name, []).select { |child| dependency_names.include?(child) }
+        package_relationships.fetch(dependency.name, [])
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
@@ -221,12 +220,10 @@ module Dependabot
           next if path.empty? # skip root package entry
           next unless details.is_a?(Hash)
 
-          parent_name = path.split("node_modules/").last
           children = details.fetch("dependencies", {}).keys
-
           next if children.empty?
 
-          rels[parent_name] = children
+          rels[path.split("node_modules/").last] = children
         end
       end
 
