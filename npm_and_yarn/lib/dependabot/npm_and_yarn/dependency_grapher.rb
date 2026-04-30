@@ -170,7 +170,8 @@ module Dependabot
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
         return fetch_npm_lock_relationships if npm_lockfile
-        # TODO: Implement yarn and pnpm relationship extraction
+        return fetch_yarn_lock_relationships if yarn_lockfile
+        # TODO: Implement pnpm relationship extraction
         {}
       end
 
@@ -180,6 +181,16 @@ module Dependabot
 
         @npm_lockfile = T.let(
           dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def yarn_lockfile
+        return @yarn_lockfile if defined?(@yarn_lockfile)
+
+        @yarn_lockfile = T.let(
+          dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -202,6 +213,23 @@ module Dependabot
         end
       rescue JSON::ParserError
         {}
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_yarn_lock_relationships
+        parsed = FileParser::YarnLock.new(T.must(yarn_lockfile)).parsed
+
+        parsed.each_with_object({}) do |(req, details), rels|
+          next unless details.is_a?(Hash)
+
+          parent_name = T.must(req.split(/(?<=\w)\@/).first)
+          children = details.fetch("dependencies", {})&.keys || []
+
+          next if children.empty?
+
+          rels[parent_name] ||= []
+          rels[parent_name].concat(children).uniq!
+        end
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
