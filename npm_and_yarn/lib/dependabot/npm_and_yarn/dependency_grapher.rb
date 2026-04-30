@@ -153,11 +153,10 @@ module Dependabot
       end
 
       # Fetches subdependencies for a given dependency.
-      # For npm/yarn/pnpm, we can extract this from the lockfile parser if available.
+      # TODO: Implement grapher-layer relationship extraction from lockfiles (like Go/Python)
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
-      def fetch_subdependencies(dependency)
-        # Check if the parser has attached depends_on metadata
-        dependency.metadata.fetch(:depends_on, [])
+      def fetch_subdependencies(dependency) # rubocop:disable Lint/UnusedMethodArgument
+        []
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
