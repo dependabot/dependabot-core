@@ -348,6 +348,113 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
     end
   end
 
+  describe "lockfile parse errors" do
+    context "with an npm lockfile that errors during relationship extraction" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Now swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json", content: "not valid json {{{", directory: "/"
+        )
+        grapher.instance_variable_set(:@npm_lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the parse error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(JSON::ParserError)
+      end
+
+      it "still returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+
+    context "with a yarn lockfile that errors during relationship extraction" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Now swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "yarn.lock", content: "\x00\x01 invalid", directory: "/"
+        )
+        grapher.instance_variable_set(:@yarn_lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(StandardError)
+      end
+
+      it "still returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+
+    context "with a pnpm lockfile that errors during relationship extraction" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Now swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "pnpm-lock.yaml", content: ": :\n  invalid: [yaml", directory: "/"
+        )
+        grapher.instance_variable_set(:@pnpm_lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the parse error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(Psych::SyntaxError)
+      end
+
+      it "still returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+  end
+
   describe "package manager detection" do
     context "with npm project (packageManager field)" do
       let(:package_json_content) do
