@@ -118,7 +118,7 @@ internal static class PackageReferenceUpdater
             // generate project.assets.json
             var parsedTargetFramework = NuGetFramework.Parse(targetFramework);
             var tempProject = await MSBuildHelper.CreateTempProjectAsync(tempDir, repoRoot, projectPath, targetFramework, topLevelDependencies, logger, importDependencyTargets: true);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely([tempProject, "/t:Restore,GenerateBuildDependencyFile"], tempDir.FullName);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync([tempProject, "/t:Restore,GenerateBuildDependencyFile"], tempDir.FullName);
             var assetsJsonPath = Path.Join(tempDir.FullName, "obj", "project.assets.json");
             var assetsJsonContent = await File.ReadAllTextAsync(assetsJsonPath);
 

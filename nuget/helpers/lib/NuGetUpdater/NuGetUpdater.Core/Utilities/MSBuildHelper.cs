@@ -406,7 +406,7 @@ internal static partial class MSBuildHelper
         var (exitCode, stdOut, stdErr) = await HandleGlobalJsonAsync(projectDirectory, repoRoot, async () =>
         {
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(
                 [
                     projectPath,
                     "/t:ReportTargetFramework",
@@ -526,7 +526,7 @@ internal static partial class MSBuildHelper
             projectPath,
             "-targets"
         };
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
             logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
@@ -557,7 +557,7 @@ internal static partial class MSBuildHelper
             $"-getProperty:{propertyName}"
         };
 
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
             if (stdOut.Contains("error MSB1001: Unknown switch."))
@@ -581,7 +581,7 @@ internal static partial class MSBuildHelper
                         $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
                         "/t:_Dependabot_GetProperty",
                     ];
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, projectDirectory);
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
                     if (exitCode == 0)
                     {
                         var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);

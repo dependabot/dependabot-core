@@ -11,7 +11,7 @@ public static class ProcessEx
     /// `RunDotnetWithoutMSBuildEnvironmentVariablesAsync` to prevent MSBuild from inheriting certain environment
     /// variables.
     /// </summary>
-    public static Task<(int ExitCode, string Output, string Error)> RunDotNetMSBuildSafely(
+    public static Task<(int ExitCode, string Output, string Error)> RunDotnetMSBuildSafelyAsync(
         IEnumerable<string> arguments,
         string workingDirectory,
         IEnumerable<(string Name, string? Value)>? extraEnvironmentVariables = null

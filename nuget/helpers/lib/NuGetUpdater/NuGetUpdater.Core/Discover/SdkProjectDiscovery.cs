@@ -195,7 +195,7 @@ internal static class SdkProjectDiscovery
                 args.Add("/p:MSBuildTreatWarningsAsErrors=false");
                 args.Add($"/bl:{binLogPath}");
 
-                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, startingProjectDirectory);
+                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
                 if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
                 {
                     // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
@@ -203,7 +203,7 @@ internal static class SdkProjectDiscovery
                     // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
                     // unless we have to.
                     args.Add("/RestoreProperty:__Unused__=__Unused__");
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotNetMSBuildSafely(args, startingProjectDirectory);
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
