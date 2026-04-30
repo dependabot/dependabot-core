@@ -228,8 +228,6 @@ module Dependabot
 
           rels[parent_name] = children
         end
-      rescue JSON::ParserError
-        {}
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
@@ -268,8 +266,6 @@ module Dependabot
           rels[parent_name] ||= []
           rels[parent_name].concat(children).uniq!
         end
-      rescue Psych::SyntaxError
-        {}
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
