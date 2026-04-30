@@ -205,25 +205,9 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       )
     end
 
-    context "when feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(false)
-      end
-
-      it "does not modify the dependency change" do
-        original_deps = dependency_change.updated_dependencies.dup
-        selector.filter_to_group!(dependency_change)
-        expect(dependency_change.updated_dependencies).to eq(original_deps)
-      end
-    end
-
-    context "when feature flag is enabled" do
+    context "when filtering dependencies" do
       before do
         allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
-
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(true)
 
         allow(dependency_group).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
         allow(dependency_group).to receive(:respond_to?).with(:applies_to).and_return(false)
@@ -270,9 +254,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
     context "with fallback group membership logic" do
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(true)
-
         allow(dependency_group).to receive(:respond_to?)
           .with(:contains_dependency?).and_return(false)
         allow(dependency_group).to receive(:respond_to?)
@@ -305,24 +286,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       )
     end
 
-    context "when feature flag is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(false)
-      end
-
-      it "does not annotate dependency drift" do
-        expect(selector).not_to receive(:detect_file_dependency_drift)
-        selector.annotate_dependency_drift!(dependency_change)
-      end
-    end
-
-    context "when feature flag is enabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(true)
-      end
-
+    context "when processing dependency drift" do
       it "processes files for dependency drift" do
         allow(selector).to receive(:detect_file_dependency_drift)
           .and_return(%w(transitive-dep-1 transitive-dep-2))
@@ -495,9 +459,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(true)
-
         [generic_group, docker_group].each do |g|
           allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
           allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
@@ -542,9 +503,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:group_membership_enforcement).and_return(true)
-
           [generic_group, docker_group, exact_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
@@ -588,9 +546,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:group_membership_enforcement).and_return(true)
-
           [generic_group, docker_group, exact_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
@@ -633,9 +588,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(true)
-
         [generic_group, docker_group, exact_group].each do |g|
           allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
           allow(g).to receive(:respond_to?).with(:applies_to).and_return(false)
@@ -735,9 +687,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       before do
         allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
-
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement).and_return(true)
 
         [generic_group, security_group].each do |g|
           allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
@@ -839,8 +788,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
-
         [generic_group, docker_minor_prod_group, docker_exact_group, docker_security_group, excluded_group,
          explicit_group].each do |g|
           allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
@@ -953,8 +900,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
-
           [generic_group, minor_updates_group, exact_rails_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
@@ -1069,8 +1014,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
-
           [version_generic_group, security_rails_group, version_rails_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
@@ -1170,8 +1113,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
-
           [generic_group, express_explicit_group, prod_deps_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
@@ -1288,8 +1229,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
-
           [generic_group, minor_patch_only_group, major_only_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
@@ -1383,8 +1322,6 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         before do
-          allow(Dependabot::Experiments).to receive(:enabled?).with(:group_membership_enforcement).and_return(true)
-
           [generic_group, rails_except_test_group].each do |g|
             allow(g).to receive(:respond_to?).with(:contains_dependency?).and_return(false)
             allow(g).to receive(:respond_to?).with(:applies_to).and_return(true)
