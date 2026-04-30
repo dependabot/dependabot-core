@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "yaml"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
@@ -169,10 +170,16 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
-        return fetch_npm_lock_relationships if npm_lockfile
-        return fetch_yarn_lock_relationships if yarn_lockfile
-        # TODO: Implement pnpm relationship extraction
-        {}
+        case detected_package_manager
+        when NpmPackageManager::NAME
+          fetch_npm_lock_relationships
+        when YarnPackageManager::NAME
+          fetch_yarn_lock_relationships
+        when PNPMPackageManager::NAME
+          fetch_pnpm_lock_relationships
+        else
+          {}
+        end
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -191,6 +198,16 @@ module Dependabot
 
         @yarn_lockfile = T.let(
           dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pnpm_lockfile
+        return @pnpm_lockfile if defined?(@pnpm_lockfile)
+
+        @pnpm_lockfile = T.let(
+          dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) },
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -230,6 +247,29 @@ module Dependabot
           rels[parent_name] ||= []
           rels[parent_name].concat(children).uniq!
         end
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_pnpm_lock_relationships
+        parsed = YAML.safe_load(T.must(T.must(pnpm_lockfile).content)) || {}
+
+        # v9+ uses "snapshots" for resolved dependency details; v6 uses "packages"
+        entries = parsed.fetch("snapshots", nil) || parsed.fetch("packages", {})
+
+        entries.each_with_object({}) do |(key, details), rels|
+          next unless details.is_a?(Hash)
+
+          # Keys are "/name@version" (v6) or "name@version" (v9)
+          parent_name = T.must(key.sub(%r{^/}, "").split(/(?<=\w)\@/).first)
+          children = details.fetch("dependencies", {})&.keys || []
+
+          next if children.empty?
+
+          rels[parent_name] ||= []
+          rels[parent_name].concat(children).uniq!
+        end
+      rescue Psych::SyntaxError
+        {}
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
