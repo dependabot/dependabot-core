@@ -3,7 +3,7 @@
 
 require "json"
 require "time"
-require "cgi"
+require "cgi/escape"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
