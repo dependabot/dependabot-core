@@ -156,5 +156,46 @@ RSpec.describe Dependabot::Bun::DependencyGrapher do
         )
       end
     end
+
+    context "when the lockfile is corrupt" do
+      let(:dependency_files) { project_dependency_files("bun/grapher_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "bun.lock", content: "not valid {{{", directory: "/"
+        )
+        grapher.instance_variable_set(:@lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the parse error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(Dependabot::DependencyFileNotParseable)
+      end
+
+      it "returns dependencies with empty relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+  end
+
+  describe "registration" do
+    it "registers as the grapher for the bun package manager" do
+      expect(Dependabot::DependencyGraphers.for_package_manager("bun")).to eq(described_class)
+    end
   end
 end
