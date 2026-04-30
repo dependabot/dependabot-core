@@ -75,18 +75,18 @@ module Dependabot
             details = details.first
 
             source = source_from(details)
-            # Cannot update local path modules, skip
-            next if source && source[:type] == "path"
+            # nil sources are unpinned (e.g. OCI without a tag/digest); paths are local.
+            next if source.nil? || source[:type] == "path"
 
             # Cannot update modules using early evaluation yet
-            if T.must(source)[:type] == "interpolation"
+            if source[:type] == "interpolation"
               Dependabot.logger.warn(
                 "Cannot parse module source name with early evaluation for #{name} in #{file.name}."
               )
               next
             end
 
-            dependency_set << build_opentofu_dependency(file, name, T.must(source), details)
+            dependency_set << build_opentofu_dependency(file, name, source, details)
           end
 
           parsed_file(file).fetch("terraform", []).each do |opentofu|
@@ -137,6 +137,7 @@ module Dependabot
         version_req = details["version"]&.strip
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
+          elsif source[:type] == "oci" then source[:version]
           elsif version_req&.match?(/^\d/) then version_req
           end
 
@@ -230,18 +231,21 @@ module Dependabot
 
         source_details =
           case source_type
-          # TODO: add support for OCI Registries https://opentofu.org/docs/cli/oci_registries/
           when :http_archive, :path, :mercurial, :s3
             { type: source_type.to_s, url: bare_source }
           when :github, :bitbucket, :git
             git_source_details_from(bare_source)
+          when :oci
+            oci_source_details_from(bare_source)
           when :registry
             registry_source_details_from(bare_source)
           when :interpolation
             { type: source_type.to_s, name: bare_source }
           end
 
-        T.must(source_details)[:proxy_url] = raw_source if raw_source != bare_source
+        return nil if source_details.nil?
+
+        source_details[:proxy_url] = raw_source if raw_source != bare_source
         source_details
       end
 
@@ -258,6 +262,38 @@ module Dependabot
           (matches[:namespace] || DEFAULT_NAMESPACE).downcase,
           (matches[:name] || name).downcase
         ]
+      end
+
+      sig { params(source_string: T.untyped).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
+      def oci_source_details_from(source_string)
+        uri_part, query_part = source_string.split("oci://").last.split("?", 2)
+
+        # Sources with no query string are unpinned — nothing to update.
+        return nil if query_part.nil?
+
+        # `//` (not preceded by `:`) separates the bare repository from a
+        # sub-module path; only the bare repo is queryable for tags.
+        artifact_identifier, subdirectory = uri_part.split(%r{(?<!:)//}, 2)
+
+        qs = CGI.parse(query_part)
+        # Treat `?tag=` or `?digest=` (empty value) the same as the param
+        # being absent, so we don't propagate "" as a usable version.
+        tag = qs["tag"].first&.then { |v| v.empty? ? nil : v }
+        digest = qs["digest"].first&.then { |v| v.empty? ? nil : v }
+
+        if tag && digest
+          raise DependencyFileNotEvaluatable,
+                "Invalid OCI source '#{source_string}': only one of `tag` or `digest` may be specified"
+        end
+
+        {
+          type: "oci",
+          artifact_identifier: artifact_identifier,
+          subdirectory: subdirectory,
+          tag: tag,
+          digest: digest,
+          version: tag || digest
+        }
       end
 
       sig { params(source_string: T.untyped).returns(T::Hash[Symbol, String]) }
@@ -333,7 +369,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
-        # TODO: add support for OCI Registries https://opentofu.org/docs/cli/oci_registries/
+        return :oci if source_string.include?("oci://")
         return :interpolation if source_string.include?("${")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")

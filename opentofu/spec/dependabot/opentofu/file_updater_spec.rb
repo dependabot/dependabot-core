@@ -122,6 +122,57 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
+    context "with an oci module" do
+      let(:project_name) { "modules_oci" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "example.com/repository-name",
+            version: "v2.0.0",
+            previous_version: "v1.0.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "oci",
+                artifact_identifier: "example.com/repository-name",
+                subdirectory: nil,
+                tag: "v2.0.0",
+                digest: nil,
+                version: "v2.0.0"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "oci",
+                artifact_identifier: "example.com/repository-name",
+                subdirectory: nil,
+                tag: "v1.0.0",
+                digest: nil,
+                version: "v1.0.0"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "rewrites the tag in the oci:// source" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(<<~HCL)
+          module "s3-webapp" {
+            source  = "oci://example.com/repository-name?tag=v2.0.0"
+          }
+        HCL
+      end
+    end
+
     context "with private modules with different versions" do
       let(:project_name) { "private_modules_with_different_versions" }
 

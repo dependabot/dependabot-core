@@ -92,6 +92,8 @@ module Dependabot
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
             update_registry_declaration(new_req, old_req, content)
+          when "oci"
+            update_oci_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} " \
                   "declaration!"
@@ -122,6 +124,29 @@ module Dependabot
             url_match.sub(old_req&.dig(:source, :ref), new_req[:source][:ref])
           end
         end
+      end
+
+      sig do
+        params(
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          updated_content: String
+        )
+          .void
+      end
+      def update_oci_declaration(new_req, old_req, updated_content)
+        old_tag = old_req&.dig(:source, :tag)
+        new_tag = new_req[:source][:tag]
+        artifact = old_req&.dig(:source, :artifact_identifier)
+        return if old_tag.nil? || new_tag.nil? || artifact.nil? || old_tag == new_tag
+
+        # Scoped to this artifact's source string so unrelated modules with
+        # the same tag value aren't touched.
+        oci_source_re = %r{
+          (["']oci://#{Regexp.escape(artifact)}(?://[^"'?]*)?\?[^"']*\btag=)
+          #{Regexp.escape(old_tag)}
+        }x
+        updated_content.gsub!(oci_source_re) { T.must(Regexp.last_match(1)) + new_tag }
       end
 
       sig do
