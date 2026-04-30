@@ -58,6 +58,21 @@ RSpec.describe Dependabot::Bun::DependencyGrapher do
       it "returns the package.json" do
         expect(grapher.relevant_dependency_file.name).to eq("package.json")
       end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "returns dependencies with empty relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
     end
   end
 
