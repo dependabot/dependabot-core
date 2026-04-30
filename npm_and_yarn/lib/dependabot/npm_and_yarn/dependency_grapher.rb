@@ -18,7 +18,10 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        # Prefer lockfile if present, otherwise use package.json
+        # An ephemerally generated lockfile should not be reported as the
+        # relevant file since it doesn't exist in the repository.
+        return package_json if @ephemeral_lockfile_generated
+
         lockfile || package_json
       end
 
@@ -101,7 +104,6 @@ module Dependabot
         )
 
         ephemeral_lockfile = generator.generate
-        return unless ephemeral_lockfile
 
         # Inject the ephemeral lockfile into the dependency files
         # so the file parser can use it
@@ -112,6 +114,8 @@ module Dependabot
           "Successfully generated ephemeral #{ephemeral_lockfile.name} for dependency graphing"
         )
       rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = e
         Dependabot.logger.warn(
           "Failed to generate ephemeral lockfile: #{e.message}. " \
           "Dependency versions may not be resolved."
