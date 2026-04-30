@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
@@ -152,11 +153,55 @@ module Dependabot
         )
       end
 
-      # Fetches subdependencies for a given dependency.
-      # TODO: Implement grapher-layer relationship extraction from lockfiles (like Go/Python)
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
-      def fetch_subdependencies(dependency) # rubocop:disable Lint/UnusedMethodArgument
-        []
+      def fetch_subdependencies(dependency)
+        dependency_names = @dependencies.map(&:name)
+        package_relationships.fetch(dependency.name, []).select { |child| dependency_names.include?(child) }
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def package_relationships
+        @package_relationships ||= T.let(
+          fetch_package_relationships,
+          T.nilable(T::Hash[String, T::Array[String]])
+        )
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_package_relationships
+        return fetch_npm_lock_relationships if npm_lockfile
+        # TODO: Implement yarn and pnpm relationship extraction
+        {}
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def npm_lockfile
+        return @npm_lockfile if defined?(@npm_lockfile)
+
+        @npm_lockfile = T.let(
+          dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_npm_lock_relationships
+        parsed = JSON.parse(T.must(T.must(npm_lockfile).content))
+        packages = parsed.fetch("packages", {})
+
+        packages.each_with_object({}) do |(path, details), rels|
+          next if path.empty? # skip root package entry
+          next unless details.is_a?(Hash)
+
+          parent_name = T.must(path.split("node_modules/").last)
+          children = details.fetch("dependencies", {}).keys
+
+          next if children.empty?
+
+          rels[parent_name] = children
+        end
+      rescue JSON::ParserError
+        {}
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
