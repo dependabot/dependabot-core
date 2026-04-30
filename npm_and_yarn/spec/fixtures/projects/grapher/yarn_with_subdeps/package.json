@@ -1,0 +1,7 @@
+{
+  "name": "grapher-yarn-with-subdeps",
+  "version": "1.0.0",
+  "dependencies": {
+    "to-regex-range": "^5.0.1"
+  }
+}
