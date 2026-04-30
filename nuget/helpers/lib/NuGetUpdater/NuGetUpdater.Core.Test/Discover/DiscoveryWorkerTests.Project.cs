@@ -894,5 +894,65 @@ public partial class DiscoveryWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task MSBuildResponseFileDoesNotCauseDiscoveryFailure()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net9.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.rsp", """
+                        /this-is-not-a-supported-switch-and-would-normally-cause-a-discovery-failure
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            TargetFrameworks = ["net9.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Build.targets",
+                                "Directory.Packages.props",
+                            ],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
     }
 }
