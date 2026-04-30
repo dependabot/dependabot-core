@@ -101,5 +101,60 @@ RSpec.describe Dependabot::Bun::DependencyGrapher do
         expect(scoped.runtime).to be(true)
       end
     end
+
+    context "with a lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("bun/grapher_with_subdeps") }
+
+      it "includes subdependency edges for direct packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        fetch_factory = resolved_dependencies["pkg:npm/fetch-factory@0.0.1"]
+        expect(fetch_factory).not_to be_nil
+        expect(fetch_factory.direct).to be(true)
+        expect(fetch_factory.dependencies).to contain_exactly(
+          "pkg:npm/es6-promise@3.3.1",
+          "pkg:npm/isomorphic-fetch@2.2.1",
+          "pkg:npm/lodash@3.10.1"
+        )
+      end
+
+      it "includes subdependency edges for transitive packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        isomorphic_fetch = resolved_dependencies["pkg:npm/isomorphic-fetch@2.2.1"]
+        expect(isomorphic_fetch).not_to be_nil
+        expect(isomorphic_fetch.direct).to be(false)
+        expect(isomorphic_fetch.dependencies).to contain_exactly(
+          "pkg:npm/node-fetch@1.7.3",
+          "pkg:npm/whatwg-fetch@3.6.20"
+        )
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        lodash = resolved_dependencies["pkg:npm/lodash@3.10.1"]
+        expect(lodash).not_to be_nil
+        expect(lodash.direct).to be(false)
+        expect(lodash.dependencies).to eq([])
+
+        safer_buffer = resolved_dependencies["pkg:npm/safer-buffer@2.1.2"]
+        expect(safer_buffer).not_to be_nil
+        expect(safer_buffer.direct).to be(false)
+        expect(safer_buffer.dependencies).to eq([])
+      end
+
+      it "correctly resolves deep dependency chains" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        node_fetch = resolved_dependencies["pkg:npm/node-fetch@1.7.3"]
+        expect(node_fetch).not_to be_nil
+        expect(node_fetch.direct).to be(false)
+        expect(node_fetch.dependencies).to contain_exactly(
+          "pkg:npm/encoding@0.1.13",
+          "pkg:npm/is-stream@1.1.0"
+        )
+      end
+    end
   end
 end
