@@ -221,7 +221,7 @@ module Dependabot
           next if path.empty? # skip root package entry
           next unless details.is_a?(Hash)
 
-          parent_name = T.must(path.split("node_modules/").last)
+          parent_name = path.split("node_modules/").last
           children = details.fetch("dependencies", {}).keys
 
           next if children.empty?
@@ -258,7 +258,7 @@ module Dependabot
           next unless details.is_a?(Hash)
 
           # Keys are "/name@version" (v6) or "name@version" (v9)
-          parent_name = T.must(key.sub(%r{^/}, "").split(/(?<=\w)\@/).first)
+          parent_name = key.sub(%r{^/}, "").split(/(?<=\w)\@/).first
           children = details.fetch("dependencies", {})&.keys || []
 
           next if children.empty?
