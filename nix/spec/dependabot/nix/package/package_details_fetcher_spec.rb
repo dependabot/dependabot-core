@@ -24,14 +24,24 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
     )
   end
   let(:credentials) do
-    [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "test-token" }]
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "test-token"
+    }]
   end
   let(:fetcher) { described_class.new(dependency: dependency, credentials: credentials) }
 
-  let(:activity_url) do
-    "https://api.github.com/repos/NixOS/nixpkgs/activity" \
-      "?activity_type=push,force_push&per_page=100&ref=refs/heads/nixos-unstable"
+  let(:activity_base_url) { "https://api.github.com/repos/NixOS/nixpkgs/activity" }
+  let(:activity_query) do
+    {
+      "activity_type" => "push,force_push",
+      "per_page" => "100",
+      "ref" => "refs/heads/nixos-unstable"
+    }
   end
+  let(:activity_url_pattern) { %r{\Ahttps://api\.github\.com/repos/NixOS/nixpkgs/activity\?} }
   let(:activity_response) do
     [
       { "id" => 1, "before" => "b12141ef619e", "after" => "0726a0ec",
@@ -46,7 +56,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
   describe "#available_versions" do
     context "when activity API returns data" do
       before do
-        stub_request(:get, activity_url).to_return(
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
           status: 200,
           body: activity_response.to_json,
           headers: { "Content-Type" => "application/json" }
@@ -78,14 +88,14 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
 
       it "sends an Authorization header derived from credentials" do
         fetcher.available_versions
-        expect(WebMock).to have_requested(:get, activity_url)
-          .with(headers: { "Authorization" => "token test-token" })
+        expect(WebMock).to have_requested(:get, activity_base_url)
+          .with(query: activity_query, headers: { "Authorization" => "token test-token" })
       end
     end
 
     context "when activity API returns 403" do
       before do
-        stub_request(:get, activity_url).to_return(
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
           status: 403,
           body: '{"message":"rate limited"}',
           headers: { "Content-Type" => "application/json" }
@@ -112,7 +122,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
 
     context "when activity API returns an empty array" do
       before do
-        stub_request(:get, activity_url).to_return(
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
           status: 200,
           body: "[]",
           headers: { "Content-Type" => "application/json" }
@@ -131,8 +141,9 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
           head_commit_for_current_branch: "fallback_sha"
         )
 
-        fetcher.available_versions
-        expect(WebMock).to have_requested(:get, activity_url)
+        versions = fetcher.available_versions
+        expect(WebMock).to have_requested(:get, activity_base_url).with(query: activity_query)
+        expect(versions.map(&:tag)).to eq(["fallback_sha"])
       end
     end
 
@@ -152,7 +163,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
         )
 
         fetcher.available_versions
-        expect(WebMock).not_to have_requested(:get, /api\.github\.com/)
+        expect(WebMock).not_to have_requested(:get, activity_url_pattern)
       end
     end
 
@@ -172,7 +183,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
         )
 
         fetcher.available_versions
-        expect(WebMock).not_to have_requested(:get, /api\.github\.com/)
+        expect(WebMock).not_to have_requested(:get, activity_url_pattern)
       end
     end
 
@@ -180,7 +191,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
       let(:credentials) { [] }
 
       before do
-        stub_request(:get, activity_url).to_return(
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
           status: 200,
           body: activity_response.to_json,
           headers: { "Content-Type" => "application/json" }
@@ -190,7 +201,8 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
       it "still calls the activity API without an Authorization header" do
         fetcher.available_versions
         expect(WebMock).to(
-          have_requested(:get, activity_url)
+          have_requested(:get, activity_base_url)
+                    .with(query: activity_query)
                     .with { |req| !req.headers.key?("Authorization") }
         )
       end
