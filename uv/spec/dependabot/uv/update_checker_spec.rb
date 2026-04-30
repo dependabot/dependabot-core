@@ -759,6 +759,42 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         )
       end
     end
+
+    context "when the requirement was in a workspace member pyproject.toml" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "standard_python_tilde_version.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "1.2.3",
+          requirements: [{
+            file: "schema/pyproject.toml",
+            requirement: "~=1.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_requests.html")
+      end
+
+      before do
+        stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+          .to_return(status: 404)
+      end
+
+      it "updates the workspace member pyproject requirement" do
+        expect(first_updated_requirements).to eq(
+          file: "schema/pyproject.toml",
+          requirement: "~=2.19.1",
+          groups: [],
+          source: nil
+        )
+      end
+    end
   end
 
   describe "#requirements_unlocked_or_can_be?" do
