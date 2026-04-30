@@ -747,7 +747,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, jboss_base_url)
+        stub_request(:get, "#{jboss_base_url}/")
           .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.html")
