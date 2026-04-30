@@ -216,14 +216,37 @@ module Dependabot
         parsed = JSON.parse(T.must(T.must(npm_lockfile).content))
         packages = parsed.fetch("packages", {})
 
-        packages.each_with_object({}) do |(path, details), rels|
-          next if path.empty? # skip root package entry
+        # v3/v2 lockfiles use a flat "packages" section
+        if packages.is_a?(Hash) && !packages.empty?
+          return packages.each_with_object({}) do |(path, details), rels|
+            next if path.empty? # skip root package entry
+            next unless details.is_a?(Hash)
+
+            children = details.fetch("dependencies", {}).keys
+            next if children.empty?
+
+            rels[path.split("node_modules/").last] = children
+          end
+        end
+
+        # if packages isn't present, attempt a v1 fallback
+        fetch_npm_v1_lock_relationships(parsed)
+      end
+
+      sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
+      def fetch_npm_v1_lock_relationships(parsed)
+        dependencies = parsed.fetch("dependencies", {})
+        return {} unless dependencies.is_a?(Hash)
+
+        dependencies.each_with_object({}) do |(name, details), rels|
           next unless details.is_a?(Hash)
 
-          children = details.fetch("dependencies", {}).keys
-          next if children.empty?
+          nested = details.fetch("dependencies", nil)
+          next unless nested.is_a?(Hash)
 
-          rels[path.split("node_modules/").last] = children
+          children = nested.keys
+          rels[name] = children unless children.empty?
+          rels.merge!(fetch_npm_v1_lock_relationships(details))
         end
       end
 
