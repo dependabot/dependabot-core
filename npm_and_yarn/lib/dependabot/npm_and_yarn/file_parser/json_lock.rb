@@ -71,10 +71,7 @@ module Dependabot
               name: package_name,
               version: version,
               package_manager: "npm_and_yarn",
-              requirements: [],
-              metadata: {
-                depends_on: details&.fetch("dependencies", {})&.keys || []
-              }
+              requirements: []
             }
 
             if details["bundled"]
