@@ -120,6 +120,58 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with an ephemeral lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
+
+      let(:ephemeral_lockfile_content) do
+        {
+          "name" => "grapher-npm-no-lockfile",
+          "version" => "1.0.0",
+          "lockfileVersion" => 3,
+          "packages" => {
+            "" => {
+              "name" => "grapher-npm-no-lockfile",
+              "version" => "1.0.0",
+              "dependencies" => { "to-regex-range" => "^5.0.1" }
+            },
+            "node_modules/to-regex-range" => {
+              "version" => "5.0.1",
+              "dependencies" => { "is-number" => "^7.0.0" }
+            },
+            "node_modules/is-number" => {
+              "version" => "7.0.0"
+            }
+          }
+        }.to_json
+      end
+
+      before do
+        lockfile_generator = instance_double(
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
+          generate: Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: ephemeral_lockfile_content,
+            directory: "/"
+          )
+        )
+        allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+          .to receive(:new).and_return(lockfile_generator)
+      end
+
+      it "includes subdependency edges from the generated lockfile" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports the package.json as the relevant file, not the ephemeral lockfile" do
+        grapher.resolved_dependencies
+        expect(grapher.relevant_dependency_file.name).to eq("package.json")
+      end
+    end
+
     context "without a lockfile - exact versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
