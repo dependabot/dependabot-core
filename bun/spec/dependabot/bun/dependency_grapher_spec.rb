@@ -55,22 +55,68 @@ RSpec.describe Dependabot::Bun::DependencyGrapher do
     context "when no lockfile exists" do
       let(:dependency_files) { project_dependency_files("javascript/exact_version_requirements_no_lockfile") }
 
-      it "returns the package.json" do
-        expect(grapher.relevant_dependency_file.name).to eq("package.json")
+      context "when lockfile generation succeeds" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::Bun::DependencyGrapher::LockfileGenerator,
+            generate: Dependabot::DependencyFile.new(
+              name: "bun.lock",
+              content: fixture("projects", "bun", "grapher_with_lockfile", "bun.lock"),
+              directory: "/"
+            )
+          )
+          allow(Dependabot::Bun::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "returns the package.json as the relevant file" do
+          grapher.resolved_dependencies
+          expect(grapher.relevant_dependency_file.name).to eq("package.json")
+        end
+
+        it "does not set the error flag" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(false)
+        end
       end
 
-      it "sets the errored_fetching_subdependencies flag" do
-        grapher.resolved_dependencies
+      context "when lockfile generation fails" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::Bun::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "bun install failed: authentication required",
+                error_context: {}
+              )
+            )
+          end
+          allow(Dependabot::Bun::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
 
-        expect(grapher.errored_fetching_subdependencies).to be(true)
-      end
+        it "sets the errored_fetching_subdependencies flag" do
+          grapher.resolved_dependencies
 
-      it "returns dependencies with empty relationship data" do
-        resolved_dependencies = grapher.resolved_dependencies
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
 
-        expect(resolved_dependencies).not_to be_empty
-        resolved_dependencies.each_value do |dep|
-          expect(dep.dependencies).to eq([])
+        it "preserves the original error as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect(grapher.subdependency_error.message).to include("bun install failed")
+        end
+
+        it "returns dependencies with empty relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          expect(resolved_dependencies).not_to be_empty
+          resolved_dependencies.each_value do |dep|
+            expect(dep.dependencies).to eq([])
+          end
         end
       end
     end
