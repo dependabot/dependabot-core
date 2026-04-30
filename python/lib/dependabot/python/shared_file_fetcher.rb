@@ -371,9 +371,13 @@ module Dependabot
         content = req_file.content
         return [] if content.nil?
 
+        # Optionally matches the `name[extras] @ ` prefix of a direct reference (PEP 508).
+        # See https://peps.python.org/pep-0508/#grammar for the url_req grammar rule.
+        direct_reference_prefix = /(?:[^\s@#'"\n\[]+(?:\[[^\]]*\])?[ \t]+@[ \t]+)?/
+
         uneditable_reqs =
           content
-          .scan(/(?<name>^['"]?(?:file:)?(?<path>\.[^\[#'"\n;]*))/)
+          .scan(/(?<name>^['"]?#{direct_reference_prefix}(?:file:)?(?<path>\.[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             { name: n.to_s.strip, path: p.to_s.strip, file: req_file.name } unless p.to_s.include?("://")
@@ -381,7 +385,7 @@ module Dependabot
 
         editable_reqs =
           content
-          .scan(/(?<name>^-e\s+['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/)
+          .scan(/(?<name>^-e\s+['"]?#{direct_reference_prefix}(?:file:)?(?<path>[^\[#'"\n;]*))/)
           .filter_map do |match_array|
             n, p = match_array
             unless p.to_s.include?("://") || p.to_s.include?("git@")
