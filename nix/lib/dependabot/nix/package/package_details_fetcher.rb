@@ -66,7 +66,11 @@ module Dependabot
         TARGET_COMMITS_TO_FETCH = 500
         ACTIVITY_TYPES = "push,force_push"
         SHA_REGEX = /\A[0-9a-f]{40}\z/
-        private_constant :TARGET_COMMITS_TO_FETCH, :ACTIVITY_TYPES, :SHA_REGEX
+        # Heuristic for refs that look like a tag/version rather than a branch
+        # (e.g. `v1.2.3`, `1.2`, `2024.01`). Branch names like `nixos-25.05`
+        # don't match because they don't start with a digit or `v<digit>`.
+        TAG_LIKE_REF_REGEX = /\Av?\d+\./
+        private_constant :TARGET_COMMITS_TO_FETCH, :ACTIVITY_TYPES, :SHA_REGEX, :TAG_LIKE_REF_REGEX
 
         # Fetch branch-tip history via GitHub's Repo Activity API. Each entry's
         # `after` SHA was once the actual branch tip — for `nixpkgs` channels
@@ -93,7 +97,15 @@ module Dependabot
           )
           return nil unless entries.is_a?(Array) && entries.any?
 
-          entries.map { |e| { tag: e[:after], release_date: format_timestamp(e[:timestamp]) } }
+          # Trim to entries newer than the currently locked SHA so we don't
+          # introduce candidates older than `dependency.version`.
+          locked = dependency.version
+          result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          entries.each do |e|
+            result << { tag: e[:after], release_date: format_timestamp(e[:timestamp]) }
+            break if locked && (e[:after] == locked || e[:before] == locked)
+          end
+          result
         rescue Octokit::Error => e
           Dependabot.logger.info(
             "Repo Activity API failed for #{dependency.name} (#{e.class}: #{e.message}), " \
@@ -117,6 +129,7 @@ module Dependabot
         def use_activity_api?(url, ref)
           return false unless url && ref
           return false if ref.match?(SHA_REGEX)
+          return false if ref.match?(TAG_LIKE_REF_REGEX)
 
           host = URI.parse(url).host
           host == "github.com"

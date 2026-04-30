@@ -167,6 +167,52 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when the ref looks like a tag/version" do
+      let(:ref) { "v1.2.3" }
+
+      it "skips the activity API and uses the commits walker" do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          ref_details_for_pinned_ref: instance_double(
+            Excon::Response,
+            status: 200,
+            body: "[]"
+          ),
+          head_commit_for_current_branch: "fallback_sha"
+        )
+
+        fetcher.available_versions
+        expect(WebMock).not_to have_requested(:get, activity_url_pattern)
+      end
+    end
+
+    context "when activity entries extend past the locked SHA" do
+      let(:activity_response) do
+        [
+          { "id" => 1, "after" => "newer_a", "before" => "older_a",
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T00:00:00Z" },
+          { "id" => 2, "after" => current_sha, "before" => "older_b",
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T00:00:00Z" },
+          { "id" => 3, "after" => "older_c", "before" => "older_d",
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T00:00:00Z" }
+        ]
+      end
+
+      before do
+        stub_request(:get, activity_base_url).with(query: activity_query).to_return(
+          status: 200,
+          body: activity_response.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+      end
+
+      it "stops at the locked SHA and excludes older entries" do
+        versions = fetcher.available_versions
+        expect(versions.map(&:tag)).to eq(%w(newer_a) + [current_sha])
+      end
+    end
+
     context "when the source URL is not on github.com" do
       let(:url) { "https://gitlab.com/foo/bar" }
 
