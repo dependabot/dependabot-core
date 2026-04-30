@@ -19,6 +19,15 @@ module Dependabot
         lockfile || package_json
       end
 
+      sig { override.void }
+      def prepare!
+        if lockfile.nil?
+          Dependabot.logger.warn("No bun.lock found; dependency graph will be incomplete.")
+          errored_fetching_subdependencies!
+        end
+        super
+      end
+
       private
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
