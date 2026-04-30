@@ -98,6 +98,28 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with a lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_subdeps") }
+
+      it "includes subdependency edges for packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+        expect(is_number.dependencies).to eq([])
+      end
+    end
+
     context "without a lockfile - exact versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
