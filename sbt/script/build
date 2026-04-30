@@ -2,6 +2,10 @@
 
 set -e
 
-# Script for building native helpers (if needed)
-# TODO: Implement build logic for native helpers
-echo "No native helpers to build for sbt"
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")/../helpers"
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  export DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+fi
+
+bash "$helpers_dir/build"
