@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(true)
+    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -77,10 +77,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
       stub_request(:get, url + "project/build.properties?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
-      # "project" is listed as a dir in contents but won't have build.sbt
-      stub_request(:get, url + "project/build.sbt?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 404)
     end
 
     it "fetches the build.sbt" do
@@ -119,9 +115,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_build_properties.json"),
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url + "project/build.sbt?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 404)
     end
 
     it "fetches all three files" do
@@ -175,9 +168,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
       stub_request(:get, url + "web/build.sbt?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
-      stub_request(:get, url + "project/build.sbt?ref=sha")
-        .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 404)
     end
 
     it "fetches the root and subproject build.sbt files" do
@@ -189,7 +179,7 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
 
   context "when beta ecosystems are not enabled" do
     before do
-      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(false)
+      Dependabot::Experiments.register(:enable_beta_ecosystems, false)
     end
 
     it "raises a DependencyFileNotFound error" do

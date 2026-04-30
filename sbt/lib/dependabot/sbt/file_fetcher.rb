@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/file_filtering"
 
 module Dependabot
   module Sbt
@@ -15,6 +16,8 @@ module Dependabot
       BUILD_SBT_FILENAME = "build.sbt"
       PLUGINS_SBT_FILENAME = "project/plugins.sbt"
       BUILD_PROPERTIES_FILENAME = "project/build.properties"
+      # Directories that are part of the SBT build structure, not subprojects
+      NON_SUBPROJECT_DIRS = T.let(%w(project target .git .github).freeze, T::Array[String])
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -43,14 +46,16 @@ module Dependabot
         fetched_files << T.must(build_properties) if build_properties
         fetched_files += subproject_build_files
 
-        fetched_files
+        fetched_files.reject do |file|
+          Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
+        end
       end
 
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         return nil unless build_properties
 
-        sbt_version = T.must(build_properties).content&.match(/sbt\.version\s*=\s*(.+)/)&.captures&.first&.strip
+        sbt_version = parse_sbt_version(T.must(build_properties).content)
         return nil unless sbt_version
 
         {
@@ -81,12 +86,24 @@ module Dependabot
       def subproject_build_files
         repo_contents(raise_errors: false)
           .select { |item| item.type == "dir" }
-          .filter_map { |dir| fetch_subproject_build_sbt(dir.name) }
+          .reject { |dir| NON_SUBPROJECT_DIRS.include?(dir.name) }
+          .reject { |dir| Dependabot::FileFiltering.should_exclude_path?(dir.name, "subproject directory", @exclude_paths) }
+          .filter_map { |dir| fetch_file_if_present(File.join(dir.name, BUILD_SBT_FILENAME)) }
       end
 
-      sig { params(dir_name: String).returns(T.nilable(DependencyFile)) }
-      def fetch_subproject_build_sbt(dir_name)
-        fetch_file_if_present(File.join(dir_name, BUILD_SBT_FILENAME))
+      sig { params(content: T.nilable(String)).returns(T.nilable(String)) }
+      def parse_sbt_version(content)
+        return nil unless content
+
+        content.each_line do |line|
+          line = line.strip
+          next if line.empty? || line.start_with?("#", "!")
+
+          match = line.match(/\Asbt\.version\s*=\s*(.+)\z/)
+          return match[1]&.strip if match
+        end
+
+        nil
       end
     end
   end
