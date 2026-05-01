@@ -1,0 +1,9 @@
+{
+  "name": "build.sbt",
+  "path": "build.sbt",
+  "sha": "abc123",
+  "size": 300,
+  "type": "file",
+  "content": "bmFtZSA6PSAibXktcHJvamVjdCIKCnZlcnNpb24gOj0gIjAuMS4wIgoKc2Nh\nbGFWZXJzaW9uIDo9ICIyLjEzLjEyIgoKbGlicmFyeURlcGVuZGVuY2llcyAr\nKz0gU2VxKAogICJvcmcudHlwZWxldmVsIiAlJSAiY2F0cy1jb3JlIiAlICIy\nLjEwLjAiLAogICJjb20uZ29vZ2xlLmd1YXZhIiAlICJndWF2YSIgJSAiMzIu\nMS4zLWpyZSIsCiAgIm9yZy5zY2FsYXRlc3QiICUlICJzY2FsYXRlc3QiICUg\nIjMuMi4xNyIgJSAidGVzdCIKKQo=\n",
+  "encoding": "base64"
+}
