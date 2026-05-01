@@ -97,7 +97,7 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = ["net46"],
                             Dependencies = [
                                 new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
-                                new("Package.B", "2.0.0", DependencyType.PackageReference, IsDirect: true, TargetFrameworks: ["net46"]),
+                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net46"]),
                             ],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
@@ -186,7 +186,7 @@ public partial class DiscoveryWorkerTests
                             TargetFrameworks = ["net48"],
                             Dependencies = [
                                 new("PackageReferencedThroughLegacyMechanism", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net48"]),
-                                new("PackageReferencedThroughCPMMechanism", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
+                                new("PackageReferencedThroughCPMMechanism", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
                             ],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [

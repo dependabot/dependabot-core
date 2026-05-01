@@ -42,9 +42,10 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       it "attempts to generate a package-lock.json" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_return("")
 
-        # Mock file existence check
         allow(File).to receive(:exist?).and_call_original
-        allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
+        allow(File).to receive(:exist?).with("package-lock.json").and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with("package-lock.json").and_return("{}")
 
         generator.generate
 
@@ -82,7 +83,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       end
 
       context "when lockfile generation fails" do
-        it "returns nil and logs an error" do
+        it "re-raises the error after logging" do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
             .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                          message: "npm ERR! ERESOLVE could not resolve",
@@ -91,8 +92,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
 
           expect(Dependabot.logger).to receive(:error).at_least(:once)
 
-          result = generator.generate
-          expect(result).to be_nil
+          expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
         end
       end
     end
@@ -107,7 +107,9 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
 
           allow(File).to receive(:exist?).and_call_original
-          allow(File).to receive(:exist?).with("yarn.lock").and_return(false)
+          allow(File).to receive(:exist?).with("yarn.lock").and_return(true)
+          allow(File).to receive(:read).and_call_original
+          allow(File).to receive(:read).with("yarn.lock").and_return("")
 
           generator.generate
 
@@ -128,7 +130,9 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command).and_return("")
 
           allow(File).to receive(:exist?).and_call_original
-          allow(File).to receive(:exist?).with("yarn.lock").and_return(false)
+          allow(File).to receive(:exist?).with("yarn.lock").and_return(true)
+          allow(File).to receive(:read).and_call_original
+          allow(File).to receive(:read).with("yarn.lock").and_return("")
 
           generator.generate
 
@@ -146,7 +150,9 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
 
         allow(File).to receive(:exist?).and_call_original
-        allow(File).to receive(:exist?).with("pnpm-lock.yaml").and_return(false)
+        allow(File).to receive(:exist?).with("pnpm-lock.yaml").and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with("pnpm-lock.yaml").and_return("")
 
         generator.generate
 
@@ -192,7 +198,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
     let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
 
     context "with ERESOLVE error" do
-      it "logs a helpful error message about peer dependencies" do
+      it "logs a helpful error message about peer dependencies and re-raises" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "npm ERR! ERESOLVE could not resolve peer dependencies",
@@ -204,12 +210,12 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         expect(Dependabot.logger).to receive(:error)
           .with(/conflicting peer dependencies/)
 
-        generator.generate
+        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
 
     context "with network error" do
-      it "logs a helpful error message about network issues" do
+      it "logs a helpful error message about network issues and re-raises" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "npm ERR! ENOTFOUND registry.npmjs.org",
@@ -221,12 +227,12 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         expect(Dependabot.logger).to receive(:error)
           .with(/Network error/)
 
-        generator.generate
+        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
 
     context "with authentication error" do
-      it "logs a helpful error message about credentials" do
+      it "logs a helpful error message about credentials and re-raises" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "npm ERR! 401 Unauthorized",
@@ -238,7 +244,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         expect(Dependabot.logger).to receive(:error)
           .with(/Authentication error/)
 
-        generator.generate
+        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
   end
@@ -270,7 +276,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with("package-lock.json").and_return(false)
 
-        generator.generate
+        expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
   end
