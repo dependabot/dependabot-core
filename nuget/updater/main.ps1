@@ -87,10 +87,44 @@ function Update-Dependencies {
     Update-Files
 }
 
+function Update-Graph {
+    Get-Files
+    if ($script:operationExitCode -ne 0) {
+        return
+    }
+
+    # install relevant SDKs
+    Install-Sdks `
+        -jobFilePath $env:DEPENDABOT_JOB_PATH `
+        -repoContentsPath $env:DEPENDABOT_REPO_CONTENTS_PATH `
+        -dotnetInstallScriptPath $env:DOTNET_INSTALL_SCRIPT_PATH `
+        -dotnetInstallDir $env:DOTNET_INSTALL_DIR
+
+    Set-NuGetConfig
+
+    Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
+    $baseCommitSha = git rev-parse HEAD
+    Pop-Location
+    Write-Host "Base commit SHA: $baseCommitSha"
+
+    $arguments = @()
+    $arguments += "graph"
+    $arguments += "--job-path", $env:DEPENDABOT_JOB_PATH
+    $arguments += "--repo-contents-path", $env:DEPENDABOT_REPO_CONTENTS_PATH
+    $arguments += "--api-url", $env:DEPENDABOT_API_URL
+    $arguments += "--job-id", $env:DEPENDABOT_JOB_ID
+    $arguments += "--base-commit-sha", $baseCommitSha
+
+    $process = Start-Process -FilePath $updaterTool -ArgumentList $arguments -NoNewWindow -Wait -PassThru
+    $process.WaitForExit()
+    $script:operationExitCode = $process.ExitCode
+}
+
 try {
     Switch ($args[0]) {
         "fetch_files" { }
         "update_files" { Update-Dependencies }
+        "update_graph" { Update-Graph }
         default { throw "unknown command: $args[0]" }
     }
     exit $operationExitCode
