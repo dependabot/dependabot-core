@@ -1390,5 +1390,37 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
     end
+
+    context "when no files are changed" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.apache.httpcomponents:httpclient",
+          version: "4.6.1",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "4.5.3",
+            groups: [],
+            source: { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" },
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "4.5.3",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "raises DependencyFileContentNotChanged with a descriptive message" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::DependencyFileContentNotChanged) do |error|
+            expect(error.message).to include("org.apache.httpcomponents:httpclient")
+            expect(error.message).to include("No files changed")
+          end
+      end
+    end
   end
 end
