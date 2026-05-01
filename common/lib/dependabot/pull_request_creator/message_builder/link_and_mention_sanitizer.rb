@@ -106,23 +106,25 @@ module Dependabot
           end
         end
 
-        # When we come across something that looks like a team mention (e.g. @dependabot/reviewers),
-        # we replace it with a text node.
-        # This is because there are ecosystems that have packages that follow the same pattern
-        # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
-        # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
+        # Sanitize team mentions (e.g. @org/team) to prevent notifications; must run before sanitize_mentions.
         sig { params(doc: Commonmarker::Node).void }
         def sanitize_team_mentions(doc)
           doc.walk do |node|
             if node.type == :text &&
                node.string_content.match?(TEAM_MENTION_REGEX)
+              if parent_node_link?(node)
+                # Preserve text node formatting while preventing notifications with zero-width space
+                node.string_content = node.string_content.gsub(TEAM_MENTION_REGEX) do |match|
+                  insert_zero_width_space_in_mention(match)
+                end
+              else
+                nodes = build_team_mention_nodes(node.string_content)
 
-              nodes = build_team_mention_nodes(node.string_content)
-
-              nodes.each do |n|
-                node.insert_before(n)
+                nodes.each do |n|
+                  node.insert_before(n)
+                end
+                node.delete
               end
-              node.delete
             end
           end
         end
