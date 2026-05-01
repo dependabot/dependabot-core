@@ -4,6 +4,7 @@
 require "nokogiri"
 require "rexml/document"
 require "sorbet-runtime"
+require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 
@@ -33,7 +34,13 @@ module Dependabot
         updated_files.select! { |f| f.name.end_with?(".xml") }
         updated_files.reject! { |f| dependency_files.include?(f) }
 
-        raise "No files changed!" if updated_files.none?
+        if updated_files.none?
+          dep_names = dependencies.map(&:name).join(", ")
+          raise Dependabot::DependencyFileContentNotChanged,
+                "No files changed when updating #{dep_names}. " \
+                "This may indicate that the dependency version is managed externally " \
+                "(e.g., via a BOM import or parent POM not available to Dependabot)."
+        end
 
         updated_files
       end
@@ -64,7 +71,8 @@ module Dependabot
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
           raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
-          next if new_req[:requirement] == T.must(old_req)[:requirement]
+
+          next if requirement_unchanged?(dependency, new_req, old_req)
 
           file_name = T.let(new_req.fetch(:file) || new_req.dig(:metadata, :pom_file), String)
           if new_req.dig(:metadata, :property_name)
@@ -82,6 +90,23 @@ module Dependabot
         files
       end
       # rubocop:enable Metrics/AbcSize
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T.nilable(T::Hash[Symbol, T.untyped])
+        ).returns(T::Boolean)
+      end
+      def requirement_unchanged?(dependency, new_req, old_req)
+        return false unless new_req[:requirement] == T.must(old_req)[:requirement]
+
+        Dependabot.logger.info(
+          "Skipping #{dependency.name} in #{new_req[:file]} - " \
+          "requirement unchanged (#{new_req[:requirement]}), only metadata differs"
+        )
+        true
+      end
 
       sig do
         params(
