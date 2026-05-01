@@ -39,7 +39,6 @@ module Dependabot
         # OR the version of Go required is greater than what Dependabot supports
         # OR other go.mod version errors
         INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
-        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         sig do
           params(
@@ -151,7 +150,7 @@ module Dependabot
           candidate_versions = filter_ignored_versions(candidate_versions)
           candidate_versions = lazy_filter_cooldown_versions(candidate_versions)
           # Adding the psuedo-version to the list to avoid downgrades
-          if PSEUDO_VERSION_REGEX.match?(dependency.version)
+          if GoModules::Version.pseudo_version?(dependency.version)
             candidate_versions << Dependabot::Package::PackageRelease.new(
               version: GoModules::Version.new(dependency.version)
             )
