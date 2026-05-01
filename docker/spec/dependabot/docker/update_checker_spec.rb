@@ -2933,6 +2933,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(result.version.class).to eq(Dependabot::Docker::Version)
       end
     end
+
+    context "when the blob HEAD request returns 404 (e.g. multi-arch/OCI image)" do
+      let(:digest_string) { "sha256:abc123" }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+        allow(mock_client).to receive(:dohead)
+          .and_raise(DockerRegistry2::NotFound.new("404 Not Found"))
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning instead of raising" do
+        expect { get_tag_publication_details }.not_to raise_error
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(/Could not determine publication date.*404/)
+      end
+    end
+
+    context "when the registry denies access (e.g. lscr.io auth failure)" do
+      let(:digest_string) { "sha256:abc123" }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+        allow(mock_client).to receive(:dohead)
+          .and_raise(DockerRegistry2::RegistryAuthenticationException.new("unauthorized"))
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      it "returns nil and logs a warning instead of raising" do
+        expect { get_tag_publication_details }.not_to raise_error
+        expect(get_tag_publication_details).to be_nil
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(/Could not determine publication date.*denied access/)
+      end
+    end
   end
 
   describe "#digest_up_to_date?" do
