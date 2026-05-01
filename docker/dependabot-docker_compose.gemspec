@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.required_rubygems_version = common_gemspec.required_ruby_version
 
   spec.require_path = "lib"
-  spec.files        = Dir["lib/**/*"]
+  spec.files        = Dir["lib/dependabot/docker_compose.rb", "lib/dependabot/docker_compose/**/*"]
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
