@@ -171,24 +171,41 @@ RSpec.describe Dependabot::Swift::DependencyGrapher do
     end
 
     describe "#resolved_dependencies" do
-      it "resolves dependencies including transitive ones" do
+      it "resolves the direct dependency" do
         resolved = grapher.resolved_dependencies
 
-        expect(resolved).not_to be_empty
-
         # swift-nio-http2 is declared in Package.swift
-        nio_http2_deps = resolved.select { |purl, _| purl.include?("swift-nio-http2") }
-        expect(nio_http2_deps).not_to be_empty
+        nio_http2 = resolved.find { |purl, _| purl.include?("swift-nio-http2") }
+        expect(nio_http2).not_to be_nil
 
-        # Transitive dependencies should also be present
-        expect(resolved.size).to be > 1
+        _, dep = nio_http2
+        expect(dep.direct).to be(true)
+      end
+
+      it "resolves transitive dependencies" do
+        resolved = grapher.resolved_dependencies
+        purl_names = resolved.keys.map { |purl| purl.split("@").first }
+
+        # swift-nio is a well-known transitive dependency of swift-nio-http2
+        expect(purl_names).to include(a_string_including("swift-nio@"))
+          .or include(a_string_matching(/swift-nio$/))
+
+        # Verify it's marked as indirect
+        nio = resolved.find { |purl, _| purl.match?(%r{/swift-nio@}) }
+        expect(nio).not_to be_nil
+        _, nio_dep = nio
+        expect(nio_dep.direct).to be(false)
       end
 
       it "includes subdependency relationships" do
         resolved = grapher.resolved_dependencies
 
-        has_subdeps = resolved.values.any? { |dep| dep.dependencies.any? }
-        expect(has_subdeps).to be(true)
+        # swift-nio-http2 should list swift-nio as a child
+        nio_http2 = resolved.find { |purl, _| purl.include?("swift-nio-http2") }
+        expect(nio_http2).not_to be_nil
+
+        _, dep = nio_http2
+        expect(dep.dependencies).to include(a_string_including("swift-nio@"))
       end
 
       it "emits a missing lockfile warning" do
