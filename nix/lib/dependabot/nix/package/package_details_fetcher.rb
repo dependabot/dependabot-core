@@ -3,12 +3,14 @@
 
 require "json"
 require "time"
+require "uri"
 require "sorbet-runtime"
 require "dependabot/nix"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/git_commit_checker"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/clients/github_with_retries"
 
 module Dependabot
   module Nix
@@ -35,7 +37,7 @@ module Dependabot
 
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def available_versions
-          versions_metadata = fetch_tags_and_release_date
+          versions_metadata = fetch_branch_tip_history || fetch_tags_and_release_date
 
           versions_metadata = fetch_latest_tag_info if versions_metadata.empty?
 
@@ -62,7 +64,117 @@ module Dependabot
         private
 
         TARGET_COMMITS_TO_FETCH = 500
-        private_constant :TARGET_COMMITS_TO_FETCH
+        ACTIVITY_TYPES = "push,force_push"
+        SHA_REGEX = /\A[0-9a-f]{40}\z/
+        # Heuristic for refs that look like a tag/version rather than a branch
+        # (e.g. `v1.2.3`, `1.2`, `2024.01`). Branch names like `nixos-25.05`
+        # don't match because they don't start with a digit or `v<digit>`.
+        TAG_LIKE_REF_REGEX = /\Av?\d+\./
+        private_constant :TARGET_COMMITS_TO_FETCH, :ACTIVITY_TYPES, :SHA_REGEX, :TAG_LIKE_REF_REGEX
+
+        # Fetch branch-tip history via GitHub's Repo Activity API. Each entry's
+        # `after` SHA was once the actual branch tip — for `nixpkgs` channels
+        # that means it was Hydra-evaluated and is cache-backed. The /commits
+        # endpoint, by contrast, returns intermediate commits that were never
+        # branch tips and may not be cached.
+        #
+        # Returns nil when the activity API isn't usable (non-GitHub host,
+        # SHA-pinned ref, missing ref, HTTP error). Callers should fall back to
+        # the existing /commits walker in that case.
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+        def fetch_branch_tip_history
+          url = source_url
+          ref = branch_ref
+          return nil unless use_activity_api?(url, ref)
+
+          Dependabot.logger.info("Fetching branch-tip history for Nix flake input: #{dependency.name}")
+          entries = fetch_activity_entries(T.must(url), T.must(ref))
+          return nil unless entries.is_a?(Array) && entries.any?
+
+          trim_entries_to_locked_sha(entries)
+        rescue Octokit::Error => e
+          Dependabot.logger.info(
+            "Repo Activity API failed for #{dependency.name} (#{e.class}: #{e.message}), " \
+            "falling back to commits API"
+          )
+          nil
+        rescue StandardError => e
+          Dependabot.logger.error(
+            "Error fetching branch-tip history for #{dependency.name} " \
+            "(#{e.class}: #{e.message})"
+          )
+          nil
+        end
+
+        sig { params(url: String, ref: String).returns(T.untyped) }
+        def fetch_activity_entries(url, ref)
+          T.unsafe(github_client).get(
+            "/repos/#{github_repo_path(url)}/activity",
+            ref: "refs/heads/#{ref}",
+            activity_type: ACTIVITY_TYPES,
+            per_page: 100
+          )
+        end
+
+        # Trim to entries up to and including the currently locked SHA, stopping
+        # once that SHA is reached so we don't introduce candidates older than
+        # `dependency.version`.
+        sig { params(entries: T::Array[T.untyped]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def trim_entries_to_locked_sha(entries)
+          locked = dependency.version
+          result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          entries.each do |e|
+            result << { tag: e[:after], release_date: format_timestamp(e[:pushed_at]) }
+            break if locked && (e[:after] == locked || e[:before] == locked)
+          end
+          result
+        end
+
+        sig { params(timestamp: T.untyped).returns(T.nilable(String)) }
+        def format_timestamp(timestamp)
+          return nil if timestamp.nil?
+          return timestamp.iso8601 if timestamp.respond_to?(:iso8601)
+
+          timestamp.to_s
+        end
+
+        sig { params(url: T.nilable(String), ref: T.nilable(String)).returns(T::Boolean) }
+        def use_activity_api?(url, ref)
+          return false unless url && ref
+          return false if ref.match?(SHA_REGEX)
+          return false if ref.match?(TAG_LIKE_REF_REGEX)
+
+          host = URI.parse(url).host
+          host == "github.com"
+        rescue URI::InvalidURIError
+          false
+        end
+
+        sig { params(url: String).returns(String) }
+        def github_repo_path(url)
+          T.must(URI.parse(url).path)
+           .delete_prefix("/")
+           .delete_suffix("/")
+           .delete_suffix(".git")
+        end
+
+        sig { returns(T.nilable(String)) }
+        def source_url
+          dependency.source_details(allowed_types: ["git"])&.fetch(:url, nil)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def branch_ref
+          dependency.source_details(allowed_types: ["git"])&.fetch(:ref, nil)
+        end
+
+        sig { returns(Dependabot::Clients::GithubWithRetries) }
+        def github_client
+          @github_client ||= T.let(
+            Dependabot::Clients::GithubWithRetries.for_github_dot_com(credentials: credentials),
+            T.nilable(Dependabot::Clients::GithubWithRetries)
+          )
+        end
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def fetch_latest_tag_info
