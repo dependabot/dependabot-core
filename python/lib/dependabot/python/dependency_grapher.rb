@@ -18,6 +18,30 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       require_relative "dependency_grapher/lockfile_generator"
 
+      # Regex patterns for detecting Python requirements / dependencies .txt manifest variants.
+      # Used by the dependency grapher to filter out unrelated .txt files (e.g. README-style notes,
+      # tool output, etc.) from being treated as pip manifests.
+
+      # Matches "requirements" preceded by a hyphen, period, underscore, start-of-string, or slash,
+      # followed by non-whitespace chars and ".txt".
+      # Examples: requirements.txt, requirements.prod.txt, requirements/production.txt
+      REQUIREMENTS_TXT_REGEX = T.let(%r{(?:[-._]|^|/)requirements[^\s]*\.txt$}i, Regexp)
+
+      # More lenient: matches "require" with optional prefix (no dots/whitespace)
+      # and optional hyphen/underscore/slash suffix. Does not match "require" as a substring.
+      # Examples: require.txt, require-test.txt, py3-require.txt, pyenv_require_e2e.txt
+      REQUIRE_TXT_REGEX = T.let(%r{[^\s|.]*require(?:[-_/][^\s|.]*)?\.txt$}i, Regexp)
+
+      # Matches "dependencies" / "dependency" preceded by a hyphen, period, underscore,
+      # start-of-string, or slash, followed by non-whitespace chars and ".txt".
+      # Examples: dependencies.txt, my-dependencies.txt, dependencies/python/ansible-lint.txt
+      DEPENDENCIES_TXT_REGEX = T.let(%r{(?:[-._]|^|/)dependenc(?:y|ies)[^\s]*\.txt$}i, Regexp)
+
+      # More lenient: matches "depend" / "depends" with optional prefix (no dots/whitespace)
+      # and optional hyphen/underscore/slash suffix. Does not match "depend" as a substring.
+      # Examples: depend.txt, depends.txt, depend-test.txt, py3-depends.txt
+      DEPEND_TXT_REGEX = T.let(%r{[^\s|.]*depend(?:s)?(?:[-_/][^\s|.]*)?\.txt$}i, Regexp)
+
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
         dependency_files_by_package_manager = T.let(
@@ -352,9 +376,17 @@ module Dependabot
 
         @pip_requirements_file = T.let(
           dependency_files.find { |f| f.name == "requirements.txt" } ||
-            dependency_files.find { |f| f.name.end_with?(".txt") },
+            dependency_files.find { |f| f.name.end_with?(".txt") && python_manifest_txt_filename?(f.name) },
           T.nilable(Dependabot::DependencyFile)
         )
+      end
+
+      sig { params(path: String).returns(T::Boolean) }
+      def python_manifest_txt_filename?(path)
+        path.match?(REQUIREMENTS_TXT_REGEX) ||
+          path.match?(REQUIRE_TXT_REGEX) ||
+          path.match?(DEPENDENCIES_TXT_REGEX) ||
+          path.match?(DEPEND_TXT_REGEX)
       end
 
       sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
