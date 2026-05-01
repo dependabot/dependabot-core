@@ -221,6 +221,23 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("subdirectory = \"python\"\n") }
     end
 
+    context "with a git dependency that has extras" do
+      let(:dependencies) { [] }
+
+      let(:poetry_lock_fixture_name) { "git_dependency_with_extras.lock" }
+      let(:pyproject_fixture_name) { "git_dependency_with_extras.toml" }
+
+      it "preserves extras on the git dependency" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+        onetl_dep = parsed.dig("tool", "poetry", "dependencies", "onetl")
+        expect(onetl_dep).to be_a(Hash)
+        expect(onetl_dep["extras"]).to eq(["ftp", "s3"])
+        expect(onetl_dep["git"]).to eq("https://github.com/example/onetl.git")
+        expect(onetl_dep["rev"]).to eq("v1.0.0")
+      end
+    end
+
     context "with PEP 621 project.dependencies" do
       let(:dependencies) { [] }
       let(:pyproject_fixture_name) { "pep621_hybrid_version_in_both.toml" }
