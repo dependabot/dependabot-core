@@ -66,7 +66,7 @@ module Dependabot
           "#{dependency_base_url(repository_url)}/#{MAVEN_METADATA_XML}"
         end
 
-        # URL for a specific artifact file (JAR/POM).
+        # URL for a specific artifact file (JAR/AAR/etc).
         #
         # Example:
         #   "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
@@ -79,6 +79,15 @@ module Dependabot
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
+        end
+
+        # URL for the POM file of a specific version.
+        # Every published Maven artifact has a .pom file regardless of packaging type.
+        sig { params(repository_url: String, version: Dependabot::Version).returns(String) }
+        def dependency_pom_url(repository_url, version)
+          _, artifact_id = dependency_parts
+          base_url = dependency_base_url(repository_url)
+          "#{base_url}/#{version}/#{artifact_id}-#{version}.pom"
         end
 
         # -- Metadata Fetching (XML) --
@@ -304,7 +313,20 @@ module Dependabot
                 url: dependency_files_url(url, version),
                 headers: headers
               )
-              response.status < 400
+              next true if response.status < 400
+
+              # When the artifact file returns 404, fall back to checking the .pom file.
+              # This handles artifacts with non-jar packaging (e.g., aar, bundle) where
+              # the consumer POM omits <type>, causing the parser to default to "jar".
+              # Only fall back when there's no classifier (classifier artifacts are specific).
+              next false unless response.status == 404
+              next false if dependency.requirements.first&.dig(:metadata, :classifier)
+
+              pom_response = Dependabot::RegistryClient.head(
+                url: dependency_pom_url(url, version),
+                headers: headers
+              )
+              pom_response.status < 400
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               false

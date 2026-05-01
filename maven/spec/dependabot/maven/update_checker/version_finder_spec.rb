@@ -148,6 +148,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       before do
         stub_request(:head, maven_central_version_files_url)
           .to_return(status: 404)
+        stub_request(:head, maven_central_version_files_url.sub(/\.jar$/, ".pom"))
+          .to_return(status: 404)
         stub_request(:head, old_maven_central_version_files_url)
           .to_return(status: 200)
       end
@@ -461,6 +463,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/10.0/guava-10.0-jre.jar")
             .to_return(status: 200)
           stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
+            .to_return(status: 404)
+          stub_request(:head, "https://repo.jenkins-ci.org/releases/com/google/guava/guava/23.6-jre/guava-23.6-jre.pom")
             .to_return(status: 404)
 
           # In central, we have a newer version
@@ -824,6 +828,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       before do
         stub_request(:head, maven_central_version_files_url)
+          .to_return(status: 404)
+        stub_request(:head, maven_central_version_files_url.sub(/\.jar$/, ".pom"))
           .to_return(status: 404)
         stub_request(:head, next_maven_central_version_files_url)
           .to_return(status: 200)
