@@ -323,12 +323,14 @@ public abstract class UpdateWorkerTestBase : TestBase
 
             // ensure only the test feed is used
             string relativeLocalFeedPath = Path.GetRelativePath(temporaryDirectory, localFeedPath);
+            // The Microsoft.Build.Sql SDK is resolved via the msbuild-sdks NuGet source (see Dockerfile).
             await File.WriteAllTextAsync(Path.Join(temporaryDirectory, "NuGet.Config"), $"""
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
                   <packageSources>
                     <clear />
                     <add key="local-feed" value="{relativeLocalFeedPath}" />
+                    <add key="msbuild-sdks" value="/tmp/msbuild-sdks" />
                   </packageSources>
                 </configuration>
                 """
