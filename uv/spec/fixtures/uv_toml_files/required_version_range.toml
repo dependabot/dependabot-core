@@ -1,0 +1,4 @@
+required-version = ">=0.6.0"
+
+[pip]
+index-url = "https://pypi.org/simple"

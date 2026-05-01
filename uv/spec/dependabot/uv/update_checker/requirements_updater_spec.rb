@@ -812,5 +812,62 @@ RSpec.describe Dependabot::Uv::UpdateChecker::RequirementsUpdater do
         end
       end
     end
+
+    context "when dealing with a uv.toml dependency" do
+      subject { updated_requirements.find { |r| r[:file] == "uv.toml" } }
+
+      let(:requirements) { [uv_toml_req] }
+      let(:uv_toml_req) do
+        {
+          file: "uv.toml",
+          requirement: uv_toml_req_string,
+          groups: ["uv-required-version"],
+          source: nil
+        }
+      end
+      let(:uv_toml_req_string) { "==0.6.12" }
+
+      context "when there is a resolvable version" do
+        let(:latest_resolvable_version) { "0.7.0" }
+
+        context "with an exact pin" do
+          let(:uv_toml_req_string) { "==0.6.12" }
+
+          its([:requirement]) { is_expected.to eq("==0.7.0") }
+        end
+
+        context "with a >= constraint" do
+          let(:uv_toml_req_string) { ">=0.6.0" }
+
+          it { is_expected.to eq(uv_toml_req) }
+        end
+
+        context "with a ~= constraint" do
+          let(:uv_toml_req_string) { "~=0.6.0" }
+
+          its([:requirement]) { is_expected.to eq("~=0.7.0") }
+        end
+
+        context "with a caret constraint" do
+          let(:uv_toml_req_string) { "^0.6.0" }
+
+          its([:requirement]) { is_expected.to eq("^0.7.0") }
+        end
+      end
+
+      context "when there is no resolvable version" do
+        let(:latest_resolvable_version) { nil }
+
+        it { is_expected.to eq(uv_toml_req) }
+      end
+
+      context "when asked to not change requirements" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+        it "does not update any requirements" do
+          expect(updated_requirements).to eq(requirements)
+        end
+      end
+    end
   end
 end

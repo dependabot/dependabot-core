@@ -946,5 +946,92 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
+
+    context "with a uv.toml containing required-version (exact pin)" do
+      let(:files) { [uv_toml] }
+      let(:uv_toml) do
+        Dependabot::DependencyFile.new(
+          name: "uv.toml",
+          content: fixture("uv_toml_files", "required_version_exact.toml")
+        )
+      end
+
+      it "parses the uv tool dependency" do
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
+        expect(uv_dep).not_to be_nil
+        expect(uv_dep.version).to eq("0.6.12")
+        expect(uv_dep.requirements).to eq(
+          [{
+            requirement: "==0.6.12",
+            file: "uv.toml",
+            groups: ["uv-required-version"],
+            source: nil
+          }]
+        )
+      end
+    end
+
+    context "with a uv.toml containing required-version (range)" do
+      let(:files) { [uv_toml] }
+      let(:uv_toml) do
+        Dependabot::DependencyFile.new(
+          name: "uv.toml",
+          content: fixture("uv_toml_files", "required_version_range.toml")
+        )
+      end
+
+      it "parses the uv tool dependency without a version" do
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
+        expect(uv_dep).not_to be_nil
+        expect(uv_dep.version).to be_nil
+        expect(uv_dep.requirements).to eq(
+          [{
+            requirement: ">=0.6.0",
+            file: "uv.toml",
+            groups: ["uv-required-version"],
+            source: nil
+          }]
+        )
+      end
+    end
+
+    context "with a uv.toml without required-version" do
+      let(:files) { [uv_toml] }
+      let(:uv_toml) do
+        Dependabot::DependencyFile.new(
+          name: "uv.toml",
+          content: fixture("uv_toml_files", "no_required_version.toml")
+        )
+      end
+
+      it "does not add a uv tool dependency" do
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
+        expect(uv_dep).to be_nil
+      end
+    end
+
+    context "with a pyproject.toml containing [tool.uv] required-version" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_required_version.toml")
+        )
+      end
+
+      it "parses the uv tool dependency from pyproject.toml" do
+        uv_dep = dependencies.find { |d| d.name == "uv:required-version" }
+        expect(uv_dep).not_to be_nil
+        expect(uv_dep.version).to eq("0.6.12")
+        expect(uv_dep.requirements.first[:file]).to eq("pyproject.toml")
+        expect(uv_dep.requirements.first[:requirement]).to eq("==0.6.12")
+        expect(uv_dep.requirements.first[:groups]).to eq(["uv-required-version"])
+      end
+
+      it "also parses regular dependencies" do
+        requests_dep = dependencies.find { |d| d.name == "requests" }
+        expect(requests_dep).not_to be_nil
+      end
+    end
   end
 end
