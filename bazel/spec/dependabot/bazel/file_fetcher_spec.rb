@@ -1406,6 +1406,217 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
     end
   end
 
+  describe "fetching bazelrc import files" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    context "with a .bazelrc containing import statements" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_bazelrc_imports.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_imports.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the tools directory listing
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "preset.bazelrc", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock the imported bazelrc file
+        stub_request(:get, url + "tools/preset.bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_imported_bazelrc.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # user.bazelrc is a try-import and not found
+        stub_request(:get, url + "user.bazelrc?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches the imported bazelrc file" do
+        expect(fetched_files.map(&:name)).to include("tools/preset.bazelrc")
+      end
+
+      it "includes MODULE.bazel and .bazelrc" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", ".bazelrc")
+      end
+
+      it "does not fail when try-import file is missing" do
+        expect(fetched_files.map(&:name)).not_to include("user.bazelrc")
+      end
+    end
+
+    context "with nested imports in bazelrc files" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_bazelrc_imports.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_imports.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Mock tools directory listing
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(
+            status: 200,
+            body: '[{"name": "preset.bazelrc", "type": "file"}, {"name": "ci.bazelrc", "type": "file"}]',
+            headers: { "content-type" => "application/json" }
+          )
+
+        # First imported file has a nested import
+        stub_request(:get, url + "tools/preset.bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_imported_bazelrc_nested.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Nested import
+        stub_request(:get, url + "tools/ci.bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_ci_bazelrc.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # user.bazelrc not found
+        stub_request(:get, url + "user.bazelrc?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "fetches recursively imported bazelrc files" do
+        expect(fetched_files.map(&:name)).to include(
+          "tools/preset.bazelrc",
+          "tools/ci.bazelrc"
+        )
+      end
+    end
+
+    context "when imported bazelrc file is missing" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_bazelrc_imports.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "MODULE.bazel?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_module_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".bazelrc?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_bazelrc_with_imports.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        # Both imported files not found
+        stub_request(:get, url + "tools/preset.bazelrc?ref=sha")
+          .to_return(status: 404)
+        stub_request(:get, url + "tools?ref=sha")
+          .to_return(status: 404)
+        stub_request(:get, url + "user.bazelrc?ref=sha")
+          .to_return(status: 404)
+
+        # Stub other optional config files
+        stub_request(:get, url + "MODULE.bazel.lock?ref=sha").to_return(status: 404)
+        stub_request(:get, url + ".bazelversion?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "maven_install.json?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD?ref=sha").to_return(status: 404)
+        stub_request(:get, url + "BUILD.bazel?ref=sha").to_return(status: 404)
+      end
+
+      it "logs a warning when imported bazelrc file is not found" do
+        allow(Dependabot.logger).to receive(:warn)
+        fetched_files
+        expect(Dependabot.logger).to have_received(:warn).with(
+          "Imported bazelrc file 'tools/preset.bazelrc' referenced in .bazelrc but not found in repository"
+        )
+      end
+
+      it "continues fetching other files successfully" do
+        expect(fetched_files.map(&:name)).to include("MODULE.bazel", ".bazelrc")
+        expect(fetched_files.map(&:name)).not_to include("tools/preset.bazelrc")
+      end
+    end
+  end
+
+  describe "bazelrc imports (cloned repo)" do
+    subject(:fetched_files) { file_fetcher_instance.fetch_files }
+
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
+    end
+    let(:repo_contents_path) { build_tmp_repo(project_name) }
+    let(:directory) { "/" }
+
+    context "with .bazelrc containing import statements" do
+      let(:project_name) { "with_bazelrc_imports" }
+
+      it "fetches the imported bazelrc file from the local repo" do
+        names = fetched_files.map(&:name)
+        expect(names).to include("tools/preset.bazelrc")
+      end
+
+      it "includes the .bazelrc file" do
+        names = fetched_files.map(&:name)
+        expect(names).to include(".bazelrc")
+      end
+
+      it "does not fail when try-import target is missing" do
+        names = fetched_files.map(&:name)
+        expect(names).not_to include("user.bazelrc")
+      end
+    end
+  end
+
   describe "bzl file fetching (cloned repo)" do
     subject(:fetched_files) { file_fetcher_instance.fetch_files }
 
