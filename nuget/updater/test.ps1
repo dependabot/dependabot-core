@@ -153,6 +153,25 @@ try {
             '  </packageSources>',
             '</configuration>'
         )
+
+    Test-NuGetConfig `
+        -scenarioName "insecure-connections" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"http://nuget.example.com/insecure/index.json"}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="http://nuget.example.com/insecure/index.json" allowInsecureConnections="true" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
 }
 catch {
     Write-Host $_
