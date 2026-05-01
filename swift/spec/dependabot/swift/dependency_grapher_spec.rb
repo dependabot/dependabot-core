@@ -86,6 +86,59 @@ RSpec.describe Dependabot::Swift::DependencyGrapher do
           expect(dep.package_url).to eq(purl)
         end
       end
+
+      describe "subdependency relationships" do
+        it "assigns child dependencies from the dependency tree" do
+          resolved = grapher.resolved_dependencies
+
+          # combine-schedulers depends on xctest-dynamic-overlay
+          combine_purl = "pkg:swift/github.com/pointfreeco/combine-schedulers@0.10.0"
+          combine = resolved[combine_purl]
+          expect(combine).not_to be_nil
+          expect(combine.dependencies).to include(
+            "pkg:swift/github.com/pointfreeco/xctest-dynamic-overlay@0.8.5"
+          )
+        end
+
+        it "returns empty dependencies for leaf packages" do
+          resolved = grapher.resolved_dependencies
+
+          # reactiveswift is a leaf dependency (no children in the tree that are also resolved)
+          reactive_purl = "pkg:swift/github.com/reactivecocoa/reactiveswift@7.1.0"
+          reactive = resolved[reactive_purl]
+          expect(reactive).not_to be_nil
+          expect(reactive.dependencies).to eq([])
+        end
+      end
+
+      describe "when fetching package relationships fails" do
+        let(:swift_command_error) { StandardError.new("swift command failed") }
+
+        before do
+          # Let prepare! run normally so dependencies are parsed, then
+          # break the grapher's tree-fetching by making the JSON parse invalid
+          grapher.send(:prepare!)
+          allow(JSON).to receive(:parse).and_raise(swift_command_error)
+        end
+
+        it "sets the error flag without raising" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
+        it "assigns the original error to the grapher" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to eql(swift_command_error)
+        end
+
+        it "returns empty dependencies for all resolved packages" do
+          depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
+
+          expect(depends_on_values).to all(be_empty)
+        end
+      end
     end
   end
 

@@ -1,10 +1,13 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
+require "dependabot/shared_helpers"
+require "dependabot/swift/url_helpers"
 require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
@@ -70,14 +73,82 @@ module Dependabot
         )
       end
 
-      sig { override.params(_dependency: Dependabot::Dependency).returns(T::Array[String]) }
-      def fetch_subdependencies(_dependency)
-        []
+      sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def fetch_subdependencies(dependency)
+        return [] unless classic_spm_mode?
+
+        dependency_names = @dependencies.map(&:name)
+        package_relationships.fetch(dependency.name, []).select { |child| dependency_names.include?(child) }
       end
 
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "swift"
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def package_relationships
+        @package_relationships ||= T.let(
+          fetch_package_relationships,
+          T.nilable(T::Hash[String, T::Array[String]])
+        )
+      end
+
+      sig { returns(T::Hash[String, T::Array[String]]) }
+      def fetch_package_relationships
+        SharedHelpers.in_a_temporary_repo_directory(
+          T.must(dependency_files.first).directory,
+          file_parser.repo_contents_path
+        ) do
+          write_temporary_dependency_files
+
+          SharedHelpers.with_git_configured(credentials: file_parser.credentials) do
+            json = SharedHelpers.run_shell_command(
+              "swift package show-dependencies --format json",
+              stderr_to_stdout: false
+            )
+            parse_dependency_tree(JSON.parse(json))
+          end
+        end
+      end
+
+      sig { void }
+      def write_temporary_dependency_files
+        dependency_files.each do |file|
+          next if file.support_file?
+
+          File.write(file.name, file.content)
+        end
+      end
+
+      # Walks the JSON tree from `swift package show-dependencies --format json`
+      # and builds a map of parent_name -> [child_names].
+      sig { params(data: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
+      def parse_dependency_tree(data)
+        relationships = T.let({}, T::Hash[String, T::Array[String]])
+        walk_tree(data, relationships)
+        relationships
+      end
+
+      sig { params(node: T::Hash[String, T.untyped], relationships: T::Hash[String, T::Array[String]]).void }
+      def walk_tree(node, relationships)
+        parent_name = node_name(node)
+        children = node.fetch("dependencies", [])
+
+        return if children.empty?
+
+        child_names = children.filter_map { |child| node_name(child) }
+        relationships[parent_name] = child_names if parent_name
+
+        children.each { |child| walk_tree(child, relationships) }
+      end
+
+      sig { params(node: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      def node_name(node)
+        url = node["url"]
+        return nil unless url
+
+        UrlHelpers.normalize_name(SharedHelpers.scp_to_standard(url))
       end
     end
   end
