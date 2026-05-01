@@ -100,6 +100,8 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
       # Update the URL stub to simulate a 404 (not found) response for an unreleased version
       stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/guava-23.7-jre.jar")
         .to_return(status: 404)
+      stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/guava-23.7-jre.pom")
+        .to_return(status: 404)
 
       unreleased_version = Dependabot::Maven::Version.new("23.7-jre")
       expect(fetcher.released?(unreleased_version)).to be(false)
