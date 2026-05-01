@@ -85,7 +85,8 @@ public class GraphWorker
             else
             {
                 payload = DependencyGrapher.BuildSubmission(
-                    discovery, _jobId, baseCommitSha, branch, detectorVersion);
+                    discovery, _jobId, baseCommitSha, branch, detectorVersion,
+                    repoContentsPath.FullName, _logger);
             }
 
             _logger.Info($"Dependency submission payload for '{directory}':\n{JsonSerializer.Serialize(payload, SerializerOptions)}");

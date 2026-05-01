@@ -18,9 +18,11 @@ public class DependencyGrapher
         string jobId,
         string baseCommitSha,
         string branch,
-        string detectorVersion)
+        string detectorVersion,
+        string? repoContentsPath = null,
+        ILogger? logger = null)
     {
-        var manifests = BuildManifests(discovery);
+        var manifests = BuildManifests(discovery, repoContentsPath, logger);
         var status = manifests.Count > 0 ? "ok" : "skipped";
         var reason = manifests.Count > 0 ? null : "missing manifest files";
         var scannedManifestPath = $"{Ecosystem}::{NormalizeWorkspacePath(discovery.Path)}";
@@ -89,7 +91,10 @@ public class DependencyGrapher
         };
     }
 
-    internal static Dictionary<string, ManifestPayload> BuildManifests(WorkspaceDiscoveryResult discovery)
+    internal static Dictionary<string, ManifestPayload> BuildManifests(
+        WorkspaceDiscoveryResult discovery,
+        string? repoContentsPath = null,
+        ILogger? logger = null)
     {
         var manifests = new Dictionary<string, ManifestPayload>();
 
@@ -101,7 +106,22 @@ public class DependencyGrapher
             }
 
             var manifestPath = Path.Join(discovery.Path, project.FilePath).FullyNormalizedRootedPath();
-            var resolved = BuildResolvedDependencies(project.Dependencies);
+
+            // Try to find and parse project.assets.json for subdependency relationships
+            Dictionary<string, HashSet<string>>? relationships = null;
+            if (repoContentsPath is not null && logger is not null)
+            {
+                var assetsPath = AssetsFileParser.FindAssetsFile(repoContentsPath, discovery.Path, project.FilePath);
+                if (assetsPath is not null)
+                {
+                    var knownPackages = new HashSet<string>(
+                        project.Dependencies.Where(d => d.Version is not null).Select(d => d.Name),
+                        StringComparer.OrdinalIgnoreCase);
+                    relationships = AssetsFileParser.ParseDependencyRelationships(assetsPath, knownPackages, logger);
+                }
+            }
+
+            var resolved = BuildResolvedDependencies(project.Dependencies, relationships);
             if (resolved.Count == 0)
             {
                 continue;
@@ -161,10 +181,13 @@ public class DependencyGrapher
     }
 
     internal static Dictionary<string, ResolvedDependencyPayload> BuildResolvedDependencies(
-        IEnumerable<Dependency> dependencies)
+        IEnumerable<Dependency> dependencies,
+        Dictionary<string, HashSet<string>>? relationships = null)
     {
         var resolved = new Dictionary<string, ResolvedDependencyPayload>();
 
+        // First pass: build all PURLs so we can reference them in subdependencies
+        var depsByName = new Dictionary<string, (Dependency Dep, string Purl)>(StringComparer.OrdinalIgnoreCase);
         foreach (var dep in dependencies)
         {
             if (dep.Version is null)
@@ -173,15 +196,32 @@ public class DependencyGrapher
             }
 
             var purl = BuildPurl(dep.Name, dep.Version);
+            depsByName[dep.Name] = (dep, purl);
+        }
+
+        // Second pass: build resolved dependencies with subdependency PURLs
+        foreach (var (name, (dep, purl)) in depsByName)
+        {
             var relationship = dep.IsTopLevel ? "direct" : "indirect";
             var scope = GetScope(dep.Type);
+
+            // Look up subdependencies and convert to PURLs
+            var subdepPurls = Array.Empty<string>();
+            if (relationships is not null && relationships.TryGetValue(name, out var childNames))
+            {
+                subdepPurls = childNames
+                    .Where(childName => depsByName.ContainsKey(childName))
+                    .Select(childName => depsByName[childName].Purl)
+                    .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
 
             resolved[purl] = new ResolvedDependencyPayload
             {
                 PackageUrl = purl,
                 Relationship = relationship,
                 Scope = scope,
-                Dependencies = [],
+                Dependencies = subdepPurls,
             };
         }
 
