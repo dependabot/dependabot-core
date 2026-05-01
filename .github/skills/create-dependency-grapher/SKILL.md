@@ -221,6 +221,14 @@ Use these as models when implementing:
 
 See the `references/` directory for annotated code from these implementations.
 
+### Architectural Requirements
+
+When implementing a dependency grapher, we should never alter the file parser layer.
+
+This risks introducing bugs or increasingly latency for Dependabot's update functionality.
+
+If we need information the file parser does not return, it should always be retrieved in the grapher even if it means re-parsing the file.
+
 ## Example Prompts
 
 ### Adding a grapher to a new ecosystem
