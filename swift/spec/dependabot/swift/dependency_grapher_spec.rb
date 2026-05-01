@@ -169,6 +169,34 @@ RSpec.describe Dependabot::Swift::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eq(manifest)
       end
     end
+
+    describe "#resolved_dependencies" do
+      it "resolves dependencies including transitive ones" do
+        resolved = grapher.resolved_dependencies
+
+        expect(resolved).not_to be_empty
+
+        # swift-nio-http2 is declared in Package.swift
+        nio_http2_deps = resolved.select { |purl, _| purl.include?("swift-nio-http2") }
+        expect(nio_http2_deps).not_to be_empty
+
+        # Transitive dependencies should also be present
+        expect(resolved.size).to be > 1
+      end
+
+      it "includes subdependency relationships" do
+        resolved = grapher.resolved_dependencies
+
+        has_subdeps = resolved.values.any? { |dep| dep.dependencies.any? }
+        expect(has_subdeps).to be(true)
+      end
+
+      it "emits a missing lockfile warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/No Package\.resolved was found/)
+
+        grapher.resolved_dependencies
+      end
+    end
   end
 
   context "with an Xcode SPM project" do

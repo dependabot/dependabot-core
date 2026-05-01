@@ -24,6 +24,12 @@ module Dependabot
         end
       end
 
+      sig { override.void }
+      def prepare!
+        emit_missing_lockfile_warning! if classic_spm_mode? && package_resolved.nil?
+        super
+      end
+
       private
 
       # Mirror the FileParser's mode selection: classic SPM takes precedence
@@ -84,6 +90,17 @@ module Dependabot
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "swift"
+      end
+
+      sig { void }
+      def emit_missing_lockfile_warning!
+        Dependabot.logger.warn(
+          "No Package.resolved was found in this repository. " \
+          "Dependabot resolved dependency versions at scan time using `swift package show-dependencies`.\n\n" \
+          "To ensure consistent builds and security scanning, we recommend committing your Package.resolved file. " \
+          "Without a committed lockfile, resolved dependency versions may change between scans " \
+          "due to new package releases."
+        )
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
