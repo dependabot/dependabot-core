@@ -54,7 +54,7 @@ EOF
 # Based on https://github.com/Azure/LinuxPatchExtension/blob/master/src/tools/references/apt/sources.list.d/ubuntu.sources
 # and https://github.com/actions/runner-images/blob/2f8d6ab9ef24fd8bda80b5259650fe1dc4311320/images/ubuntu/scripts/build/configure-apt-sources.sh#L11
 RUN <<EOT
-  set -e
+  set -euxo pipefail
   release="$( . /etc/os-release && echo "$VERSION_CODENAME" )"
   : > /etc/apt/sources.list.d/ubuntu.sources
   if [ -n "$APT_MIRROR_URL" ]; then
@@ -146,7 +146,7 @@ RUN cat > /usr/local/bin/dependabot-add-apt-ppa <<'SCRIPT' && chmod +x /usr/loca
 set -euo pipefail
 spec="${1:-}"
 if [ -z "$spec" ]; then
-  echo "usage: dependabot-add-apt-ppa <owner>/<name>" >&2
+  echo "usage: dependabot-add-apt-ppa [ppa:]<owner>/<name>" >&2
   exit 64
 fi
 spec="${spec#ppa:}"
