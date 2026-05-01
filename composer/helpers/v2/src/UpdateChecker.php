@@ -17,19 +17,35 @@ final class UpdateChecker
         [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
         $httpBasicCredentials = [];
+        $bearerCredentials = [];
 
         foreach ($gitCredentials as $credentials) {
-            $httpBasicCredentials[$credentials['host']] = [
-                'username' => $credentials['username'],
-                'password' => $credentials['password'],
-            ];
+            if (isset($credentials['host']) && isset($credentials['username']) && isset($credentials['password'])) {
+                $httpBasicCredentials[$credentials['host']] = [
+                    'username' => $credentials['username'],
+                    'password' => $credentials['password'],
+                ];
+            }
         }
 
         foreach ($registryCredentials as $credentials) {
-            $httpBasicCredentials[$credentials['registry']] = [
-                'username' => $credentials['username'],
-                'password' => $credentials['password'],
-            ];
+            $host = $credentials['registry'] ?? null;
+            if (!$host) {
+                continue;
+            }
+
+            // http-basic
+            if (isset($credentials['username']) && isset($credentials['password'])) {
+                $httpBasicCredentials[$host] = [
+                    'username' => $credentials['username'],
+                    'password' => $credentials['password'],
+                ];
+            }
+
+            // token (bearer) without auth_type distinction
+            if (isset($credentials['token'])) {
+                $bearerCredentials[$host] = $credentials['token'];
+            }
         }
 
         $io = new ExceptionIO();
@@ -38,13 +54,16 @@ final class UpdateChecker
 
         $config = $composer->getConfig();
 
-        if (0 < count($httpBasicCredentials)) {
-            $config->merge([
-                'config' => [
-                    'http-basic' => $httpBasicCredentials,
-                ],
-            ]);
+        $configToMerge = ['config' => []];
+        if (!empty($httpBasicCredentials)) {
+            $configToMerge['config']['http-basic'] = $httpBasicCredentials;
+        }
+        if (!empty($bearerCredentials)) {
+            $configToMerge['config']['bearer'] = $bearerCredentials;
+        }
 
+        if (!empty($configToMerge['config'])) {
+            $config->merge($configToMerge);
             $io->loadConfiguration($config);
         }
 
