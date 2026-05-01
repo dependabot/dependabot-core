@@ -593,9 +593,9 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       its([:requirement]) { is_expected.to eq("==2.6.0") }
     end
 
-    context "when there is a pyproject.toml file with poetry dependencies" do
+    context "when there is a pyproject.toml file with tilde version dependencies" do
       let(:dependency_files) { [pyproject] }
-      let(:pyproject_fixture_name) { "tilde_version.toml" }
+      let(:pyproject_fixture_name) { "standard_python_tilde_version.toml" }
 
       context "when updating a dependency in an additional requirements file" do
         let(:dependency_files) { super().append(requirements_file) }
