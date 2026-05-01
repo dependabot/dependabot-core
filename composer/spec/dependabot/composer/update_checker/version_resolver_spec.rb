@@ -341,4 +341,168 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
   end
+
+  describe "#registry_credentials" do
+    subject(:registry_credentials) { resolver.send(:registry_credentials) }
+
+    let(:project_name) { "exact_version" }
+    let(:dependency_name) { "monolog/monolog" }
+    let(:dependency_version) { "1.0.1" }
+    let(:string_req) { "^1.0" }
+
+    context "with auth.json credentials in dependency files" do
+      let(:project_name) { "private_registry_with_auth_json" }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { "1.0.0" }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("2.0.0") }
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      end
+
+      it "includes credentials from auth.json" do
+        expect(registry_credentials.map { |c| c["registry"] }).to include("php.fury.io")
+      end
+
+      it "includes the correct username and password from auth.json" do
+        cred = registry_credentials.find { |c| c["registry"] == "php.fury.io" }
+        expect(cred["username"]).to eq("user")
+        expect(cred["password"]).to eq("pass")
+      end
+    end
+
+    context "with composer_repository credentials" do
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "composer_repository",
+          "registry" => "registry.example.com",
+          "username" => "user",
+          "password" => "pass"
+        }]
+      end
+
+      it "includes credentials from dependabot.yml" do
+        expect(registry_credentials.map { |c| c["registry"] }).to include("registry.example.com")
+      end
+    end
+  end
+
+  describe "#merged_auth_json_content" do
+    subject(:merged_content) { resolver.send(:merged_auth_json_content) }
+
+    let(:project_name) { "exact_version" }
+    let(:dependency_name) { "monolog/monolog" }
+    let(:dependency_version) { "1.0.1" }
+    let(:string_req) { "^1.0" }
+
+    context "without auth.json or registry credentials" do
+      it "returns empty hash" do
+        expect(merged_content).to eq({})
+      end
+    end
+
+    context "with auth.json credentials in dependency files" do
+      let(:project_name) { "private_registry_with_auth_json" }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { "1.0.0" }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("2.0.0") }
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      end
+
+      it "includes credentials from auth.json" do
+        expect(merged_content.dig("http-basic", "php.fury.io")).to include(
+          "username" => "user",
+          "password" => "pass"
+        )
+      end
+    end
+
+    context "with composer_repository credentials and no auth.json" do
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "composer_repository",
+          "registry" => "registry.example.com",
+          "username" => "user",
+          "password" => "pass"
+        }]
+      end
+
+      it "generates auth.json content from registry credentials" do
+        expect(merged_content.dig("http-basic", "registry.example.com")).to include(
+          "username" => "user",
+          "password" => "pass"
+        )
+      end
+    end
+
+    context "with both auth.json and registry credentials" do
+      let(:project_name) { "private_registry_with_auth_json" }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { "1.0.0" }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("2.0.0") }
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "composer_repository",
+          "registry" => "other.registry.com",
+          "username" => "other-user",
+          "password" => "other-pass"
+        }]
+      end
+
+      it "merges credentials from both sources" do
+        expect(merged_content.dig("http-basic", "php.fury.io")).to include(
+          "username" => "user",
+          "password" => "pass"
+        )
+        expect(merged_content.dig("http-basic", "other.registry.com")).to include(
+          "username" => "other-user",
+          "password" => "other-pass"
+        )
+      end
+    end
+
+    context "with unparseable auth.json" do
+      let(:project_name) { "private_registry_with_unparseable_auth_json" }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { "1.0.0" }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("2.0.0") }
+
+      it "raises a helpful error" do
+        expect { merged_content }
+          .to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("auth.json")
+          end
+      end
+    end
+  end
 end
