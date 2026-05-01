@@ -99,7 +99,10 @@ module Dependabot
           )
           nil
         rescue StandardError => e
-          Dependabot.logger.error("Error fetching branch-tip history: #{e.message}")
+          Dependabot.logger.error(
+            "Error fetching branch-tip history for #{dependency.name} " \
+            "(#{e.class}: #{e.message})"
+          )
           nil
         end
 
@@ -113,8 +116,9 @@ module Dependabot
           )
         end
 
-        # Trim to entries newer than the currently locked SHA so we don't
-        # introduce candidates older than `dependency.version`.
+        # Trim to entries up to and including the currently locked SHA, stopping
+        # once that SHA is reached so we don't introduce candidates older than
+        # `dependency.version`.
         sig { params(entries: T::Array[T.untyped]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def trim_entries_to_locked_sha(entries)
           locked = dependency.version
