@@ -364,6 +364,51 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
     end
 
+    context "when updating a build-system dependency that also appears in the lockfile" do
+      let(:pyproject_content) { fixture("pyproject_files", "build_system_also_transitive.toml") }
+      let(:lockfile_content) { fixture("uv_locks", "build_system_also_transitive.lock") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "setuptools",
+          version: "80.10.2",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=70",
+            groups: ["build-system"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=70",
+            groups: ["build-system"],
+            source: nil
+          }],
+          previous_version: "80.9.0",
+          package_manager: "uv"
+        )
+      end
+
+      it "updates the lockfile" do
+        updated_lockfile_content = lockfile_content.sub(
+          'version = "80.9.0"',
+          'version = "80.10.2"'
+        )
+
+        allow(updater).to receive(:updated_lockfile_content).and_return(updated_lockfile_content)
+
+        updated_dependency_files = updater.updated_dependency_files
+
+        # Should NOT include pyproject.toml (requirement didn't change)
+        expect(updated_dependency_files.map(&:name)).not_to include("pyproject.toml")
+
+        # Should include the lockfile with updated version
+        lock = updated_dependency_files.find { |f| f.name == "uv.lock" }
+        expect(lock).not_to be_nil
+        expect(lock.content).to include('version = "80.10.2"')
+      end
+    end
+
     context "when updating a regular dependency" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
       let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
