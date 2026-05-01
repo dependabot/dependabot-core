@@ -20,7 +20,7 @@ module Dependabot
         sig { returns(T::Hash[String, T.untyped]) }
         def parsed
           json_obj = JSON.parse(T.must(@dependency_file.content))
-          @parsed ||= T.let(json_obj, T.untyped)
+          @parsed ||= T.let(json_obj, T.nilable(T::Hash[String, T.untyped]))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, @dependency_file.path
         end
