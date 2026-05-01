@@ -198,12 +198,15 @@ module Dependabot
 
         sig { params(deps_hash: T::Hash[String, T.untyped], dep_name: String, details: T::Hash[String, T.untyped]).void }
         def freeze_git_dep!(deps_hash, dep_name, details)
+          existing_extras = deps_hash[dep_name].is_a?(Hash) ? deps_hash[dep_name]["extras"] : nil
+
           deps_hash[dep_name] = {
             "git" => details.dig("source", "url"),
             "rev" => details.dig("source", "reference")
           }
           subdirectory = details.dig("source", "subdirectory")
           deps_hash[dep_name]["subdirectory"] = subdirectory if subdirectory
+          deps_hash[dep_name]["extras"] = existing_extras if existing_extras
         end
 
         sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
