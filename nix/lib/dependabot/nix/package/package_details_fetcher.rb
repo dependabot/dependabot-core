@@ -88,24 +88,10 @@ module Dependabot
           return nil unless use_activity_api?(url, ref)
 
           Dependabot.logger.info("Fetching branch-tip history for Nix flake input: #{dependency.name}")
-          path = "/repos/#{github_repo_path(T.must(url))}/activity"
-          entries = T.unsafe(github_client).get(
-            path,
-            ref: "refs/heads/#{T.must(ref)}",
-            activity_type: ACTIVITY_TYPES,
-            per_page: 100
-          )
+          entries = fetch_activity_entries(T.must(url), T.must(ref))
           return nil unless entries.is_a?(Array) && entries.any?
 
-          # Trim to entries newer than the currently locked SHA so we don't
-          # introduce candidates older than `dependency.version`.
-          locked = dependency.version
-          result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
-          entries.each do |e|
-            result << { tag: e[:after], release_date: format_timestamp(e[:pushed_at]) }
-            break if locked && (e[:after] == locked || e[:before] == locked)
-          end
-          result
+          trim_entries_to_locked_sha(entries)
         rescue Octokit::Error => e
           Dependabot.logger.info(
             "Repo Activity API failed for #{dependency.name} (#{e.class}: #{e.message}), " \
@@ -115,6 +101,29 @@ module Dependabot
         rescue StandardError => e
           Dependabot.logger.error("Error fetching branch-tip history: #{e.message}")
           nil
+        end
+
+        sig { params(url: String, ref: String).returns(T.untyped) }
+        def fetch_activity_entries(url, ref)
+          T.unsafe(github_client).get(
+            "/repos/#{github_repo_path(url)}/activity",
+            ref: "refs/heads/#{ref}",
+            activity_type: ACTIVITY_TYPES,
+            per_page: 100
+          )
+        end
+
+        # Trim to entries newer than the currently locked SHA so we don't
+        # introduce candidates older than `dependency.version`.
+        sig { params(entries: T::Array[T.untyped]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def trim_entries_to_locked_sha(entries)
+          locked = dependency.version
+          result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          entries.each do |e|
+            result << { tag: e[:after], release_date: format_timestamp(e[:pushed_at]) }
+            break if locked && (e[:after] == locked || e[:before] == locked)
+          end
+          result
         end
 
         sig { params(timestamp: T.untyped).returns(T.nilable(String)) }
