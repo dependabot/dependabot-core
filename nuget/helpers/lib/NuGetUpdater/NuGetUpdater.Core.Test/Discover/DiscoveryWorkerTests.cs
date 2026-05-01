@@ -1694,7 +1694,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ReferencedProjectPaths = ["referenced/a.csproj"],
             ImportedFiles = ["imported/a.props"],
             AdditionalFiles = ["a/packages.config"],
-            CentralPackageTransitivePinningEnabled = false,
+            PackageManagementKind = PackageManagementKind.Default,
         };
         var result2 = new ProjectDiscoveryResult()
         {
@@ -1709,7 +1709,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ReferencedProjectPaths = ["referenced/b.csproj"],
             ImportedFiles = ["imported/b.props"],
             AdditionalFiles = ["b/app.config"],
-            CentralPackageTransitivePinningEnabled = true,
+            PackageManagementKind = PackageManagementKind.CentralPackageManagement,
         };
 
         // to make sure we're checking everything exactly, we'll explicitly check each item
@@ -1736,7 +1736,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         AssertEx.Equal(["referenced/a.csproj", "referenced/b.csproj"], merged.ReferencedProjectPaths);
         AssertEx.Equal(["imported/a.props", "imported/b.props"], merged.ImportedFiles);
         AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);
-        Assert.True(merged.CentralPackageTransitivePinningEnabled);
+        Assert.Equal(PackageManagementKind.CentralPackageManagement, merged.PackageManagementKind);
     }
 
     [Fact]

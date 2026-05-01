@@ -408,8 +408,7 @@ public class FileWriterWorker
             .ToImmutableArray();
 
         // try update
-        var addPackageReferenceElementForPinnedPackages = !projectDiscovery.CentralPackageTransitivePinningEnabled;
-        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
+        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, projectDiscovery.PackageManagementKind);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {
