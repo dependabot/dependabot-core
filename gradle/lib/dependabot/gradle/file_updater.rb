@@ -107,17 +107,33 @@ module Dependabot
           replace_updated_files(files, updated_files)
         end
         if Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
-          buildfiles_processed.each_value do |buildfile|
-            lockfile_updater = LockfileUpdater.new(dependency_files: files)
-            updated_files = lockfile_updater.update_lockfiles(buildfile)
-            replace_updated_files(files, updated_files)
-          end
+          update_lockfiles_for_buildfiles(files, buildfiles_processed)
         end
 
         files
       end
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
+
+      sig do
+        params(
+          files: T::Array[Dependabot::DependencyFile],
+          buildfiles_processed: T::Hash[String, Dependabot::DependencyFile]
+        ).void
+      end
+      def update_lockfiles_for_buildfiles(files, buildfiles_processed)
+        lockfile_roots_processed = T.let(Set.new, T::Set[String])
+        buildfiles_processed.each_value do |buildfile|
+          lockfile_updater = LockfileUpdater.new(dependency_files: files)
+          root_dir = lockfile_updater.determine_root_dir(build_file: buildfile)
+          next if lockfile_roots_processed.include?(root_dir)
+
+          lockfile_roots_processed.add(root_dir)
+          updated_files = lockfile_updater.update_lockfiles(buildfile)
+          replace_updated_files(files, updated_files)
+        end
+      end
+
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
