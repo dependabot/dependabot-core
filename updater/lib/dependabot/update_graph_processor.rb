@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "pathname"
 require "sorbet-runtime"
 
 # Dependabot components
@@ -59,6 +60,22 @@ module Dependabot
     end
 
     private
+
+    # Normalizes a directory string for matching purposes, so that semantically
+    # equivalent paths (e.g. `"/."`, `"."`, `"/"`, `"/subproject/"`, `"/subproject"`)
+    # compare equal regardless of how they were spelled by the caller or the file
+    # fetcher.
+    #
+    # `Job#clean_directories` only does a leading-slash sub, so values like `"."`
+    # become `"/."` rather than `"/"`. The file fetcher base class then cleanpaths
+    # `"/."` to `"/"` before constructing each `DependencyFile`. Without
+    # normalization on both sides of the comparison in `dependency_files_for`,
+    # a job entry of `"/."` would not match files stored at `"/"` and the
+    # snapshot would silently come back empty (SKIPPED).
+    sig { params(directory: String).returns(String) }
+    def normalize_directory(directory)
+      Pathname.new("/").join(directory).cleanpath.to_path
+    end
 
     sig { returns(Dependabot::Service) }
     attr_reader :service
@@ -126,7 +143,8 @@ module Dependabot
 
     sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files_for(directory)
-      dependency_files.select { |f| f.directory == directory }
+      normalized = normalize_directory(directory)
+      dependency_files.select { |f| normalize_directory(f.directory) == normalized }
     end
 
     sig do
