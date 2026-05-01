@@ -45,11 +45,11 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
   let(:activity_response) do
     [
       { "id" => 1, "before" => "b12141ef619e", "after" => "0726a0ec",
-        "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T20:30:00Z", "activity_type" => "push" },
+        "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-24T20:30:00Z", "activity_type" => "push" },
       { "id" => 2, "before" => "4bd9165a9165", "after" => "b12141ef",
-        "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T19:04:11Z", "activity_type" => "push" },
+        "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-20T19:04:11Z", "activity_type" => "push" },
       { "id" => 3, "before" => current_sha, "after" => "4bd9165a",
-        "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T18:15:58Z", "activity_type" => "push" }
+        "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-15T18:15:58Z", "activity_type" => "push" }
     ]
   end
 
@@ -191,11 +191,11 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
       let(:activity_response) do
         [
           { "id" => 1, "after" => "newer_a", "before" => "older_a",
-            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T00:00:00Z" },
+            "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-24T00:00:00Z" },
           { "id" => 2, "after" => current_sha, "before" => "older_b",
-            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T00:00:00Z" },
+            "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-20T00:00:00Z" },
           { "id" => 3, "after" => "older_c", "before" => "older_d",
-            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T00:00:00Z" }
+            "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-15T00:00:00Z" }
         ]
       end
 

@@ -102,7 +102,7 @@ module Dependabot
           locked = dependency.version
           result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
           entries.each do |e|
-            result << { tag: e[:after], release_date: format_timestamp(e[:timestamp]) }
+            result << { tag: e[:after], release_date: format_timestamp(e[:pushed_at]) }
             break if locked && (e[:after] == locked || e[:before] == locked)
           end
           result
