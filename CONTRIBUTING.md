@@ -48,6 +48,44 @@ We are investing more developer time directly in `dependabot-core` to improve ou
 each ecosystem is more isolated and testable. Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
 
+## Building images behind an Artifactory (or other) APT mirror
+
+Image builds in this repository fetch packages from Canonical's Ubuntu archives
+(`archive.ubuntu.com`, `security.ubuntu.com`, `ports.ubuntu.com`) and from
+Launchpad PPAs (`ppa:git-core/ppa`, `ppa:ondrej/php`). When those endpoints are
+degraded or unreachable (e.g. the November 2025 Canonical DDoS), `script/build`
+fails on the first `apt-get` / `add-apt-repository` step, which blocks every
+ecosystem image because they all derive from `Dockerfile.updater-core`.
+
+To make builds resilient, the base image accepts the following optional build
+arguments. They default to empty, in which case behavior is unchanged. When
+provided, the URLs are inserted as the **primary** APT sources, with the
+upstream Canonical URLs retained as a fallback, and PPAs are resolved against
+the configured mirror instead of via `add-apt-repository` / Launchpad:
+
+| Build arg | Purpose |
+| --- | --- |
+| `APT_MIRROR_URL` | Mirror of `archive.ubuntu.com` (e.g. an Artifactory remote repo). |
+| `APT_MIRROR_SECURITY_URL` | Mirror of `security.ubuntu.com`. Defaults to `APT_MIRROR_URL` when unset. |
+| `APT_MIRROR_PORTS_URL` | Mirror of `ports.ubuntu.com` (arm64). |
+| `PPA_MIRROR_BASE_URL` | Base URL for Launchpad PPA mirrors. The helper appends `<owner>/<name>/ubuntu`. |
+
+`script/build` automatically forwards the values of the matching environment
+variables to `docker build`, and the CI workflows (`ci.yml`, `ci-arm64.yml`)
+forward repository/organization variables of the same name. The base image
+also installs `/etc/apt/apt.conf.d/99-dependabot-network` with bounded HTTP
+timeouts and retries so a single slow upstream no longer stalls a build for
+many minutes before failing.
+
+Example:
+
+```bash
+APT_MIRROR_URL=https://artifactory.example.com/artifactory/ubuntu-archive \
+APT_MIRROR_PORTS_URL=https://artifactory.example.com/artifactory/ubuntu-ports \
+PPA_MIRROR_BASE_URL=https://artifactory.example.com/artifactory/ubuntu-ppa \
+  script/build bundler
+```
+
 ## Stalebot
 
 We have begun using a [Stalebot action](https://github.com/actions/stale) to help keep the Issues and Pull requests backlogs tidy. You can see the configuration [here](.github/workflows/stalebot.yml). If you'd like to keep an issue open after getting a stalebot warning, simply comment on it and it'll reset the clock.

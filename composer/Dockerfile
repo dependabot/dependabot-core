@@ -8,8 +8,11 @@ RUN <<EOF
   apt-get upgrade -y
   apt-get install -y --no-install-recommends software-properties-common
 
-  # Install PHP and its packages
-  add-apt-repository ppa:ondrej/php
+  # Install PHP and its packages. Use the dependabot-add-apt-ppa helper from
+  # the base image so an Artifactory-backed PPA mirror can be substituted via
+  # PPA_MIRROR_BASE_URL (inherited from the base image ENV) when Launchpad is
+  # unreachable.
+  dependabot-add-apt-ppa ppa:ondrej/php
   apt-get update
   apt-get install -y --no-install-recommends \
     php${PHP_VERSION} \

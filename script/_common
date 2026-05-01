@@ -76,6 +76,10 @@ function docker_build() {
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
     --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
+    --build-arg APT_MIRROR_URL="${APT_MIRROR_URL:-}" \
+    --build-arg APT_MIRROR_SECURITY_URL="${APT_MIRROR_SECURITY_URL:-}" \
+    --build-arg APT_MIRROR_PORTS_URL="${APT_MIRROR_PORTS_URL:-}" \
+    --build-arg PPA_MIRROR_BASE_URL="${PPA_MIRROR_BASE_URL:-}" \
     --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \

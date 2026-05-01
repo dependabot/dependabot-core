@@ -23,4 +23,12 @@ jobs:
           persist-credentials: false
 
       - name: Build bundler ecosystem image
+        env:
+          # Optional Artifactory-backed mirrors for resilience against
+          # Canonical / Launchpad outages. Leave unset for default upstream
+          # behavior. Configure via repository/organization variables.
+          APT_MIRROR_URL: ${{ vars.APT_MIRROR_URL }}
+          APT_MIRROR_SECURITY_URL: ${{ vars.APT_MIRROR_SECURITY_URL }}
+          APT_MIRROR_PORTS_URL: ${{ vars.APT_MIRROR_PORTS_URL }}
+          PPA_MIRROR_BASE_URL: ${{ vars.PPA_MIRROR_BASE_URL }}
         run: script/build bundler

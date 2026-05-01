@@ -69,6 +69,14 @@ jobs:
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          # Optional Artifactory-backed mirrors for resilience against
+          # Canonical / Launchpad outages. Leave unset for default upstream
+          # behavior. Configure via repository/organization variables.
+          APT_MIRROR_URL: ${{ vars.APT_MIRROR_URL }}
+          APT_MIRROR_SECURITY_URL: ${{ vars.APT_MIRROR_SECURITY_URL }}
+          APT_MIRROR_PORTS_URL: ${{ vars.APT_MIRROR_PORTS_URL }}
+          PPA_MIRROR_BASE_URL: ${{ vars.PPA_MIRROR_BASE_URL }}
         run: script/build ${{ matrix.suite.path }}
 
       - name: Run ${{ matrix.suite.name }} tests

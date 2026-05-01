@@ -11,12 +11,88 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
-# Configures Ubuntu to use Azure mirrors, which are often faster and more reliable
-# From https://github.com/Azure/LinuxPatchExtension/blob/master/src/tools/references/apt/sources.list.d/ubuntu.sources
-# This is also used in other places such as the runner builds: https://github.com/actions/runner-images/blob/2f8d6ab9ef24fd8bda80b5259650fe1dc4311320/images/ubuntu/scripts/build/configure-apt-sources.sh#L11
-RUN set -e; \
-    release=$( . /etc/os-release && echo "$VERSION_CODENAME" ); \
-    cat <<EOF | tee /etc/apt/sources.list.d/ubuntu.sources
+# Optional Artifactory (or other) mirrors for Ubuntu archives and Launchpad PPAs.
+# When set, these URLs are inserted as the *primary* APT sources, with the
+# upstream Canonical URLs retained as a fallback. This provides resilience
+# against Canonical infrastructure outages (e.g. archive.ubuntu.com /
+# ports.ubuntu.com / Launchpad downtime). Default behavior is unchanged when
+# these args are empty.
+#
+# Examples:
+#   APT_MIRROR_URL=https://artifactory.example.com/artifactory/ubuntu-archive
+#   APT_MIRROR_SECURITY_URL=https://artifactory.example.com/artifactory/ubuntu-security
+#   APT_MIRROR_PORTS_URL=https://artifactory.example.com/artifactory/ubuntu-ports
+#   PPA_MIRROR_BASE_URL=https://artifactory.example.com/artifactory/ubuntu-ppa
+ARG APT_MIRROR_URL=""
+ARG APT_MIRROR_SECURITY_URL=""
+ARG APT_MIRROR_PORTS_URL=""
+ARG PPA_MIRROR_BASE_URL=""
+# Persist mirror configuration so downstream ecosystem images can reuse it
+# (e.g. composer adds ppa:ondrej/php). These ENV vars are read by the
+# `dependabot-add-apt-ppa` helper installed below.
+ENV APT_MIRROR_URL=${APT_MIRROR_URL} \
+    APT_MIRROR_SECURITY_URL=${APT_MIRROR_SECURITY_URL} \
+    APT_MIRROR_PORTS_URL=${APT_MIRROR_PORTS_URL} \
+    PPA_MIRROR_BASE_URL=${PPA_MIRROR_BASE_URL}
+
+# Harden apt against transient upstream stalls (e.g. Canonical DDoS): bound
+# connection/IO time and retry a few times so a single slow mirror does not
+# block the whole image build for many minutes before failing.
+RUN cat > /etc/apt/apt.conf.d/99-dependabot-network <<EOF
+Acquire::Retries "3";
+Acquire::http::Timeout "30";
+Acquire::https::Timeout "30";
+Acquire::http::ConnectionAttemptDelayMsec "500";
+Acquire::https::ConnectionAttemptDelayMsec "500";
+EOF
+
+# Configures Ubuntu APT sources. By default this prefers the Azure mirror with
+# the canonical archive as a fallback. When the APT_MIRROR_* build args are
+# provided (e.g. an Artifactory-backed mirror), they are inserted as the
+# *primary* sources so upstream outages no longer break image builds.
+#
+# Based on https://github.com/Azure/LinuxPatchExtension/blob/master/src/tools/references/apt/sources.list.d/ubuntu.sources
+# and https://github.com/actions/runner-images/blob/2f8d6ab9ef24fd8bda80b5259650fe1dc4311320/images/ubuntu/scripts/build/configure-apt-sources.sh#L11
+RUN <<EOT
+  set -e
+  release="$( . /etc/os-release && echo "$VERSION_CODENAME" )"
+  : > /etc/apt/sources.list.d/ubuntu.sources
+  if [ -n "$APT_MIRROR_URL" ]; then
+    cat >> /etc/apt/sources.list.d/ubuntu.sources <<MIRROR
+
+# Operator-provided mirror (preferred when configured)
+Types: deb
+URIs: ${APT_MIRROR_URL}
+Suites: ${release} ${release}-updates ${release}-backports
+Components: main universe restricted multiverse
+Architectures: i386,amd64,arm64
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+MIRROR
+  fi
+  security_url="${APT_MIRROR_SECURITY_URL:-$APT_MIRROR_URL}"
+  if [ -n "$security_url" ]; then
+    cat >> /etc/apt/sources.list.d/ubuntu.sources <<MIRROR
+
+Types: deb
+URIs: ${security_url}
+Suites: ${release}-security
+Components: main universe restricted multiverse
+Architectures: i386,amd64,arm64
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+MIRROR
+  fi
+  if [ -n "$APT_MIRROR_PORTS_URL" ]; then
+    cat >> /etc/apt/sources.list.d/ubuntu.sources <<MIRROR
+
+Types: deb
+URIs: ${APT_MIRROR_PORTS_URL}
+Suites: ${release} ${release}-updates ${release}-backports ${release}-security
+Components: main universe restricted multiverse
+Architectures: arm64
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+MIRROR
+  fi
+  cat >> /etc/apt/sources.list.d/ubuntu.sources <<UPSTREAM
 
 # Prefer Azure mirrors
 Types: deb
@@ -56,7 +132,40 @@ Components: main universe restricted multiverse
 Architectures: i386,amd64
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
-EOF
+UPSTREAM
+EOT
+
+# Helper that installs a Launchpad PPA. When PPA_MIRROR_BASE_URL is set, it
+# adds an APT source pointing at the configured mirror (e.g. Artifactory remote
+# repository proxying Launchpad) instead of calling `add-apt-repository`,
+# which performs a live Launchpad lookup and is the failure mode observed
+# during recent Canonical outages. Falls back to `add-apt-repository` when no
+# mirror is configured to preserve existing behavior.
+RUN cat > /usr/local/bin/dependabot-add-apt-ppa <<'SCRIPT' && chmod +x /usr/local/bin/dependabot-add-apt-ppa
+#!/bin/bash
+set -euo pipefail
+spec="${1:-}"
+if [ -z "$spec" ]; then
+  echo "usage: dependabot-add-apt-ppa <owner>/<name>" >&2
+  exit 64
+fi
+spec="${spec#ppa:}"
+owner="${spec%%/*}"
+name="${spec#*/}"
+release="$( . /etc/os-release && echo "$VERSION_CODENAME" )"
+if [ -n "${PPA_MIRROR_BASE_URL:-}" ]; then
+  base="${PPA_MIRROR_BASE_URL%/}"
+  list="/etc/apt/sources.list.d/${owner}-ubuntu-${name}-${release}.list"
+  echo "Using PPA mirror ${base} for ppa:${owner}/${name}"
+  # The mirror is operator-provisioned and assumed to be a trusted internal
+  # registry (e.g. Artifactory). `trusted=yes` avoids requiring out-of-band
+  # GPG key plumbing per PPA; operators wanting full GPG verification can
+  # extend this helper to fetch keys from a known mirror path.
+  echo "deb [trusted=yes] ${base}/${owner}/${name}/ubuntu ${release} main" > "$list"
+else
+  add-apt-repository -y "ppa:${owner}/${name}"
+fi
+SCRIPT
 
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -65,8 +174,10 @@ RUN apt-get update \
     software-properties-common \
     # Used to download the git-lfs GPG key as well as dev dependencies for CI
     curl \
-    # Add git core ppa to get a more recent git version than the one provided by ubuntu
-    && add-apt-repository -y ppa:git-core/ppa \
+    # Add git core ppa to get a more recent git version than the one provided by ubuntu.
+    # Uses the dependabot-add-apt-ppa helper so an Artifactory-backed mirror can
+    # be substituted via PPA_MIRROR_BASE_URL when Launchpad is unreachable.
+    && dependabot-add-apt-ppa ppa:git-core/ppa \
     # Install the git-lfs mirror. See https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md
     # We need this because the version of git-lfs provided by Ubuntu is outdated
     # apt-transport-https is a temporary dependency to install the git-lfs apt source
