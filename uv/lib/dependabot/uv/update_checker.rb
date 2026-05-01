@@ -33,6 +33,8 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        return updated_git_requirements if git_dependency?
+
         RequirementsUpdater.new(
           requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,

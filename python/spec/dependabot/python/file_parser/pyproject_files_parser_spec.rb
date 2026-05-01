@@ -77,17 +77,71 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
 
-      context "with a git requirement" do
+      context "with a git requirement (branch-based)" do
         subject(:dependency_names) { dependencies.map(&:name) }
 
         let(:pyproject_fixture_name) { "git_dependency.toml" }
 
-        it "excludes git dependency" do
-          expect(dependency_names).not_to include("toml")
+        it "includes git branch dependency" do
+          expect(dependency_names).to include("toml")
         end
 
         it "includes non-git dependencies" do
           expect(dependency_names).to include("pytest")
+        end
+
+        describe "the git branch dependency" do
+          subject(:dependency) { dependencies.find { |d| d.name == "toml" } }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("toml")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/uiri/toml.git",
+                  ref: "master",
+                  branch: "master"
+                }
+              }]
+            )
+          end
+        end
+      end
+
+      context "with a git requirement with branch fixture" do
+        let(:pyproject_fixture_name) { "git_dependency_with_branch.toml" }
+
+        it "includes git dependency with branch" do
+          expect(dependencies.map(&:name)).to include("toml")
+        end
+
+        describe "the git dependency with branch" do
+          subject(:dependency) { dependencies.find { |d| d.name == "toml" } }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("toml")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: nil,
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/uiri/toml",
+                  ref: "master",
+                  branch: "master"
+                }
+              }]
+            )
+          end
         end
       end
 
@@ -252,8 +306,25 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
         let(:poetry_lock_fixture_name) { "git_dependency.lock" }
 
-        it "excludes the git dependency" do
-          expect(dependencies.map(&:name)).not_to include("toml")
+        it "includes the git branch dependency" do
+          expect(dependencies.map(&:name)).to include("toml")
+        end
+
+        describe "the git branch dependency" do
+          subject(:dependency) { dependencies.find { |d| d.name == "toml" } }
+
+          it "has the resolved commit SHA as version" do
+            expect(dependency.version).to eq("5706d3155f4da8f3b84875f80bfe0dfc6565f61f")
+          end
+
+          it "has the right source details" do
+            expect(dependency.requirements.first[:source]).to eq(
+              type: "git",
+              url: "https://github.com/uiri/toml.git",
+              ref: "master",
+              branch: "master"
+            )
+          end
         end
       end
 
