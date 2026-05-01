@@ -118,8 +118,10 @@ module Dependabot
 
         parsed_lockfile = JSON.parse(lockfile_content)
         section = lockfile_section
-        dependency_data = parsed_lockfile.dig(section, dependency_name)
+        section_data = parsed_lockfile[section]
+        return nil unless section_data.is_a?(Hash)
 
+        dependency_data = section_data[dependency_name]
         return nil unless dependency_data
 
         dependency_data["extras"]
@@ -127,10 +129,11 @@ module Dependabot
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
-        deps = updated_lockfile[lockfile_section] || {}
+        section_data = updated_lockfile[lockfile_section]
+        return nil unless section_data.is_a?(Hash)
 
-        deps.dig(dependency_name, "version")
-            &.gsub(/^==/, "")
+        section_data.dig(dependency_name, "version")
+                    &.gsub(/^==/, "")
       end
 
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
@@ -145,7 +148,10 @@ module Dependabot
         else
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             section = keys.fetch(:lockfile)
-            return section if JSON.parse(T.must(T.must(lockfile).content))[section].keys.any?(dependency_name)
+            section_data = JSON.parse(T.must(T.must(lockfile).content))[section]
+            next unless section_data.is_a?(Hash)
+
+            return section if section_data.keys.any?(dependency_name)
           end
         end
       end
