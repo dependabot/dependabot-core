@@ -23,13 +23,20 @@ module Dependabot
       PUBLIC_HOSTNAME = "registry.opentofu.org"
       API_BASE_URL = "api.opentofu.org"
 
+      # The OpenTofu Module Registry HTTP API is wire-compatible with Terraform's,
+      # so credentials issued for either ecosystem are valid here.
+      ACCEPTED_CREDENTIAL_TYPES = T.let(
+        %w(opentofu_registry terraform_registry).freeze,
+        T::Array[String]
+      )
+
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
         @api_base_url = T.let(API_BASE_URL, String)
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
-            memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
+            memo[item["host"]] = item["token"] if ACCEPTED_CREDENTIAL_TYPES.include?(item["type"])
           end,
           T::Hash[String, String]
         )
