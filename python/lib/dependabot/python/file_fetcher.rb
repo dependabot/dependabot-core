@@ -15,17 +15,26 @@ module Dependabot
     class FileFetcher < Dependabot::Python::SharedFileFetcher
       extend T::Sig
 
+      HOME_ASSISTANT_MANIFEST_PATTERN = T.let(
+        %r{\A(?:custom_components|homeassistant/components)/[^/]+/manifest\.json\z},
+        Regexp
+      )
       ECOSYSTEM_SPECIFIC_FILES = T.let(%w(Pipfile setup.py setup.cfg).freeze, T::Array[String])
 
-      sig { override.returns(T::Array[String]) }
-      def self.ecosystem_specific_required_files
-        ECOSYSTEM_SPECIFIC_FILES
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames)
+        super || filenames.any? { |name| name.match?(HOME_ASSISTANT_MANIFEST_PATTERN) }
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, " \
-          "or a Pipfile."
+        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, Pipfile, " \
+          "or Home Assistant manifest.json file."
+      end
+
+      sig { override.returns(T::Array[String]) }
+      def self.ecosystem_specific_required_files
+        ECOSYSTEM_SPECIFIC_FILES
       end
 
       private
@@ -37,6 +46,7 @@ module Dependabot
         files << setup_file if setup_file
         files << setup_cfg_file if setup_cfg_file
         files << pip_conf if pip_conf
+        files += home_assistant_manifest_files
         files
       end
 
@@ -119,6 +129,31 @@ module Dependabot
           fetch_support_file("pip.conf"),
           T.nilable(Dependabot::DependencyFile)
         )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def home_assistant_manifest_files
+        @home_assistant_manifest_files ||= T.let(fetch_home_assistant_manifest_files, T.nilable(T::Array[Dependabot::DependencyFile]))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def fetch_home_assistant_manifest_files
+        [
+          *fetch_home_assistant_manifests_in("custom_components"),
+          *fetch_home_assistant_manifests_in(File.join("homeassistant", "components"))
+        ]
+      end
+
+      sig { params(base_dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def fetch_home_assistant_manifests_in(base_dir)
+        repo_contents(dir: base_dir, raise_errors: false)
+          .select { |f| f.type == "dir" }
+          .filter_map do |component_dir|
+            manifest = File.join(base_dir, component_dir.name, "manifest.json")
+            next unless manifest.match?(HOME_ASSISTANT_MANIFEST_PATTERN)
+
+            fetch_file_if_present(manifest)
+          end
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

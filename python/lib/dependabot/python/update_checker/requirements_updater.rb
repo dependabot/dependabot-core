@@ -66,6 +66,7 @@ module Dependabot
             when /setup\.(?:py|cfg)$/ then updated_setup_requirement(req)
             when "pyproject.toml" then updated_pyproject_requirement(req)
             when "Pipfile" then updated_pipfile_requirement(req)
+            when /manifest\.json$/ then updated_requirement(req)
             when /\.txt$|\.in$/ then updated_requirement(req)
             else raise "Unexpected filename: #{req[:file]}"
             end
