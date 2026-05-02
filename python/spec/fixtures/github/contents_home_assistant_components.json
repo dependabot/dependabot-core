@@ -1,0 +1,9 @@
+[
+  {
+    "name": "hue",
+    "path": "homeassistant/components/hue",
+    "sha": "4444444444444444444444444444444444444444",
+    "size": 0,
+    "type": "dir"
+  }
+]
