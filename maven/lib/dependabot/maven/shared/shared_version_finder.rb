@@ -5,7 +5,7 @@ require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/package/package_latest_version_finder"
-
+require "date"
 module Dependabot
   module Maven
     module Shared
@@ -68,6 +68,9 @@ module Dependabot
           return true if pre_release_compatible?(current, candidate)
 
           return true if upgrade_to_stable?(current, candidate)
+
+          # If either version contains a date, consider them compatible
+          return true if contains_date?(current) || contains_date?(candidate)
 
           suffix_compatible?(current, candidate)
         end
@@ -166,6 +169,8 @@ module Dependabot
 
           return true if contains_git_sha?(current_suffix) || contains_git_sha?(candidate_suffix)
 
+          return true if contains_date?(current_suffix) || contains_date?(candidate_suffix)
+
           # If both versions share the exact suffix or no suffix, they are compatible
           current_suffix == candidate_suffix
         end
@@ -222,6 +227,57 @@ module Dependabot
           version.split(/[-._]/).any? { |part| git_sha?(part) } ||
             # Check if removing delimiters reveals a SHA (e.g., "va_b_018a_a_6b_0d3")
             git_sha?(version.gsub(/[-._]/, ""))
+        end
+
+        # Determines whether a version string contains a date.
+        #
+        # This method checks if any part of a version string (when split by common
+        # delimiters like '-', '.', or '_') is a valid date.
+        #
+        # @example Standard delimiter-separated dates
+        #   contains_date?("2025-12-16-05-04") # => true
+        #   contains_date?("2025_12_16_05_04") # => true
+        #   contains_date?("1.0-2025_12_16_05_04") # => true
+        # @example Compact date formats
+        #   contains_date?("20251216") # => true
+        #
+        #   contains_date?("1.2.3-alpha")          # => false
+        #   contains_date?("abcdef123")            # => false
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def contains_date?(version)
+          return false unless version
+
+          parts = T.let(T.cast(version.scan(/\d+/), T::Array[String]).map(&:to_i), T::Array[Integer])
+
+          case parts.length
+          when 2
+            # Example: "2024.1"
+            year, month = parts
+            valid_date_parts?(year, month, 1)
+          when 3
+            # Example: https://github.com/relizaio/versioning/releases/tag/versioning-2026.01.7
+            year, month, day = parts
+            valid_date_parts?(year, month, day)
+          when 4, 5
+            # Examples:
+            # https://github.com/relizaio/versioning/releases/tag/2019.05.Stable.3
+            # 2025_12_16_05_04 used in https://github.com/dependabot/dependabot-core/issues/14084
+            year, month, day, = parts
+            # Just validate the date part ignoring the build number
+            valid_date_parts?(year, month, day)
+          else
+            false
+          end
+        end
+
+        sig { params(year: T.nilable(Integer), month: T.nilable(Integer), day: T.nilable(Integer)).returns(T::Boolean) }
+        def valid_date_parts?(year, month, day)
+          # Require 4-digit year to avoid matching short version numbers like "1.2.3"
+          return false unless year && year > 999
+          return false unless month&.between?(1, 12)
+          return false unless day&.between?(1, 31)
+
+          Date.valid_date?(year, month, day)
         end
 
         # Determines whether two versions are compatible based on pre-release status.
