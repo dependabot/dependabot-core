@@ -12,8 +12,14 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      HOME_ASSISTANT_MANIFEST_PATTERN = T.let(
+        %r{\A(?:custom_components|homeassistant/components)/[^/]+/manifest\.json\z},
+        Regexp
+      )
+
       require_relative "file_updater/pipfile_file_updater"
       require_relative "file_updater/pip_compile_file_updater"
+      require_relative "file_updater/home_assistant_manifest_updater"
       require_relative "file_updater/poetry_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
@@ -24,6 +30,7 @@ module Dependabot
           when :pipfile then updated_pipfile_based_files
           when :poetry then updated_poetry_based_files
           when :pip_compile then updated_pip_compile_based_files
+          when :home_assistant_manifest then updated_home_assistant_manifest_based_files
           when :requirements then updated_requirement_based_files
           else raise "Unexpected resolver type: #{resolver_type}"
           end
@@ -63,6 +70,7 @@ module Dependabot
           return :requirements
         end
 
+        return :home_assistant_manifest if changed_req_files.any? { |f| f.match?(HOME_ASSISTANT_MANIFEST_PATTERN) }
         return :pip_compile if changed_req_files.any? { |f| f.end_with?(".in") }
 
         :requirements
@@ -110,6 +118,15 @@ module Dependabot
       end
 
       sig { returns(T::Array[DependencyFile]) }
+      def updated_home_assistant_manifest_based_files
+        HomeAssistantManifestUpdater.new(
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials
+        ).updated_dependency_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
       def updated_requirement_based_files
         RequirementFileUpdater.new(
           dependencies: dependencies,
@@ -135,6 +152,7 @@ module Dependabot
       def check_required_files
         filenames = dependency_files.map(&:name)
         return if filenames.any? { |name| name.end_with?(".txt", ".in") }
+        return if filenames.any? { |name| name.match?(HOME_ASSISTANT_MANIFEST_PATTERN) }
         return if pipfile
         return if pyproject
         return if get_original_file("setup.py")

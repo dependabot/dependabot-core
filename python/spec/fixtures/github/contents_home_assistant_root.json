@@ -1,0 +1,16 @@
+[
+  {
+    "name": "custom_components",
+    "path": "custom_components",
+    "sha": "1111111111111111111111111111111111111111",
+    "size": 0,
+    "type": "dir"
+  },
+  {
+    "name": "homeassistant",
+    "path": "homeassistant",
+    "sha": "2222222222222222222222222222222222222222",
+    "size": 0,
+    "type": "dir"
+  }
+]

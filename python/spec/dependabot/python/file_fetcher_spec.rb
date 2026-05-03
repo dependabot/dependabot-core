@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "base64"
 require "spec_helper"
 require "dependabot/python/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
@@ -83,6 +84,18 @@ RSpec.describe Dependabot::Python::FileFetcher do
       it { is_expected.to be(true) }
     end
 
+    context "with a Home Assistant manifest" do
+      let(:filenames) { %w(custom_components/kia_uvo/manifest.json) }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with a manifest.json outside the Home Assistant layout" do
+      let(:filenames) { %w(manifest.json) }
+
+      it { is_expected.to be(false) }
+    end
+
     context "with no requirements" do
       let(:filenames) { %w(requirements-dev.md) }
 
@@ -118,6 +131,29 @@ RSpec.describe Dependabot::Python::FileFetcher do
     let(:json_header) { { "content-type" => "application/json" } }
     let(:repo_contents) do
       fixture("github", "contents_python_only_requirements.json")
+    end
+
+    def home_assistant_manifest_response(path)
+      manifest_content = fixture("home_assistant", "manifest.json")
+
+      {
+        "name" => "manifest.json",
+        "path" => path,
+        "sha" => "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "size" => manifest_content.bytesize,
+        "url" => "https://api.github.com/repos/gocardless/bump/contents/#{path}?ref=sha",
+        "html_url" => "https://github.com/gocardless/bump/blob/sha/#{path}",
+        "git_url" => "https://api.github.com/repos/gocardless/bump/git/blobs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "download_url" => "https://raw.githubusercontent.com/gocardless/bump/sha/#{path}",
+        "type" => "file",
+        "content" => Base64.strict_encode64(manifest_content),
+        "encoding" => "base64",
+        "_links" => {
+          "self" => "https://api.github.com/repos/gocardless/bump/contents/#{path}?ref=sha",
+          "git" => "https://api.github.com/repos/gocardless/bump/git/blobs/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "html" => "https://github.com/gocardless/bump/blob/sha/#{path}"
+        }
+      }.to_json
     end
 
     before do
@@ -1393,6 +1429,66 @@ RSpec.describe Dependabot::Python::FileFetcher do
           expect(file_fetcher_instance.files.first.name)
             .to eq("requirements.txt")
         end
+      end
+    end
+
+    context "with Home Assistant custom components" do
+      let(:repo_contents) { fixture("github", "contents_home_assistant_root.json") }
+
+      before do
+        stub_request(:get, url + "custom_components?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_home_assistant_custom_components.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, url + "custom_components/kia_uvo/manifest.json?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: home_assistant_manifest_response("custom_components/kia_uvo/manifest.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, url + "homeassistant/components?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: "[]", headers: json_header)
+      end
+
+      it "fetches the manifest.json file" do
+        expect(file_fetcher_instance.files.map(&:name)).to include("custom_components/kia_uvo/manifest.json")
+      end
+    end
+
+    context "with Home Assistant built-in components" do
+      let(:repo_contents) { fixture("github", "contents_home_assistant_root.json") }
+
+      before do
+        stub_request(:get, url + "homeassistant/components?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_home_assistant_components.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, url + "homeassistant/components/hue/manifest.json?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: home_assistant_manifest_response("homeassistant/components/hue/manifest.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, url + "custom_components?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 200, body: "[]", headers: json_header)
+      end
+
+      it "fetches the manifest.json file" do
+        expect(file_fetcher_instance.files.map(&:name)).to include("homeassistant/components/hue/manifest.json")
       end
     end
 

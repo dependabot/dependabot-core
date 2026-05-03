@@ -21,6 +21,11 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      HOME_ASSISTANT_MANIFEST_PATTERN = T.let(
+        %r{\A(?:custom_components|homeassistant/components)/[^/]+/manifest\.json\z},
+        Regexp
+      )
+
       require_relative "update_checker/poetry_version_resolver"
       require_relative "update_checker/pipenv_version_resolver"
       require_relative "update_checker/pip_compile_version_resolver"
@@ -333,7 +338,11 @@ module Dependabot
         requirement = reqs.find do |r|
           file = r[:file]
 
-          file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "Pipfile" ||
+            file == "pyproject.toml" ||
+            file.end_with?(".in") ||
+            file.end_with?(".txt") ||
+            file.match?(HOME_ASSISTANT_MANIFEST_PATTERN)
         end
 
         requirement&.fetch(:requirement)

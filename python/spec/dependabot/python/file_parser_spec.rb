@@ -40,6 +40,69 @@ RSpec.describe Dependabot::Python::FileParser do
 
     its(:length) { is_expected.to eq(5) }
 
+    context "with a Home Assistant manifest" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "custom_components/kia_uvo/manifest.json",
+            content: fixture("home_assistant", "manifest.json")
+          )
+        ]
+      end
+
+      it "parses the requirements entries as pip dependencies" do
+        expect(dependencies.map(&:name)).to contain_exactly("aiohue", "voluptuous")
+        expect(dependencies.map(&:version)).to contain_exactly("1.9.1", "0.13.1")
+        expect(dependencies.map(&:requirements)).to contain_exactly(
+          [{
+            requirement: "==1.9.1",
+            file: "custom_components/kia_uvo/manifest.json",
+            groups: [],
+            source: nil
+          }],
+          [{
+            requirement: "==0.13.1",
+            file: "custom_components/kia_uvo/manifest.json",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
+
+    context "with malformed Home Assistant manifest JSON" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "custom_components/kia_uvo/manifest.json",
+            content: "{ invalid json"
+          )
+        ]
+      end
+
+      it "raises a Dependabot::DependencyFileNotParseable error" do
+        expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    context "with an invalid Home Assistant requirement string" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "custom_components/kia_uvo/manifest.json",
+            content: {
+              "domain" => "kia_uvo",
+              "requirements" => ["aiohue"]
+            }.to_json
+          )
+        ]
+      end
+
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "with a version specified" do
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
