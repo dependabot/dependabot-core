@@ -123,14 +123,26 @@ module Dependabot
             next unless req[:metadata][:type] == :docker_image
 
             tag_value = req[:source][:tag]
+            next if tag_value.nil?
+
+            # The YAML scalar may be either the bare tag (e.g. "v1.6.41") or a
+            # digest-pinned tag (e.g. "v1.6.41@sha256:..."). Match both shapes
+            # so digest-pinned values still get updated. The digest portion is
+            # left intact -- we don't have a new digest to swap in here, and
+            # silently dropping the user's pin would be worse than producing a
+            # clearly-stale digest the user can refresh manually.
             version_scalar = value_node.children.find do |node|
-              node.is_a?(Psych::Nodes::Scalar) && node.value == tag_value
+              next false unless node.is_a?(Psych::Nodes::Scalar)
+
+              node.value == tag_value || node.value.start_with?("#{tag_value}@")
             end
 
-            if version_scalar
-              line = version_scalar.start_line
-              content[line] = T.must(content[line]).gsub(tag_value, dependency_version)
-            end
+            next unless version_scalar
+
+            line = version_scalar.start_line
+            old_scalar = version_scalar.value
+            new_scalar = old_scalar.sub(tag_value, dependency_version)
+            content[line] = T.must(content[line]).sub(old_scalar, new_scalar)
           end
 
           content

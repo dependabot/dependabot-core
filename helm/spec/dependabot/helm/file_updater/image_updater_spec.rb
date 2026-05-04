@@ -370,5 +370,62 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
           .to raise_error("Expected content to change!")
       end
     end
+
+    context "with a digest-pinned tag (tag@sha256:...)" do
+      let(:digest) { "sha256:ef895fdef7a8ea2a12cf421cd56b13c3bb65c806a09ea75a8284a78736ae5da5" }
+
+      let(:fixture_content) do
+        <<~YAML
+          image:
+            repository: nginx
+            tag: "1.20.0@#{digest}"
+            pullPolicy: IfNotPresent
+        YAML
+      end
+
+      it "updates only the tag portion and preserves the digest" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        expect(updated_content).to include(%(tag: "1.21.0@#{digest}"))
+        expect(updated_content).not_to include("1.20.0@")
+      end
+
+      it "preserves the trailing newline" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        expect(updated_content).to end_with("\n")
+      end
+
+      context "when the tag is unquoted" do
+        let(:fixture_content) do
+          <<~YAML
+            image:
+              repository: nginx
+              tag: 1.20.0@#{digest}
+          YAML
+        end
+
+        it "updates only the tag portion and preserves the digest" do
+          updated_content = updater.updated_values_yaml_content("values.yaml")
+          expect(updated_content).to include("tag: 1.21.0@#{digest}")
+          expect(updated_content).not_to include("1.20.0@")
+        end
+      end
+
+      context "when the tag line has a trailing comment" do
+        let(:fixture_content) do
+          <<~YAML
+            image:
+              repository: nginx
+              tag: "1.20.0@#{digest}"  # keep in lockstep with upstream
+          YAML
+        end
+
+        it "updates the tag and preserves the trailing comment" do
+          updated_content = updater.updated_values_yaml_content("values.yaml")
+          expect(updated_content)
+            .to include(%(tag: "1.21.0@#{digest}"  # keep in lockstep with upstream))
+          expect(updated_content).not_to include("1.20.0@")
+        end
+      end
+    end
   end
 end
