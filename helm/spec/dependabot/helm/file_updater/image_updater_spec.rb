@@ -327,9 +327,47 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
         YAML
       end
 
-      it "processes the image tag and preserving complex structures" do
-        updated_content = updater.updated_values_yaml_content("values.yaml")
-        expect(updated_content).to include("- 1.20.0")
+      # Arrays of tags aren't a real Helm pattern -- there's no scalar tag to
+      # update -- so the updater should fail loudly rather than silently
+      # producing a no-op diff (which the trailing-newline guard previously
+      # allowed through as a spurious newline-only PR).
+      it "raises rather than producing a no-op diff" do
+        expect { updater.updated_values_yaml_content("values.yaml") }
+          .to raise_error("Expected content to change!")
+      end
+    end
+
+    context "when the input ends with a trailing newline and no tag matches" do
+      # Regression test: previously the split("\n").join("\n") round-trip
+      # silently dropped the trailing newline, producing a non-empty diff
+      # even when no tag scalar matched. The guard would then fail to fire
+      # and dependabot would open a spurious newline-only PR.
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            repository: "nginx",
+            tag: "wrong-tag"
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        <<~YAML
+          image:
+            repository: nginx
+            tag: 1.20.0
+        YAML
+      end
+
+      it "raises rather than producing a no-op diff" do
+        expect { updater.updated_values_yaml_content("values.yaml") }
+          .to raise_error("Expected content to change!")
       end
     end
   end

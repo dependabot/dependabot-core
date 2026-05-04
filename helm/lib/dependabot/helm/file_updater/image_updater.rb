@@ -40,7 +40,11 @@ module Dependabot
 
         sig { params(yaml_stream: Psych::Nodes::Stream, content: String).returns(String) }
         def update_image_tags_recursive(yaml_stream, content)
-          updated_content = content.dup.split("\n")
+          # Use a -1 limit so split preserves trailing empty fields. Without
+          # this, "foo\n".split("\n") returns ["foo"] and the join below drops
+          # the trailing newline, producing a spurious diff that masks the
+          # "no change" guard below.
+          updated_content = content.dup.split("\n", -1)
 
           yaml_stream.children.each do |document|
             document.children.each do |root_node|
