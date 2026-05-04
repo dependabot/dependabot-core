@@ -1121,9 +1121,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           stub_request(:any, /.*/).to_raise(SocketError)
         end
 
-        it "has a blank message" do
+        it "still builds the pr_message without the metadata cascade" do
           expect(pr_message)
-            .to eq("")
+            .to eq("Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.")
         end
       end
 
@@ -1152,6 +1152,20 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "#{commits}" \
               "<br />\n"
             )
+        end
+      end
+
+      context "when github.com is unreachable while fetching metadata" do
+        before do
+          allow_any_instance_of(Dependabot::PullRequestCreator::MessageBuilder::MetadataPresenter)
+            .to receive(:to_s)
+            .and_raise(SocketError, "Connection refused - connect(2) for \"api.github.com\" port 443")
+        end
+
+        it "still builds the pr_message without the metadata cascade" do
+          expect(pr_message).to eq(
+            "Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0."
+          )
         end
       end
 
