@@ -45,11 +45,11 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
   let(:activity_response) do
     [
       { "id" => 1, "before" => "b12141ef619e", "after" => "0726a0ec",
-        "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-24T20:30:00Z", "activity_type" => "push" },
+        "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T20:30:00Z", "activity_type" => "push" },
       { "id" => 2, "before" => "4bd9165a9165", "after" => "b12141ef",
-        "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-20T19:04:11Z", "activity_type" => "push" },
+        "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T19:04:11Z", "activity_type" => "push" },
       { "id" => 3, "before" => current_sha, "after" => "4bd9165a",
-        "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-15T18:15:58Z", "activity_type" => "push" }
+        "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T18:15:58Z", "activity_type" => "push" }
     ]
   end
 
@@ -65,12 +65,13 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
 
       it "returns releases derived from branch-tip pushes" do
         versions = fetcher.available_versions
-        expect(versions.map(&:tag)).to eq(%w(0726a0ec b12141ef 4bd9165a))
+        expect(versions.map(&:tag)).to eq(%w(0726a0ec b12141ef 4bd9165a) + [current_sha])
         expect(versions.map(&:released_at)).to eq(
           [
             Time.parse("2026-04-24T20:30:00Z"),
             Time.parse("2026-04-20T19:04:11Z"),
-            Time.parse("2026-04-15T18:15:58Z")
+            Time.parse("2026-04-15T18:15:58Z"),
+            nil
           ]
         )
       end
@@ -79,6 +80,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
         versions = fetcher.available_versions
         expect(versions.map(&:version)).to eq(
           [
+            Dependabot::Nix::Version.new("0.0.0-0.4"),
             Dependabot::Nix::Version.new("0.0.0-0.3"),
             Dependabot::Nix::Version.new("0.0.0-0.2"),
             Dependabot::Nix::Version.new("0.0.0-0.1")
@@ -191,11 +193,11 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
       let(:activity_response) do
         [
           { "id" => 1, "after" => "newer_a", "before" => "older_a",
-            "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-24T00:00:00Z" },
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T00:00:00Z" },
           { "id" => 2, "after" => current_sha, "before" => "older_b",
-            "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-20T00:00:00Z" },
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T00:00:00Z" },
           { "id" => 3, "after" => "older_c", "before" => "older_d",
-            "ref" => "refs/heads/nixos-unstable", "pushed_at" => "2026-04-15T00:00:00Z" }
+            "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T00:00:00Z" }
         ]
       end
 

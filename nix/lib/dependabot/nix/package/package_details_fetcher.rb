@@ -108,7 +108,7 @@ module Dependabot
 
         sig { params(url: String, ref: String).returns(T.untyped) }
         def fetch_activity_entries(url, ref)
-          T.unsafe(github_client).get(
+          T.unsafe(github_client).get( # rubocop:disable Sorbet/ForbidTUnsafe
             "/repos/#{github_repo_path(url)}/activity",
             ref: "refs/heads/#{ref}",
             activity_type: ACTIVITY_TYPES,
@@ -124,8 +124,16 @@ module Dependabot
           locked = dependency.version
           result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
           entries.each do |e|
-            result << { tag: e[:after], release_date: format_timestamp(e[:pushed_at]) }
-            break if locked && (e[:after] == locked || e[:before] == locked)
+            after_sha = e[:after]
+            result << { tag: after_sha, release_date: format_timestamp(e[:timestamp]) }
+
+            next unless locked
+            break if after_sha == locked
+
+            if e[:before] == locked
+              result << { tag: locked, release_date: nil } unless result.last&.fetch(:tag) == locked
+              break
+            end
           end
           result
         end
