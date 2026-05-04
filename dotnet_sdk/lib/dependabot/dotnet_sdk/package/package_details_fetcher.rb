@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 
 require "dependabot/package/package_details"
 
@@ -67,8 +68,12 @@ module Dependabot
           )
         end
 
+        RELEASE_CHANNEL_HOST = "dotnetcli.blob.core.windows.net"
+
         sig { params(url: String).returns(T::Array[T::Hash[String, String]]) }
         def release_channel(url)
+          return [] unless trusted_release_channel_url?(url)
+
           response = release_channel_response(url)
           return [] unless response
 
@@ -96,6 +101,14 @@ module Dependabot
               { "version" => sdk["version"], "release-date" => release_date }
             end || []
           end
+        end
+
+        sig { params(url: String).returns(T::Boolean) }
+        def trusted_release_channel_url?(url)
+          uri = URI.parse(url)
+          uri.is_a?(URI::HTTPS) && uri.host == RELEASE_CHANNEL_HOST
+        rescue URI::InvalidURIError
+          false
         end
 
         sig { params(url: String).returns(T.nilable(Excon::Response)) }
