@@ -76,6 +76,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_audit_fix_fallback).and_return(true)
   end
 
   after do
@@ -765,6 +767,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
             )
             .ordered
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with(
+              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+            )
+            .ordered
+            .and_return("")
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("audit --fix", { fingerprint: "audit --fix" })
+            .ordered
+            .and_return("")
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("install --lockfile-only")
             .ordered

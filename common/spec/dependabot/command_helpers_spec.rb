@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/command_helpers"
+require "open3"
 
 RSpec.describe Dependabot::CommandHelpers do
   describe ".capture3_with_timeout" do
@@ -118,6 +119,66 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(status).not_to be_nil
         expect(status.exitstatus).to eq(0).or eq(124) # depending on whether it's handled as graceful or timeout
         expect(elapsed_time).to be < 6 # confirms early termination
+      end
+    end
+
+    context "when logging subprocess lifecycle" do
+      let(:logger) { instance_double(Logger, info: nil, debug: nil, warn: nil, error: nil) }
+
+      before do
+        allow(Dependabot).to receive(:logger).and_return(logger)
+      end
+
+      def stub_popen3_with_success
+        stdin = instance_double(IO, close: nil)
+        process_status = instance_double(
+          Process::Status,
+          success?: true,
+          exitstatus: 0,
+          pid: 12_345,
+          termsig: nil,
+          to_s: "pid 12345 exit 0"
+        )
+        wait_thr = instance_double(Process::Waiter, pid: 12_345, value: process_status)
+
+        allow(Open3).to receive(:popen3) do |*_args, &block|
+          stdout_read, stdout_write = IO.pipe
+          stderr_read, stderr_write = IO.pipe
+
+          stdout_write.close
+          stderr_write.close
+
+          begin
+            block.call(stdin, stdout_read, stderr_read, wait_thr)
+          ensure
+            stdout_read.close unless stdout_read.closed?
+            stderr_read.close unless stderr_read.closed?
+          end
+        end
+      end
+
+      it "logs git config commands at debug level" do
+        stub_popen3_with_success
+
+        described_class.capture3_with_timeout(
+          ["git config --global --list"],
+          timeout: timeout
+        )
+
+        expect(logger).to have_received(:debug).with(a_string_including("Started process PID"))
+        expect(logger).to have_received(:debug).with(a_string_including("Process PID"))
+        expect(logger).to have_received(:debug).with(a_string_including("Total execution time"))
+      end
+
+      it "logs non-git-config commands at info level" do
+        described_class.capture3_with_timeout(
+          [success_cmd],
+          timeout: timeout
+        )
+
+        expect(logger).to have_received(:info).with(a_string_including("Started process PID"))
+        expect(logger).to have_received(:info).with(a_string_including("Process PID"))
+        expect(logger).to have_received(:info).with(a_string_including("Total execution time"))
       end
     end
   end

@@ -87,6 +87,7 @@ module Dependabot
           "pre-commit" => "pre_commit",
           "pub" => "pub",
           "rust-toolchain" => "rust_toolchain",
+          "sbt" => "sbt",
           "swift" => "swift",
           "terraform" => "terraform",
           "uv" => "uv",
