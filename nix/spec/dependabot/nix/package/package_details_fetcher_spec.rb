@@ -42,13 +42,16 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
     }
   end
   let(:activity_url_pattern) { %r{\Ahttps://api\.github\.com/repos/NixOS/nixpkgs/activity\?} }
+  let(:sha_a) { "0726a0ec1234567890abcdef1234567890abcdef" }
+  let(:sha_b) { "b12141ef619e1234567890abcdef1234567890ab" }
+  let(:sha_c) { "4bd9165a91651234567890abcdef1234567890ab" }
   let(:activity_response) do
     [
-      { "id" => 1, "before" => "b12141ef619e", "after" => "0726a0ec",
+      { "id" => 1, "before" => sha_b, "after" => sha_a,
         "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T20:30:00Z", "activity_type" => "push" },
-      { "id" => 2, "before" => "4bd9165a9165", "after" => "b12141ef",
+      { "id" => 2, "before" => sha_c, "after" => sha_b,
         "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T19:04:11Z", "activity_type" => "push" },
-      { "id" => 3, "before" => current_sha, "after" => "4bd9165a",
+      { "id" => 3, "before" => current_sha, "after" => sha_c,
         "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T18:15:58Z", "activity_type" => "push" }
     ]
   end
@@ -65,7 +68,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
 
       it "returns releases derived from branch-tip pushes" do
         versions = fetcher.available_versions
-        expect(versions.map(&:tag)).to eq(%w(0726a0ec b12141ef 4bd9165a) + [current_sha])
+        expect(versions.map(&:tag)).to eq([sha_a, sha_b, sha_c, current_sha])
         expect(versions.map(&:released_at)).to eq(
           [
             Time.parse("2026-04-24T20:30:00Z"),
@@ -190,13 +193,18 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
     end
 
     context "when activity entries extend past the locked SHA" do
+      let(:newer_sha) { "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+      let(:older_a_sha) { "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }
+      let(:older_b_sha) { "cccccccccccccccccccccccccccccccccccccccc" }
+      let(:older_c_sha) { "dddddddddddddddddddddddddddddddddddddddd" }
+      let(:older_d_sha) { "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" }
       let(:activity_response) do
         [
-          { "id" => 1, "after" => "newer_a", "before" => "older_a",
+          { "id" => 1, "after" => newer_sha, "before" => older_a_sha,
             "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-24T00:00:00Z" },
-          { "id" => 2, "after" => current_sha, "before" => "older_b",
+          { "id" => 2, "after" => current_sha, "before" => older_b_sha,
             "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-20T00:00:00Z" },
-          { "id" => 3, "after" => "older_c", "before" => "older_d",
+          { "id" => 3, "after" => older_c_sha, "before" => older_d_sha,
             "ref" => "refs/heads/nixos-unstable", "timestamp" => "2026-04-15T00:00:00Z" }
         ]
       end
@@ -211,7 +219,7 @@ RSpec.describe Dependabot::Nix::Package::PackageDetailsFetcher do
 
       it "stops at the locked SHA and excludes older entries" do
         versions = fetcher.available_versions
-        expect(versions.map(&:tag)).to eq(%w(newer_a) + [current_sha])
+        expect(versions.map(&:tag)).to eq([newer_sha, current_sha])
       end
     end
 
