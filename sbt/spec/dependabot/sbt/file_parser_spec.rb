@@ -90,6 +90,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
           expect(dependency.version).to eq("3.2.17")
         end
       end
+
       describe "the scalaVersion dependency" do
         subject(:dependency) { dependencies.find { |d| d.name == "org.scala-lang:scala-library" } }
 
