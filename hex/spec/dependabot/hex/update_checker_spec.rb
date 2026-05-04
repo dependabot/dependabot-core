@@ -469,6 +469,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       context "with bad credentials" do
+        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -487,6 +488,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         it "raises a helpful error" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
@@ -496,6 +498,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       context "with no token" do
+        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -514,6 +517,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         # This needs to changes to the Elixir helper
         it "raises a helpful error" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
@@ -523,6 +527,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       context "with no credentials" do
+        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
         let(:credentials) do
           [Dependabot::Credential.new(
             {
@@ -537,6 +542,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         # The Elixir process hangs waiting for input in this case. This spec
         # passes as long as we're intelligently timing out.
         it "raises a helpful error" do
+          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
