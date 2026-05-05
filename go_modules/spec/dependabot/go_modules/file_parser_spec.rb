@@ -418,6 +418,111 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
   end
 
+  context "with a go.work workspace" do
+    let(:project_name) { "workspace" }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(
+        name: "go.work",
+        content: fixture("projects", project_name, "go.work"),
+        directory: directory
+      )
+    end
+    let(:go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "go.mod",
+        content: fixture("projects", project_name, "go.mod"),
+        directory: directory
+      )
+    end
+    let(:libs_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "libs/go.mod",
+        content: fixture("projects", project_name, "libs", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:services_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "services/go.mod",
+        content: fixture("projects", project_name, "services", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:files) { [go_work, go_mod, libs_go_mod, services_go_mod] }
+    let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+
+    describe "parse" do
+      subject(:dependencies) { parser.parse }
+
+      it "parses dependencies from all workspace modules" do
+        dep_names = dependencies.map(&:name)
+        expect(dep_names).to include("github.com/fatih/color")
+        expect(dep_names).to include("rsc.io/quote")
+        expect(dep_names).to include("golang.org/x/tools")
+      end
+
+      it "deduplicates shared dependencies across modules" do
+        color_deps = dependencies.select { |d| d.name == "github.com/fatih/color" }
+        expect(color_deps.length).to eq(1)
+      end
+
+      it "preserves requirement file provenance for shared deps" do
+        color_dep = dependencies.find { |d| d.name == "github.com/fatih/color" }
+        req_files = color_dep.requirements.map { |r| r[:file] }
+        expect(req_files).to include("go.mod")
+      end
+
+      it "identifies top-level dependencies correctly" do
+        top_level = dependencies.select(&:top_level?)
+        top_level_names = top_level.map(&:name)
+        expect(top_level_names).to include("github.com/fatih/color")
+        expect(top_level_names).to include("rsc.io/quote")
+        expect(top_level_names).to include("golang.org/x/tools")
+      end
+    end
+  end
+
+  context "with a go.work workspace (no root module)" do
+    let(:project_name) { "workspace_no_root_mod" }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(
+        name: "go.work",
+        content: fixture("projects", project_name, "go.work"),
+        directory: directory
+      )
+    end
+    let(:api_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "api/go.mod",
+        content: fixture("projects", project_name, "api", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:worker_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "worker/go.mod",
+        content: fixture("projects", project_name, "worker", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:files) { [go_work, api_go_mod, worker_go_mod] }
+    let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+
+    describe "parse" do
+      subject(:dependencies) { parser.parse }
+
+      it "parses dependencies from all sub-modules" do
+        dep_names = dependencies.map(&:name)
+        expect(dep_names).to include("rsc.io/quote")
+        expect(dep_names).to include("golang.org/x/tools")
+      end
+
+      it "does not require a root go.mod" do
+        expect { parser.parse }.not_to raise_error
+      end
+    end
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
