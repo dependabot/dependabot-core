@@ -98,6 +98,168 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with a lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_subdeps") }
+
+      it "includes subdependency edges for packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+        expect(is_number.dependencies).to eq([])
+      end
+    end
+
+    context "with a v1 lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_v1_with_subdeps") }
+
+      it "includes subdependency edges for packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+        expect(is_number.dependencies).to eq([])
+      end
+    end
+
+    context "with an ephemeral lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
+
+      let(:ephemeral_lockfile_content) do
+        {
+          "name" => "grapher-npm-no-lockfile",
+          "version" => "1.0.0",
+          "lockfileVersion" => 3,
+          "packages" => {
+            "" => {
+              "name" => "grapher-npm-no-lockfile",
+              "version" => "1.0.0",
+              "dependencies" => { "to-regex-range" => "^5.0.1" }
+            },
+            "node_modules/to-regex-range" => {
+              "version" => "5.0.1",
+              "dependencies" => { "is-number" => "^7.0.0" }
+            },
+            "node_modules/is-number" => {
+              "version" => "7.0.0"
+            }
+          }
+        }.to_json
+      end
+
+      before do
+        lockfile_generator = instance_double(
+          Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator,
+          generate: Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: ephemeral_lockfile_content,
+            directory: "/"
+          )
+        )
+        allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+          .to receive(:new).and_return(lockfile_generator)
+      end
+
+      it "includes subdependency edges from the generated lockfile" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports the package.json as the relevant file, not the ephemeral lockfile" do
+        grapher.resolved_dependencies
+        expect(grapher.relevant_dependency_file.name).to eq("package.json")
+      end
+    end
+
+    context "with a yarn lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_subdeps") }
+
+      it "includes subdependency edges for packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+        expect(is_number.dependencies).to eq([])
+      end
+    end
+
+    context "with a pnpm lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_subdeps") }
+
+      it "includes subdependency edges for packages with children" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+        expect(is_number.dependencies).to eq([])
+      end
+    end
+
+    context "with a pnpm v9 lockfile containing subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_v9_with_subdeps") }
+
+      it "includes subdependency edges from the snapshots section" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+
+      it "reports leaf packages with empty dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+        expect(is_number.dependencies).to eq([])
+      end
+    end
+
     context "without a lockfile - exact versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
@@ -203,6 +365,113 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         it "reports package.json as the relevant dependency file, not the ephemeral lockfile" do
           grapher.resolved_dependencies
           expect(grapher.relevant_dependency_file.name).to eq("package.json")
+        end
+      end
+    end
+  end
+
+  describe "lockfile parse errors" do
+    context "with an npm lockfile that errors during relationship extraction" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Now swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "package-lock.json", content: "not valid json {{{", directory: "/"
+        )
+        grapher.instance_variable_set(:@npm_lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the parse error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(JSON::ParserError)
+      end
+
+      it "still returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+
+    context "with a yarn lockfile that errors during relationship extraction" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Now swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "yarn.lock", content: "\x00\x01 invalid", directory: "/"
+        )
+        grapher.instance_variable_set(:@yarn_lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(StandardError)
+      end
+
+      it "still returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
+        end
+      end
+    end
+
+    context "with a pnpm lockfile that errors during relationship extraction" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_subdeps") }
+
+      before do
+        # Pre-populate dependencies via the parser (which reads the valid lockfile)
+        grapher.send(:prepare!)
+        # Now swap in a corrupt lockfile for relationship extraction
+        corrupt_lockfile = Dependabot::DependencyFile.new(
+          name: "pnpm-lock.yaml", content: ": :\n  invalid: [yaml", directory: "/"
+        )
+        grapher.instance_variable_set(:@pnpm_lockfile, corrupt_lockfile)
+      end
+
+      it "sets the errored_fetching_subdependencies flag" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+      end
+
+      it "stores the parse error as subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.subdependency_error).to be_a(Psych::SyntaxError)
+      end
+
+      it "still returns dependencies without relationship data" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_empty
+        resolved_dependencies.each_value do |dep|
+          expect(dep.dependencies).to eq([])
         end
       end
     end
