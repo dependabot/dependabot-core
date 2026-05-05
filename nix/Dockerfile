@@ -1,5 +1,5 @@
 # syntax=docker.io/docker/dockerfile:1.20
-FROM docker.io/nixos/nix:2.34.1 AS nix
+FROM docker.io/nixos/nix:2.34.5 AS nix
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 

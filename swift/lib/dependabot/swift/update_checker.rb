@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/experiments"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -100,8 +99,6 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def xcode_spm_mode?
-        return false unless Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-
         manifest.nil? && xcode_resolved_files.any?
       end
 

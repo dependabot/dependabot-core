@@ -167,7 +167,7 @@ public class FileWriterWorker
         }
 
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
-            .Where(d => !d.IsTransitive)
+            .Where(d => d.IsTopLevel)
             .ToImmutableArray();
         var newDependency = new Dependency(dependencyName, newDependencyVersion.ToString(), DependencyType.Unknown);
         var desiredDependencies = initialTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
@@ -243,7 +243,7 @@ public class FileWriterWorker
                 }
 
                 var rerunTopLevelDependencies = rerunProjectDiscovery.Dependencies
-                    .Where(d => !d.IsTransitive)
+                    .Where(d => d.IsTopLevel)
                     .ToImmutableArray();
                 var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                     ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()

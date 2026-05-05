@@ -185,8 +185,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::package_manager_version" do
     it "retrieves the correct package manager version" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0-alpha\n")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).and_return("7.0.0-alpha\n")
       expect(described_class.package_manager_version("npm")).to eq("7.0.0-alpha")
+    end
+
+    it "passes env through to the corepack version command" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).and_return("11.9.0\n")
+
+      expect(described_class.package_manager_version("npm", env: env)).to eq("11.9.0")
     end
   end
 
@@ -234,7 +250,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("8.0.0")
 
         # Log expectations
@@ -275,7 +292,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("10.8.2")
 
         # Log expectations
@@ -321,7 +339,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("10.8.2")
 
         # Log expectations
@@ -378,7 +397,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
         ).and_return("11.9.0")
 
         # Log expectations
@@ -402,6 +422,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
           "corepack prepare npm@11.9.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
           env: private_registry_env
         )
       end
@@ -430,7 +456,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # package_manager_version after fallback
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
         ).and_return("11.9.0")
 
         # Log expectations
@@ -454,6 +481,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
           "corepack prepare npm@11.9.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
           env: private_registry_env
         )
       end

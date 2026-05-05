@@ -806,6 +806,19 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to be(true) }
       end
+
+      context "when the source reference uses compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20260408"
+          }
+        end
+
+        it { is_expected.to be(true) }
+      end
     end
 
     context "with a non-version pin" do
@@ -819,6 +832,19 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it { is_expected.to be(false) }
+
+      context "when the pin looks like invalid compact CalVer" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "20261399"
+          }
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
 
     context "with no ref" do
@@ -1260,6 +1286,67 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to be_nil }
       end
+    end
+
+    context "with compact CalVer tags pinned to compact CalVer" do
+      let(:upload_pack_fixture) { "no_tags" }
+      let(:version) { "20260408" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: version
+        }
+      end
+
+      let(:compact_calver_refs) do
+        [
+          Dependabot::GitRef.new(
+            name: "20260408",
+            ref_sha: "a" * 40,
+            commit_sha: "a" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "20260409",
+            ref_sha: "b" * 40,
+            commit_sha: "b" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "20260410",
+            ref_sha: "c" * 40,
+            commit_sha: "c" * 40,
+            ref_type: Dependabot::RefType::Tag
+          ),
+          Dependabot::GitRef.new(
+            name: "2026.04.11",
+            ref_sha: "d" * 40,
+            commit_sha: "d" * 40,
+            ref_type: Dependabot::RefType::Tag
+          )
+        ]
+      end
+
+      let(:latest_compact_calver) do
+        {
+          commit_sha: "c" * 40,
+          tag: "20260410",
+          tag_sha: "c" * 40,
+          version: anything
+        }
+      end
+
+      before do
+        allow(checker).to receive_messages(
+          local_tag_for_pinned_sha: nil,
+          local_refs: compact_calver_refs
+        )
+      end
+
+      it { is_expected.to match(latest_compact_calver) }
     end
   end
 

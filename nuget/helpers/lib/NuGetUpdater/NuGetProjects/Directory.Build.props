@@ -10,6 +10,8 @@
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn><!-- obsolete -->
     <NuGetSourceLocation>$(MSBuildThisFileDirectory)..\..\NuGet.Client</NuGetSourceLocation>
     <SharedDirectory>$(NuGetSourceLocation)\build\Shared</SharedDirectory>
+    <NoWarn>$(NoWarn);CA1416</NoWarn><!-- platform compatibility in vendored NuGet.Client code -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn><!-- type conflicts with imported types in vendored NuGet.Client code -->
     <Version>6.8.0</Version>
   </PropertyGroup>
 

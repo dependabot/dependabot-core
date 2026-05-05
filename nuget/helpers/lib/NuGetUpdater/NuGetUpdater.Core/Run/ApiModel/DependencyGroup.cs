@@ -44,9 +44,14 @@ public class GroupMatcher
 
     public bool IsAllowedByVersion(NuGetVersion oldVersion, NuGetVersion newVersion)
     {
+        if (newVersion <= oldVersion)
+        {
+            return false;
+        }
+
         var isMajorBump = newVersion.Major > oldVersion.Major;
         var isMinorBump = newVersion.Major == oldVersion.Major && newVersion.Minor > oldVersion.Minor;
-        var isPatchBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor && newVersion.Patch > oldVersion.Patch;
+        var isPatchEquivalentBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor;
 
         var allowedUpdateTypes = new HashSet<GroupUpdateType>(UpdateTypes);
 
@@ -60,7 +65,7 @@ public class GroupMatcher
             return true;
         }
 
-        if (isPatchBump && allowedUpdateTypes.Contains(GroupUpdateType.Patch))
+        if (isPatchEquivalentBump && allowedUpdateTypes.Contains(GroupUpdateType.Patch))
         {
             return true;
         }
