@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
+require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/path_converter"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
@@ -205,7 +206,14 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def all_go_mods
         @all_go_mods ||= T.let(
-          dependency_files.select { |f| f.name.end_with?("go.mod") },
+          if go_work
+            workspace_mod_names = GoWorkParser.use_paths(T.must(T.must(go_work).content)).map do |path|
+              path == "." ? "go.mod" : "#{path}/go.mod"
+            end
+            dependency_files.select { |f| workspace_mod_names.include?(f.name) }
+          else
+            dependency_files.select { |f| f.name.end_with?("go.mod") }
+          end,
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

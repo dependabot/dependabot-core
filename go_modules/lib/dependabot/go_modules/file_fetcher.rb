@@ -55,10 +55,11 @@ module Dependabot
           fetched_files << T.must(go_work)
           fetched_files << T.must(go_work_sum) if go_work_sum
           fetched_files.concat(workspace_module_files)
+        else
+          fetched_files << T.must(go_mod) if go_mod
+          fetched_files << T.must(go_sum) if go_sum
         end
 
-        fetched_files << T.must(go_mod) if go_mod && fetched_files.none? { |f| f.name == "go.mod" }
-        fetched_files << T.must(go_sum) if go_sum && fetched_files.none? { |f| f.name == "go.sum" }
         fetched_files << T.must(go_env) if go_env
 
         fetched_files
@@ -108,7 +109,8 @@ module Dependabot
         return [] unless go_work
 
         workspace_module_paths.filter_map do |module_path|
-          fetch_file_if_present(File.join(module_path, "go.mod"))
+          name = module_path == "." ? "go.mod" : File.join(module_path, "go.mod")
+          fetch_file_if_present(name)
         end
       end
 
@@ -133,8 +135,7 @@ module Dependabot
         return false if path.include?("\0")
 
         clean = Pathname.new(path).cleanpath.to_s
-        # Skip parent traversal. Root "." is handled separately in fetch_files.
-        return false if clean.start_with?("../") || clean == "."
+        return false if clean.start_with?("../")
 
         true
       end
@@ -144,12 +145,14 @@ module Dependabot
         files = T.let([], T::Array[DependencyFile])
 
         workspace_module_paths.each do |module_path|
-          mod_file = fetch_file_if_present(File.join(module_path, "go.mod"))
+          mod_name = module_path == "." ? "go.mod" : File.join(module_path, "go.mod")
+          mod_file = fetch_file_if_present(mod_name)
           next unless mod_file
 
           files << mod_file
 
-          sum_file = fetch_file_if_present(File.join(module_path, "go.sum"))
+          sum_name = module_path == "." ? "go.sum" : File.join(module_path, "go.sum")
+          sum_file = fetch_file_if_present(sum_name)
           files << sum_file if sum_file
         end
 
