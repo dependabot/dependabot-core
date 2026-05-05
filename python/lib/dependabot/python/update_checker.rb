@@ -1,16 +1,13 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "excon"
 require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/errors"
-require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/requirement"
-require "dependabot/registry_client"
 require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
@@ -401,36 +398,6 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
-      def library?
-        return @is_library unless @is_library.nil?
-
-        @is_library = T.let(check_pypi_for_library_match, T.nilable(T::Boolean))
-        @is_library || false
-      end
-
-      sig { returns(T::Boolean) }
-      def check_pypi_for_library_match
-        return false unless updating_pyproject?
-
-        library_details_temp = library_details
-        return false unless library_details_temp && !library_details_temp["name"].nil?
-
-        has_library_metadata = !library_details_temp["description"].nil?
-
-        response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(library_details_temp['name'])}/json/"
-        )
-        return has_library_metadata unless response.status == 200
-
-        local_description = library_details_temp["description"]
-        return true if local_description.nil?
-
-        (JSON.parse(response.body)["info"] || {})["summary"] == local_description
-      rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
-        has_library_metadata
-      end
-
-      sig { returns(T::Boolean) }
       def updating_pipfile?
         requirement_files.any?("Pipfile")
       end
@@ -458,11 +425,6 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def requirements
         dependency.requirements
-      end
-
-      sig { params(name: String).returns(String) }
-      def normalised_name(name)
-        NameNormaliser.normalise(name)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

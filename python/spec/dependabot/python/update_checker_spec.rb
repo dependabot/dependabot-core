@@ -1846,52 +1846,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           fixture("pypi", "pypi_simple_response_requests.html")
         end
 
-        context "when dealing with a library" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: fixture("pypi", "pypi_response_pendulum.json")
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when the project is not on PyPI but has library metadata" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(status: 404)
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when the project is on PyPI but description is not in pyproject.toml" do
-          let(:pyproject_fixture_name) { "poetry_missing_description.toml" }
-
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: fixture("pypi", "pypi_response_pendulum.json")
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when dealing with a non-library" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: { info: { summary: "A completely different package" } }.to_json
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
+        its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
 
         context "when dealing with a poetry in non-package mode" do
           let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
@@ -1900,11 +1855,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
 
         context "when checking auto strategy multiple times" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(status: 404)
-          end
-
           it "does not call PyPI while selecting auto requirements strategy" do
             # Call requirements_update_strategy multiple times
             checker.send(:requirements_update_strategy)
@@ -1913,39 +1863,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             # Auto strategy should not rely on package classification.
             expect(a_request(:get, "https://pypi.org/pypi/pendulum/json/"))
               .not_to have_been_made
-          end
-        end
-
-        context "when PyPI request raises Excon::Error::Timeout" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_raise(Excon::Error::Timeout.new("connection timeout"))
-          end
-
-          it "treats the project as a library based on metadata" do
-            expect(checker.send(:library?)).to be true
-          end
-        end
-
-        context "when PyPI request raises Excon::Error::Socket" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_raise(Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")))
-          end
-
-          it "treats the project as a library based on metadata" do
-            expect(checker.send(:library?)).to be true
-          end
-        end
-
-        context "when PyPI request raises URI::InvalidURIError" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_raise(URI::InvalidURIError.new("bad URI"))
-          end
-
-          it "treats the project as a library based on metadata" do
-            expect(checker.send(:library?)).to be true
           end
         end
       end
@@ -1985,52 +1902,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           fixture("pypi", "pypi_simple_response_requests.html")
         end
 
-        context "when dealing with a library" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: fixture("pypi", "pypi_response_pendulum.json")
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when the project is not on PyPI but has library metadata" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(status: 404)
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when the project is on PyPI but description is dynamic" do
-          let(:pyproject_fixture_name) { "standard_python_dynamic_description.toml" }
-
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: fixture("pypi", "pypi_response_pendulum.json")
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when dealing with a non-library" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: { info: { summary: "A completely different package" } }.to_json
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
+        its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
       end
 
       context "when updating a dependency in an additional requirements file" do
@@ -2068,52 +1940,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           fixture("pypi", "pypi_simple_response_requests.html")
         end
 
-        context "when dealing with a library" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: fixture("pypi", "pypi_response_pendulum.json")
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when the project is not on PyPI but has library metadata" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(status: 404)
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when the project is on PyPI but description is dynamic" do
-          let(:pyproject_fixture_name) { "build_system_dynamic_description.toml" }
-
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: fixture("pypi", "pypi_response_pendulum.json")
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
-
-        context "when dealing with a non-library" do
-          before do
-            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-              .to_return(
-                status: 200,
-                body: { info: { summary: "A completely different package" } }.to_json
-              )
-          end
-
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
-        end
+        its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
       end
 
       context "when updating a dependency in an additional requirements file" do
