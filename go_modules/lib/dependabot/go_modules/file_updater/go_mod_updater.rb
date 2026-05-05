@@ -288,12 +288,23 @@ module Dependabot
           return ["."] unless go_work_file
 
           fetched_mod_names = dependency_files.select { |f| f.name.end_with?("go.mod") }
-                                              .map(&:name).to_set
+                                              .to_set(&:name)
 
           GoWorkParser.use_paths(T.must(go_work_file.content))
-                      .reject { |p| Pathname.new(p).absolute? || Pathname.new(p).cleanpath.to_s.start_with?("../") }
-                      .select { |p| fetched_mod_names.include?(p == "." ? "go.mod" : "#{p}/go.mod") }
+                      .select { |p| valid_workspace_path?(p) && fetched_mod_names.include?(workspace_mod_name(p)) }
                       .map { |p| p == "." ? "." : "./#{p}" }
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def valid_workspace_path?(path)
+          return false if Pathname.new(path).absolute?
+
+          !Pathname.new(path).cleanpath.to_s.start_with?("../")
+        end
+
+        sig { params(use_path: String).returns(String) }
+        def workspace_mod_name(use_path)
+          use_path == "." ? "go.mod" : "#{use_path}/go.mod"
         end
 
         sig { returns(T::Hash[String, String]) }
