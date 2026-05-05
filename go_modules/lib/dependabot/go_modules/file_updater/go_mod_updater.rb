@@ -287,8 +287,12 @@ module Dependabot
           go_work_file = dependency_files.find { |f| f.name.end_with?("go.work") }
           return ["."] unless go_work_file
 
+          fetched_mod_names = dependency_files.select { |f| f.name.end_with?("go.mod") }
+                                              .map(&:name).to_set
+
           GoWorkParser.use_paths(T.must(go_work_file.content))
-                      .reject { |p| p.start_with?("/") || p.include?("..") }
+                      .reject { |p| Pathname.new(p).absolute? || Pathname.new(p).cleanpath.to_s.start_with?("../") }
+                      .select { |p| fetched_mod_names.include?(p == "." ? "go.mod" : "#{p}/go.mod") }
                       .map { |p| p == "." ? "." : "./#{p}" }
         end
 
