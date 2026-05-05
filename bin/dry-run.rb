@@ -143,6 +143,7 @@ require "dependabot/nuget"
 require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
+require "dependabot/sbt"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/opentofu"
@@ -388,6 +389,7 @@ valid_package_managers = %w(
   pub
   python
   rust_toolchain
+  sbt
   swift
   terraform
   opentofu
