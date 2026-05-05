@@ -389,6 +389,26 @@ module Dependabot
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
+    sig { params(package_manager: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+    def fetch_blocked_versions(package_manager)
+      ::Dependabot::OpenTelemetry.tracer.in_span("fetch_blocked_versions", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
+
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/blocked_versions"
+        response = http_client.get(path: api_url, query: { "package-manager": package_manager })
+
+        if response.status >= 400
+          Dependabot.logger.warn("Failed to fetch blocked versions (HTTP #{response.status}), continuing without them")
+          return []
+        end
+
+        JSON.parse(response.body).fetch("data", [])
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
+        Dependabot.logger.warn("Failed to fetch blocked versions: #{e.message}, continuing without them")
+        []
+      end
+    end
+
     private
 
     # Update return type to allow returning a Hash or nil
