@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
+require "dependabot/go_modules/go_work_parser"
 
 module Dependabot
   module GoModules
@@ -113,6 +114,8 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_workspace_files
+        check_workspace_not_vendored!
+
         updated_files = T.let([], T::Array[Dependabot::DependencyFile])
         workspace_results = file_updater.updated_workspace_module_files
 
@@ -125,6 +128,26 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { void }
+      def check_workspace_not_vendored!
+        mod_paths = GoWorkParser.use_paths(T.must(T.must(go_work).content))
+
+        vendored_path = mod_paths.find do |mod_path|
+          vendor_modules_txt = if mod_path == "."
+                                 File.join(vendor_dir, "modules.txt")
+                               else
+                                 File.join(T.must(repo_contents_path), T.must(directory), mod_path, "vendor", "modules.txt")
+                               end
+          File.exist?(vendor_modules_txt)
+        end
+
+        return unless vendored_path
+
+        raise Dependabot::DependencyFileNotResolvable,
+              "Go workspace module \"#{vendored_path}\" has a vendor directory. " \
+              "Vendored workspaces are not yet supported."
       end
 
       sig { returns(T.nilable(String)) }

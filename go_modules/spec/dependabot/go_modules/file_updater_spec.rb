@@ -339,6 +339,20 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
+    describe "#updated_dependency_files when workspace has a vendor directory" do
+      before do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?)
+          .with(a_string_ending_with("vendor/modules.txt"))
+          .and_return(true)
+      end
+
+      it "raises DependencyFileNotResolvable" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /vendored workspaces are not yet supported/i)
+      end
+    end
+
     describe "#updated_dependency_files when go work sync fails" do
       before do
         allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)
