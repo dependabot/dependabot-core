@@ -94,7 +94,7 @@ module Dependabot
 
       sig { params(file: T.nilable(Dependabot::DependencyFile)).returns(T.nilable(String)) }
       def go_version_from_file(file)
-        file&.content&.match(/^go\s+(\d+\.\d+(?:\.\d+)?)/)&.captures&.first
+        file&.content&.match(/^go\s+(\d+\.\d+)/)&.captures&.first
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

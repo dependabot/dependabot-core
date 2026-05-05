@@ -52,7 +52,7 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
         GOWORK
       end
 
-      it { is_expected.to eq(["libs", "services"]) }
+      it { is_expected.to eq(%w(libs services)) }
     end
 
     context "with mixed block and single-line use directives" do
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
         GOWORK
       end
 
-      it { is_expected.to eq(["api", "worker"]) }
+      it { is_expected.to eq(%w(api worker)) }
     end
 
     context "with duplicate paths" do
@@ -80,7 +80,7 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
       end
 
       it "deduplicates" do
-        is_expected.to eq(["api"])
+        expect(paths).to eq(%w(api))
       end
     end
 
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::GoModules::GoWorkParser do
       end
 
       it "ignores non-use directives" do
-        is_expected.to eq([".", "cmd"])
+        expect(paths).to eq([".", "cmd"])
       end
     end
   end

@@ -156,7 +156,7 @@ module Dependabot
         def updated_workspace_module_files
           @updated_workspace_module_files ||= T.let(
             update_workspace_files,
-            T::Hash[String, String]
+            T.nilable(T::Hash[String, String])
           )
         end
 

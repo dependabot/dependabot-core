@@ -449,7 +449,9 @@ RSpec.describe Dependabot::GoModules::FileParser do
       )
     end
     let(:files) { [go_work, go_mod, libs_go_mod, services_go_mod] }
-    let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+    let(:parser) do
+      described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+    end
 
     describe "parse" do
       subject(:dependencies) { parser.parse }
@@ -506,7 +508,9 @@ RSpec.describe Dependabot::GoModules::FileParser do
       )
     end
     let(:files) { [go_work, api_go_mod, worker_go_mod] }
-    let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+    let(:parser) do
+      described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+    end
 
     describe "parse" do
       subject(:dependencies) { parser.parse }

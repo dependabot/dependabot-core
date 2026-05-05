@@ -206,7 +206,7 @@ module Dependabot
       def all_go_mods
         @all_go_mods ||= T.let(
           dependency_files.select { |f| f.name.end_with?("go.mod") },
-          T::Array[Dependabot::DependencyFile]
+          T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
