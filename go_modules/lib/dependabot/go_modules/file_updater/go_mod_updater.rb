@@ -7,13 +7,14 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
+require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
 module Dependabot
   module GoModules
     class FileUpdater
-      class GoModUpdater
+      class GoModUpdater # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         RESOLVABILITY_ERROR_REGEXES = T.let(
@@ -151,6 +152,14 @@ module Dependabot
           updated_files[:go_sum]
         end
 
+        sig { returns(T::Hash[String, String]) }
+        def updated_workspace_module_files
+          @updated_workspace_module_files ||= T.let(
+            update_workspace_files,
+            T::Hash[String, String]
+          )
+        end
+
         private
 
         sig { returns(T::Array[Dependabot::Dependency]) }
@@ -218,6 +227,91 @@ module Dependabot
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def update_workspace_files
+          in_repo_path do
+            dependency_files.each do |file|
+              path = Pathname.new(file.name).expand_path
+              FileUtils.mkdir_p(path.dirname)
+              File.write(path, file.content)
+            end
+
+            # Run `go get dep@version` in each module directory so every go.mod
+            # that requires the dependency gets the version bump, not just the first.
+            # Follow with a bare `go get` validation pass per module, matching the
+            # single-module update path's intent (see run_go_get comment).
+            workspace_module_paths.each do |mod_dir|
+              Dir.chdir(mod_dir) do
+                run_go_get(dependencies)
+                run_go_get
+              end
+            end
+
+            run_go_work_sync
+            run_workspace_tidy
+
+            collect_workspace_file_contents
+          end
+        end
+
+        sig { void }
+        def run_go_work_sync
+          command = "go work sync"
+          _, stderr, status = Open3.capture3(command)
+          return if status.success?
+
+          handle_subprocess_error(stderr)
+        end
+
+        sig { void }
+        def run_workspace_tidy
+          return unless tidy?
+
+          workspace_module_paths.each do |mod_path|
+            Dir.chdir(mod_path) do
+              command = "go mod tidy -e"
+              _, stderr, status = Open3.capture3(command)
+              if status.success?
+                Dependabot.logger.info "`go mod tidy` succeeded in #{mod_path}"
+              else
+                Dependabot.logger.info "Failed to `go mod tidy` in #{mod_path}: #{stderr}"
+              end
+            end
+          end
+        end
+
+        sig { returns(T::Array[String]) }
+        def workspace_module_paths
+          go_work_file = dependency_files.find { |f| f.name.end_with?("go.work") }
+          return ["."] unless go_work_file
+
+          GoWorkParser.use_paths(T.must(go_work_file.content))
+                      .map { |p| p == "." ? "." : "./#{p}" }
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def collect_workspace_file_contents
+          results = T.let({}, T::Hash[String, String])
+
+          workspace_module_paths.each do |mod_path|
+            relative_base = mod_path.delete_prefix("./")
+
+            mod_file = File.join(mod_path, "go.mod")
+            if File.exist?(mod_file)
+              key = relative_base.empty? || relative_base == "." ? "go.mod" : "#{relative_base}/go.mod"
+              results[key] = File.read(mod_file)
+            end
+
+            sum_file = File.join(mod_path, "go.sum")
+            next unless File.exist?(sum_file)
+
+            key = relative_base.empty? || relative_base == "." ? "go.sum" : "#{relative_base}/go.sum"
+            results[key] = File.read(sum_file)
+          end
+
+          results
         end
 
         sig { void }

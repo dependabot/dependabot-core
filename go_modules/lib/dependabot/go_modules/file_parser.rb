@@ -52,11 +52,13 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |hsh|
-          unless skip_dependency?(hsh) # rubocop:disable Style/Next
+        if workspace?
+          parse_workspace_dependencies(dependency_set)
+        else
+          required_packages.each do |hsh|
+            next if skip_dependency?(hsh)
 
-            dep = dependency_from_details(hsh)
-            dependency_set << dep
+            dependency_set << dependency_from_details(hsh)
           end
         end
 
@@ -190,9 +192,91 @@ module Dependabot
         @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def all_go_mods
+        @all_go_mods ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("go.mod") },
+          T::Array[Dependabot::DependencyFile]
+        )
+      end
+
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
+      def parse_workspace_dependencies(dependency_set)
+        all_go_mods.each do |mod_file|
+          parse_single_module(mod_file).each do |dep|
+            dependency_set << dep
+          end
+        end
+      end
+
+      sig { params(mod_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_single_module(mod_file)
+        SharedHelpers.in_a_temporary_directory do |path|
+          File.write("go.mod", mod_file.content)
+
+          command = "go mod edit -json"
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr) unless status.success?
+
+          parsed = JSON.parse(stdout)
+          packages = parsed["Require"] || []
+
+          packages.filter_map do |hsh|
+            next if skip_dependency_in_manifest?(hsh, parsed)
+
+            source = { type: "default", source: hsh["Path"] }
+            version = hsh["Version"]&.sub(/^v?/, "")
+
+            reqs = [{
+              requirement: hsh["Version"],
+              file: mod_file.name,
+              source: source,
+              groups: []
+            }]
+
+            Dependency.new(
+              name: hsh["Path"],
+              version: version,
+              requirements: hsh["Indirect"] ? [] : reqs,
+              package_manager: "go_modules"
+            )
+          end
+        end
+      end
+
+      sig { params(dep: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def skip_dependency_in_manifest?(dep, mod_manifest)
+        return true if dependency_is_replaced_in?(dep, mod_manifest)
+
+        path_uri = URI.parse("https://#{dep['Path']}")
+        !path_uri.host&.include?(".")
+      rescue URI::InvalidURIError
+        false
+      end
+
+      sig { params(details: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def dependency_is_replaced_in?(details, mod_manifest)
+        return false unless mod_manifest["Replace"]
+
+        mod_manifest["Replace"].any? do |replace|
+          replace["Old"]["Path"] == details["Path"] &&
+            (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
+        end
+      end
+
       sig { override.void }
       def check_required_files
-        raise "No go.mod!" unless go_mod
+        raise "No go.mod or go.work!" unless go_mod || go_work
       end
 
       sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
@@ -267,7 +351,8 @@ module Dependabot
       sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
       def handle_parser_error(path, stderr)
         msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
+        file_path = go_mod&.path || go_work&.path || "go.mod"
+        raise Dependabot::DependencyFileNotParseable.new(file_path, msg)
       end
 
       sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }

@@ -37,7 +37,55 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = if workspace?
+                          updated_workspace_files
+                        else
+                          updated_single_module_files
+                        end
+
+        raise "No files changed!" if updated_files.none?
+
+        updated_files
+      end
+
+      private
+
+      sig { params(go_mod: Dependabot::DependencyFile).returns(T::Boolean) }
+      def dependency_changed?(go_mod)
+        # file_changed? only checks for changed requirements. Need to check for indirect dep version changes too.
+        file_changed?(go_mod) || dependencies.any? { |dep| dep.previous_version != dep.version }
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if go_mod || go_work
+
+        raise "No go.mod or go.work!"
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_mod
+        @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_sum
+        @go_sum ||= T.let(get_original_file("go.sum"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_single_module_files
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         if go_mod && dependency_changed?(T.must(go_mod))
           updated_files <<
@@ -60,34 +108,23 @@ module Dependabot
           end
         end
 
-        raise "No files changed!" if updated_files.none?
-
         updated_files
       end
 
-      private
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_workspace_files
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
+        workspace_results = file_updater.updated_workspace_module_files
 
-      sig { params(go_mod: Dependabot::DependencyFile).returns(T::Boolean) }
-      def dependency_changed?(go_mod)
-        # file_changed? only checks for changed requirements. Need to check for indirect dep version changes too.
-        file_changed?(go_mod) || dependencies.any? { |dep| dep.previous_version != dep.version }
-      end
+        workspace_results.each do |file_path, content|
+          original = dependency_files.find { |f| f.name == file_path }
+          next unless original
+          next if original.content == content
 
-      sig { override.void }
-      def check_required_files
-        return if go_mod
+          updated_files << updated_file(file: original, content: content)
+        end
 
-        raise "No go.mod!"
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def go_mod
-        @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def go_sum
-        @go_sum ||= T.let(get_original_file("go.sum"), T.nilable(Dependabot::DependencyFile))
+        updated_files
       end
 
       sig { returns(T.nilable(String)) }
