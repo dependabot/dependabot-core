@@ -217,7 +217,11 @@ module Dependabot
       return nil unless content
 
       raw = decoded_content.dup.force_encoding(Encoding::BINARY)
-      Digest::SHA1.hexdigest("blob #{raw.bytesize}\0#{raw}")
+      header = "blob #{raw.bytesize}\0".b
+      digest = Digest::SHA1.new
+      digest.update(header)
+      digest.update(raw)
+      digest.hexdigest
     end
 
     private

@@ -398,6 +398,21 @@ RSpec.describe Dependabot::DependencyFile do
         expect(file.blob_oid).to eq("f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f")
       end
     end
+
+    context "when content is base64-encoded with non-ASCII bytes" do
+      let(:file) do
+        described_class.new(
+          name: "binary.dat",
+          content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+          content: "gP8A/g=="
+        )
+      end
+
+      it "computes the blob OID without encoding errors" do
+        # printf '\x80\xff\x00\xfe' | git hash-object --stdin
+        expect(file.blob_oid).to eq("4edea47ba105055cdec8a27d3ba236f576b59059")
+      end
+    end
   end
 
   describe "#vendored_file?" do
