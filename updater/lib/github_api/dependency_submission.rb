@@ -175,7 +175,7 @@ module GithubApi
           },
           metadata: {
             ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager),
-            blob_oid: manifest_file.blob_oid
+            blob_oid: manifest_file.blob_oid(algorithm: blob_hash_algorithm)
           }.compact,
           resolved: resolved_dependencies.transform_values do |resolved|
             {
@@ -198,6 +198,13 @@ module GithubApi
     end
     def scanned_manifest_path
       "#{GithubApi::EcosystemMapper.ecosystem_for(package_manager)}::#{manifest_file.directory}"
+    end
+
+    # Infers the repository's Git object format from the commit SHA length.
+    # SHA-1 produces 40 hex chars, SHA-256 produces 64.
+    sig { returns(Symbol) }
+    def blob_hash_algorithm
+      sha.length >= 64 ? :sha256 : :sha1
     end
   end
 end

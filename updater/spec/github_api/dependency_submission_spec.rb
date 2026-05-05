@@ -203,4 +203,42 @@ RSpec.describe GithubApi::DependencySubmission do
   context "without resolved dependencies" do
     it_behaves_like "dependency_submission", true
   end
+
+  context "when the commit SHA is 64 characters (SHA-256 repo)" do
+    let(:sha256_sha) { "a" * 64 }
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    end
+    let(:resolved_dependencies) do
+      {
+        "dummy-pkg-a" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+          package_url: "pkg:gem/dummy-pkg-a@2.0.0",
+          direct: true,
+          runtime: true,
+          dependencies: []
+        )
+      }
+    end
+
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: sha256_sha,
+        package_manager: "bundler",
+        manifest_file: lockfile,
+        resolved_dependencies: resolved_dependencies
+      )
+    end
+
+    it "uses SHA-256 for the blob OID" do
+      manifest = dependency_submission.payload[:manifests].fetch("/Gemfile.lock")
+      expect(manifest[:metadata][:blob_oid])
+        .to eq("54bf0378f9dd16ad2b60250c6156132f3ec9232e85b6ef87958aa439e29a4cec")
+    end
+  end
 end

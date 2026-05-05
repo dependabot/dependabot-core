@@ -413,6 +413,28 @@ RSpec.describe Dependabot::DependencyFile do
         expect(file.blob_oid).to eq("4edea47ba105055cdec8a27d3ba236f576b59059")
       end
     end
+
+    context "with algorithm: :sha256" do
+      it "returns a SHA-256 blob OID" do
+        expect(file.blob_oid(algorithm: :sha256))
+          .to eq("eb337bcee2061c5313c9a1392116b6c76039e9e30d71467ae359b36277e17dc7")
+      end
+
+      context "when content is base64-encoded with non-ASCII bytes" do
+        let(:file) do
+          described_class.new(
+            name: "binary.dat",
+            content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64,
+            content: "gP8A/g=="
+          )
+        end
+
+        it "computes the SHA-256 blob OID without encoding errors" do
+          expect(file.blob_oid(algorithm: :sha256))
+            .to eq("99955a54a0e195e06a6a74e7573046a935f74d5d1f4c10ae2ff27ce02dcdebc6")
+        end
+      end
+    end
   end
 
   describe "#vendored_file?" do
