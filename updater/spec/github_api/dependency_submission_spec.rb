@@ -205,6 +205,17 @@ RSpec.describe GithubApi::DependencySubmission do
   end
 
   context "when the commit SHA is 64 characters (SHA-256 repo)" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: sha256_sha,
+        package_manager: "bundler",
+        manifest_file: lockfile,
+        resolved_dependencies: resolved_dependencies
+      )
+    end
+
     let(:sha256_sha) { "a" * 64 }
     let(:lockfile) do
       Dependabot::DependencyFile.new(
@@ -222,17 +233,6 @@ RSpec.describe GithubApi::DependencySubmission do
           dependencies: []
         )
       }
-    end
-
-    subject(:dependency_submission) do
-      described_class.new(
-        job_id: "9999",
-        branch: "main",
-        sha: sha256_sha,
-        package_manager: "bundler",
-        manifest_file: lockfile,
-        resolved_dependencies: resolved_dependencies
-      )
     end
 
     it "uses SHA-256 for the blob OID" do
