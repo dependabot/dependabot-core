@@ -199,6 +199,63 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         end
       end
     end
+
+    context "when the docker_image source is digest-pinned" do
+      let(:dependency_type) { { type: :docker_image } }
+      let(:repo_fixture_name) { "ubuntu_no_latest.json" }
+      let(:dependency_name) { "ubuntu" }
+      let(:version) { "17.04" }
+      let(:repo_tags) { fixture("docker", "registry_tags", repo_fixture_name) }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
+      let(:source) do
+        { tag: version, digest: "ef895fdef7a8ea2a12cf421cd56b13c3bb65c806a09ea75a8284a78736ae5da5" }
+      end
+
+      before do
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
+
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: repo_tags)
+      end
+
+      context "when the registry returns a digest for the new tag" do
+        let(:new_digest) { "abc123aaaa00000000000000000000000000000000000000000000000000000a" }
+
+        before do
+          stub_request(:head, repo_url + "manifests/17.10")
+            .and_return(status: 200, body: "", headers: { "docker-content-digest" => "sha256:#{new_digest}" })
+        end
+
+        it "writes the new tag and the new digest into the source" do
+          source = checker.updated_requirements.first.fetch(:source)
+          expect(source[:tag]).to eq("17.10")
+          expect(source[:digest]).to eq(new_digest)
+        end
+      end
+
+      context "when the registry can't resolve a digest for the new tag" do
+        # The docker UpdateChecker treats "no digest available" as "up-to-date"
+        # for digest-pinned sources (see Docker::UpdateChecker#digest_up_to_date?),
+        # so the helm checker reports no update available and updated_requirements
+        # leaves the source untouched. This is the right outcome -- emitting a
+        # tag-only bump on a digest-pinned source would be misleading because
+        # Docker resolves `tag@digest` references by digest.
+        before do
+          stub_request(:head, repo_url + "manifests/17.10")
+            .and_return(status: 200, body: "", headers: {})
+        end
+
+        it "does not offer an update" do
+          expect(checker.latest_version).to be_nil
+        end
+
+        it "leaves the original requirements unchanged" do
+          expect(checker.updated_requirements).to eq(dependency.requirements)
+        end
+      end
+    end
   end
 
   describe "#filter_valid_releases" do
