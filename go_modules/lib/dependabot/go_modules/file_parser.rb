@@ -226,7 +226,7 @@ module Dependabot
 
           command = "go mod edit -json"
           stdout, stderr, status = Open3.capture3(command)
-          handle_parser_error(path, stderr) unless status.success?
+          handle_parser_error(path, stderr, file_path: mod_file.path) unless status.success?
 
           parsed = JSON.parse(stdout)
           packages = parsed["Require"] || []
@@ -348,11 +348,11 @@ module Dependabot
         end
       end
 
-      sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
-      def handle_parser_error(path, stderr)
+      sig { params(path: T.any(Pathname, String), stderr: String, file_path: T.nilable(String)).returns(T.noreturn) }
+      def handle_parser_error(path, stderr, file_path: nil)
         msg = stderr.gsub(path.to_s, "").strip
-        file_path = go_mod&.path || go_work&.path || "go.mod"
-        raise Dependabot::DependencyFileNotParseable.new(file_path, msg)
+        resolved_path = file_path || go_mod&.path || go_work&.path || "go.mod"
+        raise Dependabot::DependencyFileNotParseable.new(resolved_path, msg)
       end
 
       sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }

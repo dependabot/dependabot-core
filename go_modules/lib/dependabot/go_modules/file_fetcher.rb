@@ -53,6 +53,7 @@ module Dependabot
 
         if go_work
           fetched_files << T.must(go_work)
+          fetched_files << T.must(go_work_sum) if go_work_sum
           fetched_files.concat(workspace_module_files)
         end
 
@@ -82,6 +83,11 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def go_sum
         @go_sum ||= T.let(fetch_file_if_present("go.sum"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work_sum
+        @go_work_sum ||= T.let(fetch_file_if_present("go.work.sum"), T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

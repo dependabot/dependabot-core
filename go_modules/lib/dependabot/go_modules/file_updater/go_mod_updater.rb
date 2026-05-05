@@ -288,6 +288,7 @@ module Dependabot
           return ["."] unless go_work_file
 
           GoWorkParser.use_paths(T.must(go_work_file.content))
+                      .reject { |p| p.start_with?("/") || p.include?("..") }
                       .map { |p| p == "." ? "." : "./#{p}" }
         end
 
@@ -310,6 +311,8 @@ module Dependabot
             key = relative_base.empty? || relative_base == "." ? "go.sum" : "#{relative_base}/go.sum"
             results[key] = File.read(sum_file)
           end
+
+          results["go.work.sum"] = File.read("go.work.sum") if File.exist?("go.work.sum")
 
           results
         end
