@@ -57,6 +57,7 @@ module Dependabot
         cooldown
         repo_private
         multi_ecosystem_update
+        blocked_versions
       ).freeze,
       T::Array[Symbol]
     )
@@ -117,6 +118,9 @@ module Dependabot
 
     sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
+
+    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    attr_reader :blocked_versions
 
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
@@ -220,6 +224,10 @@ module Dependabot
       @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
+      @blocked_versions               = T.let(
+        attributes.fetch(:blocked_versions, []) || [],
+        T::Array[T::Hash[String, T.untyped]]
+      )
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -444,7 +452,7 @@ module Dependabot
       # allow update-types cannot be checked in allowed_update? because it runs
       # pre-resolution when only the current version is known. Version ranges
       # only need the current version — the same mechanism as ignore update-types.
-      conditions + ignored_versions_from_allowed_update_types(dependency)
+      conditions + ignored_versions_from_allowed_update_types(dependency) + blocked_versions_for(dependency)
     end
 
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
@@ -460,23 +468,54 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).void }
     def log_ignore_conditions_for(dependency)
       conditions = ignore_conditions.select { |ic| name_match?(ic["dependency-name"], dependency.name) }
-      return if conditions.empty?
+      if conditions.any?
+        Dependabot.logger.info("Ignored versions:")
+        conditions.each do |ic|
+          unless ic["version-requirement"].nil?
+            Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
+          end
 
-      Dependabot.logger.info("Ignored versions:")
-      conditions.each do |ic|
-        unless ic["version-requirement"].nil?
-          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
-        end
-
-        ic["update-types"]&.each do |update_type|
-          msg = "  #{update_type} - from #{ic['source']}"
-          msg += " (doesn't apply to security update)" if security_updates_only?
-          Dependabot.logger.info(msg)
+          ic["update-types"]&.each do |update_type|
+            msg = "  #{update_type} - from #{ic['source']}"
+            msg += " (doesn't apply to security update)" if security_updates_only?
+            Dependabot.logger.info(msg)
+          end
         end
       end
+
+      log_blocked_versions_for(dependency)
     end
 
     private
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def blocked_versions_for(dependency)
+      normaliser = name_normaliser
+      normalized_dep_name = T.must(normaliser).call(dependency.name)
+
+      blocked_versions
+        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
+        .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
+        .filter_map { |bv| bv["version"].strip.empty? ? nil : bv["version"].strip }
+    end
+
+    sig { params(dependency: Dependabot::Dependency).void }
+    def log_blocked_versions_for(dependency)
+      normaliser = name_normaliser
+      normalized_dep_name = T.must(normaliser).call(dependency.name)
+
+      blocks = blocked_versions
+               .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
+               .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
+      return if blocks.empty?
+
+      Dependabot.logger.info("Blocked versions (by GitHub Security):")
+      blocks.each do |bv|
+        msg = "  #{bv['version']}"
+        msg += " - reason: #{bv['reason']}" if bv["reason"]
+        Dependabot.logger.info(msg)
+      end
+    end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
