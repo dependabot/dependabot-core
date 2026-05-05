@@ -138,8 +138,13 @@ module Dependabot
           vendor_modules_txt = if mod_path == "."
                                  File.join(vendor_dir, "modules.txt")
                                else
-                                 File.join(T.must(repo_contents_path), T.must(directory),
-                                           mod_path, "vendor", "modules.txt")
+                                 File.join(
+                                   T.must(repo_contents_path),
+                                   T.must(directory),
+                                   mod_path,
+                                   "vendor",
+                                   "modules.txt"
+                                 )
                                end
           File.exist?(vendor_modules_txt)
         end
