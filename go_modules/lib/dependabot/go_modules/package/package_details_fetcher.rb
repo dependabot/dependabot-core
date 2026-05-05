@@ -121,8 +121,15 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def go_mod
           @go_mod ||= T.let(
-            dependency_files.find { |f| f.name == "go.mod" } ||
-              dependency_files.find { |f| f.name.end_with?("/go.mod") },
+            begin
+              req_file = dependency.requirements.first&.fetch(:file, nil)
+              if req_file
+                dependency_files.find { |f| f.name == req_file }
+              else
+                dependency_files.find { |f| f.name == "go.mod" } ||
+                  dependency_files.find { |f| f.name.end_with?("/go.mod") }
+              end
+            end,
             T.nilable(Dependabot::DependencyFile)
           )
         end
