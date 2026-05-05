@@ -2031,6 +2031,34 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
         end
+
+        context "when dealing with a non-library and the new version already satisfies the range" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "1.2.3",
+              requirements: [{
+                file: "pyproject.toml",
+                requirement: ">=1.0.0,<3.0.0",
+                groups: [],
+                source: nil
+              }],
+              package_manager: "pip"
+            )
+          end
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
+          end
+
+          it "does not bump the lower bound when the resolved version already satisfies the range" do
+            expect(first_updated_requirements[:requirement]).to eq(">=1.0.0,<3.0.0")
+          end
+        end
       end
 
       context "when updating a dependency in an additional requirements file" do

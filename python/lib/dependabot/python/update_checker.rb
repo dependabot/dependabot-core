@@ -115,8 +115,13 @@ module Dependabot
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy if @requirements_update_strategy
 
-        # Otherwise, check if this is a library or not
-        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
+        # Otherwise, check if this is a library or not.
+        # Libraries widen ranges so lower bounds are preserved (compatible with both old and new consumers).
+        # Non-libraries (applications) use BumpVersionsIfNecessary: only update the requirement when the
+        # current range no longer satisfies the new version, avoiding spurious lower-bound bumps for
+        # ranges that already include the resolved version (e.g. >=1.0.0,<3.0.0 should not become
+        # >=2.1.0,<3.0.0 just because 2.1.0 is the latest release).
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private
