@@ -271,20 +271,45 @@ module Dependabot
       }.merge(headers)
     end
 
+    DEFAULT_EXCON_CONNECT_TIMEOUT_IN_SECONDS = 5
+    DEFAULT_EXCON_WRITE_TIMEOUT_IN_SECONDS = 5
+    DEFAULT_EXCON_READ_TIMEOUT_IN_SECONDS = 20
+    DEFAULT_EXCON_RETRY_LIMIT = 4
+
     sig { params(options: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
     def self.excon_defaults(options = nil)
       options ||= {}
       headers = T.cast(options.delete(:headers), T.nilable(T::Hash[String, String]))
       {
         instrumentor: Dependabot::SimpleInstrumentor,
-        connect_timeout: 5,
-        write_timeout: 5,
-        read_timeout: 20,
-        retry_limit: 4, # Excon defaults to four retries, but let's set it explicitly for clarity
+        connect_timeout: excon_connect_timeout_in_seconds,
+        write_timeout: excon_write_timeout_in_seconds,
+        read_timeout: excon_read_timeout_in_seconds,
+        retry_limit: excon_retry_limit,
         omit_default_port: true,
         middlewares: excon_middleware,
         headers: excon_headers(headers)
       }.merge(options)
+    end
+
+    sig { returns(Integer) }
+    def self.excon_connect_timeout_in_seconds
+      ENV.fetch("DEPENDABOT_EXCON_CONNECT_TIMEOUT_IN_SECONDS", DEFAULT_EXCON_CONNECT_TIMEOUT_IN_SECONDS).to_i
+    end
+
+    sig { returns(Integer) }
+    def self.excon_write_timeout_in_seconds
+      ENV.fetch("DEPENDABOT_EXCON_WRITE_TIMEOUT_IN_SECONDS", DEFAULT_EXCON_WRITE_TIMEOUT_IN_SECONDS).to_i
+    end
+
+    sig { returns(Integer) }
+    def self.excon_read_timeout_in_seconds
+      ENV.fetch("DEPENDABOT_EXCON_READ_TIMEOUT_IN_SECONDS", DEFAULT_EXCON_READ_TIMEOUT_IN_SECONDS).to_i
+    end
+
+    sig { returns(Integer) }
+    def self.excon_retry_limit
+      ENV.fetch("DEPENDABOT_EXCON_RETRY_LIMIT", DEFAULT_EXCON_RETRY_LIMIT).to_i
     end
 
     sig do
