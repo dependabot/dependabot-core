@@ -87,6 +87,10 @@ RSpec.describe Dependabot::DependencyChange do
       }
     end
 
+    let(:update_config) do
+      instance_double(Dependabot::Config::UpdateConfig, pull_request_description: "auto")
+    end
+
     let(:message_builder_mock) do
       instance_double(
         Dependabot::PullRequestCreator::MessageBuilder,
@@ -102,7 +106,8 @@ RSpec.describe Dependabot::DependencyChange do
       allow(job).to receive_messages(
         source: github_source,
         credentials: job_credentials,
-        commit_message_options: commit_message_options
+        commit_message_options: commit_message_options,
+        update_config: update_config
       )
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
@@ -119,7 +124,8 @@ RSpec.describe Dependabot::DependencyChange do
           pr_message_encoding: nil,
           pr_message_max_length: 65_535,
           ignore_conditions: [],
-          notices: []
+          notices: [],
+          pull_request_description: "auto"
         )
 
       expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
@@ -147,7 +153,8 @@ RSpec.describe Dependabot::DependencyChange do
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
             ignore_conditions: [],
-            notices: []
+            notices: [],
+            pull_request_description: "auto"
           )
 
         expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")

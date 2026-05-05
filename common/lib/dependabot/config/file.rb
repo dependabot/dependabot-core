@@ -10,6 +10,8 @@ module Dependabot
     class File
       extend T::Sig
 
+      ALLOWED_PR_DESCRIPTIONS = %w(auto short full).freeze
+
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
       attr_reader :updates
 
@@ -26,6 +28,7 @@ module Dependabot
       def initialize(updates:, registries: nil)
         @updates = T.let(updates || [], T::Array[T::Hash[Symbol, String]])
         @registries = T.let(registries || {}, T::Hash[Symbol, T::Hash[Symbol, String]])
+        validate_updates
       end
 
       sig do
@@ -42,7 +45,8 @@ module Dependabot
         UpdateConfig.new(
           ignore_conditions: ignore_conditions(cfg),
           commit_message_options: commit_message_options(cfg),
-          exclude_paths: exclude_paths(cfg)
+          exclude_paths: exclude_paths(cfg),
+          pull_request_description: cfg&.dig(:"pull-request-description")
         )
       end
 
@@ -128,6 +132,18 @@ module Dependabot
       sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
       def exclude_paths(cfg)
         Array(cfg&.dig(:"exclude-paths") || [])
+      end
+
+      sig { void }
+      def validate_updates
+        @updates.each do |update|
+          desc = update[:"pull-request-description"]
+          next if desc.nil?
+
+          unless ALLOWED_PR_DESCRIPTIONS.include?(desc)
+            raise InvalidConfigError, "invalid pull-request-description: #{desc}"
+          end
+        end
       end
     end
   end

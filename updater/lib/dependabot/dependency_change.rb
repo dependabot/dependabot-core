@@ -96,7 +96,8 @@ module Dependabot
         pr_message_max_length: pr_message_max_length,
         pr_message_encoding: pr_message_encoding,
         ignore_conditions: job.ignore_conditions,
-        notices: notices
+        notices: notices,
+        pull_request_description: job.update_config.pull_request_description
       ).message
 
       @pr_message = message
