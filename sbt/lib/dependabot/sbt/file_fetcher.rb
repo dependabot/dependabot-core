@@ -45,6 +45,7 @@ module Dependabot
         fetched_files << T.must(plugins_sbt) if plugins_sbt
         fetched_files << T.must(build_properties) if build_properties
         fetched_files += subproject_build_files
+        fetched_files += project_scala_files
 
         fetched_files.reject do |file|
           Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
@@ -89,6 +90,14 @@ module Dependabot
           .reject { |dir| NON_SUBPROJECT_DIRS.include?(dir.name) }
           .reject { |dir| Dependabot::FileFiltering.should_exclude_path?(dir.name, "subproject directory", @exclude_paths) }
           .filter_map { |dir| fetch_file_if_present(File.join(dir.name, BUILD_SBT_FILENAME)) }
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def project_scala_files
+        project_dir_contents = repo_contents(dir: "project", raise_errors: false)
+        project_dir_contents
+          .select { |item| item.type == "file" && item.name.end_with?(".scala") }
+          .filter_map { |item| fetch_file_if_present(File.join("project", item.name)) }
       end
 
       sig { params(content: T.nilable(String)).returns(T.nilable(String)) }
