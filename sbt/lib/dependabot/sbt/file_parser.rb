@@ -78,9 +78,6 @@ module Dependabot
 
         sbt_files.each do |buildfile|
           dependency_set += scala_version_dependency(buildfile)
-          break if dependency_set.dependencies.any? do |d|
-            d.name == "org.scala-lang:scala3-library_3" || d.name == "org.scala-lang:scala-library"
-          end
         end
 
         dependency_set.dependencies
@@ -152,14 +149,14 @@ module Dependabot
       def literal_version_dependencies(buildfile)
         dependency_set = DependencySet.new
 
-        prepared_content(buildfile).scan(LIBRARY_DEP_REGEX) do
+        content_without_plugins(buildfile).scan(LIBRARY_DEP_REGEX) do
           captures = T.must(Regexp.last_match).named_captures
           group = T.must(captures.fetch("group"))
           artifact = T.must(captures.fetch("artifact"))
           version = T.must(captures.fetch("version"))
           cross_versioned = captures.fetch("op") == "%%"
 
-          dep_name = build_dependency_name(group, artifact, cross_versioned)
+          dep_name = build_dependency_name(group, artifact, cross_versioned, buildfile)
 
           next unless Sbt::Version.correct?(version)
 
@@ -184,7 +181,7 @@ module Dependabot
       def val_ref_dependencies(buildfile)
         dependency_set = DependencySet.new
 
-        prepared_content(buildfile).scan(VAL_REF_DEP_REGEX) do
+        content_without_plugins(buildfile).scan(VAL_REF_DEP_REGEX) do
           captures = T.must(Regexp.last_match).named_captures
           group = T.must(captures.fetch("group"))
           artifact = T.must(captures.fetch("artifact"))
@@ -201,7 +198,7 @@ module Dependabot
           next unless version
           next unless Sbt::Version.correct?(version)
 
-          dep_name = build_dependency_name(group, artifact, cross_versioned)
+          dep_name = build_dependency_name(group, artifact, cross_versioned, buildfile)
 
           metadata = T.let(
             { property_name: val_name, property_source: property_details[:file] },
@@ -354,24 +351,31 @@ module Dependabot
         dependency_set
       end
 
-      sig { params(group: String, artifact: String, cross_versioned: T::Boolean).returns(String) }
-      def build_dependency_name(group, artifact, cross_versioned)
+      sig do
+        params(
+          group: String,
+          artifact: String,
+          cross_versioned: T::Boolean,
+          buildfile: Dependabot::DependencyFile
+        ).returns(String)
+      end
+      def build_dependency_name(group, artifact, cross_versioned, buildfile)
         if cross_versioned
-          scala_major = scala_major_version
+          scala_major = scala_major_version_for(buildfile)
           "#{group}:#{artifact}_#{scala_major}"
         else
           "#{group}:#{artifact}"
         end
       end
 
-      sig { returns(String) }
-      def scala_major_version
-        @scala_major_version ||= T.let(resolve_scala_major_version, T.nilable(String))
-      end
+      sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
+      def scala_major_version_for(buildfile)
+        # Check the buildfile itself first, then fall back to root build.sbt
+        files_to_check = [buildfile]
+        root = sbt_files.find { |f| f.name == "build.sbt" }
+        files_to_check << root if root && root != buildfile
 
-      sig { returns(String) }
-      def resolve_scala_major_version
-        sbt_files.each do |file|
+        files_to_check.each do |file|
           match = prepared_content(file).match(SCALA_VERSION_REGEX)
           next unless match
 
@@ -390,6 +394,13 @@ module Dependabot
         T.must(buildfile.content)
          .gsub(%r{(?<=^|\s)//.*$}, "\n")
          .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+      end
+
+      # Returns prepared content with addSbtPlugin(...) calls removed so that
+      # LIBRARY_DEP_REGEX and VAL_REF_DEP_REGEX do not duplicate plugin matches.
+      sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
+      def content_without_plugins(buildfile)
+        prepared_content(buildfile).gsub(/addSbtPlugin\([^)]*\)/, "")
       end
 
       sig { returns(PropertyValueFinder) }

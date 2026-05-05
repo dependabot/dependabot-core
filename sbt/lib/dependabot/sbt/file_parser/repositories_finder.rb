@@ -72,25 +72,24 @@ module Dependabot
 
         sig { params(buildfile: Dependabot::DependencyFile).returns(T::Array[String]) }
         def repository_urls_from(buildfile)
-          urls = T.let([], T::Array[String])
           content = comment_free_content(buildfile)
 
-          content.scan(RESOLVER_AT_REGEX) do
-            urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))
-          end
-
-          content.scan(RESOLVER_URL_REGEX) do
-            urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))
-          end
-
-          content.scan(MAVEN_REPOSITORY_REGEX) do
-            urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))
-          end
+          urls = [RESOLVER_AT_REGEX, RESOLVER_SEQ_AT_REGEX, RESOLVER_URL_REGEX, MAVEN_REPOSITORY_REGEX]
+                 .flat_map { |regex| scan_urls(content, regex) }
 
           urls
             .map { |url| url.strip.gsub(%r{/$}, "") }
             .select { |url| valid_url?(url) }
             .uniq
+        end
+
+        sig { params(content: String, regex: Regexp).returns(T::Array[String]) }
+        def scan_urls(content, regex)
+          urls = T.let([], T::Array[String])
+          content.scan(regex) do
+            urls << T.must(T.must(Regexp.last_match).named_captures.fetch("url"))
+          end
+          urls
         end
 
         sig { returns(String) }
