@@ -1890,29 +1890,29 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               )
           end
 
-          its([:requirement]) { is_expected.to eq("~2.19.1") }
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
         context "when dealing with a poetry in non-package mode" do
           let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
 
-          its([:requirement]) { is_expected.to eq("~2.19.1") }
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when checking library status multiple times" do
+        context "when checking auto strategy multiple times" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
           end
 
-          it "caches the PyPI check result to avoid redundant calls" do
+          it "does not call PyPI while selecting auto requirements strategy" do
             # Call requirements_update_strategy multiple times
             checker.send(:requirements_update_strategy)
             checker.send(:requirements_update_strategy)
 
-            # Verify PyPI was only called once (memoization working)
+            # Auto strategy should not rely on package classification.
             expect(a_request(:get, "https://pypi.org/pypi/pendulum/json/"))
-              .to have_been_made.once
+              .not_to have_been_made
           end
         end
 
@@ -2029,7 +2029,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               )
           end
 
-          its([:requirement]) { is_expected.to eq("~=2.19.1") }
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
       end
 
@@ -2112,7 +2112,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
               )
           end
 
-          its([:requirement]) { is_expected.to eq("~=2.19.1") }
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
       end
 

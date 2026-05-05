@@ -115,8 +115,11 @@ module Dependabot
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy if @requirements_update_strategy
 
-        # Otherwise, check if this is a library or not
-        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
+        # In auto mode for pyproject updates, use a single conservative strategy
+        # regardless of whether the project is classified as a library or app.
+        return RequirementsUpdateStrategy::WidenRanges if updating_pyproject?
+
+        RequirementsUpdateStrategy::BumpVersions
       end
 
       private
