@@ -17,4 +17,7 @@ Dependabot::PullRequestCreator::Labeler
   .register_label_details("deno", name: "deno", colour: "70ffaf")
 
 require "dependabot/dependency"
+# Deno's import map has no dev/prod distinction (no devDependencies equivalent),
+# so every import is treated as production. If a future deno.json schema adds
+# a way to mark dev-only or test-only imports, this check should consult groups.
 Dependabot::Dependency.register_production_check("deno", ->(_) { true })
