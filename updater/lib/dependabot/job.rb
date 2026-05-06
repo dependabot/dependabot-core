@@ -507,12 +507,22 @@ module Dependabot
       blocks = blocked_versions
                .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
                .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
+               .filter_map do |bv|
+                 version = bv["version"].strip
+                 next if version.empty?
+
+                 reason = bv["reason"]
+                 reason = reason.strip if reason.is_a?(String)
+                 reason = nil if reason == ""
+
+                 { "version" => version, "reason" => reason }
+               end
       return if blocks.empty?
 
       Dependabot.logger.info("Blocked versions (by GitHub Security):")
       blocks.each do |bv|
         msg = "  #{bv['version']}"
-        msg += " - reason: #{bv['reason']}" if bv["reason"]
+        msg += " - reason: #{bv['reason']}" if bv["reason"].is_a?(String)
         Dependabot.logger.info(msg)
       end
     end
