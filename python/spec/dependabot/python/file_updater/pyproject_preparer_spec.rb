@@ -232,7 +232,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         parsed = TomlRB.parse(result)
         onetl_dep = parsed.dig("tool", "poetry", "dependencies", "onetl")
         expect(onetl_dep).to be_a(Hash)
-        expect(onetl_dep["extras"]).to eq(["ftp", "s3"])
+        expect(onetl_dep["extras"]).to eq(%w(ftp s3))
         expect(onetl_dep["git"]).to eq("https://github.com/example/onetl.git")
         expect(onetl_dep["rev"]).to eq("v1.0.0")
       end
