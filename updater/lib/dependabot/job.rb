@@ -490,41 +490,40 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def blocked_versions_for(dependency)
+      matching_blocked_entries(dependency).filter_map do |bv|
+        version = bv["version"].strip
+        version.empty? ? nil : version
+      end
+    end
+
+    sig { params(dependency: Dependabot::Dependency).void }
+    def log_blocked_versions_for(dependency)
+      versions = blocked_versions_for(dependency)
+      return if versions.empty?
+
+      Dependabot.logger.info("Blocked versions (by GitHub Security):")
+      matching_blocked_entries(dependency).each do |bv|
+        version = bv["version"].strip
+        next if version.empty?
+
+        reason = bv["reason"].is_a?(String) ? bv["reason"].strip : nil
+        msg = "  #{version}"
+        msg += " - reason: #{reason}" if reason && !reason.empty?
+        Dependabot.logger.info(msg)
+      end
+    end
+
+    sig do
+      params(dependency: Dependabot::Dependency)
+        .returns(T::Array[T::Hash[String, T.untyped]])
+    end
+    def matching_blocked_entries(dependency)
       normaliser = name_normaliser
       normalized_dep_name = T.must(normaliser).call(dependency.name)
 
       blocked_versions
         .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
         .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
-        .filter_map { |bv| bv["version"].strip.empty? ? nil : bv["version"].strip }
-    end
-
-    sig { params(dependency: Dependabot::Dependency).void }
-    def log_blocked_versions_for(dependency)
-      normaliser = name_normaliser
-      normalized_dep_name = T.must(normaliser).call(dependency.name)
-
-      blocks = blocked_versions
-               .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
-               .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
-               .filter_map do |bv|
-                 version = bv["version"].strip
-                 next if version.empty?
-
-                 reason = bv["reason"]
-                 reason = reason.strip if reason.is_a?(String)
-                 reason = nil if reason == ""
-
-                 { "version" => version, "reason" => reason }
-               end
-      return if blocks.empty?
-
-      Dependabot.logger.info("Blocked versions (by GitHub Security):")
-      blocks.each do |bv|
-        msg = "  #{bv['version']}"
-        msg += " - reason: #{bv['reason']}" if bv["reason"].is_a?(String)
-        Dependabot.logger.info(msg)
-      end
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
