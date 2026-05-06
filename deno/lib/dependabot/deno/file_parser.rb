@@ -20,6 +20,17 @@ module Dependabot
       JSR_SPECIFIER = %r{\Ajsr:(?<name>@[^@/]+/[^@/]+)(?:@(?<constraint>[^/]+))?(?:/[^\s]*)?\z}
       NPM_SPECIFIER = %r{\Anpm:(?<name>(?:@[^/]+/)?[^@/]+)(?:@(?<constraint>[^/]+))?(?:/[^\s]*)?\z}
 
+      # Matches either a JSON string literal (with escapes), a line comment, a
+      # block comment, or a trailing comma. The alternation lets gsub preserve
+      # strings while stripping the JSONC-only constructs, so e.g. "//" inside a
+      # URL value is not mistaken for the start of a comment.
+      JSONC_TOKEN = %r{
+        ("(?:\\.|[^"\\])*")    # JSON string literal
+        | //[^\n]*             # line comment
+        | /\*.*?\*/            # block comment
+        | ,(?=\s*[\}\]])       # trailing comma
+      }mx
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependencies = []
@@ -108,11 +119,7 @@ module Dependabot
       def parse_json_or_jsonc(content)
         return {} unless content
 
-        # Strip single-line comments and trailing commas for JSONC support
-        cleaned = content
-                  .gsub(%r{//[^\n]*}, "")
-                  .gsub(%r{/\*.*?\*/}m, "")
-                  .gsub(/,\s*([}\]])/, '\1')
+        cleaned = content.gsub(JSONC_TOKEN) { ::Regexp.last_match(1) || "" }
 
         JSON.parse(cleaned)
       end

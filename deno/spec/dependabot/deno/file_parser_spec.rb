@@ -142,4 +142,120 @@ RSpec.describe Dependabot::Deno::FileParser do
       expect(deps.first.name).to eq("@std/path")
     end
   end
+
+  context "with values containing // (e.g. URLs)" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.json",
+          content: <<~JSON
+            {
+              "imports": {
+                "@std/path": "jsr:@std/path@^1.0.0",
+                "legacy": "https://deno.land/x/foo/mod.ts"
+              }
+            }
+          JSON
+        )
+      ]
+    end
+
+    it "parses without treating // inside string values as a comment" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@std/path")
+    end
+  end
+
+  context "with a JSONC file containing a URL value and trailing comment" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.jsonc",
+          content: <<~JSON
+            {
+              // Top-level comment
+              "imports": {
+                "@std/path": "jsr:@std/path@^1.0.0", // trailing comment
+                "x": "https://example.com/lib"
+              }
+            }
+          JSON
+        )
+      ]
+    end
+
+    it "strips comments without corrupting the URL value" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@std/path")
+    end
+  end
+
+  context "with a multi-line block comment" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.jsonc",
+          content: <<~JSON
+            {
+              /* this is a
+                 multi-line
+                 block comment */
+              "imports": {
+                "@std/path": "jsr:@std/path@^1.0.0"
+              }
+            }
+          JSON
+        )
+      ]
+    end
+
+    it "strips the block comment across lines" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@std/path")
+    end
+  end
+
+  context "with a trailing comma after the last entry" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.jsonc",
+          content: '{"imports": {"@std/path": "jsr:@std/path@^1.0.0",}}'
+        )
+      ]
+    end
+
+    it "strips the trailing comma so JSON.parse succeeds" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@std/path")
+    end
+  end
+
+  context "with escaped quotes inside a string value" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.jsonc",
+          content: <<~'JSON'
+            {
+              "imports": {
+                "@std/path": "jsr:@std/path@^1.0.0",
+                "note": "say \"hi\" then //bye"
+              }
+            }
+          JSON
+        )
+      ]
+    end
+
+    it "treats the escaped quotes as part of the string and preserves the trailing //" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@std/path")
+    end
+  end
 end
