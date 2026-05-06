@@ -99,5 +99,81 @@ RSpec.describe Dependabot::Deno::FileUpdater do
         expect(updated_content).not_to include("^1.1.4-rc.1")
       end
     end
+
+    context "with a versionless specifier" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "deno.json",
+            content: '{"imports": {"chalk": "npm:chalk"}}'
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "chalk",
+          version: "5.4.0",
+          previous_version: nil,
+          requirements: [{
+            requirement: "5.4.0",
+            file: "deno.json",
+            groups: ["imports"],
+            source: { type: "npm" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "deno.json",
+            groups: ["imports"],
+            source: { type: "npm" }
+          }],
+          package_manager: "deno"
+        )
+      end
+
+      it "adds the version to the previously versionless specifier" do
+        updated_content = updater.updated_dependency_files.first.content
+        expect(updated_content).to eq('{"imports": {"chalk": "npm:chalk@5.4.0"}}')
+      end
+    end
+
+    context "with a versionless specifier that has a sub-path and a sibling sharing the prefix" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "deno.json",
+            content: '{"imports": {"chalk": "npm:chalk", ' \
+                     '"chalk/utils": "npm:chalk/utils", ' \
+                     '"chalk-cli": "npm:chalk-cli"}}'
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "chalk",
+          version: "5.4.0",
+          previous_version: nil,
+          requirements: [{
+            requirement: "5.4.0",
+            file: "deno.json",
+            groups: ["imports"],
+            source: { type: "npm" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "deno.json",
+            groups: ["imports"],
+            source: { type: "npm" }
+          }],
+          package_manager: "deno"
+        )
+      end
+
+      it "adds the version to bare and sub-path specifiers without touching siblings sharing the prefix" do
+        updated_content = updater.updated_dependency_files.first.content
+        expect(updated_content).to include('"chalk": "npm:chalk@5.4.0"')
+        expect(updated_content).to include('"chalk/utils": "npm:chalk@5.4.0/utils"')
+        expect(updated_content).to include('"chalk-cli": "npm:chalk-cli"')
+      end
+    end
   end
 end

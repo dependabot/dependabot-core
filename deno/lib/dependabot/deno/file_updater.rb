@@ -46,10 +46,14 @@ module Dependabot
 
           prev_reqs.zip(new_reqs).each do |prev_req, new_req|
             source_type = prev_req[:source][:type]
-            old_specifier = "#{source_type}:#{dep.name}@#{prev_req[:requirement]}"
-            new_specifier = "#{source_type}:#{dep.name}@#{T.must(new_req)[:requirement]}"
+            prev_req_str = prev_req[:requirement]
+            new_req_str = T.must(new_req)[:requirement]
 
-            content = content.gsub(/#{Regexp.escape(old_specifier)}(?=["\/])/, new_specifier)
+            base = "#{source_type}:#{dep.name}"
+            old_specifier = prev_req_str ? "#{base}@#{prev_req_str}" : base
+            new_specifier = "#{base}@#{new_req_str}"
+
+            content = content.gsub(%r{#{Regexp.escape(old_specifier)}(?=["/])}, new_specifier)
           end
         end
 
