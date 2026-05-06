@@ -14,7 +14,8 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'main' }}
+  # TODO: revert to main after merging dependabot/smoke-tests#1234
+  SMOKE_TEST_BRANCH: juxtin/add-blob-oid-to-graph-snapshots
 permissions: {}
 
 jobs:
