@@ -32,7 +32,159 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
     )
   end
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
+  end
 
   it_behaves_like "a dependency file fetcher"
+
+  describe ".required_files_in?" do
+    subject { described_class.required_files_in?(filenames) }
+
+    context "with a build.sbt" do
+      let(:filenames) { %w(build.sbt) }
+
+      it { is_expected.to be true }
+    end
+
+    context "without a build.sbt" do
+      let(:filenames) { %w(pom.xml) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  context "with a basic build.sbt" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_basic.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "build.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_build_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "project/plugins.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, url + "project/build.properties?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+    end
+
+    it "fetches the build.sbt" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).to eq(%w(build.sbt))
+    end
+  end
+
+  context "with build.sbt, plugins.sbt and build.properties" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_basic.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "build.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_build_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "project/plugins.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_plugins_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "project/build.properties?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_build_properties.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches all three files" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(build.sbt project/plugins.sbt project/build.properties))
+    end
+
+    describe "#ecosystem_versions" do
+      it "returns the SBT version from build.properties" do
+        expect(file_fetcher_instance.ecosystem_versions).to eq(
+          { package_managers: { "sbt" => "1.9.7" } }
+        )
+      end
+    end
+  end
+
+  context "with subprojects" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_with_subprojects.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "build.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_build_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "project/plugins.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, url + "project/build.properties?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_build_properties.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "core/build.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_subproject_build_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "web/build.sbt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+    end
+
+    it "fetches the root and subproject build.sbt files" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(build.sbt project/build.properties core/build.sbt))
+    end
+  end
+
+  context "when beta ecosystems are not enabled" do
+    before do
+      Dependabot::Experiments.register(:enable_beta_ecosystems, false)
+    end
+
+    it "raises a DependencyFileNotFound error" do
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
 end
