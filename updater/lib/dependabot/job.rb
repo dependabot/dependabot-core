@@ -225,7 +225,7 @@ module Dependabot
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
       @blocked_versions               = T.let(
-        attributes.fetch(:blocked_versions, []) || [],
+        (attributes.fetch(:blocked_versions, []) || []).grep(Hash),
         T::Array[T::Hash[String, T.untyped]]
       )
 
@@ -522,7 +522,6 @@ module Dependabot
       normalized_dep_name = T.must(normaliser).call(dependency.name)
 
       blocked_versions
-        .grep(Hash)
         .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
         .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
     end
