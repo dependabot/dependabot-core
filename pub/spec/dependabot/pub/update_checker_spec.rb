@@ -805,6 +805,18 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
+
+    context "when workspace root is missing" do
+      let(:stderr) do
+        "Found a pubspec.yaml at dependabot_tmp_dir/packages/geo_ip_client. " \
+          "But it has resolution `workspace`.\n" \
+          "But found no workspace root including it in parent directories."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 
   context "with a git dependency" do
