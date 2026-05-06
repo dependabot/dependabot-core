@@ -175,5 +175,53 @@ RSpec.describe Dependabot::Deno::FileUpdater do
         expect(updated_content).to include('"chalk-cli": "npm:chalk-cli"')
       end
     end
+
+    context "when updating a deno.jsonc file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "deno.jsonc",
+            content: <<~JSONC
+              {
+                // Top-level comment
+                "imports": {
+                  /* block comment */
+                  "@std/path": "jsr:@std/path@^1.0.0" // trailing comment
+                }
+              }
+            JSONC
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@std/path",
+          version: "1.1.4",
+          previous_version: "1.0.0",
+          requirements: [{
+            requirement: "^1.1.4",
+            file: "deno.jsonc",
+            groups: ["imports"],
+            source: { type: "jsr" }
+          }],
+          previous_requirements: [{
+            requirement: "^1.0.0",
+            file: "deno.jsonc",
+            groups: ["imports"],
+            source: { type: "jsr" }
+          }],
+          package_manager: "deno"
+        )
+      end
+
+      it "bumps the version while preserving comments and block comments" do
+        updated_content = updater.updated_dependency_files.first.content
+        expect(updated_content).to include("jsr:@std/path@^1.1.4")
+        expect(updated_content).not_to include("jsr:@std/path@^1.0.0")
+        expect(updated_content).to include("// Top-level comment")
+        expect(updated_content).to include("/* block comment */")
+        expect(updated_content).to include('"jsr:@std/path@^1.1.4" // trailing comment')
+      end
+    end
   end
 end
