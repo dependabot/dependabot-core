@@ -75,7 +75,13 @@ module Dependabot
           "^#{latest}"
         elsif old_constraint.start_with?("~")
           "~#{latest}"
-        elsif old_constraint.match?(/\A[><=]/)
+        elsif old_constraint.start_with?("=")
+          "=#{latest}"
+        elsif old_constraint.match?(/\A[><]/)
+          # Range constraints (>=, <=, <, >, and compound ranges like
+          # ">=1.0.0 <2.0.0") are intentionally left unchanged. Updating
+          # range bounds requires resolving the new version against the
+          # full range and is deferred to a follow-up.
           old_constraint
         else
           latest.to_s

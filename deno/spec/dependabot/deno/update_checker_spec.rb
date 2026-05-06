@@ -172,4 +172,84 @@ RSpec.describe Dependabot::Deno::UpdateChecker do
       expect(checker.latest_version).to eq(Dependabot::Deno::Version.new("5.4.0"))
     end
   end
+
+  context "with an exact pin using `=`" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@std/path",
+        version: "1.0.0",
+        requirements: [{
+          requirement: "=1.0.0",
+          file: "deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        package_manager: "deno"
+      )
+    end
+
+    before do
+      stub_request(:get, "https://jsr.io/@std/path/meta.json")
+        .to_return(
+          status: 200,
+          body: {
+            scope: "std",
+            name: "path",
+            latest: "1.1.4",
+            versions: {
+              "1.1.4" => { "createdAt" => "2025-12-01T00:00:00Z" },
+              "1.0.0" => { "createdAt" => "2024-01-01T00:00:00Z" }
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "bumps the pin to the new exact version" do
+      expect(checker.updated_requirements.first[:requirement]).to eq("=1.1.4")
+    end
+  end
+
+  context "with a range constraint" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@std/path",
+        version: "1.0.0",
+        requirements: [{
+          requirement: range_constraint,
+          file: "deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        package_manager: "deno"
+      )
+    end
+
+    before do
+      stub_request(:get, "https://jsr.io/@std/path/meta.json")
+        .to_return(
+          status: 200,
+          body: {
+            scope: "std",
+            name: "path",
+            latest: "1.1.4",
+            versions: {
+              "1.1.4" => { "createdAt" => "2025-12-01T00:00:00Z" },
+              "1.0.0" => { "createdAt" => "2024-01-01T00:00:00Z" }
+            }
+          }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    [">=1.0.0", "<=2.0.0", "<2.0.0", ">1.0.0", ">=1.0.0 <2.0.0"].each do |constraint|
+      context "with constraint #{constraint.inspect}" do
+        let(:range_constraint) { constraint }
+
+        it "is left unchanged" do
+          expect(checker.updated_requirements.first[:requirement]).to eq(constraint)
+        end
+      end
+    end
+  end
 end
