@@ -1,3 +1,4 @@
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Updater.FileWriters;
 
 using Xunit;
@@ -1558,7 +1559,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_NoExistingPackageVersionElement_TransitivePinningEnabled_OnlyPackagesPropsIsUpdated()
     {
         await TestAsync(
-            useCentralPackageTransitivePinning: true,
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
             files: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1954,7 +1955,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     public async Task UpdatingAPinnedCentrallyManagedPackageUpdatesJustTheVersionNumberWhenDeclarationIsPresent()
     {
         await TestAsync(
-            useCentralPackageTransitivePinning: true,
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
             files: [
                 ("src/project.csproj", """
                     <?xml version="1.0"?>
