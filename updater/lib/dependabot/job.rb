@@ -522,6 +522,7 @@ module Dependabot
       normalized_dep_name = T.must(normaliser).call(dependency.name)
 
       blocked_versions
+        .grep(Hash)
         .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
         .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
     end
