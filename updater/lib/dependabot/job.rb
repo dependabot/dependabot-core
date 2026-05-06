@@ -225,7 +225,7 @@ module Dependabot
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
       @blocked_versions               = T.let(
-        (attributes.fetch(:blocked_versions, []) || []).grep(Hash),
+        attributes.fetch(:blocked_versions, []) || [],
         T::Array[T::Hash[String, T.untyped]]
       )
 
