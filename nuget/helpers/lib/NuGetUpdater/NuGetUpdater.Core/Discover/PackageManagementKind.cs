@@ -8,6 +8,11 @@ public enum PackageManagementKind
     Default,
 
     /// <summary>
+    /// The Central Package Versions feature has been deprecated in favor of Central Package Management, but it still exists.
+    /// </summary>
+    CentralPackageVersions,
+
+    /// <summary>
     /// Separate <code>&lt;PackageReference&gt;</code> and <code>&lt;PackageVersion&gt;</code> elements.  Set by the
     /// user by adding the property <code>&lt;ManagePackageVersionsCentrally&gt;true&lt;/ManagePackageVersionsCentrally&gt;</code>
     /// and commonly using the file <code>Directory.Packages.props</code>
