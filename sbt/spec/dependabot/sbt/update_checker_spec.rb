@@ -201,10 +201,10 @@ RSpec.describe Dependabot::Sbt::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements }
+    subject(:updated_requirements) { checker.updated_requirements }
 
     it "updates the requirement version" do
-      expect(subject).to eq(
+      expect(updated_requirements).to eq(
         [{
           file: "build.sbt",
           requirement: "33.4.0-jre",

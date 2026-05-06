@@ -51,7 +51,7 @@ module Dependabot
       def updated_requirements
         property_names =
           declarations_using_a_property
-          .map { |req| req.dig(:metadata, :property_name) }
+          .filter_map { |req| req.dig(:metadata, :property_name) }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,

@@ -76,15 +76,14 @@ RSpec.describe Dependabot::Sbt::Package::PackageDetailsFetcher do
       expect(versions).to include("33.0.0-jre", "33.4.0-jre")
     end
 
-    it "does not include android versions for jre dependency" do
-      # Both android and jre are listed in metadata, fetcher returns all
+    it "includes all versions from metadata including android variants" do
       versions = package_details.releases.map { |r| r.version.to_s }
       expect(versions).to include("33.0.0-android")
     end
 
-    it "returns releases sorted by version" do
+    it "returns releases sorted by version in descending order" do
       versions = package_details.releases.map(&:version)
-      expect(versions).to eq(versions.sort)
+      expect(versions).to eq(versions.sort.reverse)
     end
   end
 
