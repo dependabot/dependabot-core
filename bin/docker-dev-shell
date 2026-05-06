@@ -171,6 +171,11 @@ docker run --rm -ti \
   -v "$(pwd)/conda/lib:$CODE_DIR/conda/lib" \
   -v "$(pwd)/conda/script:$CODE_DIR/conda/script" \
   -v "$(pwd)/conda/spec:$CODE_DIR/conda/spec" \
+  -v "$(pwd)/deno/.rubocop.yml:$CODE_DIR/deno/.rubocop.yml" \
+  -v "$(pwd)/deno/dependabot-deno.gemspec:$CODE_DIR/deno/dependabot-deno.gemspec" \
+  -v "$(pwd)/deno/lib:$CODE_DIR/deno/lib" \
+  -v "$(pwd)/deno/script:$CODE_DIR/deno/script" \
+  -v "$(pwd)/deno/spec:$CODE_DIR/deno/spec" \
   -v "$(pwd)/devcontainers/.rubocop.yml:$CODE_DIR/devcontainers/.rubocop.yml" \
   -v "$(pwd)/devcontainers/dependabot-devcontainers.gemspec:$CODE_DIR/devcontainers/dependabot-devcontainers.gemspec" \
   -v "$(pwd)/devcontainers/lib:$CODE_DIR/devcontainers/lib" \
