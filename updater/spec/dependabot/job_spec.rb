@@ -1494,6 +1494,24 @@ RSpec.describe Dependabot::Job do
         expect(ignored).to eq(["= 3.3.6"])
       end
     end
+
+    context "when blocked_versions contains non-Hash entries" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            nil,
+            42,
+            "not-a-hash",
+            [],
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores non-Hash entries without raising" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
   end
 
   describe "#log_ignore_conditions_for with blocked_versions" do
