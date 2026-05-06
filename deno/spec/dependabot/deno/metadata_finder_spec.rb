@@ -72,5 +72,26 @@ RSpec.describe Dependabot::Deno::MetadataFinder do
     it "finds the source URL from npm" do
       expect(finder.source_url).to eq("https://github.com/chalk/chalk")
     end
+
+    context "when the registry returns malformed JSON" do
+      before do
+        stub_request(:get, "https://registry.npmjs.org/chalk")
+          .to_return(status: 200, body: "<html>oops</html>")
+      end
+
+      it "returns nil" do
+        expect(finder.source_url).to be_nil
+      end
+    end
+
+    context "when the registry times out" do
+      before do
+        stub_request(:get, "https://registry.npmjs.org/chalk").to_timeout
+      end
+
+      it "returns nil" do
+        expect(finder.source_url).to be_nil
+      end
+    end
   end
 end

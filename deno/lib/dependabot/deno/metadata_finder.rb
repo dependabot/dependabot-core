@@ -36,6 +36,8 @@ module Dependabot
         return nil unless repo
 
         Source.from_url(repo)
+      rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket
+        nil
       end
 
       sig { returns(T.nilable(Dependabot::Source)) }
