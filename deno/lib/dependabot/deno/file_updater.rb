@@ -49,7 +49,7 @@ module Dependabot
             old_specifier = "#{source_type}:#{dep.name}@#{prev_req[:requirement]}"
             new_specifier = "#{source_type}:#{dep.name}@#{T.must(new_req)[:requirement]}"
 
-            content = content.gsub(old_specifier, new_specifier)
+            content = content.gsub(/#{Regexp.escape(old_specifier)}(?=["\/])/, new_specifier)
           end
         end
 

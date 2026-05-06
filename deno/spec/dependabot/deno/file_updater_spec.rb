@@ -62,5 +62,42 @@ RSpec.describe Dependabot::Deno::FileUpdater do
       expect(updated_content).to include("jsr:@std/path@^1.1.4")
       expect(updated_content).to include("npm:chalk@^5.3.0")
     end
+
+    context "when the manifest contains a sub-path import for the same package" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "deno.json",
+            content: '{"imports": {"@std/path": "jsr:@std/path@^1.0.0", ' \
+                     '"@std/path/posix": "jsr:@std/path@^1.0.0/posix"}}'
+          )
+        ]
+      end
+
+      it "bumps both the bare specifier and the sub-path specifier" do
+        updated_content = updater.updated_dependency_files.first.content
+        expect(updated_content).to include('"jsr:@std/path@^1.1.4"')
+        expect(updated_content).to include('"jsr:@std/path@^1.1.4/posix"')
+      end
+    end
+
+    context "when the manifest contains a prerelease pin sharing the prefix" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "deno.json",
+            content: '{"imports": {"@std/path": "jsr:@std/path@^1.0.0", ' \
+                     '"@std/path-rc": "jsr:@std/path@^1.0.0-rc.1"}}'
+          )
+        ]
+      end
+
+      it "bumps only the bare specifier and leaves the prerelease pin untouched" do
+        updated_content = updater.updated_dependency_files.first.content
+        expect(updated_content).to include('"jsr:@std/path@^1.1.4"')
+        expect(updated_content).to include('"jsr:@std/path@^1.0.0-rc.1"')
+        expect(updated_content).not_to include("^1.1.4-rc.1")
+      end
+    end
   end
 end
