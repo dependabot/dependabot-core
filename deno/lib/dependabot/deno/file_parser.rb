@@ -33,14 +33,35 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependencies = []
+        # Multiple import aliases can reference the same underlying package
+        # (e.g. "@std/path" and "@std/path/posix"). Keyed dedup by name +
+        # source type collapses those without merging across registries — our
+        # update checker only queries the first requirement's source, so
+        # mixing jsr+npm under one Dependency would silently miss updates.
+        # When the same name+source appears with different constraints, every
+        # constraint is preserved as a separate requirement entry so callers
+        # can update them all.
+        deps_by_key = {}
 
         imports.each do |_alias_name, specifier|
           dep = parse_specifier(specifier.to_s)
-          dependencies << dep if dep
+          next unless dep
+
+          key = [dep.name, dep.requirements.first[:source][:type]]
+          existing = deps_by_key[key]
+          deps_by_key[key] = if existing
+                               Dependabot::Dependency.new(
+                                 name: existing.name,
+                                 version: existing.version,
+                                 requirements: (existing.requirements + dep.requirements).uniq,
+                                 package_manager: existing.package_manager
+                               )
+                             else
+                               dep
+                             end
         end
 
-        dependencies.sort_by(&:name)
+        deps_by_key.values.sort_by(&:name)
       end
 
       private

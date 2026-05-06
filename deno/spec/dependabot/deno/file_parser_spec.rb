@@ -235,6 +235,67 @@ RSpec.describe Dependabot::Deno::FileParser do
     end
   end
 
+  context "with the same package referenced via multiple subpath aliases" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.json",
+          content: <<~JSON
+            {
+              "imports": {
+                "@std/path": "jsr:@std/path@^1.0.0",
+                "@std/path/posix": "jsr:@std/path@^1.0.0/posix",
+                "@std/path/join": "jsr:@std/path@^1.0.0/join"
+              }
+            }
+          JSON
+        )
+      ]
+    end
+
+    it "returns a single dependency" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@std/path")
+      expect(deps.first.requirements.first[:requirement]).to eq("^1.0.0")
+    end
+  end
+
+  context "with the same package referenced under two different constraints" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.json",
+          content: '{"imports": {"foo": "jsr:@scope/foo@^1.0.0", "foo2": "jsr:@scope/foo@^2.0.0"}}'
+        )
+      ]
+    end
+
+    it "returns one dependency with both constraints in its requirements" do
+      deps = parser.parse
+      expect(deps.length).to eq(1)
+      expect(deps.first.name).to eq("@scope/foo")
+      expect(deps.first.requirements.map { |r| r[:requirement] }).to contain_exactly("^1.0.0", "^2.0.0")
+    end
+  end
+
+  context "with the same package name referenced via different source types" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "deno.json",
+          content: '{"imports": {"foo-jsr": "jsr:@scope/foo@^1.0.0", "foo-npm": "npm:foo@^2.0.0"}}'
+        )
+      ]
+    end
+
+    it "treats them as separate dependencies" do
+      deps = parser.parse
+      expect(deps.length).to eq(2)
+      expect(deps.map { |d| d.requirements.first[:source][:type] }).to contain_exactly("jsr", "npm")
+    end
+  end
+
   context "with escaped quotes inside a string value" do
     let(:files) do
       [
