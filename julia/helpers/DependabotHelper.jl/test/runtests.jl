@@ -596,6 +596,7 @@ using DependabotHelper
         # will propose updates to a retracted release.
         ordinarydiffeqcore_uuid = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
         result = @test_nowarn DependabotHelper.get_available_versions("OrdinaryDiffEqCore", ordinarydiffeqcore_uuid)
+        @test !haskey(result, "error")
         @test haskey(result, "versions")
         @test "5.0.0" ∉ result["versions"]
 
