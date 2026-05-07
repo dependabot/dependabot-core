@@ -11,6 +11,9 @@ module Dependabot
     module Shared
       class SharedVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        extend T::Helpers
+
+        abstract!
 
         # Regex to match common Maven release qualifiers that indicate stable releases.
         # See https://github.com/apache/maven/blob/848fbb4bf2d427b72bdb2471c22fced7ebd9a7a1/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/ComparableVersion.java#L315-L320
@@ -121,6 +124,11 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
+        end
+
+        sig { returns(T::Boolean) }
+        def cooldown_enabled?
+          true
         end
 
         private
@@ -404,11 +412,6 @@ module Dependabot
           return suffix if suffix.include?("-") || suffix.include?("_") || git_sha?(suffix)
 
           suffix.empty? ? nil : suffix
-        end
-
-        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
-        def package_details
-          raise NotImplementedError, "Subclasses must implement `package_details`"
         end
       end
     end

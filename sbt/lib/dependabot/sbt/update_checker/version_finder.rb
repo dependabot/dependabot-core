@@ -1,17 +1,17 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/maven/package/package_details_fetcher"
-require "dependabot/maven/update_checker"
 require "dependabot/maven/shared/base_version_finder"
-require "sorbet-runtime"
+require "dependabot/sbt/update_checker"
+require "dependabot/sbt/package/package_details_fetcher"
 
 module Dependabot
-  module Maven
-    class UpdateChecker
+  module Sbt
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class VersionFinder < Dependabot::Maven::Shared::BaseVersionFinder
         extend T::Sig
 
@@ -35,16 +35,19 @@ module Dependabot
           cooldown_options: nil,
           raise_on_ignored: false
         )
-          @forbidden_urls      = T.let([], T::Array[String])
-          @dependency_metadata = T.let({}, T::Hash[T.untyped, Nokogiri::XML::Document])
-          @auth_headers_finder = T.let(nil, T.nilable(Utils::AuthHeadersFinder))
-          @pom_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @repository_finder = T.let(nil, T.nilable(Maven::FileParser::RepositoriesFinder))
-          @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @released_check = T.let({}, T::Hash[Version, T::Boolean])
           @package_details_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
-          super
+
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: cooldown_options,
+            raise_on_ignored: raise_on_ignored,
+            options: {}
+          )
         end
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
