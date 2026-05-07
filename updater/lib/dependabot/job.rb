@@ -498,17 +498,19 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).void }
     def log_blocked_versions_for(dependency)
-      versions = blocked_versions_for(dependency)
-      return if versions.empty?
-
-      Dependabot.logger.info("Blocked versions (by GitHub Security):")
-      matching_blocked_entries(dependency).each do |bv|
+      entries = matching_blocked_entries(dependency).filter_map do |bv|
         version = bv["version"].strip
         next if version.empty?
 
         reason = bv["reason"].is_a?(String) ? bv["reason"].strip : nil
-        msg = "  #{version}"
-        msg += " - reason: #{reason}" if reason && !reason.empty?
+        { version: version, reason: reason&.empty? ? nil : reason }
+      end
+      return if entries.empty?
+
+      Dependabot.logger.info("Blocked versions (by GitHub Security):")
+      entries.each do |entry|
+        msg = "  #{entry[:version]}"
+        msg += " - reason: #{entry[:reason]}" if entry[:reason]
         Dependabot.logger.info(msg)
       end
     end
