@@ -90,6 +90,33 @@ module Dependabot
           Sbt::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
         end
 
+        # Override to always use "jar" for the HEAD check. The SBT parser sets
+        # packaging_type to "cross-versioned" as metadata for %% dependencies, but the
+        # actual Maven artifact is always a .jar file.
+        sig { override.params(repository_url: String, version: Dependabot::Version).returns(String) }
+        def dependency_files_url(repository_url, version)
+          _, artifact_id = dependency_parts
+          base_url = dependency_base_url(repository_url)
+
+          "#{base_url}/#{version}/#{artifact_id}-#{version}.jar"
+        end
+
+        # Override to handle SBT plugin cross-versioning.
+        # SBT plugins are published with a double-suffix: artifact_scalaVersion_sbtVersion
+        # e.g., sbt-jmh_2.12_1.0 for SBT 1.x plugins.
+        sig { override.returns([String, String]) }
+        def dependency_parts
+          @dependency_parts = T.let(@dependency_parts, T.nilable([String, String]))
+          return @dependency_parts if @dependency_parts
+
+          group_id, artifact_id = dependency.name.split(":")
+          group_path = T.must(group_id).tr(".", "/")
+
+          artifact_id = "#{artifact_id}_#{plugin_scala_version}_#{sbt_binary_version}" if sbt_plugin?
+
+          @dependency_parts = [group_path, T.must(artifact_id)]
+        end
+
         private
 
         sig { returns(Sbt::FileParser::RepositoriesFinder) }
@@ -108,6 +135,39 @@ module Dependabot
             .map do |url|
               { URL_KEY => url, AUTH_HEADERS_KEY => auth_headers(url) }
             end
+        end
+
+        # SBT plugins are identified by having "plugins" in their groups.
+        sig { returns(T::Boolean) }
+        def sbt_plugin?
+          dependency.requirements.any? { |req| req.fetch(:groups, []).include?("plugins") }
+        end
+
+        # SBT 1.x plugins use Scala 2.12; SBT 2.x plugins use Scala 3.
+        sig { returns(String) }
+        def plugin_scala_version
+          sbt_major_version >= 2 ? "3" : "2.12"
+        end
+
+        # SBT binary version for plugin cross-versioning: "1.0" for SBT 1.x, "2.0" for SBT 2.x.
+        sig { returns(String) }
+        def sbt_binary_version
+          "#{sbt_major_version}.0"
+        end
+
+        sig { returns(Integer) }
+        def sbt_major_version
+          build_properties = dependency_files.find { |f| f.name.end_with?("build.properties") }
+          return 1 unless build_properties&.content
+
+          T.must(build_properties.content).each_line do |line|
+            match = line.strip.match(Sbt::FileParser::SBT_VERSION_REGEX)
+            next unless match
+
+            return T.must(match[:version]).strip.split(".").first.to_i
+          end
+
+          1
         end
       end
     end
