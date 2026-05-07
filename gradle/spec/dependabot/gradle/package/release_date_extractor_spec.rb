@@ -109,6 +109,28 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       end
     end
 
+    context "with directory listings that use title without trailing slash" do
+      let(:repositories) do
+        [{ "url" => "https://repo.example.com/maven", "auth_headers" => {} }]
+      end
+      let(:html_listing) do
+        <<~HTML
+          <html>
+            <body>
+              <a href="1.2.3/" title="1.2.3"></a>       2026-05-05 13:55    -
+            </body>
+          </html>
+        HTML
+      end
+      let(:release_info_metadata_fetcher) { ->(_repo) { Nokogiri::HTML(html_listing) } }
+
+      it "extracts the version using directory href when title omits the trailing slash" do
+        result = extract_release_dates
+
+        expect(result["1.2.3"]).to eq({ release_date: Time.parse("2026-05-05 13:55") })
+      end
+    end
+
     context "with both repository styles" do
       let(:repositories) do
         [

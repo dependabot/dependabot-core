@@ -137,10 +137,12 @@ module Dependabot
 
         sig { params(link: Nokogiri::XML::Element).returns(T.nilable(String)) }
         def extract_version_from_link(link)
-          identifier = link["title"] || link["href"] || link.text
-          return unless identifier&.end_with?("/")
+          href = link["href"]&.strip
+          return unless href&.end_with?("/")
 
-          identifier.to_s.gsub(%r{/$}, "")
+          identifier = link["title"] || link.text || href
+
+          identifier.to_s.strip.gsub(%r{/$}, "")
         end
 
         # Extracts release date from HTML link element's adjacent text.
