@@ -1,6 +1,9 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "base64"
+require "uri"
+
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/registry_client"
@@ -29,7 +32,12 @@ module Dependabot
         @api_base_url = T.let(API_BASE_URL, String)
         @tokens = T.let(
           credentials.each_with_object({}) do |item, memo|
-            memo[item["host"]] = item["token"] if item["type"] == "opentofu_registry"
+            # Only Bearer-token shaped creds belong here; OCI-only entries
+            # (username/password) would otherwise store a nil token and
+            # trigger a malformed `Authorization: Bearer ` header.
+            next unless item["type"] == "opentofu_registry" && item["token"]
+
+            memo[item["host"]] = item["token"]
           end,
           T::Hash[String, String]
         )
@@ -68,6 +76,52 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Fetch all tags for an OCI module artifact via the Distribution v2
+      # `GET /v2/<repo>/tags/list` endpoint. Returns Version objects whose
+      # to_s preserves the original tag string (so `v1.0.0` round-trips).
+      #
+      # @param artifact_identifier [String] "<host[:port]>/<repo>"
+      # @param credentials [Array<Dependabot::Credential>]
+      # @return [Array<Dependabot::Opentofu::Version>]
+      sig do
+        params(
+          artifact_identifier: String,
+          credentials: T::Array[Dependabot::Credential]
+        ).returns(T::Array[Dependabot::Opentofu::Version])
+      end
+      def self.all_oci_tags(artifact_identifier:, credentials: [])
+        host, _, repo = artifact_identifier.partition("/")
+        if host.empty? || repo.empty?
+          raise Dependabot::DependabotError, "Invalid OCI artifact: '#{artifact_identifier}'"
+        end
+
+        scheme = oci_scheme_for(host)
+        next_url = T.let("#{scheme}://#{host}/v2/#{repo}/tags/list", T.nilable(String))
+        tags = T.let([], T::Array[String])
+
+        while next_url
+          response = oci_get(next_url, host: host, credentials: credentials)
+          case response.status
+          when 200
+            body = JSON.parse(response.body)
+            tags.concat(Array(body["tags"]))
+          when 401, 403
+            raise Dependabot::PrivateSourceAuthenticationFailure, host
+          when 404
+            raise Dependabot::DependabotError,
+                  "OCI repository '#{repo}' not found on registry '#{host}'"
+          else
+            raise Dependabot::DependabotError,
+                  "OCI registry '#{host}' returned HTTP #{response.status} listing tags for '#{repo}'"
+          end
+          next_url = oci_next_page_url(response.headers["Link"], base: "#{scheme}://#{host}")
+        end
+
+        tags.filter_map { |t| Version.new(t) if Version.correct?(t) }
+      rescue Excon::Error::Socket, Excon::Error::Timeout
+        raise Dependabot::PrivateSourceBadResponse, host
+      end
 
       # Fetch all the versions of a provider, and return a Version
       # representation of them.
@@ -155,6 +209,124 @@ module Dependabot
               "Registry at #{hostname} does not support required service '#{service_key}'. " \
               "Available services: #{available}"
       end
+
+      # localhost registries are commonly served over plain HTTP in dev.
+      sig { params(host: String).returns(String) }
+      def self.oci_scheme_for(host)
+        bare_host = host.split(":").first
+        %w(localhost 127.0.0.1).include?(bare_host) ? "http" : "https"
+      end
+      private_class_method :oci_scheme_for
+
+      sig do
+        params(
+          url: String,
+          host: String,
+          credentials: T::Array[Dependabot::Credential]
+        ).returns(Excon::Response)
+      end
+      def self.oci_get(url, host:, credentials:)
+        cred = credentials.find do |c|
+          c["type"] == "opentofu_registry" && (c["host"] == host || c["registry"] == host)
+        end
+
+        headers = {}
+        headers["Authorization"] = oci_auth_header(cred) if cred
+
+        response = Dependabot::RegistryClient.get(url: url, headers: headers)
+
+        # OCI Distribution Spec: on 401 without explicit credentials, attempt the
+        # WWW-Authenticate Bearer challenge to access public registries anonymously.
+        if response.status == 401 && cred.nil?
+          token = oci_anonymous_bearer_token(response.headers["WWW-Authenticate"])
+          if token
+            response = Dependabot::RegistryClient.get(
+              url: url,
+              headers: { "Authorization" => "Bearer #{token}" }
+            )
+          end
+        end
+
+        response
+      end
+      private_class_method :oci_get
+
+      sig { params(www_authenticate: T.nilable(String)).returns(T.nilable(String)) }
+      def self.oci_anonymous_bearer_token(www_authenticate)
+        token_url = oci_bearer_token_url(www_authenticate)
+        return nil unless token_url
+
+        cached = oci_token_cache[token_url]
+        return cached[:token] if cached && T.cast(cached[:expires_at], Float) > Time.now.to_f
+
+        token_response = Dependabot::RegistryClient.get(url: token_url, headers: {})
+        return nil unless token_response.status == 200
+
+        body = JSON.parse(token_response.body)
+        token = body["token"]
+        expires_in = body.fetch("expires_in", 60).to_i
+        oci_token_cache[token_url] = { token: token, expires_at: Time.now.to_f + expires_in - 10 } if token
+        token
+      rescue StandardError
+        nil
+      end
+      private_class_method :oci_anonymous_bearer_token
+
+      # Parses a `WWW-Authenticate: Bearer realm="...",service="...",scope="..."`
+      # challenge and returns the token endpoint URL, or nil if not a Bearer challenge.
+      sig { params(www_authenticate: T.nilable(String)).returns(T.nilable(String)) }
+      def self.oci_bearer_token_url(www_authenticate)
+        return nil unless www_authenticate&.start_with?("Bearer ")
+
+        realm   = www_authenticate[/realm="([^"]+)"/, 1]
+        service = www_authenticate[/service="([^"]+)"/, 1]
+        scope   = www_authenticate[/scope="([^"]+)"/, 1]
+        return nil unless realm
+
+        params = {}
+        params["service"] = service if service
+        params["scope"]   = scope   if scope
+        "#{realm}?#{URI.encode_www_form(params)}"
+      end
+      private_class_method :oci_bearer_token_url
+
+      sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+      def self.oci_token_cache
+        @oci_token_cache = T.let(
+          @oci_token_cache,
+          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
+        )
+        @oci_token_cache ||= {}
+      end
+      private_class_method :oci_token_cache
+
+      # Basic for username/password pairs (OCI Distribution v2), Bearer for
+      # token-only creds (existing OpenTofu HTTP registry behaviour).
+      sig { params(cred: Dependabot::Credential).returns(String) }
+      def self.oci_auth_header(cred)
+        if cred["username"] && cred["password"]
+          "Basic " + Base64.strict_encode64("#{cred['username']}:#{cred['password']}")
+        else
+          "Bearer #{cred['token']}"
+        end
+      end
+      private_class_method :oci_auth_header
+
+      # Parses RFC 5988 `Link: <…>; rel="next"` from /tags/list responses.
+      sig { params(link_header: T.nilable(String), base: String).returns(T.nilable(String)) }
+      def self.oci_next_page_url(link_header, base:)
+        return nil if link_header.nil? || link_header.empty?
+
+        link_header.split(",").each do |part|
+          match = part.strip.match(/\A<([^>]+)>\s*;\s*rel="?next"?\z/)
+          next unless match
+
+          target = T.must(match[1])
+          return target.start_with?("http") ? target : "#{base}#{target}"
+        end
+        nil
+      end
+      private_class_method :oci_next_page_url
 
       private
 
