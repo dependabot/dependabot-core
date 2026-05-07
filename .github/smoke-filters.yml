@@ -7,6 +7,9 @@ common: &common
 bazel:
   - *common
   - 'bazel/**'
+deno:
+  - *common
+  - 'deno/**'
 github_actions:
   - *common
   - 'github_actions/**'
