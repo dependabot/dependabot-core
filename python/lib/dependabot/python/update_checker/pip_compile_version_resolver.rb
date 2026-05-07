@@ -11,6 +11,7 @@ require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/update_checker"
 require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
+require "dependabot/python/pip_compile_options_parser"
 require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/language_version_manager"
@@ -286,13 +287,16 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
-          # TODO: Stop explicitly specifying `allow-unsafe` once it becomes the default:
-          # https://github.com/jazzband/pip-tools/issues/989#issuecomment-1661254701
-          options += ["--allow-unsafe"]
 
-          if (requirements_file = compiled_file_for_filename(filename))
-            options << "--output-file=#{requirements_file.name}"
-          end
+          requirements_file = compiled_file_for_filename(filename)
+          options += if requirements_file
+                       PipCompileOptionsParser.new(requirements_file).options_from_compiled_file
+                     else
+                       # When no compiled file is found, use --allow-unsafe as a safe default.
+                       # TODO: Stop explicitly specifying `allow-unsafe` once it becomes the default:
+                       # https://github.com/jazzband/pip-tools/issues/989#issuecomment-1661254701
+                       ["--allow-unsafe"]
+                     end
 
           options.join(" ")
         end
