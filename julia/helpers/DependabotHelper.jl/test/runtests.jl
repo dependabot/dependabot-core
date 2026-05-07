@@ -533,22 +533,20 @@ using DependabotHelper
         # Test package version fetching
         json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.fetch_package_versions("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test result["package_name"] == "JSON"
-            @test haskey(result, "versions")
-            @test haskey(result, "latest_version")
-            @test haskey(result, "total_versions")
-            @test length(result["versions"]) > 0
-        end
+        @test !haskey(result, "error")
+        @test result["package_name"] == "JSON"
+        @test haskey(result, "versions")
+        @test haskey(result, "latest_version")
+        @test haskey(result, "total_versions")
+        @test length(result["versions"]) > 0
 
         # Test package info fetching
         result = @test_nowarn DependabotHelper.fetch_package_info("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test result["name"] == "JSON"
-            @test haskey(result, "uuid")
-            @test haskey(result, "all_versions")
-            @test haskey(result, "latest_version")
-        end
+        @test !haskey(result, "error")
+        @test result["name"] == "JSON"
+        @test haskey(result, "uuid")
+        @test haskey(result, "all_versions")
+        @test haskey(result, "latest_version")
 
         # Test with non-existent package
         result = @test_nowarn DependabotHelper.fetch_package_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
@@ -572,28 +570,34 @@ using DependabotHelper
 
         # Test get_latest_version with UUID
         version_result = @test_nowarn DependabotHelper.get_latest_version("JSON", json_uuid)
-        @test haskey(version_result, "version") || haskey(version_result, "error")
-        if haskey(version_result, "version")
-            @test haskey(version_result, "package_uuid")
-            @test version_result["package_uuid"] == json_uuid
-        end
+        @test haskey(version_result, "version")
+        @test haskey(version_result, "package_uuid")
+        @test version_result["package_uuid"] == json_uuid
     end
 
     @testset "New Package Functions Tests" begin
 
         # Test get_available_versions function
         result = @test_nowarn DependabotHelper.get_available_versions("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test haskey(result, "versions")
-            @test isa(result["versions"], Array)
-            @test length(result["versions"]) > 0
-            # Check that versions are strings
-            @test all(v -> isa(v, String), result["versions"])
-        end
+        @test !haskey(result, "error")
+        @test haskey(result, "versions")
+        @test isa(result["versions"], Array)
+        @test length(result["versions"]) > 0
+        # Check that versions are strings
+        @test all(v -> isa(v, String), result["versions"])
 
         # Test get_available_versions with non-existent package
         result = @test_nowarn DependabotHelper.get_available_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
         @test haskey(result, "error")
+
+        # Regression test for https://github.com/dependabot/dependabot-core/issues/14912
+        # OrdinaryDiffEqCore 5.0.0 was yanked in JuliaRegistries/General#153927 and must
+        # not be returned by get_available_versions, otherwise the latest version finder
+        # will propose updates to a retracted release.
+        ordinarydiffeqcore_uuid = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
+        result = @test_nowarn DependabotHelper.get_available_versions("OrdinaryDiffEqCore", ordinarydiffeqcore_uuid)
+        @test haskey(result, "versions")
+        @test "5.0.0" ∉ result["versions"]
 
         # Test get_version_release_date function with General registry package
         # JSON.jl is in the General registry, so it should return a real date
