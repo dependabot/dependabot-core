@@ -8,10 +8,31 @@ require "spec_helper"
 RSpec.describe Dependabot::Python::PoetryPackageManager do
   let(:package_manager) { described_class.new("1.8.3") }
 
+  describe "version constants" do
+    it "supports Poetry v1 and v2" do
+      expect(described_class::SUPPORTED_VERSIONS).to eq(
+        [
+          Dependabot::Python::Version.new("1"),
+          Dependabot::Python::Version.new("2")
+        ]
+      )
+    end
+
+    it "deprecates Poetry v1" do
+      expect(described_class::DEPRECATED_VERSIONS).to eq(
+        [Dependabot::Python::Version.new("1")]
+      )
+    end
+  end
+
   describe "#initialize" do
     context "when version is a String" do
       it "sets the version correctly" do
         expect(package_manager.version).to eq("1.8.3")
+      end
+
+      it "sets the detected_version to the major version" do
+        expect(package_manager.detected_version).to eq(Dependabot::Python::Version.new("1"))
       end
 
       it "sets the name correctly" do
@@ -42,10 +63,64 @@ RSpec.describe Dependabot::Python::PoetryPackageManager do
     end
   end
 
+  describe "#deprecated?" do
+    context "when using Poetry 1.x" do
+      let(:package_manager) { described_class.new("1.8.3") }
+
+      it "returns true" do
+        expect(package_manager.deprecated?).to be true
+      end
+    end
+
+    context "when using Poetry 2.x" do
+      let(:package_manager) { described_class.new("2.2.1") }
+
+      it "returns false" do
+        expect(package_manager.deprecated?).to be false
+      end
+    end
+  end
+
+  describe "#unsupported?" do
+    context "when using Poetry 1.x" do
+      let(:package_manager) { described_class.new("1.8.3") }
+
+      it "returns false" do
+        expect(package_manager.unsupported?).to be false
+      end
+    end
+
+    context "when using Poetry 2.x" do
+      let(:package_manager) { described_class.new("2.2.1") }
+
+      it "returns false" do
+        expect(package_manager.unsupported?).to be false
+      end
+    end
+
+    context "when using a version older than all supported versions" do
+      let(:package_manager) { described_class.new("0.12.0") }
+
+      it "returns true" do
+        expect(package_manager.unsupported?).to be true
+      end
+    end
+  end
+
   describe "#raise_if_unsupported!" do
     context "when no requirement is set" do
+      let(:package_manager) { described_class.new("1.8.3") }
+
       it "does not raise an error" do
         expect { package_manager.raise_if_unsupported! }.not_to raise_error
+      end
+    end
+
+    context "when using a version older than all supported versions" do
+      let(:package_manager) { described_class.new("0.12.0") }
+
+      it "raises ToolVersionNotSupported" do
+        expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
 

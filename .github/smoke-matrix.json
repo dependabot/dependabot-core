@@ -25,6 +25,11 @@
     "ecosystem": "conda"
   },
   {
+    "core": "deno",
+    "test": "deno",
+    "ecosystem": "deno"
+  },
+  {
     "core": "devcontainers",
     "test": "devcontainers",
     "ecosystem": "devcontainers"
@@ -91,12 +96,12 @@
   },
   {
     "core": "nuget",
-    "test": "nuget",
+    "test": "nuget-resolvability",
     "ecosystem": "nuget"
   },
   {
     "core": "nuget",
-    "test": "nuget-resolvability",
+    "test": "nuget",
     "ecosystem": "nuget"
   },
   {

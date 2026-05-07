@@ -127,7 +127,12 @@ module Dependabot
         sig { params(url: String).returns(T::Array[T::Hash[String, T.untyped]]) }
         def fetch_registry_versions_from_url(url)
           url_host = URI(url).host
-          cred = registry_credentials.find { |c| url_host == c["registry"] || url_host == URI(T.must(c["registry"])).host } # rubocop:disable Layout/LineLength
+          cred = registry_credentials.find do |c|
+            registry = c["registry"]
+            next unless registry
+
+            url_host == registry || url_host == URI(registry).host
+          end
 
           response = Dependabot::RegistryClient.get(
             url: url,

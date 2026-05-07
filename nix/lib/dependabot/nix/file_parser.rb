@@ -149,7 +149,7 @@ module Dependabot
           requirements: [{
             requirement: nil,
             file: "flake.lock",
-            source: { type: "git", url: url, branch: ref, ref: ref },
+            source: { type: "git", url: url, branch: nil, ref: ref },
             groups: []
           }]
         )

@@ -69,6 +69,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_audit_fix_fallback).and_return(true)
   end
 
   after do
@@ -362,6 +364,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     it "keeps the default npm registry" do
       expect(updated_yarn_lock_content)
         .to include("https://registry.npmjs.org/node-fetch/-/node-fetch-1.7.3")
+    end
+  end
+
+  context "when updating a yarn berry sub-dependency and normal update is a no-op" do
+    let(:files) { project_dependency_files("yarn_berry/workspace_subdependency_update") }
+
+    let(:dependency_name) { "lodash" }
+    let(:version) { "3.10.2" }
+    let(:previous_version) { "3.10.1" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    before do
+      # Stub run_yarn_commands to simulate a no-op (lockfile still has previous_version)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands)
+      allow(Dependabot::NpmAndYarn::NativeHelpers)
+        .to receive(:run_yarn_audit_fix_command).and_return("")
+    end
+
+    it "falls back to yarn npm audit --fix when lockfile still has previous version" do
+      expect(Dependabot::NpmAndYarn::NativeHelpers)
+        .to receive(:run_yarn_audit_fix_command).once.and_return("")
+
+      # Trigger the update via the public API; the stubbed run_yarn_commands
+      # simulates a no-op so the updater should fall back to yarn audit fix.
+      updated_yarn_lock_content
     end
   end
 end

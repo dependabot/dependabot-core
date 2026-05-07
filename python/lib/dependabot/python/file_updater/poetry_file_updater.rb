@@ -13,6 +13,7 @@ require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_plugin_installer"
 
 module Dependabot
   module Python
@@ -50,6 +51,7 @@ module Dependabot
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @updated_pyproject_content = T.let(nil, T.nilable(String))
+          @poetry_plugin_installer = T.let(nil, T.nilable(PoetryPluginInstaller))
           @poetry_lock = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end
 
@@ -78,9 +80,7 @@ module Dependabot
               )
           end
 
-          raise "Expected lockfile to change!" if lockfile && lockfile&.content == updated_lockfile_content
-
-          if lockfile
+          if lockfile && lockfile&.content != updated_lockfile_content
             updated_files <<
               updated_file(file: T.must(lockfile), content: updated_lockfile_content)
           end
@@ -295,6 +295,7 @@ module Dependabot
               add_auth_env_vars
 
               language_version_manager.install_required_python
+              poetry_plugin_installer.install_required_plugins
 
               # use system git instead of the pure Python dulwich
               run_poetry_command("pyenv exec poetry config system-git-client true")
@@ -415,6 +416,14 @@ module Dependabot
             LanguageVersionManager.new(
               python_requirement_parser: python_requirement_parser
             )
+        end
+
+        sig { returns(PoetryPluginInstaller) }
+        def poetry_plugin_installer
+          @poetry_plugin_installer ||= T.let(
+            PoetryPluginInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryPluginInstaller)
+          )
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

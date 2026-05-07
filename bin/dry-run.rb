@@ -66,8 +66,8 @@ $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
+$LOAD_PATH << "./deno/lib"
 $LOAD_PATH << "./devcontainers/lib"
-$LOAD_PATH << "./docker_compose/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
@@ -86,6 +86,7 @@ $LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
+$LOAD_PATH << "./sbt/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./opentofu/lib"
@@ -124,9 +125,9 @@ require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
+require "dependabot/deno"
 require "dependabot/devcontainers"
 require "dependabot/docker"
-require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -142,6 +143,7 @@ require "dependabot/nuget"
 require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
+require "dependabot/sbt"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/opentofu"
@@ -368,6 +370,7 @@ valid_package_managers = %w(
   cargo
   composer
   conda
+  deno
   devcontainers
   docker
   docker_compose
@@ -387,6 +390,7 @@ valid_package_managers = %w(
   pub
   python
   rust_toolchain
+  sbt
   swift
   terraform
   opentofu

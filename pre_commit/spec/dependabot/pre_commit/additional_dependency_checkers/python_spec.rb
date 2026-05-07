@@ -288,9 +288,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
 
       it "updates the upper bound when new version exceeds it" do
         updated = checker.updated_requirements("5.1.0")
-        # Python's RequirementsUpdater updates upper bound to next major version
-        expect(updated.first[:requirement]).to eq(">=4.0.0,<6.0.0")
-        expect(updated.first[:source][:original_string]).to eq("typing-extensions>=4.0.0,<6.0.0")
+        # Python's RequirementsUpdater bumps both bounds with bump_versions strategy
+        expect(updated.first[:requirement]).to eq(">=5.1.0,<6.0.0")
+        expect(updated.first[:source][:original_string]).to eq("typing-extensions>=5.1.0,<6.0.0")
       end
     end
 
@@ -323,8 +323,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
 
         it "bumps the lower bound" do
           # Pre-commit has no lockfile, so we always bump lower bounds
+          # Strict > becomes >= since the resolved version is the exact target
           updated = checker.updated_requirements("2.32.0")
-          expect(updated.first[:requirement]).to eq(">2.32.0")
+          expect(updated.first[:requirement]).to eq(">=2.32.0")
         end
       end
 

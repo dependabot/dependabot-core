@@ -111,7 +111,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     logger.Info($"Attempting update of {dependency.Name} from {dependency.Version} to {analysisResult.UpdatedVersion} for {projectPath}.");
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
-                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
+                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");

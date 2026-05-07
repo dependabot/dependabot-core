@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Xml.Linq;
-using System.Xml.XPath;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
@@ -62,6 +61,12 @@ internal static class SdkProjectDiscovery
         "ResolveProjectReferences",
         "GenerateBuildDependencyFile"
     ];
+
+    // these targets are required to evaluate a legacy project with a single operation
+    private static readonly ImmutableArray<string> LegacyProjectSingleRestoreTargetNames = ["ResolveProjectReferences"];
+
+    // this property evaluates to a version number in an SDK-style project and is unset or empty otherwise
+    private const string NETCoreSdkVersionPropertyName = "NETCoreSdkVersion";
 
     // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
     private const int MaximumParallelTargetFrameworkRestores = 2;
@@ -138,20 +143,39 @@ internal static class SdkProjectDiscovery
             var binLogPath = Path.Combine(Path.GetTempPath(), $"msbuild_{Guid.NewGuid():d}.binlog");
             try
             {
-                // when using single restore, we can directly invoke the relevant targets
-                var args = new List<string>() { "msbuild", startingProjectPath };
-                var targets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
-                var useDirectRestore = SingleRestoreTargetNames.All(targets.Contains);
+                // when using single restore, we can directly invoke the relevant targets...
+                var args = new List<string>() { startingProjectPath };
+
+                // ...but determining what the relevant targets are can be complicated
+
+                // For SDK-style projects  the targets `Restore`, `ResolveProjectReferences`, and `GenerateBuildDependencyFile`
+                // are necessary.  If the project has a single target framework, those magic targets will all be present and can
+                // be directly invoked, but if the project has multiple target frameworks, those targets will _NOT_ be directly
+                // present and we instead have to invoke the `Build` target and specify the three magic values as `InnerTargets`.
+
+                // If the project is legacy then those three magic targets will not be present, but we shouldn't use the `Build`
+                // and `InnerTargets` trick because that's an SDK-only mechanism, so we instead only need to invoke
+                // `ResolveProjectReferences` to gather all `PackageReference` items and further down we re-build the transitive
+                // dependency set.  Without the legacy project check, we could incorrectly invoke `Build` which eventually tries
+                // to call `csc.exe` which is unnecessary and can be slow.
+                var netCoreSdkVersionValue = await MSBuildHelper.GetProjectPropertyAsync(startingProjectPath, NETCoreSdkVersionPropertyName, logger);
+                var isLegacyProject = string.IsNullOrEmpty(netCoreSdkVersionValue);
+                var requiredTargets = isLegacyProject
+                    ? LegacyProjectSingleRestoreTargetNames
+                    : SingleRestoreTargetNames;
+
+                var actualTargets = await MSBuildHelper.GetProjectTargetsAsync(startingProjectPath, logger);
+                var useDirectRestore = requiredTargets.All(actualTargets.Contains);
                 if (useDirectRestore || isIndividualTfmRestore)
                 {
                     // directly call the required targets
-                    args.Add($"/t:{string.Join(",", SingleRestoreTargetNames)}");
+                    args.Add($"/t:{string.Join(",", requiredTargets)}");
                 }
                 else
                 {
                     // delegate to the inner build and call those targets
                     args.Add("/t:Build");
-                    args.Add($"/p:InnerTargets=\"{string.Join(";", SingleRestoreTargetNames)}\"");
+                    args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
                 }
 
                 // inject various props and targets to help with discovery
@@ -171,7 +195,7 @@ internal static class SdkProjectDiscovery
                 args.Add("/p:MSBuildTreatWarningsAsErrors=false");
                 args.Add($"/bl:{binLogPath}");
 
-                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
+                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
                 if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
                 {
                     // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
@@ -179,7 +203,7 @@ internal static class SdkProjectDiscovery
                     // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
                     // unless we have to.
                     args.Add("/RestoreProperty:__Unused__=__Unused__");
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
@@ -385,7 +409,7 @@ internal static class SdkProjectDiscovery
         foreach (var projectPath in resolvedProperties.Keys)
         {
             var projectProperties = resolvedProperties[projectPath];
-            var isProjectLegacy = !projectProperties.ContainsKey("NETCoreSdkVersion"); // legacy projects don't contain this property
+            var isProjectLegacy = !projectProperties.ContainsKey(NETCoreSdkVersionPropertyName); // legacy projects don't contain this property
             if (isProjectLegacy)
             {
                 logger.Info($"Project {projectPath} is legacy");
@@ -482,9 +506,6 @@ internal static class SdkProjectDiscovery
             }
 
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
-            var doc = XDocument.Load(projectPath);
-            var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
-            var projectPropertyNames = localPropertyDefinitionElements.Select(e => e.Name.LocalName).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var projectRelativePath = Path.GetRelativePath(workspacePath, projectPath);
 
             var propertiesForProject = resolvedProperties.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
@@ -600,7 +621,7 @@ internal static class SdkProjectDiscovery
                     }
 
                     var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
-                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsDirect: isTopLevel, IsTransitive: !isTopLevel);
+                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsTopLevel: isTopLevel);
                 }
             }
 
@@ -611,11 +632,6 @@ internal static class SdkProjectDiscovery
 
             // others
             var projectProperties = resolvedProperties[projectPath];
-            var properties = projectProperties
-                .Where(pkvp => projectPropertyNames.Contains(pkvp.Key))
-                .Select(pkvp => new Property(pkvp.Key, pkvp.Value, Path.GetRelativePath(repoRootPath, projectPath).NormalizePathToUnix()))
-                .OrderBy(p => p.Name)
-                .ToImmutableArray();
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
                 .OrderBy(p => p)
@@ -627,24 +643,29 @@ internal static class SdkProjectDiscovery
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var useCpmTransitivePinning =
+            var projectLevelCpm =
                 projectProperties.TryGetValue("ManagePackageVersionsCentrally", out var useCpmString) &&
                 bool.TryParse(useCpmString, out var useCpm) &&
-                useCpm &&
+                useCpm;
+            var projectLevelCpmWithPinning =
+                projectLevelCpm &&
                 projectProperties.TryGetValue("CentralPackageTransitivePinningEnabled", out var useTransitivePinningString) &&
                 bool.TryParse(useTransitivePinningString, out var useTransitivePinning) &&
                 useTransitivePinning;
+            var packageManagementKind =
+                projectLevelCpmWithPinning ? PackageManagementKind.CentralPackageManagementWithTransitivePinning :
+                projectLevelCpm ? PackageManagementKind.CentralPackageManagement :
+                PackageManagementKind.Default;
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
                 FilePath = projectRelativePath,
                 Dependencies = dependencies,
                 TargetFrameworks = tfms,
-                Properties = properties,
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
-                CentralPackageTransitivePinningEnabled = useCpmTransitivePinning,
+                PackageManagementKind = packageManagementKind,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }

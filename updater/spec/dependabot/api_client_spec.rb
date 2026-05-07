@@ -375,7 +375,7 @@ RSpec.describe Dependabot::ApiClient do
                 ]
               )
               expect(data["base-commit-sha"]).to eql("sha")
-              expect(data).not_to have_key("commit-message")
+              expect(data["commit-message"]).to eq("Commit message")
               expect(data["pr-title"]).to eq("PR name")
               expect(data["pr-body"]).to eq("PR message")
             end)

@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/language_version_manager"
+require "dependabot/python/poetry_plugin_installer"
 
 module Dependabot
   module Python
@@ -27,19 +28,23 @@ module Dependabot
           @credentials = credentials
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { returns(Dependabot::DependencyFile) }
         def generate
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_files
               language_version_manager.install_required_python
+
+              # Install any required Poetry plugins declared in pyproject.toml
+              poetry_plugin_installer.install_required_plugins
+
               run_poetry_lock
               read_generated_lockfile
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_generation_error(e)
-          nil
+          raise
         end
 
         private
@@ -72,11 +77,11 @@ module Dependabot
           run_poetry_command("pyenv exec poetry lock --no-interaction")
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        sig { returns(Dependabot::DependencyFile) }
         def read_generated_lockfile
           unless File.exist?(LOCKFILE_NAME)
-            Dependabot.logger.warn("#{LOCKFILE_NAME} was not generated")
-            return nil
+            Dependabot.logger.error("#{LOCKFILE_NAME} was not generated")
+            raise Dependabot::DependencyFileNotEvaluatable, "#{LOCKFILE_NAME} was not generated"
           end
 
           content = File.read(LOCKFILE_NAME)
@@ -116,6 +121,14 @@ module Dependabot
               dependency_files: dependency_files
             ),
             T.nilable(FileParser::PythonRequirementParser)
+          )
+        end
+
+        sig { returns(PoetryPluginInstaller) }
+        def poetry_plugin_installer
+          @poetry_plugin_installer ||= T.let(
+            PoetryPluginInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryPluginInstaller)
           )
         end
 

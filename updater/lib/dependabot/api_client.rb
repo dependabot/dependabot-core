@@ -71,6 +71,7 @@ module Dependabot
           "dependency-names": dependency_change.updated_dependencies.map(&:name),
           "updated-dependency-files": dependency_change.updated_dependency_files_hash,
           "base-commit-sha": base_commit_sha,
+          "commit-message": dependency_change.pr_message.commit_message,
           "pr-title": dependency_change.pr_message.pr_name,
           "pr-body": dependency_change.pr_message.pr_message
         }

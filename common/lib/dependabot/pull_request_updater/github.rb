@@ -46,7 +46,8 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           pull_request_number: Integer,
           author_details: T.nilable(T::Hash[Symbol, T.untyped]),
-          signature_key: T.nilable(String)
+          signature_key: T.nilable(String),
+          commit_message: T.nilable(String)
         )
           .void
       end
@@ -58,7 +59,8 @@ module Dependabot
         credentials:,
         pull_request_number:,
         author_details: nil,
-        signature_key: nil
+        signature_key: nil,
+        commit_message: nil
       )
         @source              = source
         @base_commit         = base_commit
@@ -68,6 +70,7 @@ module Dependabot
         @pull_request_number = pull_request_number
         @author_details      = author_details
         @signature_key       = signature_key
+        @commit_message      = T.let(commit_message, T.nilable(String))
       end
 
       sig { returns(T.nilable(Sawyer::Resource)) }
@@ -255,6 +258,9 @@ module Dependabot
 
       sig { returns(String) }
       def commit_message
+        msg = @commit_message
+        return msg unless msg.nil? || msg.empty?
+
         fallback_message =
           "#{pull_request.title}" \
           "\n\n" \

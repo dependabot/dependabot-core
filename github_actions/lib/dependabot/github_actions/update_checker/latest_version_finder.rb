@@ -102,6 +102,30 @@ module Dependabot
           available_latest_version_tag
         end
 
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def latest_version_tag_respecting_cooldown
+          return @latest_version_tag_respecting_cooldown if defined?(@latest_version_tag_respecting_cooldown)
+
+          @latest_version_tag_respecting_cooldown = T.let(
+            begin
+              selected_release = latest_release_version
+              if selected_release.nil? || selected_release.is_a?(String)
+                nil
+              else
+                latest_tag = available_latest_version_tag
+                if latest_tag&.fetch(:version) == selected_release
+                  latest_tag
+                else
+                  T.must(package_details_fetcher)
+                   .allowed_version_tags_with_release_dates
+                   .find { |tag_hash| tag_hash.fetch(:version) == selected_release }
+                end
+              end
+            end,
+            T.nilable(T::Hash[Symbol, T.untyped])
+          )
+        end
+
         private
 
         sig { returns(T.nilable(Dependabot::GithubActions::Package::PackageDetailsFetcher)) }
