@@ -643,13 +643,19 @@ internal static class SdkProjectDiscovery
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var useCpmTransitivePinning =
+            var projectLevelCpm =
                 projectProperties.TryGetValue("ManagePackageVersionsCentrally", out var useCpmString) &&
                 bool.TryParse(useCpmString, out var useCpm) &&
-                useCpm &&
+                useCpm;
+            var projectLevelCpmWithPinning =
+                projectLevelCpm &&
                 projectProperties.TryGetValue("CentralPackageTransitivePinningEnabled", out var useTransitivePinningString) &&
                 bool.TryParse(useTransitivePinningString, out var useTransitivePinning) &&
                 useTransitivePinning;
+            var packageManagementKind =
+                projectLevelCpmWithPinning ? PackageManagementKind.CentralPackageManagementWithTransitivePinning :
+                projectLevelCpm ? PackageManagementKind.CentralPackageManagement :
+                PackageManagementKind.Default;
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
@@ -659,7 +665,7 @@ internal static class SdkProjectDiscovery
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
-                CentralPackageTransitivePinningEnabled = useCpmTransitivePinning,
+                PackageManagementKind = packageManagementKind,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
