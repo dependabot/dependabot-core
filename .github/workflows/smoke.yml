@@ -83,6 +83,7 @@ jobs:
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: 'go_modules/helpers/go.mod'
+          cache: false
 
       - name: Install Dependabot CLI
         run: go install github.com/dependabot/cli/cmd/dependabot@latest
@@ -106,24 +107,34 @@ jobs:
           path: smoke.yaml
           key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
 
-      # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
-      # Allowed to fail to get out of chicken and egg situations, for example, when adding a new ecosystem.
-      - name: Download cache
-        run: |
-          # The name of the cache is derived from the test name, e.g. smoke-bundler.yaml -> cache-bundler
-          TEST=${{ matrix.suite.name }}
-          # Remove the smoke- and the .yaml or .yml suffix
-          CACHE=${TEST#smoke-}
-          CACHE=${CACHE%.yaml}
-          CACHE=${CACHE%.yml}
+      - name: Restore Proxy Cache
+        id: cache-proxy
+        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: cache
+          key: smoke-proxy-v1-${{ matrix.suite.name }}-${{ matrix.suite.sha }}
+          restore-keys: smoke-proxy-v1-${{ matrix.suite.name }}-
 
-          gh run download --repo dependabot/smoke-tests --name cache-$CACHE --dir cache
-        continue-on-error: true
+      - name: Check skip
+        id: skip-check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CACHE_HIT: ${{ steps.cache-proxy.outputs.cache-hit }}
+          SUITE_NAME: ${{ matrix.suite.name }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" && "$CACHE_HIT" != "true" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipped $SUITE_NAME: no proxy cache available. Run workflow_dispatch on main to prime the cache." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build ecosystem image
+        if: steps.skip-check.outputs.skip != 'true'
         run: script/build ${{ matrix.suite.core }}
 
       - name: ${{ matrix.suite.core }}
+        if: steps.skip-check.outputs.skip != 'true'
         id: test
         env:
           LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,11 +149,30 @@ jobs:
             2>&1 | tee -a log.txt
 
       - name: Diff
+        if: steps.skip-check.outputs.skip != 'true'
         continue-on-error: true
-        run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
+        run: |
+          if [ -f result.yaml ]; then
+            diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
+          else
+            echo "result.yaml not found, skipping diff"
+          fi
 
       - name: Create summary
-        run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          if [ -f log.txt ]; then
+            tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "No log.txt found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Save Proxy Cache
+        if: github.event_name != 'pull_request'
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: cache
+          key: ${{ steps.cache-proxy.outputs.cache-primary-key }}
 
         # No upload at the end:
         # - If a test is uncacheable in some regard, the cache would grow unbounded.
