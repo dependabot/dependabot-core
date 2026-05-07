@@ -214,3 +214,13 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+  - package-ecosystem: "docker"
+    directory: "/helm"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      helm:
+        patterns:
+          - "*"
