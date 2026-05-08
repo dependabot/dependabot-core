@@ -309,6 +309,22 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         expect(results["1.2.3"]).to eq({ release_date: Time.parse("2026-05-05 13:55") })
       end
     end
+
+    context "when title and link text are blank" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.4.0/" title=""></a>            2026-05-06 09:10    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "falls back to href for version extraction" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.4.0"]).to eq({ release_date: Time.parse("2026-05-06 09:10") })
+      end
+    end
   end
 
   describe "#check_response" do

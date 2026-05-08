@@ -168,8 +168,13 @@ module Dependabot
           href = link["href"]&.strip
           return unless href&.end_with?("/")
 
-          identifier = link["title"] || link.text || href
-          identifier.to_s.strip.gsub(%r{/$}, "")
+          identifier = [link["title"], link.text, href].find { |value| value && !value.strip.empty? }
+          return unless identifier
+
+          version = identifier.strip.gsub(%r{/$}, "")
+          return if ["..", "."].include?(version)
+
+          version
         end
 
         sig { params(link: Nokogiri::XML::Element).returns(T.nilable(Time)) }
