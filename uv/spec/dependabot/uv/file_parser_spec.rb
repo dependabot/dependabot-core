@@ -945,6 +945,27 @@ RSpec.describe Dependabot::Uv::FileParser do
           end
         end
       end
+
+      context "when a requirements.txt with stale versions is also present" do
+        let(:files) { [pyproject, uv_lock, stale_requirements] }
+        let(:stale_requirements) do
+          Dependabot::DependencyFile.new(
+            name: "third-party/requirements.txt",
+            content: "requests==2.28.0\n"
+          )
+        end
+
+        it "uses the version from uv.lock, not requirements.txt" do
+          requests_dep = dependencies.find { |d| d.name == "requests" }
+          expect(requests_dep.version).to eq("2.32.3")
+        end
+
+        it "does not include requirements from the txt file" do
+          requests_dep = dependencies.find { |d| d.name == "requests" }
+          req_files = requests_dep.requirements.map { |r| r[:file] }
+          expect(req_files).not_to include("third-party/requirements.txt")
+        end
+      end
     end
 
     context "with uv workspace member pyprojects" do
