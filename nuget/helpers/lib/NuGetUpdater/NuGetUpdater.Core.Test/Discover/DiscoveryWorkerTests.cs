@@ -1679,6 +1679,237 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task PackageManagementDetection_Default()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", "<Project />"),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.Default,
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_CentralPackageVersions()
+    {
+        // to avoid a test dependency on a real NuGet package, we fake the basic shape of the central package versions SDK
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                MockNuGetPackage.CreateMSBuildSdkPackage("Microsoft.Build.CentralPackageVersions.TEST", "2.1.3",
+                    // special file contents based on the real ones
+                    sdkPropsContent: """
+                        <Project>
+                          <PropertyGroup>
+                            <UsingMicrosoftCentralPackageVersionsSdk>true</UsingMicrosoftCentralPackageVersionsSdk>
+                          </PropertyGroup>
+                        </Project>
+                        """,
+                    sdkTargetsContent: """
+                        <Project>
+                          <PropertyGroup>
+                            <CentralPackagesFile>$([MSBuild]::GetPathOfFileAbove('Packages.props', $(MSBuildProjectDirectory)))</CentralPackagesFile>
+                          </PropertyGroup>
+
+                          <Import Project="$(CentralPackagesFile)" />
+                        </Project>
+                        """)
+            ],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", """
+                    <Project>
+                      <Sdk Name="Microsoft.Build.CentralPackageVersions.TEST" Version="2.1.3" />
+                    </Project>
+                    """),
+                ("Directory.Packages.props", "<Project />"),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                            "../Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.CentralPackageVersions,
+                        ExpectedPackageManagementSpecialFileRelativePath = "../Packages.props",
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_CentralPackageManagement()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.CentralPackageManagement,
+                        ExpectedPackageManagementSpecialFileRelativePath = "../Directory.Packages.props",
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task PackageManagementDetection_CentralPackageManagementWithTransitivePinning()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Build.props", "<Project />"),
+                ("Directory.Build.targets", "<Project />"),
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Build.targets",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                        ExpectedPackageManagementKind = PackageManagementKind.CentralPackageManagementWithTransitivePinning,
+                        ExpectedPackageManagementSpecialFileRelativePath = "../Directory.Packages.props",
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
     public void MergeProjectDiscovery()
     {
         // project discovery is frequently merged with prior results (e.g., `packages.config` followed by `<PackageReference>`)
@@ -1695,6 +1926,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ImportedFiles = ["imported/a.props"],
             AdditionalFiles = ["a/packages.config"],
             PackageManagementKind = PackageManagementKind.Default,
+            PackageManagementSpecialFileRelativePath = null,
         };
         var result2 = new ProjectDiscoveryResult()
         {
@@ -1710,6 +1942,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ImportedFiles = ["imported/b.props"],
             AdditionalFiles = ["b/app.config"],
             PackageManagementKind = PackageManagementKind.CentralPackageManagement,
+            PackageManagementSpecialFileRelativePath = "Directory.Packages.props",
         };
 
         // to make sure we're checking everything exactly, we'll explicitly check each item
@@ -1737,6 +1970,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         AssertEx.Equal(["imported/a.props", "imported/b.props"], merged.ImportedFiles);
         AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);
         Assert.Equal(PackageManagementKind.CentralPackageManagement, merged.PackageManagementKind);
+        Assert.Equal("Directory.Packages.props", merged.PackageManagementSpecialFileRelativePath);
     }
 
     [Fact]
