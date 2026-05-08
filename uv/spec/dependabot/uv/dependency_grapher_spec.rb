@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
 
       before do
         allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock", allow_unsafe_shell_command: true)
           .and_return(generated_uv_lock)
       end
 
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     context "when lockfile graph extraction fails" do
       before do
         allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock", allow_unsafe_shell_command: true)
           .and_raise(StandardError.new("lock failed"))
 
         allow(parser).to receive(:run_in_parsed_context)
@@ -213,7 +213,7 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
 
       before do
         allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock", allow_unsafe_shell_command: true)
           .and_return(generated_uv_lock)
       end
 

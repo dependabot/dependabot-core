@@ -64,7 +64,7 @@ module Dependabot
 
         begin
           Dependabot.logger.info("No uv.lock present, generating ephemeral lockfile for dependency graphing")
-          generated_lockfile = uv_parser.run_in_parsed_context(UV_LOCK_COMMAND)
+          generated_lockfile = uv_parser.run_in_parsed_context(UV_LOCK_COMMAND, allow_unsafe_shell_command: true)
           return package_relationships_from_lockfile(generated_lockfile)
         rescue StandardError => e
           Dependabot.logger.warn("Failed to build dependency graph from uv.lock: #{e.message}")

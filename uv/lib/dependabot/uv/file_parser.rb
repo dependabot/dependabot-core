@@ -71,8 +71,8 @@ module Dependabot
         )
       end
 
-      sig { override.params(command: String).returns(String) }
-      def run_in_parsed_context(command)
+      sig { override.params(command: String, allow_unsafe_shell_command: T::Boolean).returns(String) }
+      def run_in_parsed_context(command, allow_unsafe_shell_command: false)
         SharedHelpers.in_a_temporary_directory do
           dependency_files.each do |file|
             path = file.name
@@ -82,7 +82,7 @@ module Dependabot
 
           setup_python_environment
 
-          SharedHelpers.run_shell_command(command)
+          SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: allow_unsafe_shell_command)
         end
       end
 

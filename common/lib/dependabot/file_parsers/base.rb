@@ -76,8 +76,8 @@ module Dependabot
       # - We have more broadly rolled out the Dependabot graph capability across ecosystems
       # - We make the relationship information applicable to updates with new transitive update strategies
       # - We work on ingesting pre-computed dependency snapshots
-      sig { params(_command: String).returns(String) }
-      def run_in_parsed_context(_command)
+      sig { params(_command: String, allow_unsafe_shell_command: T::Boolean).returns(String) }
+      def run_in_parsed_context(_command, allow_unsafe_shell_command: false)
         raise Dependabot::NotImplemented, "No run_parsed_context utility method is provided for this ecosystem."
       end
 
