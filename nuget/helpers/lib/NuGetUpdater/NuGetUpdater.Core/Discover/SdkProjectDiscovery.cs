@@ -630,7 +630,7 @@ internal static class SdkProjectDiscovery
                 .ThenBy(d => d.Version)
                 .ToImmutableArray();
 
-            // others
+            // other values
             var projectProperties = resolvedProperties[projectPath];
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
@@ -643,19 +643,36 @@ internal static class SdkProjectDiscovery
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var projectLevelCpm =
-                projectProperties.TryGetValue("ManagePackageVersionsCentrally", out var useCpmString) &&
-                bool.TryParse(useCpmString, out var useCpm) &&
-                useCpm;
+
+            // package management special values
+            var projectLevelCpm = GetBooleanPropertyFromProjectProperties(projectProperties, "ManagePackageVersionsCentrally");
             var projectLevelCpmWithPinning =
                 projectLevelCpm &&
-                projectProperties.TryGetValue("CentralPackageTransitivePinningEnabled", out var useTransitivePinningString) &&
-                bool.TryParse(useTransitivePinningString, out var useTransitivePinning) &&
-                useTransitivePinning;
+                GetBooleanPropertyFromProjectProperties(projectProperties, "CentralPackageTransitivePinningEnabled");
+            var centralPackageVersions = GetBooleanPropertyFromProjectProperties(projectProperties, "UsingMicrosoftCentralPackageVersionsSdk");
             var packageManagementKind =
                 projectLevelCpmWithPinning ? PackageManagementKind.CentralPackageManagementWithTransitivePinning :
                 projectLevelCpm ? PackageManagementKind.CentralPackageManagement :
+                centralPackageVersions ? PackageManagementKind.CentralPackageVersions :
                 PackageManagementKind.Default;
+            var packageManagementFile = packageManagementKind switch
+            {
+                PackageManagementKind.CentralPackageVersions => GetStringPropertyFromProjectProperties(projectProperties, "CentralPackagesFile"),
+                PackageManagementKind.CentralPackageManagement or
+                PackageManagementKind.CentralPackageManagementWithTransitivePinning => GetStringPropertyFromProjectProperties(projectProperties, "DirectoryPackagesPropsPath"),
+                _ => null,
+            };
+
+            if (packageManagementFile is not null)
+            {
+                packageManagementFile = Path.GetRelativePath(projectFullDirectory, packageManagementFile).NormalizePathToUnix();
+            }
+
+            if (packageManagementKind != PackageManagementKind.Default && packageManagementFile is null)
+            {
+                logger.Warn($"Project [{projectRelativePath}] detected package management kind of {packageManagementKind} but no package management file found; forcing management kind to {PackageManagementKind.Default}.");
+                packageManagementKind = PackageManagementKind.Default;
+            }
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
@@ -666,6 +683,7 @@ internal static class SdkProjectDiscovery
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
                 PackageManagementKind = packageManagementKind,
+                PackageManagementSpecialFileRelativePath = packageManagementFile,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
@@ -964,5 +982,17 @@ internal static class SdkProjectDiscovery
         }
 
         return tfm;
+    }
+
+    private static bool GetBooleanPropertyFromProjectProperties(Dictionary<string, string> projectProperties, string propertyName)
+    {
+        return projectProperties.TryGetValue(propertyName, out var propertyStringValue) &&
+            bool.TryParse(propertyStringValue, out var propertyValue) &&
+            propertyValue;
+    }
+
+    private static string? GetStringPropertyFromProjectProperties(Dictionary<string, string> projectProperties, string propertyName)
+    {
+        return projectProperties.TryGetValue(propertyName, out var propertyValue) ? propertyValue : null;
     }
 }

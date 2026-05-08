@@ -189,8 +189,11 @@ public class XmlFileWriter : IFileWriter
                 var addPackageReferenceElementForPinnedPackages =
                     packageManagementKind switch
                     {
+                        PackageManagementKind.Default or
+                        PackageManagementKind.CentralPackageVersions or
+                        PackageManagementKind.CentralPackageManagement => true,
                         PackageManagementKind.CentralPackageManagementWithTransitivePinning => false,
-                        _ => true,
+                        _ => throw new NotSupportedException($"Unexpected package management kind {packageManagementKind}"),
                     };
                 if (addPackageReferenceElementForPinnedPackages)
                 {
