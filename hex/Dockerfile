@@ -1,51 +1,45 @@
 # syntax=docker.io/docker/dockerfile:1.20
 ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
-FROM ${UPDATER_CORE_IMAGE}
+ARG ELIXIR_VERSION=1.19.5
+ARG ERLANG_VERSION=28.4.3
+ARG UBUNTU_VERSION=noble-20260410
+
+FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-ubuntu-${UBUNTU_VERSION} AS elixir-builder
+
+# Install Zig (required by Burrito)
+ARG ZIG_VERSION=0.15.2
+ARG ZIG_CHECKSUM_X64=02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239
+ARG ZIG_CHECKSUM_ARM64=958ed7d1e00d0ea76590d27666efbf7a932281b3d7ba0c6b01b0ff26498f667f
 RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends \
-  gnupg2 sudo curl apt-transport-https
+  && apt-get install -y --no-install-recommends ca-certificates curl xz-utils \
+  && ARCH=$(uname -m) \
+  && if [ "$ARCH" = "x86_64" ]; then ZIG_CHECKSUM="$ZIG_CHECKSUM_X64"; \
+     elif [ "$ARCH" = "aarch64" ]; then ZIG_CHECKSUM="$ZIG_CHECKSUM_ARM64"; fi \
+  && curl -sSLfO "https://ziglang.org/download/${ZIG_VERSION}/zig-${ARCH}-linux-${ZIG_VERSION}.tar.xz" \
+  && echo "${ZIG_CHECKSUM}  zig-${ARCH}-linux-${ZIG_VERSION}.tar.xz" | sha256sum -c - \
+  && tar -xf "zig-${ARCH}-linux-${ZIG_VERSION}.tar.xz" -C /usr/local \
+  && ln -s "/usr/local/zig-${ARCH}-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig \
+  && rm "zig-${ARCH}-linux-${ZIG_VERSION}.tar.xz"
 
-ARG ERLANG_MAJOR_VERSION=27
-
-# This is using https://www.rabbitmq.com/docs/install-debian#apt-launchpad-erlang to install erlang. Previously, esl-erlang was used, but it does not
-# contain arm architecture packages. The base `apt` erlang version should not be used--it is too old.
-
-# primary RabbitMQ signing key
-RUN curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.github.rabbitmq.signing.gpg > /dev/null
-
-# Launchpad PPA signing key for apt
-RUN curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg > /dev/null
-
-RUN echo "deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-${ERLANG_MAJOR_VERSION}/ubuntu jammy main" >> /etc/apt/sources.list
-RUN echo "deb-src [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-${ERLANG_MAJOR_VERSION}/ubuntu jammy main" >> /etc/apt/sources.list
-
-# The `erlang` package from rabbitmq includes large packages, like erlang-wx, that aren't needed for this.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends erlang-base \
-  erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
-  erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
-  erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl \
-  erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
-
-# Install Elixir
-# https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.19.5
-ARG ELIXIR_CHECKSUM=1ab3154ec19adcd4b764cf96badecbe44df5ec6f358dc0fbe29c3749ff6c08de
-RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
-  && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
-  && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
-  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip
-ENV PATH="$PATH:/usr/local/elixir/bin"
-
-USER dependabot
-
-COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+COPY hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
 ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt/hex/native"
 RUN bash /opt/hex/helpers/build
+
+FROM ${UPDATER_CORE_IMAGE}
+COPY --from=elixir-builder /opt/hex/native /opt/hex/native
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt/hex/native"
+ENV PATH="$PATH:/opt/hex/native/hex"
+ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
+
+# Pre-extract the Burrito payload so concurrent test runs don't race to extract
+# it at runtime.
+USER dependabot
+RUN /opt/hex/native/hex/dependabot_hex --install
+USER root
 
 COPY --chown=dependabot:dependabot --parents hex common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

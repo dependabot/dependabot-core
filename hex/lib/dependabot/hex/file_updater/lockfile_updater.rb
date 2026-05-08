@@ -8,7 +8,6 @@ require "dependabot/hex/file_updater/mixfile_updater"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/file_updater/mixfile_requirement_updater"
 require "dependabot/hex/credential_helpers"
-require "dependabot/hex/native_helpers"
 require "dependabot/hex/version"
 require "dependabot/shared_helpers"
 
@@ -37,12 +36,11 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
-              FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
               SharedHelpers.with_git_configured(credentials: credentials) do
                 SharedHelpers.run_helper_subprocess(
                   env: mix_env,
-                  command: "mix run #{elixir_helper_path}",
+                  command: "dependabot_hex",
                   function: "get_updated_lockfile",
                   args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)]
                 )
@@ -162,19 +160,8 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
             "MIX_QUIET" => "1"
           }
-        end
-
-        sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
-        end
-
-        sig { returns(String) }
-        def elixir_helper_do_update_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/do_update.exs")
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }

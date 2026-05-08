@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
+
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+RELEASE_NAME="dependabot_hex_${OS}_${ARCH}"
 
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/hex"
 mkdir -p "$install_dir"
@@ -19,12 +23,10 @@ mix archive.install hex nerves_bootstrap --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 
-case $(uname) in
-  'Darwin') CP_OPTS='-R' ;;
-  *) CP_OPTS='-r' ;;
-esac
+cd "$helpers_dir"
 
-cp $CP_OPTS "$helpers_dir/lib" "$install_dir"
-cp $CP_OPTS "$helpers_dir/mix.exs" "$install_dir"
+mix deps.get
+MIX_ENV=prod mix release "$RELEASE_NAME" --overwrite
 
-cd "$install_dir"
+cp "burrito_out/${RELEASE_NAME}_target" "$install_dir/dependabot_hex"
+chmod +x "$install_dir/dependabot_hex"
