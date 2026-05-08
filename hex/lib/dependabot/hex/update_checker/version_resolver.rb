@@ -6,7 +6,6 @@ require "sorbet-runtime"
 require "dependabot/hex/version"
 require "dependabot/hex/update_checker"
 require "dependabot/hex/credential_helpers"
-require "dependabot/hex/native_helpers"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -62,7 +61,6 @@ module Dependabot
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_sanitized_dependency_files
-              FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
 
               SharedHelpers.with_git_configured(credentials: credentials) do
                 run_elixir_update_checker
@@ -81,7 +79,7 @@ module Dependabot
         def run_elixir_update_checker
           SharedHelpers.run_helper_subprocess(
             env: mix_env,
-            command: "mix run #{elixir_helper_path}",
+            command: "dependabot_hex",
             function: "get_latest_resolvable_version",
             args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)],
             stderr_to_stdout: true
@@ -166,10 +164,6 @@ module Dependabot
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
             write_temporary_sanitized_dependency_files(prepared: false)
-            FileUtils.cp(
-              elixir_helper_check_update_path,
-              "check_update.exs"
-            )
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               run_elixir_update_checker
@@ -216,19 +210,8 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
             "MIX_QUIET" => "1"
           }
-        end
-
-        sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
-        end
-
-        sig { returns(String) }
-        def elixir_helper_check_update_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
         end
       end
     end

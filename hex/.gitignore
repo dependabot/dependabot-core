@@ -4,5 +4,7 @@
 /tmp
 /deps
 /helpers/deps/
+/helpers/_build/
 /helpers/install-dir
 /dependabot-*.gem
+erl_crash.dump

@@ -1,0 +1,6 @@
+## Disable the break handler so binary data on stdin (e.g. JSON) does not
+## trigger the Erlang BREAK prompt.
++Bd
+
+## Do not start an Erlang shell; this process communicates via stdin/stdout.
+-noshell
