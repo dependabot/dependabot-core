@@ -1,7 +1,8 @@
 # syntax=docker.io/docker/dockerfile:1.20
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
 FROM docker.io/nixos/nix:2.34.5 AS nix
 
-FROM ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 # Copy Nix from the official image
 COPY --from=nix --chown=dependabot:dependabot /nix /nix

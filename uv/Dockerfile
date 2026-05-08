@@ -11,10 +11,11 @@ ARG PY_3_9=3.9.24
 # https://github.com/pyenv/pyenv/releases
 ARG PYENV_VERSION=v2.6.16
 
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
 FROM ghcr.io/astral-sh/uv:0.11.8 AS uv
 
-FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
+FROM ${UPDATER_CORE_IMAGE} AS python-core
 ARG PY_3_14
 ARG PY_3_13
 ARG PY_3_12

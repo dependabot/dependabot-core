@@ -95,12 +95,34 @@ function docker_build() {
   # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
   unset DOCKER_CONTENT_TRUST
 
-  # pre_commit depends on go_modules and bundler images, so build them first
+  # Retag the locally-built core image under a local-only name so BuildKit
+  # resolves FROM via the local daemon instead of contacting the registry.
+  local LOCAL_CORE_IMAGE="dependabot-local/updater-core"
+  docker tag "$UPDATER_CORE_IMAGE" "$LOCAL_CORE_IMAGE"
+
+  # pre_commit depends on go_modules, bundler, and pub images, so build them first
   # Use a guard variable to prevent infinite recursion when called recursively
+  local EXTRA_BUILD_ARGS=()
   if [[ "$ECOSYSTEM" == "pre_commit" && -z "$BUILDING_DEPENDENCY" ]]; then
-    echo "Building pre_commit dependencies: go_modules and bundler..."
+    echo "Building pre_commit dependencies: go_modules, bundler, and pub..."
     BUILDING_DEPENDENCY=1 docker_build "go_modules"
+    local LOCAL_GOMOD_IMAGE="dependabot-local/updater-gomod"
+    docker tag "${UPDATER_IMAGE}gomod" "$LOCAL_GOMOD_IMAGE"
+
     BUILDING_DEPENDENCY=1 docker_build "bundler"
+    local LOCAL_BUNDLER_IMAGE="dependabot-local/updater-bundler"
+    docker tag "${UPDATER_IMAGE}bundler" "$LOCAL_BUNDLER_IMAGE"
+
+    BUILDING_DEPENDENCY=1 docker_build "pub"
+    local LOCAL_PUB_IMAGE="dependabot-local/updater-pub"
+    docker tag "${UPDATER_IMAGE}pub" "$LOCAL_PUB_IMAGE"
+
+    EXTRA_BUILD_ARGS=(
+      --build-arg "UPDATER_GOMOD_IMAGE=$LOCAL_GOMOD_IMAGE"
+      --build-arg "UPDATER_BUNDLER_IMAGE=$LOCAL_BUNDLER_IMAGE"
+      --build-arg "UPDATER_PUB_IMAGE=$LOCAL_PUB_IMAGE"
+    )
+
     # Restore ecosystem and tag for pre_commit
     ECOSYSTEM="pre_commit"
     set_tag
@@ -114,6 +136,8 @@ function docker_build() {
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg "UPDATER_CORE_IMAGE=$LOCAL_CORE_IMAGE" \
+    "${EXTRA_BUILD_ARGS[@]}" \
     --cache-from "$UPDATER_IMAGE_NAME" \
     -t "$UPDATER_IMAGE_NAME" \
     -f "$DOCKERFILE_PATH" \
