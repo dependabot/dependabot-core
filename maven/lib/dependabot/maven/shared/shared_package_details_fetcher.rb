@@ -151,24 +151,37 @@ module Dependabot
         def extract_version_details_from_html(html_doc)
           versions_detail_hash = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
-          html_doc.css("a[title]").each do |link|
-            version_string = link["title"]
-            version = version_string.gsub(%r{/$}, "")
-
-            raw_date_text = link.next.text.strip.split("\n").last.strip
-
-            release_date = begin
-              Time.parse(raw_date_text)
-            rescue StandardError
-              nil
-            end
-
+          html_doc.css("a[href]").each do |link|
+            version = extract_version_from_link(link)
             next unless version && version_class.correct?(version)
+
+            release_date = extract_release_date_from_link(link)
 
             versions_detail_hash[version] = { release_date: release_date }
           end
 
           versions_detail_hash
+        end
+
+        sig { params(link: Nokogiri::XML::Element).returns(T.nilable(String)) }
+        def extract_version_from_link(link)
+          href = link["href"]&.strip
+          return unless href&.end_with?("/")
+
+          identifier = link["title"] || link.text || href
+          identifier.to_s.strip.gsub(%r{/$}, "")
+        end
+
+        sig { params(link: Nokogiri::XML::Element).returns(T.nilable(Time)) }
+        def extract_release_date_from_link(link)
+          raw_date_text = link.next&.text.to_s
+          date_match = raw_date_text.match(/\b(?:\d{4}-\d{2}-\d{2}|\d{2}-[A-Za-z]{3}-\d{4}) \d{2}:\d{2}\b/)
+
+          return Time.parse(date_match[0]) if date_match
+
+          Time.parse(raw_date_text.strip)
+        rescue StandardError
+          nil
         end
 
         # -- Response Checking & Error Handling --
