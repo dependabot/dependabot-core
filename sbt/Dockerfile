@@ -1,5 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
-FROM ghcr.io/dependabot/dependabot-updater-core
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 # Install JDK for Coursier and Maven repository interaction
 RUN apt-get update && apt-get install -y --no-install-recommends \

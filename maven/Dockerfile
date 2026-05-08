@@ -1,8 +1,9 @@
 # syntax=docker.io/docker/dockerfile:1.20
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
 # This cannot be inlined below (e.g., COPY --from=maven:...) because Dependabot does not support that syntax yet
 FROM maven:3.9.14 as maven
 
-FROM ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk-headless \
