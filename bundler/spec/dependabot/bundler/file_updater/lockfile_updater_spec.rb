@@ -20,6 +20,124 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
 
   let(:updated_lockfile_content) { updater.updated_lockfile_content }
 
+  describe "lockfile ending handling" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "byebug",
+        version: "13.0.0",
+        previous_version: "11.1.3",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "bundler"
+      )
+    end
+
+    let(:files) { [gemfile, lockfile] }
+    let(:gemfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile",
+        content: "source \"https://rubygems.org\"\n\ngem \"byebug\"\n"
+      )
+    end
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              byebug (11.1.3)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            byebug (= 11.1.3)
+
+          CHECKSUMS
+            bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785
+            byebug (11.1.3) sha256=abc
+
+          BUNDLED WITH
+            4.0.11
+        LOCKFILE
+      )
+    end
+
+    it "keeps checksum entries when removing RUBY VERSION" do
+      new_lockfile_content = <<~LOCKFILE
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            byebug (13.0.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          byebug (= 13.0.0)
+
+        RUBY VERSION
+          ruby 3.4.2p0
+
+        CHECKSUMS
+          bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785
+          byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d
+
+        BUNDLED WITH
+          4.0.12
+      LOCKFILE
+
+      updated_content = updater.send(:replace_lockfile_ending, new_lockfile_content)
+
+      expect(updated_content).not_to include("RUBY VERSION")
+      expect(updated_content).to include(
+        "bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785"
+      )
+      expect(updated_content).to include("BUNDLED WITH\n  4.0.11")
+      expect(updated_content).not_to include("BUNDLED WITH\n  4.0.12")
+    end
+
+    it "preserves checksums while sanitizing lockfiles" do
+      sanitized_content = updater.send(:sanitized_lockfile_body)
+
+      expect(sanitized_content).to include("CHECKSUMS")
+      expect(sanitized_content).to include(
+        "bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785"
+      )
+      expect(sanitized_content).not_to include("BUNDLED WITH")
+    end
+
+    it "re-adds the old bundler checksum when bundler omits it" do
+      new_lockfile_content = <<~LOCKFILE
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            byebug (13.0.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          byebug (= 13.0.0)
+
+        CHECKSUMS
+          byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d
+          io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
+
+        BUNDLED WITH
+          4.0.11
+      LOCKFILE
+
+      updated_content = updater.send(:preserve_bundler_checksum, new_lockfile_content)
+
+      expect(updated_content).to include(
+        "bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785"
+      )
+      expect(updated_content).to include("byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d")
+    end
+  end
+
   describe "with multiple path gems" do
     let(:dependency) do
       Dependabot::Dependency.new(
