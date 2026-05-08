@@ -15,9 +15,9 @@
 --ignore=common/spec/
 --ignore=composer/spec/
 --ignore=conda/spec/
+--ignore=deno/spec/
 --ignore=devcontainers/spec/
 --ignore=docker/spec/
---ignore=docker_compose/spec/
 --ignore=dotnet_sdk/spec/
 --ignore=elm/spec/
 --ignore=git_submodules/spec/
