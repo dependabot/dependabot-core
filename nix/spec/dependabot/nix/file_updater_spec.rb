@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Nix::FileUpdater do
   let(:updater) do
     described_class.new(
       dependency_files: [flake_nix, flake_lock],
-      dependencies: [dependency],
+      dependencies: dependencies,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -50,6 +50,7 @@ RSpec.describe Dependabot::Nix::FileUpdater do
       }]
     )
   end
+  let(:dependencies) { [dependency] }
 
   let(:flake_nix) do
     Dependabot::DependencyFile.new(
@@ -75,6 +76,37 @@ RSpec.describe Dependabot::Nix::FileUpdater do
 
   def fixture(filename)
     File.read(File.join(__dir__, "fixtures", filename))
+  end
+
+  def dependency_for(name:, version:, previous_version:, url:, ref:, previous_ref:)
+    Dependabot::Dependency.new(
+      name: name,
+      version: version,
+      previous_version: previous_version,
+      requirements: [{
+        file: "flake.lock",
+        requirement: nil,
+        source: {
+          type: "git",
+          url: url,
+          branch: nil,
+          ref: ref
+        },
+        groups: []
+      }],
+      previous_requirements: [{
+        file: "flake.lock",
+        requirement: nil,
+        source: {
+          type: "git",
+          url: url,
+          branch: nil,
+          ref: previous_ref
+        },
+        groups: []
+      }],
+      package_manager: "nix"
+    )
   end
 
   it_behaves_like "a dependency file updater"
@@ -112,7 +144,55 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         updated_files
         expect(Dependabot::SharedHelpers)
           .to have_received(:run_shell_command)
-          .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_name>")
+          .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_names>")
+      end
+    end
+
+    context "with grouped branch-tracking inputs" do
+      let(:dependencies) { [dependency, home_manager_dependency] }
+
+      let(:home_manager_dependency) do
+        dependency_for(
+          name: "home-manager",
+          version: "new_home_manager_sha",
+          previous_version: "old_home_manager_sha",
+          url: "https://github.com/nix-community/home-manager",
+          ref: nil,
+          previous_ref: nil
+        )
+      end
+
+      it "calls nix flake update with every input name" do
+        updated_files
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with("nix flake update nixpkgs home-manager", fingerprint: "nix flake update <input_names>")
+      end
+
+      context "when the first input alone would not change the lockfile" do
+        before do
+          command = nil
+
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command) do |actual_command, **_kwargs|
+              command = actual_command
+            end
+
+          allow(File)
+            .to receive(:read)
+            .with("flake.lock") do
+              if command == "nix flake update nixpkgs home-manager"
+                updated_lock_content
+              else
+                flake_lock_content
+              end
+            end
+        end
+
+        it "does not treat the grouped update as unchanged" do
+          expect { updated_files }.not_to raise_error
+          expect(updated_files.map(&:name)).to eq(["flake.lock"])
+        end
       end
     end
 
@@ -221,6 +301,42 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         nix_file = updated_files.find { |f| f.name == "flake.nix" }
         expect(nix_file.content).to include('"github:NixOS/nixpkgs/nixos-25.05"')
         expect(nix_file.content).not_to include("nixos-24.11")
+      end
+    end
+
+    context "with grouped inputs that change refs" do
+      let(:flake_nix_content) { fixture("flake_with_versioned_branch.nix") }
+      let(:dependencies) { [dependency, home_manager_dependency] }
+      let(:updated_lock_content) { '{"updated": true}' }
+
+      let(:dependency) do
+        dependency_for(
+          name: "nixpkgs",
+          version: "new_sha_def456",
+          previous_version: "old_sha_abc123",
+          url: "https://github.com/NixOS/nixpkgs",
+          ref: "nixos-25.05",
+          previous_ref: "nixos-24.11"
+        )
+      end
+
+      let(:home_manager_dependency) do
+        dependency_for(
+          name: "home-manager",
+          version: "new_home_manager_sha",
+          previous_version: "old_home_manager_sha",
+          url: "https://github.com/nix-community/home-manager",
+          ref: "release-25.05",
+          previous_ref: "release-24.11"
+        )
+      end
+
+      it "rewrites all changed refs in flake.nix before running nix" do
+        updated_files
+        expect(File).to have_received(:write)
+          .with("flake.nix", a_string_including("github:NixOS/nixpkgs/nixos-25.05"))
+        expect(File).to have_received(:write)
+          .with("flake.nix", a_string_including("github:nix-community/home-manager/release-25.05"))
       end
     end
   end
