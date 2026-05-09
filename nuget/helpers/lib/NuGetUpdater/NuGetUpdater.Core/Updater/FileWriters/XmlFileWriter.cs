@@ -5,6 +5,7 @@ using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater.FileWriters;
@@ -51,7 +52,7 @@ public class XmlFileWriter : IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        bool addPackageReferenceElementForPinnedPackages
+        PackageManagementKind packageManagementKind
     )
     {
         if (relativeFilePaths.IsDefaultOrEmpty)
@@ -185,6 +186,15 @@ public class XmlFileWriter : IFileWriter
                     .WithAttribute(IncludeAttributeName, requiredPackageVersion.Name);
 
                 // ...add the `<PackageReference>` element if and where appropriate...
+                var addPackageReferenceElementForPinnedPackages =
+                    packageManagementKind switch
+                    {
+                        PackageManagementKind.Default or
+                        PackageManagementKind.CentralPackageVersions or
+                        PackageManagementKind.CentralPackageManagement => true,
+                        PackageManagementKind.CentralPackageManagementWithTransitivePinning => false,
+                        _ => throw new NotSupportedException($"Unexpected package management kind {packageManagementKind}"),
+                    };
                 if (addPackageReferenceElementForPinnedPackages)
                 {
                     addItemGroup();

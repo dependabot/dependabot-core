@@ -10,8 +10,17 @@ require "dependabot/maven/version"
 require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
+  # SharedVersionFinder is abstract, so use a concrete subclass for testing
+  let(:concrete_class) do
+    Class.new(described_class) do
+      def package_details
+        nil
+      end
+    end
+  end
+
   let(:finder) do
-    described_class.new(
+    concrete_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,

@@ -470,7 +470,8 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             ReferencedProjectPaths = mergedReferencedProjects,
             ImportedFiles = mergedImportedFiles,
             AdditionalFiles = mergedAdditionalFiles,
-            CentralPackageTransitivePinningEnabled = result1.CentralPackageTransitivePinningEnabled || result2.CentralPackageTransitivePinningEnabled,
+            PackageManagementKind = (PackageManagementKind)Math.Max((int)result1.PackageManagementKind, (int)result2.PackageManagementKind),
+            PackageManagementSpecialFileRelativePath = result1.PackageManagementSpecialFileRelativePath ?? result2.PackageManagementSpecialFileRelativePath,
         };
         return mergedResult;
     }
