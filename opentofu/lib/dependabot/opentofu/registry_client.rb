@@ -292,11 +292,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
       def self.oci_token_cache
-        @oci_token_cache = T.let(
-          @oci_token_cache,
-          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
-        )
-        @oci_token_cache ||= {}
+        @oci_token_cache ||= T.let({}, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
       end
       private_class_method :oci_token_cache
 
