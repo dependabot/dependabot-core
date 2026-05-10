@@ -24,7 +24,8 @@ defmodule DependabotHex.MixProject do
         :public_key
       ],
       included_applications: [
-        :hex,
+        # Hex is already included in sbom, duplicates are not allowed
+        # :hex,
         :nerves_bootstrap
       ]
     ]
@@ -39,7 +40,9 @@ defmodule DependabotHex.MixProject do
   end
 
   defp deps do
-    []
+    [
+      {:sbom, "~> 0.10"}
+    ]
   end
 
   defp archives do

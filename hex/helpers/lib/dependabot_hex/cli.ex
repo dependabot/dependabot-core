@@ -1,5 +1,6 @@
 defmodule DependabotHex.CLI do
   alias DependabotHex.CredentialHelper
+  alias DependabotHex.DependencyGrapher
   alias DependabotHex.Parser
   alias DependabotHex.UpdateChecker
   alias DependabotHex.Updater
@@ -15,6 +16,10 @@ defmodule DependabotHex.CLI do
     |> JSON.decode!()
     |> run()
     |> handle_result()
+  end
+
+  defp run(%{"function" => "dependency_graph", "args" => [dir]}) do
+    DependencyGrapher.run(dir)
   end
 
   defp run(%{"function" => "parse", "args" => [dir]}) do
