@@ -94,6 +94,16 @@ module Dependabot
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env) # retry via local wrapper
               end
 
+              # Apply `.gitattributes` to the updated files to prevent unnecessary diff changes on newline terminators
+              existing_files = @target_files.select { |f| File.exist?(File.join(cwd, f)) }
+              begin
+                SharedHelpers.run_shell_command("git add --renormalize " + existing_files.join(" "), cwd: cwd)
+              rescue SharedHelpers::HelperSubprocessFailed => e
+                Dependabot.logger.warn(
+                  "Failed to GIT renormalize Gradle updated files #{existing_files.join(', ')}: #{e.message}"
+                )
+              end
+
               # Restore previous validateDistributionUrl option if it existed
               override_validate_distribution_url_option(properties_file, validate_distribution)
 
