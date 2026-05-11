@@ -1,0 +1,12 @@
+{
+  "name": "plugins.versions.toml",
+  "path": "gradle/plugins.versions.toml",
+  "sha": "a_sha_for_plugins_toml",
+  "size": 100,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/gradle/plugins.versions.toml?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/gradle/plugins.versions.toml",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_plugins_toml",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/gradle/plugins.versions.toml",
+  "type": "file",
+  "content": "W3ZlcnNpb25zXQprb3RsaW50ZXIgPSAiMy4xMC4wIgpbcGx1Z2luc10Ka290bGludGVyID0geyBpZCA9ICJvcmcuam1haWxlbi5rb3RsaW50ZXIiLCB2ZXJzaW9uLnJlZiA9ICJrb3RsaW50ZXIiIH0K"
+}

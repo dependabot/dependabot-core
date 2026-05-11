@@ -1,0 +1,14 @@
+// settings.gradle (Idiomatic Groovy)
+dependencyResolutionManagement {
+    versionCatalogs {
+        libs {
+            from files('gradle/libs.versions.toml')
+        }
+        tools {
+            from files("gradle/tools.versions.toml")
+        }
+        plugins {
+            from files("gradle/plugins.versions.toml")
+        }
+    }
+}
