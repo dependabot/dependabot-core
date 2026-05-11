@@ -61,6 +61,39 @@ RSpec.describe Dependabot::Bun::FileParser do
 
         its(:length) { is_expected.to eq(0) }
       end
+
+      context "with catalog dependencies" do
+        let(:files) { project_dependency_files("bun/catalog_workspace") }
+
+        it "parses dependencies from the default catalog" do
+          react = dependencies.find { |d| d.name == "react" }
+          expect(react).to be_a(Dependabot::Dependency)
+          expect(react.version).to eq("18.2.0")
+          expect(react.requirements).to include(
+            a_hash_including(
+              requirement: "^18.2.0",
+              groups: ["catalog"]
+            )
+          )
+        end
+
+        it "parses dependencies from named catalogs" do
+          jest = dependencies.find { |d| d.name == "jest" }
+          expect(jest).to be_a(Dependabot::Dependency)
+          expect(jest.version).to eq("29.6.2")
+          expect(jest.requirements).to include(
+            a_hash_including(
+              requirement: "^29.6.2",
+              groups: ["catalogs"]
+            )
+          )
+        end
+
+        it "includes all catalog dependencies" do
+          catalog_names = dependencies.map(&:name)
+          expect(catalog_names).to include("react", "react-dom", "jest", "testing-library")
+        end
+      end
     end
   end
 
