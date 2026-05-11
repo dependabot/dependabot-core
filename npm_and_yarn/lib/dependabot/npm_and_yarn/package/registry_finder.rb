@@ -122,7 +122,7 @@ module Dependabot
         def explicit_registry_from_rc(dependency_name)
           if dependency_name&.start_with?("@") && dependency_name.include?("/")
             scope = dependency_name.split("/").first
-            scoped_registry(T.must(scope)) || configured_global_registry
+            scoped_registry(T.must(scope)) || global_registry_from_config_files
           else
             configured_global_registry
           end
@@ -149,7 +149,14 @@ module Dependabot
               raise DependencyFileNotResolvable, e.message
             end&.fetch("registry")
 
-          @first_registry_with_dependency_details ||= global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")
+          # For scoped packages without explicit scoped registry, fall back to global registry from config files
+          # or the public npm registry, NOT the replaces-base credential
+          @first_registry_with_dependency_details ||=
+            if dependency&.name&.start_with?("@") && dependency&.name&.include?("/")
+              (global_registry_from_config_files || GLOBAL_NPM_REGISTRY).sub(%r{/+$}, "").sub(%r{^.*?//}, "")
+            else
+              global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")
+            end
         end
 
         sig { returns(T.nilable(String)) }
@@ -317,6 +324,16 @@ module Dependabot
           @configured_global_registry = nil
         end
         # rubocop:enable Metrics/PerceivedComplexity
+
+        # Returns global registry from config files only (.npmrc, .yarnrc, .yarnrc.yml),
+        # excluding credentials with replaces-base
+        sig { returns(T.nilable(String)) }
+        def global_registry_from_config_files
+          (npmrc_file && npmrc_global_registries.first&.fetch("url")) ||
+            (yarnrc_file && yarnrc_global_registries.first&.fetch("url")) ||
+            (parsed_yarnrc_yml&.key?("npmRegistryServer") &&
+              prepare_registry_url(T.must(parsed_yarnrc_yml)["npmRegistryServer"]))
+        end
 
         sig { returns(T::Array[T::Hash[String, String]]) }
         def npmrc_global_registries
