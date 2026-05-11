@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
@@ -27,7 +30,6 @@ public class GraphWorker : IGraphWorker
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = RunWorker.Deserialize(jobFileContent);
         var job = jobWrapper.Job;
-        var experimentsManager = ExperimentsManager.GetExperimentsManager(job.Experiments);
 
         // Use the case-insensitive repo contents path if provided, otherwise use the original
         var actualRepoContentsPath = caseInsensitiveRepoContentsPath ?? repoContentsPath;
@@ -190,10 +192,10 @@ public class GraphWorker : IGraphWorker
         {
             Version = 1,
             Sha = baseCommitSha,
-            Ref = $"refs/heads/{job.Source.Branch ?? "main"}",
+            Ref = GetSymbolicRef(job.Source.Branch),
             Job = new CreateDependencySubmission.SubmissionJob
             {
-                Correlator = $"dependabot-nuget-{directory.Replace("/", "-").TrimStart('-')}",
+                Correlator = GetCorrelator(directory),
                 Id = _jobId
             },
             Detector = new CreateDependencySubmission.SubmissionDetector
@@ -212,9 +214,36 @@ public class GraphWorker : IGraphWorker
         };
     }
 
+    internal static string GetSymbolicRef(string? branch)
+    {
+        branch = (branch ?? "main").TrimStart('/');
+        if (branch.StartsWith("refs/", StringComparison.OrdinalIgnoreCase))
+        {
+            return branch;
+        }
+
+        return $"refs/heads/{branch}";
+    }
+
+    internal static string GetCorrelator(string directory)
+    {
+        var sanitized = directory.TrimStart('/').Replace("/", "-").TrimStart('-');
+        if (Encoding.UTF8.GetByteCount(sanitized) > 32)
+        {
+            sanitized = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sanitized)));
+        }
+
+        return string.IsNullOrEmpty(sanitized) ? "dependabot-nuget" : $"dependabot-nuget-{sanitized}";
+    }
+
     internal static string GetDetectorVersion()
     {
-        var version = Environment.GetEnvironmentVariable("DEPENDABOT_VERSION") ?? "development";
+        var version = Environment.GetEnvironmentVariable("DEPENDABOT_VERSION");
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            version = "development";
+        }
+
         var sha = Environment.GetEnvironmentVariable("DEPENDABOT_UPDATER_SHA");
         if (!string.IsNullOrEmpty(sha))
         {
