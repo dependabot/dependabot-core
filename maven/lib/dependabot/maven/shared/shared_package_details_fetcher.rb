@@ -66,7 +66,7 @@ module Dependabot
           "#{dependency_base_url(repository_url)}/#{MAVEN_METADATA_XML}"
         end
 
-        # URL for a specific artifact file (JAR/POM).
+        # URL for a specific artifact file (JAR/AAR/etc).
         #
         # Example:
         #   "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
@@ -79,6 +79,15 @@ module Dependabot
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
+        end
+
+        # URL for the POM file of a specific version.
+        # Every published Maven artifact has a .pom file regardless of packaging type.
+        sig { params(repository_url: String, version: Dependabot::Version).returns(String) }
+        def dependency_pom_url(repository_url, version)
+          _, artifact_id = dependency_parts
+          base_url = dependency_base_url(repository_url)
+          "#{base_url}/#{version}/#{artifact_id}-#{version}.pom"
         end
 
         # -- Metadata Fetching (XML) --
@@ -151,24 +160,42 @@ module Dependabot
         def extract_version_details_from_html(html_doc)
           versions_detail_hash = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
-          html_doc.css("a[title]").each do |link|
-            version_string = link["title"]
-            version = version_string.gsub(%r{/$}, "")
-
-            raw_date_text = link.next.text.strip.split("\n").last.strip
-
-            release_date = begin
-              Time.parse(raw_date_text)
-            rescue StandardError
-              nil
-            end
-
+          html_doc.css("a[href]").each do |link|
+            version = extract_version_from_link(link)
             next unless version && version_class.correct?(version)
+
+            release_date = extract_release_date_from_link(link)
 
             versions_detail_hash[version] = { release_date: release_date }
           end
 
           versions_detail_hash
+        end
+
+        sig { params(link: Nokogiri::XML::Element).returns(T.nilable(String)) }
+        def extract_version_from_link(link)
+          href = link["href"]&.strip
+          return unless href&.end_with?("/")
+
+          identifier = [link["title"], link.text, href].find { |value| value && !value.strip.empty? }
+          return unless identifier
+
+          version = identifier.strip.gsub(%r{/$}, "")
+          return if ["..", "."].include?(version)
+
+          version
+        end
+
+        sig { params(link: Nokogiri::XML::Element).returns(T.nilable(Time)) }
+        def extract_release_date_from_link(link)
+          raw_date_text = link.next&.text.to_s
+          date_match = raw_date_text.match(/\b(?:\d{4}-\d{2}-\d{2}|\d{2}-[A-Za-z]{3}-\d{4}) \d{2}:\d{2}\b/)
+
+          return Time.parse(date_match[0]) if date_match
+
+          Time.parse(raw_date_text.strip)
+        rescue StandardError
+          nil
         end
 
         # -- Response Checking & Error Handling --
@@ -304,7 +331,20 @@ module Dependabot
                 url: dependency_files_url(url, version),
                 headers: headers
               )
-              response.status < 400
+              next true if response.status < 400
+
+              # When the artifact file returns 404, fall back to checking the .pom file.
+              # This handles artifacts with non-jar packaging (e.g., aar, bundle) where
+              # the consumer POM omits <type>, causing the parser to default to "jar".
+              # Only fall back when there's no classifier (classifier artifacts are specific).
+              next false unless response.status == 404
+              next false if dependency.requirements.first&.dig(:metadata, :classifier)
+
+              pom_response = Dependabot::RegistryClient.head(
+                url: dependency_pom_url(url, version),
+                headers: headers
+              )
+              pom_response.status < 400
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               false

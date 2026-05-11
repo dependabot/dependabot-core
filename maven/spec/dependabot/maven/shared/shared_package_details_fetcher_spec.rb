@@ -152,6 +152,16 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
     end
   end
 
+  describe "#dependency_pom_url" do
+    let(:version) { Dependabot::Maven::Version.new("23.6-jre") }
+
+    it "constructs the POM file URL" do
+      url = client.dependency_pom_url(maven_central, version)
+
+      expect(url).to eq("#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre.pom")
+    end
+  end
+
   describe "#extract_metadata_from_xml" do
     let(:xml_body) do
       <<~XML
@@ -270,6 +280,61 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         expect(results).not_to have_key("not-a-version!")
       end
     end
+
+    context "with Artifactory-style listings without title attributes" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="../">../</a>
+          <a href="1.0/">1.0/</a>                 24-Jul-2025 10:31    -
+          <a href="1.2/">1.2/</a>                 24-Jul-2025 10:33    -
+          <a href="1.3.6/">1.3.6/</a>             05-May-2026 13:55    -
+          <a href="maven-metadata.xml">maven-metadata.xml</a> 05-May-2026 13:55  443 bytes
+          </pre></body></html>
+        HTML
+      end
+
+      it "extracts release dates from href/text when title is absent" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.0"]).to eq({ release_date: Time.parse("24-Jul-2025 10:31") })
+        expect(results["1.2"]).to eq({ release_date: Time.parse("24-Jul-2025 10:33") })
+        expect(results["1.3.6"]).to eq({ release_date: Time.parse("05-May-2026 13:55") })
+        expect(results).not_to have_key("maven-metadata.xml")
+      end
+    end
+
+    context "when title omits the trailing slash" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.2.3/" title="1.2.3">1.2.3/</a>            2026-05-05 13:55    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "uses the directory href to detect version entries" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.2.3"]).to eq({ release_date: Time.parse("2026-05-05 13:55") })
+      end
+    end
+
+    context "when title and link text are blank" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.4.0/" title=""></a>            2026-05-06 09:10    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "falls back to href for version extraction" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.4.0"]).to eq({ release_date: Time.parse("2026-05-06 09:10") })
+      end
+    end
   end
 
   describe "#check_response" do
@@ -370,7 +435,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         result = client.fetch_dependency_metadata(repository_details)
 
         expect(result).to be_a(Nokogiri::XML::Document)
-        expect(result.css("versions > version").count).to be > 0
+        expect(result.css("versions > version").count).to be_positive
       end
     end
 
@@ -463,11 +528,63 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
     end
 
     context "when the artifact does not exist" do
+      let(:pom_url) { "#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre.pom" }
+
+      before do
+        stub_request(:head, artifact_url).to_return(status: 404)
+        stub_request(:head, pom_url).to_return(status: 404)
+      end
+
+      it "returns false" do
+        expect(client.released?(version)).to be(false)
+      end
+    end
+
+    context "when the jar returns 404 but the pom exists (non-jar packaging like aar)" do
+      let(:pom_url) { "#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre.pom" }
+
+      before do
+        stub_request(:head, artifact_url).to_return(status: 404)
+        stub_request(:head, pom_url).to_return(status: 200)
+      end
+
+      it "falls back to the pom check and returns true" do
+        expect(client.released?(version)).to be(true)
+      end
+    end
+
+    context "when the artifact returns a non-404 error" do
+      before do
+        stub_request(:head, artifact_url).to_return(status: 401)
+      end
+
+      it "does not fall back to the pom check" do
+        expect(client.released?(version)).to be(false)
+      end
+    end
+
+    context "when a classifier is present and jar returns 404" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [{
+            requirement: "23.3-jre",
+            file: "pom.xml",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { packaging_type: "jar", classifier: "sources" }
+          }],
+          package_manager: "maven"
+        )
+      end
+      let(:artifact_url) { "#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre-sources.jar" }
+
       before do
         stub_request(:head, artifact_url).to_return(status: 404)
       end
 
-      it "returns false" do
+      it "does not fall back to the pom check" do
         expect(client.released?(version)).to be(false)
       end
     end
@@ -498,8 +615,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
     end
 
     context "when the result is false" do
+      let(:pom_url) { "#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre.pom" }
+
       before do
         stub_request(:head, artifact_url).to_return(status: 404)
+        stub_request(:head, pom_url).to_return(status: 404)
       end
 
       it "caches false results without re-requesting" do
@@ -513,6 +633,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
     context "with multiple repositories" do
       let(:private_repo) { "https://private.repo.example.com/maven2" }
       let(:private_artifact_url) { "#{private_repo}/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar" }
+      let(:private_pom_url) { "#{private_repo}/com/google/guava/guava/23.6-jre/guava-23.6-jre.pom" }
       let(:repositories) do
         [
           { "url" => private_repo, "auth_headers" => {} },
@@ -522,6 +643,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
       before do
         stub_request(:head, private_artifact_url).to_return(status: 404)
+        stub_request(:head, private_pom_url).to_return(status: 404)
         stub_request(:head, artifact_url).to_return(status: 200)
       end
 
