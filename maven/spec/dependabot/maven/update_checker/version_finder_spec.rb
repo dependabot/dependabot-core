@@ -59,9 +59,9 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     "https://repo.maven.apache.org/maven2/" \
       "com/google/guava/guava/maven-metadata.xml"
   end
-  let(:maven_central_base_url) do
+  let(:maven_central_base_url_with_slash) do
     "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava"
+      "com/google/guava/guava/"
   end
   let(:maven_central_metadata_url_mockk) do
     "https://repo.maven.apache.org/maven2/io/mockk/mockk/maven-metadata.xml"
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   before do
     stub_request(:get, maven_central_metadata_url)
       .to_return(status: 200, body: maven_central_releases)
-    stub_request(:get, maven_central_base_url)
+    stub_request(:get, maven_central_base_url_with_slash)
       .to_return(status: 200, body: maven_central_release_base)
     stub_request(:head, maven_central_version_files_url)
       .to_return(status: 200)
@@ -751,7 +751,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             status: 200,
             body: fixture("maven_central_metadata", "with_release.xml")
           )
-        stub_request(:get, jboss_base_url)
+        stub_request(:get, "#{jboss_base_url}/")
           .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.html")

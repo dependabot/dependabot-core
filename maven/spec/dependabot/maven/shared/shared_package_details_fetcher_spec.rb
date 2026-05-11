@@ -485,11 +485,12 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
   describe "#fetch_dependency_metadata_from_html" do
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
     let(:repository_details) { { "url" => maven_central, "auth_headers" => {} } }
 
     context "when the registry returns a valid HTML response" do
       before do
-        stub_request(:get, base_url)
+        stub_request(:get, base_url_with_slash)
           .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
       end
 
@@ -502,13 +503,27 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
     context "when the registry returns a 404" do
       before do
-        stub_request(:get, base_url).to_return(status: 404)
+        stub_request(:get, base_url_with_slash).to_return(status: 404)
       end
 
       it "returns nil" do
         result = client.fetch_dependency_metadata_from_html(repository_details)
 
         expect(result).to be_nil
+      end
+    end
+
+    context "when fetching HTML directory listing" do
+      before do
+        stub_request(:get, base_url_with_slash)
+          .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
+      end
+
+      it "adds a trailing slash to the base URL for directory listing" do
+        result = client.fetch_dependency_metadata_from_html(repository_details)
+
+        expect(result).to be_a(Nokogiri::HTML::Document)
+        expect(WebMock).to have_requested(:get, base_url_with_slash).once
       end
     end
   end
@@ -738,10 +753,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
   describe "#dependency_metadata_from_html" do
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
     let(:repository_details) { { "url" => maven_central, "auth_headers" => {} } }
 
     before do
-      stub_request(:get, base_url)
+      stub_request(:get, base_url_with_slash)
         .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
     end
 
@@ -757,6 +773,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
   describe "#versions" do
     let(:metadata_url) { "#{maven_central}/com/google/guava/guava/maven-metadata.xml" }
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
 
     before do
       stub_request(:get, metadata_url)
@@ -764,7 +781,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
           status: 200,
           body: fixture("maven_central_metadata", "with_release.xml")
         )
-      stub_request(:get, base_url)
+      stub_request(:get, base_url_with_slash)
         .to_return(
           status: 200,
           body: fixture("maven_central_metadata", "with_release.html")
@@ -798,7 +815,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
     context "when HTML fetch fails" do
       before do
-        stub_request(:get, base_url).to_raise(StandardError.new("boom"))
+        stub_request(:get, base_url_with_slash).to_raise(StandardError.new("boom"))
       end
 
       it "still returns versions from XML" do
@@ -857,10 +874,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
   describe "#versions_details_hash_from_html" do
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
 
     context "when the repository returns valid HTML" do
       before do
-        stub_request(:get, base_url)
+        stub_request(:get, base_url_with_slash)
           .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.html")
@@ -879,7 +897,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
     context "when no HTML data is found" do
       before do
-        stub_request(:get, base_url).to_return(status: 404)
+        stub_request(:get, base_url_with_slash).to_return(status: 404)
       end
 
       it "returns an empty hash" do
