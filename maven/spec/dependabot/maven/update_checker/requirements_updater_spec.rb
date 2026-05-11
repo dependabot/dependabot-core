@@ -68,6 +68,35 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         end
       end
 
+      context "when the latest version matches the current requirement" do
+        let(:pom_req_string) { "23.6-jre" }
+        let(:latest_version) { version_class.new("23.6-jre") }
+
+        it "does not update the requirement or source" do
+          expect(updater.updated_requirements.first).to eq(pom_req)
+        end
+      end
+
+      context "when only source metadata differs but requirement is unchanged" do
+        let(:pom_req) do
+          {
+            file: "pom.xml",
+            requirement: "1.46.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }
+        end
+        let(:pom_req_string) { "1.46.0" }
+        let(:latest_version) { version_class.new("1.46.0") }
+
+        it "returns the original requirement without updating source" do
+          result = updater.updated_requirements.first
+          expect(result).to eq(pom_req)
+          expect(result[:source]).to be_nil
+        end
+      end
+
       context "when the version is including capitals" do
         let(:pom_req_string) { "23.3.RELEASE" }
 
@@ -128,6 +157,28 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
                 requirement: "[23.0,)",
                 groups: [],
                 source: nil
+              }
+            )
+          end
+        end
+
+        context "when one requirement is already at the latest version" do
+          let(:pom_req_string) { "23.6-jre" }
+          let(:other_requirement_string) { "23.3-jre" }
+
+          it "only updates the outdated requirement" do
+            expect(updater.updated_requirements).to contain_exactly(
+              {
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "another/pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: { type: "maven_repo", url: "new_url" }
               }
             )
           end
