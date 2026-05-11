@@ -280,6 +280,61 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         expect(results).not_to have_key("not-a-version!")
       end
     end
+
+    context "with Artifactory-style listings without title attributes" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="../">../</a>
+          <a href="1.0/">1.0/</a>                 24-Jul-2025 10:31    -
+          <a href="1.2/">1.2/</a>                 24-Jul-2025 10:33    -
+          <a href="1.3.6/">1.3.6/</a>             05-May-2026 13:55    -
+          <a href="maven-metadata.xml">maven-metadata.xml</a> 05-May-2026 13:55  443 bytes
+          </pre></body></html>
+        HTML
+      end
+
+      it "extracts release dates from href/text when title is absent" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.0"]).to eq({ release_date: Time.parse("24-Jul-2025 10:31") })
+        expect(results["1.2"]).to eq({ release_date: Time.parse("24-Jul-2025 10:33") })
+        expect(results["1.3.6"]).to eq({ release_date: Time.parse("05-May-2026 13:55") })
+        expect(results).not_to have_key("maven-metadata.xml")
+      end
+    end
+
+    context "when title omits the trailing slash" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.2.3/" title="1.2.3">1.2.3/</a>            2026-05-05 13:55    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "uses the directory href to detect version entries" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.2.3"]).to eq({ release_date: Time.parse("2026-05-05 13:55") })
+      end
+    end
+
+    context "when title and link text are blank" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.4.0/" title=""></a>            2026-05-06 09:10    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "falls back to href for version extraction" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.4.0"]).to eq({ release_date: Time.parse("2026-05-06 09:10") })
+      end
+    end
   end
 
   describe "#check_response" do
@@ -380,7 +435,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         result = client.fetch_dependency_metadata(repository_details)
 
         expect(result).to be_a(Nokogiri::XML::Document)
-        expect(result.css("versions > version").count).to be > 0
+        expect(result.css("versions > version").count).to be_positive
       end
     end
 
