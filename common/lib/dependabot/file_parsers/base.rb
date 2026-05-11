@@ -76,7 +76,11 @@ module Dependabot
       # - We have more broadly rolled out the Dependabot graph capability across ecosystems
       # - We make the relationship information applicable to updates with new transitive update strategies
       # - We work on ingesting pre-computed dependency snapshots
-      sig { params(_command: String).returns(String) }
+      # `command` accepts either a single shell command or an ordered list of commands. When an array is
+      # given the commands are executed sequentially inside the same parsed context and the stdout of the
+      # final command is returned, allowing callers to compose multi-step workflows (for example,
+      # generating an ephemeral lockfile then reading it) without relying on shell metacharacters.
+      sig { params(_command: T.any(String, T::Array[String])).returns(String) }
       def run_in_parsed_context(_command)
         raise Dependabot::NotImplemented, "No run_parsed_context utility method is provided for this ecosystem."
       end

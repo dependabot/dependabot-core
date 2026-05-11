@@ -71,7 +71,7 @@ module Dependabot
         )
       end
 
-      sig { override.params(command: String).returns(String) }
+      sig { override.params(command: T.any(String, T::Array[String])).returns(String) }
       def run_in_parsed_context(command)
         SharedHelpers.in_a_temporary_directory do
           dependency_files.each do |file|
@@ -82,7 +82,10 @@ module Dependabot
 
           setup_python_environment
 
-          SharedHelpers.run_shell_command(command)
+          commands = command.is_a?(Array) ? command : [command]
+          last_output = T.let("", String)
+          commands.each { |cmd| last_output = SharedHelpers.run_shell_command(cmd) }
+          last_output
         end
       end
 

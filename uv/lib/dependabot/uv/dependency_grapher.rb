@@ -12,7 +12,10 @@ require "toml-rb"
 module Dependabot
   module Uv
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
-      UV_LOCK_COMMAND = T.let("pyenv exec uv lock --color never --no-progress && cat uv.lock", String)
+      UV_LOCK_COMMAND = T.let(
+        ["pyenv exec uv lock --color never --no-progress", "cat uv.lock"].freeze,
+        T::Array[String]
+      )
       UV_TREE_COMMAND = T.let("pyenv exec uv tree -q --color never --no-progress --frozen", String)
 
       # Used to capture package lines from `uv tree` output.
