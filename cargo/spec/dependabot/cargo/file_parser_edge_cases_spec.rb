@@ -279,5 +279,44 @@ RSpec.describe Dependabot::Cargo::FileParser do
         expect(dependencies.map(&:name)).not_to include("version", "authors")
       end
     end
+
+    # Regression test for https://github.com/emancu/toml-rb/issues/161
+    # Multi-line inline tables are valid TOML 1.1 syntax and are commonly used
+    # in Cargo.toml files. toml-rb < 4.2 raised TomlRB::ParseError on these.
+    context "with multi-line inline tables in Cargo.toml" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: <<~TOML
+              [package]
+              name = "multi-line-inline"
+              version = "0.1.0"
+
+              [dependencies]
+              windows-sys = {
+                  version = "0.61.2",
+                  features = [
+                      "Win32_System_Environment",
+                      "Win32_Storage_FileSystem",
+                      "Win32_System_Memory"
+                      ]
+                  }
+            TOML
+          )
+        ]
+      end
+
+      it "parses multi-line inline tables without raising" do
+        expect { parser.parse }.not_to raise_error
+      end
+
+      it "extracts the dependency and its requirement" do
+        dependencies = parser.parse
+
+        expect(dependencies.map(&:name)).to eq(["windows-sys"])
+        expect(dependencies.first.requirements.first[:requirement]).to eq("0.61.2")
+      end
+    end
   end
 end
