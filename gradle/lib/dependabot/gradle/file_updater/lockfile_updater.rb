@@ -3,8 +3,8 @@
 
 require "sorbet-runtime"
 require "shellwords"
+require "fileutils"
 
-require "dependabot/gradle/file_parser"
 require "dependabot/gradle/file_updater"
 
 module Dependabot
@@ -13,6 +13,8 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
+        INIT_SCRIPT_TASK_NAME = T.let("dependabotResolveAll", String)
+
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
@@ -20,67 +22,124 @@ module Dependabot
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_lockfiles(build_file)
-          local_lockfiles = dependency_files.select do |file|
-            file.directory == build_file.directory && file.name.end_with?(".lockfile")
-          end
+          root_dir = determine_root_dir(build_file: build_file)
+          lockfiles = lockfiles_for_root(root_dir)
 
-          # If we don't have any lockfiles in the build files don't generate one
-          return dependency_files unless local_lockfiles.any?
+          return dependency_files unless lockfiles.any?
 
           updated_files = dependency_files.dup
+
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
-            cwd = File.join(temp_dir, build_file.directory, build_file.name)
-            cwd = if build_file.path.end_with?("/gradle/libs.versions.toml")
-                    File.dirname(cwd, 2)
-                  else
-                    File.dirname(cwd)
-                  end
 
-            # Create gradle.properties file with proxy settings
+            cwd = File.join(temp_dir, root_dir == "/" ? "" : root_dir.delete_prefix("/"))
+            FileUtils.mkdir_p(cwd)
+
+            # Create gradle.properties file with proxy settings.
             # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
-            write_properties_file(properties_filename)
+            write_properties_file(File.join(cwd, "gradle.properties"))
+
+            init_script_path = File.join(cwd, "dependabot-locking.init.gradle")
+            write_init_script(init_script_path)
 
             command_parts = [
               "gradle",
-              "dependencies",
-              "--no-daemon",
-              "--write-locks"
+              "--init-script", init_script_path,
+              INIT_SCRIPT_TASK_NAME,
+              "--write-locks",
+              "--no-daemon"
             ]
             command = Shellwords.join(command_parts)
 
-            Dir.chdir(cwd) do
-              SharedHelpers.run_shell_command(command, cwd: cwd)
-              update_lockfiles_content(temp_dir, local_lockfiles, updated_files)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              puts "Failed to update lockfiles: #{e.message}"
-              return updated_files
-            end
+            SharedHelpers.run_shell_command(command, cwd: cwd)
+
+            update_lockfiles_content(temp_dir, lockfiles, updated_files)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            Dependabot.logger.error("Failed to update lockfiles: #{e.message}")
+            return updated_files
           end
+
           updated_files
+        end
+
+        # Returns the Gradle build root that owns build_file, which is the
+        # directory of the closest ancestor settings file.  Falls back to the
+        # file's own directory (or two levels up for a version catalog).
+        sig { params(build_file: Dependabot::DependencyFile).returns(String) }
+        def determine_root_dir(build_file:)
+          settings_file = find_settings_file(build_file)
+          return normalized_directory_path(settings_file) if settings_file
+
+          file_path = normalized_file_path(build_file)
+          return normalize_path(File.dirname(file_path, 2)) if file_path.end_with?("/gradle/libs.versions.toml")
+
+          normalized_directory_path(build_file)
+        end
+
+        private
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :dependency_files
+
+        # Returns all lockfiles under root_dir that do not belong to an
+        # included/composite build nested inside that root.
+        sig { params(root_dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def lockfiles_for_root(root_dir)
+          sub_roots = sub_build_roots_for(root_dir)
+
+          dependency_files.select do |file|
+            next false unless file.name.end_with?(".lockfile")
+
+            file_path = normalized_file_path(file)
+            next false unless path_under_root?(file_path, root_dir)
+
+            sub_roots.none? { |sub_root| file_path.start_with?("#{sub_root}/") || file_path == sub_root }
+          end
         end
 
         sig do
           params(
             temp_dir: T.any(Pathname, String),
-            local_lockfiles: T::Array[Dependabot::DependencyFile],
+            lockfiles: T::Array[Dependabot::DependencyFile],
             updated_lockfiles: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
-          local_lockfiles.each do |file|
-            f_content = File.read(File.join(temp_dir, file.directory, file.name))
+        def update_lockfiles_content(temp_dir, lockfiles, updated_lockfiles)
+          lockfiles.each do |file|
+            # file.directory is the Dependabot job source directory (e.g. "/")
+            # and file.name is relative to it. Avoid passing "/" to File.join
+            # because that would anchor the join to the filesystem root.
+            relative_dir = file.directory == "/" ? "" : file.directory
+            lockfile_path = File.join(temp_dir, relative_dir, file.name)
+
+            unless File.exist?(lockfile_path)
+              # Gradle may intentionally stop generating a lockfile for a
+              # configuration that no longer has locked deps. Preserve the
+              # existing content rather than emitting a stale update.
+              Dependabot.logger.warn(
+                "Lockfile #{file.name} was not regenerated by Gradle after a successful " \
+                "lockfile update run. Preserving existing lockfile."
+              )
+              next
+            end
+
+            content = File.read(lockfile_path)
+            next if content == file.content
+
             tmp_file = file.dup
-            tmp_file.content = f_content
-            updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
+            tmp_file.content = content
+
+            updated_lockfiles[T.must(updated_lockfiles.find_index { |f| f.name == file.name })] = tmp_file
           end
         end
 
         sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
-          @dependency_files.each do |file|
-            in_path_name = File.join(temp_dir, file.directory, file.name)
+          dependency_files.each do |file|
+            # file.directory is the Dependabot job source directory, not a
+            # sub-path within temp_dir, so avoid passing "/" to File.join.
+            relative_dir = file.directory == "/" ? "" : file.directory
+            in_path_name = File.join(temp_dir, relative_dir, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
             File.write(in_path_name, file.content)
           end
@@ -104,10 +163,95 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           File.write(file_name, properties_content)
         end
 
-        private
+        sig { params(file_name: String).void }
+        def write_init_script(file_name)
+          # Register a task on every project that resolves all resolvable
+          # configurations so Gradle rewrites every relevant lockfile in one
+          # invocation, including subprojects.
+          script_content = <<~GRADLE
+            allprojects {
+              if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
+                tasks.register("#{INIT_SCRIPT_TASK_NAME}") {
+                  doLast {
+                    configurations.findAll { it.canBeResolved }.each { it.resolve() }
+                  }
+                }
+              }
+            }
+          GRADLE
+          File.write(file_name, script_content)
+        end
 
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
-        attr_reader :dependency_files
+        # Returns the closest ancestor settings file for build_file, i.e. the
+        # settings file whose directory is an ancestor of build_file's directory
+        # and is as deep as possible (for composite/included builds).
+        sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+        def find_settings_file(build_file)
+          settings_files = dependency_files.select do |f|
+            basename = File.basename(f.name)
+            basename == "settings.gradle" || basename == "settings.gradle.kts"
+          end
+
+          return nil if settings_files.empty?
+
+          build_dir = normalized_directory_path(build_file)
+
+          ancestor_settings = settings_files.select do |f|
+            settings_dir = normalized_directory_path(f)
+            path_under_root?(build_dir, settings_dir)
+          end
+
+          return nil if ancestor_settings.empty?
+
+          ancestor_settings.max_by do |f|
+            normalized_directory_path(f).split("/").count { |element| !element.empty? }
+          end
+        end
+
+        # Returns all sub-build roots (directories containing a settings file)
+        # that are strictly nested inside root_dir, so we can exclude their
+        # lockfiles from the scope of the root build.
+        sig { params(root_dir: String).returns(T::Array[String]) }
+        def sub_build_roots_for(root_dir)
+          dependency_files.filter_map do |f|
+            basename = File.basename(f.name)
+            next unless basename == "settings.gradle" || basename == "settings.gradle.kts"
+
+            dir = normalized_directory_path(f)
+            next if dir == root_dir
+
+            dir if path_under_root?(dir, root_dir)
+          end
+        end
+
+        sig { params(file_path: String, root_dir: String).returns(T::Boolean) }
+        def path_under_root?(file_path, root_dir)
+          root_dir == "/" || file_path == root_dir || file_path.start_with?("#{root_dir}/")
+        end
+
+        # Returns the canonical absolute path for a DependencyFile by combining
+        # its job source directory (file.directory) with its relative name.
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def normalized_file_path(file)
+          relative_dir = file.directory == "/" ? "" : file.directory
+          path = relative_dir.empty? ? file.name : File.join(relative_dir, file.name)
+          normalize_path(path)
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def normalized_directory_path(file)
+          file_path = normalized_file_path(file)
+          dir = File.dirname(file_path)
+          dir == "/" ? "/" : normalize_path(dir)
+        end
+
+        sig { params(path: String).returns(String) }
+        def normalize_path(path)
+          normalized = path.squeeze("/")
+          normalized = "/#{normalized}" unless normalized.start_with?("/")
+          normalized = normalized.sub(%r{/$}, "")
+          normalized.empty? ? "/" : normalized
+        end
       end
     end
   end
