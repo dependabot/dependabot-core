@@ -12,7 +12,10 @@ require "toml-rb"
 module Dependabot
   module Uv
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
-      UV_LOCK_COMMAND = T.let("pyenv exec uv lock --color never --no-progress && cat uv.lock", String)
+      UV_LOCK_COMMAND = T.let(
+        ["pyenv exec uv lock --color never --no-progress", "cat uv.lock"].freeze,
+        T::Array[String]
+      )
       UV_TREE_COMMAND = T.let("pyenv exec uv tree -q --color never --no-progress --frozen", String)
 
       # Used to capture package lines from `uv tree` output.
@@ -64,7 +67,7 @@ module Dependabot
 
         begin
           Dependabot.logger.info("No uv.lock present, generating ephemeral lockfile for dependency graphing")
-          generated_lockfile = uv_parser.run_in_parsed_context(UV_LOCK_COMMAND, allow_unsafe_shell_command: true)
+          generated_lockfile = uv_parser.run_in_parsed_context(UV_LOCK_COMMAND)
           return package_relationships_from_lockfile(generated_lockfile)
         rescue StandardError => e
           Dependabot.logger.warn("Failed to build dependency graph from uv.lock: #{e.message}")
