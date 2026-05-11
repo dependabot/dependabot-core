@@ -6,6 +6,8 @@ require "fileutils"
 module Functions
   class LockfileUpdater
     RETRYABLE_ERRORS = [Bundler::HTTPError].freeze
+    CHECKSUMS_SECTION = /(?:\A|\n)CHECKSUMS\n(?<entries>(?: {2,}.*\n)+)/
+    BUNDLER_CHECKSUM_ENTRY = /^ {2,}bundler \([^\n]+\) sha256=[0-9a-f]{64}$/
     GEM_NOT_FOUND_ERROR_REGEX =
       /
         locked\sto\s(?<name>[^\s]+)\s\(|
@@ -50,7 +52,7 @@ module Functions
 
         cache_vendored_gems(definition) if Bundler.app_cache.exist?
 
-        definition.to_lock
+        preserve_bundler_checksum(definition.to_lock)
       rescue Bundler::GemNotFound => e
         unlock_yanked_gem(dependencies_to_unlock, e) && retry
       rescue Bundler::SolveFailure => e
@@ -229,6 +231,23 @@ module Functions
 
     def lockfile
       @lockfile ||= File.read(lockfile_name)
+    end
+
+    def preserve_bundler_checksum(lockfile_body)
+      old_entries = lockfile.match(CHECKSUMS_SECTION)&.[](:entries)
+      old_bundler_checksum = old_entries&.lines&.find { |line| line.match?(BUNDLER_CHECKSUM_ENTRY) }
+      return lockfile_body unless old_bundler_checksum
+
+      new_checksums = lockfile_body.match(CHECKSUMS_SECTION)
+      return lockfile_body unless new_checksums
+
+      new_entries = new_checksums[:entries]
+      return lockfile_body if new_entries.lines.any? { |line| line.match?(BUNDLER_CHECKSUM_ENTRY) }
+
+      lockfile_body.sub(
+        CHECKSUMS_SECTION,
+        "\nCHECKSUMS\n#{old_bundler_checksum}#{new_entries}"
+      )
     end
   end
 end

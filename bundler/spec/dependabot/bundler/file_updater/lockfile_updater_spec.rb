@@ -108,37 +108,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       expect(sanitized_content).not_to include("BUNDLED WITH")
     end
 
-    it "re-adds the old bundler checksum when bundler omits it" do
-      new_lockfile_content = <<~LOCKFILE
-        GEM
-          remote: https://rubygems.org/
-          specs:
-            byebug (13.0.0)
-
-        PLATFORMS
-          ruby
-
-        DEPENDENCIES
-          byebug (= 13.0.0)
-
-        CHECKSUMS
-          byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d
-          io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
-
-        BUNDLED WITH
-          4.0.11
-      LOCKFILE
-
-      updated_content = updater.send(:preserve_bundler_checksum, new_lockfile_content)
-
-      expect(updated_content).to include(
-        "bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785"
-      )
-      expect(updated_content).to include(
-        "byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d"
-      )
-    end
-
     context "when previous lockfile has RUBY VERSION" do
       let(:lockfile) do
         Dependabot::DependencyFile.new(

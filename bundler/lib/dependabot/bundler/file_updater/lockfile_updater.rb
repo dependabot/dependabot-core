@@ -26,8 +26,6 @@ module Dependabot
         RUBY_VERSION_SECTION = /(?:\A|\n)RUBY VERSION\n(?: {2,}.*\n)+/
         BUNDLED_WITH_SECTION = /(?:\A|\n)BUNDLED WITH\n(?: {2,}.*\n?)/
         LOCKFILE_ENDING = /#{RUBY_VERSION_SECTION.source}|#{BUNDLED_WITH_SECTION.source}/
-        CHECKSUMS_SECTION = /(?:\A|\n)CHECKSUMS\n(?<entries>(?: {2,}.*\n)+)/
-        BUNDLER_CHECKSUM_ENTRY = /^ {2,}bundler \([^\n]+\) sha256=[0-9a-f]{64}$/
         GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
         GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
 
@@ -225,26 +223,7 @@ module Dependabot
         sig { params(lockfile_body: String).returns(String) }
         def post_process_lockfile(lockfile_body)
           lockfile_body = reorder_git_dependencies(lockfile_body)
-          lockfile_body = preserve_bundler_checksum(lockfile_body)
           replace_lockfile_ending(lockfile_body)
-        end
-
-        sig { params(lockfile_body: String).returns(String) }
-        def preserve_bundler_checksum(lockfile_body)
-          old_entries = T.must(lockfile).content&.match(CHECKSUMS_SECTION)&.[](:entries)
-          old_bundler_checksum = old_entries&.lines&.find { |line| line.match?(BUNDLER_CHECKSUM_ENTRY) }
-          return lockfile_body unless old_bundler_checksum
-
-          new_checksums = lockfile_body.match(CHECKSUMS_SECTION)
-          return lockfile_body unless new_checksums
-
-          new_entries = T.must(new_checksums[:entries])
-          return lockfile_body if new_entries.lines.any? { |line| line.match?(BUNDLER_CHECKSUM_ENTRY) }
-
-          lockfile_body.sub(
-            CHECKSUMS_SECTION,
-            "\nCHECKSUMS\n#{old_bundler_checksum}#{new_entries}"
-          )
         end
 
         sig { params(lockfile_body: String).returns(String) }
