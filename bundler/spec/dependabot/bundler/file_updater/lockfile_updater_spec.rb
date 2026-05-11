@@ -134,7 +134,66 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       expect(updated_content).to include(
         "bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785"
       )
-      expect(updated_content).to include("byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d")
+      expect(updated_content).to include(
+        "byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d"
+      )
+    end
+
+    context "when previous lockfile has RUBY VERSION" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: <<~LOCKFILE
+            GEM
+              remote: https://rubygems.org/
+              specs:
+                byebug (11.1.3)
+
+            PLATFORMS
+              ruby
+
+            DEPENDENCIES
+              byebug (= 11.1.3)
+
+            RUBY VERSION
+              ruby 3.4.2p0
+
+            CHECKSUMS
+              bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785
+              byebug (11.1.3) sha256=abc
+
+            BUNDLED WITH
+              4.0.11
+          LOCKFILE
+        )
+      end
+
+      it "re-inserts RUBY VERSION before BUNDLED WITH when missing" do
+        new_lockfile_content = <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              byebug (13.0.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            byebug (= 13.0.0)
+
+          CHECKSUMS
+            bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785
+            byebug (13.0.0) sha256=d2263efe751941ca520fa29744b71972d39cbc41839496706f5d9b22e92ae05d
+
+          BUNDLED WITH
+            4.0.12
+        LOCKFILE
+
+        updated_content = updater.send(:replace_lockfile_ending, new_lockfile_content)
+
+        expect(updated_content).to include("RUBY VERSION\n  ruby 3.4.2p0")
+        expect(updated_content).to include("RUBY VERSION\n  ruby 3.4.2p0\n\nBUNDLED WITH\n  4.0.11")
+      end
     end
   end
 

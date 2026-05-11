@@ -282,28 +282,43 @@ module Dependabot
         def replace_lockfile_ending(lockfile_body)
           lockfile_content = T.must(lockfile).content
 
-          # Re-add the old `BUNDLED WITH` version.
-          old_bundled_with = lockfile_content&.match(BUNDLED_WITH_SECTION)&.to_s
-          if old_bundled_with
-            lockfile_body =
-              if lockfile_body.match?(BUNDLED_WITH_SECTION)
-                lockfile_body.gsub(BUNDLED_WITH_SECTION, old_bundled_with)
-              else
-                "#{lockfile_body.rstrip}\n#{old_bundled_with}"
-              end
-          else
-            lockfile_body = lockfile_body.gsub(BUNDLED_WITH_SECTION, "")
-          end
+          lockfile_body = restore_bundled_with(lockfile_body, lockfile_content)
+          restore_ruby_version(lockfile_body, lockfile_content)
+        end
 
-          # Remove `RUBY VERSION` if it wasn't previously present in the lockfile.
+        sig { params(lockfile_body: String, lockfile_content: T.nilable(String)).returns(String) }
+        def restore_bundled_with(lockfile_body, lockfile_content)
+          old_bundled_with = lockfile_content&.match(BUNDLED_WITH_SECTION)&.to_s
+
+          lockfile_body = if old_bundled_with
+                            if lockfile_body.match?(BUNDLED_WITH_SECTION)
+                              lockfile_body.gsub(BUNDLED_WITH_SECTION, old_bundled_with)
+                            else
+                              "#{lockfile_body.rstrip}\n#{old_bundled_with}"
+                            end
+                          else
+                            lockfile_body.gsub(BUNDLED_WITH_SECTION, "")
+                          end
+
+          lockfile_body
+        end
+
+        sig { params(lockfile_body: String, lockfile_content: T.nilable(String)).returns(String) }
+        def restore_ruby_version(lockfile_body, lockfile_content)
           old_ruby_version = lockfile_content&.match(RUBY_VERSION_SECTION)&.to_s
           return lockfile_body.gsub(RUBY_VERSION_SECTION, "") unless old_ruby_version
 
+          ruby_version_block = old_ruby_version.delete_prefix("\n").rstrip
+
           if lockfile_body.match?(RUBY_VERSION_SECTION)
-            lockfile_body.gsub(RUBY_VERSION_SECTION, old_ruby_version)
-          else
-            lockfile_body
+            return lockfile_body.gsub(RUBY_VERSION_SECTION, old_ruby_version)
           end
+
+          if lockfile_body.match?(BUNDLED_WITH_SECTION)
+            return lockfile_body.sub(BUNDLED_WITH_SECTION, "\n#{ruby_version_block}\n\\0")
+          end
+
+          "#{lockfile_body.rstrip}\n\n#{ruby_version_block}\n"
         end
 
         sig { params(path: String, gemspec_content: String).returns(String) }
@@ -374,9 +389,7 @@ module Dependabot
         sig { returns(String) }
         def sanitized_lockfile_body
           content = T.must(lockfile).content
-          T.must(content)
-           .gsub(RUBY_VERSION_SECTION, "")
-           .gsub(BUNDLED_WITH_SECTION, "")
+          T.must(content).gsub(RUBY_VERSION_SECTION, "").gsub(BUNDLED_WITH_SECTION, "")
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
