@@ -40,7 +40,11 @@ module Dependabot
 
         sig { params(yaml_stream: Psych::Nodes::Stream, content: String).returns(String) }
         def update_image_tags_recursive(yaml_stream, content)
-          updated_content = content.dup.split("\n")
+          # Use a -1 limit so split preserves trailing empty fields. Without
+          # this, "foo\n".split("\n") returns ["foo"] and the join below drops
+          # the trailing newline, producing a spurious diff that masks the
+          # "no change" guard below.
+          updated_content = content.dup.split("\n", -1)
 
           yaml_stream.children.each do |document|
             document.children.each do |root_node|
@@ -96,8 +100,7 @@ module Dependabot
           has_dependency = contains_dependency?(value_node, dependency_name)
           return content unless has_dependency
 
-          dependency_version = T.must(dependency.version)
-          update_version_tags(value_node, content, dependency_version)
+          update_version_tags(value_node, content)
         end
 
         sig { params(node: Psych::Nodes::Node, dependency_name: String).returns(T::Boolean) }
@@ -110,26 +113,70 @@ module Dependabot
         sig do
           params(
             value_node: Psych::Nodes::Mapping,
-            content: T::Array[String],
-            dependency_version: String
+            content: T::Array[String]
           ).returns(T::Array[String])
         end
-        def update_version_tags(value_node, content, dependency_version)
-          dependency.requirements.each do |req|
-            next unless req[:metadata][:type] == :docker_image
+        def update_version_tags(value_node, content)
+          dependency.requirements.each do |new_req|
+            next unless new_req.dig(:metadata, :type) == :docker_image
 
-            tag_value = req[:source][:tag]
-            version_scalar = value_node.children.find do |node|
-              node.is_a?(Psych::Nodes::Scalar) && node.value == tag_value
-            end
-
-            if version_scalar
-              line = version_scalar.start_line
-              content[line] = T.must(content[line]).gsub(tag_value, dependency_version)
-            end
+            apply_image_requirement(new_req, value_node, content)
           end
 
           content
+        end
+
+        sig do
+          params(
+            new_req: T::Hash[Symbol, T.untyped],
+            value_node: Psych::Nodes::Mapping,
+            content: T::Array[String]
+          ).void
+        end
+        def apply_image_requirement(new_req, value_node, content)
+          old_req = matching_previous_requirement(new_req) || new_req
+          old_tag = old_req.dig(:source, :tag)
+          return if old_tag.nil?
+
+          version_scalar = find_version_scalar(value_node, old_tag)
+          return unless version_scalar
+
+          new_tag = new_req.dig(:source, :tag) || T.must(dependency.version)
+          old_digest = old_req.dig(:source, :digest)
+          new_digest = new_req.dig(:source, :digest)
+
+          old_scalar = version_scalar.value
+          new_scalar = old_scalar.sub(old_tag, new_tag)
+          new_scalar = new_scalar.sub(old_digest, new_digest) if old_digest && new_digest
+
+          line = version_scalar.start_line
+          content[line] = T.must(content[line]).sub(old_scalar, new_scalar)
+        end
+
+        # Match scalars of the bare tag (e.g. "v1.6.41") and the digest-pinned
+        # form (e.g. "v1.6.41@sha256:..."). In the latter case the caller
+        # replaces the tag and the digest in lockstep so the user's pin keeps
+        # pointing at the new image.
+        sig do
+          params(
+            value_node: Psych::Nodes::Mapping,
+            old_tag: String
+          ).returns(T.nilable(Psych::Nodes::Scalar))
+        end
+        def find_version_scalar(value_node, old_tag)
+          match = value_node.children.find do |node|
+            next false unless node.is_a?(Psych::Nodes::Scalar)
+
+            node.value == old_tag || node.value.start_with?("#{old_tag}@")
+          end
+          T.cast(match, T.nilable(Psych::Nodes::Scalar))
+        end
+
+        sig { params(new_req: T::Hash[Symbol, T.untyped]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def matching_previous_requirement(new_req)
+          (dependency.previous_requirements || []).find do |req|
+            req[:file] == new_req[:file] && req.dig(:metadata, :type) == :docker_image
+          end
         end
       end
     end

@@ -44,6 +44,7 @@ module Dependabot
           updated_metadata = req.fetch(:metadata).dup
           updated_req = req.dup
           updated_req[:requirement] = latest_version.to_s if updated_metadata.key?(:type)
+          updated_req[:source] = updated_image_source(req.fetch(:source)) if updated_metadata[:type] == :docker_image
 
           updated_req
         end
@@ -304,38 +305,83 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_image_version
-        docker_dependency = build_docker_dependency
+        checker = docker_checker
+        return nil unless checker
 
-        Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{docker_dependency.name}")
-
-        docker_checker = if cooldown_enabled?
-                           Dependabot::UpdateCheckers.for_package_manager("docker").new(
-                             dependency: docker_dependency,
-                             dependency_files: dependency_files,
-                             credentials: credentials,
-                             ignored_versions: ignored_versions,
-                             security_advisories: security_advisories,
-                             raise_on_ignored: raise_on_ignored,
-                             update_cooldown: update_cooldown
-                           )
-                         else
-                           Dependabot::UpdateCheckers.for_package_manager("docker").new(
-                             dependency: docker_dependency,
-                             dependency_files: dependency_files,
-                             credentials: credentials,
-                             ignored_versions: ignored_versions,
-                             security_advisories: security_advisories,
-                             raise_on_ignored: raise_on_ignored
-                           )
-                         end
-
-        latest_version = docker_checker.latest_version
-
+        latest_version = checker.latest_version
         Dependabot.logger.info("Docker UpdateChecker found latest version: #{latest_version || 'none'}")
 
-        return unless docker_checker.can_update?(requirements_to_unlock: :none)
+        return unless checker.can_update?(requirements_to_unlock: :none)
 
         version_class.new(latest_version)
+      end
+
+      # Memoized docker UpdateChecker used both for the version lookup and for
+      # resolving a fresh digest via #updated_image_source. Calling
+      # #updated_requirements on it triggers a manifest_digest call against the
+      # registry, so we want to share one instance per Helm checker.
+      sig { returns(T.nilable(Dependabot::UpdateCheckers::Base)) }
+      def docker_checker
+        return @docker_checker if defined?(@docker_checker)
+
+        Dependabot.logger.info("Delegating to Docker UpdateChecker for image: #{dependency.name}")
+        klass = Dependabot::UpdateCheckers.for_package_manager("docker")
+        args = {
+          dependency: build_docker_dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          security_advisories: security_advisories,
+          raise_on_ignored: raise_on_ignored
+        }
+        args[:update_cooldown] = update_cooldown if cooldown_enabled?
+
+        @docker_checker = T.let(klass.new(**args), T.nilable(Dependabot::UpdateCheckers::Base))
+      end
+
+      # Asks the docker UpdateChecker for the new tag (and new digest, if the
+      # original source was digest-pinned).
+      #
+      # The DependencyFileNotResolvable raise below is a defensive guard. In
+      # practice the docker UpdateChecker treats "couldn't resolve a digest"
+      # as "up-to-date" (see Dependabot::Docker::UpdateChecker#digest_up_to_date?),
+      # so #latest_version returns nil and we never reach this method when the
+      # registry isn't returning digest headers. But if that contract ever
+      # changes -- or if the docker checker resolves a tag bump but somehow
+      # produces a source without :digest -- emitting a YAML update that
+      # bumps only the tag would be wrong: Docker resolves `tag@digest`
+      # references by digest, so the new pull would still resolve to the old
+      # image. Fail loudly rather than produce a misleading diff.
+      sig { params(old_source: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      def updated_image_source(old_source)
+        new_source = old_source.dup
+        new_source[:tag] = latest_version.to_s
+
+        return new_source unless old_source[:digest]
+
+        new_digest = fetch_new_image_digest
+        if new_digest.nil?
+          raise Dependabot::DependencyFileNotResolvable,
+                "Cannot update digest-pinned image #{dependency.name} to #{latest_version}: " \
+                "registry did not return a manifest digest for the new tag"
+        end
+
+        new_source[:digest] = new_digest
+        new_source
+      end
+
+      sig { returns(T.nilable(String)) }
+      def fetch_new_image_digest
+        checker = docker_checker
+        return nil unless checker
+
+        docker_req = checker.updated_requirements.first
+        docker_req&.dig(:source, :digest)
+      rescue StandardError => e
+        Dependabot.logger.warn(
+          "Failed to fetch new digest for #{dependency.name}: #{e.class}: #{e.message}"
+        )
+        nil
       end
 
       sig { params(tags: T::Array[String], repo_url: String).returns(T::Array[GitTagWithDetail]) }
@@ -384,6 +430,12 @@ module Dependabot
 
         registry = source[:registry] || nil
 
+        # Propagate any digest the parser found so the docker UpdateChecker
+        # resolves a fresh digest in #updated_requirements (it gates digest
+        # lookup on `digest || pin_digests?`).
+        docker_source = { registry: registry, tag: version }
+        docker_source[:digest] = source[:digest] if source[:digest]
+
         Dependency.new(
           name: name,
           version: version,
@@ -391,10 +443,7 @@ module Dependabot
             requirement: nil,
             groups: [],
             file: T.must(dependency.requirements.first)[:file],
-            source: {
-              registry: registry,
-              tag: version
-            }
+            source: docker_source
           }],
           package_manager: "docker"
         )
