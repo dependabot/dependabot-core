@@ -401,8 +401,8 @@ module Dependabot
         ).returns(T.nilable(Dependabot::Dependency))
       end
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false) # rubocop:disable Metrics/PerceivedComplexity
-        group   = evaluated_value(T.cast(details_hash[:group], T.nilable(String)), buildfile)
-        name    = evaluated_value(T.cast(details_hash[:name], T.nilable(String)), buildfile)
+        group   = evaluated_value(T.cast(details_hash[:group], T.nilable(String)), buildfile)&.strip
+        name    = evaluated_value(T.cast(details_hash[:name], T.nilable(String)), buildfile)&.strip
         version = evaluated_value(T.cast(details_hash[:version], T.nilable(String)), buildfile)
         extra_groups = T.cast(details_hash[:extra_groups], T.nilable(T::Array[String])) || []
 
