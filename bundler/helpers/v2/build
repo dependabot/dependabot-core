@@ -28,7 +28,17 @@ gem install bundler -v "$bundler_constraint" --no-document
 
 # Resolve the Bundler version that was actually installed in GEM_HOME to ensure
 # consistency with what was requested and to avoid picking up system gems.
-default_version=$(ruby -e "gemspecs = Dir.glob(\"#{ENV['GEM_HOME']}/specifications/bundler-*.gemspec\"); gemspecs.max_by { |f| File.basename(f) } ? File.basename(gemspecs.max_by { |f| File.basename(f) }).match(/bundler-(.*)\.gemspec/)[1] : 'unknown'")
+default_version=$(ruby -e '
+  gemspecs = Dir.glob("#{ENV["GEM_HOME"]}/specifications/bundler-*.gemspec")
+  latest = gemspecs.max_by { |f| Gem::Version.new(File.basename(f).match(/bundler-(.*)\.gemspec/)[1]) }
+  abort("No bundler gemspec found in #{ENV["GEM_HOME"]}/specifications") unless latest
+  print File.basename(latest).match(/bundler-(.*)\.gemspec/)[1]
+')
+
+if [ -z "$default_version" ]; then
+  echo "error: failed to resolve installed Bundler version in $GEM_HOME" >&2
+  exit 1
+fi
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   bundle _"$default_version"_ install
