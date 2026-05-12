@@ -3,7 +3,7 @@
 
 require "native_spec_helper"
 
-RSpec.describe "Bundler version resolution" do
+RSpec.describe Bundler do
   describe "helper runtime activation" do
     it "allows Bundler 4 via constraint" do
       # The gem constraint in run.rb should accept Bundler 4

@@ -1531,7 +1531,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           if File.exist?("/opt/bundler/v2/.bundle/specifications/bundler-4.0.11.gemspec")
             skip "Requires Bundler 2.x (guard-bundler constraint: < 3)"
           end
-          expect(subject).to eq(Dependabot::Bundler::Version.new("3.0.0"))
+          expect(checker.latest_resolvable_version).to eq(Dependabot::Bundler::Version.new("3.0.0"))
         end
       end
     end
