@@ -49,12 +49,17 @@ module Dependabot
         fetched_files << T.must(cargo_lock) if cargo_lock
         fetched_files << T.must(cargo_config) if cargo_config
         fetched_files << T.must(rust_toolchain) if rust_toolchain
-        fetched_files += fetch_path_dependency_and_workspace_files
+
         parsed_manifest = parsed_file(cargo_toml)
+        workspace_root = T.let(nil, T.nilable(DependencyFile))
         if uses_workspace_dependencies?(parsed_manifest) || workspace_member?(parsed_manifest)
           workspace_root = find_workspace_root(cargo_toml)
-          fetched_files << workspace_root if workspace_root && !fetched_files.include?(workspace_root)
         end
+
+        manifest_inputs = T.let([cargo_toml], T::Array[DependencyFile])
+        manifest_inputs << workspace_root if workspace_root
+        fetched_files += fetch_path_dependency_and_workspace_files(manifest_inputs)
+
         fetched_files.reject do |file|
           Dependabot::FileFiltering.should_exclude_path?(file.name, "file from final collection", @exclude_paths)
         end.uniq
@@ -267,9 +272,13 @@ module Dependabot
       end
 
       # See if this Cargo manifest inherits any property from a workspace
-      # (e.g. edition = { workspace = true }).
+      # (e.g. edition = { workspace = true }) or explicitly points at a
+      # workspace root via `[package] workspace = "<path>"`.
       sig { params(hash: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
       def workspace_member?(hash)
+        package_workspace = hash.dig("package", "workspace")
+        return true if package_workspace.is_a?(String) && !package_workspace.empty?
+
         hash.each do |key, value|
           if key == "workspace" && value == true
             return true
@@ -291,8 +300,9 @@ module Dependabot
 
         workspace_root_dir = parsed_file(workspace_member).dig("package", "workspace")
         unless workspace_root_dir.nil?
+          base_dir = current_dir.empty? ? workspace_root_dir : File.join(current_dir, workspace_root_dir)
           workspace_root = fetch_file_from_host(
-            File.join(current_dir, workspace_root_dir, "Cargo.toml"),
+            File.join(base_dir, "Cargo.toml"),
             fetch_submodules: true
           )
           return workspace_root if parsed_file(workspace_root)["workspace"]
@@ -303,7 +313,7 @@ module Dependabot
 
         parent_dirs = current_dir.scan("/").length
         while parent_dirs >= 0
-          current_dir = File.join(current_dir, "..")
+          current_dir = current_dir.empty? ? ".." : File.join(current_dir, "..")
           begin
             parent_manifest = fetch_file_from_host(
               File.join(current_dir, "Cargo.toml"),
