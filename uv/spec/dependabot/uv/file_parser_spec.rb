@@ -1047,4 +1047,27 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
   end
+
+  describe "#run_in_parsed_context" do
+    let(:pyproject_content) { fixture("pyproject_files", "uv_dependency_grapher.toml") }
+    let(:pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: pyproject_content,
+        directory: "/"
+      )
+    end
+    let(:files) { [pyproject] }
+
+    it "passes commands with allow_unsafe_shell_command so shell operators are preserved" do
+      allow(parser).to receive(:setup_python_environment)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("output")
+
+      parser.run_in_parsed_context("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pyenv exec uv lock --color never --no-progress && cat uv.lock",
+              allow_unsafe_shell_command: true)
+    end
+  end
 end
