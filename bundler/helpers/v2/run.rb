@@ -1,7 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
-gem "bundler", "~> 2.4"
+gem "bundler", ">= 2.4"
 require "bundler"
 require "json"
 

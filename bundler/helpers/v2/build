@@ -19,12 +19,15 @@ fi
 
 cd "$install_dir"
 
-default_version=$(ruby -rbundler -e'print Bundler::VERSION')
+# Default to Bundler 4, with an override for controlled testing/rollouts.
+bundler_constraint="${DEPENDABOT_BUNDLER_VERSION_CONSTRAINT:-${BUNDLER_VERSION_CONSTRAINT:-~> 4.0}}"
 
 export GEM_HOME=$install_dir/.bundle
 
-gem install bundler -v "$default_version" --no-document
+gem install bundler -v "$bundler_constraint" --no-document
+
+default_version=$(ruby -e 'print Gem::Specification.find_all_by_name("bundler").max_by(&:version).version')
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
-  bundle install
+  bundle _"$default_version"_ install
 fi

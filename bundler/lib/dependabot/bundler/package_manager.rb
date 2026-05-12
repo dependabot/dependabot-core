@@ -12,7 +12,10 @@ module Dependabot
     PACKAGE_MANAGER = "bundler"
 
     # Keep versions in ascending order
-    SUPPORTED_BUNDLER_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
+    SUPPORTED_BUNDLER_VERSIONS = T.let(
+      [Version.new("2"), Version.new("4")].freeze,
+      T::Array[Dependabot::Version]
+    )
 
     # Currently, we don't support any deprecated versions of Bundler
     # When a version is going to be unsupported, it will be added here for a while to give users time to upgrade
