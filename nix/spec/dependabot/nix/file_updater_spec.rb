@@ -116,6 +116,45 @@ RSpec.describe Dependabot::Nix::FileUpdater do
       end
     end
 
+    context "with an input name Nix's CLI can't parse" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "_1password-shell-plugins",
+          version: "new_sha_abc123",
+          previous_version: "old_sha_abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "git",
+              url: "https://github.com/1Password/shell-plugins",
+              branch: nil,
+              ref: "main"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "git",
+              url: "https://github.com/1Password/shell-plugins",
+              branch: nil,
+              ref: "main"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      it "raises DependencyFileNotResolvable with a clear message" do
+        expect { updated_files }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /_1password-shell-plugins/)
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+      end
+    end
+
     context "with a tag-pinned input (ref changed)" do
       let(:flake_nix_content) { fixture("flake_with_tag.nix") }
 
