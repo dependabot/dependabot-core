@@ -75,6 +75,7 @@ namespace NuGetGallery.Frameworks
         public static readonly NuGetFramework Net100Windows = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version10, "windows", EmptyVersion);
 
         public static readonly NuGetFramework Net110 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version11);
+        public static readonly NuGetFramework Net110Windows = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version11, "windows", EmptyVersion);
 
         public static readonly NuGetFramework NetCore = new NuGetFramework(FrameworkIdentifiers.NetCore, EmptyVersion);
         public static readonly NuGetFramework NetMf = new NuGetFramework(FrameworkIdentifiers.NetMicro, EmptyVersion);
@@ -90,6 +91,7 @@ namespace NuGetGallery.Frameworks
         public static readonly NuGetFramework Net80Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version8, "windows", Version7);
         public static readonly NuGetFramework Net90Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version9, "windows", Version7);
         public static readonly NuGetFramework Net100Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version10, "windows", Version7);
+        public static readonly NuGetFramework Net110Windows7 = new NuGetFramework(FrameworkIdentifiers.NetCoreApp, Version11, "windows", Version7);
 
         public static readonly IReadOnlyList<NuGetFramework> AllSupportedNuGetFrameworks;
 
@@ -106,7 +108,7 @@ namespace NuGetGallery.Frameworks
                 Net80, Net80Android, Net80Browser, Net80Ios, Net80MacCatalyst, Net80MacOs, Net80TvOs, Net80Windows, Net80Windows7,
                 Net90, Net90Android, Net90Browser, Net90Ios, Net90MacCatalyst, Net90MacOs, Net90TvOs, Net90Windows, Net90Windows7,
                 Net100, Net100Android, Net100Browser, Net100Ios, Net100MacCatalyst, Net100MacOs, Net100TvOs, Net100Windows, Net100Windows7,
-                Net110,
+                Net110, Net110Windows, Net110Windows7,
                 NetCore, NetCore45, NetCore451,
                 NetCoreApp10, NetCoreApp11, NetCoreApp20, NetCoreApp21, NetCoreApp22, NetCoreApp30, NetCoreApp31,
                 NetMf,
