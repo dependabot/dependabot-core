@@ -817,6 +817,14 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "when dependency_services is not run from workspace root" do
+      let(:stderr) { "Only apply dependency_services to the root of the workspace." }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 
   context "with a git dependency" do
