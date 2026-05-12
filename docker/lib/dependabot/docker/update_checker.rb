@@ -4,6 +4,35 @@
 require "docker_registry2"
 require "sorbet-runtime"
 
+begin
+  require "rest-client"
+rescue LoadError
+  # Keep backwards-compatible exception constants when rest-client isn't bundled.
+  module ::RestClient
+    module Exceptions
+      class Timeout < StandardError; end
+      class OpenTimeout < Timeout; end
+      class ReadTimeout < Timeout; end
+    end
+
+    class Forbidden < StandardError; end
+    class TooManyRequests < StandardError; end
+    class ServerBrokeConnection < StandardError; end
+    class ServiceUnavailable < StandardError; end
+    class InternalServerError < StandardError; end
+    class BadGateway < StandardError; end
+
+    class Response
+      extend T::Sig
+
+      sig { returns(T::Hash[T.untyped, T.untyped]) }
+      def headers
+        {}
+      end
+    end
+  end
+end
+
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/cooldown_calculation"
