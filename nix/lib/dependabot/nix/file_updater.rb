@@ -14,6 +14,10 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      # Nix's CLI restricts flake input attribute path elements to this regex.
+      # see `flakeIdRegex` in nix/src/libflake/include/nix/flake/flakeref.hh
+      FLAKE_ID_REGEX = /\A[a-zA-Z][a-zA-Z0-9_-]*\z/
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
@@ -54,6 +58,13 @@ module Dependabot
 
       sig { params(updated_nix_content: T.nilable(String)).returns(String) }
       def update_flake_lock(updated_nix_content)
+        unless dependency.name.match?(FLAKE_ID_REGEX)
+          raise Dependabot::DependencyFileNotResolvable,
+                "Cannot update flake input '#{dependency.name}': Nix only " \
+                "permits input names matching #{FLAKE_ID_REGEX.source}. " \
+                "Rename the input in flake.nix to update it via Dependabot."
+        end
+
         SharedHelpers.in_a_temporary_repo_directory(
           flake_lock.directory,
           repo_contents_path
