@@ -7,7 +7,8 @@ RSpec.describe Bundler do
   describe "helper runtime activation" do
     it "is running a supported Bundler major version" do
       bundler_major = Bundler::VERSION.split(".").first.to_i
-      expect([2, 4]).to(satisfy { |allowed| allowed.include?(bundler_major) })
+      expect(bundler_major).to be_between(2, 4)
+      expect(bundler_major).not_to eq(3)
     end
 
     it "respects DEPENDABOT_BUNDLER_VERSION_CONSTRAINT override" do
@@ -62,7 +63,7 @@ RSpec.describe Bundler do
       skip "GEM_HOME not set in test environment" unless gem_home
 
       bundler_specs = Dir.glob("#{gem_home}/specifications/bundler-*.gemspec")
-      expect(bundler_specs).not_to be_empty
+      expect(bundler_specs.length).to be_positive
     end
   end
 end
