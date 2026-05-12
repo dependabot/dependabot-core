@@ -198,7 +198,6 @@ module Dependabot
         url.to_s
       end
       private_class_method :clean_dependency_url
-
     end
   end
 end
