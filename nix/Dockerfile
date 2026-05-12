@@ -6,9 +6,14 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 # Copy Nix from the official image
 COPY --from=nix --chown=dependabot:dependabot /nix /nix
 
-# Configure Nix for single-user mode with flakes enabled
+# Configure Nix for single-user mode with flakes enabled.
+# Additional language-level experimental features are enabled so user flakes
+# that opt into them can still be evaluated when updating flake.lock:
+#   - pipe-operators: |> and <| operators
+#   - fetch-closure: builtins.fetchClosure
+#   - parse-toml-timestamps: timestamp parsing in builtins.fromTOML
 RUN mkdir -p /etc/nix \
-  && echo "experimental-features = nix-command flakes" > /etc/nix/nix.conf \
+  && echo "experimental-features = nix-command flakes pipe-operators fetch-closure parse-toml-timestamps" > /etc/nix/nix.conf \
   && echo "sandbox = false" >> /etc/nix/nix.conf
 
 ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
