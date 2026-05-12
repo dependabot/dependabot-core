@@ -8,7 +8,6 @@ require "dependabot/composer/helpers"
 
 RSpec.describe Dependabot::Composer::Helpers do
   describe ".composer_version" do
-
     let(:composer_v2_content) do
       <<~JSON
         {
