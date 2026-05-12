@@ -45,13 +45,13 @@ module Dependabot
         artifact_identifier = info[:artifact_identifier] || info["artifact_identifier"]
         return unless artifact_identifier
 
-        hostname, repo = T.must(artifact_identifier).split("/", 2)
+        hostname, repo = artifact_identifier.split("/", 2)
         return unless repo
 
         Source.new(
           provider: "oci",
           repo: repo,
-          hostname: T.must(hostname),
+          hostname: hostname,
           api_endpoint: "https://#{hostname}/"
         )
       end
