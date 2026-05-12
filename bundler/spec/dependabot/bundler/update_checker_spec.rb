@@ -1314,14 +1314,22 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           it "raises a helpful error" do
-            # TODO: This test failure may be unrelated to Bundler 4 - the error changed from
-            # GitDependencyReferenceNotFound to GitDependenciesNotReachable. Investigate git
-            # handling changes that might have caused this regression.
-            skip "Git dependency error handling needs investigation"
+            # Bundler 4 surfaces bad git references as GitDependenciesNotReachable
+            # rather than GitDependencyReferenceNotFound; assert the appropriate
+            # error class for the active helper runtime so coverage is preserved
+            # on Bundler 2 while we investigate restoring the more specific error
+            # mapping under Bundler 4.
+            expected_error =
+              if PackageManagerHelper.helper_running_bundler_v4?
+                Dependabot::GitDependenciesNotReachable
+              else
+                Dependabot::GitDependencyReferenceNotFound
+              end
+
             expect { checker.latest_resolvable_version }
               .to raise_error do |error|
-                expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
-                expect(error.dependency).to eq("prius")
+                expect(error).to be_a(expected_error)
+                expect(error.dependency).to eq("prius") if error.is_a?(Dependabot::GitDependencyReferenceNotFound)
               end
           end
         end
@@ -1528,9 +1536,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       context "when using bundler v2" do
         it do
           # Helper uses Bundler 4 which doesn't support bundler < 3 constraint
-          if File.exist?("/opt/bundler/v2/.bundle/specifications/bundler-4.0.11.gemspec")
-            skip "Requires Bundler 2.x (guard-bundler constraint: < 3)"
-          end
+          skip "Requires Bundler 2.x (guard-bundler constraint: < 3)" if PackageManagerHelper.helper_running_bundler_v4?
           expect(checker.latest_resolvable_version).to eq(Dependabot::Bundler::Version.new("3.0.0"))
         end
       end

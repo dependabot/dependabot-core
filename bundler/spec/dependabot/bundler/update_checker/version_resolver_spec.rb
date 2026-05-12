@@ -144,9 +144,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         it "resolves version" do
           # guard-bundler requires bundler < 3, incompatible with Bundler 4+
-          if File.exist?("/opt/bundler/v2/.bundle/specifications/bundler-4.0.11.gemspec")
-            skip "Requires Bundler 2.x (guard-bundler constraint: < 3)"
-          end
+          skip "Requires Bundler 2.x (guard-bundler constraint: < 3)" if PackageManagerHelper.helper_running_bundler_v4?
           expect(latest_resolvable_version_details[:version]).to eq(Dependabot::Bundler::Version.new("3.0.0"))
         end
       end

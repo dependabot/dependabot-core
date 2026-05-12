@@ -1,9 +1,14 @@
 # typed: true
 # frozen_string_literal: true
 
-# Allow Bundler 4 (with upper bound to prevent unintended future major versions).
-# The build script respects DEPENDABOT_BUNDLER_VERSION_CONSTRAINT for version control.
-gem "bundler", ">= 2.4", "< 5"
+require_relative "lib/bundler_version_constraint"
+
+# Allow Bundler 4 by default with an upper bound to prevent unintended future
+# major versions. Honor DEPENDABOT_BUNDLER_VERSION_CONSTRAINT (or its
+# BUNDLER_VERSION_CONSTRAINT fallback) so staged rollouts and emergency
+# rollbacks performed by the build script are respected at activation time.
+bundler_constraint = BundlerVersionConstraint.resolve
+gem "bundler", *BundlerVersionConstraint.activation_clauses(bundler_constraint)
 require "bundler"
 require "json"
 
