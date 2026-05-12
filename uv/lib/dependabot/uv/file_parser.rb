@@ -8,6 +8,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
 require "dependabot/uv/requirement"
+require "dependabot/uv/requirement_parser"
 require "dependabot/errors"
 require "dependabot/uv/language"
 require "dependabot/uv/native_helpers"
@@ -382,11 +383,42 @@ module Dependabot
       def write_temporary_dependency_files
         dependency_files
           .reject { |f| f.name == ".python-version" }
+          .reject { |f| skip_for_requirements_parsing?(f) }
           .each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, remove_imports(file))
           end
+      end
+
+      # The `parse_requirements` Python helper globs every `*.txt` and `*.in`
+      # file in the working directory and asks pip to parse each one. Support
+      # files (such as a `LICENSE.txt` declared via PEP 621
+      # `project.license.file` / `project.license-files`) would otherwise be
+      # misinterpreted as pip requirements files, causing an `InstallationError`
+      # when their contents aren't valid pip requirements. Skip writing
+      # `.txt`/`.in` support files that don't look like requirements files.
+      sig { params(file: DependencyFile).returns(T::Boolean) }
+      def skip_for_requirements_parsing?(file)
+        return false unless file.support_file?
+        return false unless file.name.end_with?(".txt", ".in")
+
+        !requirements_txt_or_in_file?(file)
+      end
+
+      sig { params(file: DependencyFile).returns(T::Boolean) }
+      def requirements_txt_or_in_file?(file)
+        content = file.content
+        return false unless content&.valid_encoding?
+        return true if File.basename(file.name).match?(/requirements/i)
+
+        content.lines.all? do |line|
+          stripped = line.strip
+          next true if stripped.empty?
+          next true if stripped.start_with?("#", "-r ", "-c ", "-e ", "--")
+
+          line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
+        end
       end
 
       sig { params(file: T.untyped).returns(T.untyped) }
