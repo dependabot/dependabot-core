@@ -1,7 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
-gem "bundler", ">= 2.4"
+# Allow Bundler 4 (with upper bound to prevent unintended future major versions).
+# The build script respects DEPENDABOT_BUNDLER_VERSION_CONSTRAINT for version control.
+gem "bundler", ">= 2.4", "< 5"
 require "bundler"
 require "json"
 

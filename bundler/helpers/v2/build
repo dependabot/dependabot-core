@@ -26,7 +26,9 @@ export GEM_HOME=$install_dir/.bundle
 
 gem install bundler -v "$bundler_constraint" --no-document
 
-default_version=$(ruby -e 'print Gem::Specification.find_all_by_name("bundler").max_by(&:version).version')
+# Resolve the Bundler version that was actually installed in GEM_HOME to ensure
+# consistency with what was requested and to avoid picking up system gems.
+default_version=$(ruby -e "gemspecs = Dir.glob(\"#{ENV['GEM_HOME']}/specifications/bundler-*.gemspec\"); gemspecs.max_by { |f| File.basename(f) } ? File.basename(gemspecs.max_by { |f| File.basename(f) }).match(/bundler-(.*)\.gemspec/)[1] : 'unknown'")
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   bundle _"$default_version"_ install
