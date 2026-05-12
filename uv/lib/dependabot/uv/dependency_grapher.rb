@@ -35,6 +35,10 @@ module Dependabot
         return T.must(uv_lock) if uv_lock
         return T.must(pyproject_toml) if pyproject_toml
 
+        # Fall back to requirements files (.txt/.in) when no pyproject.toml or uv.lock is present
+        req_file = dependency_files.find { |f| f.name.end_with?(".txt", ".in") }
+        return req_file if req_file
+
         raise DependabotError, "No uv.lock or pyproject.toml present."
       end
 

@@ -54,6 +54,22 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
       end
     end
+
+    context "when only requirements.txt files are present" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "flask==3.1.3\nrequests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt] }
+
+      it "falls back to the requirements file" do
+        expect(grapher.relevant_dependency_file).to eql(requirements_txt)
+      end
+    end
   end
 
   describe "#resolved_dependencies" do
