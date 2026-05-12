@@ -147,7 +147,7 @@ module Dependabot
 
             Add at least one package to the dependencies section:
               dependencies:
-                - python>=3.9
+                - python>=3.10
                 - numpy>=1.21.0
           MSG
         when :invalid_yaml
