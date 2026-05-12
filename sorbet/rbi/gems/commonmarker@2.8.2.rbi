@@ -55,22 +55,22 @@ module Commonmarker::Config
   extend ::Commonmarker::Utils
 
   class << self
-    # source://commonmarker//lib/commonmarker/config.rb#86
+    # source://commonmarker//lib/commonmarker/config.rb#91
     def process_extension_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#70
+    # source://commonmarker//lib/commonmarker/config.rb#75
     def process_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#86
+    # source://commonmarker//lib/commonmarker/config.rb#91
     def process_parse_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#78
+    # source://commonmarker//lib/commonmarker/config.rb#83
     def process_plugins(plugins); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#86
+    # source://commonmarker//lib/commonmarker/config.rb#91
     def process_render_options(options); end
 
-    # source://commonmarker//lib/commonmarker/config.rb#103
+    # source://commonmarker//lib/commonmarker/config.rb#108
     def process_syntax_highlighter_plugin(options); end
   end
 end
@@ -81,7 +81,7 @@ end
 # source://commonmarker//lib/commonmarker/config.rb#7
 Commonmarker::Config::OPTIONS = T.let(T.unsafe(nil), Hash)
 
-# source://commonmarker//lib/commonmarker/config.rb#60
+# source://commonmarker//lib/commonmarker/config.rb#65
 Commonmarker::Config::PLUGINS = T.let(T.unsafe(nil), Hash)
 
 # source://commonmarker//lib/commonmarker/constants.rb#4
@@ -94,6 +94,12 @@ Commonmarker::Constants::BOOLS = T.let(T.unsafe(nil), Array)
 class Commonmarker::Node
   include ::Enumerable
   include ::Commonmarker::Node::Inspect
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
+  def alert_type; end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
+  def alert_type=(_arg0); end
 
   # source://commonmarker//lib/commonmarker/extension.rb#7
   def append_child(_arg0); end
@@ -111,6 +117,12 @@ class Commonmarker::Node
 
   # source://commonmarker//lib/commonmarker/extension.rb#7
   def fence_info=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
+  def fenced=(_arg0); end
+
+  # source://commonmarker//lib/commonmarker/extension.rb#7
+  def fenced?; end
 
   # source://commonmarker//lib/commonmarker/extension.rb#7
   def first_child; end
