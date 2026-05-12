@@ -82,7 +82,7 @@ module Dependabot
 
           setup_python_environment
 
-          SharedHelpers.run_shell_command(command)
+          SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true)
         end
       end
 

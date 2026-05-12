@@ -1,25 +1,21 @@
 # typed: strict
 # frozen_string_literal: true
 
-#######################################################
-# For more details on Maven version constraints, see: #
-# https://maven.apache.org/pom.html#Dependencies      #
-#######################################################
-
+require "sorbet-runtime"
 require "dependabot/requirements_updater/base"
-require "dependabot/maven/update_checker"
-require "dependabot/maven/version"
-require "dependabot/maven/requirement"
+require "dependabot/sbt/update_checker"
+require "dependabot/sbt/version"
+require "dependabot/sbt/requirement"
 
 module Dependabot
-  module Maven
-    class UpdateChecker
+  module Sbt
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
       class RequirementsUpdater
         extend T::Sig
         extend T::Generic
 
-        Version = type_member { { fixed: Dependabot::Maven::Version } }
-        Requirement = type_member { { fixed: Dependabot::Maven::Requirement } }
+        Version = type_member { { fixed: Dependabot::Sbt::Version } }
+        Requirement = type_member { { fixed: Dependabot::Sbt::Requirement } }
 
         include Dependabot::RequirementsUpdater::Base
 
@@ -49,9 +45,6 @@ module Dependabot
         def updated_requirements
           return requirements unless latest_version
 
-          # NOTE: Order is important here. The FileUpdater needs the updated
-          # requirement at index `i` to correspond to the previous requirement
-          # at the same index.
           requirements.map do |req|
             next req if req.fetch(:requirement).nil?
             next req if req.fetch(:requirement).include?(",")
@@ -60,8 +53,6 @@ module Dependabot
             next req if property_name && !properties_to_update.include?(property_name)
 
             new_req = update_requirement(req[:requirement])
-            next req if new_req == req[:requirement]
-
             req.merge(requirement: new_req, source: updated_source)
           end
         end
@@ -82,28 +73,22 @@ module Dependabot
 
         sig { params(req_string: String).returns(String) }
         def update_requirement(req_string)
-          # Since range requirements are excluded this must be exact
-          update_exact_requirement(req_string)
-        end
-
-        sig { params(req_string: String).returns(String) }
-        def update_exact_requirement(req_string)
           old_version = requirement_class.new(req_string)
                                          .requirements.first.last
-          req_string.gsub(old_version.to_s, latest_version.to_s)
+          req_string.gsub(old_version.to_s, T.must(latest_version).to_s)
         end
 
         sig { override.returns(T::Class[Version]) }
         def version_class
-          Maven::Version
+          Sbt::Version
         end
 
         sig { override.returns(T::Class[Requirement]) }
         def requirement_class
-          Maven::Requirement
+          Sbt::Requirement
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(T::Hash[Symbol, T.untyped]) }
         def updated_source
           { type: "maven_repo", url: source_url }
         end

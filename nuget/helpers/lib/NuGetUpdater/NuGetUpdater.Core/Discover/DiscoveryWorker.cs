@@ -471,6 +471,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             ImportedFiles = mergedImportedFiles,
             AdditionalFiles = mergedAdditionalFiles,
             PackageManagementKind = (PackageManagementKind)Math.Max((int)result1.PackageManagementKind, (int)result2.PackageManagementKind),
+            PackageManagementSpecialFileRelativePath = result1.PackageManagementSpecialFileRelativePath ?? result2.PackageManagementSpecialFileRelativePath,
         };
         return mergedResult;
     }
