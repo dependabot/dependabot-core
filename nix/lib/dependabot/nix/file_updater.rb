@@ -60,8 +60,9 @@ module Dependabot
       def update_flake_lock(updated_nix_content)
         unless dependency.name.match?(FLAKE_ID_REGEX)
           raise Dependabot::DependencyFileNotResolvable,
-                "Cannot update flake input '#{dependency.name}': Nix only " \
-                "permits input names matching #{FLAKE_ID_REGEX.source}. " \
+                "Cannot update flake input '#{dependency.name}': Nix requires input names to start " \
+                "with a letter and contain only letters, digits, underscores, or hyphens " \
+                "(pattern: [a-zA-Z][a-zA-Z0-9_-]*). " \
                 "Rename the input in flake.nix to update it via Dependabot."
         end
 
