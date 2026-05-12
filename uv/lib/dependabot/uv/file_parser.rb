@@ -392,32 +392,24 @@ module Dependabot
       end
 
       # The `parse_requirements` Python helper globs every `*.txt` and `*.in`
-      # file in the working directory and asks pip to parse each one. Support
-      # files (such as a `LICENSE.txt` declared via PEP 621
-      # `project.license.file` / `project.license-files`) would otherwise be
-      # misinterpreted as pip requirements files, causing an `InstallationError`
-      # when their contents aren't valid pip requirements. Skip writing
-      # `.txt`/`.in` support files that don't look like requirements files.
+      # file in the working directory and asks pip to parse each one. Skip
+      # writing `.txt`/`.in` support files (e.g. a `LICENSE.txt` pulled in via
+      # PEP 621 `project.license.file`) whose contents don't look like a pip
+      # requirements file, so they aren't misparsed as requirements.
       sig { params(file: DependencyFile).returns(T::Boolean) }
       def skip_for_requirements_parsing?(file)
         return false unless file.support_file?
         return false unless file.name.end_with?(".txt", ".in")
 
-        !requirements_txt_or_in_file?(file)
-      end
-
-      sig { params(file: DependencyFile).returns(T::Boolean) }
-      def requirements_txt_or_in_file?(file)
         content = file.content
         return false unless content&.valid_encoding?
-        return true if File.basename(file.name).match?(/requirements/i)
+        return false if File.basename(file.name).match?(/requirements/i)
 
-        content.lines.all? do |line|
+        !content.lines.all? do |line|
           stripped = line.strip
-          next true if stripped.empty?
-          next true if stripped.start_with?("#", "-r ", "-c ", "-e ", "--")
-
-          line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
+          stripped.empty? ||
+            stripped.start_with?("#", "-r ", "-c ", "-e ", "--") ||
+            line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
         end
       end
 
