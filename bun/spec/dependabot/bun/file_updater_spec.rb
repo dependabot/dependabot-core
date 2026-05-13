@@ -182,19 +182,71 @@ RSpec.describe Dependabot::Bun::FileUpdater do
             .to include("etag@1.2.0")
         end
 
-        it "runs bun install commands with --ignore-scripts" do
+        it "runs bun install commands with --ignore-scripts and --no-frozen-lockfile" do
           allow(Dependabot::Bun::Helpers).to receive(:run_bun_command).and_call_original
 
           updated_files
 
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts$/),
-            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts --no-frozen-lockfile$/),
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts --no-frozen-lockfile"
           )
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-            "install --save-text-lockfile --ignore-scripts"
+            "install --save-text-lockfile --ignore-scripts --no-frozen-lockfile"
           )
         end
+      end
+    end
+
+    context "with a bunfig.toml that sets frozenLockfile = true" do
+      let(:files) { project_dependency_files("bun/frozen_lockfile") }
+      let(:repo_contents_path) { build_tmp_repo("bun/frozen_lockfile", path: "projects") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.2.0",
+            previous_version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "bun"
+          ),
+          Dependabot::Dependency.new(
+            name: "is-number",
+            version: "2.1.0",
+            previous_version: "2.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "bun"
+          )
+        ]
+      end
+
+      it "still updates the lockfile despite the frozen guard" do
+        expect { updated_files }.not_to raise_error
+        expect(updated_files.map(&:name)).to match_array(%w(bun.lock))
+        expect(updated_bun_lock.content).to include("etag@1.2.0")
+        expect(updated_bun_lock.content).to include("is-number@2.1.0")
       end
     end
 
