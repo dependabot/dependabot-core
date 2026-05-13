@@ -26,6 +26,13 @@ module Dependabot
       PUBLIC_HOSTNAME = "registry.opentofu.org"
       API_BASE_URL = "api.opentofu.org"
 
+      # The OpenTofu Module Registry HTTP API is wire-compatible with Terraform's,
+      # so credentials issued for either ecosystem are valid here.
+      ACCEPTED_CREDENTIAL_TYPES = T.let(
+        %w(opentofu_registry terraform_registry).freeze,
+        T::Array[String]
+      )
+
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
@@ -35,7 +42,7 @@ module Dependabot
             # Only Bearer-token shaped creds belong here; OCI-only entries
             # (username/password) would otherwise store a nil token and
             # trigger a malformed `Authorization: Bearer ` header.
-            next unless item["type"] == "opentofu_registry" && item["token"]
+            next unless ACCEPTED_CREDENTIAL_TYPES.include?(item["type"]) && item["token"]
 
             memo[item["host"]] = item["token"]
           end,

@@ -280,6 +280,61 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         expect(results).not_to have_key("not-a-version!")
       end
     end
+
+    context "with Artifactory-style listings without title attributes" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="../">../</a>
+          <a href="1.0/">1.0/</a>                 24-Jul-2025 10:31    -
+          <a href="1.2/">1.2/</a>                 24-Jul-2025 10:33    -
+          <a href="1.3.6/">1.3.6/</a>             05-May-2026 13:55    -
+          <a href="maven-metadata.xml">maven-metadata.xml</a> 05-May-2026 13:55  443 bytes
+          </pre></body></html>
+        HTML
+      end
+
+      it "extracts release dates from href/text when title is absent" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.0"]).to eq({ release_date: Time.parse("24-Jul-2025 10:31") })
+        expect(results["1.2"]).to eq({ release_date: Time.parse("24-Jul-2025 10:33") })
+        expect(results["1.3.6"]).to eq({ release_date: Time.parse("05-May-2026 13:55") })
+        expect(results).not_to have_key("maven-metadata.xml")
+      end
+    end
+
+    context "when title omits the trailing slash" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.2.3/" title="1.2.3">1.2.3/</a>            2026-05-05 13:55    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "uses the directory href to detect version entries" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.2.3"]).to eq({ release_date: Time.parse("2026-05-05 13:55") })
+      end
+    end
+
+    context "when title and link text are blank" do
+      let(:html_body) do
+        <<~HTML
+          <html><body><pre>
+          <a href="1.4.0/" title=""></a>            2026-05-06 09:10    -
+          </pre></body></html>
+        HTML
+      end
+
+      it "falls back to href for version extraction" do
+        results = client.extract_version_details_from_html(html)
+
+        expect(results["1.4.0"]).to eq({ release_date: Time.parse("2026-05-06 09:10") })
+      end
+    end
   end
 
   describe "#check_response" do
@@ -380,7 +435,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
         result = client.fetch_dependency_metadata(repository_details)
 
         expect(result).to be_a(Nokogiri::XML::Document)
-        expect(result.css("versions > version").count).to be > 0
+        expect(result.css("versions > version").count).to be_positive
       end
     end
 
@@ -430,11 +485,12 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
   describe "#fetch_dependency_metadata_from_html" do
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
     let(:repository_details) { { "url" => maven_central, "auth_headers" => {} } }
 
     context "when the registry returns a valid HTML response" do
       before do
-        stub_request(:get, base_url)
+        stub_request(:get, base_url_with_slash)
           .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
       end
 
@@ -447,13 +503,27 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
     context "when the registry returns a 404" do
       before do
-        stub_request(:get, base_url).to_return(status: 404)
+        stub_request(:get, base_url_with_slash).to_return(status: 404)
       end
 
       it "returns nil" do
         result = client.fetch_dependency_metadata_from_html(repository_details)
 
         expect(result).to be_nil
+      end
+    end
+
+    context "when fetching HTML directory listing" do
+      before do
+        stub_request(:get, base_url_with_slash)
+          .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
+      end
+
+      it "adds a trailing slash to the base URL for directory listing" do
+        result = client.fetch_dependency_metadata_from_html(repository_details)
+
+        expect(result).to be_a(Nokogiri::HTML::Document)
+        expect(WebMock).to have_requested(:get, base_url_with_slash).once
       end
     end
   end
@@ -683,10 +753,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
   describe "#dependency_metadata_from_html" do
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
     let(:repository_details) { { "url" => maven_central, "auth_headers" => {} } }
 
     before do
-      stub_request(:get, base_url)
+      stub_request(:get, base_url_with_slash)
         .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
     end
 
@@ -702,6 +773,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
   describe "#versions" do
     let(:metadata_url) { "#{maven_central}/com/google/guava/guava/maven-metadata.xml" }
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
 
     before do
       stub_request(:get, metadata_url)
@@ -709,7 +781,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
           status: 200,
           body: fixture("maven_central_metadata", "with_release.xml")
         )
-      stub_request(:get, base_url)
+      stub_request(:get, base_url_with_slash)
         .to_return(
           status: 200,
           body: fixture("maven_central_metadata", "with_release.html")
@@ -743,7 +815,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
     context "when HTML fetch fails" do
       before do
-        stub_request(:get, base_url).to_raise(StandardError.new("boom"))
+        stub_request(:get, base_url_with_slash).to_raise(StandardError.new("boom"))
       end
 
       it "still returns versions from XML" do
@@ -802,10 +874,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
   describe "#versions_details_hash_from_html" do
     let(:base_url) { "#{maven_central}/com/google/guava/guava" }
+    let(:base_url_with_slash) { "#{base_url}/" }
 
     context "when the repository returns valid HTML" do
       before do
-        stub_request(:get, base_url)
+        stub_request(:get, base_url_with_slash)
           .to_return(
             status: 200,
             body: fixture("maven_central_metadata", "with_release.html")
@@ -824,7 +897,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
 
     context "when no HTML data is found" do
       before do
-        stub_request(:get, base_url).to_return(status: 404)
+        stub_request(:get, base_url_with_slash).to_return(status: 404)
       end
 
       it "returns an empty hash" do
