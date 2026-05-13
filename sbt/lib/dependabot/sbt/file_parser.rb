@@ -31,8 +31,9 @@ module Dependabot
       )
 
       # "org" % "artifact" % valName  or  "org" %% "artifact" % valName
+      # Also handles dotted references like Object.member
       VAL_REF_DEP_REGEX = T.let(
-        /"(?<group>[^"]+)"\s+(?<op>%%?)\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*)/,
+        /"(?<group>[^"]+)"\s+(?<op>%%?)\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)/,
         Regexp
       )
 
@@ -43,8 +44,9 @@ module Dependabot
       )
 
       # addSbtPlugin("org" % "name" % valName)
+      # Also handles dotted references like Object.member
       PLUGIN_VAL_REF_REGEX = T.let(
-        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*)\s*\)/,
+        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\s*\)/,
         Regexp
       )
 
@@ -55,8 +57,15 @@ module Dependabot
       )
 
       # scalaVersion := "2.13.12"  or  ThisBuild / scalaVersion := "2.13.12"
+      # Also: scalaVersion in ThisBuild := "2.13.12" (older SBT syntax)
       SCALA_VERSION_REGEX = T.let(
-        %r{(?:ThisBuild\s*/\s*)?scalaVersion\s*:=\s*"(?<version>[^"]+)"},
+        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*"(?<version>[^"]+)"},
+        Regexp
+      )
+
+      # scalaVersion := valRef  or  scalaVersion in ThisBuild := V.scala212
+      SCALA_VERSION_VAL_REGEX = T.let(
+        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)},
         Regexp
       )
 
@@ -129,6 +138,16 @@ module Dependabot
         sbt_files.each do |file|
           match = prepared_content(file).match(SCALA_VERSION_REGEX)
           return T.must(match[:version]) if match
+
+          val_match = prepared_content(file).match(SCALA_VERSION_VAL_REGEX)
+          next unless val_match
+
+          val_name = T.must(val_match[:val_name])
+          resolved = property_value_finder.property_value(
+            property_name: val_name,
+            callsite_buildfile: file
+          )
+          return resolved if resolved
         end
         "NOT-AVAILABLE"
       end
@@ -376,17 +395,33 @@ module Dependabot
         files_to_check << root if root && root != buildfile
 
         files_to_check.each do |file|
+          # Try literal scalaVersion first
           match = prepared_content(file).match(SCALA_VERSION_REGEX)
-          next unless match
+          if match
+            full_version = T.must(match[:version])
+            return extract_scala_major(full_version)
+          end
 
-          full_version = T.must(match[:version])
-          parts = full_version.split(".")
-          # Scala 2.x uses major.minor (e.g. 2.13), Scala 3.x uses just major (e.g. 3)
-          return parts[0] == "3" ? "3" : "#{parts[0]}.#{parts[1]}"
+          # Try val-reference scalaVersion (e.g. scalaVersion := myVal or := V.scala212)
+          val_match = prepared_content(file).match(SCALA_VERSION_VAL_REGEX)
+          next unless val_match
+
+          val_name = T.must(val_match[:val_name])
+          resolved = property_value_finder.property_value(
+            property_name: val_name,
+            callsite_buildfile: file
+          )
+          return extract_scala_major(resolved) if resolved
         end
 
         # Default to 2.13 if scalaVersion is not declared
         "2.13"
+      end
+
+      sig { params(full_version: String).returns(String) }
+      def extract_scala_major(full_version)
+        parts = full_version.split(".")
+        parts[0] == "3" ? "3" : "#{parts[0]}.#{parts[1]}"
       end
 
       sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
