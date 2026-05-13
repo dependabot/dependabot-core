@@ -19,11 +19,17 @@ module Dependabot
 
         url =
           if info.nil?
-            "https://#{GITHUB_COM}/#{dependency.name}"
+            "https://#{source_hostname}/#{dependency.name}"
           else
             info[:url] || info.fetch("url")
           end
         Source.from_url(url)
+      end
+
+      sig { returns(String) }
+      def source_hostname
+        ghe_cred = credentials.find { |c| c["type"] == "git_source" && c["host"] != GITHUB_COM }
+        ghe_cred&.fetch("host", nil) || GITHUB_COM
       end
     end
   end
