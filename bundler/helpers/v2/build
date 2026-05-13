@@ -19,12 +19,27 @@ fi
 
 cd "$install_dir"
 
-default_version=$(ruby -rbundler -e'print Bundler::VERSION')
+# Default to Bundler 4, with an override for controlled testing/rollouts.
+bundler_constraint="${DEPENDABOT_BUNDLER_VERSION_CONSTRAINT:-${BUNDLER_VERSION_CONSTRAINT:-~> 4.0}}"
 
 export GEM_HOME=$install_dir/.bundle
 
-gem install bundler -v "$default_version" --no-document
+gem install bundler -v "$bundler_constraint" --no-document
+
+# Resolve the Bundler version that was actually installed in GEM_HOME to ensure
+# consistency with what was requested and to avoid picking up system gems.
+default_version=$(ruby -e '
+  gemspecs = Dir.glob("#{ENV["GEM_HOME"]}/specifications/bundler-*.gemspec")
+  latest = gemspecs.max_by { |f| Gem::Version.new(File.basename(f).match(/bundler-(.*)\.gemspec/)[1]) }
+  abort("No bundler gemspec found in #{ENV["GEM_HOME"]}/specifications") unless latest
+  print File.basename(latest).match(/bundler-(.*)\.gemspec/)[1]
+')
+
+if [ -z "$default_version" ]; then
+  echo "error: failed to resolve installed Bundler version in $GEM_HOME" >&2
+  exit 1
+fi
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
-  bundle install
+  bundle _"$default_version"_ install
 fi

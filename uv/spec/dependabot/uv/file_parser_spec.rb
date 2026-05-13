@@ -1047,4 +1047,113 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
     end
   end
+
+  describe "#run_in_parsed_context" do
+    let(:pyproject_content) { fixture("pyproject_files", "uv_dependency_grapher.toml") }
+    let(:pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: pyproject_content,
+        directory: "/"
+      )
+    end
+    let(:files) { [pyproject] }
+
+    it "passes commands with allow_unsafe_shell_command so shell operators are preserved" do
+      allow(parser).to receive(:setup_python_environment)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("output")
+
+      parser.run_in_parsed_context("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pyenv exec uv lock --color never --no-progress && cat uv.lock",
+              allow_unsafe_shell_command: true)
+    end
+  end
+
+  describe "#write_temporary_dependency_files" do
+    subject(:write_temporary_dependency_files) { parser.send(:write_temporary_dependency_files) }
+
+    let(:pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: <<~TOML
+          [project]
+          name = "example"
+          version = "0.1.0"
+          license = { file = "LICENSE.txt" }
+          dependencies = ["requests==2.31.0"]
+        TOML
+      )
+    end
+    let(:license_file) do
+      Dependabot::DependencyFile.new(
+        name: "LICENSE.txt",
+        support_file: true,
+        content: <<~LICENSE
+          MIT License
+
+          Copyright (c) 2024 Example
+
+          Permission is hereby granted, free of charge, to any person obtaining a copy
+          of this software and associated documentation files (the "Software"), to deal
+          in the Software without restriction, including without limitation the rights
+          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+          copies of the Software, and to permit persons to whom the Software is furnished
+          to do so, subject to the following conditions:
+        LICENSE
+      )
+    end
+    let(:requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "requests==2.31.0\n"
+      )
+    end
+    let(:files) { [pyproject, license_file, requirements_txt] }
+
+    around do |example|
+      Dependabot::SharedHelpers.in_a_temporary_directory { example.run }
+    end
+
+    it "does not write non-requirements .txt support files like LICENSE.txt" do
+      write_temporary_dependency_files
+
+      expect(File.exist?("requirements.txt")).to be(true)
+      expect(File.exist?("pyproject.toml")).to be(true)
+      expect(File.exist?("LICENSE.txt")).to be(false)
+    end
+
+    context "when a support .txt file looks like a requirements file" do
+      let(:license_file) do
+        Dependabot::DependencyFile.new(
+          name: "constraints-extra.txt",
+          support_file: true,
+          content: "requests==2.31.0\n"
+        )
+      end
+
+      it "still writes the support file" do
+        write_temporary_dependency_files
+
+        expect(File.exist?("constraints-extra.txt")).to be(true)
+      end
+    end
+
+    context "when the support file's name contains 'requirements'" do
+      let(:license_file) do
+        Dependabot::DependencyFile.new(
+          name: "extra-requirements.txt",
+          support_file: true,
+          content: "some-garbage-but-named-requirements"
+        )
+      end
+
+      it "writes the file based on its name" do
+        write_temporary_dependency_files
+
+        expect(File.exist?("extra-requirements.txt")).to be(true)
+      end
+    end
+  end
 end
