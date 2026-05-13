@@ -825,6 +825,24 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "when pubspec.yaml has duplicate mapping keys" do
+      let(:stderr) { "Error on line 39, column 3 of pubspec.yaml: Duplicate mapping key." }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when pubspec.yaml name doesn't match expected name" do
+      let(:stderr) do
+        "Error on line 1, column 7: \"name\" field doesn't match expected name \"flutter_shortcuts\"."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
   end
 
   context "with a git dependency" do
