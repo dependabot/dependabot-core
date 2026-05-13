@@ -346,6 +346,15 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     it "does not include scope" do
       expect(config.update_config("npm_and_yarn").commit_message_options.include_scope?).to be(false)
     end
+
+    it "parses substitutions" do
+      expect(config.update_config("npm_and_yarn").commit_message_options.substitutions).to eq(
+        [
+          { "from" => "@", "to" => "_at_" },
+          { "from" => "#", "to" => "_hash_" }
+        ]
+      )
+    end
   end
 
   describe ".wildcard_match?" do
