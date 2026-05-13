@@ -30,6 +30,11 @@ module Dependabot
             .returns(T.nilable(T::Hash[Symbol, String]))
         end
         def property_details(property_name:, callsite_buildfile:)
+          # Handle dotted references like "V.scalafixVersion" by looking up the member name
+          if property_name.include?(".")
+            return dotted_property_details(property_name: property_name, callsite_buildfile: callsite_buildfile)
+          end
+
           # Look in the callsite file first, then fall back to the root build.sbt,
           # then check project/*.scala build definition files
           all_files = [callsite_buildfile, top_level_buildfile].compact
@@ -54,6 +59,71 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        # Resolves dotted property references like "Versions.catsVersion" or "V.scala212".
+        # Searches for `val <member> = "..."` inside `object <ObjectName> { ... }` blocks
+        # across all dependency files.
+        sig do
+          params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
+            .returns(T.nilable(T::Hash[Symbol, String]))
+        end
+        def dotted_property_details(property_name:, callsite_buildfile:)
+          parts = property_name.split(".")
+          return nil unless parts.length == 2
+
+          object_name = T.must(parts.first)
+          member_name = T.must(parts.last)
+
+          # Resolve val aliases (e.g. "val V = BuildInfo" means V.x should look in object BuildInfo)
+          resolved_names = resolve_object_aliases(object_name, callsite_buildfile)
+
+          all_files = [callsite_buildfile, top_level_buildfile].compact
+          all_files += project_scala_files
+          all_files.uniq!
+
+          resolved_names.each do |resolved_name|
+            all_files.each do |file|
+              content = prepared_content(file)
+              object_regex = /object\s+#{Regexp.quote(resolved_name)}\b[^{]*\{(?<body>[^}]*)\}/m
+              content.scan(object_regex) do
+                body = T.must(Regexp.last_match).named_captures.fetch("body")
+                member_regex = /(?:^|\s)(?:lazy\s+)?val\s+#{Regexp.quote(member_name)}/
+                member_value_regex = /#{member_regex}(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/
+                member_match = body&.match(member_value_regex)
+                next unless member_match
+
+                declaration_string = member_match.to_s.strip
+                return {
+                  value: T.must(member_match[:value]),
+                  declaration_string: declaration_string,
+                  file: file.name
+                }
+              end
+            end
+          end
+
+          nil
+        end
+
+        # Resolves val aliases like "val V = BuildInfo" → returns ["V", "BuildInfo"]
+        # so that dotted references like V.member can look in object BuildInfo.
+        sig { params(name: String, callsite_buildfile: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def resolve_object_aliases(name, callsite_buildfile)
+          names = [name]
+
+          all_files = [callsite_buildfile, top_level_buildfile].compact
+          all_files += project_scala_files
+          all_files.uniq!
+
+          all_files.each do |file|
+            prepared_content(file).scan(/(?:^|\s)(?:lazy\s+)?val\s+#{Regexp.quote(name)}\s*=\s*(?<target>[A-Z]\w*)/) do
+              target = T.must(Regexp.last_match).named_captures.fetch("target")
+              names << T.must(target) unless names.include?(target)
+            end
+          end
+
+          names
+        end
 
         sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[String, T::Hash[Symbol, String]]) }
         def properties(buildfile)
