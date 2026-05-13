@@ -1,25 +1,21 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
-# NOTE: This file was scaffolded automatically but is OPTIONAL.
-# If you don't need custom metadata finding logic (changelogs, release notes, etc.),
-# you can safely delete this file and remove the require from lib/dependabot/sbt.rb
-
 require "dependabot/metadata_finders"
-require "dependabot/metadata_finders/base"
+require "dependabot/maven/shared/shared_metadata_finder"
+require "dependabot/sbt/file_fetcher"
+require "sorbet-runtime"
 
 module Dependabot
   module Sbt
-    class MetadataFinder < Dependabot::MetadataFinders::Base
+    class MetadataFinder < Dependabot::Maven::Shared::SharedMetadataFinder
       extend T::Sig
 
       private
 
-      sig { override.returns(T.nilable(Dependabot::Source)) }
-      def look_up_source
-        # TODO: Implement custom source lookup logic if needed
-        # Otherwise, delete this file and the require in the main registration file
-        nil
+      sig { override.returns(T.class_of(Dependabot::FileFetchers::Base)) }
+      def file_fetcher_class
+        Dependabot::Sbt::FileFetcher
       end
     end
   end
