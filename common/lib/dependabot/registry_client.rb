@@ -36,7 +36,7 @@ module Dependabot
         retry_interval: 5
       )
     rescue Excon::Error::Timeout, Excon::Error::Socket => e
-      cache_error(url, e)
+      cache_error(url, e) if cacheable_error?(e)
       raise e
     end
 
@@ -57,7 +57,7 @@ module Dependabot
         **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
       )
     rescue Excon::Error::Timeout, Excon::Error::Socket => e
-      cache_error(url, e)
+      cache_error(url, e) if cacheable_error?(e)
       raise e
     end
 
@@ -76,6 +76,18 @@ module Dependabot
     private_class_method def self.cached_error_for(url)
       host = URI(url).host
       @cached_errors.fetch(host, nil)
+    end
+
+    sig { params(error: CachedErrorType).returns(T::Boolean) }
+    private_class_method def self.cacheable_error?(error)
+      if error.is_a?(Excon::Error::Socket)
+        case error.socket_error
+        when EOFError
+          return false
+        end
+      end
+
+      true
     end
   end
 end
