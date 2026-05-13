@@ -160,6 +160,16 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
             Dependabot::Helm::Version.new("1.1.0")
           )
         end
+
+        context "when current dependency version is prerelease" do
+          let(:version) { "3.44.0-1.g1234567" }
+
+          it "considers prerelease tags" do
+            expect(checker.latest_version).to eq(
+              Dependabot::Helm::Version.new("3.44.1-1.g585bce1")
+            )
+          end
+        end
       end
     end
   end

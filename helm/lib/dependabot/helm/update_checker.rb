@@ -252,9 +252,9 @@ module Dependabot
         release_tags = release_tags.select do |tag|
           # Skip tags that start with "sha256-" or end with .sig, .att, or .metadata
           next false if tag.start_with?("sha256-") || tag.end_with?(".sig", ".att", ".metadata")
-          # Skip prerelease tags for OCI charts (e.g. 2.0.4-main.146.sha.7ac1266,
-          # 2.0.4-featuresearch.28.sha.abc1234).
-          next false if oci_prerelease_tag?(tag)
+          # Skip prerelease tags for stable dependencies, but keep them when the
+          # current dependency is already on a prerelease track.
+          next false if oci_prerelease_tag?(tag) && !wants_oci_prerelease_tags?
 
           # Use Version.correct? to check if the tag is a valid version
           version_class.correct?(tag)
@@ -265,6 +265,14 @@ module Dependabot
       sig { params(tag: String).returns(T::Boolean) }
       def oci_prerelease_tag?(tag)
         tag.match?(OCI_PRERELEASE_TAG_REGEX)
+      end
+
+      sig { returns(T::Boolean) }
+      def wants_oci_prerelease_tags?
+        current_version = dependency.version
+        return false unless current_version
+
+        oci_prerelease_tag?(current_version)
       end
 
       sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }
