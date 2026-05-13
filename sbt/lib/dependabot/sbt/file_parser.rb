@@ -23,6 +23,12 @@ module Dependabot
       BUILD_SBT_FILENAME = "build.sbt"
       BUILD_PROPERTIES_FILENAME = "project/build.properties"
 
+      # Matches a simple identifier or dotted reference (e.g. myVal, V.scala212)
+      IDENT_OR_DOTTED = T.let(
+        "[a-zA-Z_]\\w*(?:\\.[a-zA-Z_]\\w*)*",
+        String
+      )
+
       # "org" % "artifact" % "version"  or  "org" %% "artifact" % "version"
       # Optionally followed by % "scope" (e.g. % "test", % "provided")
       LIBRARY_DEP_REGEX = T.let(
@@ -46,7 +52,7 @@ module Dependabot
       # addSbtPlugin("org" % "name" % valName)
       # Also handles dotted references like Object.member
       PLUGIN_VAL_REF_REGEX = T.let(
-        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)\s*\)/,
+        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>#{IDENT_OR_DOTTED})\s*\)/,
         Regexp
       )
 
@@ -65,7 +71,7 @@ module Dependabot
 
       # scalaVersion := valRef  or  scalaVersion in ThisBuild := V.scala212
       SCALA_VERSION_VAL_REGEX = T.let(
-        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)},
+        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*(?<val_name>#{IDENT_OR_DOTTED})},
         Regexp
       )
 
@@ -136,18 +142,8 @@ module Dependabot
       sig { returns(String) }
       def scala_full_version
         sbt_files.each do |file|
-          match = prepared_content(file).match(SCALA_VERSION_REGEX)
-          return T.must(match[:version]) if match
-
-          val_match = prepared_content(file).match(SCALA_VERSION_VAL_REGEX)
-          next unless val_match
-
-          val_name = T.must(val_match[:val_name])
-          resolved = property_value_finder.property_value(
-            property_name: val_name,
-            callsite_buildfile: file
-          )
-          return resolved if resolved
+          version = resolve_scala_version(file)
+          return version if version
         end
         "NOT-AVAILABLE"
       end
@@ -179,17 +175,12 @@ module Dependabot
 
           next unless Sbt::Version.correct?(version)
 
-          dependency_set << Dependency.new(
+          meta = cross_versioned ? { packaging_type: "cross-versioned" } : nil
+          dependency_set << new_dependency(
             name: dep_name,
             version: version,
-            requirements: [{
-              requirement: version,
-              file: buildfile.name,
-              source: nil,
-              groups: [],
-              metadata: cross_versioned ? { packaging_type: "cross-versioned" } : nil
-            }],
-            package_manager: "sbt"
+            file: buildfile.name,
+            metadata: meta
           )
         end
 
@@ -225,17 +216,11 @@ module Dependabot
           )
           metadata[:packaging_type] = "cross-versioned" if cross_versioned
 
-          dependency_set << Dependency.new(
+          dependency_set << new_dependency(
             name: dep_name,
             version: version,
-            requirements: [{
-              requirement: version,
-              file: buildfile.name,
-              source: nil,
-              groups: [],
-              metadata: metadata
-            }],
-            package_manager: "sbt"
+            file: buildfile.name,
+            metadata: metadata
           )
         end
 
@@ -254,17 +239,11 @@ module Dependabot
 
           next unless Sbt::Version.correct?(version)
 
-          dependency_set << Dependency.new(
+          dependency_set << new_dependency(
             name: "#{group}:#{artifact}",
             version: version,
-            requirements: [{
-              requirement: version,
-              file: buildfile.name,
-              source: nil,
-              groups: ["plugins"],
-              metadata: nil
-            }],
-            package_manager: "sbt"
+            file: buildfile.name,
+            groups: ["plugins"]
           )
         end
 
@@ -291,17 +270,13 @@ module Dependabot
           next unless version
           next unless Sbt::Version.correct?(version)
 
-          dependency_set << Dependency.new(
+          meta = { property_name: val_name, property_source: property_details[:file] }
+          dependency_set << new_dependency(
             name: "#{group}:#{artifact}",
             version: version,
-            requirements: [{
-              requirement: version,
-              file: buildfile.name,
-              source: nil,
-              groups: ["plugins"],
-              metadata: { property_name: val_name, property_source: property_details[:file] }
-            }],
-            package_manager: "sbt"
+            file: buildfile.name,
+            groups: ["plugins"],
+            metadata: meta
           )
         end
 
@@ -322,17 +297,11 @@ module Dependabot
           version = T.must(match[:version]).strip
           next unless Sbt::Version.correct?(version)
 
-          dependency_set << Dependency.new(
+          dependency_set << new_dependency(
             name: "org.scala-sbt:sbt",
             version: version,
-            requirements: [{
-              requirement: version,
-              file: properties_file.name,
-              source: nil,
-              groups: [],
-              metadata: { property_source: "build.properties" }
-            }],
-            package_manager: "sbt"
+            file: properties_file.name,
+            metadata: { property_source: "build.properties" }
           )
 
           break
@@ -354,17 +323,11 @@ module Dependabot
         # Scala 3 uses scala3-library, Scala 2 uses scala-library
         dep_name = version.start_with?("3") ? "org.scala-lang:scala3-library_3" : "org.scala-lang:scala-library"
 
-        dependency_set << Dependency.new(
+        dependency_set << new_dependency(
           name: dep_name,
           version: version,
-          requirements: [{
-            requirement: version,
-            file: buildfile.name,
-            source: nil,
-            groups: [],
-            metadata: { property_source: "scalaVersion" }
-          }],
-          package_manager: "sbt"
+          file: buildfile.name,
+          metadata: { property_source: "scalaVersion" }
         )
 
         dependency_set
@@ -395,27 +358,28 @@ module Dependabot
         files_to_check << root if root && root != buildfile
 
         files_to_check.each do |file|
-          # Try literal scalaVersion first
-          match = prepared_content(file).match(SCALA_VERSION_REGEX)
-          if match
-            full_version = T.must(match[:version])
-            return extract_scala_major(full_version)
-          end
-
-          # Try val-reference scalaVersion (e.g. scalaVersion := myVal or := V.scala212)
-          val_match = prepared_content(file).match(SCALA_VERSION_VAL_REGEX)
-          next unless val_match
-
-          val_name = T.must(val_match[:val_name])
-          resolved = property_value_finder.property_value(
-            property_name: val_name,
-            callsite_buildfile: file
-          )
-          return extract_scala_major(resolved) if resolved
+          version = resolve_scala_version(file)
+          return extract_scala_major(version) if version
         end
 
         # Default to 2.13 if scalaVersion is not declared
         "2.13"
+      end
+
+      # Resolves scalaVersion from a file, trying literal value first, then val reference.
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def resolve_scala_version(file)
+        match = prepared_content(file).match(SCALA_VERSION_REGEX)
+        return T.must(match[:version]) if match
+
+        val_match = prepared_content(file).match(SCALA_VERSION_VAL_REGEX)
+        return nil unless val_match
+
+        val_name = T.must(val_match[:val_name])
+        property_value_finder.property_value(
+          property_name: val_name,
+          callsite_buildfile: file
+        )
       end
 
       sig { params(full_version: String).returns(String) }
@@ -467,6 +431,27 @@ module Dependabot
         @scala_build_files ||= T.let(
           dependency_files.select { |f| f.name.end_with?(".scala") && f.name.start_with?("project/") },
           T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig do
+        params(
+          name: String,
+          version: String,
+          file: String,
+          groups: T::Array[String],
+          metadata: T.nilable(T::Hash[Symbol, T.untyped])
+        ).returns(Dependabot::Dependency)
+      end
+      def new_dependency(name:, version:, file:, groups: [], metadata: nil)
+        Dependency.new(
+          name: name,
+          version: version,
+          requirements: [{
+            requirement: version, file: file,
+            source: nil, groups: groups, metadata: metadata
+          }],
+          package_manager: "sbt"
         )
       end
 

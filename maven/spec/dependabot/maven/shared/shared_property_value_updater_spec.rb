@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Maven::Shared::SharedPropertyValueUpdater do
         @dependency_files = dependency_files
       end
 
-      def property_details(property_name:)
+      def property_details(property_name:, callsite_buildfile: nil) # rubocop:disable Lint/UnusedMethodArgument
         @dependency_files.each do |file|
           file.content&.scan(
             /(?:^|\s)(?:lazy\s+)?val\s+#{Regexp.quote(property_name)}(?:\s*:\s*String)?\s*=\s*"([^"]+)"/

@@ -41,6 +41,8 @@ module Dependabot
             property_name: property_name,
             callsite_buildfile: callsite_buildfile
           )
+          raise "Property '#{property_name}' not found" unless declaration_details
+
           declaration_string = T.let(declaration_details.fetch(:declaration_string), String)
           filename = T.let(declaration_details.fetch(:file), String)
 

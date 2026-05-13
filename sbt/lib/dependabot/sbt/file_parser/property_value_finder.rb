@@ -74,30 +74,55 @@ module Dependabot
           object_name = T.must(parts.first)
           member_name = T.must(parts.last)
 
+          # Resolve val aliases (e.g. "val V = BuildInfo" means V.x should look in object BuildInfo)
+          resolved_names = resolve_object_aliases(object_name, callsite_buildfile)
+
+          all_files = [callsite_buildfile, top_level_buildfile].compact
+          all_files += project_scala_files
+          all_files.uniq!
+
+          resolved_names.each do |resolved_name|
+            all_files.each do |file|
+              content = prepared_content(file)
+              object_regex = /object\s+#{Regexp.quote(resolved_name)}\b[^{]*\{(?<body>[^}]*)\}/m
+              content.scan(object_regex) do
+                body = T.must(Regexp.last_match).named_captures.fetch("body")
+                member_regex = /(?:^|\s)(?:lazy\s+)?val\s+#{Regexp.quote(member_name)}/
+                member_value_regex = /#{member_regex}(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/
+                member_match = body&.match(member_value_regex)
+                next unless member_match
+
+                declaration_string = member_match.to_s.strip
+                return {
+                  value: T.must(member_match[:value]),
+                  declaration_string: declaration_string,
+                  file: file.name
+                }
+              end
+            end
+          end
+
+          nil
+        end
+
+        # Resolves val aliases like "val V = BuildInfo" → returns ["V", "BuildInfo"]
+        # so that dotted references like V.member can look in object BuildInfo.
+        sig { params(name: String, callsite_buildfile: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def resolve_object_aliases(name, callsite_buildfile)
+          names = [name]
+
           all_files = [callsite_buildfile, top_level_buildfile].compact
           all_files += project_scala_files
           all_files.uniq!
 
           all_files.each do |file|
-            content = prepared_content(file)
-            # Look for val <member> = "value" inside object <ObjectName>
-            object_regex = /object\s+#{Regexp.quote(object_name)}\b[^{]*\{(?<body>[^}]*)\}/m
-            content.scan(object_regex) do
-              body = T.must(Regexp.last_match).named_captures.fetch("body")
-              member_regex = /(?:^|\s)(?:lazy\s+)?val\s+#{Regexp.quote(member_name)}(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/
-              member_match = body&.match(member_regex)
-              next unless member_match
-
-              declaration_string = member_match.to_s.strip
-              return {
-                value: T.must(member_match[:value]),
-                declaration_string: declaration_string,
-                file: file.name
-              }
+            prepared_content(file).scan(/(?:^|\s)(?:lazy\s+)?val\s+#{Regexp.quote(name)}\s*=\s*(?<target>[A-Z]\w*)/) do
+              target = T.must(Regexp.last_match).named_captures.fetch("target")
+              names << T.must(target) unless names.include?(target)
             end
           end
 
-          nil
+          names
         end
 
         sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[String, T::Hash[Symbol, String]]) }

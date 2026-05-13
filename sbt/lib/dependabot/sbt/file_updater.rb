@@ -14,6 +14,14 @@ module Dependabot
 
       require_relative "file_updater/property_value_updater"
 
+      # Regex matching scalaVersion declarations in all supported SBT syntaxes
+      SCALA_VERSION_DECL = T.let(
+        "(?:ThisBuild\\s*/\\s*)?" \
+        "(?:scalaVersion\\s+in\\s+ThisBuild|scalaVersion)" \
+        '\\s*:=\\s*"',
+        String
+      )
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
@@ -55,20 +63,34 @@ module Dependabot
           raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
           next if new_req[:requirement] == T.must(old_req)[:requirement]
 
-          if new_req.dig(:metadata, :property_name)
-            files = update_files_for_property_change(files, T.must(old_req), new_req)
-          elsif T.let(new_req[:file], String).end_with?("build.properties")
-            files = update_build_properties(files, T.must(old_req), new_req)
-          elsif scala_version_requirement?(new_req)
-            file = T.must(files.find { |f| f.name == new_req[:file] })
-            files[T.must(files.index(file))] = update_scala_version(file, T.must(old_req), new_req)
-          else
-            file = T.must(files.find { |f| f.name == new_req[:file] })
-            files[T.must(files.index(file))] = update_version_in_buildfile(dependency, file, T.must(old_req), new_req)
-          end
+          files = apply_requirement_update(files, dependency, new_req, T.must(old_req))
         end
 
         files
+      end
+
+      sig do
+        params(
+          files: T::Array[Dependabot::DependencyFile],
+          dependency: Dependabot::Dependency,
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T::Hash[Symbol, T.untyped]
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def apply_requirement_update(files, dependency, new_req, old_req)
+        if new_req.dig(:metadata, :property_name)
+          update_files_for_property_change(files, old_req, new_req)
+        elsif T.let(new_req[:file], String).end_with?("build.properties")
+          update_build_properties(files, old_req, new_req)
+        elsif scala_version_requirement?(new_req)
+          file = T.must(files.find { |f| f.name == new_req[:file] })
+          idx = T.must(files.index(file))
+          files.dup.tap { |updated| updated[idx] = update_scala_version(file, old_req, new_req) }
+        else
+          file = T.must(files.find { |f| f.name == new_req[:file] })
+          idx = T.must(files.index(file))
+          files.dup.tap { |updated| updated[idx] = update_version_in_buildfile(dependency, file, old_req, new_req) }
+        end
       end
 
       sig do
@@ -128,7 +150,7 @@ module Dependabot
         new_version = T.let(new_req.fetch(:requirement), String)
 
         updated_content = T.must(file.content).sub(
-          %r{((?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*")#{Regexp.quote(old_version)}(")},
+          /(#{SCALA_VERSION_DECL})#{Regexp.quote(old_version)}(")/,
           "\\1#{new_version}\\2"
         )
 
