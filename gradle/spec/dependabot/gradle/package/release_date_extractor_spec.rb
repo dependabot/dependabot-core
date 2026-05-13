@@ -20,7 +20,8 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       extractor.extract(
         repositories: repositories,
         dependency_metadata_fetcher: dependency_metadata_fetcher,
-        release_info_metadata_fetcher: release_info_metadata_fetcher
+        release_info_metadata_fetcher: release_info_metadata_fetcher,
+        version_release_date_fetcher: nil
       )
     end
 
@@ -131,7 +132,7 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       end
     end
 
-    context "with both repository styles" do
+    context "with both repository styles and fallback" do
       let(:repositories) do
         [
           { "url" => "https://plugins.gradle.org/m2", "auth_headers" => {} },
@@ -154,18 +155,26 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
             <body>
               <a href="1.0.0/" title="1.0.0/"></a>       2019-11-01 10:00    -
               <a href="1.2.0/" title="1.2.0/"></a>       2019-12-01 14:30    -
+              <a href="1.3.0/" title="1.3.0/"></a>       <!-- no date -->
             </body>
           </html>
         HTML
       end
       let(:dependency_metadata_fetcher) { ->(_repo) { Nokogiri::XML(maven_metadata_xml) } }
       let(:release_info_metadata_fetcher) { ->(_repo) { Nokogiri::HTML(html_listing) } }
+      let(:fallback_dates) { { "1.3.0" => Time.utc(2020, 1, 1, 12, 0, 0) } }
+      let(:version_release_date_fetcher) { ->(version) { fallback_dates[version] } }
 
-      it "combines data from both sources without duplicates" do
-        result = extract_release_dates
-        # Version 1.2.0 should be found from Gradle Plugin Portal first, not overwritten by Maven
+      it "combines data from all sources and uses fallback if needed" do
+        result = extractor.extract(
+          repositories: repositories,
+          dependency_metadata_fetcher: dependency_metadata_fetcher,
+          release_info_metadata_fetcher: release_info_metadata_fetcher,
+          version_release_date_fetcher: version_release_date_fetcher
+        )
         expect(result["1.2.0"]).to eq({ release_date: Time.utc(2019, 12, 1, 19, 14, 59) })
         expect(result["1.0.0"][:release_date]).to be_a(Time)
+        expect(result["1.3.0"][:release_date]).to eq(Time.utc(2020, 1, 1, 12, 0, 0))
       end
     end
 

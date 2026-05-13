@@ -38,10 +38,11 @@ module Dependabot
             ).returns(Nokogiri::XML::Document),
             release_info_metadata_fetcher: T.proc.params(
               repo: T::Hash[String, T.untyped]
-            ).returns(Nokogiri::HTML::Document)
+            ).returns(Nokogiri::HTML::Document),
+            version_release_date_fetcher: T.nilable(T.proc.params(version: String).returns(T.nilable(Time)))
           ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
         end
-        def extract(repositories:, dependency_metadata_fetcher:, release_info_metadata_fetcher:)
+        def extract(repositories:, dependency_metadata_fetcher:, release_info_metadata_fetcher:, version_release_date_fetcher: nil)
           release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
           begin
@@ -57,6 +58,24 @@ module Dependabot
                 release_date_info,
                 release_info_metadata_fetcher
               )
+            end
+
+            # Fallback: For any version missing a release date, use version_release_date_fetcher if provided
+            if version_release_date_fetcher
+              all_versions = release_date_info.keys
+              # Also include versions found in directory listing links (if not already present)
+              repositories.each do |repository_details|
+                release_info_metadata_fetcher.call(repository_details).css("a[href]").each do |link|
+                  version = extract_version_from_link(link)
+                  next unless version && version_class.correct?(version)
+                  all_versions << version unless all_versions.include?(version)
+                end
+              end
+              all_versions.uniq.each do |version|
+                next if release_date_info[version]&.dig(:release_date)
+                release_date = version_release_date_fetcher.call(version)
+                release_date_info[version] = { release_date: release_date } if release_date
+              end
             end
 
             release_date_info

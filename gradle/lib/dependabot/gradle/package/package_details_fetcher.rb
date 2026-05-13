@@ -110,8 +110,25 @@ module Dependabot
           extractor.extract(
             repositories: repositories,
             dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
-            release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
+            release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) },
+            version_release_date_fetcher: method(:version_release_date_fallback)
           )
+        end
+
+        # Fallback: fetch Last-Modified header from the POM file for a version
+        def version_release_date_fallback(version)
+          repositories.each do |repo|
+            url = repo["url"]
+            pom_url = File.join(url, *dependency.name.split("."), dependency.name.split(":").last + ".gradle.plugin", version, "#{dependency.name.split(":").last}.gradle.plugin-#{version}.pom")
+            begin
+              response = Dependabot::RegistryClient.head(url: pom_url, headers: repo["auth_headers"])
+              last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
+              return Time.httpdate(last_modified) if last_modified
+            rescue StandardError
+              next
+            end
+          end
+          nil
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
