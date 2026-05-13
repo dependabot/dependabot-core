@@ -30,6 +30,18 @@ module Dependabot
       # https://opentofu.org/docs/language/providers/requirements/#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
 
+      # Namespaces reserved for providers bundled with the OpenTofu/Terraform
+      # binary. Providers in these namespaces cannot be updated independently
+      # because their version tracks the binary itself.
+      # See: https://pkg.go.dev/github.com/opentofu/registry-address/v2#Provider.IsBuiltIn
+      BUILTIN_PROVIDER_NAMESPACES = T.let(
+        %w(
+          terraform.io/builtin
+          opentofu.org/builtin
+        ).freeze,
+        T::Array[String]
+      )
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
@@ -56,6 +68,17 @@ module Dependabot
 
       private
 
+      sig { params(details: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
+      def builtin_provider?(details)
+        return false unless details.is_a?(Hash)
+
+        source_address = details["source"]
+        return false unless source_address.is_a?(String)
+
+        normalized = source_address.downcase
+        BUILTIN_PROVIDER_NAMESPACES.any? { |ns| normalized.start_with?("#{ns}/") }
+      end
+
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_opentofu_files(dependency_set)
@@ -75,24 +98,29 @@ module Dependabot
             details = details.first
 
             source = source_from(details)
-            # Cannot update local path modules, skip
-            next if source && source[:type] == "path"
+            # nil sources are unpinned (e.g. OCI without a tag/digest); paths are local.
+            next if source.nil? || source[:type] == "path"
 
             # Cannot update modules using early evaluation yet
-            if T.must(source)[:type] == "interpolation"
+            if source[:type] == "interpolation"
               Dependabot.logger.warn(
                 "Cannot parse module source name with early evaluation for #{name} in #{file.name}."
               )
               next
             end
 
-            dependency_set << build_opentofu_dependency(file, name, T.must(source), details)
+            dependency_set << build_opentofu_dependency(file, name, source, details)
           end
 
           parsed_file(file).fetch("terraform", []).each do |opentofu|
             required_providers = opentofu.fetch("required_providers", {})
             required_providers.each do |provider|
               provider.each do |name, details|
+                if builtin_provider?(details)
+                  Dependabot.logger.info("Skipping built-in provider #{name} in #{file.name}")
+                  next
+                end
+
                 dependency_set << build_provider_dependency(file, name, details)
               end
             end
@@ -137,6 +165,7 @@ module Dependabot
         version_req = details["version"]&.strip
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
+          elsif source[:type] == "oci" then source[:version]
           elsif version_req&.match?(/^\d/) then version_req
           end
 
@@ -230,18 +259,21 @@ module Dependabot
 
         source_details =
           case source_type
-          # TODO: add support for OCI Registries https://opentofu.org/docs/cli/oci_registries/
           when :http_archive, :path, :mercurial, :s3
             { type: source_type.to_s, url: bare_source }
           when :github, :bitbucket, :git
             git_source_details_from(bare_source)
+          when :oci
+            oci_source_details_from(bare_source)
           when :registry
             registry_source_details_from(bare_source)
           when :interpolation
             { type: source_type.to_s, name: bare_source }
           end
 
-        T.must(source_details)[:proxy_url] = raw_source if raw_source != bare_source
+        return nil if source_details.nil?
+
+        source_details[:proxy_url] = raw_source if raw_source != bare_source
         source_details
       end
 
@@ -250,28 +282,65 @@ module Dependabot
         matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
         matches = {} if matches.nil?
 
+        # OpenTofu provider source addresses are case-insensitive, so we normalize
+        # to lowercase to avoid treating e.g. "Azure/azapi" and "azure/azapi" as
+        # different sources when merging dependencies across multiple files.
         [
-          matches[:hostname] || DEFAULT_REGISTRY,
-          matches[:namespace] || DEFAULT_NAMESPACE,
-          matches[:name] || name
+          (matches[:hostname] || DEFAULT_REGISTRY).downcase,
+          (matches[:namespace] || DEFAULT_NAMESPACE).downcase,
+          (matches[:name] || name).downcase
         ]
+      end
+
+      sig { params(source_string: T.untyped).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
+      def oci_source_details_from(source_string)
+        uri_part, query_part = source_string.split("oci://").last.split("?", 2)
+
+        # Sources with no query string are unpinned — nothing to update.
+        return nil if query_part.nil?
+
+        # `//` (not preceded by `:`) separates the bare repository from a
+        # sub-module path; only the bare repo is queryable for tags.
+        artifact_identifier, subdirectory = uri_part.split(%r{(?<!:)//}, 2)
+
+        qs = CGI.parse(query_part)
+        # Treat `?tag=` or `?digest=` (empty value) the same as the param
+        # being absent, so we don't propagate "" as a usable version.
+        tag = qs["tag"].first&.then { |v| v.empty? ? nil : v }
+        digest = qs["digest"].first&.then { |v| v.empty? ? nil : v }
+
+        if tag && digest
+          raise DependencyFileNotEvaluatable,
+                "Invalid OCI source '#{source_string}': only one of `tag` or `digest` may be specified"
+        end
+
+        {
+          type: "oci",
+          artifact_identifier: artifact_identifier,
+          subdirectory: subdirectory,
+          tag: tag,
+          digest: digest,
+          version: tag || digest
+        }
       end
 
       sig { params(source_string: T.untyped).returns(T::Hash[Symbol, String]) }
       def registry_source_details_from(source_string)
         parts = source_string.split("//").first.split("/")
 
+        # Registry module source addresses are case-insensitive, so we normalize
+        # to lowercase to avoid treating case-variant declarations as different sources.
         if parts.count == 3
           {
             type: "registry",
             registry_hostname: "registry.opentofu.org",
-            module_identifier: source_string.split("//").first
+            module_identifier: source_string.split("//").first.downcase
           }
         elsif parts.count == 4
           {
             type: "registry",
-            registry_hostname: parts.first,
-            module_identifier: parts[1..3].join("/")
+            registry_hostname: parts.first.downcase,
+            module_identifier: parts[1..3].join("/").downcase
           }
         else
           msg = "Invalid registry source specified: '#{source_string}'"
@@ -328,7 +397,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
-        # TODO: add support for OCI Registries https://opentofu.org/docs/cli/oci_registries/
+        return :oci if source_string.include?("oci://")
         return :interpolation if source_string.include?("${")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")

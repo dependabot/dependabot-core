@@ -5,7 +5,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   gnupg2 sudo curl apt-transport-https
 
-ARG ERLANG_MAJOR_VERSION=26
+ARG ERLANG_MAJOR_VERSION=27
 
 # This is using https://www.rabbitmq.com/docs/install-debian#apt-launchpad-erlang to install erlang. Previously, esl-erlang was used, but it does not
 # contain arm architecture packages. The base `apt` erlang version should not be used--it is too old.
@@ -30,7 +30,7 @@ RUN apt-get update \
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.19.5
-ARG ELIXIR_CHECKSUM=db6701f2232be899190ecb8dbf280104fe2434675093c2b5935e563a08052afb
+ARG ELIXIR_CHECKSUM=1ab3154ec19adcd4b764cf96badecbe44df5ec6f358dc0fbe29c3749ff6c08de
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \

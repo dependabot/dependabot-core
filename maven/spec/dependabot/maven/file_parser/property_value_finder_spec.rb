@@ -53,6 +53,13 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("org.reproducer.channels2") }
       end
 
+      context "when the nested property is undefined" do
+        let(:base_pom_fixture_name) { "pom_with_undefined_property.xml" }
+        let(:property_name) { "os.detected.classifier" }
+
+        its([:value]) { is_expected.to eq("") }
+      end
+
       context "when the property name starts with 'project' but not an attribute of the project" do
         let(:base_pom_fixture_name) { "property_name_starts_with_project_pom.xml" }
         let(:property_name) { "project.dependency.spring-boot.version" }

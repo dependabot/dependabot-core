@@ -30,7 +30,7 @@ module Dependabot
         return additional_dependency_latest_version if additional_dependency?
 
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release,
+          T.must(latest_version_finder).latest_release_version,
           T.nilable(T.any(String, Gem::Version))
         )
       end

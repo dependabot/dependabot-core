@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/gradle/package/release_date_extractor"
+require "dependabot/gradle/version"
 
 RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
   let(:extractor) do
@@ -75,6 +76,58 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
         result = extract_release_dates
         expect(result["1.0.0"][:release_date]).to be_a(Time)
         expect(result["1.1.0"][:release_date]).to be_a(Time)
+      end
+    end
+
+    context "with Artifactory style repository" do
+      let(:repositories) do
+        [{ "url" => "https://artifactory.example.com/maven", "auth_headers" => {} }]
+      end
+      let(:html_listing) do
+        <<~HTML
+          <html>
+            <body>
+              <pre><a href="../">../</a>
+              <a href="1.0/">1.0/</a>                 24-Jul-2025 10:31    -
+              <a href="1.2/">1.2/</a>                 24-Jul-2025 10:33    -
+              <a href="1.3.6/">1.3.6/</a>               05-May-2026 13:55    -
+              <a href="maven-metadata.xml">maven-metadata.xml</a>   05-May-2026 13:55  443 bytes
+              </pre>
+            </body>
+          </html>
+        HTML
+      end
+      let(:release_info_metadata_fetcher) { ->(_repo) { Nokogiri::HTML(html_listing) } }
+
+      it "extracts release dates from directory listings without title attributes" do
+        result = extract_release_dates
+
+        expect(result["1.0"]).to eq({ release_date: Time.parse("24-Jul-2025 10:31") })
+        expect(result["1.2"]).to eq({ release_date: Time.parse("24-Jul-2025 10:33") })
+        expect(result["1.3.6"]).to eq({ release_date: Time.parse("05-May-2026 13:55") })
+        expect(result).not_to have_key("maven-metadata.xml")
+      end
+    end
+
+    context "with directory listings that use title without trailing slash" do
+      let(:repositories) do
+        [{ "url" => "https://repo.example.com/maven", "auth_headers" => {} }]
+      end
+      let(:html_listing) do
+        <<~HTML
+          <html>
+            <body>
+              <a href="1.2.3/" title="1.2.3"></a>       2026-05-05 13:55    -
+            </body>
+          </html>
+        HTML
+      end
+      let(:release_info_metadata_fetcher) { ->(_repo) { Nokogiri::HTML(html_listing) } }
+
+      it "extracts the version using directory href when title omits the trailing slash" do
+        result = extract_release_dates
+
+        expect(result["1.2.3"]).to eq({ release_date: Time.parse("2026-05-05 13:55") })
       end
     end
 

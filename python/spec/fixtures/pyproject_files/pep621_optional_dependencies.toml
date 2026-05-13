@@ -1,0 +1,21 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+description = "Test project with optional dependencies"
+requires-python = ">=3.10"
+
+dependencies = [
+    "requests>=2.13.0",
+]
+
+[project.optional-dependencies]
+socks = [
+    'PySocks >= 1.5.6, != 1.5.7, < 2',
+]
+tests = [
+    "pytest >= 7.0, < 8",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

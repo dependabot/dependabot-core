@@ -183,7 +183,12 @@ function Get-NuGetConfigContents([PSObject[]]$creds) {
         $sourceName = "nuget_source_$i"
         $i++
         $url = $cred.url
-        $customSourceLines += "    <add key=`"$sourceName`" value=`"$url`" />"
+        $insecureAttr = ""
+        if ($url.StartsWith("http://")) {
+            $insecureAttr = "allowInsecureConnections=`"true`" "
+        }
+
+        $customSourceLines += "    <add key=`"$sourceName`" value=`"$url`" $insecureAttr/>"
     }
 
     $lines = @()

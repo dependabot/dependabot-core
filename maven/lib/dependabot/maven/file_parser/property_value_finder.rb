@@ -127,7 +127,7 @@ module Dependabot
               callsite_pom: callsite_pom,
               seen_properties: seen_properties
             )
-            T.must(resolved)[:value]
+            resolved[:value] if resolved
           end
 
           { file: pom.name, node: node, value: resolved_value }

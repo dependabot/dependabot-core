@@ -18,6 +18,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_plugin_installer"
 
 module Dependabot
   module Python
@@ -90,6 +91,7 @@ module Dependabot
           @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
+          @poetry_plugin_installer = T.let(nil, T.nilable(PoetryPluginInstaller))
         end
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
@@ -128,6 +130,9 @@ module Dependabot
                 add_auth_env_vars
 
                 language_version_manager.install_required_python
+
+                # Install any required Poetry plugins declared in pyproject.toml
+                poetry_plugin_installer.install_required_plugins
 
                 # use system git instead of the pure Python dulwich
                 run_poetry_command("pyenv exec poetry config system-git-client true")
@@ -383,6 +388,14 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           poetry_lock
+        end
+
+        sig { returns(PoetryPluginInstaller) }
+        def poetry_plugin_installer
+          @poetry_plugin_installer ||= T.let(
+            PoetryPluginInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryPluginInstaller)
+          )
         end
 
         sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }

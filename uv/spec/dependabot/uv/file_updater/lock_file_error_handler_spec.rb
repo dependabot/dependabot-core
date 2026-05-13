@@ -472,6 +472,77 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
       end
     end
 
+    context "when unhandled uv error starts with 'Using CPython' (conflicting URLs)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: conflicting_urls_error,
+          error_context: {}
+        )
+      end
+
+      let(:conflicting_urls_error) do
+        <<~ERROR
+          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+             Updating https://github.com/org/repo-a (HEAD)
+             Updating https://github.com/org/repo-b (HEAD)
+              Updated https://github.com/org/repo-a (c153cf38a632381e617475adff6f71cc9fe8087d)
+              Updated https://github.com/org/repo-b (0fd65b7f549ed22c154e2e64c20b88a73a1a9e56)
+            × Failed to resolve dependencies for `my-cli` (v0.2.1)
+            ╰─▶ Requirements contain conflicting URLs for package `my-services`
+                in split `python_full_version >= '3.14' and sys_platform == 'win32'`:
+                - git+https://github.com/org/repo-a@v0.x
+                - git+https://github.com/org/repo-b
+            help: `my-cli` (v0.2.1) was included because
+                  `my-project:dev` (v2.0.0) depends on `my-cli`
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable with the error details" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("Failed to resolve dependencies")
+          expect(raised_error.message).to include("conflicting URLs")
+          expect(raised_error.message).not_to include("Using CPython")
+        end
+      end
+    end
+
+    context "when unhandled uv error starts with 'Using CPython' (uv.lock parse failure)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: uv_lock_parse_error,
+          error_context: {}
+        )
+      end
+
+      let(:uv_lock_parse_error) do
+        <<~ERROR
+          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+          error: Failed to parse `uv.lock`
+            Caused by: Dependency `soupsieve` has missing `source` field but has more than one matching package
+        ERROR
+      end
+
+      it "raises DependencyFileNotResolvable and strips the CPython prefix" do
+        expect { handle_uv_error }.to raise_error(Dependabot::DependencyFileNotResolvable) do |raised_error|
+          expect(raised_error.message).to include("Failed to parse `uv.lock`")
+          expect(raised_error.message).not_to include("Using CPython")
+        end
+      end
+    end
+
+    context "when error contains 'Using CPython' mid-message (not at start)" do
+      let(:error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "some other error\nUsing CPython 3.11.14 interpreter at: /usr/bin/python3.11\ndetails",
+          error_context: {}
+        )
+      end
+
+      it "re-raises the original error" do
+        expect { handle_uv_error }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
+
     context "when error is unknown" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(

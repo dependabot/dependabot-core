@@ -1464,6 +1464,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       it "returns the latest version" do
+        # guard-bundler requires bundler < 3, incompatible with Bundler 4+
+        skip "Requires Bundler 2.x (guard-bundler constraint: < 3)" if PackageManagerHelper.helper_running_bundler_v4?
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end

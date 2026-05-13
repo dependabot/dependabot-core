@@ -170,4 +170,75 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
       expect(helper.classify_semver_update(prev_version, curr_version)).to eq("major")
     end
   end
+
+  describe "#update_type_for_dependency" do
+    before do
+      allow(Dependabot).to receive(:logger).and_return(instance_double(Logger, info: nil))
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "my-gem",
+        version: current_version,
+        previous_version: previous_version,
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "dummy"
+      )
+    end
+
+    context "when it is a major update" do
+      let(:previous_version) { "1.0.0" }
+      let(:current_version) { "2.0.0" }
+
+      it "returns 'major'" do
+        expect(helper.update_type_for_dependency(dependency)).to eq("major")
+      end
+    end
+
+    context "when it is a minor update" do
+      let(:previous_version) { "1.0.0" }
+      let(:current_version) { "1.1.0" }
+
+      it "returns 'minor'" do
+        expect(helper.update_type_for_dependency(dependency)).to eq("minor")
+      end
+    end
+
+    context "when it is a patch update" do
+      let(:previous_version) { "1.0.0" }
+      let(:current_version) { "1.0.1" }
+
+      it "returns 'patch'" do
+        expect(helper.update_type_for_dependency(dependency)).to eq("patch")
+      end
+    end
+
+    context "when previous_version is nil" do
+      let(:previous_version) { nil }
+      let(:current_version) { "1.0.0" }
+
+      it "returns nil" do
+        expect(helper.update_type_for_dependency(dependency)).to be_nil
+      end
+    end
+
+    context "when version is nil" do
+      let(:previous_version) { "1.0.0" }
+      let(:current_version) { nil }
+
+      it "returns nil" do
+        expect(helper.update_type_for_dependency(dependency)).to be_nil
+      end
+    end
+
+    context "when versions are the same" do
+      let(:previous_version) { "1.0.0" }
+      let(:current_version) { "1.0.0" }
+
+      it "returns nil" do
+        expect(helper.update_type_for_dependency(dependency)).to be_nil
+      end
+    end
+  end
 end

@@ -185,8 +185,24 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::package_manager_version" do
     it "retrieves the correct package manager version" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0-alpha\n")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).and_return("7.0.0-alpha\n")
       expect(described_class.package_manager_version("npm")).to eq("7.0.0-alpha")
+    end
+
+    it "passes env through to the corepack version command" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).and_return("11.9.0\n")
+
+      expect(described_class.package_manager_version("npm", env: env)).to eq("11.9.0")
     end
   end
 
@@ -234,7 +250,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("8.0.0")
 
         # Log expectations
@@ -275,7 +292,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("10.8.2")
 
         # Log expectations
@@ -321,7 +339,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_version("npm")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack npm -v",
-          fingerprint: "corepack npm -v"
+          fingerprint: "corepack npm -v",
+          env: {}
         ).and_return("10.8.2")
 
         # Log expectations
@@ -337,6 +356,139 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Test the result
         result = described_class.install("npm", "8.0.0")
         expect(result).to eq("10.8.2")
+      end
+    end
+
+    context "when corepack fails with private registry and falls back" do
+      let(:private_registry_env) do
+        {
+          "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+          "npm_config_registry" => "https://packages.example.com/artifactory/api/npm/npm",
+          "registry" => "https://packages.example.com/artifactory/api/npm/npm"
+        }
+      end
+
+      it "passes private registry env vars to fallback activation" do
+        # First call: corepack prepare npm@10.0.0 --activate WITH private registry env
+        # Fails with signature error (Artifactory strips signatures)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_raise(
+          StandardError,
+          "Preparing npm@10.0.0 for immediate activation...\n" \
+          "Internal Error: No compatible signature found in package metadata"
+        )
+
+        # Fallback: npm -v returns the container's installed version
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).and_return("11.9.0")
+
+        # Fallback must use the same private registry env vars
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_return("Preparing npm@11.9.0 for immediate activation...")
+
+        # package_manager_version after fallback
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        ).and_return("11.9.0")
+
+        # Log expectations
+        expect(Dependabot.logger).to receive(:info).with("Installing \"npm@10.0.0\"")
+        expect(Dependabot.logger).to receive(:error).with(
+          a_string_matching(/Error activating npm@10.0.0:.*No compatible signature found/m)
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of npm."
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of npm: 11.9.0"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 11.9.0")
+
+        result = described_class.install("npm", "10.0.0", env: private_registry_env)
+        expect(result).to eq("11.9.0")
+
+        # Verify the fallback call received the private registry env
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        )
+      end
+
+      it "passes private registry env vars to fallback on unexpected output" do
+        # First call returns unexpected output (no exception, but missing "immediate activation...")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_return("Some unexpected corepack output")
+
+        # Fallback: npm -v returns the container's installed version
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "npm -v",
+          fingerprint: "npm -v"
+        ).and_return("11.9.0")
+
+        # Fallback must use the same private registry env vars
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_return("Preparing npm@11.9.0 for immediate activation...")
+
+        # package_manager_version after fallback
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        ).and_return("11.9.0")
+
+        # Log expectations
+        expect(Dependabot.logger).to receive(:info).with("Installing \"npm@10.0.0\"")
+        expect(Dependabot.logger).to receive(:error).with(
+          "Corepack installation output unexpected: Some unexpected corepack output"
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of npm."
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of npm: 11.9.0"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 11.9.0")
+
+        result = described_class.install("npm", "10.0.0", env: private_registry_env)
+        expect(result).to eq("11.9.0")
+
+        # Verify the fallback call received the private registry env
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack prepare npm@11.9.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        )
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        )
       end
     end
   end

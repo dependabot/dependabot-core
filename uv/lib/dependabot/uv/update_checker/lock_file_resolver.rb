@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/package/release_cooldown_options"
 require "dependabot/uv/version"
 require "dependabot/uv/requirement"
 require "dependabot/uv/update_checker"
@@ -21,7 +22,8 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
-            ignored_versions: T::Array[String]
+            ignored_versions: T::Array[String],
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
         def initialize(
@@ -30,7 +32,8 @@ module Dependabot
           credentials:,
           repo_contents_path: nil,
           security_advisories: [],
-          ignored_versions: []
+          ignored_versions: [],
+          update_cooldown: nil
         )
           @dependency = dependency
           @dependency_files = dependency_files
@@ -38,6 +41,7 @@ module Dependabot
           @repo_contents_path = repo_contents_path
           @security_advisories = security_advisories
           @ignored_versions = ignored_versions
+          @update_cooldown = update_cooldown
         end
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Uv::Version)) }
@@ -90,6 +94,9 @@ module Dependabot
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
 
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
+
         sig { returns(LatestVersionFinder) }
         def latest_version_finder
           @latest_version_finder ||= T.let(
@@ -99,6 +106,7 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               security_advisories: security_advisories,
+              cooldown_options: update_cooldown,
               raise_on_ignored: false
             ),
             T.nilable(LatestVersionFinder)

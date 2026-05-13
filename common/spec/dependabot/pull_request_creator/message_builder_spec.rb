@@ -239,6 +239,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it { is_expected.to start_with("[Security] Bump business") }
         end
 
+        context "when a dependency has audit_fix_used metadata" do
+          let(:metadata) { { audit_fix_used: true } }
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 (via audit fix)") }
+        end
+
         context "with two dependencies" do
           let(:dependency2) do
             Dependabot::Dependency.new(
@@ -715,6 +721,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:vulnerabilities_fixed) { { business: [{}] } }
 
           it { is_expected.to start_with("[Security] Update business") }
+        end
+
+        context "when a dependency has audit_fix_used metadata" do
+          let(:metadata) { { audit_fix_used: true } }
+
+          it "appends (via audit fix) to the PR name" do
+            expect(pr_name)
+              .to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0 (via audit fix)")
+          end
         end
 
         context "with two dependencies" do

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
@@ -29,7 +28,8 @@ public class DiscoveryWorkerTestBase : TestBase
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath, includeCommonPackages: includeCommonPackages);
 
             repoContentsPath ??= directoryPath;
-            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
+            var logger = new StringLogger();
+            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, logger);
             var result = await worker.RunWithErrorHandlingAsync(repoContentsPath, workspacePath);
             return result;
         });
@@ -96,8 +96,6 @@ public class DiscoveryWorkerTestBase : TestBase
             Assert.True(actualProject is not null, $"Unable to find project with path `{expectedProject.FilePath.NormalizePathToUnix()}` in collection [{string.Join(", ", actualProjects.Select(p => p.FilePath))}]");
             Assert.Equal(expectedProject.FilePath.NormalizePathToUnix(), actualProject.FilePath.NormalizePathToUnix());
 
-            var actualProperties = actualProject.Properties;
-            AssertEx.Equal(expectedProject.Properties, actualProperties, PropertyComparer.Instance);
             AssertEx.Equal(expectedProject.TargetFrameworks, actualProject.TargetFrameworks);
             AssertEx.Equal(expectedProject.ReferencedProjectPaths, actualProject.ReferencedProjectPaths);
             AssertEx.Equal(expectedProject.ImportedFiles, actualProject.ImportedFiles);
@@ -109,6 +107,16 @@ public class DiscoveryWorkerTestBase : TestBase
 
             ValidateDependencies(expectedProject.Dependencies, actualDependencies);
             Assert.Equal(expectedProject.ExpectedDependencyCount ?? expectedProject.Dependencies.Length, actualDependencies.Length);
+
+            if (expectedProject.ExpectedPackageManagementKind is not null)
+            {
+                Assert.Equal(expectedProject.ExpectedPackageManagementKind.GetValueOrDefault(), actualProject.PackageManagementKind);
+            }
+
+            if (expectedProject.ExpectedPackageManagementSpecialFileRelativePath is not null)
+            {
+                Assert.Equal(expectedProject.ExpectedPackageManagementSpecialFileRelativePath, actualProject.PackageManagementSpecialFileRelativePath);
+            }
         }
     }
 
@@ -126,8 +134,7 @@ public class DiscoveryWorkerTestBase : TestBase
                 return d.Name == expectedDependency.Name
                     && d.Type == expectedDependency.Type
                     && d.Version == expectedDependency.Version
-                    && d.IsDirect == expectedDependency.IsDirect
-                    && d.IsTransitive == expectedDependency.IsTransitive
+                    && d.IsTopLevel == expectedDependency.IsTopLevel
                     && d.TargetFrameworks.SequenceEqual(expectedDependency.TargetFrameworks);
             }).ToArray();
             Assert.True(matchingDependencies.Length == 1, $"""
@@ -135,8 +142,7 @@ public class DiscoveryWorkerTestBase : TestBase
                     Name: {expectedDependency.Name}
                     Type: {expectedDependency.Type}
                     Version: {expectedDependency.Version}
-                    IsDirect: {expectedDependency.IsDirect}
-                    IsTransitive: {expectedDependency.IsTransitive}
+                    IsTopLevel: {expectedDependency.IsTopLevel}
                     TargetFrameworks: {string.Join(", ", expectedDependency.TargetFrameworks ?? [])}
                 Found:{"\n\t"}{string.Join("\n\t", actualDependencies)}
                 """);
@@ -151,22 +157,5 @@ public class DiscoveryWorkerTestBase : TestBase
         // run discovery
         var result = await action(temporaryDirectory.DirectoryPath);
         return result;
-    }
-
-    internal class PropertyComparer : IEqualityComparer<Property>
-    {
-        public static PropertyComparer Instance { get; } = new();
-
-        public bool Equals(Property? x, Property? y)
-        {
-            return x?.Name == y?.Name &&
-                   x?.Value == y?.Value &&
-                   x?.SourceFilePath.NormalizePathToUnix() == y?.SourceFilePath.NormalizePathToUnix();
-        }
-
-        public int GetHashCode([DisallowNull] Property obj)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

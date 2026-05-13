@@ -6,13 +6,13 @@ require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/maven/package/package_details_fetcher"
 require "dependabot/maven/update_checker"
-require "dependabot/maven/shared/shared_version_finder"
+require "dependabot/maven/shared/base_version_finder"
 require "sorbet-runtime"
 
 module Dependabot
   module Maven
     class UpdateChecker
-      class VersionFinder < Dependabot::Maven::Shared::SharedVersionFinder
+      class VersionFinder < Dependabot::Maven::Shared::BaseVersionFinder
         extend T::Sig
 
         sig do
@@ -52,91 +52,12 @@ module Dependabot
           @package_details ||= package_details_fetcher.fetch
         end
 
-        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
-        def releases
-          (package_details&.releases || []).reverse
-        end
-
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
-        def latest_version_details
-          release = fetch_latest_release
-          release&.version ? { version: release.version, source_url: release.url } : nil
-        end
-
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
-        def lowest_security_fix_version_details
-          release = fetch_lowest_security_fix_release
-          release&.version ? { version: release.version, source_url: release.url } : nil
-        end
-
-        protected
-
-        sig { returns(T::Boolean) }
-        def cooldown_enabled?
-          true
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Version))
-        end
-        def fetch_latest_version(language_version: nil)
-          fetch_latest_release(language_version: language_version)&.version
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Version))
-        end
-        def fetch_latest_version_with_no_unlock(language_version:)
-          fetch_latest_release(language_version: language_version)&.version
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Version))
-        end
-        def fetch_lowest_security_fix_version(language_version: nil)
-          fetch_lowest_security_fix_release(language_version: language_version)&.version
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Package::PackageRelease))
-        end
-        def fetch_latest_release(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
-          possible_releases = filter_prerelease_versions(releases)
-          possible_releases = filter_date_based_versions(possible_releases)
-          possible_releases = filter_version_types(possible_releases)
-          possible_releases = filter_ignored_versions(possible_releases)
-          possible_releases = filter_by_cooldown(possible_releases)
-          possible_releases_reverse = possible_releases.reverse
-
-          possible_releases_reverse.find do |r|
-            package_details_fetcher.released?(r.version)
-          end
-        end
-
-        sig do
-          params(language_version: T.nilable(T.any(String, Dependabot::Version)))
-            .returns(T.nilable(Dependabot::Package::PackageRelease))
-        end
-        def fetch_lowest_security_fix_release(language_version: nil) # rubocop:disable Lint/UnusedMethodArgument
-          possible_releases = filter_prerelease_versions(releases)
-          possible_releases = filter_date_based_versions(possible_releases)
-          possible_releases = filter_version_types(possible_releases)
-          possible_releases = Dependabot::UpdateCheckers::VersionFilters
-                              .filter_vulnerable_versions(
-                                possible_releases,
-                                security_advisories
-                              )
-          possible_releases = filter_ignored_versions(possible_releases)
-          possible_releases = filter_lower_versions(possible_releases)
-
-          possible_releases.find { |r| package_details_fetcher.released?(r.version) }
-        end
-
         private
+
+        sig { override.params(version: Dependabot::Version).returns(T::Boolean) }
+        def released?(version)
+          package_details_fetcher.released?(version)
+        end
 
         sig { returns(Package::PackageDetailsFetcher) }
         def package_details_fetcher
@@ -145,55 +66,6 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials
           )
-        end
-
-        sig do
-          params(possible_versions: T::Array[Dependabot::Package::PackageRelease])
-            .returns(T::Array[Dependabot::Package::PackageRelease])
-        end
-        def filter_date_based_versions(possible_versions)
-          return possible_versions if wants_date_based_version?
-
-          filtered = possible_versions.reject { |release| release.version > version_class.new(1900) }
-          if possible_versions.count > filtered.count
-            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
-          end
-          filtered
-        end
-
-        sig do
-          params(possible_versions: T::Array[Dependabot::Package::PackageRelease])
-            .returns(T::Array[Dependabot::Package::PackageRelease])
-        end
-        def filter_version_types(possible_versions)
-          filtered = possible_versions.select do |release|
-            matches_dependency_version_type?(release.version)
-          end
-          if possible_versions.count > filtered.count
-            diff = possible_versions.count - filtered.count
-            classifier = dependency.version&.split(/[.\-]/)&.last
-            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
-          end
-          filtered
-        end
-
-        sig { returns(T::Boolean) }
-        def wants_prerelease?
-          return false unless dependency.numeric_version
-
-          dependency.numeric_version&.prerelease? || false
-        end
-
-        sig { returns(T::Boolean) }
-        def wants_date_based_version?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version) >= version_class.new(100)
-        end
-
-        sig { returns(T.class_of(Dependabot::Version)) }
-        def version_class
-          dependency.version_class
         end
       end
     end

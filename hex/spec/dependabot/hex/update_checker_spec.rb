@@ -678,6 +678,41 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
+      context "when the helper fails to decode the public key (tuple order regression)" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+              "url" => private_registry_url
+            }
+          )]
+        end
+
+        before do
+          # Simulate the error produced by the Elixir helper when
+          # Hex.Repo.get_public_key/1 returns data in the wrong tuple order,
+          # causing `key` to be a headers map that :public_key.pem_decode/1
+          # cannot decode.
+          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+            .with(hash_including(function: "get_latest_resolvable_version"))
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: 'Failed to decode public key for repo "dependabot"',
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
       context "with dependencies on both a private organization and private repo" do
         let(:credentials) do
           [Dependabot::Credential.new(
