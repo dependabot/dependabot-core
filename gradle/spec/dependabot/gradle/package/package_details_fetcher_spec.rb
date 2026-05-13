@@ -203,6 +203,9 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
       end
 
       it "uses pom last-modified fallback when listing omits release date" do
+        logger = instance_double(Logger, info: nil, debug: nil)
+        allow(Dependabot).to receive(:logger).and_return(logger)
+
         stub_request(:get, gradle_plugin_html_url).to_return(
           status: 200,
           body: <<~HTML
@@ -221,6 +224,10 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         release = versions.find { |v| v[:version].to_s == "2.0.5.RELEASE" }
         expect(release).not_to be_nil
         expect(release[:released_at]).to eq(Time.utc(2026, 5, 11, 10, 8, 43))
+        expect(logger).to have_received(:info).with(
+          "Using POM Last-Modified fallback for org.springframework.boot version 2.0.5.RELEASE " \
+          "from https://plugins.gradle.org/m2: 2026-05-11 10:08:43 UTC"
+        )
       end
 
       describe "the first version" do

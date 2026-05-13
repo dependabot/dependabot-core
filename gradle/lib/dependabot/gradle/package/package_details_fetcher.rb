@@ -11,6 +11,7 @@ require "dependabot/gradle/requirement"
 require "dependabot/gradle/distributions"
 require "dependabot/maven/utils/auth_headers_finder"
 require "sorbet-runtime"
+require "dependabot/logger"
 require "dependabot/gradle/metadata_finder"
 require "dependabot/gradle/package/release_date_extractor"
 
@@ -121,16 +122,32 @@ module Dependabot
         sig { params(version: String).returns(T.nilable(Time)) }
         def version_release_date_fallback(version)
           repositories.each do |repo|
-            pom_url = plugin_version_pom_url(repo.fetch("url"), version)
+            repository_url = repo.fetch("url")
+            pom_url = plugin_version_pom_url(repository_url, version)
 
             begin
               response = Dependabot::RegistryClient.head(url: pom_url, headers: repo["auth_headers"])
               last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
-              return Time.httpdate(last_modified) if last_modified
-            rescue StandardError
-              next
+
+              next unless last_modified
+
+              released_at = Time.httpdate(last_modified)
+              Dependabot.logger.info(
+                "Using POM Last-Modified fallback for #{dependency.name} version #{version} from " \
+                "#{repository_url}: #{released_at}"
+              )
+              return released_at
+            rescue StandardError => e
+              Dependabot.logger.debug(
+                "Failed POM Last-Modified fallback for #{dependency.name} version #{version} from " \
+                "#{repository_url}: #{e.message}"
+              )
             end
           end
+
+          Dependabot.logger.debug(
+            "No POM Last-Modified fallback release date found for #{dependency.name} version #{version}"
+          )
           nil
         end
 
