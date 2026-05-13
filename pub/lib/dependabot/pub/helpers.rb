@@ -293,26 +293,13 @@ module Dependabot
         end
       end
 
-      NOT_EVALUATABLE_ERROR_REGEX = Regexp.union(
-        "Failed parsing lock file",
-        "Unsupported operation",
-        "Duplicate mapping key",
-        "doesn't match expected name"
-      )
-
-      NOT_RESOLVABLE_ERROR_REGEX = Regexp.union(
-        "version solving failed",
-        "found no workspace root",
-        "Only apply dependency_services to the root"
-      )
-
       sig { params(stderr: String).returns(T.noreturn) }
       def raise_error(stderr)
-        if stderr.match?(NOT_EVALUATABLE_ERROR_REGEX)
+        if stderr.include?("Failed parsing lock file") || stderr.include?("Unsupported operation")
           raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Git error")
           raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"
-        elsif stderr.match?(NOT_RESOLVABLE_ERROR_REGEX)
+        elsif stderr.match?(/version solving failed|found no workspace root|Only apply dependency_services to the root/)
           raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Could not find a file named \"pubspec.yaml\"")
           raise Dependabot::DependencyFileNotFound.new("pubspec.yaml", "dependency_services failed: #{stderr}")
