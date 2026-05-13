@@ -101,20 +101,30 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize,Metrics/PerceivedComplexity
 
+        sig { params(release: Dependabot::Package::PackageRelease).returns(Dependabot::Package::PackageRelease) }
+        def fetch_release_metadata(release:)
+          return release if release.released_at
+
+          release_date = release_details[release.version.to_s]&.fetch(:release_date, nil)
+          hydrated_release = build_release_with_date(release, release_date)
+
+          return hydrated_release if hydrated_release.released_at || !plugin?
+
+          fallback_release_date = version_release_date_fallback(release.version.to_s)
+          build_release_with_date(hydrated_release, fallback_release_date)
+        end
+
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
           extractor = ReleaseDateExtractor.new(
             dependency_name: dependency.name,
             version_class: version_class
           )
-
-          fallback_fetcher = plugin? ? ->(version) { version_release_date_fallback(version) } : nil
-
           extractor.extract(
             repositories: repositories,
             dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
             release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) },
-            version_release_date_fetcher: fallback_fetcher
+            version_release_date_fetcher: nil
           )
         end
 
@@ -158,6 +168,28 @@ module Dependabot
 
           pom_filename = "#{artifact_id}-#{version}.pom"
           File.join(repository_url, T.must(group_id).tr(".", "/"), artifact_id, version, pom_filename)
+        end
+
+        sig do
+          params(
+            release: Dependabot::Package::PackageRelease,
+            release_date: T.nilable(Time)
+          ).returns(Dependabot::Package::PackageRelease)
+        end
+        def build_release_with_date(release, release_date)
+          Dependabot::Package::PackageRelease.new(
+            version: release.version,
+            released_at: release_date,
+            latest: release.latest,
+            yanked: release.yanked,
+            yanked_reason: release.yanked_reason,
+            downloads: release.downloads,
+            url: release.url,
+            package_type: release.package_type,
+            language: release.language,
+            tag: release.tag,
+            details: release.details
+          )
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
