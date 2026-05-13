@@ -603,7 +603,10 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:cooldown_options) { nil }
 
       before do
-        allow(finder.send(:package_details_fetcher)).to receive(:fetch_release_metadata).with(release: release).and_return(release)
+        allow(finder.send(:package_details_fetcher))
+          .to receive(:fetch_release_metadata)
+          .with(release: release)
+          .and_return(release)
       end
 
       context "when release date is available" do
@@ -659,7 +662,10 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         let(:release_date) { nil }
 
         before do
-          allow(finder.send(:package_details_fetcher)).to receive(:fetch_release_metadata).with(release: release).and_return(release)
+          allow(finder.send(:package_details_fetcher))
+            .to receive(:fetch_release_metadata)
+            .with(release: release)
+            .and_return(release)
         end
 
         it "filters out the version" do
@@ -684,7 +690,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         end
 
         before do
-          allow(finder.send(:package_details_fetcher)).to receive(:fetch_release_metadata).with(release: release)
+          allow(finder.send(:package_details_fetcher))
+            .to receive(:fetch_release_metadata)
+            .with(release: release)
             .and_return(hydrated_release)
         end
 

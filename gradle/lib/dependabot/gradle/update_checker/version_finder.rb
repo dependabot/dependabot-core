@@ -233,22 +233,33 @@ module Dependabot
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
           release = package_details_fetcher.fetch_release_metadata(release: release)
-
-          unless release.released_at
-            if cooldown_options
-              Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
-              return true
-            else
-              Dependabot.logger.info("Release date not available for version #{release.version}")
-              return false
-            end
-          end
+          return missing_release_date_in_cooldown?(release) unless release.released_at
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
           days = cooldown_days_for(current_version, release.version)
+          cooldown_window?(release: release, days: days)
+        end
+
+        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def missing_release_date_in_cooldown?(release)
+          if cooldown_options
+            Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
+            true
+          else
+            Dependabot.logger.info("Release date not available for version #{release.version}")
+            false
+          end
+        end
+
+        sig do
+          params(
+            release: Dependabot::Package::PackageRelease,
+            days: Integer
+          ).returns(T::Boolean)
+        end
+        def cooldown_window?(release:, days:)
           in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
                         .within_cooldown_window?(T.must(release.released_at), days)
-
           if in_cooldown
             passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
@@ -256,7 +267,6 @@ module Dependabot
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
-
           in_cooldown
         end
 

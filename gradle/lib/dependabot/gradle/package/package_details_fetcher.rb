@@ -38,7 +38,6 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @forbidden_urls = forbidden_urls
-
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
@@ -57,17 +56,12 @@ module Dependabot
         attr_reader :forbidden_urls
 
         # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-        sig do
-          returns(T::Array[T::Hash[String, T.untyped]])
-        end
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def fetch_available_versions
-          T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
           package_releases = T.let([], T::Array[T::Hash[String, T.untyped]])
-
           version_details =
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
-
               next distribution_version_details if url == Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL
               next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
 
@@ -81,21 +75,16 @@ module Dependabot
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
           release_date_info = release_details
-
           version_details.map do |info|
-            version = info[:version]&.to_s
-
             package_releases << {
-              version: Gradle::Version.new(version),
-              released_at: info[:released_at] || release_date_info[version]&.fetch(:release_date),
+              version: Gradle::Version.new(info[:version].to_s),
+              released_at: info[:released_at] || release_date_info[info[:version].to_s]&.fetch(:release_date),
               source_url: info[:source_url]
             }
           end
           if version_details.none? && T.must(forbidden_urls).any?
-            raise PrivateSourceAuthenticationFailure,
-                  T.must(forbidden_urls).first
+            raise PrivateSourceAuthenticationFailure, T.must(forbidden_urls).first
           end
-          # version_details
 
           package_releases
         end
@@ -110,16 +99,12 @@ module Dependabot
 
           return hydrated_release if hydrated_release.released_at || !plugin?
 
-          fallback_release_date = version_release_date_fallback(release.version.to_s)
-          build_release_with_date(hydrated_release, fallback_release_date)
+          build_release_with_date(hydrated_release, version_release_date_fallback(release.version.to_s))
         end
 
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
-          extractor = ReleaseDateExtractor.new(
-            dependency_name: dependency.name,
-            version_class: version_class
-          )
+          extractor = ReleaseDateExtractor.new(dependency_name: dependency.name, version_class: version_class)
           extractor.extract(
             repositories: repositories,
             dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
@@ -128,17 +113,14 @@ module Dependabot
           )
         end
 
-        # Fallback: fetch Last-Modified header from the POM file for a version
         sig { params(version: String).returns(T.nilable(Time)) }
         def version_release_date_fallback(version)
           repositories.each do |repo|
             repository_url = repo.fetch("url")
             pom_url = plugin_version_pom_url(repository_url, version)
-
             begin
               response = Dependabot::RegistryClient.head(url: pom_url, headers: repo["auth_headers"])
               last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
-
               next unless last_modified
 
               released_at = Time.httpdate(last_modified)
@@ -154,7 +136,6 @@ module Dependabot
               )
             end
           end
-
           Dependabot.logger.debug(
             "No POM Last-Modified fallback release date found for #{dependency.name} version #{version}"
           )
@@ -165,17 +146,11 @@ module Dependabot
         def plugin_version_pom_url(repository_url, version)
           group_id, artifact_id = group_and_artifact_ids
           group_id = "#{Dependabot::Gradle::MetadataFinder::KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
-
           pom_filename = "#{artifact_id}-#{version}.pom"
           File.join(repository_url, T.must(group_id).tr(".", "/"), artifact_id, version, pom_filename)
         end
 
-        sig do
-          params(
-            release: Dependabot::Package::PackageRelease,
-            release_date: T.nilable(Time)
-          ).returns(Dependabot::Package::PackageRelease)
-        end
+        sig { params(release: Dependabot::Package::PackageRelease, release_date: T.nilable(Time)).returns(Dependabot::Package::PackageRelease) }
         def build_release_with_date(release, release_date)
           Dependabot::Package::PackageRelease.new(
             version: release.version,
@@ -208,7 +183,6 @@ module Dependabot
             details.reject do |repo|
               next if repo["auth_headers"]
 
-              # Reject this entry if an identical one with non-empty auth_headers exists
               details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
             end
         end
@@ -282,8 +256,6 @@ module Dependabot
             end
         end
 
-        # Fetches HTML directory listing from Maven-compatible repositories.
-        # Uses CSS selector "a[title]" to extract versions and dates. Caches results per repository.
         sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
         def release_info_metadata(repository_details)
           @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
@@ -354,18 +326,13 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[String, String]]) }
         def plugin_repository_details
-          [{
-            "url" => Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO,
-            "auth_headers" => {}
-          }] + dependency_repository_details
+          [{ "url" => Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO, "auth_headers" => {} }] +
+            dependency_repository_details
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def distribution_repository_details
-          [{
-            "url" => Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL,
-            "auth_headers" => {}
-          }]
+          [{ "url" => Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL, "auth_headers" => {} }]
         end
 
         sig { params(comparison_version: T.untyped).returns(T::Boolean) }
