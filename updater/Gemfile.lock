@@ -29,7 +29,7 @@ PATH
     dependabot-common (0.375.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
-      bundler (>= 1.16, < 3.0.0)
+      bundler (>= 2.4, < 5.0.0)
       commonmarker (~> 2.3)
       docker_registry2 (~> 1.18)
       excon (~> 1.2)
