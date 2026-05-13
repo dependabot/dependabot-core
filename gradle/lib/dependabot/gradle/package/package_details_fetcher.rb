@@ -107,19 +107,22 @@ module Dependabot
             version_class: version_class
           )
 
+          fallback_fetcher = plugin? ? ->(version) { version_release_date_fallback(version) } : nil
+
           extractor.extract(
             repositories: repositories,
             dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
             release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) },
-            version_release_date_fetcher: method(:version_release_date_fallback)
+            version_release_date_fetcher: fallback_fetcher
           )
         end
 
         # Fallback: fetch Last-Modified header from the POM file for a version
+        sig { params(version: String).returns(T.nilable(Time)) }
         def version_release_date_fallback(version)
           repositories.each do |repo|
-            url = repo["url"]
-            pom_url = File.join(url, *dependency.name.split("."), dependency.name.split(":").last + ".gradle.plugin", version, "#{dependency.name.split(":").last}.gradle.plugin-#{version}.pom")
+            pom_url = plugin_version_pom_url(repo.fetch("url"), version)
+
             begin
               response = Dependabot::RegistryClient.head(url: pom_url, headers: repo["auth_headers"])
               last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
@@ -129,6 +132,15 @@ module Dependabot
             end
           end
           nil
+        end
+
+        sig { params(repository_url: String, version: String).returns(String) }
+        def plugin_version_pom_url(repository_url, version)
+          group_id, artifact_id = group_and_artifact_ids
+          group_id = "#{Dependabot::Gradle::MetadataFinder::KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
+
+          pom_filename = "#{artifact_id}-#{version}.pom"
+          File.join(repository_url, T.must(group_id).tr(".", "/"), artifact_id, version, pom_filename)
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
