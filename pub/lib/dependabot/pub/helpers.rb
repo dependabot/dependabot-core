@@ -299,7 +299,7 @@ module Dependabot
           raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Git error")
           raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"
-        elsif stderr.include?("version solving failed")
+        elsif stderr.match?(/version solving failed|found no workspace root|Only apply dependency_services to the root/)
           raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Could not find a file named \"pubspec.yaml\"")
           raise Dependabot::DependencyFileNotFound.new("pubspec.yaml", "dependency_services failed: #{stderr}")

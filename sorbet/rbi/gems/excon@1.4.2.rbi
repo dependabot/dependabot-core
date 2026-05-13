@@ -10,45 +10,45 @@
 # source://excon//lib/excon/version.rb#3
 module Excon
   class << self
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def connect(url, params = T.unsafe(nil), &block); end
 
     # @return [Hash] defaults for Excon connections
     #
-    # source://excon//lib/excon.rb#50
+    # source://excon//lib/excon.rb#54
     def defaults; end
 
     # Change defaults for Excon connections
     #
     # @return [Hash] defaults for Excon connections
     #
-    # source://excon//lib/excon.rb#56
+    # source://excon//lib/excon.rb#60
     def defaults=(_arg0); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def delete(url, params = T.unsafe(nil), &block); end
 
     # @raise [Error::Warning]
     #
-    # source://excon//lib/excon.rb#58
+    # source://excon//lib/excon.rb#62
     def display_warning(warning); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def get(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def head(url, params = T.unsafe(nil), &block); end
 
     # Status of mocking
     #
-    # source://excon//lib/excon.rb#72
+    # source://excon//lib/excon.rb#76
     def mock; end
 
     # Change the status of mocking
     # false is the default and works as expected
     # true returns a value from stubs or raises
     #
-    # source://excon//lib/excon.rb#80
+    # source://excon//lib/excon.rb#84
     def mock=(new_mock); end
 
     # Initializes a new keep-alive session for a given remote host
@@ -59,46 +59,46 @@ module Excon
     # @return [Connection] A new Excon::Connection instance
     # @see Connection#initialize
     #
-    # source://excon//lib/excon.rb#116
+    # source://excon//lib/excon.rb#120
     def new(url, params = T.unsafe(nil)); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def options(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def patch(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def post(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def put(url, params = T.unsafe(nil), &block); end
 
-    # source://excon//lib/excon.rb#67
+    # source://excon//lib/excon.rb#71
     def set_raise_on_warnings!(should_raise); end
 
     # @return [String] The filesystem path to the SSL Certificate Authority
     #
-    # source://excon//lib/excon.rb#86
+    # source://excon//lib/excon.rb#90
     def ssl_ca_path; end
 
     # Change path to the SSL Certificate Authority
     #
     # @return [String] The filesystem path to the SSL Certificate Authority
     #
-    # source://excon//lib/excon.rb#93
+    # source://excon//lib/excon.rb#97
     def ssl_ca_path=(new_ssl_ca_path); end
 
     # @return [true, false] Whether or not to verify the peer's SSL certificate / chain
     #
-    # source://excon//lib/excon.rb#99
+    # source://excon//lib/excon.rb#103
     def ssl_verify_peer; end
 
     # Change the status of ssl peer verification
     #
     # @see Excon#ssl_verify_peer (attr_reader)
     #
-    # source://excon//lib/excon.rb#106
+    # source://excon//lib/excon.rb#110
     def ssl_verify_peer=(new_ssl_verify_peer); end
 
     # push an additional stub onto the list to check for mock requests
@@ -106,7 +106,7 @@ module Excon
     # @param request_params [Hash<Symbol, >] request params to match against, omitted params match all
     # @param response_params [Hash<Symbol, >] response params to return or block to call with matched params
     #
-    # source://excon//lib/excon.rb#138
+    # source://excon//lib/excon.rb#142
     def stub(request_params = T.unsafe(nil), response_params = T.unsafe(nil), &block); end
 
     # get a stub matching params or nil
@@ -114,15 +114,15 @@ module Excon
     # @param request_params [Hash<Symbol, >] request params to match against, omitted params match all
     # @return [Hash<Symbol, >] response params to return from matched request or block to call with params
     #
-    # source://excon//lib/excon.rb#182
+    # source://excon//lib/excon.rb#186
     def stub_for(request_params = T.unsafe(nil)); end
 
     # get a list of defined stubs
     #
-    # source://excon//lib/excon.rb#230
+    # source://excon//lib/excon.rb#234
     def stubs; end
 
-    # source://excon//lib/excon.rb#250
+    # source://excon//lib/excon.rb#254
     def trace(url, params = T.unsafe(nil), &block); end
 
     # remove first/oldest stub matching request_params or nil if none match
@@ -130,7 +130,7 @@ module Excon
     # @param request_params [Hash<Symbol, >] request params to match against, omitted params match all
     # @return [Hash<Symbol, >] response params from deleted stub
     #
-    # source://excon//lib/excon.rb#242
+    # source://excon//lib/excon.rb#246
     def unstub(request_params = T.unsafe(nil)); end
   end
 end
@@ -164,10 +164,12 @@ class Excon::Connection
   # @option params
   # @option params
   # @option params
+  # @option params
+  # @option params
   # @param params [Hash<Symbol, >] One or more optional params
   # @return [Connection] a new instance of Connection
   #
-  # source://excon//lib/excon/connection.rb#63
+  # source://excon//lib/excon/connection.rb#65
   def initialize(params = T.unsafe(nil)); end
 
   # Sends the supplied requests to the destination host using pipelining in
@@ -176,10 +178,10 @@ class Excon::Connection
   #
   # @param pipeline_params [Array<Hash>] An array of one or more optional params, override defaults set in Connection.new, see #request for details
   #
-  # source://excon//lib/excon/connection.rb#357
+  # source://excon//lib/excon/connection.rb#359
   def batch_requests(pipeline_params, limit = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def connect(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#9
@@ -193,19 +195,19 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#7
   def data; end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def delete(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#108
+  # source://excon//lib/excon/connection.rb#110
   def error_call(datum); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def get(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def head(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#394
+  # source://excon//lib/excon/connection.rb#396
   def inspect; end
 
   # source://excon//lib/excon/connection.rb#36
@@ -214,7 +216,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#41
   def logger=(logger); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def options(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#18
@@ -223,10 +225,10 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#22
   def params=(new_params); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def patch(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def post(params = T.unsafe(nil), &block); end
 
   # source://excon//lib/excon/connection.rb#27
@@ -235,7 +237,7 @@ class Excon::Connection
   # source://excon//lib/excon/connection.rb#31
   def proxy=(new_proxy); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def put(params = T.unsafe(nil), &block); end
 
   # Sends the supplied request to the destination host.
@@ -247,71 +249,71 @@ class Excon::Connection
   # @param params [Hash<Symbol, >] One or more optional params, override defaults set in Connection.new
   # @yield [chunk] @see Response#self.parse
   #
-  # source://excon//lib/excon/connection.rb#229
+  # source://excon//lib/excon/connection.rb#231
   def request(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#114
+  # source://excon//lib/excon/connection.rb#116
   def request_call(datum); end
 
   # Sends the supplied requests to the destination host using pipelining.
   #
   # @param pipeline_params [Array<Hash>] An array of one or more optional params, override defaults set in Connection.new, see #request for details
   #
-  # source://excon//lib/excon/connection.rb#330
+  # source://excon//lib/excon/connection.rb#332
   def requests(pipeline_params); end
 
-  # source://excon//lib/excon/connection.rb#368
+  # source://excon//lib/excon/connection.rb#370
   def reset; end
 
-  # source://excon//lib/excon/connection.rb#208
+  # source://excon//lib/excon/connection.rb#210
   def response_call(datum); end
 
-  # source://excon//lib/excon/connection.rb#389
+  # source://excon//lib/excon/connection.rb#391
   def retry_limit; end
 
-  # source://excon//lib/excon/connection.rb#384
+  # source://excon//lib/excon/connection.rb#386
   def retry_limit=(new_retry_limit); end
 
-  # source://excon//lib/excon/connection.rb#377
+  # source://excon//lib/excon/connection.rb#379
   def trace(params = T.unsafe(nil), &block); end
 
-  # source://excon//lib/excon/connection.rb#408
+  # source://excon//lib/excon/connection.rb#410
   def valid_request_keys(middlewares); end
 
   private
 
-  # source://excon//lib/excon/connection.rb#414
+  # source://excon//lib/excon/connection.rb#416
   def detect_content_length(body); end
 
-  # source://excon//lib/excon/connection.rb#534
+  # source://excon//lib/excon/connection.rb#543
   def proxy_from_env; end
 
-  # source://excon//lib/excon/connection.rb#521
+  # source://excon//lib/excon/connection.rb#530
   def proxy_match_host_port(host, port); end
 
-  # source://excon//lib/excon/connection.rb#513
+  # source://excon//lib/excon/connection.rb#522
   def raise_socket_error(error); end
 
-  # source://excon//lib/excon/connection.rb#471
+  # source://excon//lib/excon/connection.rb#473
   def response(datum = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#562
+  # source://excon//lib/excon/connection.rb#571
   def setup_proxy; end
 
-  # source://excon//lib/excon/connection.rb#482
+  # source://excon//lib/excon/connection.rb#484
   def socket(datum = T.unsafe(nil)); end
 
-  # source://excon//lib/excon/connection.rb#493
+  # source://excon//lib/excon/connection.rb#502
   def sockets; end
 
-  # source://excon//lib/excon/connection.rb#426
+  # source://excon//lib/excon/connection.rb#428
   def valid_middleware_keys(middlewares); end
 
-  # source://excon//lib/excon/connection.rb#439
+  # source://excon//lib/excon/connection.rb#441
   def validate_params(validation, params, middlewares); end
 end
 
-# source://excon//lib/excon/constants.rb#186
+# source://excon//lib/excon/constants.rb#189
 Excon::DEFAULTS = T.let(T.unsafe(nil), Hash)
 
 # source://excon//lib/excon/constants.rb#5
@@ -331,7 +333,7 @@ Excon::DEFAULT_RETRY_ERRORS = T.let(T.unsafe(nil), Array)
 # source://excon//lib/excon/constants.rb#14
 Excon::DEFAULT_RETRY_LIMIT = T.let(T.unsafe(nil), Integer)
 
-# source://excon//lib/excon/constants.rb#118
+# source://excon//lib/excon/constants.rb#120
 Excon::DEPRECATED_VALID_REQUEST_KEYS = T.let(T.unsafe(nil), Hash)
 
 # Excon exception classes
@@ -1124,6 +1126,26 @@ end
 # source://excon//lib/excon/constants.rb#34
 Excon::REDACTED = T.let(T.unsafe(nil), String)
 
+# This factory produces new +resolv+ gem resolver instances. Users who wants
+# to configure a custom resolver (varying settings for varying resolvers) can
+# provide a custom resolver factory class and configure it globally on the
+# Excon defaults:
+#
+#   Excon.defaults[:resolver_factory] = MyCustomResolverFactory
+#
+# Then you just need to provide a static method called +.create_resolver+
+# which returns a new +Resolv+ instance. This allows the customization.
+#
+# source://excon//lib/excon/resolver_factory.rb#12
+class Excon::ResolverFactory
+  class << self
+    # @return [Resolv] the new resolver instance
+    #
+    # source://excon//lib/excon/resolver_factory.rb#14
+    def create_resolver; end
+  end
+end
+
 # source://excon//lib/excon/response.rb#3
 class Excon::Response
   # @return [Response] a new instance of Response
@@ -1232,6 +1254,138 @@ class Excon::Response
   end
 end
 
+# SOCKS5 protocol implementation (RFC 1928, RFC 1929)
+# Shared module for SOCKS5Socket and SOCKS5SSLSocket
+#
+# source://excon//lib/excon/socks5.rb#6
+module Excon::SOCKS5
+  private
+
+  # Parse SOCKS5 proxy string into components
+  #
+  # @param proxy_string [String] Proxy specification in various formats
+  # @return [Array<String, String, String, String>] host, port, user, pass
+  #
+  # source://excon//lib/excon/socks5.rb#44
+  def parse_socks5_proxy(proxy_string); end
+
+  # Perform SOCKS5 authentication handshake
+  #
+  # source://excon//lib/excon/socks5.rb#69
+  def socks5_authenticate; end
+
+  # Request connection to target through SOCKS5 proxy
+  #
+  # source://excon//lib/excon/socks5.rb#122
+  def socks5_connect(host, port); end
+
+  # source://excon//lib/excon/socks5.rb#150
+  def socks5_read_bound_address(atyp); end
+
+  # Read exact number of bytes with timeout support
+  #
+  # source://excon//lib/excon/socks5.rb#165
+  def socks5_read_exactly(nbytes); end
+
+  # RFC 1929: Username/Password Authentication
+  #
+  # source://excon//lib/excon/socks5.rb#102
+  def socks5_username_password_auth; end
+end
+
+# Maximum hostname length per RFC 1928
+#
+# source://excon//lib/excon/socks5.rb#37
+Excon::SOCKS5::MAX_HOSTNAME_LENGTH = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5.rb#20
+Excon::SOCKS5::SOCKS5_ATYP_DOMAIN = T.let(T.unsafe(nil), Integer)
+
+# Address types
+#
+# source://excon//lib/excon/socks5.rb#19
+Excon::SOCKS5::SOCKS5_ATYP_IPV4 = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5.rb#21
+Excon::SOCKS5::SOCKS5_ATYP_IPV6 = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5.rb#12
+Excon::SOCKS5::SOCKS5_AUTH_USERNAME_PASSWORD = T.let(T.unsafe(nil), Integer)
+
+# Commands
+#
+# source://excon//lib/excon/socks5.rb#16
+Excon::SOCKS5::SOCKS5_CMD_CONNECT = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5.rb#25
+Excon::SOCKS5::SOCKS5_ERRORS = T.let(T.unsafe(nil), Hash)
+
+# source://excon//lib/excon/socks5.rb#13
+Excon::SOCKS5::SOCKS5_NO_ACCEPTABLE_AUTH = T.let(T.unsafe(nil), Integer)
+
+# Authentication methods
+#
+# source://excon//lib/excon/socks5.rb#11
+Excon::SOCKS5::SOCKS5_NO_AUTH = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5.rb#8
+Excon::SOCKS5::SOCKS5_RESERVED = T.let(T.unsafe(nil), Integer)
+
+# Reply codes
+#
+# source://excon//lib/excon/socks5.rb#24
+Excon::SOCKS5::SOCKS5_SUCCESS = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5.rb#7
+Excon::SOCKS5::SOCKS5_VERSION = T.let(T.unsafe(nil), Integer)
+
+# source://excon//lib/excon/socks5_ssl_socket.rb#4
+class Excon::SOCKS5SSLSocket < ::Excon::SSLSocket
+  include ::Excon::SOCKS5
+
+  # @return [SOCKS5SSLSocket] a new instance of SOCKS5SSLSocket
+  #
+  # source://excon//lib/excon/socks5_ssl_socket.rb#7
+  def initialize(data = T.unsafe(nil)); end
+
+  private
+
+  # Proxy-swap pattern (same as SOCKS5Socket#connect).
+  #
+  # Call chain:
+  #   SOCKS5SSLSocket#initialize -> super (SSLSocket#initialize)
+  #     -> super (Socket#initialize) -> connect
+  #       -> SOCKS5SSLSocket#connect (this method)
+  #         -> super -> SSLSocket#connect -> Socket#connect (TCP to proxy)
+  #       -> SOCKS5 handshake on raw TCP socket
+  #     <- returns to SSLSocket#initialize
+  #     -> @data[:proxy] is nil, so HTTP CONNECT is skipped (line 111)
+  #     -> SSL wrapping on the SOCKS5-tunneled socket
+  #
+  # source://excon//lib/excon/socks5_ssl_socket.rb#26
+  def connect; end
+end
+
+# source://excon//lib/excon/socks5_socket.rb#4
+class Excon::SOCKS5Socket < ::Excon::Socket
+  include ::Excon::SOCKS5
+
+  # @return [SOCKS5Socket] a new instance of SOCKS5Socket
+  #
+  # source://excon//lib/excon/socks5_socket.rb#7
+  def initialize(data = T.unsafe(nil)); end
+
+  private
+
+  # Proxy-swap pattern: temporarily set @data[:proxy] to the SOCKS5 proxy
+  # so that Socket#connect routes the TCP connection there (inheriting DNS
+  # resolution, nonblock, retry, keepalive, reuseaddr, remote_ip tracking).
+  # After TCP is up, clear :proxy and run the SOCKS5 handshake.
+  #
+  # source://excon//lib/excon/socks5_socket.rb#19
+  def connect; end
+end
+
 # source://excon//lib/excon/ssl_socket.rb#3
 class Excon::SSLSocket < ::Excon::Socket
   # @return [SSLSocket] a new instance of SSLSocket
@@ -1321,13 +1475,13 @@ class Excon::Socket
   # source://excon//lib/excon/socket.rb#212
   def consume_read_buffer; end
 
-  # source://excon//lib/excon/socket.rb#300
+  # source://excon//lib/excon/socket.rb#296
   def read_block(max_length); end
 
   # source://excon//lib/excon/socket.rb#227
   def read_nonblock(max_length); end
 
-  # source://excon//lib/excon/socket.rb#296
+  # source://excon//lib/excon/socket.rb#292
   def readable_bytes; end
 
   # Returns the remaining time in seconds until we reach the deadline for the request timeout.
@@ -1335,7 +1489,7 @@ class Excon::Socket
   #
   # @raise [Excon::Errors::Timeout]
   #
-  # source://excon//lib/excon/socket.rb#399
+  # source://excon//lib/excon/socket.rb#383
   def request_time_remaining; end
 
   # Rewind the read buffer to just after the given index.
@@ -1344,16 +1498,16 @@ class Excon::Socket
   # source://excon//lib/excon/socket.rb#222
   def rewind_read_buffer(chunk, idx); end
 
-  # source://excon//lib/excon/socket.rb#359
+  # source://excon//lib/excon/socket.rb#349
   def select_with_timeout(socket, type); end
 
-  # source://excon//lib/excon/socket.rb#389
+  # source://excon//lib/excon/socket.rb#375
   def unpacked_sockaddr; end
 
-  # source://excon//lib/excon/socket.rb#349
+  # source://excon//lib/excon/socket.rb#341
   def write_block(data); end
 
-  # source://excon//lib/excon/socket.rb#314
+  # source://excon//lib/excon/socket.rb#308
   def write_nonblock(data); end
 end
 
@@ -1526,7 +1680,7 @@ Excon::Utils::UNWISE = T.let(T.unsafe(nil), String)
 
 # FIXME: should be frozen, but with a way to change them, similar to defaults
 #
-# source://excon//lib/excon/constants.rb#72
+# source://excon//lib/excon/constants.rb#73
 Excon::VALID_CONNECTION_KEYS = T.let(T.unsafe(nil), Array)
 
 # FIXME: should be frozen, but with a way to change them, similar to defaults
