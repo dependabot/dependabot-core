@@ -657,6 +657,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           let(:wrapper_jar_bytes) { "PK\x03\x04fake-gradle-wrapper-jar".b }
           let(:updated_wrapper_jar_bytes) { "PK\x03\x04updated-gradle-wrapper-jar".b }
+          let(:seen_wrapper_jar_bytes) { [] }
           let(:wrapper_jar) do
             Dependabot::DependencyFile.new(
               name: "gradle/wrapper/gradle-wrapper.jar",
@@ -727,7 +728,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           before do
             allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, **|
               jar_path = File.join(cwd, "gradle/wrapper/gradle-wrapper.jar")
-              expect(File.binread(jar_path)).to eq(wrapper_jar_bytes)
+              seen_wrapper_jar_bytes << File.binread(jar_path)
               File.binwrite(jar_path, updated_wrapper_jar_bytes)
             end
             allow(File).to receive(:exist?).and_return(true)
@@ -768,6 +769,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           it "preserves the wrapper jar as a binary dependency file" do
             updated_wrapper_jar = updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.jar" }
 
+            expect(seen_wrapper_jar_bytes).to eq([wrapper_jar_bytes])
             expect(updated_wrapper_jar).not_to be_nil
             expect(updated_wrapper_jar.content_encoding)
               .to eq(Dependabot::DependencyFile::ContentEncoding::BASE64)
