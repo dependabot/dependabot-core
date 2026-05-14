@@ -196,9 +196,9 @@ PATH
 PATH
   remote: sbt
   specs:
-    dependabot-sbt (0.375.0)
-      dependabot-common (= 0.375.0)
-      dependabot-maven (= 0.375.0)
+    dependabot-sbt (0.376.0)
+      dependabot-common (= 0.376.0)
+      dependabot-maven (= 0.376.0)
 
 PATH
   remote: silent
