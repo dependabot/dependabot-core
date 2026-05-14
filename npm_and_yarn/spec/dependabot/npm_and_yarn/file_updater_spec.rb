@@ -573,7 +573,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
-        context "when using git host URL: gitlab" do
+        context "when using git host URL: gitlab", pending: "GitLab needs authentication" do
           let(:dependency_name) { "babel-preset-php" }
           let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
           let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
@@ -2195,7 +2195,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
           end
 
-          context "when using git host URL: gitlab" do
+          context "when using git host URL: gitlab", pending: "GitLab needs authentication" do
             let(:dependency_name) { "babel-preset-php" }
             let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
             let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
