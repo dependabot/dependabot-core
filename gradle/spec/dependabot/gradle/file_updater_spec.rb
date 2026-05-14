@@ -655,6 +655,17 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.properties" }
           end
 
+          let(:wrapper_jar_bytes) { "PK\x03\x04fake-gradle-wrapper-jar".b }
+          let(:updated_wrapper_jar_bytes) { "PK\x03\x04updated-gradle-wrapper-jar".b }
+          let(:seen_wrapper_jar_bytes) { [] }
+          let(:wrapper_jar) do
+            Dependabot::DependencyFile.new(
+              name: "gradle/wrapper/gradle-wrapper.jar",
+              content: Base64.encode64(wrapper_jar_bytes),
+              content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64
+            )
+          end
+
           let(:buildfile) do
             wrapper_file
           end
@@ -715,10 +726,16 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           end
 
           before do
-            allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, **|
+              jar_path = File.join(cwd, "gradle/wrapper/gradle-wrapper.jar")
+              seen_wrapper_jar_bytes << File.binread(jar_path)
+              File.binwrite(jar_path, updated_wrapper_jar_bytes)
+            end
             allow(File).to receive(:exist?).and_return(true)
             allow(FileUtils).to receive(:chmod)
           end
+
+          let(:dependency_files) { [buildfile, wrapper_jar] }
 
           its(:content) do
             expected_command = %W(
@@ -747,6 +764,16 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
               cwd: anything,
               env: expected_env
             )
+          end
+
+          it "preserves the wrapper jar as a binary dependency file" do
+            updated_wrapper_jar = updated_files.find { |f| f.name == "gradle/wrapper/gradle-wrapper.jar" }
+
+            expect(seen_wrapper_jar_bytes).to eq([wrapper_jar_bytes])
+            expect(updated_wrapper_jar).not_to be_nil
+            expect(updated_wrapper_jar.content_encoding)
+              .to eq(Dependabot::DependencyFile::ContentEncoding::BASE64)
+            expect(updated_wrapper_jar.decoded_content).to eq(updated_wrapper_jar_bytes)
           end
         end
 

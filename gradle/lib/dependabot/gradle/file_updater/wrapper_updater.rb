@@ -203,7 +203,7 @@ module Dependabot
           files_to_populate.each do |file|
             in_path_name = File.join(temp_dir, file.directory, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+            File.write(in_path_name, file.binary? ? file.decoded_content : file.content)
           end
         end
 
