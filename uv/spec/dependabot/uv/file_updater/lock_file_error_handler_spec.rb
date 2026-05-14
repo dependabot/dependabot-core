@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
 
       let(:git_fetch_credential_error) do
         <<~ERROR
-          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+          Using CPython 3.11.15 interpreter at: /usr/local/.pyenv/versions/3.11.15/bin/python3.11
              Updating https://github.com/org/private-repo (7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f)
             × Failed to download and build `private-repo @
             │ git+https://github.com/org/private-repo@7a71bd9f5ae50ea4c8b4629a97ab35b95bba3c8f#subdirectory=pkg`
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
 
       let(:conflicting_urls_error) do
         <<~ERROR
-          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+          Using CPython 3.11.15 interpreter at: /usr/local/.pyenv/versions/3.11.15/bin/python3.11
              Updating https://github.com/org/repo-a (HEAD)
              Updating https://github.com/org/repo-b (HEAD)
               Updated https://github.com/org/repo-a (c153cf38a632381e617475adff6f71cc9fe8087d)
@@ -516,7 +516,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
 
       let(:uv_lock_parse_error) do
         <<~ERROR
-          Using CPython 3.11.14 interpreter at: /usr/local/.pyenv/versions/3.11.14/bin/python3.11
+          Using CPython 3.11.15 interpreter at: /usr/local/.pyenv/versions/3.11.15/bin/python3.11
           error: Failed to parse `uv.lock`
             Caused by: Dependency `soupsieve` has missing `source` field but has more than one matching package
         ERROR
@@ -533,7 +533,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileErrorHandler do
     context "when error contains 'Using CPython' mid-message (not at start)" do
       let(:error) do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-          message: "some other error\nUsing CPython 3.11.14 interpreter at: /usr/bin/python3.11\ndetails",
+          message: "some other error\nUsing CPython 3.11.15 interpreter at: /usr/bin/python3.11\ndetails",
           error_context: {}
         )
       end
