@@ -230,8 +230,8 @@ module Dependabot
               original_content = File.read(lockfile_name)
 
               Helpers.run_pnpm_command(
-                "update #{dependency.name} --lockfile-only",
-                fingerprint: "update <dependency_name> --lockfile-only"
+                pnpm_update_command,
+                fingerprint: pnpm_update_fingerprint
               )
 
               updated_content = File.read(lockfile_name)
@@ -248,6 +248,16 @@ module Dependabot
               { lockfile_name => updated_content }
             end
           end
+        end
+
+        sig { returns(String) }
+        def pnpm_update_command
+          "update #{dependency.name}@#{dependency.version} --lockfile-only --no-save -r"
+        end
+
+        sig { returns(String) }
+        def pnpm_update_fingerprint
+          "update <dependency_name>@<dependency_version> --lockfile-only --no-save -r"
         end
 
         # First-tier fallback: try `pnpm update --depth Infinity <dep>` to
