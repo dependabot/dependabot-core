@@ -296,4 +296,59 @@ RSpec.describe Dependabot::Sbt::FileParser do
       )
     end
   end
+
+  context "with scalaVersion in ThisBuild syntax (older SBT)" do
+    let(:buildfile_fixture_name) { "in_this_build.sbt" }
+
+    it "correctly resolves the Scala version for cross-versioned deps" do
+      dependencies = parser.parse
+      cats_dep = dependencies.find { |d| d.name.start_with?("org.typelevel:cats_") }
+      expect(cats_dep).to be_a(Dependabot::Dependency)
+      expect(cats_dep.name).to eq("org.typelevel:cats_2.12")
+      expect(cats_dep.version).to eq("0.9.0")
+    end
+
+    it "parses scalaVersion as a dependency" do
+      dependencies = parser.parse
+      scala_dep = dependencies.find { |d| d.name == "org.scala-lang:scala-library" }
+      expect(scala_dep).to be_a(Dependabot::Dependency)
+      expect(scala_dep.version).to eq("2.12.18")
+    end
+  end
+
+  context "with dotted val references (Object.member)" do
+    let(:buildfile_fixture_name) { "dotted_val_build.sbt" }
+
+    let(:scala_build_file) do
+      Dependabot::DependencyFile.new(
+        name: "project/BuildInfo.scala",
+        content: fixture("buildfiles", "project/BuildInfo.scala")
+      )
+    end
+
+    let(:dependency_files) { [build_sbt, scala_build_file] }
+
+    it "resolves dotted val references for dependency versions" do
+      dependencies = parser.parse
+      scalafix_dep = dependencies.find { |d| d.name.start_with?("ch.epfl.scala:scalafix-core") }
+      expect(scalafix_dep).to be_a(Dependabot::Dependency)
+      expect(scalafix_dep.version).to eq("0.9.34")
+      expect(scalafix_dep.requirements.first[:metadata]).to include(
+        property_name: "V.scalafixVersion"
+      )
+    end
+
+    it "resolves dotted val references for scalaVersion" do
+      dependencies = parser.parse
+      cats_dep = dependencies.find { |d| d.name.start_with?("org.typelevel:cats_") }
+      expect(cats_dep).to be_a(Dependabot::Dependency)
+      expect(cats_dep.name).to eq("org.typelevel:cats_2.12")
+    end
+
+    it "still parses literal version deps correctly" do
+      dependencies = parser.parse
+      cats_dep = dependencies.find { |d| d.name.start_with?("org.typelevel:cats_") }
+      expect(cats_dep.version).to eq("0.9.0")
+    end
+  end
 end

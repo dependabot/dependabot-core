@@ -350,7 +350,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   ecr_repository_prefix: "PullThroughCacheRuleRepositoryPrefix", # required
   #   upstream_registry_url: "Url", # required
   #   registry_id: "RegistryId",
-  #   upstream_registry: "ecr", # accepts ecr, ecr-public, quay, k8s, docker-hub, github-container-registry, azure-container-registry, gitlab-container-registry
+  #   upstream_registry: "ecr", # accepts ecr, ecr-public, quay, k8s, docker-hub, github-container-registry, azure-container-registry, gitlab-container-registry, chainguard
   #   credential_arn: "CredentialArn",
   #   custom_role_arn: "CustomRoleArn",
   #   upstream_repository_prefix: "PullThroughCacheRuleRepositoryPrefix",
@@ -361,7 +361,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   resp.upstream_registry_url #=> String
   #   resp.created_at #=> Time
   #   resp.registry_id #=> String
-  #   resp.upstream_registry #=> String, one of "ecr", "ecr-public", "quay", "k8s", "docker-hub", "github-container-registry", "azure-container-registry", "gitlab-container-registry"
+  #   resp.upstream_registry #=> String, one of "ecr", "ecr-public", "quay", "k8s", "docker-hub", "github-container-registry", "azure-container-registry", "gitlab-container-registry", "chainguard"
   #   resp.credential_arn #=> String
   #   resp.custom_role_arn #=> String
   #   resp.upstream_repository_prefix #=> String
@@ -1229,7 +1229,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   resp.pull_through_cache_rules[0].credential_arn #=> String
   #   resp.pull_through_cache_rules[0].custom_role_arn #=> String
   #   resp.pull_through_cache_rules[0].upstream_repository_prefix #=> String
-  #   resp.pull_through_cache_rules[0].upstream_registry #=> String, one of "ecr", "ecr-public", "quay", "k8s", "docker-hub", "github-container-registry", "azure-container-registry", "gitlab-container-registry"
+  #   resp.pull_through_cache_rules[0].upstream_registry #=> String, one of "ecr", "ecr-public", "quay", "k8s", "docker-hub", "github-container-registry", "azure-container-registry", "gitlab-container-registry", "chainguard"
   #   resp.pull_through_cache_rules[0].updated_at #=> Time
   #   resp.next_token #=> String
   # @option params
@@ -3112,7 +3112,7 @@ end
 
 # @api private
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#1565
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#1569
 Aws::ECR::ClientApi::API = T.let(T.unsafe(nil), Seahorse::Model::Api)
 
 # @api private
@@ -5003,131 +5003,136 @@ Aws::ECR::ClientApi::UnableToGetUpstreamLayerException = T.let(T.unsafe(nil), Se
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#394
-Aws::ECR::ClientApi::UnsupportedImageTypeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UnableToListUpstreamImageReferrersException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#395
-Aws::ECR::ClientApi::UnsupportedUpstreamRegistryException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UnsupportedImageTypeException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#396
-Aws::ECR::ClientApi::UntagResourceRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UnsupportedUpstreamRegistryException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#397
-Aws::ECR::ClientApi::UntagResourceResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UntagResourceRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#398
-Aws::ECR::ClientApi::UpdateImageStorageClassRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UntagResourceResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#399
-Aws::ECR::ClientApi::UpdateImageStorageClassResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UpdateImageStorageClassRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#400
-Aws::ECR::ClientApi::UpdatePullThroughCacheRuleRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UpdateImageStorageClassResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#401
-Aws::ECR::ClientApi::UpdatePullThroughCacheRuleResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UpdatePullThroughCacheRuleRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#402
-Aws::ECR::ClientApi::UpdateRepositoryCreationTemplateRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UpdatePullThroughCacheRuleResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#403
-Aws::ECR::ClientApi::UpdateRepositoryCreationTemplateResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UpdateRepositoryCreationTemplateRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#404
-Aws::ECR::ClientApi::UpdatedTimestamp = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
+Aws::ECR::ClientApi::UpdateRepositoryCreationTemplateResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#405
-Aws::ECR::ClientApi::UploadId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::ECR::ClientApi::UpdatedTimestamp = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#406
-Aws::ECR::ClientApi::UploadLayerPartRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UploadId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#407
-Aws::ECR::ClientApi::UploadLayerPartResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UploadLayerPartRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#408
-Aws::ECR::ClientApi::UploadNotFoundException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::UploadLayerPartResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#409
-Aws::ECR::ClientApi::UpstreamRegistry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::ECR::ClientApi::UploadNotFoundException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#410
-Aws::ECR::ClientApi::Url = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::ECR::ClientApi::UpstreamRegistry = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#411
-Aws::ECR::ClientApi::ValidatePullThroughCacheRuleRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::Url = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#412
-Aws::ECR::ClientApi::ValidatePullThroughCacheRuleResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::ValidatePullThroughCacheRuleRequest = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#413
-Aws::ECR::ClientApi::ValidationException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::ValidatePullThroughCacheRuleResponse = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#414
-Aws::ECR::ClientApi::Version = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::ECR::ClientApi::ValidationException = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#415
-Aws::ECR::ClientApi::VulnerabilityId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::ECR::ClientApi::Version = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#416
-Aws::ECR::ClientApi::VulnerabilitySourceUpdateTimestamp = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
+Aws::ECR::ClientApi::VulnerabilityId = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#417
-Aws::ECR::ClientApi::VulnerablePackage = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
+Aws::ECR::ClientApi::VulnerabilitySourceUpdateTimestamp = T.let(T.unsafe(nil), Seahorse::Model::Shapes::TimestampShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#418
-Aws::ECR::ClientApi::VulnerablePackageName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+Aws::ECR::ClientApi::VulnerablePackage = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StructureShape)
 
 # @api private
 #
 # source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#419
+Aws::ECR::ClientApi::VulnerablePackageName = T.let(T.unsafe(nil), Seahorse::Model::Shapes::StringShape)
+
+# @api private
+#
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/client_api.rb#420
 Aws::ECR::ClientApi::VulnerablePackagesList = T.let(T.unsafe(nil), Seahorse::Model::Shapes::ListShape)
 
 # Endpoint parameters used to influence endpoints per request.
@@ -5298,6 +5303,7 @@ end
 # * {UnableToDecryptSecretValueException}
 # * {UnableToGetUpstreamImageException}
 # * {UnableToGetUpstreamLayerException}
+# * {UnableToListUpstreamImageReferrersException}
 # * {UnsupportedImageTypeException}
 # * {UnsupportedUpstreamRegistryException}
 # * {UploadNotFoundException}
@@ -5306,772 +5312,788 @@ end
 # Additionally, error classes are dynamically generated for service errors based on the error code
 # if they are not defined above.
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#79
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#80
 module Aws::ECR::Errors
   extend ::Aws::Errors::DynamicErrors
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#83
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#84
 class Aws::ECR::Errors::BlockedByOrganizationPolicyException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::BlockedByOrganizationPolicyException]
   # @param message [String]
   # @return [BlockedByOrganizationPolicyException] a new instance of BlockedByOrganizationPolicyException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#88
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#89
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#93
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#94
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#98
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#99
 class Aws::ECR::Errors::EmptyUploadException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::EmptyUploadException]
   # @param message [String]
   # @return [EmptyUploadException] a new instance of EmptyUploadException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#103
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#104
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#108
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#109
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#113
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#114
 class Aws::ECR::Errors::ExclusionAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ExclusionAlreadyExistsException]
   # @param message [String]
   # @return [ExclusionAlreadyExistsException] a new instance of ExclusionAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#118
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#119
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#123
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#124
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#128
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#129
 class Aws::ECR::Errors::ExclusionNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ExclusionNotFoundException]
   # @param message [String]
   # @return [ExclusionNotFoundException] a new instance of ExclusionNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#133
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#134
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#138
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#139
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#143
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#144
 class Aws::ECR::Errors::ImageAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ImageAlreadyExistsException]
   # @param message [String]
   # @return [ImageAlreadyExistsException] a new instance of ImageAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#148
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#149
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#153
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#154
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#158
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#159
 class Aws::ECR::Errors::ImageArchivedException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ImageArchivedException]
   # @param message [String]
   # @return [ImageArchivedException] a new instance of ImageArchivedException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#163
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#164
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#168
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#169
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#173
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#174
 class Aws::ECR::Errors::ImageDigestDoesNotMatchException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ImageDigestDoesNotMatchException]
   # @param message [String]
   # @return [ImageDigestDoesNotMatchException] a new instance of ImageDigestDoesNotMatchException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#178
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#179
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#183
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#184
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#188
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#189
 class Aws::ECR::Errors::ImageNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ImageNotFoundException]
   # @param message [String]
   # @return [ImageNotFoundException] a new instance of ImageNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#193
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#194
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#198
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#199
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#203
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#204
 class Aws::ECR::Errors::ImageStorageClassUpdateNotSupportedException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ImageStorageClassUpdateNotSupportedException]
   # @param message [String]
   # @return [ImageStorageClassUpdateNotSupportedException] a new instance of ImageStorageClassUpdateNotSupportedException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#208
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#209
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#213
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#214
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#218
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#219
 class Aws::ECR::Errors::ImageTagAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ImageTagAlreadyExistsException]
   # @param message [String]
   # @return [ImageTagAlreadyExistsException] a new instance of ImageTagAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#223
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#224
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#228
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#229
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#233
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#234
 class Aws::ECR::Errors::InvalidLayerException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::InvalidLayerException]
   # @param message [String]
   # @return [InvalidLayerException] a new instance of InvalidLayerException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#238
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#239
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#243
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#244
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#248
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#249
 class Aws::ECR::Errors::InvalidLayerPartException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::InvalidLayerPartException]
   # @param message [String]
   # @return [InvalidLayerPartException] a new instance of InvalidLayerPartException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#253
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#254
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#273
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#274
   def last_valid_byte_received; end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#278
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#279
   def message; end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#258
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#259
   def registry_id; end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#263
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#264
   def repository_name; end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#268
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#269
   def upload_id; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#283
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#284
 class Aws::ECR::Errors::InvalidParameterException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::InvalidParameterException]
   # @param message [String]
   # @return [InvalidParameterException] a new instance of InvalidParameterException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#288
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#289
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#293
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#294
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#298
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#299
 class Aws::ECR::Errors::InvalidTagParameterException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::InvalidTagParameterException]
   # @param message [String]
   # @return [InvalidTagParameterException] a new instance of InvalidTagParameterException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#303
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#304
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#308
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#309
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#313
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#314
 class Aws::ECR::Errors::KmsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::KmsException]
   # @param message [String]
   # @return [KmsException] a new instance of KmsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#318
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#319
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#328
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#329
   def kms_error; end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#323
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#324
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#333
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#334
 class Aws::ECR::Errors::LayerAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LayerAlreadyExistsException]
   # @param message [String]
   # @return [LayerAlreadyExistsException] a new instance of LayerAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#338
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#339
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#343
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#344
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#348
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#349
 class Aws::ECR::Errors::LayerInaccessibleException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LayerInaccessibleException]
   # @param message [String]
   # @return [LayerInaccessibleException] a new instance of LayerInaccessibleException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#353
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#354
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#358
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#359
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#363
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#364
 class Aws::ECR::Errors::LayerPartTooSmallException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LayerPartTooSmallException]
   # @param message [String]
   # @return [LayerPartTooSmallException] a new instance of LayerPartTooSmallException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#368
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#369
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#373
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#374
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#378
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#379
 class Aws::ECR::Errors::LayersNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LayersNotFoundException]
   # @param message [String]
   # @return [LayersNotFoundException] a new instance of LayersNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#383
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#384
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#388
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#389
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#393
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#394
 class Aws::ECR::Errors::LifecyclePolicyNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LifecyclePolicyNotFoundException]
   # @param message [String]
   # @return [LifecyclePolicyNotFoundException] a new instance of LifecyclePolicyNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#398
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#399
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#403
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#404
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#408
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#409
 class Aws::ECR::Errors::LifecyclePolicyPreviewInProgressException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LifecyclePolicyPreviewInProgressException]
   # @param message [String]
   # @return [LifecyclePolicyPreviewInProgressException] a new instance of LifecyclePolicyPreviewInProgressException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#413
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#414
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#418
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#419
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#423
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#424
 class Aws::ECR::Errors::LifecyclePolicyPreviewNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LifecyclePolicyPreviewNotFoundException]
   # @param message [String]
   # @return [LifecyclePolicyPreviewNotFoundException] a new instance of LifecyclePolicyPreviewNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#428
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#429
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#433
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#434
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#438
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#439
 class Aws::ECR::Errors::LimitExceededException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::LimitExceededException]
   # @param message [String]
   # @return [LimitExceededException] a new instance of LimitExceededException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#443
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#444
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#448
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#449
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#453
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#454
 class Aws::ECR::Errors::PullThroughCacheRuleAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::PullThroughCacheRuleAlreadyExistsException]
   # @param message [String]
   # @return [PullThroughCacheRuleAlreadyExistsException] a new instance of PullThroughCacheRuleAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#458
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#459
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#463
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#464
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#468
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#469
 class Aws::ECR::Errors::PullThroughCacheRuleNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::PullThroughCacheRuleNotFoundException]
   # @param message [String]
   # @return [PullThroughCacheRuleNotFoundException] a new instance of PullThroughCacheRuleNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#473
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#474
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#478
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#479
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#483
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#484
 class Aws::ECR::Errors::ReferencedImagesNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ReferencedImagesNotFoundException]
   # @param message [String]
   # @return [ReferencedImagesNotFoundException] a new instance of ReferencedImagesNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#488
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#489
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#493
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#494
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#498
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#499
 class Aws::ECR::Errors::RegistryPolicyNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::RegistryPolicyNotFoundException]
   # @param message [String]
   # @return [RegistryPolicyNotFoundException] a new instance of RegistryPolicyNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#503
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#504
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#508
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#509
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#513
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#514
 class Aws::ECR::Errors::RepositoryAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::RepositoryAlreadyExistsException]
   # @param message [String]
   # @return [RepositoryAlreadyExistsException] a new instance of RepositoryAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#518
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#519
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#523
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#524
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#528
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#529
 class Aws::ECR::Errors::RepositoryNotEmptyException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::RepositoryNotEmptyException]
   # @param message [String]
   # @return [RepositoryNotEmptyException] a new instance of RepositoryNotEmptyException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#533
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#534
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#538
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#539
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#543
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#544
 class Aws::ECR::Errors::RepositoryNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::RepositoryNotFoundException]
   # @param message [String]
   # @return [RepositoryNotFoundException] a new instance of RepositoryNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#548
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#549
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#553
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#554
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#558
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#559
 class Aws::ECR::Errors::RepositoryPolicyNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::RepositoryPolicyNotFoundException]
   # @param message [String]
   # @return [RepositoryPolicyNotFoundException] a new instance of RepositoryPolicyNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#563
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#564
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#568
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#569
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#573
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#574
 class Aws::ECR::Errors::ScanNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ScanNotFoundException]
   # @param message [String]
   # @return [ScanNotFoundException] a new instance of ScanNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#578
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#579
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#583
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#584
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#588
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#589
 class Aws::ECR::Errors::SecretNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::SecretNotFoundException]
   # @param message [String]
   # @return [SecretNotFoundException] a new instance of SecretNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#593
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#594
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#598
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#599
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#603
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#604
 class Aws::ECR::Errors::ServerException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ServerException]
   # @param message [String]
   # @return [ServerException] a new instance of ServerException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#608
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#609
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#613
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#614
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#81
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#82
 class Aws::ECR::Errors::ServiceError < ::Aws::Errors::ServiceError; end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#618
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#619
 class Aws::ECR::Errors::SigningConfigurationNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::SigningConfigurationNotFoundException]
   # @param message [String]
   # @return [SigningConfigurationNotFoundException] a new instance of SigningConfigurationNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#623
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#624
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#628
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#629
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#633
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#634
 class Aws::ECR::Errors::TemplateAlreadyExistsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::TemplateAlreadyExistsException]
   # @param message [String]
   # @return [TemplateAlreadyExistsException] a new instance of TemplateAlreadyExistsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#638
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#639
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#643
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#644
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#648
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#649
 class Aws::ECR::Errors::TemplateNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::TemplateNotFoundException]
   # @param message [String]
   # @return [TemplateNotFoundException] a new instance of TemplateNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#653
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#654
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#658
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#659
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#663
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#664
 class Aws::ECR::Errors::TooManyTagsException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::TooManyTagsException]
   # @param message [String]
   # @return [TooManyTagsException] a new instance of TooManyTagsException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#668
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#669
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#673
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#674
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#678
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#679
 class Aws::ECR::Errors::UnableToAccessSecretException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UnableToAccessSecretException]
   # @param message [String]
   # @return [UnableToAccessSecretException] a new instance of UnableToAccessSecretException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#683
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#684
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#688
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#689
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#693
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#694
 class Aws::ECR::Errors::UnableToDecryptSecretValueException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UnableToDecryptSecretValueException]
   # @param message [String]
   # @return [UnableToDecryptSecretValueException] a new instance of UnableToDecryptSecretValueException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#698
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#699
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#703
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#704
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#708
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#709
 class Aws::ECR::Errors::UnableToGetUpstreamImageException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UnableToGetUpstreamImageException]
   # @param message [String]
   # @return [UnableToGetUpstreamImageException] a new instance of UnableToGetUpstreamImageException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#713
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#714
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#718
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#719
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#723
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#724
 class Aws::ECR::Errors::UnableToGetUpstreamLayerException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UnableToGetUpstreamLayerException]
   # @param message [String]
   # @return [UnableToGetUpstreamLayerException] a new instance of UnableToGetUpstreamLayerException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#728
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#729
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#733
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#734
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#738
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#739
+class Aws::ECR::Errors::UnableToListUpstreamImageReferrersException < ::Aws::ECR::Errors::ServiceError
+  # @param context [Seahorse::Client::RequestContext]
+  # @param data [Aws::ECR::Types::UnableToListUpstreamImageReferrersException]
+  # @param message [String]
+  # @return [UnableToListUpstreamImageReferrersException] a new instance of UnableToListUpstreamImageReferrersException
+  #
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#744
+  def initialize(context, message, data = T.unsafe(nil)); end
+
+  # @return [String]
+  #
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#749
+  def message; end
+end
+
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#754
 class Aws::ECR::Errors::UnsupportedImageTypeException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UnsupportedImageTypeException]
   # @param message [String]
   # @return [UnsupportedImageTypeException] a new instance of UnsupportedImageTypeException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#743
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#759
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#748
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#764
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#753
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#769
 class Aws::ECR::Errors::UnsupportedUpstreamRegistryException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UnsupportedUpstreamRegistryException]
   # @param message [String]
   # @return [UnsupportedUpstreamRegistryException] a new instance of UnsupportedUpstreamRegistryException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#758
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#774
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#763
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#779
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#768
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#784
 class Aws::ECR::Errors::UploadNotFoundException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::UploadNotFoundException]
   # @param message [String]
   # @return [UploadNotFoundException] a new instance of UploadNotFoundException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#773
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#789
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#778
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#794
   def message; end
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#783
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#799
 class Aws::ECR::Errors::ValidationException < ::Aws::ECR::Errors::ServiceError
   # @param context [Seahorse::Client::RequestContext]
   # @param data [Aws::ECR::Types::ValidationException]
   # @param message [String]
   # @return [ValidationException] a new instance of ValidationException
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#788
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#804
   def initialize(context, message, data = T.unsafe(nil)); end
 
   # @return [String]
   #
-  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#793
+  # source://aws-sdk-ecr//lib/aws-sdk-ecr/errors.rb#809
   def message; end
 end
 
@@ -6592,120 +6614,120 @@ Aws::ECR::Types::DescribeImageSigningStatusResponse::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImagesFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1270
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1271
 class Aws::ECR::Types::DescribeImagesFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1271
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1272
 Aws::ECR::Types::DescribeImagesFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImagesRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1324
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1325
 class Aws::ECR::Types::DescribeImagesRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1325
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1326
 Aws::ECR::Types::DescribeImagesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImagesResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1345
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1346
 class Aws::ECR::Types::DescribeImagesResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1346
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1347
 Aws::ECR::Types::DescribeImagesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribePullThroughCacheRulesRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1390
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1391
 class Aws::ECR::Types::DescribePullThroughCacheRulesRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1391
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1392
 Aws::ECR::Types::DescribePullThroughCacheRulesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribePullThroughCacheRulesResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1412
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1413
 class Aws::ECR::Types::DescribePullThroughCacheRulesResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1413
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1414
 Aws::ECR::Types::DescribePullThroughCacheRulesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @api private
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRegistryRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1421
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1422
 class Aws::ECR::Types::DescribeRegistryRequest < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRegistryResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1435
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1436
 class Aws::ECR::Types::DescribeRegistryResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1436
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1437
 Aws::ECR::Types::DescribeRegistryResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoriesRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1486
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1487
 class Aws::ECR::Types::DescribeRepositoriesRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1487
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1488
 Aws::ECR::Types::DescribeRepositoriesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoriesResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1507
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1508
 class Aws::ECR::Types::DescribeRepositoriesResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1508
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1509
 Aws::ECR::Types::DescribeRepositoriesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoryCreationTemplatesRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1553
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1554
 class Aws::ECR::Types::DescribeRepositoryCreationTemplatesRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1554
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1555
 Aws::ECR::Types::DescribeRepositoryCreationTemplatesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoryCreationTemplatesResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1579
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1580
 class Aws::ECR::Types::DescribeRepositoryCreationTemplatesResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1580
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1581
 Aws::ECR::Types::DescribeRepositoryCreationTemplatesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified layer upload does not contain any layer parts.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EmptyUploadException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1593
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1594
 class Aws::ECR::Types::EmptyUploadException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1594
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1595
 Aws::ECR::Types::EmptyUploadException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The encryption configuration for the repository. This determines how
@@ -6729,12 +6751,12 @@ Aws::ECR::Types::EmptyUploadException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EncryptionConfiguration AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1658
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1659
 class Aws::ECR::Types::EncryptionConfiguration < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1659
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1660
 Aws::ECR::Types::EncryptionConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The encryption configuration to associate with the repository creation
@@ -6742,12 +6764,12 @@ Aws::ECR::Types::EncryptionConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EncryptionConfigurationForRepositoryCreationTemplate AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1704
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1705
 class Aws::ECR::Types::EncryptionConfigurationForRepositoryCreationTemplate < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1705
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1706
 Aws::ECR::Types::EncryptionConfigurationForRepositoryCreationTemplate::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of an enhanced image scan. This is returned when enhanced
@@ -6755,12 +6777,12 @@ Aws::ECR::Types::EncryptionConfigurationForRepositoryCreationTemplate::SENSITIVE
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EnhancedImageScanFinding AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1805
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1806
 class Aws::ECR::Types::EnhancedImageScanFinding < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1806
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1807
 Aws::ECR::Types::EnhancedImageScanFinding::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified pull time update exclusion already exists for the
@@ -6768,204 +6790,204 @@ Aws::ECR::Types::EnhancedImageScanFinding::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ExclusionAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1819
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1820
 class Aws::ECR::Types::ExclusionAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1820
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1821
 Aws::ECR::Types::ExclusionAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified pull time update exclusion was not found.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ExclusionNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1832
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1833
 class Aws::ECR::Types::ExclusionNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1833
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1834
 Aws::ECR::Types::ExclusionNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAccountSettingRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1845
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1846
 class Aws::ECR::Types::GetAccountSettingRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1846
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1847
 Aws::ECR::Types::GetAccountSettingRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAccountSettingResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1864
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1865
 class Aws::ECR::Types::GetAccountSettingResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1865
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1866
 Aws::ECR::Types::GetAccountSettingResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAuthorizationTokenRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1878
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1879
 class Aws::ECR::Types::GetAuthorizationTokenRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1879
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1880
 Aws::ECR::Types::GetAuthorizationTokenRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAuthorizationTokenResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1897
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1898
 class Aws::ECR::Types::GetAuthorizationTokenResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1898
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1899
 Aws::ECR::Types::GetAuthorizationTokenResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetDownloadUrlForLayerRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1922
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1923
 class Aws::ECR::Types::GetDownloadUrlForLayerRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1923
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1924
 Aws::ECR::Types::GetDownloadUrlForLayerRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetDownloadUrlForLayerResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1939
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1940
 class Aws::ECR::Types::GetDownloadUrlForLayerResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1940
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1941
 Aws::ECR::Types::GetDownloadUrlForLayerResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyPreviewRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1995
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1996
 class Aws::ECR::Types::GetLifecyclePolicyPreviewRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1996
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#1997
 Aws::ECR::Types::GetLifecyclePolicyPreviewRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyPreviewResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2041
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2042
 class Aws::ECR::Types::GetLifecyclePolicyPreviewResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2042
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2043
 Aws::ECR::Types::GetLifecyclePolicyPreviewResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2060
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2061
 class Aws::ECR::Types::GetLifecyclePolicyRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2061
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2062
 Aws::ECR::Types::GetLifecyclePolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2087
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2088
 class Aws::ECR::Types::GetLifecyclePolicyResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2088
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2089
 Aws::ECR::Types::GetLifecyclePolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @api private
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRegistryPolicyRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2096
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2097
 class Aws::ECR::Types::GetRegistryPolicyRequest < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRegistryPolicyResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2110
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2111
 class Aws::ECR::Types::GetRegistryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2111
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2112
 Aws::ECR::Types::GetRegistryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @api private
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRegistryScanningConfigurationRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2119
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2120
 class Aws::ECR::Types::GetRegistryScanningConfigurationRequest < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRegistryScanningConfigurationResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2133
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2134
 class Aws::ECR::Types::GetRegistryScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2134
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2135
 Aws::ECR::Types::GetRegistryScanningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRepositoryPolicyRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2152
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2153
 class Aws::ECR::Types::GetRepositoryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2153
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2154
 Aws::ECR::Types::GetRepositoryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRepositoryPolicyResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2174
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2175
 class Aws::ECR::Types::GetRepositoryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2175
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2176
 Aws::ECR::Types::GetRepositoryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @api private
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetSigningConfigurationRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2183
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2184
 class Aws::ECR::Types::GetSigningConfigurationRequest < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetSigningConfigurationResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2197
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2198
 class Aws::ECR::Types::GetSigningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2198
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2199
 Aws::ECR::Types::GetSigningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing an Amazon ECR image.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Image AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2233
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2234
 class Aws::ECR::Types::Image < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2234
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2235
 Aws::ECR::Types::Image::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified image has already been pushed, and there were no changes
@@ -6973,24 +6995,24 @@ Aws::ECR::Types::Image::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2248
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2249
 class Aws::ECR::Types::ImageAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2249
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2250
 Aws::ECR::Types::ImageAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified image is archived and cannot be scanned.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageArchivedException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2261
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2262
 class Aws::ECR::Types::ImageArchivedException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2262
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2263
 Aws::ECR::Types::ImageArchivedException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object that describes an image returned by a DescribeImages
@@ -6998,12 +7020,12 @@ Aws::ECR::Types::ImageArchivedException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageDetail AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2373
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2374
 class Aws::ECR::Types::ImageDetail < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2374
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2375
 Aws::ECR::Types::ImageDetail::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified image digest does not match the digest that Amazon ECR
@@ -7011,24 +7033,24 @@ Aws::ECR::Types::ImageDetail::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageDigestDoesNotMatchException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2387
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2388
 class Aws::ECR::Types::ImageDigestDoesNotMatchException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2388
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2389
 Aws::ECR::Types::ImageDigestDoesNotMatchException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing an Amazon ECR image failure.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageFailure AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2411
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2412
 class Aws::ECR::Types::ImageFailure < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2412
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2413
 Aws::ECR::Types::ImageFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object with identifying information for an image in an Amazon ECR
@@ -7036,108 +7058,108 @@ Aws::ECR::Types::ImageFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageIdentifier AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2431
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2432
 class Aws::ECR::Types::ImageIdentifier < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2432
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2433
 Aws::ECR::Types::ImageIdentifier::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The image requested does not exist in the specified repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2444
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2445
 class Aws::ECR::Types::ImageNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2445
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2446
 Aws::ECR::Types::ImageNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing an artifact associated with a subject image.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageReferrer AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2484
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2485
 class Aws::ECR::Types::ImageReferrer < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2485
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2486
 Aws::ECR::Types::ImageReferrer::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The status of the replication process for an image.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageReplicationStatus AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2514
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2515
 class Aws::ECR::Types::ImageReplicationStatus < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2515
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2516
 Aws::ECR::Types::ImageReplicationStatus::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Contains information about an image scan finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanFinding AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2550
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2551
 class Aws::ECR::Types::ImageScanFinding < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2551
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2552
 Aws::ECR::Types::ImageScanFinding::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of an image scan.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanFindings AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2584
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2585
 class Aws::ECR::Types::ImageScanFindings < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2585
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2586
 Aws::ECR::Types::ImageScanFindings::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A summary of the last completed image scan.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanFindingsSummary AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2608
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2609
 class Aws::ECR::Types::ImageScanFindingsSummary < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2609
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2610
 Aws::ECR::Types::ImageScanFindingsSummary::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The current status of an image scan.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanStatus AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2627
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2628
 class Aws::ECR::Types::ImageScanStatus < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2628
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2629
 Aws::ECR::Types::ImageScanStatus::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The image scanning configuration for a repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanningConfiguration AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2649
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2650
 class Aws::ECR::Types::ImageScanningConfiguration < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2650
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2651
 Aws::ECR::Types::ImageScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The signing status for an image. Each status corresponds to a signing
@@ -7145,24 +7167,24 @@ Aws::ECR::Types::ImageScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageSigningStatus AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2688
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2689
 class Aws::ECR::Types::ImageSigningStatus < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2689
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2690
 Aws::ECR::Types::ImageSigningStatus::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The requested image storage class update is not supported.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageStorageClassUpdateNotSupportedException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2701
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2702
 class Aws::ECR::Types::ImageStorageClassUpdateNotSupportedException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2702
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2703
 Aws::ECR::Types::ImageStorageClassUpdateNotSupportedException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified image is tagged with a tag that already exists. The
@@ -7170,12 +7192,12 @@ Aws::ECR::Types::ImageStorageClassUpdateNotSupportedException::SENSITIVE = T.let
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageTagAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2715
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2716
 class Aws::ECR::Types::ImageTagAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2716
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2717
 Aws::ECR::Types::ImageTagAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A filter that specifies which image tags should be excluded from the
@@ -7183,32 +7205,32 @@ Aws::ECR::Types::ImageTagAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageTagMutabilityExclusionFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2737
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2738
 class Aws::ECR::Types::ImageTagMutabilityExclusionFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2738
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2739
 Aws::ECR::Types::ImageTagMutabilityExclusionFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InitiateLayerUploadRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2756
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2757
 class Aws::ECR::Types::InitiateLayerUploadRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2757
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2758
 Aws::ECR::Types::InitiateLayerUploadRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InitiateLayerUploadResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2775
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2776
 class Aws::ECR::Types::InitiateLayerUploadResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2776
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2777
 Aws::ECR::Types::InitiateLayerUploadResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The layer digest calculation performed by Amazon ECR upon receipt of
@@ -7216,12 +7238,12 @@ Aws::ECR::Types::InitiateLayerUploadResponse::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidLayerException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2790
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2791
 class Aws::ECR::Types::InvalidLayerException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2791
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2792
 Aws::ECR::Types::InvalidLayerException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The layer part size is not valid, or the first byte specified is not
@@ -7229,12 +7251,12 @@ Aws::ECR::Types::InvalidLayerException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidLayerPartException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2826
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2827
 class Aws::ECR::Types::InvalidLayerPartException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2827
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2828
 Aws::ECR::Types::InvalidLayerPartException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified parameter is invalid. Review the available parameters
@@ -7242,12 +7264,12 @@ Aws::ECR::Types::InvalidLayerPartException::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidParameterException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2841
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2842
 class Aws::ECR::Types::InvalidParameterException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2842
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2843
 Aws::ECR::Types::InvalidParameterException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An invalid parameter has been specified. Tag keys can have a maximum
@@ -7256,60 +7278,60 @@ Aws::ECR::Types::InvalidParameterException::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidTagParameterException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2856
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2857
 class Aws::ECR::Types::InvalidTagParameterException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2857
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2858
 Aws::ECR::Types::InvalidTagParameterException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The operation failed due to a KMS exception.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/KmsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2874
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2875
 class Aws::ECR::Types::KmsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2875
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2876
 Aws::ECR::Types::KmsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing an Amazon ECR image layer.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Layer AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2905
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2906
 class Aws::ECR::Types::Layer < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2906
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2907
 Aws::ECR::Types::Layer::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The image layer already exists in the associated repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2919
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2920
 class Aws::ECR::Types::LayerAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2920
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2921
 Aws::ECR::Types::LayerAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing an Amazon ECR image layer failure.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerFailure AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2943
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2944
 class Aws::ECR::Types::LayerFailure < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2944
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2945
 Aws::ECR::Types::LayerFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified layer is not available because it is not associated with
@@ -7317,24 +7339,24 @@ Aws::ECR::Types::LayerFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerInaccessibleException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2958
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2959
 class Aws::ECR::Types::LayerInaccessibleException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2959
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2960
 Aws::ECR::Types::LayerInaccessibleException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Layer parts must be at least 5 MiB in size.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerPartTooSmallException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2972
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2973
 class Aws::ECR::Types::LayerPartTooSmallException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2973
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2974
 Aws::ECR::Types::LayerPartTooSmallException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified layers could not be found, or the specified layer is not
@@ -7342,12 +7364,12 @@ Aws::ECR::Types::LayerPartTooSmallException::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayersNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2987
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2988
 class Aws::ECR::Types::LayersNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2988
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#2989
 Aws::ECR::Types::LayersNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The lifecycle policy could not be found, and no policy is set to the
@@ -7355,24 +7377,24 @@ Aws::ECR::Types::LayersNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3001
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3002
 class Aws::ECR::Types::LifecyclePolicyNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3002
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3003
 Aws::ECR::Types::LifecyclePolicyNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The filter for the lifecycle policy preview.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3015
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3016
 class Aws::ECR::Types::LifecyclePolicyPreviewFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3016
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3017
 Aws::ECR::Types::LifecyclePolicyPreviewFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The previous lifecycle policy preview request has not completed. Wait
@@ -7380,60 +7402,60 @@ Aws::ECR::Types::LifecyclePolicyPreviewFilter::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewInProgressException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3029
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3030
 class Aws::ECR::Types::LifecyclePolicyPreviewInProgressException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3030
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3031
 Aws::ECR::Types::LifecyclePolicyPreviewInProgressException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # There is no dry run for this repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3042
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3043
 class Aws::ECR::Types::LifecyclePolicyPreviewNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3043
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3044
 Aws::ECR::Types::LifecyclePolicyPreviewNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The result of the lifecycle policy preview.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewResult AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3082
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3083
 class Aws::ECR::Types::LifecyclePolicyPreviewResult < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3083
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3084
 Aws::ECR::Types::LifecyclePolicyPreviewResult::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The summary of the lifecycle policy preview request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewSummary AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3103
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3104
 class Aws::ECR::Types::LifecyclePolicyPreviewSummary < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3104
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3105
 Aws::ECR::Types::LifecyclePolicyPreviewSummary::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The type of action to be taken.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyRuleAction AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3123
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3124
 class Aws::ECR::Types::LifecyclePolicyRuleAction < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3124
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3125
 Aws::ECR::Types::LifecyclePolicyRuleAction::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The operation did not succeed because it would have exceeded a service
@@ -7446,140 +7468,140 @@ Aws::ECR::Types::LifecyclePolicyRuleAction::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LimitExceededException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3143
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3144
 class Aws::ECR::Types::LimitExceededException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3144
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3145
 Aws::ECR::Types::LimitExceededException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing a filter on a ListImageReferrers operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImageReferrersFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3166
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3167
 class Aws::ECR::Types::ListImageReferrersFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3167
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3168
 Aws::ECR::Types::ListImageReferrersFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImageReferrersRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3227
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3228
 class Aws::ECR::Types::ListImageReferrersRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3228
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3229
 Aws::ECR::Types::ListImageReferrersRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImageReferrersResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3248
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3249
 class Aws::ECR::Types::ListImageReferrersResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3249
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3250
 Aws::ECR::Types::ListImageReferrersResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing a filter on a ListImages operation.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImagesFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3268
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3270
 class Aws::ECR::Types::ListImagesFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3269
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3271
 Aws::ECR::Types::ListImagesFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImagesRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3320
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3322
 class Aws::ECR::Types::ListImagesRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3321
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3323
 Aws::ECR::Types::ListImagesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImagesResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3340
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3342
 class Aws::ECR::Types::ListImagesResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3341
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3343
 Aws::ECR::Types::ListImagesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListPullTimeUpdateExclusionsRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3377
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3379
 class Aws::ECR::Types::ListPullTimeUpdateExclusionsRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3378
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3380
 Aws::ECR::Types::ListPullTimeUpdateExclusionsRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListPullTimeUpdateExclusionsResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3399
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3401
 class Aws::ECR::Types::ListPullTimeUpdateExclusionsResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3400
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3402
 Aws::ECR::Types::ListPullTimeUpdateExclusionsResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListTagsForResourceRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3413
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3415
 class Aws::ECR::Types::ListTagsForResourceRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3414
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3416
 Aws::ECR::Types::ListTagsForResourceRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListTagsForResourceResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3425
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3427
 class Aws::ECR::Types::ListTagsForResourceResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3426
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3428
 Aws::ECR::Types::ListTagsForResourceResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about a package vulnerability finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PackageVulnerabilityDetails AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3487
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3489
 class Aws::ECR::Types::PackageVulnerabilityDetails < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3488
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3490
 Aws::ECR::Types::PackageVulnerabilityDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of a pull through cache rule.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PullThroughCacheRule AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3548
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3550
 class Aws::ECR::Types::PullThroughCacheRule < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3549
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3551
 Aws::ECR::Types::PullThroughCacheRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A pull through cache rule with these settings already exists for the
@@ -7587,12 +7609,12 @@ Aws::ECR::Types::PullThroughCacheRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PullThroughCacheRuleAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3562
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3564
 class Aws::ECR::Types::PullThroughCacheRuleAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3563
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3565
 Aws::ECR::Types::PullThroughCacheRuleAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The pull through cache rule was not found. Specify a valid pull
@@ -7600,192 +7622,192 @@ Aws::ECR::Types::PullThroughCacheRuleAlreadyExistsException::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PullThroughCacheRuleNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3576
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3578
 class Aws::ECR::Types::PullThroughCacheRuleNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3577
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3579
 Aws::ECR::Types::PullThroughCacheRuleNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutAccountSettingRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3596
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3598
 class Aws::ECR::Types::PutAccountSettingRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3597
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3599
 Aws::ECR::Types::PutAccountSettingRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutAccountSettingResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3613
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3615
 class Aws::ECR::Types::PutAccountSettingResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3614
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3616
 Aws::ECR::Types::PutAccountSettingResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3654
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3656
 class Aws::ECR::Types::PutImageRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3655
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3657
 Aws::ECR::Types::PutImageRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3666
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3668
 class Aws::ECR::Types::PutImageResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3667
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3669
 Aws::ECR::Types::PutImageResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageScanningConfigurationRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3694
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3696
 class Aws::ECR::Types::PutImageScanningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3695
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3697
 Aws::ECR::Types::PutImageScanningConfigurationRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageScanningConfigurationResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3716
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3718
 class Aws::ECR::Types::PutImageScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3717
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3719
 Aws::ECR::Types::PutImageScanningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageTagMutabilityRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3751
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3753
 class Aws::ECR::Types::PutImageTagMutabilityRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3752
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3754
 Aws::ECR::Types::PutImageTagMutabilityRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageTagMutabilityResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3779
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3781
 class Aws::ECR::Types::PutImageTagMutabilityResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3780
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3782
 Aws::ECR::Types::PutImageTagMutabilityResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutLifecyclePolicyRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3803
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3805
 class Aws::ECR::Types::PutLifecyclePolicyRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3804
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3806
 Aws::ECR::Types::PutLifecyclePolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutLifecyclePolicyResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3825
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3827
 class Aws::ECR::Types::PutLifecyclePolicyResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3826
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3828
 Aws::ECR::Types::PutLifecyclePolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryPolicyRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3844
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3846
 class Aws::ECR::Types::PutRegistryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3845
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3847
 Aws::ECR::Types::PutRegistryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryPolicyResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3861
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3863
 class Aws::ECR::Types::PutRegistryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3862
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3864
 Aws::ECR::Types::PutRegistryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryScanningConfigurationRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3892
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3894
 class Aws::ECR::Types::PutRegistryScanningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3893
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3895
 Aws::ECR::Types::PutRegistryScanningConfigurationRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryScanningConfigurationResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3904
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3906
 class Aws::ECR::Types::PutRegistryScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3905
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3907
 Aws::ECR::Types::PutRegistryScanningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutReplicationConfigurationRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3916
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3918
 class Aws::ECR::Types::PutReplicationConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3917
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3919
 Aws::ECR::Types::PutReplicationConfigurationRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutReplicationConfigurationResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3928
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3930
 class Aws::ECR::Types::PutReplicationConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3929
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3931
 Aws::ECR::Types::PutReplicationConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutSigningConfigurationRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3940
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3942
 class Aws::ECR::Types::PutSigningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3941
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3943
 Aws::ECR::Types::PutSigningConfigurationRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutSigningConfigurationResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3952
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3954
 class Aws::ECR::Types::PutSigningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3953
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3955
 Aws::ECR::Types::PutSigningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Details about the recommended course of action to remediate the
@@ -7793,104 +7815,104 @@ Aws::ECR::Types::PutSigningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Recommendation AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3972
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3974
 class Aws::ECR::Types::Recommendation < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3973
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3975
 Aws::ECR::Types::Recommendation::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The manifest list is referencing an image that does not exist.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReferencedImagesNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3985
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3987
 class Aws::ECR::Types::ReferencedImagesNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3986
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3988
 Aws::ECR::Types::ReferencedImagesNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegisterPullTimeUpdateExclusionRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3998
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4000
 class Aws::ECR::Types::RegisterPullTimeUpdateExclusionRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#3999
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4001
 Aws::ECR::Types::RegisterPullTimeUpdateExclusionRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegisterPullTimeUpdateExclusionResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4017
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4019
 class Aws::ECR::Types::RegisterPullTimeUpdateExclusionResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4018
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4020
 Aws::ECR::Types::RegisterPullTimeUpdateExclusionResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The registry doesn't have an associated registry policy.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegistryPolicyNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4030
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4032
 class Aws::ECR::Types::RegistryPolicyNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4031
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4033
 Aws::ECR::Types::RegistryPolicyNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The scanning configuration for a private registry.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegistryScanningConfiguration AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4049
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4051
 class Aws::ECR::Types::RegistryScanningConfiguration < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4050
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4052
 Aws::ECR::Types::RegistryScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of a scanning rule for a private registry.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegistryScanningRule AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4074
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4076
 class Aws::ECR::Types::RegistryScanningRule < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4075
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4077
 Aws::ECR::Types::RegistryScanningRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information on how to remediate a finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Remediation AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4089
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4091
 class Aws::ECR::Types::Remediation < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4090
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4092
 Aws::ECR::Types::Remediation::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The replication configuration for a registry.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReplicationConfiguration AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4104
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4106
 class Aws::ECR::Types::ReplicationConfiguration < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4105
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4107
 Aws::ECR::Types::ReplicationConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An array of objects representing the destination for a replication
@@ -7898,12 +7920,12 @@ Aws::ECR::Types::ReplicationConfiguration::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReplicationDestination AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4126
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4128
 class Aws::ECR::Types::ReplicationDestination < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4127
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4129
 Aws::ECR::Types::ReplicationDestination::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An array of objects representing the replication destinations and
@@ -7911,36 +7933,36 @@ Aws::ECR::Types::ReplicationDestination::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReplicationRule AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4150
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4152
 class Aws::ECR::Types::ReplicationRule < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4151
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4153
 Aws::ECR::Types::ReplicationRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object representing a repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Repository AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4213
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4215
 class Aws::ECR::Types::Repository < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4214
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4216
 Aws::ECR::Types::Repository::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified repository already exists in the specified registry.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4227
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4229
 class Aws::ECR::Types::RepositoryAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4228
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4230
 Aws::ECR::Types::RepositoryAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of the repository creation template associated with the
@@ -7948,12 +7970,12 @@ Aws::ECR::Types::RepositoryAlreadyExistsException::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryCreationTemplate AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4319
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4321
 class Aws::ECR::Types::RepositoryCreationTemplate < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4320
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4322
 Aws::ECR::Types::RepositoryCreationTemplate::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The filter settings used with image replication. Specifying a
@@ -7964,12 +7986,12 @@ Aws::ECR::Types::RepositoryCreationTemplate::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4346
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4348
 class Aws::ECR::Types::RepositoryFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4347
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4349
 Aws::ECR::Types::RepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified repository contains images. To delete a repository that
@@ -7978,12 +8000,12 @@ Aws::ECR::Types::RepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryNotEmptyException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4362
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4364
 class Aws::ECR::Types::RepositoryNotEmptyException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4363
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4365
 Aws::ECR::Types::RepositoryNotEmptyException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified repository could not be found. Check the spelling of the
@@ -7992,12 +8014,12 @@ Aws::ECR::Types::RepositoryNotEmptyException::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4378
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4380
 class Aws::ECR::Types::RepositoryNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4379
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4381
 Aws::ECR::Types::RepositoryNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified repository and registry combination does not have an
@@ -8005,24 +8027,24 @@ Aws::ECR::Types::RepositoryNotFoundException::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryPolicyNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4393
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4395
 class Aws::ECR::Types::RepositoryPolicyNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4394
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4396
 Aws::ECR::Types::RepositoryPolicyNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of the scanning configuration for a repository.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryScanningConfiguration AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4427
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4429
 class Aws::ECR::Types::RepositoryScanningConfiguration < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4428
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4430
 Aws::ECR::Types::RepositoryScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details about any failures associated with the scanning
@@ -8030,36 +8052,36 @@ Aws::ECR::Types::RepositoryScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryScanningConfigurationFailure AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4452
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4454
 class Aws::ECR::Types::RepositoryScanningConfigurationFailure < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4453
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4455
 Aws::ECR::Types::RepositoryScanningConfigurationFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Details about the resource involved in a finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Resource AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4482
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4484
 class Aws::ECR::Types::Resource < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4483
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4485
 Aws::ECR::Types::Resource::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Contains details about the resource involved in the finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ResourceDetails AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4497
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4499
 class Aws::ECR::Types::ResourceDetails < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4498
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4500
 Aws::ECR::Types::ResourceDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified image scan could not be found. Ensure that image
@@ -8067,12 +8089,12 @@ Aws::ECR::Types::ResourceDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ScanNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4511
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4513
 class Aws::ECR::Types::ScanNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4512
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4514
 Aws::ECR::Types::ScanNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The details of a scanning repository filter. For more information on
@@ -8085,24 +8107,24 @@ Aws::ECR::Types::ScanNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ScanningRepositoryFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4536
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4538
 class Aws::ECR::Types::ScanningRepositoryFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4537
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4539
 Aws::ECR::Types::ScanningRepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information about the Amazon Inspector score given to a finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ScoreDetails AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4551
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4553
 class Aws::ECR::Types::ScoreDetails < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4552
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4554
 Aws::ECR::Types::ScoreDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The ARN of the secret specified in the pull through cache rule was not
@@ -8111,44 +8133,44 @@ Aws::ECR::Types::ScoreDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SecretNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4566
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4568
 class Aws::ECR::Types::SecretNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4567
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4569
 Aws::ECR::Types::SecretNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # These errors are usually caused by a server-side issue.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ServerException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4580
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4582
 class Aws::ECR::Types::ServerException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4581
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4583
 Aws::ECR::Types::ServerException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SetRepositoryPolicyRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4618
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4620
 class Aws::ECR::Types::SetRepositoryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4619
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4621
 Aws::ECR::Types::SetRepositoryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SetRepositoryPolicyResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4640
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4642
 class Aws::ECR::Types::SetRepositoryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4641
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4643
 Aws::ECR::Types::SetRepositoryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The signing configuration for a registry, which specifies rules for
@@ -8156,12 +8178,12 @@ Aws::ECR::Types::SetRepositoryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningConfiguration AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4657
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4659
 class Aws::ECR::Types::SigningConfiguration < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4658
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4660
 Aws::ECR::Types::SigningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified signing configuration was not found. This occurs when
@@ -8170,12 +8192,12 @@ Aws::ECR::Types::SigningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningConfigurationNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4673
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4675
 class Aws::ECR::Types::SigningConfigurationNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4674
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4676
 Aws::ECR::Types::SigningConfigurationNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A repository filter used to determine which repositories have their
@@ -8184,12 +8206,12 @@ Aws::ECR::Types::SigningConfigurationNotFoundException::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningRepositoryFilter AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4706
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4708
 class Aws::ECR::Types::SigningRepositoryFilter < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4707
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4709
 Aws::ECR::Types::SigningRepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # A signing rule that specifies a signing profile and optional
@@ -8198,64 +8220,64 @@ Aws::ECR::Types::SigningRepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningRule AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4737
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4739
 class Aws::ECR::Types::SigningRule < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4738
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4740
 Aws::ECR::Types::SigningRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartImageScanRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4762
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4764
 class Aws::ECR::Types::StartImageScanRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4763
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4765
 Aws::ECR::Types::StartImageScanRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartImageScanResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4790
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4792
 class Aws::ECR::Types::StartImageScanResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4791
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4793
 Aws::ECR::Types::StartImageScanResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartLifecyclePolicyPreviewRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4815
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4817
 class Aws::ECR::Types::StartLifecyclePolicyPreviewRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4816
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4818
 Aws::ECR::Types::StartLifecyclePolicyPreviewRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartLifecyclePolicyPreviewResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4842
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4844
 class Aws::ECR::Types::StartLifecyclePolicyPreviewResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4843
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4845
 Aws::ECR::Types::StartLifecyclePolicyPreviewResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # An object that identifies an image subject.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SubjectIdentifier AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4856
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4858
 class Aws::ECR::Types::SubjectIdentifier < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4857
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4859
 Aws::ECR::Types::SubjectIdentifier::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The metadata to apply to a resource to help you categorize and
@@ -8266,27 +8288,27 @@ Aws::ECR::Types::SubjectIdentifier::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Tag AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4881
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4883
 class Aws::ECR::Types::Tag < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4882
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4884
 Aws::ECR::Types::Tag::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TagResourceRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4903
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4905
 class Aws::ECR::Types::TagResourceRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4904
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4906
 Aws::ECR::Types::TagResourceRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TagResourceResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4910
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4912
 class Aws::ECR::Types::TagResourceResponse < ::Aws::EmptyStructure; end
 
 # The repository creation template already exists. Specify a unique
@@ -8294,12 +8316,12 @@ class Aws::ECR::Types::TagResourceResponse < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TemplateAlreadyExistsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4921
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4923
 class Aws::ECR::Types::TemplateAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4922
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4924
 Aws::ECR::Types::TemplateAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified repository creation template can't be found. Verify the
@@ -8307,12 +8329,12 @@ Aws::ECR::Types::TemplateAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TemplateNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4935
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4937
 class Aws::ECR::Types::TemplateNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4936
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4938
 Aws::ECR::Types::TemplateNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The list of tags on the repository is over the limit. The maximum
@@ -8320,24 +8342,24 @@ Aws::ECR::Types::TemplateNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TooManyTagsException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4949
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4951
 class Aws::ECR::Types::TooManyTagsException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4950
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4952
 Aws::ECR::Types::TooManyTagsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The total count of images transitioning to a storage class.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TransitioningImageTotalCount AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4968
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4970
 class Aws::ECR::Types::TransitioningImageTotalCount < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4969
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4971
 Aws::ECR::Types::TransitioningImageTotalCount::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The secret is unable to be accessed. Verify the resource permissions
@@ -8345,12 +8367,12 @@ Aws::ECR::Types::TransitioningImageTotalCount::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToAccessSecretException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4982
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4984
 class Aws::ECR::Types::UnableToAccessSecretException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4983
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4985
 Aws::ECR::Types::UnableToAccessSecretException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The secret is accessible but is unable to be decrypted. Verify the
@@ -8358,12 +8380,12 @@ Aws::ECR::Types::UnableToAccessSecretException::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToDecryptSecretValueException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4996
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4998
 class Aws::ECR::Types::UnableToDecryptSecretValueException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4997
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#4999
 Aws::ECR::Types::UnableToDecryptSecretValueException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The image or images were unable to be pulled using the pull through
@@ -8373,12 +8395,12 @@ Aws::ECR::Types::UnableToDecryptSecretValueException::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToGetUpstreamImageException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5012
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5014
 class Aws::ECR::Types::UnableToGetUpstreamImageException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5013
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5015
 Aws::ECR::Types::UnableToGetUpstreamImageException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # There was an issue getting the upstream layer matching the pull
@@ -8386,131 +8408,146 @@ Aws::ECR::Types::UnableToGetUpstreamImageException::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToGetUpstreamLayerException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5026
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5028
 class Aws::ECR::Types::UnableToGetUpstreamLayerException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5027
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5029
 Aws::ECR::Types::UnableToGetUpstreamLayerException::SENSITIVE = T.let(T.unsafe(nil), Array)
+
+# The referrer or referrers were unable to be listed using the pull
+# through cache rule. This is usually caused because of an issue with
+# the Secrets Manager secret containing the credentials for the upstream
+# registry.
+#
+# @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToListUpstreamImageReferrersException AWS API Documentation
+#
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5044
+class Aws::ECR::Types::UnableToListUpstreamImageReferrersException < ::Struct
+  include ::Aws::Structure
+end
+
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5045
+Aws::ECR::Types::UnableToListUpstreamImageReferrersException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The image is of a type that cannot be scanned.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnsupportedImageTypeException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5039
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5057
 class Aws::ECR::Types::UnsupportedImageTypeException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5040
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5058
 Aws::ECR::Types::UnsupportedImageTypeException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The specified upstream registry isn't supported.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnsupportedUpstreamRegistryException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5052
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5070
 class Aws::ECR::Types::UnsupportedUpstreamRegistryException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5053
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5071
 Aws::ECR::Types::UnsupportedUpstreamRegistryException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UntagResourceRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5071
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5089
 class Aws::ECR::Types::UntagResourceRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5072
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5090
 Aws::ECR::Types::UntagResourceRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UntagResourceResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5078
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5096
 class Aws::ECR::Types::UntagResourceResponse < ::Aws::EmptyStructure; end
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateImageStorageClassRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5105
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5123
 class Aws::ECR::Types::UpdateImageStorageClassRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5106
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5124
 Aws::ECR::Types::UpdateImageStorageClassRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateImageStorageClassResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5135
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5153
 class Aws::ECR::Types::UpdateImageStorageClassResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5136
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5154
 Aws::ECR::Types::UpdateImageStorageClassResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdatePullThroughCacheRuleRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5169
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5187
 class Aws::ECR::Types::UpdatePullThroughCacheRuleRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5170
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5188
 Aws::ECR::Types::UpdatePullThroughCacheRuleRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdatePullThroughCacheRuleResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5210
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5228
 class Aws::ECR::Types::UpdatePullThroughCacheRuleResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5211
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5229
 Aws::ECR::Types::UpdatePullThroughCacheRuleResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateRepositoryCreationTemplateRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5297
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5315
 class Aws::ECR::Types::UpdateRepositoryCreationTemplateRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5298
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5316
 Aws::ECR::Types::UpdateRepositoryCreationTemplateRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateRepositoryCreationTemplateResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5315
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5333
 class Aws::ECR::Types::UpdateRepositoryCreationTemplateResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5316
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5334
 Aws::ECR::Types::UpdateRepositoryCreationTemplateResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UploadLayerPartRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5357
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5375
 class Aws::ECR::Types::UploadLayerPartRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5358
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5376
 Aws::ECR::Types::UploadLayerPartRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UploadLayerPartResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5384
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5402
 class Aws::ECR::Types::UploadLayerPartResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5385
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5403
 Aws::ECR::Types::UploadLayerPartResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # The upload could not be found, or the specified upload ID is not valid
@@ -8518,56 +8555,56 @@ Aws::ECR::Types::UploadLayerPartResponse::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UploadNotFoundException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5399
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5417
 class Aws::ECR::Types::UploadNotFoundException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5400
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5418
 Aws::ECR::Types::UploadNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ValidatePullThroughCacheRuleRequest AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5418
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5436
 class Aws::ECR::Types::ValidatePullThroughCacheRuleRequest < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5419
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5437
 Aws::ECR::Types::ValidatePullThroughCacheRuleRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ValidatePullThroughCacheRuleResponse AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5478
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5496
 class Aws::ECR::Types::ValidatePullThroughCacheRuleResponse < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5479
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5497
 Aws::ECR::Types::ValidatePullThroughCacheRuleResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # There was an exception validating this request.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ValidationException AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5491
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5509
 class Aws::ECR::Types::ValidationException < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5492
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5510
 Aws::ECR::Types::ValidationException::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Information on the vulnerable package identified by a finding.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/VulnerablePackage AWS API Documentation
 #
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5545
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5563
 class Aws::ECR::Types::VulnerablePackage < ::Struct
   include ::Aws::Structure
 end
 
-# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5546
+# source://aws-sdk-ecr//lib/aws-sdk-ecr/types.rb#5564
 Aws::ECR::Types::VulnerablePackage::SENSITIVE = T.let(T.unsafe(nil), Array)
 
 # Waiters are utility methods that poll for a particular state to occur

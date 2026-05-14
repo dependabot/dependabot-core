@@ -6405,263 +6405,263 @@ Nokogiri::XML::PP::Node::COLLECTIONS = T.let(T.unsafe(nil), Array)
 class Nokogiri::XML::ParseOptions
   # @return [ParseOptions] a new instance of ParseOptions
   #
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#165
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#169
   def initialize(options = T.unsafe(nil)); end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#198
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#202
   def ==(other); end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def big_lines; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def big_lines?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def compact; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def compact?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_html; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_html?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_schema; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_schema?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_xml; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_xml?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_xslt; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def default_xslt?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def dtdattr; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def dtdattr?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def dtdload; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def dtdload?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def dtdvalid; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def dtdvalid?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def huge; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def huge?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#204
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#208
   def inspect; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nobasefix; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nobasefix?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nobig_lines; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noblanks; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noblanks?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nocdata; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nocdata?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nocompact; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodefault_html; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodefault_schema; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodefault_xml; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodefault_xslt; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodict; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodict?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodtdattr; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodtdload; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nodtdvalid; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noent; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noent?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noerror; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noerror?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nohuge; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonet; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonet?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonobasefix; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonoblanks; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonocdata; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonodict; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonoent; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonoerror; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nononet; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonowarning; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonoxincnode; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nonsclean; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noold10; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nopedantic; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def norecover; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nosax1; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nowarning; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nowarning?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noxinclude; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noxincnode; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def noxincnode?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nsclean; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def nsclean?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def old10; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def old10?; end
 
   # Returns the value of attribute options.
   #
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#163
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#167
   def options; end
 
   # Sets the attribute options
   #
   # @param value the value to set the attribute options to.
   #
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#163
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#167
   def options=(_arg0); end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def pedantic; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def pedantic?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def recover; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def recover?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def sax1; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def sax1?; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#189
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#193
   def strict; end
 
   # @return [Boolean]
   #
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#194
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#198
   def strict?; end
 
   # Returns the value of attribute options.
   #
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#202
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#206
   def to_i; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def xinclude; end
 
-  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#172
+  # source://nokogiri//lib/nokogiri/xml/parse_options.rb#176
   def xinclude?; end
 end
 
@@ -6669,35 +6669,39 @@ end
 # by default for for XML::Document, XML::DocumentFragment, HTML4::Document,
 # HTML4::DocumentFragment, XSLT::Stylesheet, and XML::Schema.
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#149
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#148
 Nokogiri::XML::ParseOptions::BIG_LINES = T.let(T.unsafe(nil), Integer)
 
 # Compact small text nodes. Off by default.
 #
-# ⚠ No modification of the DOM tree is allowed after parsing. libxml2 may crash if you try to
-# modify the tree.
+# ⚠ No modification of the DOM tree is allowed after parsing.
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#133
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#132
 Nokogiri::XML::ParseOptions::COMPACT = T.let(T.unsafe(nil), Integer)
 
 # The options mask used by default used for parsing HTML4::Document and HTML4::DocumentFragment
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#158
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#162
 Nokogiri::XML::ParseOptions::DEFAULT_HTML = T.let(T.unsafe(nil), Integer)
 
 # The options mask used by default used for parsing XML::Schema
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#161
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#165
 Nokogiri::XML::ParseOptions::DEFAULT_SCHEMA = T.let(T.unsafe(nil), Integer)
 
 # The options mask used by default for parsing XML::Document and XML::DocumentFragment
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#152
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#151
 Nokogiri::XML::ParseOptions::DEFAULT_XML = T.let(T.unsafe(nil), Integer)
 
-# The options mask used by default used for parsing XSLT::Stylesheet
+# Shorthand options mask useful for parsing XSLT stylesheets:
+# sets RECOVER, NONET, NOENT, DTDLOAD, DTDATTR, NOCDATA, BIG_LINES.
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#155
+# 🛡 This option set includes `NOENT` and `DTDLOAD` which are unsafe for untrusted
+# documents. <b>Do not parse untrusted XSLT stylesheets.</b> See Nokogiri::XSLT for more
+# information.
+#
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#159
 Nokogiri::XML::ParseOptions::DEFAULT_XSLT = T.let(T.unsafe(nil), Integer)
 
 # Default DTD attributes. On by default for XSLT::Stylesheet.
@@ -6707,7 +6711,7 @@ Nokogiri::XML::ParseOptions::DTDATTR = T.let(T.unsafe(nil), Integer)
 
 # Load external subsets. On by default for XSLT::Stylesheet.
 #
-# ⚠ <b>It is UNSAFE to set this option</b> when parsing untrusted documents.
+# 🛡 <b>It is UNSAFE to set this option</b> when parsing untrusted documents.
 #
 # source://nokogiri//lib/nokogiri/xml/parse_options.rb#85
 Nokogiri::XML::ParseOptions::DTDLOAD = T.let(T.unsafe(nil), Integer)
@@ -6719,14 +6723,14 @@ Nokogiri::XML::ParseOptions::DTDVALID = T.let(T.unsafe(nil), Integer)
 
 # Relax any hardcoded limit from the parser. Off by default.
 #
-# ⚠ <b>It is UNSAFE to set this option</b> when parsing untrusted documents.
+# 🛡 <b>It is UNSAFE to set this option</b> when parsing untrusted documents.
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#144
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#143
 Nokogiri::XML::ParseOptions::HUGE = T.let(T.unsafe(nil), Integer)
 
 # Do not fixup XInclude xml:base uris. Off by default
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#139
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#138
 Nokogiri::XML::ParseOptions::NOBASEFIX = T.let(T.unsafe(nil), Integer)
 
 # Remove blank nodes. Off by default.
@@ -6748,7 +6752,7 @@ Nokogiri::XML::ParseOptions::NODICT = T.let(T.unsafe(nil), Integer)
 #
 # ⚠ This option enables entity substitution, contrary to what the name implies.
 #
-# ⚠ <b>It is UNSAFE to set this option</b> when parsing untrusted documents.
+# 🛡 <b>It is UNSAFE to set this option</b> when parsing untrusted documents.
 #
 # source://nokogiri//lib/nokogiri/xml/parse_options.rb#80
 Nokogiri::XML::ParseOptions::NOENT = T.let(T.unsafe(nil), Integer)
@@ -6761,7 +6765,7 @@ Nokogiri::XML::ParseOptions::NOERROR = T.let(T.unsafe(nil), Integer)
 # Forbid network access. On by default for XML::Document, XML::DocumentFragment,
 # HTML4::Document, HTML4::DocumentFragment, XSLT::Stylesheet, and XML::Schema.
 #
-# ⚠ <b>It is UNSAFE to unset this option</b> when parsing untrusted documents.
+# 🛡 <b>It is UNSAFE to unset this option</b> when parsing untrusted documents.
 #
 # source://nokogiri//lib/nokogiri/xml/parse_options.rb#115
 Nokogiri::XML::ParseOptions::NONET = T.let(T.unsafe(nil), Integer)
@@ -6783,7 +6787,7 @@ Nokogiri::XML::ParseOptions::NSCLEAN = T.let(T.unsafe(nil), Integer)
 
 # Parse using XML-1.0 before update 5. Off by default
 #
-# source://nokogiri//lib/nokogiri/xml/parse_options.rb#136
+# source://nokogiri//lib/nokogiri/xml/parse_options.rb#135
 Nokogiri::XML::ParseOptions::OLD10 = T.let(T.unsafe(nil), Integer)
 
 # Enable pedantic error reporting. Off by default.
@@ -7235,7 +7239,7 @@ module Nokogiri::XML::SAX; end
 # of ParserContext#replace_entities. (Recall that the default value of
 # ParserContext#replace_entities is `false`.)
 #
-# ⚠ <b>It is UNSAFE to set ParserContext#replace_entities to `true`</b> when parsing untrusted
+# 🛡 <b>It is UNSAFE to set ParserContext#replace_entities to `true`</b> when parsing untrusted
 # documents.
 #
 # 💡 For more information on entity types, see [Wikipedia's page on
@@ -8400,10 +8404,16 @@ class Nokogiri::XML::XPathContext
   end
 end
 
-# See Nokogiri::XSLT::Stylesheet for creating and manipulating
-# Stylesheet object.
+# See Nokogiri::XSLT::Stylesheet for creating and manipulating Stylesheet objects.
 #
-# source://nokogiri//lib/nokogiri/xslt.rb#15
+# 🛡 <b>Do not use this module for untrusted stylesheet documents.</b> libxslt does not support
+# safely processing untrusted stylesheets. Untrusted stylesheets may access the file system and
+# network, consume large amounts of CPU, memory, or other system resources, and IO and file
+# access are not restricted. Additionally, the stylesheet is parsed by libxml2 with +NOENT+ and
+# +DTDLOAD+ enabled (see ParseOptions::DEFAULT_XSLT), meaning that <b>external entities will be
+# resolved and external subsets will be loaded</b> during parsing.
+#
+# source://nokogiri//lib/nokogiri/xslt.rb#21
 module Nokogiri::XSLT
   class << self
     # :call-seq:
@@ -8411,6 +8421,9 @@ module Nokogiri::XSLT
     #   parse(xsl, modules) → Nokogiri::XSLT::Stylesheet
     #
     # Parse the stylesheet in +xsl+, registering optional +modules+ as custom class handlers.
+    #
+    # 🛡 <b>Do not pass untrusted stylesheet content to this method.</b> See Nokogiri::XSLT for more
+    # information.
     #
     # [Parameters]
     # - +xsl+ (String) XSL content to be parsed into a stylesheet
@@ -8459,7 +8472,7 @@ module Nokogiri::XSLT
     #   #    "  <reverse>raB</reverse>\n" +
     #   #    "</reversed>\n"
     #
-    # source://nokogiri//lib/nokogiri/xslt.rb#70
+    # source://nokogiri//lib/nokogiri/xslt.rb#79
     def parse(string, modules = T.unsafe(nil)); end
 
     # :call-seq:
@@ -8473,7 +8486,7 @@ module Nokogiri::XSLT
     #
     # [Returns] Array of string parameters, with quotes correctly escaped for use with XSLT::Stylesheet.transform
     #
-    # source://nokogiri//lib/nokogiri/xslt.rb#94
+    # source://nokogiri//lib/nokogiri/xslt.rb#103
     def quote_params(params); end
 
     # source://nokogiri//lib/nokogiri/extension.rb#7
@@ -8481,14 +8494,19 @@ module Nokogiri::XSLT
   end
 end
 
-# A Stylesheet represents an XSLT Stylesheet object.  Stylesheet creation
-# is done through Nokogiri.XSLT.  Here is an example of transforming
-# an XML::Document with a Stylesheet:
+# A Stylesheet represents an XSLT Stylesheet object. Stylesheet creation is done through
+# Nokogiri::XSLT.parse (or the convenience method Nokogiri.XSLT). Here is an example of
+# transforming an XML::Document with a Stylesheet:
 #
 #   doc   = Nokogiri::XML(File.read('some_file.xml'))
 #   xslt  = Nokogiri::XSLT(File.read('some_transformer.xslt'))
 #
 #   xslt.transform(doc) # => Nokogiri::XML::Document
+#
+# 🛡 <b>This class does not support execution of untrusted stylesheets.</b> An untrusted
+# stylesheet may consume a large amount of CPU, memory, or other system resources during
+# transformation, and IO and file access are not restricted. See Nokogiri::XSLT for more
+# information about the security implications of untrusted stylesheets.
 #
 # Many XSLT transformations include serialization behavior to emit a non-XML document. For these
 # cases, please take care to invoke the #serialize method on the result of the transformation:
@@ -8505,7 +8523,7 @@ end
 #
 # See Nokogiri::XSLT::Stylesheet#transform for more information and examples.
 #
-# source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#29
+# source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#34
 class Nokogiri::XSLT::Stylesheet
   # :call-seq:
   #   apply_to(document, params = []) -> String
@@ -8522,7 +8540,7 @@ class Nokogiri::XSLT::Stylesheet
   #
   # See Nokogiri::XSLT::Stylesheet#transform for more information and examples.
   #
-  # source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#44
+  # source://nokogiri//lib/nokogiri/xslt/stylesheet.rb#49
   def apply_to(document, params = T.unsafe(nil)); end
 
   # source://nokogiri//lib/nokogiri/extension.rb#7
