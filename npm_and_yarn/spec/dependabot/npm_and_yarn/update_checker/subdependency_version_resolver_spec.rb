@@ -198,7 +198,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "3.10.2" }
 
-      it "uses the same pnpm update flags as the file updater" do
+      it "pins pnpm update to the latest allowable version" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
         allow(Dependabot::NpmAndYarn::NativeHelpers)
           .to receive_messages(run_pnpm_deep_update_command: "", run_pnpm_audit_fix_command: "")
@@ -206,8 +206,8 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         expect(Dependabot::NpmAndYarn::Helpers)
           .to receive(:run_pnpm_command)
           .with(
-            "update lodash@3.10.1 --lockfile-only --no-save -r",
-            { fingerprint: "update <dependency_name>@<dependency_version> --lockfile-only --no-save -r" }
+            "update lodash@3.10.2 --lockfile-only --no-save -r",
+            { fingerprint: "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save -r" }
           )
         expect(Dependabot::NpmAndYarn::NativeHelpers)
           .to receive(:run_pnpm_deep_update_command).once

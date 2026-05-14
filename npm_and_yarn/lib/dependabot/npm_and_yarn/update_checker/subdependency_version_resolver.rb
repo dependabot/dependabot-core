@@ -252,12 +252,20 @@ module Dependabot
 
         sig { returns(String) }
         def pnpm_update_command
-          "update #{dependency.name}@#{dependency.version} --lockfile-only --no-save -r"
+          if latest_allowable_version
+            "update #{dependency.name}@#{latest_allowable_version} --lockfile-only --no-save -r"
+          else
+            "update #{dependency.name} --lockfile-only"
+          end
         end
 
         sig { returns(String) }
         def pnpm_update_fingerprint
-          "update <dependency_name>@<dependency_version> --lockfile-only --no-save -r"
+          if latest_allowable_version
+            "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save -r"
+          else
+            "update <dependency_name> --lockfile-only"
+          end
         end
 
         # First-tier fallback: try `pnpm update --depth Infinity <dep>` to
