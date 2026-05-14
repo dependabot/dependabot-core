@@ -1038,14 +1038,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it "uses pnpm no-save recursive flags while checking resolvability" do
           allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
           allow(Dir).to receive(:chdir).and_call_original
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")
+
           expect(Dir).to receive(:chdir).with(".").and_yield
 
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).with(
+          resolver.send(:run_pnpm_checker, path: ".", version: latest_allowable_version)
+
+          expect(Dependabot::NpmAndYarn::Helpers).to have_received(:run_pnpm_command).with(
             "update left-pad@1.3.0 --lockfile-only --no-save -r",
             fingerprint: "update <dependency_name>@<version> --lockfile-only --no-save -r"
-          ).and_return("")
-
-          resolver.send(:run_pnpm_checker, path: ".", version: latest_allowable_version)
+          )
         end
       end
 
