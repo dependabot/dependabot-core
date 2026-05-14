@@ -179,6 +179,13 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_build_properties.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, url + "core?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_core_subproject_dir.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "core/build.sbt?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
@@ -186,7 +193,7 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_subproject_build_file.json"),
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url + "web/build.sbt?ref=sha")
+      stub_request(:get, url + "web?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
     end
