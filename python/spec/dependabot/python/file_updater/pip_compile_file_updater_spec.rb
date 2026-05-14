@@ -537,6 +537,24 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
+    context "with version matching error" do
+      it "raises DependencyFileNotResolvable for version matching failures" do
+        error_message = "Could not find a version that matches attrs>=99.0.0"
+        error = Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message, error_context: {}
+        )
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+          raise error if cmd.include?("pip-compile")
+
+          "" # no-op for pyenv and other commands
+        end
+
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+          expect(err.message).to include("Could not find a version that matches")
+        end
+      end
+    end
+
     context "with stripped extras" do
       let(:manifest_fixture_name) { "strip_extras.in" }
       let(:generated_fixture_name) { "pip_compile_strip_extras.txt" }
@@ -578,6 +596,64 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("--resolver=legacy")
         expect(updated_files.first.content).not_to include("boto3")
+      end
+    end
+
+    context "with relative import paths (regression test for pip >25 issue)" do
+      let(:dependency_files) do
+        [base_file, manifest_file, generated_file]
+      end
+      let(:base_file) do
+        Dependabot::DependencyFile.new(
+          name: "base.in",
+          content: "authlib"
+        )
+      end
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: "-r ../base.in\nruff==0.12.3"
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("requirements", "pip_compile_relative_paths.txt")
+        )
+      end
+      let(:dependency_name) { "ruff" }
+      let(:dependency_version) { "0.12.4" }
+      let(:dependency_previous_version) { "0.12.3" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==0.12.4",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==0.12.3",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "preserves relative paths in generated comments (not absolute)", :slow do
+        updated_generated_file = updated_files.find { |file| file.name == "requirements/test.txt" }
+
+        expect(updated_generated_file).not_to be_nil
+
+        updated_content = updated_generated_file.content
+
+        expect(updated_content).to include("# via -r ../base.in")
+        expect(updated_content).to include("ruff==0.12.4")
+        expect(updated_content).not_to match(%r{# via -r /})
+        expect(updated_content).not_to include("/tmp/")
+        expect(updated_content).not_to include("/home/")
+        expect(updated_content).not_to include("/opt/")
       end
     end
   end

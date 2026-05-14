@@ -167,6 +167,8 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(message: String).returns(T.nilable(String)) }
         def handle_pip_compile_errors(message) # rubocop:disable Metrics/MethodLength
+          handle_pip_tooling_errors(message)
+
           if message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
@@ -230,6 +232,21 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { params(message: String).void }
+        def handle_pip_tooling_errors(message)
+          if message.include?("ModuleNotFoundError: No module named 'piptools'")
+            raise DependencyFileNotResolvable,
+                  "pip-compile could not be run. " \
+                  "Please ensure pip-tools is installed in the Python environment."
+          end
+
+          return unless message.include?("Could not find a version that matches")
+
+          check_original_requirements_resolvable
+          cleaned_message = clean_error_message(message)
+          raise DependencyFileNotResolvable, cleaned_message.empty? ? message : cleaned_message
+        end
+
         # Needed because pip-compile's resolver isn't perfect.
         # Note: We raise errors from this method, rather than returning a
         # boolean, so that all deps for this repo will raise identical
@@ -255,7 +272,7 @@ module Dependabot
               # Pick the error message that includes resolvability errors, this might be the cause from
               # handle_pip_compile_errors (it's unclear if we should always pick the cause here)
               error_message = [e.message, e.cause&.message].compact.find do |msg|
-                msg.include?(RESOLUTION_IMPOSSIBLE_ERROR)
+                msg.include?(RESOLUTION_IMPOSSIBLE_ERROR) || msg.include?("Could not find a version that matches")
               end
 
               cleaned_message = clean_error_message(error_message || "")

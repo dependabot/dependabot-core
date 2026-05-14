@@ -61,6 +61,34 @@ RSpec.describe namespace::PipCompileVersionResolver do
     }]
   end
 
+  describe Dependabot::Python::PipCompileErrorHandler do
+    subject(:error_handler) { described_class.new }
+
+    describe "#handle_pipcompile_error" do
+      context "when dealing with a version matching error" do
+        let(:exception_message) do
+          "ERROR: Could not find a version that matches foo==99.99.99"
+        end
+
+        it "does not raise an error" do
+          expect { error_handler.handle_pipcompile_error(exception_message) }
+            .not_to raise_error
+        end
+      end
+
+      context "when dealing with a subprocess error" do
+        let(:exception_message) do
+          "subprocess-exited-with-error: pip install failed"
+        end
+
+        it "raises a helpful error" do
+          expect { error_handler.handle_pipcompile_error(exception_message) }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(requirement: updated_requirement)
@@ -69,6 +97,26 @@ RSpec.describe namespace::PipCompileVersionResolver do
     let(:updated_requirement) { ">=17.3.0,<=18.1.0" }
 
     it { is_expected.to eq(Gem::Version.new("18.1.0")) }
+
+    context "when pip-tools module is missing" do
+      before do
+        error_message = "ModuleNotFoundError: No module named 'piptools'"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, **_kwargs|
+          if cmd.include?("pip-compile")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: error_message, error_context: {}
+            )
+          end
+
+          ""
+        end
+      end
+
+      it "raises DependencyFileNotResolvable with a helpful message" do
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /pip-tools is installed/)
+      end
+    end
 
     context "with a mismatch in filename" do
       let(:generated_fixture_name) { "pip_compile_unpinned_renamed.txt" }
