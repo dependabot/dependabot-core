@@ -843,6 +843,16 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
+
+    context "when pubspec.yaml name field is not a string" do
+      let(:stderr) do
+        "Error on line 1, column 7 of pubspec.yaml: \"name\" field must be a String."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
   end
 
   context "with a git dependency" do
