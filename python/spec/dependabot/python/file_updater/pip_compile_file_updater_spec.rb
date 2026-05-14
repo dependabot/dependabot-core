@@ -580,6 +580,58 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.first.content).not_to include("boto3")
       end
     end
+
+    context "with relative import paths (regression test for pip >25 issue)" do
+      let(:dependency_files) do
+        [base_file, manifest_file, generated_file]
+      end
+      let(:base_file) do
+        Dependabot::DependencyFile.new(
+          name: "base.in",
+          content: "authlib"
+        )
+      end
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.in",
+          content: "-r ../base.in\nruff==0.12.3"
+        )
+      end
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test.txt",
+          content: fixture("requirements", "pip_compile_relative_paths.txt")
+        )
+      end
+      let(:dependency_name) { "ruff" }
+      let(:dependency_version) { "0.12.4" }
+      let(:dependency_previous_version) { "0.12.3" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==0.12.4",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==0.12.3",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "preserves relative paths in generated comments (not absolute)", :slow do
+        updated_content = updated_files.first.content
+
+        expect(updated_content).not_to match(%r{# via -r /})
+        expect(updated_content).not_to include("/tmp/")
+        expect(updated_content).not_to include("/home/")
+        expect(updated_content).not_to include("/opt/")
+      end
+    end
   end
 
   describe "#package_hashes_for" do

@@ -61,6 +61,24 @@ RSpec.describe namespace::PipCompileVersionResolver do
     }]
   end
 
+  describe Dependabot::Python::PipCompileErrorHandler do
+    subject(:error_handler) { described_class.new }
+
+    describe "#handle_pipcompile_error" do
+      context "when dealing with a version matching error" do
+        let(:exception_message) do
+          "ERROR: Could not find a version that matches foo==99.99.99 " \
+            "(from versions: 1.0.0, 2.0.0)"
+        end
+
+        it "raises a helpful error" do
+          expect { error_handler.handle_pipcompile_error(exception_message) }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(requirement: updated_requirement)
