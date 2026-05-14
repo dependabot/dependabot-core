@@ -92,7 +92,12 @@ module Dependabot
           return unless requirement_node
 
           begin
-            eval(requirement_node.children[2].loc.expression.source)
+            dependency_requirement_node = requirement_node.children[2]
+            if dependency_requirement_node.type == :array
+              dependency_requirement_node.children.map { |child| eval(child.loc.expression.source) }
+            else
+              eval(dependency_requirement_node.loc.expression.source)
+            end
           rescue StandardError
             nil # If we can't evaluate the expression just return nil
           end
