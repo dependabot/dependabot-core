@@ -242,6 +242,15 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         latest_resolvable_version
       end
 
+      it "returns nil when lockfiles are unchanged after update and fallbacks" do
+        allow(resolver).to receive(:update_subdependency_in_lockfile) do |lockfile|
+          lockfile.content
+        end
+
+        expect(resolver).not_to receive(:version_from_updated_lockfiles)
+        expect(latest_resolvable_version).to be_nil
+      end
+
       context "when pnpm audit --fix fails" do
         it "logs and continues without raising" do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command).and_return("")

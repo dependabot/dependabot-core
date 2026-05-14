@@ -80,6 +80,12 @@ module Dependabot
               updated_lockfile
             end
 
+            # If every targeted lockfile remained byte-identical after running
+            # update + fallbacks, treat this as not resolvable. Returning a
+            # synthetic higher version here can cause FileUpdater to no-op and
+            # raise NoChangeError later in grouped security updates.
+            return nil unless lockfiles_changed?(updated_lockfiles)
+
             version_from_updated_lockfiles(updated_lockfiles)
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -377,6 +383,14 @@ module Dependabot
             ).files_requiring_update,
             T.nilable(T::Array[Dependabot::DependencyFile])
           )
+        end
+
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
+        def lockfiles_changed?(updated_lockfiles)
+          filtered_lockfiles.any? do |original|
+            updated = updated_lockfiles.find { |file| file.name == original.name }
+            updated && updated.content != original.content
+          end
         end
 
         sig { returns(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) }
