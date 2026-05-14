@@ -18,7 +18,7 @@ require "dependabot/gradle/package/release_date_extractor"
 module Dependabot
   module Gradle
     module Package
-      class PackageDetailsFetcher
+      class PackageDetailsFetcher # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
@@ -41,6 +41,10 @@ module Dependabot
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @release_details = T.let(nil, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
+          @version_release_date_fallback_cache = T.let(nil, T.nilable(T::Hash[String, T.nilable(Time)]))
+          @fallback_repository_url = T.let(nil, T.nilable(String))
+          @fallback_logged = T.let(false, T::Boolean)
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -104,18 +108,22 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
         def release_details
-          extractor = ReleaseDateExtractor.new(dependency_name: dependency.name, version_class: version_class)
-          extractor.extract(
-            repositories: repositories,
-            dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
-            release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) },
-            version_release_date_fetcher: nil
-          )
+          @release_details ||= begin
+            extractor = ReleaseDateExtractor.new(dependency_name: dependency.name, version_class: version_class)
+            extractor.extract(
+              repositories: repositories,
+              dependency_metadata_fetcher: ->(repo) { dependency_metadata(repo) },
+              release_info_metadata_fetcher: ->(repo) { release_info_metadata(repo) }
+            )
+          end
         end
 
         sig { params(version: String).returns(T.nilable(Time)) }
         def version_release_date_fallback(version)
-          repositories.each do |repo|
+          cache = version_release_date_fallback_cache
+          return cache[version] if cache.key?(version)
+
+          fallback_repository_details.each do |repo|
             repository_url = repo.fetch("url")
             pom_url = plugin_version_pom_url(repository_url, version)
             begin
@@ -124,10 +132,9 @@ module Dependabot
               next unless last_modified
 
               released_at = Time.httpdate(last_modified)
-              Dependabot.logger.info(
-                "Using POM Last-Modified fallback for #{dependency.name} version #{version} from " \
-                "#{repository_url}: #{released_at}"
-              )
+              @fallback_repository_url = repository_url
+              log_fallback_hit(version: version, repository_url: repository_url, released_at: released_at)
+              cache[version] = released_at
               return released_at
             rescue StandardError => e
               Dependabot.logger.debug(
@@ -136,10 +143,11 @@ module Dependabot
               )
             end
           end
+
           Dependabot.logger.debug(
             "No POM Last-Modified fallback release date found for #{dependency.name} version #{version}"
           )
-          nil
+          cache[version] = nil
         end
 
         sig { params(repository_url: String, version: String).returns(String) }
@@ -150,7 +158,12 @@ module Dependabot
           File.join(repository_url, T.must(group_id).tr(".", "/"), artifact_id, version, pom_filename)
         end
 
-        sig { params(release: Dependabot::Package::PackageRelease, release_date: T.nilable(Time)).returns(Dependabot::Package::PackageRelease) }
+        sig do
+          params(
+            release: Dependabot::Package::PackageRelease,
+            release_date: T.nilable(Time)
+          ).returns(Dependabot::Package::PackageRelease)
+        end
         def build_release_with_date(release, release_date)
           Dependabot::Package::PackageRelease.new(
             version: release.version,
@@ -283,6 +296,33 @@ module Dependabot
           plugin? ? plugin_repository_details : dependency_repository_details
         end
 
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        def fallback_repository_details
+          candidates = repositories.reject do |repo|
+            T.must(forbidden_urls).include?(repo.fetch("url"))
+          end
+
+          preferred_repository, remaining_repositories = candidates.partition do |repo|
+            fallback_repository_url && repo.fetch("url") == fallback_repository_url
+          end
+
+          preferred_repository + remaining_repositories
+        end
+
+        sig { params(version: String, repository_url: String, released_at: Time).void }
+        def log_fallback_hit(version:, repository_url:, released_at:)
+          Dependabot.logger.debug(
+            "Using POM Last-Modified fallback for #{dependency.name} version #{version} from " \
+            "#{repository_url}: #{released_at}"
+          )
+          return if @fallback_logged
+
+          Dependabot.logger.info(
+            "Using POM Last-Modified fallback release dates for #{dependency.name} from #{repository_url}"
+          )
+          @fallback_logged = true
+        end
+
         sig { params(response: T.untyped, repository_url: T.untyped).returns(T.nilable(T::Array[T.untyped])) }
         def check_response(response, repository_url)
           return unless response.status == 401 || response.status == 403
@@ -398,6 +438,14 @@ module Dependabot
         sig { returns(T::Boolean) }
         def distribution?
           Distributions.distribution_requirements?(dependency.requirements)
+        end
+
+        sig { returns(T.nilable(String)) }
+        attr_reader :fallback_repository_url
+
+        sig { returns(T::Hash[String, T.nilable(Time)]) }
+        def version_release_date_fallback_cache
+          @version_release_date_fallback_cache ||= T.let({}, T.nilable(T::Hash[String, T.nilable(Time)]))
         end
 
         sig { returns(T::Array[String]) }

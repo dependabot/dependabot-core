@@ -38,16 +38,10 @@ module Dependabot
             ).returns(Nokogiri::XML::Document),
             release_info_metadata_fetcher: T.proc.params(
               repo: T::Hash[String, T.untyped]
-            ).returns(Nokogiri::HTML::Document),
-            version_release_date_fetcher: T.nilable(T.proc.params(arg0: String).returns(T.nilable(Time)))
+            ).returns(Nokogiri::HTML::Document)
           ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
         end
-        def extract(
-          repositories:,
-          dependency_metadata_fetcher:,
-          release_info_metadata_fetcher:,
-          version_release_date_fetcher: nil
-        )
+        def extract(repositories:, dependency_metadata_fetcher:, release_info_metadata_fetcher:)
           release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
           begin
@@ -56,13 +50,6 @@ module Dependabot
               release_date_info: release_date_info,
               dependency_metadata_fetcher: dependency_metadata_fetcher,
               release_info_metadata_fetcher: release_info_metadata_fetcher
-            )
-
-            apply_release_date_fallback(
-              repositories: repositories,
-              release_date_info: release_date_info,
-              release_info_metadata_fetcher: release_info_metadata_fetcher,
-              version_release_date_fetcher: version_release_date_fetcher
             )
 
             release_date_info
@@ -114,82 +101,6 @@ module Dependabot
               release_info_metadata_fetcher
             )
           end
-        end
-
-        sig do
-          params(
-            repositories: T::Array[T::Hash[String, T.untyped]],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
-            release_info_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
-            ).returns(Nokogiri::HTML::Document),
-            version_release_date_fetcher: T.nilable(T.proc.params(arg0: String).returns(T.nilable(Time)))
-          ).void
-        end
-        def apply_release_date_fallback(
-          repositories:,
-          release_date_info:,
-          release_info_metadata_fetcher:,
-          version_release_date_fetcher:
-        )
-          return unless version_release_date_fetcher
-
-          candidate_versions(
-            repositories: repositories,
-            release_date_info: release_date_info,
-            release_info_metadata_fetcher: release_info_metadata_fetcher
-          ).each do |version|
-            next if release_date_info[version]&.dig(:release_date)
-
-            release_date = version_release_date_fetcher.call(version)
-            release_date_info[version] = { release_date: release_date } if release_date
-          end
-        end
-
-        sig do
-          params(
-            repositories: T::Array[T::Hash[String, T.untyped]],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
-            release_info_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
-            ).returns(Nokogiri::HTML::Document)
-          ).returns(T::Array[String])
-        end
-        def candidate_versions(repositories:, release_date_info:, release_info_metadata_fetcher:)
-          versions = T.let(release_date_info.keys.dup, T::Array[String])
-
-          repositories.each do |repository_details|
-            add_versions_from_repository_listing(
-              repository_details: repository_details,
-              versions: versions,
-              release_info_metadata_fetcher: release_info_metadata_fetcher
-            )
-          end
-
-          versions
-        end
-
-        sig do
-          params(
-            repository_details: T::Hash[String, T.untyped],
-            versions: T::Array[String],
-            release_info_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
-            ).returns(Nokogiri::HTML::Document)
-          ).void
-        end
-        def add_versions_from_repository_listing(repository_details:, versions:, release_info_metadata_fetcher:)
-          release_info_metadata_fetcher.call(repository_details).css("a[href]").each do |link|
-            version = extract_version_from_link(link)
-            next unless version && version_class.correct?(version)
-
-            versions << version unless versions.include?(version)
-          end
-        rescue StandardError => e
-          Dependabot.logger.debug(
-            "Could not parse fallback candidate versions from #{repository_details.fetch('url')} " \
-            "for #{dependency_name}: #{e.message}"
-          )
         end
 
         # Parses Maven-style HTML directory listings to extract release dates.

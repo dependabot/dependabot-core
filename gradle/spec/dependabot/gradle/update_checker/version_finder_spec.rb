@@ -855,6 +855,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
           expect(a_request(:head, spring_boot_plugin_pom_url)).to have_been_made.once
           expect(logger).to have_received(:info).with(
+            "Using POM Last-Modified fallback release dates for org.springframework.boot from https://plugins.gradle.org/m2"
+          )
+          expect(logger).to have_received(:debug).with(
             "Using POM Last-Modified fallback for org.springframework.boot version 2.0.5.RELEASE " \
             "from https://plugins.gradle.org/m2: 2026-05-11 10:08:43 UTC"
           )

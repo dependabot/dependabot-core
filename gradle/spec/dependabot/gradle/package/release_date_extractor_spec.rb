@@ -20,8 +20,7 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       extractor.extract(
         repositories: repositories,
         dependency_metadata_fetcher: dependency_metadata_fetcher,
-        release_info_metadata_fetcher: release_info_metadata_fetcher,
-        version_release_date_fetcher: nil
+        release_info_metadata_fetcher: release_info_metadata_fetcher
       )
     end
 
@@ -132,7 +131,7 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       end
     end
 
-    context "with both repository styles and fallback" do
+    context "with both repository styles" do
       let(:repositories) do
         [
           { "url" => "https://plugins.gradle.org/m2", "auth_headers" => {} },
@@ -162,19 +161,12 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       end
       let(:dependency_metadata_fetcher) { ->(_repo) { Nokogiri::XML(maven_metadata_xml) } }
       let(:release_info_metadata_fetcher) { ->(_repo) { Nokogiri::HTML(html_listing) } }
-      let(:fallback_dates) { { "1.3.0" => Time.utc(2020, 1, 1, 12, 0, 0) } }
-      let(:version_release_date_fetcher) { ->(version) { fallback_dates[version] } }
 
-      it "combines data from all sources and uses fallback if needed" do
-        result = extractor.extract(
-          repositories: repositories,
-          dependency_metadata_fetcher: dependency_metadata_fetcher,
-          release_info_metadata_fetcher: release_info_metadata_fetcher,
-          version_release_date_fetcher: version_release_date_fetcher
-        )
+      it "combines data from both sources without duplicates" do
+        result = extract_release_dates
         expect(result["1.2.0"]).to eq({ release_date: Time.utc(2019, 12, 1, 19, 14, 59) })
         expect(result["1.0.0"][:release_date]).to be_a(Time)
-        expect(result["1.3.0"][:release_date]).to eq(Time.utc(2020, 1, 1, 12, 0, 0))
+        expect(result["1.3.0"]).to eq({ release_date: nil })
       end
     end
 
