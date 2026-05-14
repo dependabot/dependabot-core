@@ -223,7 +223,7 @@ class TomlRB::Keyvalue
   def accept_visitor(parser); end
 
   # source://toml-rb//lib/toml-rb/keyvalue.rb#13
-  def assign(hash, fully_defined_keys, symbolize_keys = T.unsafe(nil)); end
+  def assign(hash, fully_defined_paths, symbolize_keys = T.unsafe(nil)); end
 
   # source://toml-rb//lib/toml-rb/keyvalue.rb#35
   def dotted_key_merge(hash, update); end
