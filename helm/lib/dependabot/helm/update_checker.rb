@@ -24,7 +24,7 @@ module Dependabot
       # Matches semver-like OCI tags that carry prerelease metadata after the
       # patch version, including git-describe style builds and branch-based
       # labels such as 2.0.4-main.146.sha.7ac1266.
-      OCI_PRERELEASE_TAG_REGEX = /\A[vV]?\d+(?:\.\d+){1,}-[0-9A-Za-z][0-9A-Za-z.-]*(?:\+[0-9A-Za-z.-]+)?\z/
+      OCI_PRERELEASE_TAG_REGEX = /\A[vV]?\d+(?:\.\d+){1,}-[0-9A-Za-z][0-9A-Za-z.-]*(?:[+_][0-9A-Za-z.-]+)?\z/
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
