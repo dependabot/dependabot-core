@@ -162,7 +162,8 @@ module Dependabot
           params(
             release: Dependabot::Package::PackageRelease,
             release_date: T.nilable(Time)
-          ).returns(Dependabot::Package::PackageRelease)
+          )
+            .returns(Dependabot::Package::PackageRelease)
         end
         def build_release_with_date(release, release_date)
           Dependabot::Package::PackageRelease.new(
