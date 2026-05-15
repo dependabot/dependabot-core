@@ -394,6 +394,47 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       end
     end
 
+    context "when ungrouped update has nil latest version after existing-PR detection" do
+      let(:checker_with_nil_latest_version) do
+        instance_double(
+          Dependabot::UpdateCheckers::Base,
+          latest_version: nil,
+          up_to_date?: false,
+          dependency: dependency
+        )
+      end
+
+      let(:real_update_all_versions) do
+        Dependabot::Updater::Operations::UpdateAllVersions.new(
+          service: mock_service,
+          job: job,
+          dependency_snapshot: dependency_snapshot,
+          error_handler: mock_error_handler
+        )
+      end
+
+      before do
+        allow(job).to receive_messages(multi_ecosystem_update?: false, source: mock_source)
+        allow(dependency_snapshot).to receive(:current_directory=)
+        allow(dependency_snapshot).to receive_messages(
+          groups: [],
+          dependencies: [dependency],
+          ungrouped_dependencies: [dependency]
+        )
+
+        allow(real_update_all_versions).to receive_messages(
+          update_checker_for: checker_with_nil_latest_version,
+          all_versions_ignored?: false,
+          pr_exists_for_latest_version?: true
+        )
+        allow(Dependabot::Updater::Operations::UpdateAllVersions).to receive(:new).and_return(real_update_all_versions)
+      end
+
+      it "does not raise while running ungrouped updates" do
+        expect { perform }.not_to raise_error
+      end
+    end
+
     context "when job is multi-ecosystem update" do
       before do
         allow(dependency_snapshot).to receive(:groups).and_return([dependency_group])
