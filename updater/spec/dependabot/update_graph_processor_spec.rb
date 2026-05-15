@@ -5,6 +5,7 @@ require "spec_helper"
 require "support/dependency_file_helpers"
 
 require "dependabot/bundler"
+require "dependabot/python"
 
 require "dependabot/service"
 require "dependabot/update_graph_processor"
@@ -536,6 +537,80 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       end
 
       update_graph_processor.run
+    end
+  end
+
+  context "with a pip graph job that rejects external code" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:dependency_file) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: "[project]\nname='example'\nversion='0.1.0'",
+        directory: directory
+      )
+    end
+    let(:dependency_files) { [dependency_file] }
+
+    let(:job) do
+      instance_double(
+        Dependabot::Job,
+        id: "42",
+        package_manager: "pip",
+        repo_contents_path: repo_contents_path,
+        credentials: credentials,
+        source: source,
+        reject_external_code?: true,
+        experiments: { large_hadron_collider: true }
+      )
+    end
+
+    let(:parser) { instance_double(Dependabot::Python::FileParser) }
+    let(:grapher) do
+      instance_double(
+        Dependabot::Python::DependencyGrapher,
+        resolved_dependencies: {},
+        errored_fetching_subdependencies: false,
+        relevant_dependency_file: dependency_file
+      )
+    end
+    let(:parser_class) { class_double(Dependabot::Python::FileParser) }
+    let(:grapher_class) { class_double(Dependabot::Python::DependencyGrapher) }
+
+    before do
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+        .with("pip")
+        .and_return(parser_class)
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with("pip")
+        .and_return(grapher_class)
+
+      allow(grapher_class).to receive(:new).with(file_parser: parser).and_return(grapher)
+    end
+
+    it "does not pass reject_external_code to pip parsers" do
+      allow(parser_class).to receive(:new).with(
+        hash_including(
+          dependency_files: dependency_files,
+          repo_contents_path: nil,
+          credentials: credentials,
+          reject_external_code: false,
+          options: { large_hadron_collider: true }
+        )
+      ).and_return(parser)
+      expect(service).to receive(:create_dependency_submission).once
+
+      update_graph_processor.run
+
+      expect(parser_class).to have_received(:new).with(
+        hash_including(
+          dependency_files: dependency_files,
+          repo_contents_path: nil,
+          credentials: credentials,
+          reject_external_code: false,
+          options: { large_hadron_collider: true }
+        )
+      )
     end
   end
 

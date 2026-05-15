@@ -163,7 +163,7 @@ module Dependabot
         repo_contents_path: job.repo_contents_path,
         source: source,
         credentials: job.credentials,
-        reject_external_code: job.reject_external_code?,
+        reject_external_code: parser_reject_external_code?,
         options: job.experiments
       )
 
@@ -188,6 +188,13 @@ module Dependabot
         status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
         reason: reason || nil
       )
+    end
+
+    sig { returns(T::Boolean) }
+    def parser_reject_external_code?
+      return false if job.package_manager == "pip"
+
+      job.reject_external_code?
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
