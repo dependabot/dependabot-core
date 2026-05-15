@@ -327,10 +327,7 @@ module Dependabot
             update_dependency_requirement(dependencies, updated_requirement)
           end
 
-          groups = poetry_object["group"]&.values || []
-          groups.each do |group_spec|
-            update_dependency_requirement(group_spec["dependencies"], updated_requirement)
-          end
+          update_group_dependency_requirements(poetry_object, updated_requirement)
 
           # If this is a sub-dependency, add the new requirement
           unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
@@ -339,6 +336,17 @@ module Dependabot
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        sig { params(poetry_object: T::Hash[String, T.untyped], updated_requirement: String).void }
+        def update_group_dependency_requirements(poetry_object, updated_requirement)
+          groups = poetry_object["group"]&.values || []
+          groups.each do |group_spec|
+            group_dependencies = group_spec["dependencies"]
+            next unless group_dependencies.is_a?(Hash)
+
+            update_dependency_requirement(group_dependencies, updated_requirement)
+          end
         end
 
         sig { params(toml_node: T::Hash[String, T.untyped], requirement: String).void }
