@@ -110,5 +110,38 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
         expect(release.latest).to be(false)
       end
     end
+
+    context "when the registry raises Excon::Error::Socket" do
+      context "with a private registry" do
+        let(:registry_url) { "https://npm.fury.io/dependabot/react" }
+
+        before do
+          stub_request(:get, registry_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new))
+          allow_any_instance_of(described_class) # rubocop:disable RSpec/AnyInstance
+            .to receive(:dependency_registry).and_return("npm.fury.io/dependabot")
+          allow_any_instance_of(described_class) # rubocop:disable RSpec/AnyInstance
+            .to receive(:dependency_url).and_return(registry_url)
+        end
+
+        it "raises PrivateSourceTimedOut" do
+          expect { fetcher.fetch }
+            .to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+              expect(error.source).to eq("npm.fury.io/<redacted>")
+            end
+        end
+      end
+
+      context "with the global registry" do
+        before do
+          stub_request(:get, registry_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new))
+        end
+
+        it "re-raises the Excon::Error::Socket" do
+          expect { fetcher.fetch }.to raise_error(Excon::Error::Socket)
+        end
+      end
+    end
   end
 end

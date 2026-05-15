@@ -108,12 +108,10 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             return null;
         }
 
-        var isVersionOverride = false;
         var version = element.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase);
         if (version is null)
         {
             version = element.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase);
-            isVersionOverride = version is not null;
         }
 
         dependencies.AddRange(
@@ -122,8 +120,7 @@ internal sealed class ProjectBuildFile : XmlBuildFile
                         Name: dep.Trim(),
                         Version: string.IsNullOrEmpty(version) ? null : version,
                         Type: GetDependencyType(element.Name),
-                        IsUpdate: isUpdate,
-                        IsOverride: isVersionOverride))
+                        IsUpdate: isUpdate))
         );
 
 

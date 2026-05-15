@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/config/ignore_condition"
 require "dependabot/utils"
 
 module Dependabot
@@ -11,6 +12,19 @@ module Dependabot
     # ecosystems and provides fallback semantic versioning detection.
     module UpdateTypeHelper
       extend T::Sig
+
+      SEMVER_MAJOR = "major"
+      SEMVER_MINOR = "minor"
+      SEMVER_PATCH = "patch"
+
+      ALL_SEMVER_UPDATE_TYPES = T.let(
+        [
+          Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE,
+          Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE,
+          Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+        ].freeze,
+        T::Array[String]
+      )
 
       # Represents semantic version components (major, minor, patch)
       class SemverParts < T::Struct
@@ -58,11 +72,11 @@ module Dependabot
         curr_parts = semver_parts(curr)
         return nil if prev_parts.nil? || curr_parts.nil?
 
-        return "major" if curr_parts.major > prev_parts.major
-        return "minor" if curr_parts.major == prev_parts.major && curr_parts.minor > prev_parts.minor
-        return "patch" if curr_parts.major == prev_parts.major &&
-                          curr_parts.minor == prev_parts.minor &&
-                          curr_parts.patch > prev_parts.patch
+        return SEMVER_MAJOR if curr_parts.major > prev_parts.major
+        return SEMVER_MINOR if curr_parts.major == prev_parts.major && curr_parts.minor > prev_parts.minor
+        return SEMVER_PATCH if curr_parts.major == prev_parts.major &&
+                               curr_parts.minor == prev_parts.minor &&
+                               curr_parts.patch > prev_parts.patch
 
         Dependabot.logger.info(
           "Could not classify semver update: #{prev_parts.major}.#{prev_parts.minor}.#{prev_parts.patch} -> " \
@@ -97,6 +111,27 @@ module Dependabot
         )
 
         SemverParts.new(major: major, minor: minor, patch: patch)
+      end
+
+      # Determines the semver update type ("major", "minor", "patch") for a dependency
+      # by comparing its previous and current versions. Returns nil if it cannot be determined.
+      sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
+      def update_type_for_dependency(dep)
+        prev_str = dep.respond_to?(:previous_version) ? dep.previous_version&.to_s : nil
+        curr_str = dep.respond_to?(:version) ? dep.version&.to_s : nil
+        return nil unless prev_str && curr_str
+
+        version_class = version_class_for(dep)
+        return nil unless version_class
+
+        update_type = update_type_from_class(version_class, prev_str, curr_str)
+        return update_type if update_type
+
+        versions = build_versions(version_class, prev_str, curr_str)
+        return nil unless versions
+
+        prev_ver, curr_ver = versions
+        classify_semver_update(prev_ver, curr_ver)
       end
     end
   end

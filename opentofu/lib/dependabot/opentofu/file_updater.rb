@@ -91,7 +91,13 @@ module Dependabot
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
-            update_registry_declaration(new_req, old_req, content)
+            if new_req[:source][:local_variable]
+              update_local_variable_declaration(new_req, old_req, content)
+            else
+              update_registry_declaration(new_req, old_req, content)
+            end
+          when "oci"
+            update_oci_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} " \
                   "declaration!"
@@ -132,6 +138,29 @@ module Dependabot
         )
           .void
       end
+      def update_oci_declaration(new_req, old_req, updated_content)
+        old_tag = old_req&.dig(:source, :tag)
+        new_tag = new_req[:source][:tag]
+        artifact = old_req&.dig(:source, :artifact_identifier)
+        return if old_tag.nil? || new_tag.nil? || artifact.nil? || old_tag == new_tag
+
+        # Scoped to this artifact's source string so unrelated modules with
+        # the same tag value aren't touched.
+        oci_source_re = %r{
+          (["']oci://#{Regexp.escape(artifact)}(?://[^"'?]*)?\?[^"']*\btag=)
+          #{Regexp.escape(old_tag)}
+        }x
+        updated_content.gsub!(oci_source_re) { T.must(Regexp.last_match(1)) + new_tag }
+      end
+
+      sig do
+        params(
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          updated_content: String
+        )
+          .void
+      end
       def update_registry_declaration(new_req, old_req, updated_content)
         regex = if new_req[:source][:type] == "provider"
                   provider_declaration_regex(updated_content)
@@ -148,6 +177,31 @@ module Dependabot
           regex_match.sub(version_regex) do |req_line_match|
             req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
           end
+        end
+      end
+
+      sig do
+        params(
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          updated_content: String
+        )
+          .void
+      end
+      def update_local_variable_declaration(new_req, old_req, updated_content)
+        var_name = new_req[:source][:local_variable]
+        old_version = old_req&.fetch(:requirement)
+        new_version = new_req[:requirement]
+        return if old_version.nil? || new_version.nil? || old_version == new_version
+
+        local_var_regex = /
+          (?<prefix>\b#{Regexp.escape(var_name)}\s*=\s*["'])
+          #{Regexp.escape(old_version)}
+          (?<suffix>["'])
+        /x
+
+        updated_content.sub!(local_var_regex) do
+          "#{Regexp.last_match(:prefix)}#{new_version}#{Regexp.last_match(:suffix)}"
         end
       end
 
@@ -372,11 +426,11 @@ module Dependabot
         regex_version_preceeds = %r{
           (((?<!required_)version\s=\s*["'].*["'])
           (\s*source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*))
-        }mx
+        }mxi
         regex_source_preceeds = %r{
           ((source\s*=\s*["'](#{registry_host}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
           (?:(?!^\}).)+)
-        }mx
+        }mxi
 
         if updated_content.match(regex_version_preceeds)
           regex_version_preceeds
@@ -396,7 +450,7 @@ module Dependabot
             (//modules/\S+)?
             ["']
           (?:(?!^\}).)*
-        }mx
+        }mxi
       end
 
       sig { params(filename: String).returns(Regexp) }

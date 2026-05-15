@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 using System.IO.Enumeration;
 using System.Text.Json;
 
+using NuGet.Versioning;
+
 namespace NuGetUpdater.Core.Run.ApiModel;
 
 public record DependencyGroup
@@ -38,6 +40,37 @@ public class GroupMatcher
         var isExcluded = ExcludePatterns.Any(p => FileSystemName.MatchesSimpleExpression(p, dependencyName));
         var isMatch = isIncluded && !isExcluded;
         return isMatch;
+    }
+
+    public bool IsAllowedByVersion(NuGetVersion oldVersion, NuGetVersion newVersion)
+    {
+        if (newVersion <= oldVersion)
+        {
+            return false;
+        }
+
+        var isMajorBump = newVersion.Major > oldVersion.Major;
+        var isMinorBump = newVersion.Major == oldVersion.Major && newVersion.Minor > oldVersion.Minor;
+        var isPatchEquivalentBump = newVersion.Major == oldVersion.Major && newVersion.Minor == oldVersion.Minor;
+
+        var allowedUpdateTypes = new HashSet<GroupUpdateType>(UpdateTypes);
+
+        if (isMajorBump && allowedUpdateTypes.Contains(GroupUpdateType.Major))
+        {
+            return true;
+        }
+
+        if (isMinorBump && allowedUpdateTypes.Contains(GroupUpdateType.Minor))
+        {
+            return true;
+        }
+
+        if (isPatchEquivalentBump && allowedUpdateTypes.Contains(GroupUpdateType.Patch))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public static GroupMatcher FromRules(Dictionary<string, object> rules)

@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
-require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/swift/file_parser/dependency_parser"
@@ -10,6 +9,7 @@ require "dependabot/swift/file_parser/manifest_parser"
 require "dependabot/swift/file_parser/xcode_spm_resolver"
 require "dependabot/swift/package_manager"
 require "dependabot/swift/language"
+require "dependabot/swift/xcode_file_helpers"
 
 module Dependabot
   module Swift
@@ -83,8 +83,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def xcode_spm_mode?
-        Dependabot::Experiments.enabled?(:enable_swift_xcode_spm) &&
-          xcode_resolved_files.any?
+        xcode_resolved_files.any?
       end
 
       sig { returns(Dependabot::Swift::FileParser::DependencyParser) }
@@ -99,14 +98,9 @@ module Dependabot
       sig { override.void }
       def check_required_files
         return if package_manifest_file
+        return if xcode_resolved_files.any?
 
-        if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return if xcode_resolved_files.any?
-
-          raise "No Package.swift or Xcode Package.resolved found!"
-        end
-
-        raise "No Package.swift!"
+        raise "No Package.swift or Xcode Package.resolved found!"
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -115,13 +109,12 @@ module Dependabot
         @package_manifest_file ||= T.let(get_original_file("Package.swift"), T.nilable(Dependabot::DependencyFile))
       end
 
-      # All non-support Package.resolved files from Xcode project directories
+      # All non-support Package.resolved files from Xcode project and workspace directories (.xcodeproj, .xcworkspace)
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def xcode_resolved_files
         @xcode_resolved_files ||= T.let(
           dependency_files.select do |f|
-            f.name.end_with?("Package.resolved") &&
-              f.name.include?(".xcodeproj/") &&
+            XcodeFileHelpers.xcode_resolved_path?(f.name) &&
               !f.support_file?
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])

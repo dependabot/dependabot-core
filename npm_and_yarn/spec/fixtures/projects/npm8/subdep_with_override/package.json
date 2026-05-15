@@ -1,0 +1,12 @@
+{
+  "name": "subdep-with-override",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "@actions/http-client": "^2.2.3"
+  },
+  "overrides": {
+    "undici": "^6.23.0"
+  }
+}

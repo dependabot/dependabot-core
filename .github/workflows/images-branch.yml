@@ -16,6 +16,7 @@ on: # yamllint disable-line rule:truthy
         required: true
         type: number
         description: PR number
+permissions: {}
 
 jobs:
   approval:
@@ -24,6 +25,9 @@ jobs:
     # Running this workflow against PR's from forks requires manually triggering it via `workflow_dispatch`.
     if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       decision: ${{ steps.decision.outputs.decision }}
     steps:
@@ -64,6 +68,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: conda, ecosystem: conda }
           - { name: composer, ecosystem: composer }
+          - { name: deno, ecosystem: deno }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
           - { name: docker, ecosystem: docker }
@@ -77,6 +82,7 @@ jobs:
           - { name: hex, ecosystem: mix }
           - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
+          - { name: nix, ecosystem: nix }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
           - { name: pre_commit, ecosystem: pre-commit }
@@ -102,6 +108,12 @@ jobs:
           persist-credentials: false
 
       - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Expose GitHub Actions cache to Buildx
+        uses: crazy-max/ghaction-github-runtime@04d248b84655b509d8c44dc1d6f990c879747487 # v4.0.0
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -129,6 +141,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ecosystem image
+        env:
+          BUILDX_GHA_CACHE: "1"
         run: script/build ${{ matrix.suite.name }}
 
       - name: Push branch image

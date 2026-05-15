@@ -1,3 +1,4 @@
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Updater.FileWriters;
 
 using Xunit;
@@ -1558,7 +1559,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_NoExistingPackageVersionElement_TransitivePinningEnabled_OnlyPackagesPropsIsUpdated()
     {
         await TestAsync(
-            useCentralPackageTransitivePinning: true,
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
             files: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1944,6 +1945,118 @@ public class XmlFileWriterTests : FileWriterTestsBase
                           <Version>10.0.0</Version>
                         </PackageReference>
                       </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task UpdatingAPinnedCentrallyManagedPackageUpdatesJustTheVersionNumberWhenDeclarationIsPresent()
+    {
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
+            files: [
+                ("src/project.csproj", """
+                    <?xml version="1.0"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <?xml version="1.0"?>
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("src/project.csproj", """
+                    <?xml version="1.0"?>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Directory.Packages.props", """
+                    <?xml version="1.0"?>
+                    <Project>
+                      <ItemGroup>
+                        <PackageVersion Include="Some.Dependency" Version="2.0.0" />
+                        <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task NewReference_ItemGroupWithExistingPackageReferences_IsAdded()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Package.Not.Related" Version="1.2.3" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <AdditionalFiles Include="some-resource.json" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["This.Package.Gets.Pinned/4.5.5"],
+            requiredDependencyStrings: ["This.Package.Gets.Pinned/4.5.6"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Package.Not.Related" Version="1.2.3" />
+                        <PackageReference Include="This.Package.Gets.Pinned" Version="4.5.6" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <AdditionalFiles Include="some-resource.json" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task NewReference_AtStartOfItemGroup_HonorsIndentation()
+    {
+        // this test requires tabs and rather than deal with various editor states, a tab character is explicitly included
+        var tb = '\t';
+        await TestAsync(
+            files: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    {tb}<ItemGroup>
+                    {tb}{tb}<AdditionalFiles Include="some-resource.json" />
+                    {tb}</ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["This.Package.Gets.Pinned/4.5.5"],
+            requiredDependencyStrings: ["This.Package.Gets.Pinned/4.5.6"],
+            expectedFiles: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    {tb}<ItemGroup>
+                    {tb}{tb}<PackageReference Include="This.Package.Gets.Pinned" Version="4.5.6" />
+                    {tb}{tb}<AdditionalFiles Include="some-resource.json" />
+                    {tb}</ItemGroup>
                     </Project>
                     """)
             ]

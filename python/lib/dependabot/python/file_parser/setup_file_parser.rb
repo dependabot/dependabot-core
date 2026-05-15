@@ -43,7 +43,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: normalised_name(dep["name"], dep["extras"]),
+                name: normalise(dep["name"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
@@ -51,7 +51,8 @@ module Dependabot
                   source: nil,
                   groups: [dep["requirement_type"]]
                 }],
-                package_manager: "pip"
+                package_manager: "pip",
+                metadata: extras_metadata(dep["extras"])
               )
           end
           dependencies
@@ -182,6 +183,18 @@ module Dependabot
         sig { params(name: String, extras: T::Array[String]).returns(String) }
         def normalised_name(name, extras)
           NameNormaliser.normalise_including_extras(name, extras)
+        end
+
+        sig { params(name: String).returns(String) }
+        def normalise(name)
+          NameNormaliser.normalise(name)
+        end
+
+        sig { params(extras: T::Array[String]).returns(T::Hash[Symbol, String]) }
+        def extras_metadata(extras)
+          return {} if extras.empty?
+
+          { extras: extras.join(",") }
         end
 
         sig { returns(T.untyped) }

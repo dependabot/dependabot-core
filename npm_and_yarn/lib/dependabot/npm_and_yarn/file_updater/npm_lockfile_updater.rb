@@ -47,6 +47,12 @@ module Dependabot
           updated_file
         end
 
+        sig { returns(T::Hash[Dependabot::DependencyFile, String]) }
+        def updated_package_json_files
+          updated_lockfile_content
+          @updated_package_json_files || {}
+        end
+
         sig { params(response: Exception).returns(T.noreturn) }
         def updated_lockfile_reponse(response)
           handle_npm_updater_error(response)
@@ -148,6 +154,10 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
               updated_files = Dir.chdir(lockfile_directory) { run_current_npm_update }
+              @updated_package_json_files = T.let(
+                capture_updated_package_json_files,
+                T.nilable(T::Hash[Dependabot::DependencyFile, String])
+              )
               updated_lockfile_content = updated_files.fetch(lockfile_basename)
               post_process_npm_lockfile(updated_lockfile_content)
             end,
@@ -322,8 +332,27 @@ module Dependabot
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
+          original_content = File.read(lockfile_basename)
+
           NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
-          { lockfile_basename => File.read(lockfile_basename) }
+
+          updated_content = File.read(lockfile_basename)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            # `npm update` is a no-op for transitive dependencies not listed in
+            # any package.json (common in workspace repos). Fall back to
+            # `npm audit fix` which can update these in the lockfile.
+            # npm audit fix exits non-zero when vulnerabilities remain, so we
+            # rescue and use whatever lockfile changes it managed to make.
+            begin
+              NativeHelpers.run_npm_audit_fix_command
+              sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+            end
+            updated_content = File.read(lockfile_basename)
+          end
+
+          { lockfile_basename => updated_content }
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
@@ -769,6 +798,11 @@ module Dependabot
 
           File.write(File.join(lockfile_directory, ".npmrc"), npmrc_content)
 
+          @pre_npm_package_json_contents = T.let(
+            {},
+            T.nilable(T::Hash[String, String])
+          )
+
           package_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -794,7 +828,23 @@ module Dependabot
 
             updated_content = package_json_preparer.remove_invalid_characters(updated_content)
 
+            T.must(@pre_npm_package_json_contents)[file.name] = updated_content
             File.write(file.name, updated_content)
+          end
+        end
+
+        sig { returns(T::Hash[Dependabot::DependencyFile, String]) }
+        def capture_updated_package_json_files
+          pre_npm_contents = @pre_npm_package_json_contents || {}
+          package_files.each_with_object({}) do |file, updates|
+            next if file.name == T.must(package_json).name
+            next unless File.exist?(file.name)
+
+            updated_content = File.read(file.name)
+            pre_npm_content = pre_npm_contents[file.name] || file.content
+            next if updated_content == pre_npm_content
+
+            updates[file] = updated_content
           end
         end
 
