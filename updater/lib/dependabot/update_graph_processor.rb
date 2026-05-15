@@ -192,9 +192,20 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def parser_reject_external_code?
-      return false if job.package_manager == "pip"
+      # GitHub-hosted graph jobs for pip can currently send reject_external_code=true
+      # even when external code execution is configured as allowed. Narrow this
+      # workaround to the hosted Actions path to avoid changing behavior elsewhere.
+      return false if pip_graph_hosted_reject_external_code_mismatch?
 
       job.reject_external_code?
+    end
+
+    sig { returns(T::Boolean) }
+    def pip_graph_hosted_reject_external_code_mismatch?
+      return false unless job.package_manager == "pip"
+      return false unless job.reject_external_code?
+
+      Dependabot::Environment.github_actions?
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
