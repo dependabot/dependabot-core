@@ -228,8 +228,8 @@ module Dependabot
             end
 
             Helpers.run_yarn_command(
-              "up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
-              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip
+              "up -R #{updates.join(' ')} #{yarn_berry_upgrade_args}".strip,
+              fingerprint: "up -R <dependency_names> #{yarn_berry_upgrade_args}".strip
             )
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -277,6 +277,14 @@ module Dependabot
         def yarn_berry_args
           @yarn_berry_args ||= T.let(
             Helpers.yarn_berry_args,
+            T.nilable(String)
+          )
+        end
+
+        sig { returns(String) }
+        def yarn_berry_upgrade_args
+          @yarn_berry_upgrade_args ||= T.let(
+            Helpers.yarn_berry_upgrade_args,
             T.nilable(String)
           )
         end
