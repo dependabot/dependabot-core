@@ -366,6 +366,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
         groups = parsed["dependency-groups"]
         expect(groups["dev"]).to include("pytest==8.0.2", "black==24.2.0")
+        expect(groups["dev"]).to include("colorama==0.4.6 ; sys_platform == 'win32'")
         expect(groups["docs"]).to include("sphinx==7.2.6")
       end
     end
