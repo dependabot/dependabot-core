@@ -472,6 +472,29 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it { is_expected.to be_falsey }
     end
 
+    context "with a git dependency" do
+      let(:dependency_name) { "business" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/dependabot-fixtures/business",
+            ref: "master"
+          }
+        }]
+      end
+
+      before do
+        # Mock latest_version to return a commit SHA (String) as it does for git dependencies
+        allow(checker).to receive(:latest_version).and_return("f4321f78fe567fd29dd0a0fb5cb17af68efd36bb")
+      end
+
+      it { is_expected.to be_falsey }
+    end
+
     context "with a latest version" do
       before do
         allow(checker).to receive(:latest_version).and_return(Dependabot::Bundler::Version.new(target_version))
@@ -512,6 +535,31 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
 
     include_context "when stubbing rubygems compact index"
+
+    context "with a git dependency" do
+      let(:dependency_name) { "business" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/dependabot-fixtures/business",
+            ref: "master"
+          }
+        }]
+      end
+
+      before do
+        # Mock latest_version to return a commit SHA (String) as it does for git dependencies
+        allow(checker).to receive(:latest_version).and_return("f4321f78fe567fd29dd0a0fb5cb17af68efd36bb")
+      end
+
+      it "returns an empty array for git dependencies" do
+        expect(updated_dependencies_after_full_unlock).to eq([])
+      end
+    end
 
     context "with a latest version" do
       before do
