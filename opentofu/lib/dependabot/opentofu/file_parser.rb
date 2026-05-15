@@ -346,11 +346,11 @@ module Dependabot
         # sub-module path; only the bare repo is queryable for tags.
         artifact_identifier, subdirectory = uri_part.split(%r{(?<!:)//}, 2)
 
-        qs = CGI.parse(query_part)
+        qs = URI.decode_www_form(query_part).to_h
         # Treat `?tag=` or `?digest=` (empty value) the same as the param
         # being absent, so we don't propagate "" as a usable version.
-        tag = qs["tag"].first&.then { |v| v.empty? ? nil : v }
-        digest = qs["digest"].first&.then { |v| v.empty? ? nil : v }
+        tag = qs["tag"]&.then { |v| v.empty? ? nil : v }
+        digest = qs["digest"]&.then { |v| v.empty? ? nil : v }
 
         if tag && digest
           raise DependencyFileNotEvaluatable,

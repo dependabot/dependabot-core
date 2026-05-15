@@ -3,6 +3,7 @@
 
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
+require "cgi/escape"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
