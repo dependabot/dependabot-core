@@ -5,7 +5,6 @@ require "spec_helper"
 require "support/dependency_file_helpers"
 
 require "dependabot/bundler"
-require "dependabot/python"
 
 require "dependabot/service"
 require "dependabot/update_graph_processor"
@@ -565,17 +564,34 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       )
     end
 
-    let(:parser) { instance_double(Dependabot::Python::FileParser) }
+    let(:parser_klass) do
+      Class.new do
+        def initialize(**_kwargs); end
+      end
+    end
+    let(:grapher_klass) do
+      Class.new do
+        def initialize(file_parser:); end
+
+        def resolved_dependencies; end
+
+        def errored_fetching_subdependencies; end
+
+        def relevant_dependency_file; end
+      end
+    end
+
+    let(:parser) { instance_double(parser_klass) }
     let(:grapher) do
       instance_double(
-        Dependabot::Python::DependencyGrapher,
+        grapher_klass,
         resolved_dependencies: {},
         errored_fetching_subdependencies: false,
         relevant_dependency_file: dependency_file
       )
     end
-    let(:parser_class) { class_double(Dependabot::Python::FileParser) }
-    let(:grapher_class) { class_double(Dependabot::Python::DependencyGrapher) }
+    let(:parser_class) { class_double(parser_klass) }
+    let(:grapher_class) { class_double(grapher_klass) }
 
     before do
       allow(Dependabot::FileParsers).to receive(:for_package_manager)
