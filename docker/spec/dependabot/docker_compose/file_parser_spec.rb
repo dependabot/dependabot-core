@@ -489,6 +489,36 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
         end
       end
     end
+
+    context "with a compose lock file containing YAML symbols" do
+      let(:composefile_fixture_name) { "lock_with_symbols" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: {
+              registry: "quay.io",
+              digest: "ed9be66eb5f2636c18289c34c3b725ddf57815f2777c77b5938543b78a44f144",
+              tag: "RELEASE.2025-01-20T14-49-07Z"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("minio/minio")
+          expect(dependency.version).to eq("RELEASE.2025-01-20T14-49-07Z")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 
   describe "version_from with environment variables" do
