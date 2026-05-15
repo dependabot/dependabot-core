@@ -120,6 +120,8 @@ module Dependabot
         # to distinguish between different workflow files in the same repository
         name = if path&.match?(%r{/\.github/workflows/.*\.ya?ml$})
                  "#{repo_name}#{path}"
+               elsif path && ref&.match?(/^[0-9a-f]{6,40}$/)
+                 "#{repo_name}#{path}"
                elsif version_class.path_based?(ref)
                  string
                else
