@@ -1,9 +1,5 @@
-extern alias CoreV2;
-
 using System.Collections.Immutable;
 using System.Xml.Linq;
-
-using CoreV2::NuGet.Runtime;
 
 using Microsoft.Language.Xml;
 
@@ -11,8 +7,6 @@ using NuGet.ProjectManagement;
 
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
-
-using Runtime_AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
 
@@ -151,7 +145,7 @@ internal static class BindingRedirectManager
         return new ConfigurationFile(configFilePath, configFileContents, false);
     }
 
-    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<(Runtime_AssemblyBinding Binding, string AssemblyPath)> bindingRedirectsAndAssemblyPaths, string assemblyPathPrefix)
+    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<(AssemblyBinding Binding, string AssemblyPath)> bindingRedirectsAndAssemblyPaths, string assemblyPathPrefix)
     {
         // Do nothing if there are no binding redirects to add, bail out
         if (!bindingRedirectsAndAssemblyPaths.Any())
@@ -245,7 +239,7 @@ internal static class BindingRedirectManager
 
         static void UpdateBindingRedirectElement(
             XElement existingDependentAssemblyElement,
-            Runtime_AssemblyBinding newBindingRedirect)
+            AssemblyBinding newBindingRedirect)
         {
             var existingBindingRedirectElement = existingDependentAssemblyElement.Element(BindingRedirectName);
             // Since we've successfully parsed this node, it has to be valid and this child must exist.
@@ -273,7 +267,7 @@ internal static class BindingRedirectManager
             // We're going to need to know which element is associated with what binding for removal
             var assemblyElementPairs = dependencyAssemblyElements.Select(dependentAssemblyElement => new
             {
-                Binding = Runtime_AssemblyBinding.Parse(dependentAssemblyElement),
+                Binding = AssemblyBinding.Parse(dependentAssemblyElement),
                 Element = dependentAssemblyElement
             });
 
@@ -302,7 +296,7 @@ internal static class BindingRedirectManager
         }
     }
 
-    internal sealed record AssemblyIdentity(string Name, string PublicKeyToken);
+    internal sealed record AssemblyIdentity(string? Name, string? PublicKeyToken);
 
     // Case-insensitive comparer. This helps avoid creating duplicate binding redirects when there is a case form mismatch between assembly identities.
     // Especially important for PublicKeyToken which is typically lowercase (using NuGet.exe), but can also be uppercase when using other tools (e.g. Visual Studio auto-resolve assembly conflicts feature).
