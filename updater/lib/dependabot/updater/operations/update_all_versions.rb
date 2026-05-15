@@ -130,7 +130,7 @@ module Dependabot
 
           if pr_exists_for_latest_version?(checker)
             latest_version = checker.latest_version&.to_s
-            return false if latest_version.nil?
+            return if latest_version.nil?
 
             return log_existing_pr_for_latest_version(checker.dependency.name, latest_version, checker.latest_version)
           end
