@@ -21,6 +21,11 @@ module Dependabot
 
       require_relative "update_checker/latest_version_resolver"
 
+      # Matches semver-like OCI tags that carry prerelease metadata after the
+      # patch version, including git-describe style builds and branch-based
+      # labels such as 2.0.4-main.146.sha.7ac1266.
+      OCI_PRERELEASE_TAG_REGEX = /\A[vV]?\d+(?:\.\d+){1,}-[0-9A-Za-z][0-9A-Za-z.-]*(?:[+_][0-9A-Za-z.-]+)?\z/
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(fetch_latest_version, T.nilable(T.any(String, Gem::Version)))
@@ -247,11 +252,27 @@ module Dependabot
         release_tags = release_tags.select do |tag|
           # Skip tags that start with "sha256-" or end with .sig, .att, or .metadata
           next false if tag.start_with?("sha256-") || tag.end_with?(".sig", ".att", ".metadata")
+          # Skip prerelease tags for stable dependencies, but keep them when the
+          # current dependency is already on a prerelease track.
+          next false if oci_prerelease_tag?(tag) && !wants_oci_prerelease_tags?
 
           # Use Version.correct? to check if the tag is a valid version
           version_class.correct?(tag)
         end
         release_tags.map { |tag| tag.tr("_", "+") }
+      end
+
+      sig { params(tag: String).returns(T::Boolean) }
+      def oci_prerelease_tag?(tag)
+        tag.match?(OCI_PRERELEASE_TAG_REGEX)
+      end
+
+      sig { returns(T::Boolean) }
+      def wants_oci_prerelease_tags?
+        current_version = dependency.version
+        return false unless current_version
+
+        oci_prerelease_tag?(current_version)
       end
 
       sig { params(repo_url: T.nilable(String)).returns(T.nilable(String)) }

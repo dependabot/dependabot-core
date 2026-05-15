@@ -142,6 +142,35 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           )
         end
       end
+
+      context "when tags include prerelease tags" do
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+            .with("registry.sweet.security/helm/frontierchart")
+            .and_return(
+              "1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238\n" \
+              "1.1.0\n" \
+              "3.44.1-1.g585bce1\n" \
+              "2.0.4-qcg2060solacelabels.146.sha.7ac1266"
+            )
+        end
+
+        it "ignores prerelease tags" do
+          expect(checker.latest_version).to eq(
+            Dependabot::Helm::Version.new("1.1.0")
+          )
+        end
+
+        context "when current dependency version is prerelease" do
+          let(:version) { "3.44.0-1.g1234567" }
+
+          it "considers prerelease tags" do
+            expect(checker.latest_version).to eq(
+              Dependabot::Helm::Version.new("3.44.1-1.g585bce1")
+            )
+          end
+        end
+      end
     end
   end
 
