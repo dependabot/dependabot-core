@@ -10,6 +10,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
+require "dependabot/go_modules/azure_devops_path_normalizer"
 
 module Dependabot
   module GoModules
@@ -77,8 +78,9 @@ module Dependabot
               end
 
               # Turn off the module proxy for private dependencies
+              dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
               versions_json = SharedHelpers.run_shell_command(
-                "go list -m -versions -json #{dependency.name}",
+                "go list -m -versions -json #{dependency_name}",
                 fingerprint: "go list -m -versions -json <dependency_name>"
               )
               version_strings = JSON.parse(versions_json)["Versions"]
@@ -118,7 +120,18 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def go_mod
-          @go_mod ||= T.let(dependency_files.find { |f| f.name == "go.mod" }, T.nilable(Dependabot::DependencyFile))
+          @go_mod ||= T.let(
+            begin
+              req_file = dependency.requirements.first&.fetch(:file, nil)
+              if req_file
+                dependency_files.find { |f| f.name == req_file }
+              else
+                dependency_files.find { |f| f.name == "go.mod" } ||
+                  dependency_files.find { |f| f.name.end_with?("/go.mod") }
+              end
+            end,
+            T.nilable(Dependabot::DependencyFile)
+          )
         end
 
         sig do

@@ -19,20 +19,21 @@ end
 # rubocop:disable Metrics/BlockLength
 Sentry.init do |config|
   config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
-  config.logger = Dependabot.logger
+  config.sdk_logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(
     dependabot-updater/bin|
     dependabot-updater/config|
     dependabot-updater/lib|
+    bazel|
     common|
     bundler|
     cargo|
     composer|
     conda|
+    deno|
     devcontainers|
-    docker_compose|
     docker|
     dotnet_sdk|
     elm|
@@ -44,14 +45,17 @@ Sentry.init do |config|
     hex|
     julia|
     maven|
+    nix|
     npm_and_yarn|
     nuget|
+    pre_commit|
     pub|
     python|
     rust_toolchain|
     silent|
     swift|
     terraform|
+    opentofu|
     uv|
     vcpkg|
   )}x
@@ -66,14 +70,15 @@ Dependabot::OpenTelemetry.configure
 Dependabot::Sorbet::Runtime.silently_report_errors!
 
 # Ecosystems
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/devcontainers"
-require "dependabot/docker_compose"
 require "dependabot/docker"
+require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -84,13 +89,16 @@ require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/julia"
 require "dependabot/maven"
+require "dependabot/nix"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"
 require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"

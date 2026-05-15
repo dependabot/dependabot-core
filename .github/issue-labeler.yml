@@ -53,7 +53,7 @@
     - '(dotnet(?:[-_]sdk)?|\.NET)'
 
 "L: dart:pub":
-    - '(dart|pub)'
+    - '\b(?:dart|pub)\b'
 
 "L: python":
     - '(python|pip|poetry|uv|conda)'
@@ -67,11 +67,26 @@
 "L: terraform":
     - '(terraform)'
 
+"L: opentofu":
+    - '(opentofu)'
+
 "L: swift":
     - '(swift)'
 
 "L: helm":
     - '(helm)'
 
+"L: bazel":
+    - '(bazel)'
+
 "L: julia":
     - '(julia)'
+
+"L: pre:commit":
+    - '(pre_commit)'
+
+"L: deno":
+    - '(deno)'
+
+"L: nix":
+    - '(nix)'

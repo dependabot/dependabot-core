@@ -35,6 +35,7 @@ module Dependabot
 
     OWNER_KEY = T.let("owner", String)
     REPO_KEY = T.let("repo", String)
+    PATH_KEY = T.let("path", String)
     REF_KEY = T.let("ref", String)
     USES_KEY = T.let("uses", String)
     STEPS_KEY = T.let("steps", String)

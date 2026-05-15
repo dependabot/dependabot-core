@@ -1,0 +1,6 @@
+on:
+  pull_request:
+
+jobs:
+  test-yaml-workflow:
+    uses: dsp-testing/github-action-with-yaml-extension/.github/workflows/action-test.yaml@v1.0.0

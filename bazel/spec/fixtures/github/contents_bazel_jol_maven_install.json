@@ -1,0 +1,13 @@
+{
+  "name": "jol_maven_install.json",
+  "path": "tools/jol/jol_maven_install.json",
+  "sha": "jol456",
+  "size": 100,
+  "url": "https://api.github.com/repos/example/repo/contents/tools/jol/jol_maven_install.json?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/tools/jol/jol_maven_install.json",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/jol456",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/tools/jol/jol_maven_install.json",
+  "type": "file",
+  "content": "eyJkZXBlbmRlbmN5X3RyZWUiOiB7fX0K\n",
+  "encoding": "base64"
+}

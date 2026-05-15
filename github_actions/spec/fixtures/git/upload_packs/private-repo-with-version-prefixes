@@ -1,0 +1,28 @@
+001e# service=git-upload-pack
+00000108a9594b7a3de691e58c1ff7f96448d9b93fd831e7 HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed no-done symref=HEAD:refs/heads/main agent=git/github-g9f520e8baf3c
+003fa9594b7a3de691e58c1ff7f96448d9b93fd831e7 refs/heads/main
+003fb4cc9058ebd2336f73752f9d3c9b3835d52c66de refs/tags/v0.0.24
+003f0c88df3830339b80617701c8f539e88f69493756 refs/tags/v0.0.23
+003f5e0bb811e6f3e201a82e1666ca9d0aa716b5b207 refs/tags/v0.0.22
+003f9662b298a60a10c3c7b8fcfc00c879a541dbfa16 refs/tags/v0.0.21
+003f3e319f3bee40b1a0e3454bb2b222b45e6e9ee77a refs/tags/v0.0.20
+003ffa55b1e9e3c2c1409fe8e920eb0260ae87fb13bd refs/tags/v0.0.19
+003fc9d07309e2e05eea997a8fcc5b5e51b9e96f2ade refs/tags/v0.0.18
+003ffec6b817e6e9a1217e69b658cde3a77157669c1f refs/tags/v0.0.17
+003f5d80121fb4cf04cfb6736287ddf0b6b459fda3ac refs/tags/v0.0.16
+003f9b54e329ebd8efa9665d3a76c69e74003b29bf58 refs/tags/v0.0.15
+003f88704ba129ebdf486ddc7ee043874d23a0f35fe1 refs/tags/v0.0.14
+003f34eec9742bb121ee5f05e34db22087e2134cb95b refs/tags/v0.0.13
+003f3f411be8815e6aa3be71fcbfff67217e872f6f45 refs/tags/v0.0.12
+003fb1886ca3a54cd496593bcc9004f15f6c1c91eb25 refs/tags/v0.0.11
+003f3de45661164d5fd002792a884b0c6a120c9fe4b9 refs/tags/v0.0.10
+003f28a85811986fc35e6da9f668fd7937b347caef8c refs/tags/v0.0.9
+003f3360e7dac4207c1c893162c98e00d955a95f9748 refs/tags/v0.0.8
+003f9d7db928ff8db9b3dabe9ee60e61b7665a51d4b7 refs/tags/v0.0.7
+003f651f618435526262d432c12bb507e22102c002e6 refs/tags/v0.0.6
+003f7d6452d6265031f0b6448ede20f1f89a13f0eea7 refs/tags/v0.0.5
+003fbdc853c81256ce2ee1ee07fee1a0212f3e86eb25 refs/tags/v0.0.4
+003f8fd86cbb3e63703f518244568760a7ca705d8f1d refs/tags/v0.0.3
+003f74ad6266516e9665e034287d003e626d51c45ae5 refs/tags/v0.0.2
+003f78fcf095bc156a09e414fbc0d221cf1c4e66de69 refs/tags/v0.0.1
+0000

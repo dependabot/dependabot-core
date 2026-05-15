@@ -141,6 +141,17 @@ public class MessageReportTests
         yield return
         [
             // message
+            new OutOfDisk(),
+            // expected
+            """
+            Error type: out_of_disk
+            """
+
+        ];
+
+        yield return
+        [
+            // message
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             // expected
             """
@@ -152,11 +163,12 @@ public class MessageReportTests
         yield return
         [
             // message
-            new PrivateSourceBadResponse(["url1", "url2"]),
+            new PrivateSourceBadResponse(["url1", "url2"], "some extra info"),
             // expected
             """
             Error type: private_source_bad_response
             - source: (url1|url2)
+            - message: some extra info
             """
         ];
 

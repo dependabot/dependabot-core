@@ -96,17 +96,18 @@ module Dependabot
         versions = releases.map(&:version).sort
 
         # Filter out ignored versions
-        versions = versions.reject do |version|
-          ignored_versions.any?(version.to_s)
-        end
+        versions = filter_ignored_versions(versions)
+        return nil if versions.empty?
+
+        # Filter out lower versions
+        versions = filter_lower_versions(versions)
+        return nil if versions.empty?
 
         # Filter out vulnerable versions
         filtered_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
           versions,
           security_advisories
         )
-
-        raise Dependabot::AllVersionsIgnored if filtered_versions.empty? && raise_on_ignored
 
         filtered_versions.max
       end
@@ -122,6 +123,39 @@ module Dependabot
 
         releases.reject do |release|
           cooldown_active_for_release?(release)
+        end
+      end
+
+      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
+      def filter_ignored_versions(versions)
+        filtered = versions.reject do |version|
+          ignore_requirements.any? { |req| req.satisfied_by?(version) }
+        end
+
+        if versions.count > filtered.count
+          Dependabot.logger.info("Filtered out #{versions.count - filtered.count} ignored versions")
+        end
+
+        if raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          raise Dependabot::AllVersionsIgnored
+        end
+
+        filtered
+      end
+
+      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
+      def filter_lower_versions(versions)
+        return versions unless dependency.version
+
+        current_version = Gem::Version.new(dependency.version)
+        versions.select { |v| v > current_version }
+      end
+
+      sig { returns(T::Array[Dependabot::Requirement]) }
+      def ignore_requirements
+        ignored_versions.flat_map do |req_string|
+          Dependabot::Julia::Requirement.requirements_array(req_string)
         end
       end
 

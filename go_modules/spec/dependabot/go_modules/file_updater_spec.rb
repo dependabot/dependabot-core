@@ -132,96 +132,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
-    context "without a clone of the repository" do
-      before do
-        # We don't have git configured in prod, so simulate the same setup here
-        @previous_git_author_name = ENV.fetch("GIT_AUTHOR_NAME", nil)
-        @previous_git_author_email = ENV.fetch("GIT_AUTHOR_EMAIL", nil)
-        @previous_git_committer_name = ENV.fetch("GIT_COMMITTER_NAME", nil)
-        @previous_git_committer_email = ENV.fetch("GIT_COMMITTER_EMAIL", nil)
-
-        ENV["GIT_AUTHOR_NAME"] = nil
-        ENV["GIT_AUTHOR_EMAIL"] = nil
-        ENV["GIT_COMMITTER_NAME"] = nil
-        ENV["GIT_COMMITTER_EMAIL"] = nil
-      end
-
-      after do
-        ENV["GIT_AUTHOR_NAME"] = @previous_git_author_name
-        ENV["GIT_AUTHOR_EMAIL"] = @previous_git_author_email
-        ENV["GIT_COMMITTER_NAME"] = @previous_git_committer_name
-        ENV["GIT_COMMITTER_EMAIL"] = @previous_git_committer_email
-      end
-
-      let(:updater) do
-        described_class.new(
-          dependency_files: files,
-          dependencies: [dependency],
-          credentials: [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }],
-          repo_contents_path: nil
-        )
-      end
-
-      it "includes an updated go.mod" do
-        expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
-      end
-
-      it "includes an updated go.sum" do
-        expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
-      end
-
-      it "disables the tidy option" do
-        double = instance_double(
-          Dependabot::GoModules::FileUpdater::GoModUpdater,
-          updated_go_mod_content: "",
-          updated_go_sum_content: ""
-        )
-
-        expect(Dependabot::GoModules::FileUpdater::GoModUpdater)
-          .to receive(:new)
-          .with(
-            dependencies: anything,
-            dependency_files: anything,
-            credentials: anything,
-            repo_contents_path: anything,
-            directory: anything,
-            options: { tidy: false, vendor: false }
-          ).and_return(double)
-
-        updater.updated_dependency_files
-      end
-
-      context "when dependency files are nested in a directory" do
-        let(:go_mod) do
-          Dependabot::DependencyFile.new(
-            name: "go.mod",
-            content: go_mod_body,
-            directory: "/nested"
-          )
-        end
-        let(:go_sum) do
-          Dependabot::DependencyFile.new(
-            name: "go.sum",
-            content: go_sum_body,
-            directory: "/nested"
-          )
-        end
-
-        it "includes an updated go.mod" do
-          expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
-        end
-
-        it "includes an updated go.sum" do
-          expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
-        end
-      end
-    end
-
     context "when dealing with vendoring" do
       let(:project_name) { "vendor" }
       let(:dependency_name) { "github.com/pkg/errors" }
@@ -358,6 +268,173 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             expect(dir).to eq("/nested")
           end
         end
+      end
+    end
+  end
+
+  context "with a go.work workspace" do
+    let(:project_name) { "workspace" }
+    let(:go_work_body) { fixture("projects", project_name, "go.work") }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(name: "go.work", content: go_work_body, directory: "/")
+    end
+    let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+    let(:go_mod) do
+      Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body, directory: "/")
+    end
+    let(:libs_go_mod_body) { fixture("projects", project_name, "libs", "go.mod") }
+    let(:libs_go_mod) do
+      Dependabot::DependencyFile.new(name: "libs/go.mod", content: libs_go_mod_body, directory: "/")
+    end
+    let(:services_go_mod_body) { fixture("projects", project_name, "services", "go.mod") }
+    let(:services_go_mod) do
+      Dependabot::DependencyFile.new(name: "services/go.mod", content: services_go_mod_body, directory: "/")
+    end
+    let(:files) { [go_work, go_mod, libs_go_mod, services_go_mod] }
+    let(:dependency_name) { "github.com/fatih/color" }
+    let(:dependency_previous_version) { "v1.7.0" }
+    let(:dependency_version) { "v1.16.0" }
+    let(:previous_requirements) do
+      [{
+        file: "go.mod",
+        requirement: dependency_previous_version,
+        groups: [],
+        source: { type: "default", source: dependency_name }
+      }]
+    end
+    let(:requirements) do
+      [{
+        file: "go.mod",
+        requirement: dependency_version,
+        groups: [],
+        source: { type: "default", source: dependency_name }
+      }]
+    end
+    let(:updater) do
+      described_class.new(
+        dependency_files: files,
+        dependencies: [dependency],
+        credentials: credentials,
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    describe "#updated_dependency_files" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      it "returns updated files from workspace modules" do
+        expect(updated_files).not_to be_empty
+      end
+
+      it "updates go.mod files in all workspace modules that require the dependency" do
+        # github.com/fatih/color appears in go.mod, libs/go.mod, and services/go.mod
+        mod_files = updated_files.select { |f| f.name.end_with?("go.mod") }
+        mod_file_names = mod_files.map(&:name)
+        expect(mod_file_names).to include("go.mod")
+        expect(mod_file_names).to include("libs/go.mod")
+        expect(mod_file_names).to include("services/go.mod")
+        mod_files.each do |f|
+          expect(f.content).to match(%r{github\.com/fatih/color\s+#{Regexp.escape(dependency_version)}})
+        end
+      end
+    end
+
+    describe "#updated_dependency_files when workspace has a vendor directory" do
+      before do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?)
+          .with(a_string_ending_with("vendor/modules.txt"))
+          .and_return(true)
+      end
+
+      it "raises DependencyFileNotResolvable" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /vendored workspaces are not yet supported/i)
+      end
+    end
+
+    describe "#updated_dependency_files when go work sync fails" do
+      before do
+        allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)
+          .to receive(:run_go_work_sync)
+          .and_raise(Dependabot::DependencyFileNotResolvable, "go work sync failed")
+      end
+
+      it "raises DependencyFileNotResolvable" do
+        expect { updater.updated_dependency_files }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+  end
+
+  context "with a go.work workspace (no root module)" do
+    let(:project_name) { "workspace_no_root_mod" }
+    let(:go_work_body) { fixture("projects", project_name, "go.work") }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(name: "go.work", content: go_work_body, directory: "/")
+    end
+    let(:api_go_mod_body) { fixture("projects", project_name, "api", "go.mod") }
+    let(:api_go_mod) do
+      Dependabot::DependencyFile.new(name: "api/go.mod", content: api_go_mod_body, directory: "/")
+    end
+    let(:worker_go_mod_body) { fixture("projects", project_name, "worker", "go.mod") }
+    let(:worker_go_mod) do
+      Dependabot::DependencyFile.new(name: "worker/go.mod", content: worker_go_mod_body, directory: "/")
+    end
+    let(:files) { [go_work, api_go_mod, worker_go_mod] }
+    let(:dependency_name) { "rsc.io/quote" }
+    let(:dependency_previous_version) { "v1.5.2" }
+    let(:dependency_version) { "v1.5.3" }
+    let(:previous_requirements) do
+      [{
+        file: "api/go.mod",
+        requirement: dependency_previous_version,
+        groups: [],
+        source: { type: "default", source: dependency_name }
+      }]
+    end
+    let(:requirements) do
+      [{
+        file: "api/go.mod",
+        requirement: dependency_version,
+        groups: [],
+        source: { type: "default", source: dependency_name }
+      }]
+    end
+    let(:updater) do
+      described_class.new(
+        dependency_files: files,
+        dependencies: [dependency],
+        credentials: credentials,
+        repo_contents_path: repo_contents_path
+      )
+    end
+
+    describe "#updated_dependency_files" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      before do
+        # Stub the low-level go subprocess calls so the test focuses on the
+        # no-root-go.mod plumbing rather than real network/go-proxy access.
+        allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)
+          .to receive(:run_go_get)
+        allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)
+          .to receive(:run_go_work_sync)
+        allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)
+          .to receive(:run_workspace_tidy)
+        # Return a fake updated api/go.mod so updated_dependency_files has something to diff
+        fake_mod_content = api_go_mod_body.sub("v1.5.2", "v1.5.3")
+        allow_any_instance_of(Dependabot::GoModules::FileUpdater::GoModUpdater)
+          .to receive(:updated_workspace_module_files)
+          .and_return({ "api/go.mod" => fake_mod_content })
+      end
+
+      it "does not raise when there is no root go.mod" do
+        expect { updated_files }.not_to raise_error
+      end
+
+      it "returns at least one updated file" do
+        expect(updated_files).not_to be_empty
       end
     end
   end

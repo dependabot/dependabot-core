@@ -1,0 +1,24 @@
+[
+  {
+    "name": "MODULE.bazel",
+    "path": "subdir/MODULE.bazel",
+    "sha": "abc123",
+    "size": 1234,
+    "url": "https://api.github.com/repos/example/repo/contents/subdir/MODULE.bazel?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/subdir/MODULE.bazel",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/subdir/MODULE.bazel",
+    "type": "file"
+  },
+  {
+    "name": "BUILD",
+    "path": "subdir/BUILD",
+    "sha": "def456",
+    "size": 567,
+    "url": "https://api.github.com/repos/example/repo/contents/subdir/BUILD?ref=sha",
+    "html_url": "https://github.com/example/repo/blob/sha/subdir/BUILD",
+    "git_url": "https://api.github.com/repos/example/repo/git/blobs/def456",
+    "download_url": "https://raw.githubusercontent.com/example/repo/sha/subdir/BUILD",
+    "type": "file"
+  }
+]

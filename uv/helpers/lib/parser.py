@@ -32,7 +32,7 @@ def parse_pep621_pep735_dependencies(pyproject_path):
                 next(iter(specifier_set)).operator in {"==", "==="}):
             return next(iter(specifier_set)).version
 
-    def parse_requirement(entry, pyproject_path):
+    def parse_requirement(entry, pyproject_path, requirement_type=None):
         try:
             req = Requirement(entry)
         except InvalidRequirement as e:
@@ -46,14 +46,19 @@ def parse_pep621_pep735_dependencies(pyproject_path):
                 "file": pyproject_path,
                 "requirement": str(req.specifier),
                 "extras": sorted(list(req.extras)),
+                "requirement_type": requirement_type,
             }
             return data
 
-    def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
+    def parse_toml_section_pep621_dependencies(
+        pyproject_path, dependencies, requirement_type=None
+    ):
         requirement_packages = []
 
         for dependency in dependencies:
-            parsed_dependency = parse_requirement(dependency, pyproject_path)
+            parsed_dependency = parse_requirement(
+                dependency, pyproject_path, requirement_type
+            )
             requirement_packages.append(parsed_dependency)
 
         return requirement_packages
@@ -75,7 +80,9 @@ def parse_pep621_pep735_dependencies(pyproject_path):
         for entry in dependencies:
             # Handle direct requirement
             if isinstance(entry, str):
-                parsed_dependency = parse_requirement(entry, pyproject_path)
+                parsed_dependency = parse_requirement(
+                    entry, pyproject_path, group_name
+                )
                 requirement_packages.append(parsed_dependency)
             # Handle include-group directive
             elif isinstance(entry, dict) and "include-group" in entry:
@@ -128,7 +135,8 @@ def parse_pep621_pep735_dependencies(pyproject_path):
         if 'requires' in build_system_section:
             build_system_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,
-                build_system_section['requires']
+                build_system_section['requires'],
+                "build-system"
             )
             dependencies.extend(build_system_dependencies)
 

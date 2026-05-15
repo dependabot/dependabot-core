@@ -11,6 +11,8 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
+      GEM_DEP_SPLIT = T.let(/\A(?<name>[a-zA-Z0-9_\-]+):(?<version>.+)\z/, Regexp)
+
       sig { params(req: T::Hash[Symbol, String], version: Gem::Version).returns(T::Boolean) }
       def self.satisfied_by?(req, version)
         new(req[:requirement]).satisfied_by?(version)
@@ -24,8 +26,41 @@ module Dependabot
         [new(requirement_string)]
       end
 
-      # Patches Gem::Requirement to make it accept requirement strings like
-      # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse_dep_string(dep_string)
+        stripped = dep_string.strip
+        return nil if stripped.empty?
+
+        match = stripped.match(GEM_DEP_SPLIT)
+        return nil unless match
+
+        name = T.must(match[:name])
+        constraint = T.must(match[:version]).strip
+
+        return nil if constraint.empty?
+
+        version = extract_version(constraint)
+
+        {
+          name: name,
+          normalised_name: name,
+          version: version,
+          requirement: constraint,
+          extras: nil
+        }
+      end
+
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.extract_version(constraint)
+        version_part = constraint.sub(/\A[~><=!]+\s*/, "").strip
+
+        return version_part if version_part.match?(/\A\d+(?:\.\d+)*(?:\.\w+)?\z/)
+
+        nil
+      end
+
+      private_class_method :extract_version
+
       sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|

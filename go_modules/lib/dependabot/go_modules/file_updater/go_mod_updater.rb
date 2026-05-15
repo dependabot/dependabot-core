@@ -7,13 +7,14 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
+require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
 module Dependabot
   module GoModules
     class FileUpdater
-      class GoModUpdater
+      class GoModUpdater # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         RESOLVABILITY_ERROR_REGEXES = T.let(
@@ -57,6 +58,8 @@ module Dependabot
             /go(?: get)?: .*: unknown revision/m,
             # Package pointing to a proxy that 404s
             /go(?: get)?: .*: unrecognized import path/m,
+            # Private repository cannot be fetched over a secure protocol
+            Dependabot::GoModules::ResolvabilityErrors::INSECURE_PROTOCOL_REPOSITORY_REGEX,
             # Package not being referenced correctly
             /go:.*imports.*package.+is not in std/m,
             # Invalid version due to missing go.mod files at specified revision
@@ -94,11 +97,21 @@ module Dependabot
           T::Array[Regexp]
         )
 
+        PATH_DEPENDENCY_ERROR_REGEXES = T.let(
+          [
+            /replaced by (?<path>[^)\s]+)\): reading .*go\.mod: open .*: no such file or directory/
+          ].freeze,
+          T::Array[Regexp]
+        )
+
         GO_LANG = "Go"
 
         AMBIGUOUS_ERROR_MESSAGE = /ambiguous import: found package (?<package>.*) in multiple modules/
 
         GO_VERSION_MISMATCH = /requires go (?<current_ver>.*) .*running go (?<req_ver>.*);/
+
+        GITHUB_403_REGEX =
+          %r{https://github\.com/(?<repo>[^/'\s]+/[^/'\s]+)/?': The requested URL returned error: 403}
 
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
@@ -137,6 +150,14 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def updated_go_sum_content
           updated_files[:go_sum]
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def updated_workspace_module_files
+          @updated_workspace_module_files ||= T.let(
+            update_workspace_files,
+            T.nilable(T::Hash[String, String])
+          )
         end
 
         private
@@ -206,6 +227,109 @@ module Dependabot
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def update_workspace_files
+          in_repo_path do
+            dependency_files.each do |file|
+              path = Pathname.new(file.name).expand_path
+              FileUtils.mkdir_p(path.dirname)
+              File.write(path, file.content)
+            end
+
+            # Run `go get dep@version` in each module directory so every go.mod
+            # that requires the dependency gets the version bump, not just the first.
+            # Follow with a bare `go get` validation pass per module, matching the
+            # single-module update path's intent (see run_go_get comment).
+            workspace_module_paths.each do |mod_dir|
+              Dir.chdir(mod_dir) do
+                run_go_get(dependencies)
+                run_go_get
+              end
+            end
+
+            run_go_work_sync
+            run_workspace_tidy
+
+            collect_workspace_file_contents
+          end
+        end
+
+        sig { void }
+        def run_go_work_sync
+          command = "go work sync"
+          _, stderr, status = Open3.capture3(command)
+          return if status.success?
+
+          handle_subprocess_error(stderr)
+        end
+
+        sig { void }
+        def run_workspace_tidy
+          return unless tidy?
+
+          workspace_module_paths.each do |mod_path|
+            Dir.chdir(mod_path) do
+              command = "go mod tidy -e"
+              _, stderr, status = Open3.capture3(command)
+              if status.success?
+                Dependabot.logger.info "`go mod tidy` succeeded in #{mod_path}"
+              else
+                Dependabot.logger.info "Failed to `go mod tidy` in #{mod_path}: #{stderr}"
+              end
+            end
+          end
+        end
+
+        sig { returns(T::Array[String]) }
+        def workspace_module_paths
+          go_work_file = dependency_files.find { |f| f.name.end_with?("go.work") }
+          return ["."] unless go_work_file
+
+          fetched_mod_names = dependency_files.select { |f| f.name.end_with?("go.mod") }
+                                              .to_set(&:name)
+
+          GoWorkParser.use_paths(T.must(go_work_file.content))
+                      .select { |p| valid_workspace_path?(p) && fetched_mod_names.include?(workspace_mod_name(p)) }
+                      .map { |p| p == "." ? "." : "./#{p}" }
+        end
+
+        sig { params(path: String).returns(T::Boolean) }
+        def valid_workspace_path?(path)
+          return false if Pathname.new(path).absolute?
+
+          !Pathname.new(path).cleanpath.to_s.start_with?("../")
+        end
+
+        sig { params(use_path: String).returns(String) }
+        def workspace_mod_name(use_path)
+          use_path == "." ? "go.mod" : "#{use_path}/go.mod"
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def collect_workspace_file_contents
+          results = T.let({}, T::Hash[String, String])
+
+          workspace_module_paths.each do |mod_path|
+            relative_base = mod_path.delete_prefix("./")
+
+            mod_file = File.join(mod_path, "go.mod")
+            if File.exist?(mod_file)
+              key = relative_base.empty? || relative_base == "." ? "go.mod" : "#{relative_base}/go.mod"
+              results[key] = File.read(mod_file)
+            end
+
+            sum_file = File.join(mod_path, "go.sum")
+            next unless File.exist?(sum_file)
+
+            key = relative_base.empty? || relative_base == "." ? "go.sum" : "#{relative_base}/go.sum"
+            results[key] = File.read(sum_file)
+          end
+
+          results["go.work.sum"] = File.read("go.work.sum") if File.exist?("go.work.sum")
+
+          results
         end
 
         sig { void }
@@ -305,7 +429,7 @@ module Dependabot
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
             T.let(
-              Dependabot::GoModules::ReplaceStubber.new(repo_contents_path)
+              Dependabot::GoModules::ReplaceStubber.new(T.must(repo_contents_path))
                                                                .stub_paths(manifest, directory),
               T.nilable(T::Hash[String, String])
             )
@@ -326,11 +450,8 @@ module Dependabot
         def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
           stderr = stderr.gsub(Dir.getwd, "")
 
-          go_mod_parse_error_regex = GO_MOD_PARSE_ERROR_REGEXES.find { |r| stderr =~ r }
-          if go_mod_parse_error_regex
-            error_message = filter_error_message(message: stderr, regex: go_mod_parse_error_regex)
-            raise Dependabot::DependencyFileNotParseable.new(go_mod_path, error_message)
-          end
+          raise_for_go_mod_parse_error(stderr)
+          raise_for_path_dependency_error(stderr)
 
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
@@ -343,8 +464,12 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
+          if github_credentials_configured? && (matches = stderr.match(GITHUB_403_REGEX))
+            raise Dependabot::PrivateSourceAuthenticationFailure, "https://github.com/#{matches[:repo]}"
+          end
+
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
-          ResolvabilityErrors.handle(stderr) if repo_error_regex
+          Dependabot::GoModules::ResolvabilityErrors.handle(stderr) if repo_error_regex
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
           if path_regex
@@ -385,6 +510,44 @@ module Dependabot
 
           # In case the regex is multi-line, match the whole string
           message.match(regex).to_s
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def extract_replacement_path(message)
+          PATH_DEPENDENCY_ERROR_REGEXES.each do |regex|
+            match = regex.match(message)
+            return match[:path] if match
+          end
+
+          nil
+        end
+
+        sig { returns(T::Boolean) }
+        def github_credentials_configured?
+          credentials.any? do |credential|
+            credential["type"] == "git_source" && credential["host"] == "github.com"
+          end
+        end
+
+        sig { params(stderr: String).void }
+        def raise_for_go_mod_parse_error(stderr)
+          go_mod_parse_error_regex = GO_MOD_PARSE_ERROR_REGEXES.find { |r| stderr =~ r }
+          return unless go_mod_parse_error_regex
+
+          error_message = filter_error_message(message: stderr, regex: go_mod_parse_error_regex)
+          raise Dependabot::DependencyFileNotParseable.new(go_mod_path, error_message)
+        end
+
+        sig { params(stderr: String).void }
+        def raise_for_path_dependency_error(stderr)
+          path_error_regex = PATH_DEPENDENCY_ERROR_REGEXES.find { |r| stderr =~ r }
+          return unless path_error_regex
+
+          dependency_path = extract_replacement_path(stderr)
+          raise Dependabot::PathDependenciesNotReachable, [dependency_path] if dependency_path
+
+          error_message = filter_error_message(message: stderr, regex: path_error_regex)
+          raise Dependabot::DependencyFileNotResolvable, error_message
         end
 
         sig { returns(String) }

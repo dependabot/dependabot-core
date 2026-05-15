@@ -98,6 +98,22 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
+    context "with a non-package mode project" do
+      let(:pyproject_fixture_name) { "poetry_non_package_mode_simple.toml" }
+      let(:lockfile_fixture_name) { "version_not_specified.lock" }
+      let(:dependency_version) { "2.18.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "*",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
     context "with a lockfile" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }
@@ -374,18 +390,48 @@ RSpec.describe namespace::PoetryVersionResolver do
         end
       end
     end
+
+    context "when checking a security fix version" do
+      context "when the fix version is resolvable" do
+        let(:version) { Gem::Version.new("2.18.1") }
+
+        it "confirms the security fix can be applied" do
+          expect(resolvable).to be(true)
+        end
+      end
+
+      context "when the fix version is too high for transitive constraints" do
+        let(:version) { Gem::Version.new("99.0.0") }
+
+        it "indicates the security fix is not installable" do
+          expect(resolvable).to be(false)
+        end
+      end
+    end
   end
 
   describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
     subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
 
+    let(:exception) { Exception.new(response) }
     let(:error_handler) do
       Dependabot::Python::PoetryErrorHandler.new(
         dependencies: dependency,
         dependency_files: dependency_files
       )
     end
-    let(:exception) { Exception.new(response) }
+
+    context "with 'Cannot enrich dependency with incompatible constraints' error" do
+      let(:response) do
+        "Cannot enrich dependency with incompatible constraints: foo (>=1.0.0) and foo (<1.0.0)"
+      end
+
+      it "raises a helpful error with details" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("Incompatible version constraints for foo: >=1.0.0 vs <1.0.0")
+        end
+      end
+    end
 
     context "with incompatible constraints mentioned in requirements" do
       let(:response) { "Incompatible constraints in requirements of histolab (0.7.0):" }
@@ -651,6 +697,37 @@ RSpec.describe namespace::PoetryVersionResolver do
       it "raises a helpful error" do
         expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
+    end
+  end
+
+  describe "plugin installation during resolution" do
+    it "invokes the poetry plugin installer" do
+      plugin_installer = instance_double(
+        Dependabot::Python::PoetryPluginInstaller,
+        install_required_plugins: nil
+      )
+      allow(Dependabot::Python::PoetryPluginInstaller)
+        .to receive(:from_dependency_files).and_return(plugin_installer)
+      allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
+
+      language_version_manager = instance_double(
+        Dependabot::Python::LanguageVersionManager,
+        install_required_python: nil
+      )
+      allow(resolver).to receive_messages(
+        language_version_manager: language_version_manager,
+        write_temporary_dependency_files: nil
+      )
+
+      begin
+        resolver.latest_resolvable_version(requirement: "*")
+      rescue StandardError
+        nil
+      end
+
+      expect(plugin_installer).to have_received(:install_required_plugins)
     end
   end
 end

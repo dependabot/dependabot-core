@@ -50,7 +50,8 @@ internal static class RunCommand
             var analyzeWorker = new AnalyzeWorker(jobId!, experimentsManager, logger);
             var updateWorker = new UpdaterWorker(jobId!, experimentsManager, logger);
             var worker = new RunWorker(jobId!, apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
-            await worker.RunAsync(jobPath!, repoContentsPath!, caseInsensitiveRepoContentsPath, baseCommitSha!);
+            var result = await worker.RunAsync(jobPath!, repoContentsPath!, caseInsensitiveRepoContentsPath, baseCommitSha!);
+            setExitCode(result);
             return 0;
         });
 

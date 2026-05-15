@@ -3,11 +3,13 @@
 
 require "sorbet-runtime"
 require "wildcard_matcher"
+require "dependabot/utils"
 require "dependabot/dependency_attribution"
 require "dependabot/dependency_change"
 require "dependabot/dependency_group"
 require "dependabot/dependency_snapshot"
 require "dependabot/updater/pattern_specificity_calculator"
+require "dependabot/updater/update_type_helper"
 
 module Dependabot
   class Updater
@@ -28,6 +30,7 @@ module Dependabot
     #
     # Note: Filtering requires the :group_membership_enforcement feature to be enabled.
     class GroupDependencySelector
+      include UpdateTypeHelper
       extend T::Sig
 
       MAX_DEPENDENCIES_TO_LOG = 10
@@ -134,17 +137,59 @@ module Dependabot
 
       sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
       def deduplicate_dependencies(changes_by_dir)
-        seen_updates = T.let(Set.new, T::Set[[String, String]])
+        if @group.group_by_dependency_name?
+          deduplicate_by_name_only(changes_by_dir)
+        else
+          deduplicate_by_directory_and_name(changes_by_dir)
+        end
+      end
+
+      sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
+      def deduplicate_by_directory_and_name(changes_by_dir)
+        deduplicate_dependencies_with_key(changes_by_dir) { |directory, dep| [directory, dep.name] }
+      end
+
+      sig { params(changes_by_dir: T::Array[Dependabot::DependencyChange]).returns(T::Array[Dependabot::Dependency]) }
+      def deduplicate_by_name_only(changes_by_dir)
+        directories_by_name = T.let({}, T::Hash[String, T::Array[String]])
+
+        # Collect all directories per dependency name before deduplication
+        changes_by_dir.each do |change|
+          directory = change.job.source.directory || "."
+          Array(change.updated_dependencies).each do |dep|
+            directories_by_name[dep.name] ||= []
+            T.must(directories_by_name[dep.name]) << directory
+          end
+        end
+
+        merged = deduplicate_dependencies_with_key(changes_by_dir) { |_directory, dep| dep.name }
+
+        # Annotate each surviving dependency with all directories where it was updated
+        merged.each do |dep|
+          dep.metadata[:updated_directories] = T.must(directories_by_name[dep.name]).uniq
+        end
+
+        merged
+      end
+
+      sig do
+        params(
+          changes_by_dir: T::Array[Dependabot::DependencyChange],
+          _blk: T.proc.params(directory: String, dep: Dependabot::Dependency).returns(T.untyped)
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def deduplicate_dependencies_with_key(changes_by_dir, &_blk)
+        seen_keys = T.let(Set.new, T::Set[T.untyped])
         merged_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         changes_by_dir.each do |change|
           directory = change.job.source.directory || "."
 
           Array(change.updated_dependencies).each do |dep|
-            key = [directory, dep.name]
-            next if seen_updates.include?(key)
+            key = yield(directory, dep)
+            next if seen_keys.include?(key)
 
-            seen_updates.add(key)
+            seen_keys.add(key)
             @source_directory = directory
             merged_dependencies << dep
           end
@@ -210,8 +255,11 @@ module Dependabot
           ).returns(T::Boolean)
         )
 
+        update_type = update_type_for_dependency(dep)
+        applies_to = group_applies_to
+
         @specificity_calculator.dependency_belongs_to_more_specific_group?(
-          @group, dep, @snapshot.groups, contains_checker, directory
+          @group, dep, @snapshot.groups, contains_checker, directory, applies_to:, update_type:
         )
       end
 
@@ -224,6 +272,13 @@ module Dependabot
         else
           group.contains?(dep)
         end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def group_applies_to
+        return nil unless @group.respond_to?(:applies_to)
+
+        T.unsafe(@group).applies_to
       end
 
       sig { params(dep: Dependabot::Dependency, job: Dependabot::Job).returns(T::Boolean) }

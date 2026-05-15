@@ -15,7 +15,7 @@ module Dependabot
 
       # Section : Update instructions
       # With every major release update
-      # - Add new NPM_Vx , i.e. NPM_V11 = "11"
+      # - Add new NPM_Vx , i.e. NPM_V12 = "12"
       # - Add to SUPPORTED_VERSIONS
 
       NPM_V6 = "6"
@@ -23,6 +23,7 @@ module Dependabot
       NPM_V8 = "8"
       NPM_V9 = "9"
       NPM_V10 = "10"
+      NPM_V11 = "11"
 
       # Keep versions in ascending order
       SUPPORTED_VERSIONS = T.let(
@@ -30,7 +31,8 @@ module Dependabot
           Version.new(NPM_V7),
           Version.new(NPM_V8),
           Version.new(NPM_V9),
-          Version.new(NPM_V10)
+          Version.new(NPM_V10),
+          Version.new(NPM_V11)
         ].freeze,
         T::Array[Dependabot::Version]
       )

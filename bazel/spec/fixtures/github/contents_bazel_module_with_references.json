@@ -1,0 +1,13 @@
+{
+  "name": "MODULE.bazel",
+  "path": "MODULE.bazel",
+  "sha": "abc123",
+  "size": 1234,
+  "url": "https://api.github.com/repos/example/repo/contents/MODULE.bazel?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/MODULE.bazel",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/abc123",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/MODULE.bazel",
+  "type": "file",
+  "content": "YmF6ZWxfZGVwKG5hbWUgPSAicnVsZXNfcHl0aG9uIiwgdmVyc2lvbiA9ICIxLjYuMyIpCgpweXRob24gPSB1c2VfZXh0ZW5zaW9uKCJAcnVsZXNfcHl0aG9uLy9weXRob24vZXh0ZW5zaW9uczpweXRob24uYnpsIiwgInB5dGhvbiIpCnB5dGhvbi50b29sY2hhaW4ocHl0aG9uX3ZlcnNpb24gPSAiMy4xMyIpCgpwaXAgPSB1c2VfZXh0ZW5zaW9uKCJAcnVsZXNfcHl0aG9uLy9weXRob24vZXh0ZW5zaW9uczpwaXAuYnpsIiwgInBpcCIpCnBpcC5wYXJzZSgKICAgIGh1Yl9uYW1lID0gInBpcCIsCiAgICBweXRob25fdmVyc2lvbiA9ICIzLjEzIiwKICAgIHJlcXVpcmVtZW50c19sb2NrID0gIi8vcHl0aG9uOnJlcXVpcmVtZW50cy50eHQiLAopCgptYXZlbiA9IHVzZV9leHRlbnNpb24oIkBydWxlc19qdm1fZXh0ZXJuYWwvL2V4dGVuc2lvbjptYXZlbi5iemwiLCAibWF2ZW4iKQptYXZlbi5pbnN0YWxsKAogICAgYXJ0aWZhY3RzID0gWyJjb20uZ29vZ2xlLmd1YXZhOmd1YXZhOjMzLjQuMC1qcmUiXSwKICAgIGxvY2tfZmlsZSA9ICJAYmF0ZmlzaC8vOm1hdmVuX2luc3RhbGwuanNvbiIsCiAgICBuYW1lID0gIm1hdmVuIiwKKQoKbWF2ZW4uaW5zdGFsbCgKICAgIGFydGlmYWN0cyA9IFsib3JnLm9wZW5qZGsuam1oOmptaC1jb3JlOjEuMzciXSwKICAgIGxvY2tfZmlsZSA9ICIvL3Rvb2xzL2pvbDpqb2xfbWF2ZW5faW5zdGFsbC5qc29uIiwKICAgIG5hbWUgPSAiam1oX21hdmVuIiwKKQoKbWF2ZW4uaW5zdGFsbCgKICAgIGFydGlmYWN0cyA9IFsib3JnLm9wZW5qZGsuam1oOmptaC1jb3JlOjEuMzciXSwKICAgIGxvY2tfZmlsZSA9ICIvL3Rvb2xzL2JlbmNobWFya3M6am1oX21hdmVuX2luc3RhbGwuanNvbiIsCiAgICBuYW1lID0gImJlbmNobWFya3MiLAopCg==\n",
+  "encoding": "base64"
+}

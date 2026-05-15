@@ -1,0 +1,53 @@
+{
+  "lockFileVersion": 11,
+  "registryFileHashes": {
+    "https://bcr.bazel.build/bazel_registry.json": "sha256-kqOZyrc7m3kNmW9Df8M3Zs-cJjJ7zp7D5HZR5FTK8Q0=",
+    "https://bcr.bazel.build/modules/abseil-cpp/20230125.3/MODULE.bazel": "sha256-example1234567890abcdef",
+    "https://bcr.bazel.build/modules/platforms/0.0.11/MODULE.bazel": "sha256-example2345678901bcdefg",
+    "https://bcr.bazel.build/modules/rules_cc/0.1.1/MODULE.bazel": "sha256-example3456789012cdefgh"
+  },
+  "selectedYankedVersions": {},
+  "moduleExtensions": {},
+  "moduleDepGraph": {
+    "<root>": {
+      "name": "my-module",
+      "version": "1.0",
+      "repoName": "",
+      "executionPlatformsToRegister": [],
+      "toolchainsToRegister": [],
+      "deps": {
+        "abseil-cpp": "abseil-cpp@20230125.3",
+        "platforms": "platforms@0.0.11",
+        "rules_cc": "rules_cc@0.1.1"
+      }
+    },
+    "abseil-cpp@20230125.3": {
+      "name": "abseil-cpp",
+      "version": "20230125.3",
+      "repoName": "abseil-cpp",
+      "executionPlatformsToRegister": [],
+      "toolchainsToRegister": [],
+      "deps": {
+        "rules_cc": "rules_cc@0.1.1"
+      }
+    },
+    "platforms@0.0.11": {
+      "name": "platforms",
+      "version": "0.0.11",
+      "repoName": "platforms",
+      "executionPlatformsToRegister": [],
+      "toolchainsToRegister": [],
+      "deps": {}
+    },
+    "rules_cc@0.1.1": {
+      "name": "rules_cc",
+      "version": "0.1.1",
+      "repoName": "rules_cc",
+      "executionPlatformsToRegister": [],
+      "toolchainsToRegister": [],
+      "deps": {
+        "platforms": "platforms@0.0.11"
+      }
+    }
+  }
+}

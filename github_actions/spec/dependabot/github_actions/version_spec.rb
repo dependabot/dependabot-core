@@ -5,10 +5,10 @@ require "spec_helper"
 require "dependabot/github_actions"
 
 RSpec.describe Dependabot::GithubActions::Version do
-  semver_version = "v1.2.3"
-  semver_without_v = "1.2.3"
-  path_based_sem_version = "dummy/v1.2.3"
-  path_based_sem_without_v = "dummy/1.2.3"
+  let(:semver_version) { "v1.2.3" }
+  let(:semver_without_v) { "1.2.3" }
+  let(:path_based_sem_version) { "dummy/v1.2.3" }
+  let(:path_based_sem_without_v) { "dummy/1.2.3" }
 
   describe "#correct?" do
     it "rejects nil" do

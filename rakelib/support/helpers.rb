@@ -21,13 +21,15 @@ class RakeHelpers
   GEMSPECS = T.let(
     %w(
       common/dependabot-common.gemspec
+      bazel/dependabot-bazel.gemspec
       bun/dependabot-bun.gemspec
       bundler/dependabot-bundler.gemspec
       cargo/dependabot-cargo.gemspec
       composer/dependabot-composer.gemspec
       conda/dependabot-conda.gemspec
+      deno/dependabot-deno.gemspec
       devcontainers/dependabot-devcontainers.gemspec
-      docker_compose/dependabot-docker_compose.gemspec
+      docker/dependabot-docker_compose.gemspec
       docker/dependabot-docker.gemspec
       dotnet_sdk/dependabot-dotnet_sdk.gemspec
       elm/dependabot-elm.gemspec
@@ -37,10 +39,14 @@ class RakeHelpers
       gradle/dependabot-gradle.gemspec
       helm/dependabot-helm.gemspec
       hex/dependabot-hex.gemspec
+      julia/dependabot-julia.gemspec
       maven/dependabot-maven.gemspec
+      nix/dependabot-nix.gemspec
       npm_and_yarn/dependabot-npm_and_yarn.gemspec
       nuget/dependabot-nuget.gemspec
       omnibus/dependabot-omnibus.gemspec
+      opentofu/dependabot-opentofu.gemspec
+      pre_commit/dependabot-pre_commit.gemspec
       pub/dependabot-pub.gemspec
       python/dependabot-python.gemspec
       rust_toolchain/dependabot-rust_toolchain.gemspec

@@ -1,0 +1,24 @@
+# This file is machine-generated - editing it directly is not advised
+
+julia_version = "1.12.1"
+manifest_format = "2.0"
+project_hash = "aabbccdd1234567890abcdef1234567890abcdef"
+
+[[deps.MainPackage]]
+deps = ["JSON"]
+path = "."
+uuid = "11111111-1111-1111-1111-111111111111"
+version = "1.0.0"
+
+[[deps.JSON]]
+git-tree-sha1 = "93e5f6082b09f74f41e90fea4f9ec7e8ff30cbad"
+uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+version = "0.21.4"
+
+[[deps.Documenter]]
+git-tree-sha1 = "fe6a5d0d9a9f4e8e2ee9dcdf24e4e4a6d5c56d50"
+uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+version = "1.0.0"
+
+[[deps.Test]]
+uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

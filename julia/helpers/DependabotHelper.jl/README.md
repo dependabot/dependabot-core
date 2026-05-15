@@ -6,7 +6,7 @@ This package provides the Julia-side functionality for parsing `Project.toml` an
 
 ## Features
 
-- Project.toml and Manifest.toml parsing
+- Project.toml and Manifest.toml discovery and parsing
 - Dependency resolution using Julia's Pkg manager
 - Version fetching from Julia registries
 - Package metadata retrieval

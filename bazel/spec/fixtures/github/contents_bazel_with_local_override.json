@@ -1,0 +1,17 @@
+[
+  {
+    "name": "MODULE.bazel",
+    "path": "MODULE.bazel",
+    "type": "file"
+  },
+  {
+    "name": "BUILD.bazel",
+    "path": "BUILD.bazel",
+    "type": "file"
+  },
+  {
+    "name": "third_party",
+    "path": "third_party",
+    "type": "dir"
+  }
+]

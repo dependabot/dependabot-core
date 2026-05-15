@@ -112,8 +112,7 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock,
-          bun: bun_lock
+          pnpm: pnpm_lock
         }
       end
 
@@ -187,16 +186,6 @@ module Dependabot
         @pnpm_workspace_yml ||= T.let(
           dependency_files.find do |f|
             f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
-          end,
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def bun_lock
-        @bun_lock ||= T.let(
-          dependency_files.find do |f|
-            f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
           end,
           T.nilable(Dependabot::DependencyFile)
         )
@@ -502,6 +491,7 @@ module Dependabot
       end
       def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
+        return jsr_registry_source if requirement.start_with?("jsr:")
 
         resolved_url = lockfile_details&.fetch("resolved", nil)
 
@@ -549,6 +539,11 @@ module Dependabot
           branch: nil,
           ref: details["ref"]
         }
+      end
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      def jsr_registry_source
+        { type: "registry", url: NpmAndYarn::Requirement::JSR_REGISTRY }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

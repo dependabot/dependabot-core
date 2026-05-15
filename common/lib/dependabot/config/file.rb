@@ -60,10 +60,12 @@ module Dependabot
 
       PACKAGE_MANAGER_LOOKUP = T.let(
         {
+          "bazel" => "bazel",
           "bun" => "bun",
           "bundler" => "bundler",
           "cargo" => "cargo",
           "composer" => "composer",
+          "deno" => "deno",
           "conda" => "conda",
           "devcontainer" => "devcontainers",
           "docker-compose" => "docker_compose",
@@ -78,11 +80,15 @@ module Dependabot
           "julia" => "julia",
           "maven" => "maven",
           "mix" => "hex",
+          "nix" => "nix",
           "npm" => "npm_and_yarn",
           "nuget" => "nuget",
+          "opentofu" => "opentofu",
           "pip" => "pip",
+          "pre-commit" => "pre_commit",
           "pub" => "pub",
           "rust-toolchain" => "rust_toolchain",
+          "sbt" => "sbt",
           "swift" => "swift",
           "terraform" => "terraform",
           "uv" => "uv",

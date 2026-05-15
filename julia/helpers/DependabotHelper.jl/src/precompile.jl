@@ -45,6 +45,15 @@
         run_check_result("""{"function": "find_package_source_url", "args": {"package_name": "JSON", "package_uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6"}}""")
         run_check_result("""{"function": "extract_package_metadata_from_url", "args": {"package_name": "JSON", "source_url": "https://github.com/JuliaIO/JSON.jl"}}""")
 
+        # Release date functions (General registry)
+        run_check_result("""{"function": "get_version_release_date", "args": {"package_name": "JSON", "version": "0.21.0", "package_uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6"}}""")
+        run_check_result("""{"function": "get_available_versions", "args": {"package_name": "JSON", "package_uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6"}}""")
+
+        # Batch operations
+        run_check_result("""{"function": "batch_get_package_info", "args": {"packages": [{"name": "JSON", "uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6"}]}}""")
+        run_check_result("""{"function": "batch_get_available_versions", "args": {"packages": [{"name": "JSON", "uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6"}]}}""")
+        run_check_result("""{"function": "batch_get_version_release_dates", "args": {"packages_versions": [{"name": "JSON", "uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6", "versions": ["0.21.0"]}]}}""")
+
         # Compatibility functions (use nonexistent paths to avoid actual updates)
         run("""{"function": "check_update_compatibility", "args": {"project_path": "/tmp/nonexistent", "package_name": "JSON", "target_version": "0.21.4"}}""")
         run("""{"function": "resolve_dependencies_with_constraints", "args": {"project_path": "/tmp/nonexistent", "target_updates": {"JSON": "0.21.4"}}}""")
@@ -60,5 +69,8 @@
 
         # Test missing args field (expected to return error)
         run("""{"function": "get_latest_version"}""")
+
+        # Clear the GeneralMetadata cache after precompilation workload
+        empty!(GENERAL_METADATA_CACHE)
     end
 end

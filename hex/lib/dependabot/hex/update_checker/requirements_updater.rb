@@ -76,7 +76,7 @@ module Dependabot
               tw_req = last_string_reqs.find { |r| r.start_with?("~>") }
               update_twiddle_version(tw_req, T.must(latest_resolvable_version)).to_s
             else
-              update_mixfile_range(last_string_reqs).map(&:to_s).join(" and ")
+              update_mixfile_range(last_string_reqs).join(" and ")
             end
 
           new_requirement = req[:requirement] + " or " + new_requirement if or_string_reqs.count > 1

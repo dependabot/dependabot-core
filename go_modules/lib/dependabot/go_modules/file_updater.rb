@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
+require "dependabot/go_modules/go_work_parser"
 
 module Dependabot
   module GoModules
@@ -15,6 +16,9 @@ module Dependabot
 
       require_relative "file_updater/go_mod_updater"
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileUpdater class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
         override
           .params(
@@ -29,12 +33,60 @@ module Dependabot
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})
         super
 
-        use_repo_contents_stub if repo_contents_path.nil?
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = if workspace?
+                          updated_workspace_files
+                        else
+                          updated_single_module_files
+                        end
+
+        raise "No files changed!" if updated_files.none?
+
+        updated_files
+      end
+
+      private
+
+      sig { params(go_mod: Dependabot::DependencyFile).returns(T::Boolean) }
+      def dependency_changed?(go_mod)
+        # file_changed? only checks for changed requirements. Need to check for indirect dep version changes too.
+        file_changed?(go_mod) || dependencies.any? { |dep| dep.previous_version != dep.version }
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if go_mod || go_work
+
+        raise "No go.mod or go.work!"
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_mod
+        @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_sum
+        @go_sum ||= T.let(get_original_file("go.sum"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_single_module_files
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         if go_mod && dependency_changed?(T.must(go_mod))
           updated_files <<
@@ -57,59 +109,51 @@ module Dependabot
           end
         end
 
-        raise "No files changed!" if updated_files.none?
+        updated_files
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_workspace_files
+        check_workspace_not_vendored!
+
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
+        workspace_results = file_updater.updated_workspace_module_files
+
+        workspace_results.each do |file_path, content|
+          original = dependency_files.find { |f| f.name == file_path }
+          next unless original
+          next if original.content == content
+
+          updated_files << updated_file(file: original, content: content)
+        end
 
         updated_files
       end
 
-      private
+      sig { void }
+      def check_workspace_not_vendored!
+        mod_paths = GoWorkParser.use_paths(T.must(T.must(go_work).content))
 
-      sig { params(go_mod: Dependabot::DependencyFile).returns(T::Boolean) }
-      def dependency_changed?(go_mod)
-        # file_changed? only checks for changed requirements. Need to check for indirect dep version changes too.
-        file_changed?(go_mod) || dependencies.any? { |dep| dep.previous_version != dep.version }
-      end
-
-      sig { override.void }
-      def check_required_files
-        return if go_mod
-
-        raise "No go.mod!"
-      end
-
-      sig { returns(String) }
-      def use_repo_contents_stub
-        @repo_contents_stub = T.let(true, T.nilable(T::Boolean))
-        @repo_contents_path = Dir.mktmpdir
-
-        Dir.chdir(@repo_contents_path) do
-          dependency_files.each do |file|
-            path = File.join(@repo_contents_path, directory, file.name)
-            path = Pathname.new(path).expand_path
-            FileUtils.mkdir_p(path.dirname)
-            File.write(path, file.content)
-          end
-
-          # Only used to create a backup git config that's reset
-          SharedHelpers.with_git_configured(credentials: []) do
-            `git config --global user.email "no-reply@github.com"`
-            `git config --global user.name "Dependabot"`
-            `git config --global init.defaultBranch "placeholder-default-branch"`
-            `git init .`
-            `git add .`
-            `git commit -m'fake repo_contents_path'`
-          end
+        vendored_path = mod_paths.find do |mod_path|
+          vendor_modules_txt = if mod_path == "."
+                                 File.join(vendor_dir, "modules.txt")
+                               else
+                                 File.join(
+                                   T.must(repo_contents_path),
+                                   T.must(directory),
+                                   mod_path,
+                                   "vendor",
+                                   "modules.txt"
+                                 )
+                               end
+          File.exist?(vendor_modules_txt)
         end
-      end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def go_mod
-        @go_mod ||= T.let(get_original_file("go.mod"), T.nilable(Dependabot::DependencyFile))
-      end
+        return unless vendored_path
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def go_sum
-        @go_sum ||= T.let(get_original_file("go.sum"), T.nilable(Dependabot::DependencyFile))
+        raise Dependabot::DependencyFileNotResolvable,
+              "Go workspace module \"#{vendored_path}\" has a vendor directory. " \
+              "Vendored workspaces are not yet supported."
       end
 
       sig { returns(T.nilable(String)) }
@@ -147,7 +191,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def tidy?
-        !@repo_contents_stub
+        true
       end
 
       sig { returns(T::Boolean) }

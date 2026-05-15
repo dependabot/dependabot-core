@@ -335,22 +335,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
-    context "when an existing pull request matches the updated dependencies" do
-      before do
-        allow(stub_update_checker).to receive_messages(
-          up_to_date?: false,
-          requirements_unlocked_or_can_be?: true,
-          updated_dependencies: [dependency],
-          latest_version: Gem::Version.new("2.0.0")
-        )
-      end
-
-      it "does not create a pull request" do
-        expect(update_all_versions).not_to receive(:create_pull_request)
-        update_all_versions.send(:check_and_create_pull_request, dependency)
-      end
-    end
-
     context "when no existing pull request matches the updated dependencies" do
       before do
         allow(stub_update_checker).to receive_messages(
@@ -372,6 +356,108 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
           stub_dependency_change
         )
         update_all_versions.send(:check_and_create_pull_request, dependency)
+      end
+    end
+  end
+
+  describe "#update_checker_for" do
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when job is a security update with cooldown configured" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|
+          definition["job"]["security_updates_only"] = true
+          definition["job"]["dependencies"] = ["dummy-pkg-a"]
+          definition["job"]["cooldown"] = {
+            "default-days" => 7
+          }
+        end
+      end
+
+      it "does not pass cooldown to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(update_cooldown: nil)
+        )
+      end
+    end
+
+    context "when job is a version update with cooldown configured" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|
+          definition["job"]["security_updates_only"] = false
+          definition["job"]["cooldown"] = {
+            "default-days" => 7
+          }
+        end
+      end
+
+      it "passes cooldown to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(update_cooldown: having_attributes(default_days: 7))
+        )
+      end
+    end
+
+    context "when allow rules specify update-types (patch only)" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/allow_update_types_patch_only")
+      end
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_allow_update_types")
+      end
+
+      it "passes ignored_versions that block major and minor updates to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            ignored_versions: a_collection_containing_exactly(
+              a_string_matching(/>= 5/),
+              a_string_matching(/>= 4\.1/)
+            )
+          )
+        )
+      end
+    end
+
+    context "when allow rules specify update-types (minor and patch)" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/allow_update_types_minor_and_patch")
+      end
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_allow_update_types")
+      end
+
+      it "passes ignored_versions that block only major updates to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            ignored_versions: a_collection_containing_exactly(
+              a_string_matching(/>= 5/)
+            )
+          )
+        )
+      end
+    end
+
+    context "when allow rules have no update-types" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple")
+      end
+
+      it "passes no implicit ignored_versions to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(ignored_versions: [])
+        )
       end
     end
   end

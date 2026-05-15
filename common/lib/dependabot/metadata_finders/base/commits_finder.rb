@@ -113,14 +113,14 @@ module Dependabot
 
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def lowest_tag_satisfying_previous_requirements
           tags = dependency_tags
                  .select { |t| version_from_tag(t) }
                  .select { |t| satisfies_previous_reqs?(version_from_tag(t)) }
                  .sort_by { |t| [version_from_tag(t), t.length] }
 
-          tags.find { |t| t.include?(dependency.name) } || T.must(tags.first)
+          tags.find { |t| t.include?(dependency.name) } || tags.first
         end
 
         sig { params(tag: String).returns(T.nilable(Dependabot::Version)) }

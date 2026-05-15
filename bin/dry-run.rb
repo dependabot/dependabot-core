@@ -10,7 +10,7 @@
 # should always be up-to-date.
 #
 # Usage:
-#   ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER GITHUB_REPO
+#   bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER GITHUB_REPO
 #
 # ! You'll need to have a GitHub access token (a personal access token is
 # ! fine) available as the environment variable LOCAL_GITHUB_ACCESS_TOKEN.
@@ -19,6 +19,7 @@
 #   ruby bin/dry-run.rb go_modules zonedb/zonedb
 #
 # Package managers:
+# - bazel
 # - bun
 # - bundler
 # - cargo
@@ -37,11 +38,13 @@
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
+# - pre_commit
 # - pub
 # - rust_toolchain
 # - submodules
 # - swift
 # - terraform
+# - opentofu
 # - vcpkg
 
 # rubocop:disable Style/GlobalVars
@@ -56,14 +59,15 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
+$LOAD_PATH << "./deno/lib"
 $LOAD_PATH << "./devcontainers/lib"
-$LOAD_PATH << "./docker_compose/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
@@ -75,13 +79,17 @@ $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
+$LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
+$LOAD_PATH << "./sbt/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./opentofu/lib"
 $LOAD_PATH << "./uv/lib"
 $LOAD_PATH << "./vcpkg/lib"
 
@@ -111,14 +119,15 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
+require "dependabot/deno"
 require "dependabot/devcontainers"
 require "dependabot/docker"
-require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -131,10 +140,13 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
+require "dependabot/sbt"
 require "dependabot/swift"
 require "dependabot/terraform"
+require "dependabot/opentofu"
 require "dependabot/uv"
 require "dependabot/vcpkg"
 
@@ -159,6 +171,7 @@ $options = {
   vendor_dependencies: false,
   ignore_conditions: [],
   pull_request: false,
+  hostname: nil,
   cooldown: nil
 }
 
@@ -332,6 +345,11 @@ option_parse = OptionParser.new do |opts|
     puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
     exit 1
   end
+
+  opts.on("--ghes-hostname HOSTNAME", "Custom hostname for the provider") do |value|
+    $options[:ghes_hostname] = value
+    $options[:api_endpoint] = File.join(value, "api", "v3")
+  end
 end
 # rubocop:enable Metrics/BlockLength
 
@@ -346,11 +364,13 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  bazel
   bun
   bundler
   cargo
   composer
   conda
+  deno
   devcontainers
   docker
   docker_compose
@@ -366,11 +386,14 @@ valid_package_managers = %w(
   npm_and_yarn
   nuget
   pip
+  pre_commit
   pub
   python
   rust_toolchain
+  sbt
   swift
   terraform
+  opentofu
   uv
   vcpkg
 )
@@ -585,13 +608,20 @@ begin
     end
   end
 
-  $source = Dependabot::Source.new(
+  source_options = {
     provider: $options[:provider],
     repo: $repo_name,
     directory: $options[:directory],
     branch: $options[:branch],
     commit: $options[:commit]
-  )
+  }
+
+  if $options[:ghes_hostname]
+    source_options[:hostname] = $options[:ghes_hostname]
+    source_options[:api_endpoint] = $options[:api_endpoint]
+  end
+
+  $source = Dependabot::Source.new(**source_options)
 
   $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 

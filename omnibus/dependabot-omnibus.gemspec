@@ -26,12 +26,14 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
 
+  spec.add_dependency "dependabot-bazel", Dependabot::VERSION
   spec.add_dependency "dependabot-bun", Dependabot::VERSION
   spec.add_dependency "dependabot-bundler", Dependabot::VERSION
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-composer", Dependabot::VERSION
   spec.add_dependency "dependabot-conda", Dependabot::VERSION
+  spec.add_dependency "dependabot-deno", Dependabot::VERSION
   spec.add_dependency "dependabot-devcontainers", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-docker_compose", Dependabot::VERSION
@@ -45,8 +47,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-hex", Dependabot::VERSION
   spec.add_dependency "dependabot-julia", Dependabot::VERSION
   spec.add_dependency "dependabot-maven", Dependabot::VERSION
+  spec.add_dependency "dependabot-nix", Dependabot::VERSION
   spec.add_dependency "dependabot-npm_and_yarn", Dependabot::VERSION
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
+  spec.add_dependency "dependabot-opentofu", Dependabot::VERSION
+  spec.add_dependency "dependabot-pre_commit", Dependabot::VERSION
   spec.add_dependency "dependabot-pub", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
   spec.add_dependency "dependabot-rust_toolchain", Dependabot::VERSION

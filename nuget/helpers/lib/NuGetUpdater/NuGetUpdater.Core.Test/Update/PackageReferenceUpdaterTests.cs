@@ -12,6 +12,36 @@ namespace NuGetUpdater.Core.Test.Update;
 public class PackageReferenceUpdaterTests
 {
     [Theory]
+    [InlineData("net9.0", "net9.0")]
+    [InlineData("net9.0-android", "net9.0")]
+    [InlineData("net9.0-android", "net9.0-android")]
+    public async Task GetPackageGraphForDependencies_DifferentTargetFrameworks(string projectTfm, string packageTfm)
+    {
+        // arrange
+        using var repoRoot = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />"));
+        var projectPath = Path.Combine(repoRoot.DirectoryPath, "project.csproj");
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Parent.Package", "1.0.0", packageTfm, [(null, [("Transitive.Package", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", packageTfm, [(null, [("Super.Transitive.Package", "3.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Super.Transitive.Package", "3.0.0", "net8.0"), // explicitly a different but compatible tfm
+        ], repoRoot.DirectoryPath);
+        var topLevelDependencies = new[]
+        {
+            new Dependency("Parent.Package", "1.0.0", DependencyType.PackageReference),
+        };
+
+        // act
+        var packageGraph = await PackageReferenceUpdater.GetPackageGraphForDependencies(repoRoot.DirectoryPath, projectPath, projectTfm, [.. topLevelDependencies], new TestLogger());
+
+        // assert
+        Assert.Equal("1.0.0", packageGraph.PackageVersions["Parent.Package"].ToString());
+        Assert.Equal("2.0.0", packageGraph.PackageVersions["Transitive.Package"].ToString());
+        Assert.Equal("3.0.0", packageGraph.PackageVersions["Super.Transitive.Package"].ToString());
+        Assert.Equal("Parent.Package", packageGraph.PackageParents["Transitive.Package"].Single());
+        Assert.Equal("Transitive.Package", packageGraph.PackageParents["Super.Transitive.Package"].Single());
+    }
+
+    [Theory]
     [MemberData(nameof(ComputeUpdateOperationsTestData))]
     public async Task ComputeUpdateOperations
     (

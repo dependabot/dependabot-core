@@ -7,24 +7,30 @@ on:  # yamllint disable-line rule:truthy
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+permissions: {}
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core'
     strategy:
       fail-fast: false
       matrix:
         suite:
+          - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
-          - { path: common, name: common, ecosystem: common}
+          - { path: common, name: common, ecosystem: common }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: conda, name: conda, ecosystem: conda }
+          - { path: deno, name: deno, ecosystem: deno }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
-          - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
           - { path: docker, name: docker, ecosystem: docker }
+          - { path: docker, name: docker_compose, ecosystem: docker-compose, build: docker_compose }
           - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
@@ -35,11 +41,14 @@ jobs:
           - { path: hex, name: hex, ecosystem: mix }
           - { path: julia, name: julia, ecosystem: julia }
           - { path: maven, name: maven, ecosystem: maven }
+          - { path: nix, name: nix, ecosystem: nix }
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: opentofu, name: opentofu, ecosystem: opentofu }
+          - { path: pre_commit, name: pre_commit, ecosystem: pre-commit }
           - { path: pub, name: pub, ecosystem: pub }
-          - { path: python, name: python_slow, ecosystem: pip }
           - { path: python, name: python, ecosystem: pip }
+          - { path: python, name: python_slow, ecosystem: pip }
           - { path: rust_toolchain, name: rust_toolchain, ecosystem: rust-toolchain }
           - { path: swift, name: swift, ecosystem: swift }
           - { path: terraform, name: terraform, ecosystem: terraform }
@@ -48,9 +57,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
+          persist-credentials: false
 
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: changes
@@ -60,7 +70,7 @@ jobs:
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
-        run: script/build ${{ matrix.suite.path }}
+        run: script/build ${{ matrix.suite.build || matrix.suite.path }}
 
       - name: Run ${{ matrix.suite.name }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
@@ -79,11 +89,14 @@ jobs:
       DOCKER_BUILDKIT: 1
     name: Updater
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
+          persist-credentials: false
       # using bundler as the test updater
       - name: Build ecosystem image
         run: script/build bundler
@@ -95,11 +108,15 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
         with:
           bundler-cache: true
       - run: ./bin/lint
@@ -109,11 +126,15 @@ jobs:
   rakefile_tests:
     name: Rakefile Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: changes
@@ -123,7 +144,7 @@ jobs:
 
       - name: Setup Ruby
         if: steps.changes.outputs.rakefile_tests == 'true'
-        uses: ruby/setup-ruby@829114fc20da43a41d27359103ec7a63020954d4 # v1.255.0
+        uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
         with:
           bundler-cache: true
 
@@ -135,31 +156,27 @@ jobs:
     env:
       DOCKER_BUILDKIT: 1
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Build ecosystem image
         run: script/build silent
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: 'silent/tests/go.mod'
 
-      - name: Download Dependabot CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
-          tar xzvf *.tar.gz >/dev/null 2>&1
-          ./dependabot --version
+      - name: Install Dependabot CLI
+        run: go install github.com/dependabot/cli/cmd/dependabot@latest
 
       - name: Run integration tests
-        env:
-          PATH: ${{ github.workspace }}:$PATH
         run: |
           cd silent/tests
           go test ./...

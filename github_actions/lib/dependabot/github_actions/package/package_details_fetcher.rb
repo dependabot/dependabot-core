@@ -8,6 +8,7 @@ require "sorbet-runtime"
 require "time"
 
 require "dependabot/errors"
+require "dependabot/git_tag_with_detail"
 require "dependabot/github_actions/helpers"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
@@ -16,6 +17,7 @@ require "dependabot/package/package_details"
 require "dependabot/package/package_release"
 require "dependabot/registry_client"
 require "dependabot/shared_helpers"
+require "dependabot/source"
 
 module Dependabot
   module GithubActions
@@ -125,6 +127,54 @@ module Dependabot
             end,
             T.nilable(T::Hash[Symbol, T.untyped])
           )
+        end
+
+        sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
+        def fetch_tag_and_release_date
+          allowed_version_tags = git_commit_checker.allowed_version_tags
+          allowed_tag_names = Set.new(allowed_version_tags.map(&:name))
+
+          # Use the shared GitCommitChecker#refs_for_tag_with_detail to fetch all tags
+          # with release dates in a single clone (instead of one clone per tag)
+          all_refs_with_detail = git_commit_checker.refs_for_tag_with_detail
+
+          result = all_refs_with_detail.select do |ref|
+            allowed_tag_names.include?(ref.tag)
+          end
+
+          # Log an error if we couldn't fetch any release dates
+          if result.empty? && allowed_version_tags.any?
+            Dependabot.logger.error("Error fetching tag and release date: unable to fetch for allowed tags")
+          end
+
+          result
+        rescue StandardError => e
+          Dependabot.logger.error("Error fetching tag and release date: #{e.message}")
+          []
+        end
+
+        sig do
+          returns(T::Array[T::Hash[Symbol, T.untyped]])
+        end
+        def allowed_version_tags_with_release_dates
+          allowed_version_tags_hashes = git_commit_checker.local_tags_for_allowed_versions
+          tag_to_release_date = T.let({}, T::Hash[String, T.nilable(String)])
+
+          # Build a map of tag names to release dates for quick lookup
+          fetch_tag_and_release_date.each do |git_tag_with_detail|
+            tag_to_release_date[git_tag_with_detail.tag] = git_tag_with_detail.release_date
+          end
+
+          # Combine version info with release dates and sort by version descending
+          result = allowed_version_tags_hashes.map do |tag_hash|
+            tag_name = tag_hash.fetch(:tag)
+            tag_hash.merge(
+              release_date: tag_to_release_date[tag_name]
+            )
+          end
+
+          # Sort by version descending (newest first)
+          result.sort_by { |tag_hash| tag_hash.fetch(:version) }.reverse
         end
 
         private

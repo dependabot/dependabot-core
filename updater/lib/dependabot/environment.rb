@@ -54,6 +54,11 @@ module Dependabot
       @github_actions ||= T.let(b, T.nilable(T::Boolean))
     end
 
+    sig { returns(T.nilable(String)) }
+    def self.updater_sha
+      @updater_sha ||= T.let(environment_variable("DEPENDABOT_UPDATER_SHA", nil), T.nilable(String))
+    end
+
     sig { returns(T::Boolean) }
     def self.deterministic_updates?
       b = T.cast(environment_variable("UPDATER_DETERMINISTIC", false), T::Boolean)

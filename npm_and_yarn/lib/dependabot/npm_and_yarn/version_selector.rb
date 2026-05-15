@@ -10,10 +10,6 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      # For limited testing, allowing only specific versions defined in engines in package.json
-      # such as "20.8.7", "8.1.2", "8.21.2",
-      NODE_ENGINE_SUPPORTED_REGEX = /^\d+(?:\.\d+)*$/
-
       # Sets up engine versions from the given manifest JSON.
       #
       # @param manifest_json [Hash] The manifest JSON containing version information.
@@ -35,26 +31,15 @@ module Dependabot
 
         versions = {}
 
-        if Dependabot::Experiments.enabled?(:enable_engine_version_detection)
-          engine_versions.each do |engine, value|
-            next unless engine.to_s.match(name)
+        engine_versions.each do |engine, value|
+          next unless engine.to_s == name
 
-            versions[name] = ConstraintHelper.find_highest_version_from_constraint_expression(
-              value, dependabot_versions
-            )
-          end
-        else
-          versions = engine_versions.select do |engine, value|
-            engine.to_s.match(name) && valid_extracted_version?(value)
-          end
+          versions[name] = ConstraintHelper.find_highest_version_from_constraint_expression(
+            value, dependabot_versions
+          )
         end
 
         versions
-      end
-
-      sig { params(version: String).returns(T::Boolean) }
-      def valid_extracted_version?(version)
-        version.match?(NODE_ENGINE_SUPPORTED_REGEX)
       end
     end
   end

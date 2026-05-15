@@ -78,10 +78,19 @@ function Update-Files {
     $script:operationExitCode = $process.ExitCode
 }
 
+function Update-Dependencies {
+    Get-Files
+    if ($script:operationExitCode -ne 0) {
+        return
+    }
+
+    Update-Files
+}
+
 try {
     Switch ($args[0]) {
         "fetch_files" { }
-        "update_files" { Get-Files; Update-Files }
+        "update_files" { Update-Dependencies }
         default { throw "unknown command: $args[0]" }
     }
     exit $operationExitCode

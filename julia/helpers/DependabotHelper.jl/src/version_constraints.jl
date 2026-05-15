@@ -11,7 +11,9 @@
 # - Hyphen specifiers: 1.2.3 - 4.5.6
 # - Comma-separated: 1.2, 2
 # - Exact versions: 1.2.3
-# - Wildcard: * (matches any version)
+#
+# Note: Missing compat entries (no constraint) means any version is acceptable.
+# There is no wildcard syntax in Julia compat specifications.
 #
 # Special handling for 0.x versions follows semver rules:
 # - ^0.2.3 means [0.2.3, 0.3.0)
@@ -23,7 +25,7 @@
 Convert various constraint formats to Julia-compatible version constraints using semver_spec.
 
 This function handles preprocessing for edge cases that semver_spec doesn't support directly,
-such as wildcard (*) constraints and double equals (==) operators.
+such as double equals (==) operators.
 
 For standard constraint formats (^, ~, >=, <, hyphen ranges, comma-separated),
 the original constraint is returned as-is since semver_spec handles them correctly.
@@ -31,9 +33,9 @@ the original constraint is returned as-is since semver_spec handles them correct
 function convert_to_julia_constraint(constraint::String)
     constraint = strip(constraint)
 
-    # Handle empty or wildcard constraints (semver_spec doesn't support these)
-    if isempty(constraint) || constraint == "*"
-        return "*"
+    # Handle empty constraint (not valid in Julia compat)
+    if isempty(constraint)
+        return constraint
     end
 
     # Handle double equals (convert to single equals for exact match)
@@ -84,21 +86,21 @@ Supports all official Julia version constraint formats:
 - Hyphen ranges: 1.2.3 - 4.5.6
 - Comma-separated: 1.2, 2
 - Exact versions: 1.2.3
-- Wildcard: * (any version)
 
 Returns a Dict with keys:
-- "type": "parsed", "wildcard", or "error"
+- "type": "parsed" or "error"
 - "constraint": original constraint string (for parsed)
-- "version_spec": "*" (for wildcard)
 - "error": error message (for error)
+
+Note: Empty constraints are not valid in Julia compat specifications.
 """
 function parse_julia_version_constraint(constraint::String)
     try
-        # Handle wildcard constraints (semver_spec doesn't support these)
-        if isempty(constraint) || constraint == "*"
+        # Handle empty constraint (not valid in Julia compat)
+        if isempty(constraint)
             return Dict(
-                "type" => "wildcard",
-                "version_spec" => "*"
+                "type" => "error",
+                "error" => "Empty constraint is not valid in Julia compat"
             )
         end
 
@@ -134,18 +136,16 @@ Args:
 Returns:
 - Boolean: true if version satisfies constraint, false otherwise
 
-Special handling:
-- "*" constraint always returns true
-- Invalid versions or constraints return false
+Note: Invalid versions or constraints return false. Empty constraints are not valid.
 """
 function check_version_satisfies_constraint(version::String, constraint::String)
     try
         # Parse the version
         parsed_version = Pkg.Types.VersionNumber(version)
 
-        # Handle wildcard constraint
-        if constraint == "*"
-            return true
+        # Handle empty constraint (not valid in Julia compat)
+        if isempty(constraint)
+            return false
         end
 
         # Use Julia's semver_spec to parse the constraint
@@ -171,10 +171,9 @@ example version numbers that satisfy the constraint. This helps understand
 what versions would be considered compatible.
 
 Returns a Dict with keys:
-- "type": "constraint", "wildcard", or "error"
+- "type": "constraint" or "error"
 - "original": original constraint string
 - "ranges": array of example version strings that match
-- "description": human-readable description (for wildcard)
 - "error": error message (for error)
 
 Note: This generates example versions for demonstration purposes.
@@ -182,11 +181,11 @@ In practice, you would query actual available package versions.
 """
 function expand_version_constraint(constraint::String)
     try
-        # Handle wildcard constraints
-        if isempty(constraint) || constraint == "*"
+        # Handle empty constraint (not valid in Julia compat)
+        if isempty(constraint)
             return Dict(
-                "type" => "wildcard",
-                "description" => "Matches any version"
+                "type" => "error",
+                "error" => "Empty constraint is not valid in Julia compat"
             )
         end
 

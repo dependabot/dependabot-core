@@ -11,13 +11,14 @@ module Dependabot
     class PackageManager < Ecosystem::VersionManager
       extend T::Sig
 
-      PACKAGE_MANAGER_COMMAND = T.let("julia", String)
+      ECOSYSTEM = T.let("julia", String)
+      PACKAGE_MANAGER = T.let("julia", String)
       # Julia versions as of June 2025:
       # - 1.10 is the LTS (Long Term Support) version
-      # - 1.11 is the current stable version
+      # - 1.12 is the current stable version
       # Update these constants when new LTS or major versions are released
       MINIMUM_VERSION = T.let("1.10", String) # LTS version
-      CURRENT_VERSION = T.let("1.11", String) # Current stable version
+      CURRENT_VERSION = T.let("1.12", String) # Current stable version
 
       sig { returns(T.nilable(String)) }
       def self.detected_version

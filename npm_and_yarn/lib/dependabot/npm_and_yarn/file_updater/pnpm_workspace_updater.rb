@@ -10,7 +10,7 @@ class DependencyRequirement < T::Struct
   const :file, String
   const :requirement, String
   const :groups, T::Array[String]
-  const :source, T.nilable(String)
+  const :source, T.nilable(T::Hash[Symbol, T.untyped])
 end
 
 module Dependabot

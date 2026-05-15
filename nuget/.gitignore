@@ -6,3 +6,4 @@
 Properties/
 bin/
 obj/
+*.lscache

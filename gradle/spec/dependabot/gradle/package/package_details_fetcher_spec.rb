@@ -45,8 +45,9 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }
 
+  let(:metadata_base_url) { "https://repo.maven.apache.org/maven2" }
   let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
+    "#{metadata_base_url}/" \
       "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
@@ -83,6 +84,72 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
       end
     end
 
+    context "with a replaces-base credential" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
+    context "with multiple private registry credentials" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) do
+        "https://mirror.example.com/maven/" \
+          "com/google/guava/guava/maven-metadata.xml"
+      end
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://mirror.example.com/maven/",
+              "username" => "hello",
+              "password" => "world"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, mirror_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
     context "with a plugin" do
       let(:dependency_requirements) do
         [{
@@ -106,11 +173,24 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
+      end
+
+      it "populates release_details for the latest version" do
+        release_info = packagedetailsfetcher.send(:release_details)
+        expect(release_info).to be_a(Hash)
+        expect(release_info).to have_key("2.1.4.RELEASE")
+        expect(release_info["2.1.4.RELEASE"][:release_date]).to eq(Time.utc(2019, 4, 4, 5, 30, 33))
       end
 
       describe "the first version" do
@@ -134,6 +214,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
+          is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
         end
       end
     end
@@ -161,11 +246,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
           "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
+          "org.jetbrains.kotlin.jvm.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
       end
 
       describe "the first version" do
@@ -189,6 +280,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
+          is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
         end
       end
     end
@@ -286,6 +382,46 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
           its([:source_url]) do
             is_expected.to eq("https://jcenter.bintray.com")
+          end
+        end
+      end
+
+      context "when the details come from gradle distributions" do
+        before do
+          stub_request(:get, "https://services.gradle.org/versions/all")
+            .to_return(
+              status: 200,
+              body: fixture("gradle_distributions_metadata", "versions_all.json")
+            )
+        end
+
+        describe "the last version" do
+          subject { versions.last }
+
+          let(:dependency_name) { "gradle-distribution" }
+          let(:dependency_version) { "8.5-rc-3" }
+          let(:dependency_requirements) do
+            [{
+              requirement: "8.5-rc-3",
+              file: "gradle/wrapper/gradle-wrapper.properties",
+              source: {
+                type: "gradle-distribution",
+                url: "https://services.gradle.org/distributions/gradle-8.5-rc-3-bin.zip"
+              },
+              groups: []
+            }]
+          end
+
+          its([:version]) do
+            is_expected.to eq(version_class.new("9.0.0"))
+          end
+
+          its([:released_at]) do
+            is_expected.to eq(Time.new(2025, 7, 31, 16, 35, 12))
+          end
+
+          its([:source_url]) do
+            is_expected.to eq("https://services.gradle.org")
           end
         end
       end

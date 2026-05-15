@@ -1,0 +1,9 @@
+name: test-pin-operator
+channels:
+  - defaults
+dependencies:
+  - python=3.13
+  - conda==25.5.1
+  - setuptools
+  - numpy==1.26.0
+  - pandas>=2.0.0

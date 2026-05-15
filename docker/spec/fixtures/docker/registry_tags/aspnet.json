@@ -1,0 +1,11 @@
+{
+  "name": "dotnet/framework/aspnet",
+  "tags": [
+    "4.8-windowsservercore-ltsc2022",
+    "4.8-20250909-windowsservercore-ltsc2022",
+    "4.8.1-windowsservercore-ltsc2022",
+    "4.8.1-20251014-windowsservercore-ltsc2022",
+    "4.8.1-windowsservercore-ltsc2019",
+    "4.8-windowsservercore-ltsc2019"
+  ]
+}

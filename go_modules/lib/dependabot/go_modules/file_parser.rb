@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
+require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/path_converter"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
@@ -20,6 +21,9 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      # NOTE: repo_contents_path is typed as T.nilable(String) to maintain
+      # compatibility with the base FileParser class signature. However,
+      # we validate it's not nil at runtime since it's always required in production.
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
@@ -40,6 +44,8 @@ module Dependabot
       )
         super
 
+        raise ArgumentError, "repo_contents_path is required" if repo_contents_path.nil?
+
         set_go_environment_variables
       end
 
@@ -47,11 +53,13 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |hsh|
-          unless skip_dependency?(hsh) # rubocop:disable Style/Next
+        if workspace?
+          parse_workspace_dependencies(dependency_set)
+        else
+          required_packages.each do |hsh|
+            next if skip_dependency?(hsh)
 
-            dep = dependency_from_details(hsh)
-            dependency_set << dep
+            dependency_set << dependency_from_details(hsh)
           end
         end
 
@@ -75,16 +83,16 @@ module Dependabot
       # Utility method to allow collaborators to check other go commands inside the parsed project's context
       sig { params(command: String).returns(String) }
       def run_in_parsed_context(command)
-        SharedHelpers.in_a_temporary_directory do |path|
-          # Create a fake empty module for each local module so that
-          # `go mod edit` works, even if some modules have been `replace`d with
-          # a local module that we don't have access to.
+        SharedHelpers.in_a_temporary_repo_directory(T.must(source&.directory), repo_contents_path) do |path|
+          # Create a fake empty module for local modules that are not inside the repository.
+          # This allows us to run go commands that require all modules to be present.
           local_replacements.each do |_, stub_path|
             FileUtils.mkdir_p(stub_path)
             FileUtils.touch(File.join(stub_path, "go.mod"))
           end
 
           File.write("go.mod", go_mod_content)
+
           stdout, stderr, status = Open3.capture3(command)
           handle_parser_error(path, stderr) unless status.success?
 
@@ -185,9 +193,98 @@ module Dependabot
         @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def all_go_mods
+        @all_go_mods ||= T.let(
+          if go_work
+            workspace_mod_names = GoWorkParser.use_paths(T.must(T.must(go_work).content)).map do |path|
+              path == "." ? "go.mod" : "#{path}/go.mod"
+            end
+            dependency_files.select { |f| workspace_mod_names.include?(f.name) }
+          else
+            dependency_files.select { |f| f.name.end_with?("go.mod") }
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
+      def parse_workspace_dependencies(dependency_set)
+        all_go_mods.each do |mod_file|
+          parse_single_module(mod_file).each do |dep|
+            dependency_set << dep
+          end
+        end
+      end
+
+      sig { params(mod_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_single_module(mod_file)
+        SharedHelpers.in_a_temporary_directory do |path|
+          File.write("go.mod", mod_file.content)
+
+          command = "go mod edit -json"
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr, file_path: mod_file.path) unless status.success?
+
+          parsed = JSON.parse(stdout)
+          packages = parsed["Require"] || []
+
+          packages.filter_map do |hsh|
+            next if skip_dependency_in_manifest?(hsh, parsed)
+
+            source = { type: "default", source: hsh["Path"] }
+            version = hsh["Version"]&.sub(/^v?/, "")
+
+            reqs = [{
+              requirement: hsh["Version"],
+              file: mod_file.name,
+              source: source,
+              groups: []
+            }]
+
+            Dependency.new(
+              name: hsh["Path"],
+              version: version,
+              requirements: hsh["Indirect"] ? [] : reqs,
+              package_manager: "go_modules"
+            )
+          end
+        end
+      end
+
+      sig { params(dep: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def skip_dependency_in_manifest?(dep, mod_manifest)
+        return true if dependency_is_replaced_in?(dep, mod_manifest)
+
+        path_uri = URI.parse("https://#{dep['Path']}")
+        !path_uri.host&.include?(".")
+      rescue URI::InvalidURIError
+        false
+      end
+
+      sig { params(details: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def dependency_is_replaced_in?(details, mod_manifest)
+        return false unless mod_manifest["Replace"]
+
+        mod_manifest["Replace"].any? do |replace|
+          replace["Old"]["Path"] == details["Path"] &&
+            (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
+        end
+      end
+
       sig { override.void }
       def check_required_files
-        raise "No go.mod!" unless go_mod
+        raise "No go.mod or go.work!" unless go_mod || go_work
       end
 
       sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
@@ -227,7 +324,7 @@ module Dependabot
           # means we don't need to worry about references to parent
           # directories, etc.
           T.let(
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod&.directory),
+            ReplaceStubber.new(T.must(repo_contents_path)).stub_paths(manifest, go_mod&.directory),
             T.nilable(T::Hash[String, String])
           )
       end
@@ -259,10 +356,11 @@ module Dependabot
         end
       end
 
-      sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
-      def handle_parser_error(path, stderr)
+      sig { params(path: T.any(Pathname, String), stderr: String, file_path: T.nilable(String)).returns(T.noreturn) }
+      def handle_parser_error(path, stderr, file_path: nil)
         msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
+        resolved_path = file_path || go_mod&.path || go_work&.path || "go.mod"
+        raise Dependabot::DependencyFileNotParseable.new(resolved_path, msg)
       end
 
       sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }

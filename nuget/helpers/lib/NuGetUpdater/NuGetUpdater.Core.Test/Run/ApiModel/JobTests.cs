@@ -4,6 +4,7 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -37,7 +38,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             false,
         ];
@@ -56,7 +57,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             true,
         ];
@@ -74,7 +75,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -92,7 +93,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             false,
         ];
@@ -112,7 +113,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             true,
         ];
@@ -130,7 +131,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -150,7 +151,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -170,7 +171,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -190,7 +191,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -207,7 +208,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -224,7 +225,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -241,7 +242,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -258,7 +259,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -275,7 +276,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -293,7 +294,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -312,7 +313,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -377,6 +378,44 @@ public class JobTests
             // expectedResult
             true,
         ];
+    }
+
+    [Fact]
+    public async Task ExpandJobDirectories()
+    {
+        // arrange
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            // file names are irrelevant, but make this function easy to use
+            ("src/client/android/ui/file.txt", "contents irrelevant"),
+            ("src/client/ios/ui/file.txt", "contents irrelevant"),
+            ("src/legacy/winphone/ui/file.txt", "contents irrelevant"),
+            ("src/server/linux/cloud/file.txt", "contents irrelevant"),
+            ("src/server/windows/file.txt", "contents irrelevant")
+        );
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directories = [
+                    "src/server/linux", // single value
+                    "src/client/*/ui", // wildcard
+                ]
+            }
+        };
+
+        // act
+        var actualDirectories = job.GetAllDirectories(tempDir.DirectoryPath);
+
+        // assert - directories were expanded and original order maintained
+        var expectedDirectories = new[]
+        {
+            "/src/server/linux",
+            "/src/client/android/ui",
+            "/src/client/ios/ui"
+        }.ToImmutableArray();
+        AssertEx.Equal(expectedDirectories, actualDirectories);
     }
 
     private static Job CreateJob(

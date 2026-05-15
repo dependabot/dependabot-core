@@ -81,7 +81,7 @@ module Dependabot
           end
           Dependabot.logger.info(
             "Allowed version tags after filtering versions in cooldown:
-                #{versions.map(&:to_s).join(', ')}"
+                #{versions.join(', ')}"
           )
           versions
         rescue StandardError => e
@@ -107,7 +107,7 @@ module Dependabot
           end
           Dependabot.logger.info(
             "filter_versions_in_cooldown_period_from_module::
-              Allowed version tags after filtering versions in cooldown:#{versions.map(&:to_s).join(', ')}"
+              Allowed version tags after filtering versions in cooldown:#{versions.join(', ')}"
           )
           versions
         rescue StandardError => e

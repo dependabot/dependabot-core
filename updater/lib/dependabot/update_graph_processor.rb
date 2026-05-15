@@ -52,17 +52,9 @@ module Dependabot
       branch = job.source.branch || default_branch
 
       T.must(job.source.directories).each do |directory|
-        directory_source = create_source_for(directory)
-        directory_dependency_files = dependency_files_for(directory)
-
-        submission = if directory_dependency_files.empty?
-                       empty_submission(branch, directory_source)
-                     else
-                       create_submission(branch, directory_source, directory_dependency_files)
-                     end
-
-        Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
-        service.create_dependency_submission(dependency_submission: submission)
+        # Each directory is processed with its own error handling so one failure will not
+        # block the overall job.
+        process_directory(branch:, directory:)
       end
     end
 
@@ -83,6 +75,48 @@ module Dependabot
     sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
 
+    sig { params(branch: String, directory: String).void }
+    def process_directory(branch:, directory:)
+      directory_source = create_source_for(directory)
+      directory_dependency_files = dependency_files_for(directory)
+
+      submission = if directory_dependency_files.empty?
+                     empty_submission(
+                       branch,
+                       directory_source,
+                       GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
+                       GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS
+                     )
+                   else
+                     create_submission(branch, directory_source, directory_dependency_files)
+                   end
+
+      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
+      service.create_dependency_submission(dependency_submission: submission)
+    rescue Dependabot::ApiError, Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
+      # If the submission API is down, we should raise this as a specific error type for visibility.
+      error_handler.handle_job_error(
+        error: Dependabot::SnapshotsUnavailableGraphError.new(
+          "Unable to submit data to the Dependency Snapshot API"
+        )
+      )
+    rescue Dependabot::DependabotError => e
+      error_handler.handle_job_error(error: e)
+
+      # If we are not running in Actions, there's nothing more to do.
+      return unless Dependabot::Environment.github_actions?
+
+      # Send an empty submission so the snapshot service has a record that the job id has been completed.
+      error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
+      empty_submission = empty_submission(
+        branch,
+        T.must(directory_source),
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        error_details.fetch(:"error-type")
+      )
+      service.create_dependency_submission(dependency_submission: empty_submission)
+    end
+
     sig { params(directory: String).returns(Dependabot::Source) }
     def create_source_for(directory)
       job.source.dup.tap do |s|
@@ -95,15 +129,24 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
-    sig { params(branch: String, source: Dependabot::Source).returns(GithubApi::DependencySubmission) }
-    def empty_submission(branch, source)
+    sig do
+      params(
+        branch: String,
+        source: Dependabot::Source,
+        status: GithubApi::DependencySubmission::SnapshotStatus,
+        reason: T.nilable(String)
+      ).returns(GithubApi::DependencySubmission)
+    end
+    def empty_submission(branch, source, status, reason)
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
         branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
-        resolved_dependencies: {}
+        resolved_dependencies: {},
+        status: status,
+        reason: reason
       )
     end
 
@@ -125,7 +168,15 @@ module Dependabot
       )
 
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
-      grapher.prepare!
+
+      # Build resolved dependencies first so subdependency fetching can set the error flag if it fails.
+      resolved = grapher.resolved_dependencies
+
+      if grapher.errored_fetching_subdependencies
+        handle_subdependency_error(grapher.subdependency_error, source)
+        status = GithubApi::DependencySubmission::SnapshotStatus::DEGRADED
+        reason = GithubApi::DependencySubmission::DEGRADED_REASON_SUBDEPENDENCY_ERR
+      end
 
       GithubApi::DependencySubmission.new(
         job_id: job.id.to_s,
@@ -133,8 +184,42 @@ module Dependabot
         sha: base_commit_sha,
         package_manager: job.package_manager,
         manifest_file: grapher.relevant_dependency_file,
-        resolved_dependencies: grapher.resolved_dependencies
+        resolved_dependencies: resolved,
+        status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
+        reason: reason || nil
       )
+    end
+
+    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
+    def handle_subdependency_error(error, source)
+      # We record a warning instead of an error because the graph submission can still proceed
+      # with partial data - only the subdependency relationships will be missing.
+      error_message = if error.is_a?(Dependabot::DependabotError)
+                        error.message
+                      else
+                        "Failed to fetch subdependencies in directory #{source.directory}"
+                      end
+
+      Dependabot.logger.warn("Dependency graph incomplete: #{error_message}")
+
+      service.record_update_job_warning(
+        warn_type: "dependency_graph_incomplete",
+        warn_title: "dependency graph incomplete",
+        warn_description: "The dependency graph may be incomplete. #{error_message}"
+      )
+    end
+
+    sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
+    def record_subdependency_error(error, source)
+      if error.is_a?(Dependabot::DependabotError)
+        error_handler.handle_job_error(error: error)
+      else
+        error_handler.handle_job_error(
+          error: Dependabot::DependencyFileNotResolvable.new(
+            "Failed to fetch subdependencies in directory #{source.directory}"
+          )
+        )
+      end
     end
 
     sig { returns(String) }

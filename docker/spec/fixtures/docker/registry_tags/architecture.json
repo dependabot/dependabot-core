@@ -1,0 +1,11 @@
+{
+  "name": "nginx",
+  "tags": [
+    "1.25.3-alpine-arm64",
+    "1.25.3-alpine-amd64",
+    "1.25.3-alpine",
+    "1.25.4-alpine-arm64",
+    "1.25.4-alpine-amd64",
+    "1.25.4-alpine"
+  ]
+}

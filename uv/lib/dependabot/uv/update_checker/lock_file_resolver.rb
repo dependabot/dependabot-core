@@ -3,9 +3,11 @@
 
 require "sorbet-runtime"
 
+require "dependabot/package/release_cooldown_options"
 require "dependabot/uv/version"
 require "dependabot/uv/requirement"
 require "dependabot/uv/update_checker"
+require "dependabot/uv/update_checker/latest_version_finder"
 
 module Dependabot
   module Uv
@@ -18,14 +20,28 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            ignored_versions: T::Array[String],
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path: nil)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          repo_contents_path: nil,
+          security_advisories: [],
+          ignored_versions: [],
+          update_cooldown: nil
+        )
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
           @repo_contents_path = repo_contents_path
+          @security_advisories = security_advisories
+          @ignored_versions = ignored_versions
+          @update_cooldown = update_cooldown
         end
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Uv::Version)) }
@@ -50,7 +66,12 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Uv::Version)) }
         def lowest_resolvable_security_fix_version
-          nil
+          # Delegate to LatestVersionFinder which handles security advisory filtering
+          fix_version = latest_version_finder.lowest_security_fix_version
+          return nil if fix_version.nil?
+
+          # Return the fix version cast to Uv::Version
+          Uv::Version.new(fix_version.to_s)
         end
 
         private
@@ -66,6 +87,31 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
+
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        attr_reader :security_advisories
+
+        sig { returns(T::Array[String]) }
+        attr_reader :ignored_versions
+
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :update_cooldown
+
+        sig { returns(LatestVersionFinder) }
+        def latest_version_finder
+          @latest_version_finder ||= T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories,
+              cooldown_options: update_cooldown,
+              raise_on_ignored: false
+            ),
+            T.nilable(LatestVersionFinder)
+          )
+        end
       end
     end
   end

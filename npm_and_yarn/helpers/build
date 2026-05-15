@@ -14,8 +14,10 @@ helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/test" \
-  "$helpers_dir/run.js" \
-  "$helpers_dir/.eslintrc" \
+  "$helpers_dir/run.ts" \
+  "$helpers_dir/tsconfig.json" \
+  "$helpers_dir/tsconfig.build.json" \
+  "$helpers_dir/eslint.config.js" \
   "$helpers_dir/jest.config.js" \
   "$helpers_dir/package.json" \
   "$helpers_dir/package-lock.json" \
@@ -23,4 +25,5 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-npm ci --no-audit --fetch-timeout=600000 --fetch-retries=5 --no-dry-run --no-ignore-scripts
+npm ci --fetch-timeout=600000 --fetch-retries=5
+npm run build

@@ -1464,6 +1464,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       it "returns the latest version" do
+        # guard-bundler requires bundler < 3, incompatible with Bundler 4+
+        skip "Requires Bundler 2.x (guard-bundler constraint: < 3)" if PackageManagerHelper.helper_running_bundler_v4?
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end
@@ -1571,8 +1573,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           }]
         end
 
-        removed = "vendor/cache/dependabot-test-ruby-package-81073f9462f2"
-        added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
+        let(:removed) { "vendor/cache/dependabot-test-ruby-package-81073f9462f2" }
+        let(:added) { "vendor/cache/dependabot-test-ruby-package-1c6331732c41" }
 
         it "vendors the new dependency" do
           expect(updater.updated_dependency_files.map(&:name))

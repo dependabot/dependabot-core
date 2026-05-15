@@ -266,6 +266,72 @@ RSpec.describe Dependabot::DependencyChange do
     end
   end
 
+  describe "#humanized" do
+    it "includes from and to versions when previous version exists" do
+      expect(dependency_change.humanized).to eq("business ( from 1.7.0 to 1.8.0 )")
+    end
+
+    context "when previous_version is nil" do
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "django-cors-headers",
+            package_manager: "pip",
+            version: "4.6.0",
+            previous_version: nil,
+            requirements: [
+              { file: "requirements.txt", requirement: "==4.6.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "requirements.txt", requirement: nil, groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "omits the from version" do
+        expect(dependency_change.humanized).to eq("django-cors-headers ( to 4.6.0 )")
+      end
+    end
+
+    context "with multiple dependencies" do
+      let(:updated_dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          ),
+          Dependabot::Dependency.new(
+            name: "redis",
+            package_manager: "pip",
+            version: "5.2.0",
+            previous_version: nil,
+            requirements: [
+              { file: "requirements.txt", requirement: "==5.2.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "requirements.txt", requirement: nil, groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "formats each dependency correctly" do
+        expect(dependency_change.humanized).to eq(
+          "business ( from 1.7.0 to 1.8.0 ), redis ( to 5.2.0 )"
+        )
+      end
+    end
+  end
+
   describe "#grouped_update?" do
     it "is false by default" do
       expect(dependency_change.grouped_update?).to be false

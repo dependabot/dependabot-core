@@ -1,0 +1,13 @@
+{
+  "name": ".bazelrc",
+  "path": ".bazelrc",
+  "sha": "def456",
+  "size": 567,
+  "url": "https://api.github.com/repos/example/repo/contents/.bazelrc?ref=sha",
+  "html_url": "https://github.com/example/repo/blob/sha/.bazelrc",
+  "git_url": "https://api.github.com/repos/example/repo/git/blobs/def456",
+  "download_url": "https://raw.githubusercontent.com/example/repo/sha/.bazelrc",
+  "type": "file",
+  "content": "IyBCYXplbCBjb25maWd1cmF0aW9uIGZpbGUKYnVpbGQgLS1qYXZhX3J1bnRp\nbWVfdmVyc2lvbj1yZW1vdGVqZGtfMTEKCiMgQ3VzdG9tIGRvd25sb2FkZXIg\nY29uZmlndXJhdGlvbiBmb3IgbWlycm9ycwpidWlsZCAtLWRvd25sb2FkZXJf\nY29uZmlnPWRvd25sb2FkZXIuY2ZnCgojIE90aGVyIGJ1aWxkIG9wdGlvbnMK\ndGVzdCAtLXRlc3Rfb3V0cHV0PWFsbAo=\n",
+  "encoding": "base64"
+}

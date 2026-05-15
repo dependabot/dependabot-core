@@ -64,7 +64,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
         )
       end
 
-      # Phase 3: Update checking now works with delegation to Python ecosystem
       it "can detect updates when newer version is available" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
       end
@@ -90,7 +89,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
         allow(latest_version_finder).to receive(:latest_version).and_return(Dependabot::Conda::Version.new("2.28.2"))
       end
 
-      # Phase 3: Update checking now works with delegation to Python ecosystem
       it "can detect updates when newer version is available" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
       end
@@ -137,6 +135,48 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
       it "delegates to latest_version_finder" do
         expect(checker.latest_version).to eq(mock_latest_version)
         expect(latest_version_finder).to have_received(:latest_version)
+      end
+    end
+
+    context "with a dependency without version constraints" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "numpy",
+          version: nil,
+          package_manager: "conda",
+          requirements: [{
+            requirement: nil,
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "returns nil without calling latest_version_finder (optimization)" do
+        expect(checker.latest_version).to be_nil
+        expect(latest_version_finder).not_to have_received(:latest_version)
+      end
+    end
+
+    context "with a dependency with wildcard constraint" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "numpy",
+          version: nil,
+          package_manager: "conda",
+          requirements: [{
+            requirement: "*",
+            file: "environment.yml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "returns nil without calling latest_version_finder (optimization)" do
+        expect(checker.latest_version).to be_nil
+        expect(latest_version_finder).not_to have_received(:latest_version)
       end
     end
   end
@@ -442,184 +482,6 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
       it "returns existing requirements when target_version is nil" do
         result = checker.updated_requirements
         expect(result).to eq(dependency.requirements)
-      end
-    end
-  end
-
-  describe "#update_requirement_string" do
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "numpy",
-        version: "1.21.0",
-        package_manager: "conda",
-        requirements: [{
-          requirement: original_requirement,
-          file: "environment.yml",
-          source: nil,
-          groups: ["dependencies"]
-        }]
-      )
-    end
-
-    let(:target_version) { "1.26.4" }
-
-    context "with exact match requirement" do
-      let(:original_requirement) { "=1.21.0" }
-
-      it "updates to new exact match" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-
-    context "with equality requirement" do
-      let(:original_requirement) { "==1.21.0" }
-
-      it "updates to new equality" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("==1.26.4")
-      end
-    end
-
-    context "with greater than or equal requirement" do
-      let(:original_requirement) { ">=1.21.0" }
-
-      it "updates minimum version" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq(">=1.26.4")
-      end
-    end
-
-    context "with greater than requirement" do
-      let(:original_requirement) { ">1.21.0" }
-
-      it "updates minimum version" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq(">1.26.4")
-      end
-    end
-
-    context "with tilde and equals requirement" do
-      let(:original_requirement) { "~=1.21.0" }
-
-      it "updates to new tilde equals requirement" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("~=1.26.4")
-      end
-    end
-
-    context "with less than or equal requirement" do
-      let(:original_requirement) { "<=1.21.0" }
-
-      it "keeps the original requirement unchanged" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("<=1.21.0")
-      end
-    end
-
-    context "with less than requirement" do
-      let(:original_requirement) { "<1.21.0" }
-
-      it "keeps the original requirement unchanged" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("<1.21.0")
-      end
-    end
-
-    context "with not equal requirement" do
-      let(:original_requirement) { "!=1.21.0" }
-
-      it "keeps the original requirement unchanged" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("!=1.21.0")
-      end
-    end
-
-    context "with unknown requirement format" do
-      let(:original_requirement) { "someunknownformat" }
-
-      it "defaults to exact match with new version" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-
-    context "with star pattern" do
-      let(:original_requirement) { "1.21.*" }
-
-      it "defaults to exact match with new version" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-
-    context "with tilde requirement (conda style)" do
-      let(:original_requirement) { "~1.21.0" }
-
-      it "defaults to exact match with new version" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-
-    context "with compatible requirement" do
-      let(:original_requirement) { "^1.21.0" }
-
-      it "defaults to exact match with new version" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-
-    context "with whitespace in exact requirement" do
-      let(:original_requirement) { "= 1.21.0" }
-
-      it "defaults to exact match with new version (whitespace not preserved)" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-
-    context "with whitespace in equality requirement" do
-      let(:original_requirement) { "== 1.21.0" }
-
-      it "defaults to exact match with new version (whitespace not preserved)" do
-        result = checker.send(:update_requirement_string, original_requirement, target_version)
-        expect(result).to eq("=1.26.4")
-      end
-    end
-  end
-
-  describe "#python_package?" do
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "numpy",
-        version: "1.21.0",
-        package_manager: "conda",
-        requirements: [{
-          requirement: ">=1.0.0",
-          file: "environment.yml",
-          source: nil,
-          groups: ["dependencies"]
-        }]
-      )
-    end
-
-    context "when dependency name is in Python package list" do
-      let(:dependency_name) { "requests" }
-
-      it "returns true" do
-        result = checker.send(:python_package?, dependency_name)
-        expect(result).to be(true)
-      end
-    end
-
-    context "when dependency name is not in Python package list" do
-      let(:dependency_name) { "cmake" }
-
-      it "returns false" do
-        result = checker.send(:python_package?, dependency_name)
-        expect(result).to be(false)
       end
     end
   end

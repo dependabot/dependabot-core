@@ -4,6 +4,7 @@
 require "base64"
 require "sorbet-runtime"
 
+require "dependabot/fetched_files"
 require "dependabot/file_parsers"
 require "dependabot/notices_helpers"
 
@@ -122,6 +123,10 @@ module Dependabot
     def mark_group_handled(group, excluding_dependencies = {})
       Dependabot.logger.info("Marking group '#{group.name}' as handled.")
 
+      # When grouping by dependency name, we need to mark dependencies as handled
+      # across ALL directories to prevent duplicate individual PRs
+      group_by_name = group.group_by_dependency_name?
+
       directories.each do |directory|
         @current_directory = directory
 
@@ -130,7 +135,8 @@ module Dependabot
           dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
 
           dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
-            !dep["directory"] || dep["directory"] == directory
+            # When grouping by name, include deps from all directories; otherwise filter by current directory
+            group_by_name || !dep["directory"] || dep["directory"] == directory
           end
 
           # also add dependencies that might be in the group, as a rebase would add them;
@@ -192,7 +198,7 @@ module Dependabot
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
     end
 
-    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[String]) }
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, T.untyped]]) }
     def dependencies_in_existing_pr_for_group(group)
       existing = job.existing_group_pull_requests.find do |pr|
         pr["dependency-group-name"] == group.name

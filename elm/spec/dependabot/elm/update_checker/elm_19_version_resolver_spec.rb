@@ -16,10 +16,12 @@ RSpec.describe namespace::Elm19LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
+      ignored_versions: ignored_versions,
       cooldown_options: update_cooldown
     )
   end
   let(:update_cooldown) { nil }
+  let(:ignored_versions) { [] }
   let(:unlock_requirement) { :own }
   let(:dependency_files) { [elm_json] }
   let(:elm_json) do
@@ -70,6 +72,41 @@ RSpec.describe namespace::Elm19LatestVersionFinder do
           let(:unlock_requirement) { :all }
 
           it { is_expected.to eq(elm_version("1.1.0")) }
+        end
+
+        context "when the resolved version is ignored" do
+          let(:unlock_requirement) { :own }
+          let(:ignored_versions) { ["> 1.0.0"] }
+
+          it "returns the current version" do
+            expect(latest_resolvable_version).to eq(elm_version("1.0.0"))
+          end
+        end
+
+        context "when a different version is ignored" do
+          let(:unlock_requirement) { :own }
+          let(:ignored_versions) { ["> 2.0.0"] }
+
+          it "returns the resolved version" do
+            expect(latest_resolvable_version).to eq(elm_version("1.1.0"))
+          end
+        end
+
+        context "when the resolved version is ignored but a lower version is allowed" do
+          let(:unlock_requirement) { :own }
+          let(:ignored_versions) { ["> 1.0.5"] }
+
+          before do
+            stub_request(:get, "https://package.elm-lang.org/packages/elm/parser/releases.json")
+              .to_return(
+                status: 200,
+                body: '{"1.0.0": 1534772073, "1.0.5": 1535000000, "1.1.0": 1535657346}'
+              )
+          end
+
+          it "returns the highest non-ignored version" do
+            expect(latest_resolvable_version).to eq(elm_version("1.0.5"))
+          end
         end
       end
 

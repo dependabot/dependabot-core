@@ -54,10 +54,11 @@ job:
     api-endpoint: http://127.0.0.1/api/v3
     repo: dependabot/smoke-tests
   existing-pull-requests:
-    - - dependency-name: dependency-a
-        dependency-version: 1.2.5
-        directory: "/"
-        pr-number: 123
+    - pr-number: 123
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.5
+          directory: "/"
 
 -- input-rebase-old.yml --
 job:
@@ -72,9 +73,10 @@ job:
     - dependency-a
   updating-a-pull-request: true
   existing-pull-requests:
-    - - dependency-name: dependency-a
-        dependency-version: 1.2.5
-        pr-number: 123
+    - pr-number: 123
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.5
 
 -- input-rebase-new.yml --
 job:
@@ -89,7 +91,9 @@ job:
     - dependency-a
   updating-a-pull-request: true
   existing-pull-requests:
-    - - dependency-name: dependency-a
-        dependency-version: 1.2.5
-        directory: "/"
-        pr-number: 123
+    - pr-number: 123
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.5
+          directory: "/"
+

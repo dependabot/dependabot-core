@@ -6,7 +6,12 @@ require "logger"
 require "rspec/sorbet"
 require "vcr"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "yaml"
+
+# Load common spec helpers for build_tmp_repo
+common_dir = Gem::Specification.find_by_name("dependabot-common").gem_dir
+require "#{common_dir}/spec/spec_helper.rb"
 
 # TODO: Stop rescuing StandardError in Dependabot::BaseCommand#run
 #

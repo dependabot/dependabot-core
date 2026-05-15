@@ -69,15 +69,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   let(:package_json) { { "packageManager" => "npm@7" } }
   let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_shared_helpers_command_timeout)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_engine_version_detection)
-      .and_return(true)
-  end
-
   describe "#package_manager" do
     context "when npm lockfile exists" do
       it "returns an NpmPackageManager instance" do
@@ -141,6 +132,35 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with engines field for package manager with '^' constraint and missing minor/patch version" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "npm" => "^10" } } }
+
+      it "returns a NpmPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("10")
+      end
+    end
+
+    context "with engines field for npm >=11.0.0" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "npm" => ">=11.0.0" } } }
+
+      it "returns an NpmPackageManager instance from engines field" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+        expect(helper.package_manager.detected_version).to eq("11")
+      end
+
+      it "supports npm version 11" do
+        npm_package_manager = helper.package_manager
+        expect(npm_package_manager.supported_versions).to include(Dependabot::Version.new("11"))
+      end
+
+      it "does not throw unsupported version error" do
+        expect { helper.package_manager.raise_if_unsupported! }.not_to raise_error
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
@@ -177,12 +197,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         )
       end
 
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
-      end
-
       it "returns the unsupported package manager" do
         expect(package_manager.detected_version.to_s).to eq "6"
         expect(package_manager.unsupported?).to be true
@@ -216,12 +230,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
             }
           LOCKFILE
         )
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
       end
 
       it "returns the deprecated version" do
@@ -379,7 +387,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when the installed version matches the expected format" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack npm -v", fingerprint: "corepack npm -v").and_return("7.5.2")
+          .with("corepack npm -v", fingerprint: "corepack npm -v", env: nil).and_return("7.5.2")
       end
 
       it "returns the raw installed version" do
@@ -390,7 +398,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when the installed version not found returns inferred version" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack yarn -v", fingerprint: "corepack yarn -v")
+          .with("corepack yarn -v", fingerprint: "corepack yarn -v", env: nil)
           .and_return("1")
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric).and_return(1)
       end
@@ -405,14 +413,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
     context "when memoization is in effect" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v").and_return("7.1.0")
+          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v", env: nil).and_return("7.1.0")
         # Pre-cache the result
         helper.installed_version("pnpm")
       end
 
       it "does not re-run the shell command and uses the cached version" do
         expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
-          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v")
+          .with("corepack pnpm -v", fingerprint: "corepack pnpm -v", env: nil)
         expect(helper.installed_version("pnpm")).to eq("7.1.0")
       end
     end
@@ -481,6 +489,36 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         requirement = helper.find_engine_constraints_as_requirement("pnpm")
         expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
         expect(requirement.constraints).to eq([">= 10"])
+      end
+    end
+
+    context "when the engines field contains npm >=11.0.0 constraint" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "npm" => ">=11.0.0"
+          }
+        }
+      end
+
+      it "returns a requirement for npm with the correct constraints" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 11.0.0"])
+      end
+
+      it "validates that npm version 11 satisfies the constraint" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        npm_version_eleven = Dependabot::Version.new("11.6.2")
+        expect(requirement.satisfied_by?(npm_version_eleven)).to be(true)
+      end
+
+      it "validates that npm version 10 does not satisfy the constraint" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        npm_version_ten = Dependabot::Version.new("10.9.3")
+        expect(requirement.satisfied_by?(npm_version_ten)).to be(false)
       end
     end
 

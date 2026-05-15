@@ -16,6 +16,7 @@ on: # yamllint disable-line rule:truthy
         required: true
         type: number
         description: PR number
+permissions: {}
 
 jobs:
   approval:
@@ -24,13 +25,17 @@ jobs:
     # Running this workflow against PR's from forks requires manually triggering it via `workflow_dispatch`.
     if: ${{ !github.event.pull_request.head.repo.fork }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       decision: ${{ steps.decision.outputs.decision }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Set PR
         run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
@@ -57,11 +62,13 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: bazel, ecosystem: bazel }
           - { name: bun, ecosystem: bun }
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
           - { name: conda, ecosystem: conda }
           - { name: composer, ecosystem: composer }
+          - { name: deno, ecosystem: deno }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
           - { name: docker, ecosystem: docker }
@@ -75,13 +82,16 @@ jobs:
           - { name: hex, ecosystem: mix }
           - { name: julia, ecosystem: julia }
           - { name: maven, ecosystem: maven }
+          - { name: nix, ecosystem: nix }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
+          - { name: pre_commit, ecosystem: pre-commit }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: rust_toolchain, ecosystem: rust-toolchain }
           - { name: swift, ecosystem: swift }
           - { name: terraform, ecosystem: terraform }
+          - { name: opentofu, ecosystem: opentofu }
           - { name: uv, ecosystem: uv }
           - { name: vcpkg, ecosystem: vcpkg }
     permissions:
@@ -92,11 +102,18 @@ jobs:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
+          persist-credentials: false
 
-      - uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Expose GitHub Actions cache to Buildx
+        uses: crazy-max/ghaction-github-runtime@04d248b84655b509d8c44dc1d6f990c879747487 # v4.0.0
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -117,13 +134,15 @@ jobs:
           echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
-      - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ecosystem image
+        env:
+          BUILDX_GHA_CACHE: "1"
         run: script/build ${{ matrix.suite.name }}
 
       - name: Push branch image

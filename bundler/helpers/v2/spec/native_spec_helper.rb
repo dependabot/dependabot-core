@@ -3,7 +3,15 @@
 
 require "rspec/its"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "debug"
+
+# Bundler 4's stricter $LOAD_PATH handling breaks RSpec's lazy autoload of
+# built-in matchers (e.g. `satisfy`, `raise_error`, `contain_exactly`, `has`).
+# Eagerly load all of them so tests don't hit LoadError mid-run.
+Gem.loaded_specs["rspec-expectations"]&.then do |spec|
+  Dir[File.join(spec.full_gem_path, "lib/rspec/matchers/built_in/*.rb")].each { |f| require f }
+end
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))

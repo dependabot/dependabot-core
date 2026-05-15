@@ -214,7 +214,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("actions/checkout")
+        expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml")
         expect(dependency.version).to eq("2.1.0")
         expect(dependency.requirements).to eq(expected_requirements)
       end
@@ -225,6 +225,123 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       it "does not treat the path like a dependency" do
         expect(dependencies).to eq([])
+      end
+    end
+
+    describe "with multiple reusable workflows from the same repository" do
+      let(:workflow_file_fixture_name) { "workflow_multiple_reusable_workflows.yml" }
+
+      before do
+        mock_service_pack_request("dsp-testing/github-action-with-multiple-reusable-workflow-10619")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency (action-one.yml)" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/dsp-testing/github-action-with-multiple-reusable-workflow-10619",
+              ref: "v1.0.0",
+              branch: nil
+            },
+            metadata: {
+              declaration_string: "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
+                                  "/.github/workflows/action-one.yml@v1.0.0"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq(
+            "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
+            "/.github/workflows/action-one.yml"
+          )
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency (action-two.yml)" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/dsp-testing/github-action-with-multiple-reusable-workflow-10619",
+              ref: "v1.0.0",
+              branch: nil
+            },
+            metadata: {
+              declaration_string: "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
+                                  "/.github/workflows/action-two.yml@v1.0.0"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq(
+            "dsp-testing/github-action-with-multiple-reusable-workflow-10619" \
+            "/.github/workflows/action-two.yml"
+          )
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    describe "with reusable workflow using .yaml extension" do
+      let(:workflow_file_fixture_name) { "workflow_reusable_yaml_extension.yml" }
+
+      before do
+        mock_service_pack_request("dsp-testing/github-action-with-yaml-extension")
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency with .yaml extension" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/dsp-testing/github-action-with-yaml-extension",
+              ref: "v1.0.0",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+                "dsp-testing/github-action-with-yaml-extension" \
+                "/.github/workflows/action-test.yaml@v1.0.0"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq(
+            "dsp-testing/github-action-with-yaml-extension" \
+            "/.github/workflows/action-test.yaml"
+          )
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
       end
     end
 
@@ -410,7 +527,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml")
           expect(dependency.version).to eq("2.1.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end

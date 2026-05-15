@@ -407,7 +407,7 @@ public class SerializationTests : TestBase
     }
 
     [Fact]
-    public void DeserializeExistingPullRequests()
+    public void DeserializeExistingPullRequestsOldFormat()
     {
         var jsonWrapperJson = """
             {
@@ -429,6 +429,41 @@ public class SerializationTests : TestBase
             """;
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Single(jobWrapper.Job.ExistingPullRequests);
+        Assert.Null(jobWrapper.Job.ExistingPullRequests[0].PrNumber);
+        Assert.Single(jobWrapper.Job.ExistingPullRequests[0].Dependencies);
+        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyName);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyVersion);
+        Assert.False(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyRemoved);
+        Assert.Null(jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].Directory);
+    }
+
+    [Fact]
+    public void DeserializeExistingPullRequestsNewFormat()
+    {
+        var jsonWrapperJson = """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "existing-pull-requests": [
+                        {
+                            "pr-number": 123,
+                            "dependencies": [
+                                {
+                                    "dependency-name": "Some.Package",
+                                    "dependency-version": "1.2.3"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        Assert.Single(jobWrapper.Job.ExistingPullRequests);
+        Assert.Equal(123, jobWrapper.Job.ExistingPullRequests[0].PrNumber);
         Assert.Single(jobWrapper.Job.ExistingPullRequests[0].Dependencies);
         Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyName);
         Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0].Dependencies[0].DependencyVersion);
@@ -758,6 +793,14 @@ public class SerializationTests : TestBase
 
         yield return
         [
+            new OutOfDisk(),
+            """
+            {"data":{"error-type":"out_of_disk","error-details":{}}}
+            """
+        ];
+
+        yield return
+        [
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             """
             {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}
@@ -766,7 +809,7 @@ public class SerializationTests : TestBase
 
         yield return
         [
-            new PrivateSourceBadResponse(["url1", "url2"]),
+            new PrivateSourceBadResponse(["url1", "url2"], "unused"),
             """
             {"data":{"error-type":"private_source_bad_response","error-details":{"source":"(url1|url2)"}}}
             """

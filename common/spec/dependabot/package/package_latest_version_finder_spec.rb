@@ -66,7 +66,8 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
           downloads: downloads,
           url: url,
           package_type: package_type,
-          language: language
+          language: language,
+          tag: release.fetch(:tag, nil)
         )
       end
     )
@@ -152,6 +153,7 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       downloads: 1,
       url: "https://example.com",
       package_type: "gem",
+      tag: "v7.0.0",
       language: language_with_requirement
     }
   end
@@ -312,6 +314,59 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
     end
   end
 
+  describe "#latest_tag" do
+    subject(:latest_tag) { finder.latest_tag }
+
+    it "returns the tag of the latest release" do
+      expect(latest_tag).to eq("v7.0.0")
+    end
+
+    context "when the latest release has no tag" do
+      let(:available_releases) do
+        [available_release_6_1_4, available_release_6_0_2, available_release_6_0_0]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when all supported versions are ignored" do
+      let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#latest_release" do
+    subject(:latest_release) { finder.latest_release }
+
+    it "returns the latest non-yanked release" do
+      expect(latest_release).to be_a(Dependabot::Package::PackageRelease)
+      expect(latest_release.version).to eq(TestVersion.new("7.0.0"))
+    end
+
+    it "includes the tag from the release" do
+      expect(latest_release.tag).to eq("v7.0.0")
+    end
+
+    context "when all supported versions are ignored" do
+      let(:ignored_versions) { ["7.0.0", "6.1.4", "6.0.2", "6.0.0"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#latest_version_with_no_unlock" do
     subject(:latest_version_with_no_unlock) { finder.latest_version_with_no_unlock }
 
@@ -406,6 +461,153 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       expect(finder.latest_version).to be_nil
       expect(finder.latest_version_with_no_unlock).to be_nil
       expect(finder.lowest_security_fix_version).to be_nil
+    end
+  end
+
+  describe "cooldown fallback to current version" do
+    let(:dependency_version) { "6.0.0" }
+
+    context "when all versions are filtered by cooldown" do
+      let(:available_releases) do
+        [
+          {
+            version: "6.0.1",
+            released_at: Time.now.strftime("%Y-%m-%d"),
+            yanked: false
+          }
+        ]
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 365, # Very long cooldown to filter everything
+          semver_major_days: 365,
+          semver_minor_days: 365,
+          semver_patch_days: 365
+        )
+      end
+
+      it "falls back to the current version" do
+        expect(finder.latest_version).to eq(TestVersion.new("6.0.0"))
+      end
+
+      it "logs the fallback" do
+        expect(Dependabot.logger).to receive(:info)
+          .with(/Filtered out 1 versions due to cooldown/)
+        expect(Dependabot.logger).to receive(:info)
+          .with(/All versions filtered by cooldown for rails, falling back to current version 6\.0\.0/)
+        finder.latest_version
+      end
+    end
+
+    context "when some versions pass cooldown" do
+      let(:available_releases) do
+        [
+          {
+            version: "6.0.2",
+            released_at: (Time.now - (10 * 24 * 60 * 60)).strftime("%Y-%m-%d"), # 10 days ago
+            yanked: false
+          },
+          {
+            version: "6.0.1",
+            released_at: Time.now.strftime("%Y-%m-%d"), # Today
+            yanked: false
+          }
+        ]
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7
+        )
+      end
+
+      it "returns the version that passed cooldown" do
+        expect(finder.latest_version).to eq(TestVersion.new("6.0.2"))
+      end
+
+      it "does not fall back to current version" do
+        expect(Dependabot.logger).not_to receive(:info)
+          .with(/falling back to current version/)
+        finder.latest_version
+      end
+    end
+
+    context "when cooldown is disabled" do
+      let(:cooldown_options) { nil }
+
+      let(:available_releases) do
+        [
+          {
+            version: "6.0.1",
+            released_at: Time.now.strftime("%Y-%m-%d"),
+            yanked: false
+          }
+        ]
+      end
+
+      it "returns the latest version without fallback" do
+        expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+      end
+    end
+
+    context "when dependency has no current version" do
+      let(:dependency_version) { nil }
+
+      let(:available_releases) do
+        [
+          {
+            version: "6.0.1",
+            released_at: Time.now.strftime("%Y-%m-%d"),
+            yanked: false
+          }
+        ]
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 365,
+          semver_major_days: 365,
+          semver_minor_days: 365,
+          semver_patch_days: 365
+        )
+      end
+
+      it "returns nil when all versions filtered and no current version exists" do
+        expect(finder.latest_version).to be_nil
+      end
+
+      it "does not attempt fallback" do
+        expect(Dependabot.logger).not_to receive(:info)
+          .with(/falling back to current version/)
+        finder.latest_version
+      end
+    end
+
+    context "when no releases are available" do
+      let(:available_releases) { [] }
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          semver_major_days: 7,
+          semver_minor_days: 7,
+          semver_patch_days: 7
+        )
+      end
+
+      it "returns nil without attempting fallback" do
+        expect(finder.latest_version).to be_nil
+      end
+
+      it "does not log fallback message" do
+        expect(Dependabot.logger).not_to receive(:info)
+          .with(/falling back to current version/)
+        finder.latest_version
+      end
     end
   end
 end

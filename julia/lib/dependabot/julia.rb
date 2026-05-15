@@ -63,3 +63,11 @@ require "dependabot/julia/update_checker"
 require "dependabot/julia/file_updater"
 require "dependabot/julia/metadata_finder"
 require "dependabot/julia/dependency"
+
+require "dependabot/pull_request_creator/labeler"
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("julia", name: "julia", colour: "a270ba")
+
+require "dependabot/dependency"
+Dependabot::Dependency
+  .register_production_check("julia", ->(_) { true })

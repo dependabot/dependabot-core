@@ -474,11 +474,136 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
           it "doesn't update version comments" do
             allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
-            allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return true
-            allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return("v2.1.0", nil, nil)
+            allow(git_checker).to receive_messages(
+              ref_looks_like_commit_sha?: true,
+              most_specific_version_tags_for_sha: ["v2.1.0"]
+            )
+            allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return(nil, nil)
             old_version = dependency.previous_requirements[1].dig(:source, :ref)
             expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
           end
+        end
+      end
+
+      context "with pinned SHA where shorter tag version is a suffix of comment version" do
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+        let(:workflow_file_body) do
+          fixture("workflow_files", "pinned_source_multiple_tags_substring_versions.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "advanced-security/filter-sarif",
+            version: "1.1",
+            package_manager: "github_actions",
+            previous_version: "1.0.1",
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/advanced-security/filter-sarif",
+                ref: "f3b8118a9349d88f7b1c0c488476411145b6270d",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d"
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/advanced-security/filter-sarif",
+                ref: "2da736ff05ef065cb2894ac6892e47b5eac2c3c0",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0"
+              }
+            }]
+          )
+        end
+
+        it "uses the most specific matching tag to avoid partial gsub replacements" do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          # The old SHA has multiple tags where "1" (from v1) is a suffix of "1.0.1"
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha)
+            .with("f3b8118a9349d88f7b1c0c488476411145b6270d")
+            .and_return(["v1", "v1.0", "v1.0.1"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha)
+            .with("2da736ff05ef065cb2894ac6892e47b5eac2c3c0")
+            .and_return("v1.1")
+
+          expect(updated_workflow_file.content).to include(
+            "advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1"
+          )
+          # Must NOT contain the buggy result where gsub("1", "1.1") mangled the comment
+          expect(updated_workflow_file.content).not_to include("v1.1.0.1.1")
+        end
+      end
+
+      context "with pinned SHA hash matching multiple tags and version in comment different from latest matching tag" do
+        let(:service_pack_url) do
+          "https://github.com/github/codeql-action.git/info/refs" \
+            "?service=git-upload-pack"
+        end
+        let(:workflow_file_body) do
+          fixture("workflow_files", "pinned_sources_version_comments.yml")
+        end
+        let(:previous_version) { "3.29.5" }
+        let(:new_ref) { "2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "github/codeql-action",
+            version: "3.30.0",
+            package_manager: "github_actions",
+            previous_version: previous_version,
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/github/codeql-action",
+                ref: "51f77329afa6477de8c49fc9c7046c15b9a4e79d",
+                branch: nil
+              },
+              metadata: { declaration_string: "github/codeql-action@51f77329afa6477de8c49fc9c7046c15b9a4e79d" }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/github/codeql-action",
+                ref: new_ref,
+                branch: nil
+              },
+              metadata: { declaration_string: "github/codeql-action@#{new_ref}" }
+            }]
+          )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "codeql-action"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
+        it "updates SHA and comment" do
+          expect(updated_workflow_file.content).to match(/@#{new_ref}\s+#.*#{dependency.version}/)
         end
       end
 

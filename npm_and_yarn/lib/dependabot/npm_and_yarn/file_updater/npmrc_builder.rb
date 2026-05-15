@@ -115,6 +115,10 @@ module Dependabot
         def global_registry
           return @global_registry if defined?(@global_registry)
 
+          # Check for replaces_base credential first (takes precedence)
+          replaces_base = registry_credentials.find(&:replaces_base?)
+          return @global_registry = replaces_base if replaces_base
+
           @global_registry = T.let(
             registry_credentials.find do |cred|
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])

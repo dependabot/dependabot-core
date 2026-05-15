@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "toml-rb"
 require "tempfile"
 require "fileutils"
 require "dependabot/dependency"
@@ -10,6 +9,9 @@ require "dependabot/file_parsers/base"
 require "dependabot/julia/version"
 require "dependabot/julia/requirement"
 require "dependabot/julia/registry_client"
+require "dependabot/julia/package_manager"
+require "dependabot/julia/language"
+require "dependabot/ecosystem"
 
 module Dependabot
   module Julia
@@ -35,11 +37,8 @@ module Dependabot
         options: {}
       )
         super
-        @parsed_project_file = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        @parsed_manifest_file = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @registry_client = T.let(nil, T.nilable(Dependabot::Julia::RegistryClient))
         @custom_registries = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
-        @temp_dir = T.let(nil, T.nilable(String))
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
@@ -50,7 +49,35 @@ module Dependabot
         dependency_set.uniq
       end
 
+      sig { override.returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: PackageManager::ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new,
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def language
+        @language ||= T.let(
+          Language.new(PackageManager::CURRENT_VERSION),
+          T.nilable(Ecosystem::VersionManager)
+        )
+      end
 
       # Helper methods for DependabotHelper.jl integration
 
@@ -73,203 +100,107 @@ module Dependabot
         end
       end
 
-      sig { returns(String) }
-      def write_temp_project_file
-        @temp_dir ||= Dir.mktmpdir("julia_project")
-        project_path = File.join(@temp_dir, "Project.toml")
-        File.write(project_path, T.must(project_file).content)
-        project_path
-      end
-
-      sig { returns(T.nilable(String)) }
-      def write_temp_manifest_file
-        return nil unless manifest_file
-
-        @temp_dir ||= Dir.mktmpdir("julia_project")
-        manifest_path = File.join(@temp_dir, "Manifest.toml")
-        File.write(manifest_path, T.must(manifest_file).content)
-        manifest_path
-      end
-
       sig { returns(T::Array[Dependabot::Dependency]) }
       def project_file_dependencies
-        dependencies = T.let([], T::Array[Dependabot::Dependency])
-        return dependencies unless project_file
+        dependencies_map = T.let({}, T::Hash[String, Dependabot::Dependency])
 
-        # Use DependabotHelper.jl for project parsing
-        project_path = write_temp_project_file
-        manifest_path = write_temp_manifest_file if manifest_file
+        # Parse all project files in the workspace
+        all_project_files.each do |proj_file|
+          parse_single_project_file(proj_file, dependencies_map)
+        end
+
+        dependencies_map.values
+      end
+
+      sig { params(proj_file: Dependabot::DependencyFile, dependencies_map: T::Hash[String, Dependabot::Dependency]).void }
+      def parse_single_project_file(proj_file, dependencies_map)
+        temp_dir = Dir.mktmpdir("julia_project")
+        project_path = File.join(temp_dir, proj_file.name)
+        FileUtils.mkdir_p(File.dirname(project_path))
+        File.write(project_path, proj_file.content)
 
         begin
-          result = registry_client.parse_project(
-            project_path: project_path,
-            manifest_path: manifest_path
-          )
+          result = registry_client.parse_project(project_path: project_path)
 
-          if result["error"]
-            # Fallback to Ruby TOML parsing if Julia helper fails
-            Dependabot.logger.warn(
-              "DependabotHelper.jl parsing failed: #{result['error']}, " \
-              "falling back to Ruby parsing"
-            )
-            return fallback_project_file_dependencies
-          end
+          return if result["error"]
 
-          # Convert DependabotHelper.jl result to Dependabot::Dependency objects
-          dependencies = build_dependencies_from_julia_result(result)
-        ensure
-          # Cleanup temporary directory
-          FileUtils.rm_rf(@temp_dir) if @temp_dir && File.exist?(@temp_dir)
-        end
+          # Process dependencies
+          parsed_deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
+          merge_dependencies_from_list(parsed_deps, ["deps"], proj_file.name, dependencies_map)
 
-        dependencies
-      end
-
-      sig { params(result: T::Hash[String, T.untyped]).returns(T::Array[Dependabot::Dependency]) }
-      def build_dependencies_from_julia_result(result)
-        dependencies = T.let([], T::Array[Dependabot::Dependency])
-        parsed_deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
-
-        parsed_deps.each do |dep_info|
-          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
-          name = T.cast(dep_hash["name"], String)
-          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
-          requirement_string = T.cast(dep_hash["requirement"] || "*", String)
-          resolved_version = T.cast(dep_hash["resolved_version"], T.nilable(String))
-
-          # Skip Julia version requirement
-          next if name == "julia"
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: resolved_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["runtime"],
-              source: nil
-            }],
-            package_manager: "julia",
-            metadata: uuid ? { julia_uuid: uuid } : {}
-          )
-        end
-
-        dependencies
-      end
-
-      # Fallback method using Ruby TOML parsing
-      sig { returns(T::Array[Dependabot::Dependency]) }
-      def fallback_project_file_dependencies
-        dependencies = T.let([], T::Array[Dependabot::Dependency])
-
-        parsed_project = parsed_project_file
-        deps_section = T.cast(parsed_project["deps"] || {}, T::Hash[String, T.untyped])
-        compat_section = T.cast(parsed_project["compat"] || {}, T::Hash[String, T.untyped])
-
-        deps_section.each do |name, _uuid|
-          next if name == "julia" # Skip Julia version requirement
-
-          # Get the version requirement from compat section, default to "*" if not specified
-          requirement_string = T.cast(compat_section[name] || "*", String)
-
-          # Get the exact version from Manifest.toml if available
-          exact_version = version_from_manifest(name)
-
-          dependencies << Dependabot::Dependency.new(
-            name: name,
-            version: exact_version,
-            requirements: [{
-              requirement: requirement_string,
-              file: T.must(project_file).name,
-              groups: ["runtime"],
-              source: nil
-            }],
-            package_manager: "julia"
-          )
-        end
-
-        dependencies
-      end
-
-      sig { params(dependency_name: String).returns(T.nilable(String)) }
-      def version_from_manifest(dependency_name)
-        return nil unless manifest_file
-
-        # Try using DependabotHelper.jl first
-        temp_dir = Dir.mktmpdir("julia_manifest_only")
-        manifest_path = File.join(temp_dir, "Manifest.toml")
-        File.write(manifest_path, T.must(manifest_file).content)
-
-        begin
-          # We need the UUID for the DependabotHelper.jl call, so fallback to Ruby parsing
-          # Note: Future enhancement could add name-only lookup to DependabotHelper.jl
-          fallback_version_from_manifest(dependency_name)
+          # Process weak dependencies
+          parsed_weak_deps = T.cast(result["weak_dependencies"] || [], T::Array[T.untyped])
+          merge_dependencies_from_list(parsed_weak_deps, ["weakdeps"], proj_file.name, dependencies_map)
         ensure
           FileUtils.rm_rf(temp_dir)
         end
       end
 
-      sig { params(dependency_name: String).returns(T.nilable(String)) }
-      def fallback_version_from_manifest(dependency_name)
-        return nil unless manifest_file
+      sig do
+        params(
+          dep_list: T::Array[T.untyped],
+          groups: T::Array[String],
+          file_name: String,
+          dependencies_map: T::Hash[String, Dependabot::Dependency]
+        ).void
+      end
+      def merge_dependencies_from_list(dep_list, groups, file_name, dependencies_map)
+        dep_list.each do |dep_info|
+          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
+          name = T.cast(dep_hash["name"], String)
+          next if name == "julia" # Skip Julia version requirement
 
-        parsed_manifest = parsed_manifest_file
+          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
+          requirement_string = T.cast(dep_hash["requirement"], T.nilable(String))
 
-        # Look for the dependency in the manifest
-        deps_section = T.cast(parsed_manifest["deps"], T.nilable(T::Hash[String, T.untyped]))
-        if deps_section && deps_section[dependency_name]
-          # Manifest v2 format
-          dep_entries = deps_section[dependency_name]
-          if dep_entries.is_a?(Array) && dep_entries.first.is_a?(Hash)
-            return T.cast(dep_entries.first["version"], T.nilable(String))
+          new_requirement = {
+            requirement: requirement_string,
+            file: file_name,
+            groups: groups,
+            source: nil
+          }
+
+          if dependencies_map.key?(name)
+            # Merge requirements from additional project files
+            existing_dep = T.must(dependencies_map[name])
+            existing_requirements = existing_dep.requirements.dup
+            existing_requirements << new_requirement
+            dependencies_map[name] = Dependabot::Dependency.new(
+              name: name,
+              version: nil,
+              requirements: existing_requirements,
+              package_manager: "julia",
+              metadata: existing_dep.metadata
+            )
+          else
+            # Create new dependency
+            dependencies_map[name] = Dependabot::Dependency.new(
+              name: name,
+              version: nil,
+              requirements: [new_requirement],
+              package_manager: "julia",
+              metadata: uuid ? { julia_uuid: uuid } : {}
+            )
           end
         end
+      end
 
-        nil
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def all_project_files
+        dependency_files.select { |f| f.name.match?(/Project\.toml$/i) }
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def project_file
         @project_file ||= T.let(
-          get_original_file("Project.toml") || get_original_file("JuliaProject.toml"),
+          all_project_files.first || get_original_file("Project.toml") || get_original_file("JuliaProject.toml"),
           T.nilable(Dependabot::DependencyFile)
         )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def manifest_file
-        @manifest_file ||= T.let(
-          get_original_file("Manifest.toml") || get_original_file("JuliaManifest.toml"),
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_project_file
-        return @parsed_project_file if @parsed_project_file
-
-        parsed_content = T.cast(TomlRB.parse(T.must(project_file).content), T::Hash[String, T.untyped])
-        @parsed_project_file = parsed_content
-        parsed_content
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
-        raise Dependabot::DependencyFileNotParseable, "Error parsing #{T.must(project_file).name}: #{e.message}"
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_manifest_file
-        return {} unless manifest_file
-        return @parsed_manifest_file if @parsed_manifest_file
-
-        parsed_content = T.cast(TomlRB.parse(T.must(manifest_file).content), T::Hash[String, T.untyped])
-        @parsed_manifest_file = parsed_content
-        parsed_content
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
-        raise Dependabot::DependencyFileNotParseable, "Error parsing #{T.must(manifest_file).name}: #{e.message}"
       end
 
       sig { override.void }
       def check_required_files
-        raise "No Project.toml or JuliaProject.toml!" unless project_file
+        raise "No Project.toml or JuliaProject.toml!" if all_project_files.empty?
       end
     end
   end

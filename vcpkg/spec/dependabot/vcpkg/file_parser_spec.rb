@@ -256,9 +256,201 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         )
       end
 
-      it "currently ignores vcpkg-configuration.json and only parses vcpkg.json" do
-        expect(dependencies.length).to eq(1)
-        expect(dependencies.first.name).to eq("github.com/microsoft/vcpkg")
+      it "parses both vcpkg.json and vcpkg-configuration.json" do
+        expect(dependencies.length).to eq(2)
+
+        # First dependency should be from vcpkg.json builtin-baseline
+        builtin_dependency = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
+        expect(builtin_dependency).not_to be_nil
+        expect(builtin_dependency.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
+        expect(builtin_dependency.requirements.first[:file]).to eq("vcpkg.json")
+
+        # Second dependency should be from vcpkg-configuration.json default-registry
+        registry_dependency = dependencies.find { |d| d.name == "https://github.com/microsoft/vcpkg" }
+        expect(registry_dependency).not_to be_nil
+        expect(registry_dependency.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
+        expect(registry_dependency.requirements.first[:file]).to eq("vcpkg-configuration.json")
+        expect(registry_dependency.requirements.first[:source][:url]).to eq("https://github.com/microsoft/vcpkg")
+      end
+    end
+
+    context "with a vcpkg-configuration.json file containing different registry types" do
+      let(:dependency_files) { [vcpkg_configuration_json] }
+
+      context "with builtin registry as default-registry" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "default-registry": {
+                  "kind": "builtin",
+                  "baseline": "abc123def456789012345678901234567890abcd"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "parses builtin default-registry" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+          expect(dependency.name).to eq("github.com/microsoft/vcpkg")
+          expect(dependency.version).to eq("abc123def456789012345678901234567890abcd")
+          expect(dependency.package_manager).to eq("vcpkg")
+          expect(dependency.requirements.first[:file]).to eq("vcpkg-configuration.json")
+          expect(dependency.requirements.first[:source][:type]).to eq("git")
+          expect(dependency.requirements.first[:source][:url]).to eq("https://github.com/microsoft/vcpkg.git")
+          expect(dependency.requirements.first[:source][:ref]).to eq("master")
+        end
+      end
+
+      context "with git registries in the registries array" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "registries": [
+                  {
+                    "kind": "git",
+                    "repository": "https://github.com/custom/registry",
+                    "baseline": "123abc456def789012345678901234567890abcd",
+                    "reference": "main",
+                    "packages": ["custom-*"]
+                  },
+                  {
+                    "kind": "builtin",
+                    "baseline": "def456789012345678901234567890abcd123abc",
+                    "packages": ["boost-*"]
+                  }
+                ]
+              }
+            JSON
+          )
+        end
+
+        it "parses multiple registries" do
+          expect(dependencies.length).to eq(2)
+
+          git_registry = dependencies.find { |d| d.name.include?("custom/registry") }
+          expect(git_registry).not_to be_nil
+          expect(git_registry.name).to eq("https://github.com/custom/registry")
+          expect(git_registry.version).to eq("123abc456def789012345678901234567890abcd")
+          expect(git_registry.requirements.first[:source][:url]).to eq("https://github.com/custom/registry")
+          expect(git_registry.requirements.first[:source][:ref]).to eq("main")
+
+          builtin_registry = dependencies.find { |d| d.name.include?("microsoft/vcpkg") }
+          expect(builtin_registry).not_to be_nil
+          expect(builtin_registry.name).to eq("github.com/microsoft/vcpkg")
+          expect(builtin_registry.version).to eq("def456789012345678901234567890abcd123abc")
+          expect(builtin_registry.requirements.first[:source][:url]).to eq("https://github.com/microsoft/vcpkg.git")
+        end
+      end
+
+      context "with filesystem registry (should be ignored)" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "default-registry": {
+                  "kind": "filesystem",
+                  "path": "/local/path/to/registry",
+                  "baseline": "default"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "ignores filesystem registries" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "with missing baseline (should be ignored)" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "default-registry": {
+                  "kind": "git",
+                  "repository": "https://github.com/custom/registry"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "ignores registries without baseline" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "with missing repository for git registry (should be ignored)" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "default-registry": {
+                  "kind": "git",
+                  "baseline": "abc123def456789012345678901234567890abcd"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "ignores git registries without repository" do
+          expect(dependencies).to be_empty
+        end
+      end
+
+      context "with mixed supported and non-supported registries" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "default-registry": {
+                  "kind": "git",
+                  "repository": "https://github.com/custom/registry",
+                  "baseline": "abc123def456789012345678901234567890abcd"
+                },
+                "registries": [
+                  {
+                    "kind": "filesystem",
+                    "path": "/local/path",
+                    "baseline": "default",
+                    "packages": ["local-*"]
+                  },
+                  {
+                    "kind": "git",
+                    "repository": "https://github.com/another/registry",
+                    "baseline": "def456789012345678901234567890abcd123abc",
+                    "packages": ["another-*"]
+                  }
+                ]
+              }
+            JSON
+          )
+        end
+
+        it "only tracks git and builtin registries" do
+          expect(dependencies.length).to eq(2)
+
+          default_registry = dependencies.find { |d| d.name.include?("custom/registry") }
+          expect(default_registry).not_to be_nil
+          expect(default_registry.name).to eq("https://github.com/custom/registry")
+
+          git_registry = dependencies.find { |d| d.name.include?("another/registry") }
+          expect(git_registry).not_to be_nil
+          expect(git_registry.name).to eq("https://github.com/another/registry")
+        end
       end
     end
 
@@ -272,7 +464,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
       end
 
       it "raises a DependencyFileNotFound error" do
-        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotFound, "vcpkg.json not found")
+        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotFound, "No vcpkg manifest files found")
       end
     end
 
@@ -280,7 +472,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
       let(:dependency_files) { [] }
 
       it "raises a DependencyFileNotFound error" do
-        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotFound, "vcpkg.json not found")
+        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotFound, "No vcpkg manifest files found")
       end
     end
   end
@@ -304,7 +496,9 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
       end
 
       it "raises a DependencyFileNotFound error" do
-        expect { check_required_files }.to raise_error(Dependabot::DependencyFileNotFound, "vcpkg.json not found")
+        expect do
+          check_required_files
+        end.to raise_error(Dependabot::DependencyFileNotFound, "No vcpkg manifest files found")
       end
     end
   end

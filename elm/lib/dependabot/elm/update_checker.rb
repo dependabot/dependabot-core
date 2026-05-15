@@ -75,6 +75,7 @@ module Dependabot
             Elm19LatestVersionFinder.new(
               dependency: dependency,
               dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
               cooldown_options: update_cooldown
             )
           end,

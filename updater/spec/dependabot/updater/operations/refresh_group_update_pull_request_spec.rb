@@ -98,6 +98,20 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     allow(job).to receive(:package_manager).and_return("bundler")
   end
 
+  describe "#group" do
+    context "when dependency_snapshot has a job_group" do
+      it "returns the dependency group from the snapshot" do
+        expect(refresh_group.group).to be_a(Dependabot::DependencyGroup)
+        expect(refresh_group.group.name).to eq("everything-everywhere-all-at-once")
+      end
+
+      it "allows access to group properties required by GroupUpdateCreation module" do
+        expect { refresh_group.group.name }.not_to raise_error
+        expect(refresh_group.group.name).to be_a(String)
+      end
+    end
+  end
+
   describe "#perform" do
     context "when the same dependencies need to be updated to the same target versions" do
       let(:job_definition) do
@@ -213,6 +227,179 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         expect(dependency_snapshot.handled_dependencies).to match_array(
           %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
              dummy-pkg-d)
+        )
+      end
+    end
+
+    context "when there is a PR for an overlapping group but from a different directory" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(mock_service).to receive(:update_pull_request)
+        allow(mock_service).to receive(:close_pull_request)
+        allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "dependency-version" => "1.2.0",
+                  "directory" => "/packages/other"
+                },
+                {
+                  "dependency-name" => "dummy-pkg-c",
+                  "dependency-version" => "1.0.0",
+                  "directory" => "/packages/other"
+                }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-d",
+                  "dependency-version" => "0.1.0",
+                  "directory" => "/packages/other"
+                }
+              ]
+            }
+          ]
+        )
+      end
+
+      it "does not mark the overlapping groups as handled" do
+        refresh_group.perform
+
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "overlapping-group"), anything
+        )
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "something-else"), anything
+        )
+      end
+    end
+
+    context "when there is a PR for an overlapping group from the same directory" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "dependency-version" => "1.2.0",
+                  "directory" => "/"
+                },
+                {
+                  "dependency-name" => "dummy-pkg-c",
+                  "dependency-version" => "1.0.0",
+                  "directory" => "/"
+                }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-d",
+                  "dependency-version" => "0.1.0",
+                  "directory" => "/"
+                }
+              ]
+            }
+          ]
+        )
+      end
+
+      it "marks the overlapping groups as handled" do
+        refresh_group.perform
+
+        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+          having_attributes(name: "overlapping-group"), anything
+        )
+        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+          having_attributes(name: "something-else"), anything
+        )
+      end
+    end
+
+    context "when there is a PR for an overlapping group with no directory info" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" },
+                { "dependency-name" => "dummy-pkg-c", "dependency-version" => "1.0.0" }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-d", "dependency-version" => "0.1.0" }
+              ]
+            }
+          ]
+        )
+      end
+
+      it "treats the existing PRs as matches and marks the groups as handled" do
+        refresh_group.perform
+
+        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+          having_attributes(name: "overlapping-group"), anything
+        )
+        expect(dependency_snapshot).to have_received(:mark_group_handled).with(
+          having_attributes(name: "something-else"), anything
         )
       end
     end

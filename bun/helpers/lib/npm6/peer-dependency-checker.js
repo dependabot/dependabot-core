@@ -45,7 +45,6 @@ async function checkPeerDependencies(
     {
       loglevel: "silent",
       force: true,
-      audit: false,
       "prefer-offline": true,
       "ignore-scripts": true,
       save: false,

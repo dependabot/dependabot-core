@@ -10,7 +10,8 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
   let(:directory) { "/" }
-  let(:repo_contents_path) { nil }
+  let(:project_name) { "simple" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -28,7 +29,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
     )
   end
   let(:files) { [go_mod] }
-  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+  let(:parser) { described_class.new(dependency_files: files, source:, repo_contents_path:) }
 
   after do
     # Reset the environment variable after each test to avoid side effects
@@ -41,7 +42,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
   it "requires a go.mod to be present" do
     expect do
-      described_class.new(dependency_files: [], source: source)
+      described_class.new(dependency_files: [], source: source, repo_contents_path: repo_contents_path)
     end.to raise_error(RuntimeError)
   end
 
@@ -52,7 +53,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         content: "GOPRIVATE=github.com/dependabot-fixtures",
         directory: directory
       )
-      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPRIVATE`.strip).to eq("github.com/dependabot-fixtures")
     end
 
@@ -69,12 +70,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
           }
         )
       ]
-      described_class.new(dependency_files: [go_mod], source: source, credentials: credentials)
+      described_class.new(dependency_files: [go_mod], source:, credentials:, repo_contents_path:)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com,direct")
     end
 
     it "does not set the GOPROXY environment variable if there are no goproxy_server credentials" do
-      described_class.new(dependency_files: [go_mod], source: source)
+      described_class.new(dependency_files: [go_mod], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.golang.org,direct")
     end
 
@@ -84,7 +85,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         content: "GOPROXY=https://proxy.example.com",
         directory: directory
       )
-      described_class.new(dependency_files: [go_mod, go_env], source: source)
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
     end
 
@@ -101,6 +102,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         dependency_files: [go_mod],
         source: source,
         credentials: credentials,
+        repo_contents_path: repo_contents_path,
         options: { goprivate: "*" }
       )
       expect(`go env GOPRIVATE`.strip).to be_empty
@@ -380,7 +382,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a monorepo" do
       let(:project_name) { "monorepo" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses root file" do
@@ -409,11 +410,119 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
     context "when using a dependency without hostname" do
       let(:project_name) { "unrecognized_import" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses ignores invalid dependency" do
         expect(dependencies.map(&:name)).to eq([])
+      end
+    end
+  end
+
+  context "with a go.work workspace" do
+    let(:project_name) { "workspace" }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(
+        name: "go.work",
+        content: fixture("projects", project_name, "go.work"),
+        directory: directory
+      )
+    end
+    let(:go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "go.mod",
+        content: fixture("projects", project_name, "go.mod"),
+        directory: directory
+      )
+    end
+    let(:libs_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "libs/go.mod",
+        content: fixture("projects", project_name, "libs", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:services_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "services/go.mod",
+        content: fixture("projects", project_name, "services", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:files) { [go_work, go_mod, libs_go_mod, services_go_mod] }
+    let(:parser) do
+      described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+    end
+
+    describe "parse" do
+      subject(:dependencies) { parser.parse }
+
+      it "parses dependencies from all workspace modules" do
+        dep_names = dependencies.map(&:name)
+        expect(dep_names).to include("github.com/fatih/color")
+        expect(dep_names).to include("rsc.io/quote")
+        expect(dep_names).to include("golang.org/x/tools")
+      end
+
+      it "deduplicates shared dependencies across modules" do
+        color_deps = dependencies.select { |d| d.name == "github.com/fatih/color" }
+        expect(color_deps.length).to eq(1)
+      end
+
+      it "preserves requirement file provenance for shared deps" do
+        color_dep = dependencies.find { |d| d.name == "github.com/fatih/color" }
+        req_files = color_dep.requirements.map { |r| r[:file] }
+        expect(req_files).to include("go.mod")
+      end
+
+      it "identifies top-level dependencies correctly" do
+        top_level = dependencies.select(&:top_level?)
+        top_level_names = top_level.map(&:name)
+        expect(top_level_names).to include("github.com/fatih/color")
+        expect(top_level_names).to include("rsc.io/quote")
+        expect(top_level_names).to include("golang.org/x/tools")
+      end
+    end
+  end
+
+  context "with a go.work workspace (no root module)" do
+    let(:project_name) { "workspace_no_root_mod" }
+    let(:go_work) do
+      Dependabot::DependencyFile.new(
+        name: "go.work",
+        content: fixture("projects", project_name, "go.work"),
+        directory: directory
+      )
+    end
+    let(:api_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "api/go.mod",
+        content: fixture("projects", project_name, "api", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:worker_go_mod) do
+      Dependabot::DependencyFile.new(
+        name: "worker/go.mod",
+        content: fixture("projects", project_name, "worker", "go.mod"),
+        directory: directory
+      )
+    end
+    let(:files) { [go_work, api_go_mod, worker_go_mod] }
+    let(:parser) do
+      described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+    end
+
+    describe "parse" do
+      subject(:dependencies) { parser.parse }
+
+      it "parses dependencies from all sub-modules" do
+        dep_names = dependencies.map(&:name)
+        expect(dep_names).to include("rsc.io/quote")
+        expect(dep_names).to include("golang.org/x/tools")
+      end
+
+      it "does not require a root go.mod" do
+        expect { parser.parse }.not_to raise_error
       end
     end
   end
@@ -431,7 +540,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "go_modules"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.25.0"
+        expect(package_manager.version.to_s).to eq "1.26.1"
       end
     end
 

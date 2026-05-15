@@ -1,0 +1,8 @@
+{
+  "name": "grapher-npm-with-lockfile",
+  "version": "1.0.0",
+  "description": "Test project with existing lockfile",
+  "dependencies": {
+    "is-number": "^7.0.0"
+  }
+}

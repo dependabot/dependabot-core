@@ -18,6 +18,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/poetry_plugin_installer"
 
 module Dependabot
   module Python
@@ -90,6 +91,7 @@ module Dependabot
           @original_reqs_resolvable = T.let(nil, T.nilable(T::Boolean))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
+          @poetry_plugin_installer = T.let(nil, T.nilable(PoetryPluginInstaller))
         end
 
         sig { params(requirement: T.nilable(String)).returns(T.nilable(Dependabot::Python::Version)) }
@@ -128,6 +130,9 @@ module Dependabot
                 add_auth_env_vars
 
                 language_version_manager.install_required_python
+
+                # Install any required Poetry plugins declared in pyproject.toml
+                poetry_plugin_installer.install_required_plugins
 
                 # use system git instead of the pure Python dulwich
                 run_poetry_command("pyenv exec poetry config system-git-client true")
@@ -385,6 +390,14 @@ module Dependabot
           poetry_lock
         end
 
+        sig { returns(PoetryPluginInstaller) }
+        def poetry_plugin_installer
+          @poetry_plugin_installer ||= T.let(
+            PoetryPluginInstaller.from_dependency_files(dependency_files),
+            T.nilable(PoetryPluginInstaller)
+          )
+        end
+
         sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
         def run_poetry_command(command, fingerprint: nil)
           SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
@@ -414,6 +427,12 @@ module Dependabot
 
       # package version mentioned in .toml not found in package index
       PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
+
+      INCOMPATIBLE_ENRICH_CONSTRAINTS = /
+        Cannot\senrich\sdependency\swith\sincompatible\sconstraints:\s+
+        (?<dep>[^\s(]+)\s*\((?<ver_range_a>[^)]+)\)\s+and\s+
+        (?<dep_b>[^\s(]+)\s*\((?<ver_range_b>[^)]+)\)
+      /x
 
       # client access error codes while accessing package index
       CLIENT_ERROR_CODES = T.let(
@@ -502,7 +521,6 @@ module Dependabot
         if (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS) ||
             error.message.match(INVALID_CONFIGURATION) || error.message.match(INVALID_VERSION) ||
             error.message.match(INVALID_LINK))
-
           raise DependencyFileNotResolvable, msg
         end
 
@@ -510,11 +528,12 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
+        handle_enrich_constraints(error)
+
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
 
         if error.message.match(POETRY_VIRTUAL_ENV_CONFIG) || error.message.match(ERR_LOCAL_PROJECT_PATH)
           msg = "Error while resolving pyproject.toml file"
-
           raise DependencyFileNotResolvable, msg
         end
 
@@ -548,6 +567,19 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/CyclomaticComplexity
+
+      private
+
+      sig { params(error: Exception).void }
+      def handle_enrich_constraints(error)
+        if (msg = error.message.match(INCOMPATIBLE_ENRICH_CONSTRAINTS))
+          dep   = msg[:dep]
+          ver_a = msg[:ver_range_a]
+          ver_b = msg[:ver_range_b]
+          raise DependencyFileNotResolvable,
+                "Incompatible version constraints for #{dep}: #{ver_a} vs #{ver_b}"
+        end
+      end
     end
   end
 end
