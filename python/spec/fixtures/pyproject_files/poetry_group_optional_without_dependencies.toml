@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "poetry-group-optional-without-dependencies"
+version = "0.1.0"
+description = ""
+authors = ["Dependabot <support@dependabot.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+
+[dependency-groups]
+dev = [
+    "requests==2.18.0",
+]
+gpu = [
+    "onnxruntime-gpu==1.23.2",
+]
+
+[tool.poetry.group.gpu]
+optional = true
