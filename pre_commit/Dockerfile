@@ -2,9 +2,13 @@
 
 # Import pre-built ecosystem images to avoid code duplication
 # These images contain all the native helpers and tools already built
-FROM ghcr.io/dependabot/dependabot-updater-gomod:latest AS go_modules
-FROM ghcr.io/dependabot/dependabot-updater-bundler:latest AS bundler
-FROM ghcr.io/dependabot/dependabot-updater-pub:latest AS pub
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+ARG UPDATER_GOMOD_IMAGE=ghcr.io/dependabot/dependabot-updater-gomod:latest
+ARG UPDATER_BUNDLER_IMAGE=ghcr.io/dependabot/dependabot-updater-bundler:latest
+ARG UPDATER_PUB_IMAGE=ghcr.io/dependabot/dependabot-updater-pub:latest
+FROM ${UPDATER_GOMOD_IMAGE} AS go_modules
+FROM ${UPDATER_BUNDLER_IMAGE} AS bundler
+FROM ${UPDATER_PUB_IMAGE} AS pub
 
 # Create an intermediate stage that combines both ecosystems into a single layer
 FROM scratch AS combined-helpers
@@ -15,7 +19,7 @@ COPY --from=pub /opt/dart /opt/dart
 COPY --from=pub /opt/pub /opt/pub
 
 # Final stage - copy all helpers in a single layer from the combined stage
-FROM ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 USER root
 

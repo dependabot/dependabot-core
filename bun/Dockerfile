@@ -1,5 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
-FROM ghcr.io/dependabot/dependabot-updater-core
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 # Check for updates at https://github.com/oven-sh/bun/releases
 ARG BUN_VERSION=1.3.5
