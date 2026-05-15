@@ -1,0 +1,7 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+
+dependencies = [
+    "boto3[crt,s3]>=1.28.0",
+]

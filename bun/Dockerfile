@@ -1,9 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
-# Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.33.0
-
 # Check for updates at https://github.com/oven-sh/bun/releases
 ARG BUN_VERSION=1.3.5
 
@@ -18,7 +15,7 @@ RUN mkdir -p /etc/apt/keyrings \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g corepack@$COREPACK_VERSION bun@$BUN_VERSION \
+  && npm install -g bun@$BUN_VERSION \
   && rm -rf ~/.npm
 
 USER dependabot

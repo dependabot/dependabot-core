@@ -244,4 +244,61 @@ RSpec.describe Dependabot::Package::ReleaseCooldownOptions do
       end
     end
   end
+
+  describe "#cooldown_days_for" do
+    context "with distinct semver days" do
+      let(:default_days) { 5 }
+      let(:semver_major_days) { 14 }
+      let(:semver_minor_days) { 7 }
+      let(:semver_patch_days) { 2 }
+
+      it "returns semver_major_days for a major bump" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [2, 0, 0])).to eq(14)
+      end
+
+      it "returns semver_minor_days for a minor bump" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [1, 1, 0])).to eq(7)
+      end
+
+      it "returns semver_patch_days for a patch bump" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [1, 0, 1])).to eq(2)
+      end
+
+      it "returns default_days when versions are equal" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [1, 0, 0])).to eq(5)
+      end
+
+      it "returns default_days when current_semver is nil" do
+        expect(release_cooldown_options.cooldown_days_for(nil, [2, 0, 0])).to eq(5)
+      end
+
+      it "returns default_days when new_semver is nil" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], nil)).to eq(5)
+      end
+
+      it "returns default_days when both are nil" do
+        expect(release_cooldown_options.cooldown_days_for(nil, nil)).to eq(5)
+      end
+
+      it "returns semver_major_days for a major bump that also changes minor and patch" do
+        expect(release_cooldown_options.cooldown_days_for([0, 33, 0], [1, 2, 3])).to eq(14)
+      end
+
+      it "returns default_days for a downgrade (new major < current major)" do
+        expect(release_cooldown_options.cooldown_days_for([2, 0, 0], [1, 5, 0])).to eq(5)
+      end
+
+      it "returns default_days for a minor downgrade within the same major" do
+        expect(release_cooldown_options.cooldown_days_for([1, 5, 0], [1, 3, 0])).to eq(5)
+      end
+
+      it "returns default_days for a patch downgrade within the same major and minor" do
+        expect(release_cooldown_options.cooldown_days_for([1, 5, 3], [1, 5, 1])).to eq(5)
+      end
+
+      it "returns semver_minor_days when major is equal and minor increases" do
+        expect(release_cooldown_options.cooldown_days_for([2, 1, 0], [2, 3, 0])).to eq(7)
+      end
+    end
+  end
 end

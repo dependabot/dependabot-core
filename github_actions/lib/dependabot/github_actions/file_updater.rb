@@ -110,8 +110,12 @@ module Dependabot
         previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
         return unless previous_version_tags.any? # There's no tag for this commit
 
+        # Use the most specific (longest) matching version to avoid partial replacements.
+        # Tags are sorted ascending, so ["v1", "v1.0", "v1.0.1"] maps to ["1", "1.0", "1.0.1"].
+        # Without this, "1" could match the end of "v1.0.1", causing gsub("1", "1.1") => "v1.1.0.1.1".
         previous_version = previous_version_tags.map { |tag| version_class.new(tag).to_s }
-                                                .find { |version| comment.end_with? version }
+                                                .select { |version| comment.end_with?(version) }
+                                                .max_by(&:length)
         return unless previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)

@@ -111,6 +111,11 @@ RSpec.shared_examples "dependency_submission" do |empty|
       expect(payload[:detector][:version]).to eq(Dependabot::VERSION)
       expect(payload[:job][:correlator]).to eq("dependabot-bundler")
       expect(payload[:job][:id]).to eq("9999")
+
+      # Check dependabot-specific metadata keys
+      expect(payload[:metadata][:status]).to eql("ok")
+      expect(payload[:metadata][:reason]).to be_nil
+      expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
     end
 
     it "affixes to use the updater sha if available" do
@@ -169,6 +174,9 @@ RSpec.shared_examples "dependency_submission" do |empty|
       # Ecosystem is mapped from the package manager
       expect(lockfile[:metadata][:ecosystem]).to eq("rubygems")
 
+      # Blob OID matches the Git blob SHA-1 of the fixture file
+      expect(lockfile[:metadata][:blob_oid]).to eq("1f21c435958a7c58ef0b4021e1f981017e6d49f2")
+
       # Resolved dependencies are correct
       expect(lockfile[:resolved].length).to eq(2)
 
@@ -194,5 +202,43 @@ RSpec.describe GithubApi::DependencySubmission do
 
   context "without resolved dependencies" do
     it_behaves_like "dependency_submission", true
+  end
+
+  context "when the commit SHA is 64 characters (SHA-256 repo)" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: sha256_sha,
+        package_manager: "bundler",
+        manifest_file: lockfile,
+        resolved_dependencies: resolved_dependencies
+      )
+    end
+
+    let(:sha256_sha) { "a" * 64 }
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    end
+    let(:resolved_dependencies) do
+      {
+        "dummy-pkg-a" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+          package_url: "pkg:gem/dummy-pkg-a@2.0.0",
+          direct: true,
+          runtime: true,
+          dependencies: []
+        )
+      }
+    end
+
+    it "uses SHA-256 for the blob OID" do
+      manifest = dependency_submission.payload[:manifests].fetch("/Gemfile.lock")
+      expect(manifest[:metadata][:blob_oid])
+        .to eq("54bf0378f9dd16ad2b60250c6156132f3ec9232e85b6ef87958aa439e29a4cec")
+    end
   end
 end

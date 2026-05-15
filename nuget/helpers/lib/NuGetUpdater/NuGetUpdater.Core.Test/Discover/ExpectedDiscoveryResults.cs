@@ -17,12 +17,13 @@ public record ExpectedWorkspaceDiscoveryResult : NativeResult
 
 public record ExpectedSdkProjectDiscoveryResult : ExpectedDependencyDiscoveryResult
 {
-    public required ImmutableArray<Property> Properties { get; init; }
     public required ImmutableArray<string> TargetFrameworks { get; init; }
     public required ImmutableArray<string> ReferencedProjectPaths { get; init; }
     public required ImmutableArray<string> ImportedFiles { get; init; }
     public required ImmutableArray<string> AdditionalFiles { get; init; }
     public string? ErrorDetails { get; init; }
+    public PackageManagementKind? ExpectedPackageManagementKind { get; init; } = null;
+    public string? ExpectedPackageManagementSpecialFileRelativePath { get; init; } = null;
 }
 
 public record ExpectedDependencyDiscoveryResult : IDiscoveryResultWithDependencies

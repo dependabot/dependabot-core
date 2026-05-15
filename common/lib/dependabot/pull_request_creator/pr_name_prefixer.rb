@@ -200,10 +200,12 @@ module Dependabot
         return unless (msg = last_dependabot_commit_title)
 
         return :gitmoji if msg.start_with?("⬆️")
-        return :conventional_prefix if msg.match?(/\A(chore|build|upgrade):/i)
-        return unless msg.match?(/\A(chore|build|upgrade)\(/i)
 
-        :conventional_prefix_with_scope
+        prefixes = (ANGULAR_PREFIXES + ESLINT_PREFIXES).uniq(&:downcase).join("|")
+        return :conventional_prefix if msg.match?(/\A(#{prefixes}):/i)
+        return :conventional_prefix_with_scope if msg.match?(/\A(#{prefixes})\(/i)
+
+        nil
       end
 
       sig { returns(T.nilable(String)) }

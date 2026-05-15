@@ -290,6 +290,153 @@ RSpec.describe Dependabot::Swift::FileParser do
     it_behaves_like "parse"
   end
 
+  context "with trailing commas" do
+    let(:project_name) { "trailing_comma" }
+
+    let(:expectations) do
+      [
+        {
+          identity: "swift-atomics",
+          name: "github.com/apple/swift-atomics",
+          url: "https://github.com/apple/swift-atomics.git",
+          version: "1.3.0",
+          requirement: ">= 1.2.0, < 2.0.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-atomics.git",
+                  from: "1.2.0",
+                )
+          DECLARATION
+          requirement_string: "from: \"1.2.0\","
+        },
+        {
+          identity: "swift-collections",
+          name: "github.com/apple/swift-collections",
+          url: "https://github.com/apple/swift-collections.git",
+          version: "1.4.1",
+          requirement: ">= 1.4.0, < 2.0.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-collections.git",
+                  .upToNextMajor(from: "1.4.0",),
+                )
+          DECLARATION
+          requirement_string: ".upToNextMajor(from: \"1.4.0\",),"
+        },
+        {
+          identity: "swift-log",
+          name: "github.com/apple/swift-log",
+          url: "https://github.com/apple/swift-log.git",
+          version: "1.12.0",
+          requirement: ">= 1.11.0, < 2.0.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-log.git",
+                  .upToNextMajor(from: "1.11.0"),
+                )
+          DECLARATION
+          requirement_string: ".upToNextMajor(from: \"1.11.0\"),"
+        },
+        {
+          identity: "swift-docc-plugin",
+          name: "github.com/apple/swift-docc-plugin",
+          url: "https://github.com/apple/swift-docc-plugin",
+          version: "1.4.6",
+          requirement: ">= 1.4.5, < 1.5.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-docc-plugin",
+                  .upToNextMinor(from: "1.4.5",),
+                )
+          DECLARATION
+          requirement_string: ".upToNextMinor(from: \"1.4.5\",),"
+        },
+        {
+          identity: "swift-docc-symbolkit",
+          name: "github.com/swiftlang/swift-docc-symbolkit",
+          url: "https://github.com/swiftlang/swift-docc-symbolkit",
+          version: "1.0.0"
+        },
+        {
+          identity: "swift-argument-parser",
+          name: "github.com/apple/swift-argument-parser",
+          url: "https://github.com/apple/swift-argument-parser",
+          version: "1.7.1",
+          requirement: ">= 1.7.0, < 1.8.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-argument-parser",
+                  .upToNextMinor(from: "1.7.0"),
+                )
+          DECLARATION
+          requirement_string: ".upToNextMinor(from: \"1.7.0\"),"
+        },
+        {
+          identity: "swift-nio-http2",
+          name: "github.com/apple/swift-nio-http2",
+          url: "https://github.com/apple/swift-nio-http2.git",
+          version: "1.42.0",
+          requirement: "= 1.42.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-nio-http2.git",
+                  exact: "1.42.0",
+                )
+          DECLARATION
+          requirement_string: "exact: \"1.42.0\","
+        },
+        {
+          identity: "swift-nio",
+          name: "github.com/apple/swift-nio",
+          url: "https://github.com/apple/swift-nio.git",
+          version: "2.98.0"
+        },
+        {
+          identity: "swift-system",
+          name: "github.com/apple/swift-system",
+          url: "https://github.com/apple/swift-system.git",
+          version: "1.6.4"
+        },
+        {
+          identity: "swift-crypto",
+          name: "github.com/apple/swift-crypto",
+          url: "https://github.com/apple/swift-crypto.git",
+          version: "4.3.1",
+          requirement: "= 4.3.1",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-crypto.git",
+                  .exact("4.3.1",),
+                )
+          DECLARATION
+          requirement_string: ".exact(\"4.3.1\",),"
+        },
+        {
+          identity: "swift-asn1",
+          name: "github.com/apple/swift-asn1",
+          url: "https://github.com/apple/swift-asn1.git",
+          version: "1.7.0"
+        },
+        {
+          identity: "swift-numerics",
+          name: "github.com/apple/swift-numerics",
+          url: "https://github.com/apple/swift-numerics.git",
+          version: "1.1.0",
+          requirement: "= 1.1.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-numerics.git",
+                  .exact("1.1.0"),
+                )
+          DECLARATION
+          requirement_string: ".exact(\"1.1.0\"),"
+        }
+      ]
+    end
+
+    it_behaves_like "parse"
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
@@ -305,7 +452,7 @@ RSpec.describe Dependabot::Swift::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "swift"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "6.2.3"
+        expect(package_manager.version.to_s).to eq "6.3.1"
       end
     end
 
@@ -335,15 +482,12 @@ RSpec.describe Dependabot::Swift::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "swift"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "6.2.3"
+        expect(language.version.to_s).to eq "6.3.1"
       end
     end
   end
 
-  context "when enable_swift_xcode_spm experiment is enabled" do
-    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, true) }
-    after { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
-
+  context "with Xcode SPM projects" do
     context "with a single Xcode project (v2 Package.resolved)" do
       let(:project_name) { "xcode_project" }
       let(:files) do
@@ -572,12 +716,12 @@ RSpec.describe Dependabot::Swift::FileParser do
 
       it "associates requirements with correct pbxproj files" do
         deps = parser.parse
-        nio = deps.find { |d| d.name == "github.com/apple/swift-nio" }
-        collections = deps.find { |d| d.name == "github.com/apple/swift-collections" }
+        nio_dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
+        collections_dep = deps.find { |d| d.name == "github.com/apple/swift-collections" }
 
-        # With scoped requirements, nio comes from AppA and collections from AppB
-        expect(nio.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
-        expect(collections.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
+        # With scoped requirements, swift-nio comes from AppA and swift-collections from AppB
+        expect(nio_dep.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(collections_dep.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
       end
     end
 
@@ -781,40 +925,6 @@ RSpec.describe Dependabot::Swift::FileParser do
         dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
         expect(dep).not_to be_nil
         expect(dep.requirements.first[:file]).to eq("Package.swift")
-      end
-    end
-  end
-
-  context "when enable_swift_xcode_spm experiment is disabled" do
-    before { Dependabot::Experiments.register(:enable_swift_xcode_spm, false) }
-
-    context "with only Xcode files (no Package.swift)" do
-      let(:project_name) { "xcode_project" }
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "MyApp.xcodeproj/project.pbxproj",
-            content: fixture("projects", project_name, "MyApp.xcodeproj", "project.pbxproj"),
-            support_file: true
-          ),
-          Dependabot::DependencyFile.new(
-            name: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
-            content: fixture(
-              "projects",
-              project_name,
-              "MyApp.xcodeproj",
-              "project.xcworkspace",
-              "xcshareddata",
-              "swiftpm",
-              "Package.resolved"
-            )
-          )
-        ]
-      end
-      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-      it "raises an error about missing Package.swift" do
-        expect { parser }.to raise_error("No Package.swift!")
       end
     end
   end

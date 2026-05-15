@@ -134,7 +134,7 @@ module Dependabot
 
         sig { params(prefix: String).returns(T::Array[Dependabot::GitRef]) }
         def tags_with_prefix(prefix)
-          git_commit_checker.allowed_version_tags.select { |tag| tag.name.start_with?(prefix) }
+          git_commit_checker.all_version_tags.select { |tag| tag_prefix(tag.name) == prefix }
         end
 
         sig { params(tag_name: String, prefix: String).returns(T::Array[String]) }
