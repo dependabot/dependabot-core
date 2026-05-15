@@ -200,6 +200,13 @@ PATH
       dependabot-common (= 0.376.0)
 
 PATH
+  remote: ../sbt
+  specs:
+    dependabot-sbt (0.376.0)
+      dependabot-common (= 0.376.0)
+      dependabot-maven (= 0.376.0)
+
+PATH
   remote: ../silent
   specs:
     dependabot-silent (0.376.0)
@@ -627,6 +634,7 @@ DEPENDENCIES
   dependabot-pub!
   dependabot-python!
   dependabot-rust_toolchain!
+  dependabot-sbt!
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!
@@ -718,6 +726,7 @@ CHECKSUMS
   dependabot-pub (0.376.0)
   dependabot-python (0.376.0)
   dependabot-rust_toolchain (0.376.0)
+  dependabot-sbt (0.376.0)
   dependabot-silent (0.376.0)
   dependabot-swift (0.376.0)
   dependabot-terraform (0.376.0)
