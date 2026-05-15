@@ -670,7 +670,7 @@ RSpec.describe Dependabot::Job do
       expect(job.insecure_external_code_execution_allowed?).to be(false)
     end
 
-    it "returns true when insecure external code execution is allow" do
+    it "returns true when insecure external code execution is allowed" do
       attrs = attributes
       attrs[:insecure_external_code_execution] = "allow"
       job = described_class.new(attrs)
