@@ -35,7 +35,15 @@ function Get-Files {
     }
 }
 
-function Update-Files {
+function Get-BaseCommitSha {
+    Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
+    $baseCommitSha = git rev-parse HEAD
+    Pop-Location
+    Write-Host "Base commit SHA: $baseCommitSha"
+    return $baseCommitSha
+}
+
+function Initialize-UpdateEnvironment {
     # install relevant SDKs
     Install-Sdks `
         -jobFilePath $env:DEPENDABOT_JOB_PATH `
@@ -45,14 +53,16 @@ function Update-Files {
     # TODO: install workloads?
 
     Set-NuGetConfig
+}
 
-    Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
-    $baseCommitSha = git rev-parse HEAD
-    Pop-Location
-    Write-Host "Base commit SHA: $baseCommitSha"
+function Build-UpdaterArguments {
+    param(
+        [string]$command,
+        [string]$baseCommitSha
+    )
 
     $arguments = @()
-    $arguments += "run"
+    $arguments += $command
     $arguments += "--job-path", $env:DEPENDABOT_JOB_PATH
     $arguments += "--repo-contents-path", $env:DEPENDABOT_REPO_CONTENTS_PATH
     $arguments += "--api-url", $env:DEPENDABOT_API_URL
@@ -73,24 +83,46 @@ function Update-Files {
         $env:NUGET_FALLBACK_PACKAGES = "$env:DEPENDABOT_HOME/.nuget/packages"
     }
 
+    return $arguments
+}
+
+function Invoke-Updater {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('run', 'graph')]
+        [string]$command
+    )
+
+    Initialize-UpdateEnvironment
+    $baseCommitSha = Get-BaseCommitSha
+
+    $arguments = Build-UpdaterArguments -command $command -baseCommitSha $baseCommitSha
+
     $process = Start-Process -FilePath $updaterTool -ArgumentList $arguments -NoNewWindow -Wait -PassThru
     $process.WaitForExit()
     $script:operationExitCode = $process.ExitCode
 }
 
-function Update-Dependencies {
+function Invoke-DependencyProcess {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('run', 'graph')]
+        [string]$command
+    )
+
     Get-Files
     if ($script:operationExitCode -ne 0) {
         return
     }
 
-    Update-Files
+    Invoke-Updater -command $command
 }
 
 try {
     Switch ($args[0]) {
         "fetch_files" { }
-        "update_files" { Update-Dependencies }
+        "update_files" { Invoke-DependencyProcess -command run }
+        "update_graph" { Invoke-DependencyProcess -command graph }
         default { throw "unknown command: $args[0]" }
     }
     exit $operationExitCode

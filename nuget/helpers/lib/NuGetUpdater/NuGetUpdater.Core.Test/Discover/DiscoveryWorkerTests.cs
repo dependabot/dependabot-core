@@ -1992,4 +1992,121 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         };
         Assert.Throws<InvalidOperationException>(() => DiscoveryWorker.MergeProjectDiscovery(result1, result2));
     }
+
+    [Fact]
+    public async Task TestDependencyGraphIsEmpty_PackagesConfig()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45",
+                    dependencyGroups: [(null, [("Some.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net45"),
+            ],
+            workspacePath: "src",
+            files:
+            [
+                ("src/project.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("src/packages.config", """
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net45"],
+                        Dependencies =
+                        [
+                            new Dependency("Some.Package", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [
+                            "packages.config",
+                        ],
+                        ExpectedDependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Some.Package/1.0.0"] = [],
+                        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestDependencyGraphIsPopulated()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0",
+                    dependencyGroups: [(null, [("Some.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", "net8.0"),
+            ],
+            workspacePath: "src",
+            files:
+            [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies =
+                        [
+                            new Dependency("Some.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+                            new Dependency("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                        ExpectedDependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Some.Package/1.0.0"] = ["Some.Dependency/2.0.0"],
+                            ["Some.Dependency/2.0.0"] = [],
+                        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+                    }
+                ]
+            }
+        );
+    }
 }
