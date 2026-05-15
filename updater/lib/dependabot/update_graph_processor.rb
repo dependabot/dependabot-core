@@ -163,7 +163,7 @@ module Dependabot
         repo_contents_path: job.repo_contents_path,
         source: source,
         credentials: job.credentials,
-        reject_external_code: job.reject_external_code?,
+        reject_external_code: parser_reject_external_code?,
         options: job.experiments
       )
 
@@ -188,6 +188,25 @@ module Dependabot
         status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
         reason: reason || nil
       )
+    end
+
+    sig { returns(T::Boolean) }
+    def parser_reject_external_code?
+      # GitHub-hosted graph jobs for pip can currently send reject_external_code=true
+      # in paths where external code execution is not explicitly denied. Preserve
+      # explicit deny while applying the workaround for absent/inconsistent inputs.
+      return false if pip_graph_hosted_reject_external_code_mismatch?
+
+      job.reject_external_code?
+    end
+
+    sig { returns(T::Boolean) }
+    def pip_graph_hosted_reject_external_code_mismatch?
+      return false unless job.package_manager == "pip"
+      return false unless job.reject_external_code?
+      return false if job.insecure_external_code_execution_disallowed?
+
+      Dependabot::Environment.github_actions?
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
