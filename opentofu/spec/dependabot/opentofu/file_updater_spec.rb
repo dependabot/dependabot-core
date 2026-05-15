@@ -754,6 +754,143 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
+    context "with a module version using interpolated local syntax" do
+      let(:project_name) { "module_with_interpolated_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable value and preserves the interpolation syntax" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+        expect(updated_file.content).to include('version = "${local.module_version}"')
+      end
+    end
+
+    context "with a module version from a local in the same file" do
+      let(:project_name) { "module_with_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable value" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+        expect(updated_file.content).to include("version = local.module_version")
+      end
+    end
+
+    context "with a module version from a local in a different file" do
+      let(:project_name) { "module_with_cross_file_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "locals.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "locals.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable in the locals file" do
+        updated_file = updated_dependency_files.find { |file| file.name == "locals.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+      end
+
+      it "does not modify the main.tf file" do
+        main_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(main_file).to be_nil
+      end
+    end
+
     context "with a required provider block with multiple versions" do
       let(:project_name) { "registry_provider_compound_local_name" }
       let(:dependencies) do
