@@ -559,6 +559,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         repo_contents_path: repo_contents_path,
         credentials: credentials,
         source: source,
+        insecure_external_code_execution_allowed?: true,
         reject_external_code?: true,
         experiments: { large_hadron_collider: true }
       )
@@ -652,6 +653,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         repo_contents_path: repo_contents_path,
         credentials: credentials,
         source: source,
+        insecure_external_code_execution_allowed?: true,
         reject_external_code?: true,
         experiments: { large_hadron_collider: true }
       )
@@ -700,6 +702,100 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
 
     it "preserves reject_external_code for standalone execution" do
+      allow(parser_class).to receive(:new).with(
+        hash_including(
+          dependency_files: dependency_files,
+          repo_contents_path: nil,
+          credentials: credentials,
+          reject_external_code: true,
+          options: { large_hadron_collider: true }
+        )
+      ).and_return(parser)
+      expect(service).to receive(:create_dependency_submission).once
+
+      update_graph_processor.run
+
+      expect(parser_class).to have_received(:new).with(
+        hash_including(
+          dependency_files: dependency_files,
+          repo_contents_path: nil,
+          credentials: credentials,
+          reject_external_code: true,
+          options: { large_hadron_collider: true }
+        )
+      )
+    end
+  end
+
+  context "with a GitHub Actions pip graph job that rejects external code and disallows insecure execution" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:dependency_file) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: "[project]\nname='example'\nversion='0.1.0'",
+        directory: directory
+      )
+    end
+    let(:dependency_files) { [dependency_file] }
+
+    let(:job) do
+      instance_double(
+        Dependabot::Job,
+        id: "42",
+        package_manager: "pip",
+        repo_contents_path: repo_contents_path,
+        credentials: credentials,
+        source: source,
+        insecure_external_code_execution_allowed?: false,
+        reject_external_code?: true,
+        experiments: { large_hadron_collider: true }
+      )
+    end
+
+    let(:parser_klass) do
+      Class.new do
+        def initialize(**_kwargs); end
+      end
+    end
+    let(:grapher_klass) do
+      Class.new do
+        def initialize(file_parser:); end
+
+        def resolved_dependencies; end
+
+        def errored_fetching_subdependencies; end
+
+        def relevant_dependency_file; end
+      end
+    end
+
+    let(:parser) { instance_double(parser_klass) }
+    let(:grapher) do
+      instance_double(
+        grapher_klass,
+        resolved_dependencies: {},
+        errored_fetching_subdependencies: false,
+        relevant_dependency_file: dependency_file
+      )
+    end
+    let(:parser_class) { class_double(parser_klass) }
+    let(:grapher_class) { class_double(grapher_klass) }
+
+    before do
+      allow(Dependabot::Environment).to receive(:github_actions?).and_return(true)
+
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+        .with("pip")
+        .and_return(parser_class)
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with("pip")
+        .and_return(grapher_class)
+
+      allow(grapher_class).to receive(:new).with(file_parser: parser).and_return(grapher)
+    end
+
+    it "preserves reject_external_code when insecure execution is not explicitly allowed" do
       allow(parser_class).to receive(:new).with(
         hash_including(
           dependency_files: dependency_files,

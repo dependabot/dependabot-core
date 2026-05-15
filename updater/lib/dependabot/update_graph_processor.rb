@@ -204,6 +204,7 @@ module Dependabot
     def pip_graph_hosted_reject_external_code_mismatch?
       return false unless job.package_manager == "pip"
       return false unless job.reject_external_code?
+      return false unless job.insecure_external_code_execution_allowed?
 
       Dependabot::Environment.github_actions?
     end

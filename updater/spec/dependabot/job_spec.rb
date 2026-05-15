@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Job do
       let(:directories) { nil }
 
       it "raises a helpful error" do
-        expect { job.source.directory }.to raise_error
+        expect { job.source.directory }.to raise_error(RuntimeError)
       end
     end
 
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Job do
       let(:directories) { %w(/hello /world) }
 
       it "raises a helpful error" do
-        expect { job.source.directory }.to raise_error
+        expect { job.source.directory }.to raise_error(RuntimeError)
       end
     end
   end
@@ -662,6 +662,26 @@ RSpec.describe Dependabot::Job do
       attrs[:reject_external_code] = true
       job = described_class.new(attrs)
       expect(job.reject_external_code?).to be(true)
+    end
+  end
+
+  describe "#insecure_external_code_execution_allowed?" do
+    it "defaults to false" do
+      expect(job.insecure_external_code_execution_allowed?).to be(false)
+    end
+
+    it "returns true when insecure external code execution is allow" do
+      attrs = attributes
+      attrs[:insecure_external_code_execution] = "allow"
+      job = described_class.new(attrs)
+      expect(job.insecure_external_code_execution_allowed?).to be(true)
+    end
+
+    it "returns false when insecure external code execution is deny" do
+      attrs = attributes
+      attrs[:insecure_external_code_execution] = "deny"
+      job = described_class.new(attrs)
+      expect(job.insecure_external_code_execution_allowed?).to be(false)
     end
   end
 
