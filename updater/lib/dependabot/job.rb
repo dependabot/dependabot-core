@@ -297,6 +297,11 @@ module Dependabot
       @insecure_external_code_execution == "allow"
     end
 
+    sig { returns(T::Boolean) }
+    def insecure_external_code_execution_disallowed?
+      @insecure_external_code_execution == "deny"
+    end
+
     # TODO: Remove vulnerability checking
     #
     # This method does too much, let's make it focused on _just_ determining

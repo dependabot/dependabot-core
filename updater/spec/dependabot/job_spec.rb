@@ -685,6 +685,26 @@ RSpec.describe Dependabot::Job do
     end
   end
 
+  describe "#insecure_external_code_execution_disallowed?" do
+    it "defaults to false" do
+      expect(job.insecure_external_code_execution_disallowed?).to be(false)
+    end
+
+    it "returns false when insecure external code execution is allow" do
+      attrs = attributes
+      attrs[:insecure_external_code_execution] = "allow"
+      job = described_class.new(attrs)
+      expect(job.insecure_external_code_execution_disallowed?).to be(false)
+    end
+
+    it "returns true when insecure external code execution is deny" do
+      attrs = attributes
+      attrs[:insecure_external_code_execution] = "deny"
+      job = described_class.new(attrs)
+      expect(job.insecure_external_code_execution_disallowed?).to be(true)
+    end
+  end
+
   describe "#cooldown" do
     context "when cooldown is provided" do
       let(:cooldown) do

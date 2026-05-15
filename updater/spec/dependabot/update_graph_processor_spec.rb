@@ -559,7 +559,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         repo_contents_path: repo_contents_path,
         credentials: credentials,
         source: source,
-        insecure_external_code_execution_allowed?: true,
+        insecure_external_code_execution_disallowed?: false,
         reject_external_code?: true,
         experiments: { large_hadron_collider: true }
       )
@@ -653,7 +653,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         repo_contents_path: repo_contents_path,
         credentials: credentials,
         source: source,
-        insecure_external_code_execution_allowed?: true,
+        insecure_external_code_execution_disallowed?: false,
         reject_external_code?: true,
         experiments: { large_hadron_collider: true }
       )
@@ -747,7 +747,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         repo_contents_path: repo_contents_path,
         credentials: credentials,
         source: source,
-        insecure_external_code_execution_allowed?: false,
+        insecure_external_code_execution_disallowed?: true,
         reject_external_code?: true,
         experiments: { large_hadron_collider: true }
       )
