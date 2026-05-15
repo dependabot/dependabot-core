@@ -303,11 +303,9 @@ module Dependabot
       previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
       # adding a random suffix to avoid conflicts when running in parallel
       # some package managers like bundler will modify the global git config
-      git_config_global_path = File.expand_path("#{SecureRandom.hex(16)}.gitconfig", Utils::BUMP_TMP_DIR_PATH)
-      git_store_path = File.expand_path(
-        "#{File.basename(git_config_global_path, '.gitconfig')}.git.store",
-        Utils::BUMP_TMP_DIR_PATH
-      )
+      random_suffix = SecureRandom.hex(16)
+      git_config_global_path = File.expand_path("#{random_suffix}.gitconfig", Utils::BUMP_TMP_DIR_PATH)
+      git_store_path = File.join(Dir.pwd, "#{random_suffix}.git.store")
       previous_terminal_prompt = ENV.fetch("GIT_TERMINAL_PROMPT", nil)
 
       begin
