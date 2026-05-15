@@ -69,11 +69,24 @@ module Dependabot
     sig { override.returns(Dependabot::Job) }
     def job
       @job ||= T.let(
-        Job.new_update_job(
-          job_id: job_id,
-          job_definition: Environment.job_definition,
-          repo_contents_path: Environment.repo_contents_path
-        ),
+        begin
+          definition = Environment.job_definition
+          job_hash = definition["job"]
+
+          # Fetch blocked versions from the API if the experiment is enabled.
+          # Inject them into the job definition so they're available at construction time.
+          if Experiments.enabled?(:blocked_versions)
+            package_manager = job_hash["package-manager"] || job_hash["package_manager"] || ""
+            blocked = service.fetch_blocked_versions(package_manager)
+            job_hash["blocked-versions"] = blocked if blocked.any?
+          end
+
+          Job.new_update_job(
+            job_id: job_id,
+            job_definition: definition,
+            repo_contents_path: Environment.repo_contents_path
+          )
+        end,
         T.nilable(Dependabot::Job)
       )
     end

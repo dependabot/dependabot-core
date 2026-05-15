@@ -800,4 +800,80 @@ RSpec.describe Dependabot::ApiClient do
       end
     end
   end
+
+  describe "fetch_blocked_versions" do
+    let(:blocked_versions_url) { "http://example.com/update_jobs/1/blocked_versions" }
+
+    context "when the API returns blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [
+                { "dependency-name" => "event-stream", "version" => "3.3.6", "reason" => "malware" },
+                { "dependency-name" => "flatmap-stream", "version" => "0.1.1", "reason" => "malware" }
+              ]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns the blocked versions array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq(
+          [
+            { "dependency-name" => "event-stream", "version" => "3.3.6", "reason" => "malware" },
+            { "dependency-name" => "flatmap-stream", "version" => "0.1.1", "reason" => "malware" }
+          ]
+        )
+      end
+    end
+
+    context "when the API returns an error" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 500, body: "Internal Server Error", headers: headers)
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API times out" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_timeout
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns no blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns an empty array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+  end
 end

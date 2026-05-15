@@ -438,4 +438,53 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
     end
   end
+
+  describe "#perform_job with blocked versions experiment enabled" do
+    subject(:perform_job) { job.perform_job }
+
+    before do
+      Dependabot::Experiments.register(:blocked_versions, true)
+      allow(service).to receive(:fetch_blocked_versions).and_return(blocked_versions)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    let(:blocked_versions) do
+      [
+        { "dependency-name" => "rails", "version" => "7.0.0", "reason" => "vulnerability" }
+      ]
+    end
+
+    it "fetches blocked versions and injects them into the job definition" do
+      dummy_runner = double(run: nil)
+      allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+      allow(dummy_runner).to receive(:run)
+      allow(service).to receive(:mark_job_as_processed)
+      allow(service).to receive(:update_dependency_list)
+
+      expect(service).to receive(:fetch_blocked_versions).with("bundler")
+
+      perform_job
+    end
+
+    context "when the API returns no blocked versions" do
+      let(:blocked_versions) { [] }
+
+      it "does not inject blocked versions into the job definition" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        perform_job
+
+        # Job should still have empty blocked_versions (the default)
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to eq([])
+      end
+    end
+  end
 end
