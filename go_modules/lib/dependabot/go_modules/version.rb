@@ -21,6 +21,15 @@ module Dependabot
                         '(\+incompatible)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
+      PSEUDO_VERSION_REGEX = T.let(/\d{14}-[0-9a-f]{12}$/, Regexp)
+
+      sig { params(version: T.nilable(String)).returns(T::Boolean) }
+      def self.pseudo_version?(version)
+        return false if version.nil?
+
+        PSEUDO_VERSION_REGEX.match?(version)
+      end
+
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         version = version.gsub(/^v/, "") if version.is_a?(String)

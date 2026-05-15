@@ -36,7 +36,6 @@ module Dependabot
         # OR the version of Go required is greater than what Dependabot supports
         # OR other go.mod version errors
         INVALID_VERSION_REGEX = /(go: loading module retractions for)|(version "[^"]+" invalid)/m
-        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         sig do
           params(
