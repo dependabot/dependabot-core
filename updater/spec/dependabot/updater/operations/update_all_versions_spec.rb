@@ -310,20 +310,9 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         expect { update_all_versions.send(:check_and_create_pull_request, dependency) }.not_to raise_error
       end
 
-      it "returns nil from the original method body" do
-        raw_returns = []
-        tracer = TracePoint.new(:return) do |trace|
-          next unless trace.path.end_with?("updater/lib/dependabot/updater/operations/update_all_versions.rb")
-          next unless trace.method_id == :check_and_create_pull_request
-
-          raw_returns << trace.return_value
-        end
-
-        tracer.enable do
-          update_all_versions.send(:check_and_create_pull_request, dependency)
-        end
-
-        expect(raw_returns).to include(nil)
+      it "does not log an existing PR for the latest version" do
+        expect(update_all_versions).not_to receive(:log_existing_pr_for_latest_version)
+        update_all_versions.send(:check_and_create_pull_request, dependency)
       end
     end
 
