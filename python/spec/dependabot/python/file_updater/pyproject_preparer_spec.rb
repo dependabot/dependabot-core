@@ -350,5 +350,25 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         end
       end
     end
+
+    context "with PEP 735 dependency-groups" do
+      let(:dependencies) { [] }
+      let(:pyproject_fixture_name) { "poetry_v2_groups_markers.toml" }
+      let(:poetry_lock_fixture_name) { "poetry_v2_groups_markers.lock" }
+
+      it "freezes dependency-groups entries to their locked versions" do
+        result = freeze_top_level_dependencies_except
+        parsed = TomlRB.parse(result)
+
+        project_deps = parsed.dig("project", "dependencies")
+        requests_dep = project_deps.find { |d| d.start_with?("requests") }
+        expect(requests_dep).to eq("requests==2.31.0")
+
+        groups = parsed["dependency-groups"]
+        expect(groups["dev"]).to include("pytest==8.0.2", "black==24.2.0")
+        expect(groups["dev"]).to include("colorama==0.4.6 ; sys_platform == 'win32'")
+        expect(groups["docs"]).to include("sphinx==7.2.6")
+      end
+    end
   end
 end

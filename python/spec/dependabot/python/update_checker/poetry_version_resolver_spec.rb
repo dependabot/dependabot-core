@@ -62,6 +62,34 @@ RSpec.describe namespace::PoetryVersionResolver do
     }]
   end
 
+  describe "#set_target_dependency_req" do
+    subject(:updated_pyproject_content) do
+      resolver.send(:set_target_dependency_req, pyproject_content, updated_requirement)
+    end
+
+    let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
+
+    context "when a poetry group has no dependencies table" do
+      let(:pyproject_fixture_name) { "poetry_group_without_dependencies.toml" }
+      let(:dependency_name) { "requests" }
+      let(:dependency_version) { "2.31.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "^2.31.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it "does not raise and updates the target requirement" do
+        expect { updated_pyproject_content }.not_to raise_error
+        parsed = TomlRB.parse(updated_pyproject_content)
+        expect(parsed.dig("tool", "poetry", "dependencies", "requests")).to eq(updated_requirement)
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: updated_requirement) }
 
