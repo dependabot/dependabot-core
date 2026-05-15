@@ -421,6 +421,27 @@ RSpec.describe namespace::SubdependencyVersionResolver do
           end
         end
 
+        context "when fallback runs but lockfile content is unchanged" do
+          let(:parsed_dep) do
+            Dependabot::Dependency.new(
+              name: "acorn",
+              version: "5.5.3",
+              requirements: [],
+              package_manager: "npm_and_yarn",
+              metadata: { all_versions: all_version_deps }
+            )
+          end
+
+          before do
+            allow(Dependabot::NpmAndYarn::NativeHelpers)
+              .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
+          end
+
+          it "does not infer a newer resolvable version from all_versions alone" do
+            expect(latest_resolvable_version).to eq(Gem::Version.new("5.5.3"))
+          end
+        end
+
         context "when the experiment is disabled" do
           before do
             allow(Dependabot::Experiments).to receive(:enabled?)

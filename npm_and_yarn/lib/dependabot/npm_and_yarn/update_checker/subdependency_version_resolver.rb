@@ -113,6 +113,8 @@ module Dependabot
 
         sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Gem::Version)) }
         def version_from_updated_lockfiles(updated_lockfiles)
+          lockfile_changed = lockfiles_changed?(updated_lockfiles)
+
           updated_files = dependency_files -
                           dependency_files_builder.lockfiles +
                           updated_lockfiles
@@ -126,19 +128,21 @@ module Dependabot
 
           combined = version_class.new(parsed_dep.version)
           current_version = dependency.version ? version_class.new(dependency.version) : nil
-          audit_fix_version = audit_fix_best_version(parsed_dep, current_version)
+          audit_fix_version = audit_fix_best_version(parsed_dep, current_version, lockfile_changed)
           audit_fix_version || combined
         end
 
         sig do
           params(
             parsed_dep: Dependabot::Dependency,
-            current_version: T.nilable(Gem::Version)
+            current_version: T.nilable(Gem::Version),
+            lockfile_changed: T::Boolean
           ).returns(T.nilable(Gem::Version))
         end
-        def audit_fix_best_version(parsed_dep, current_version)
+        def audit_fix_best_version(parsed_dep, current_version, lockfile_changed)
           return unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
           return unless current_version
+          return unless lockfile_changed
 
           all_versions = parsed_dep.metadata[:all_versions]
           return unless all_versions&.any?
@@ -163,6 +167,17 @@ module Dependabot
             .filter_map { |d| version_class.new(d.version) if d.version }
             .select { |v| v > current_version && (allowable.nil? || v <= allowable) }
             .max
+        end
+
+        sig { params(updated_lockfiles: T::Array[Dependabot::DependencyFile]).returns(T::Boolean) }
+        def lockfiles_changed?(updated_lockfiles)
+          original_lockfile_contents = dependency_files_builder.lockfiles.to_h do |lockfile|
+            [lockfile.name, lockfile.content]
+          end
+
+          updated_lockfiles.any? do |lockfile|
+            lockfile.content != original_lockfile_contents[lockfile.name]
+          end
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
