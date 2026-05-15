@@ -747,6 +747,56 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
+  context "when the source directories use unnormalized strings" do
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    # `Job#clean_directories` only normalizes leading slashes, so a CLI input of
+    # `--directory=.` ends up as `"/."` in `job.source.directories`, while the file
+    # fetcher cleanpaths it to `"/"` before stamping it onto each `DependencyFile`.
+    # Without normalization in the processor, `dependency_files_for("/.")` returns
+    # an empty list and the snapshot is silently skipped.
+    [
+      ["/.", "/"],
+      [".", "/"],
+      ["./", "/"],
+      ["//", "/"],
+      ["/foo/.", "/foo"],
+      ["foo", "/foo"],
+      ["./bar", "/bar"]
+    ].each do |raw_dir, expected_dir|
+      context "with raw directory #{raw_dir.inspect}" do
+        let(:directories) { [raw_dir] }
+
+        let(:dependency_files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("bundler/original/Gemfile"),
+              directory: expected_dir
+            ),
+            Dependabot::DependencyFile.new(
+              name: "Gemfile.lock",
+              content: fixture("bundler/original/Gemfile.lock"),
+              directory: expected_dir
+            )
+          ]
+        end
+
+        it "matches files under the normalized directory and emits a populated snapshot" do
+          expect(service).to receive(:create_dependency_submission) do |args|
+            payload = args[:dependency_submission].payload
+
+            expect(payload[:metadata][:status])
+              .to eql(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
+            expect(payload[:manifests]).not_to be_empty
+          end
+
+          update_graph_processor.run
+        end
+      end
+    end
+  end
+
   context "when the dependency submission API is unavailable" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
