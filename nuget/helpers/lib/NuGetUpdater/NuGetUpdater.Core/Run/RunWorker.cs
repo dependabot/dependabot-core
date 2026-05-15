@@ -51,8 +51,29 @@ public class RunWorker
 
     public async Task<int> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        if (experimentsManager.FindRootDirectory)
+        {
+            _logger.Info("FindRootDirectory experiment is enabled; resolving root directories...");
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
+            job = await ResolveRootDirectoriesAsync(job, repoContentsPath.FullName);
+        }
+
         var result = await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
+    }
+
+    internal async Task<Job> ResolveRootDirectoriesAsync(Job job, string repoRootPath)
+    {
+        var originalDirectories = job.GetAllDirectories(repoRootPath);
+        var rootDirectories = await EntryPointFinder.FindRootDirectoriesAsync(originalDirectories, repoRootPath, _logger);
+        if (rootDirectories.SequenceEqual(originalDirectories))
+        {
+            return job;
+        }
+
+        _logger.Info($"  Updated job directories from [{string.Join(", ", originalDirectories)}] to [{string.Join(", ", rootDirectories)}]");
+        var updatedSource = job.Source with { Directory = null, Directories = rootDirectories.ToArray() };
+        return job with { Source = updatedSource };
     }
 
     private static readonly ImmutableArray<IUpdateHandler> UpdateHandlers =
