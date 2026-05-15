@@ -167,6 +167,7 @@ module Dependabot
 
           # Freeze PEP 621 project.dependencies and project.optional-dependencies
           freeze_pep621_top_level_deps!(pyproject_object, excluded_names)
+          freeze_pep735_dependency_groups!(pyproject_object, excluded_names)
 
           TomlRB.dump(pyproject_object)
         end
@@ -218,6 +219,36 @@ module Dependabot
 
           project_object["optional-dependencies"]&.each_value do |opt_deps|
             freeze_pep621_dep_array!(opt_deps, excluded_names)
+          end
+        end
+
+        sig { params(pyproject_object: T::Hash[String, T.untyped], excluded_names: T::Array[String]).void }
+        def freeze_pep735_dependency_groups!(pyproject_object, excluded_names)
+          dependency_groups = pyproject_object["dependency-groups"]
+          return unless dependency_groups
+
+          dependency_groups.each_value do |dep_array|
+            freeze_pep735_dep_array!(dep_array, excluded_names)
+          end
+        end
+
+        sig { params(dep_array: T.nilable(T::Array[T.untyped]), excluded_names: T::Array[String]).void }
+        def freeze_pep735_dep_array!(dep_array, excluded_names)
+          return unless dep_array
+
+          dep_array.each_with_index do |entry, index|
+            next unless entry.is_a?(String)
+
+            match = entry.match(/\A([a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)/i)
+            next unless match
+
+            dep_name = normalise(T.must(match[1]))
+            next if excluded_names.include?(dep_name)
+
+            locked_details = locked_details(dep_name)
+            next unless (locked_version = locked_details&.fetch("version"))
+
+            dep_array[index] = self.class.send(:pin_pep508_entry, entry, locked_version)
           end
         end
 
