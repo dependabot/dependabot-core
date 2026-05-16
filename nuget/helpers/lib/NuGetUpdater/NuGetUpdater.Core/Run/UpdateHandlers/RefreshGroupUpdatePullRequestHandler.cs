@@ -68,6 +68,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         var updateOperationsPerformed = new List<UpdateOperationBase>();
         var updatedDependencies = new List<ReportedDependency>();
         var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
+        var initialLockFiles = ModifiedFilesTracker.GetExistingLockFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -78,7 +79,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialLockFiles);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
 
             var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
@@ -89,7 +90,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
                 .ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
             logger.Info($"Updating dependencies: {string.Join(", ", groupedUpdateOperationsToPerform.Select(g => g.Key).Distinct().OrderBy(d => d, StringComparer.OrdinalIgnoreCase))}");
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialLockFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
