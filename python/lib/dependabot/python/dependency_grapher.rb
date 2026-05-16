@@ -16,6 +16,11 @@ require "toml-rb"
 module Dependabot
   module Python
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
+      HOME_ASSISTANT_MANIFEST_PATTERN = T.let(
+        %r{\A(?:custom_components|homeassistant/components)/[^/]+/manifest\.json\z},
+        Regexp
+      )
+
       require_relative "dependency_grapher/lockfile_generator"
 
       # Regex patterns for detecting Python requirements / dependencies .txt manifest variants.
@@ -49,8 +54,8 @@ module Dependabot
             PipenvPackageManager::NAME => [pipfile_lock, pipfile],
             PoetryPackageManager::NAME => [committed_poetry_lock, pyproject_toml],
             PipCompilePackageManager::NAME => [pip_compile_lockfile, pip_compile_manifest, pyproject_toml],
-            PipPackageManager::NAME => [pip_requirements_file, pyproject_toml, pipfile_lock, pipfile, setup_file,
-                                        setup_cfg_file]
+            PipPackageManager::NAME => [pip_requirements_file, home_assistant_manifest_file, pyproject_toml,
+                                        pipfile_lock, pipfile, setup_file, setup_cfg_file]
           },
           T::Hash[String, T::Array[T.nilable(Dependabot::DependencyFile)]]
         )
@@ -377,6 +382,16 @@ module Dependabot
         @pip_requirements_file = T.let(
           dependency_files.find { |f| f.name == "requirements.txt" } ||
             dependency_files.find { |f| f.name.end_with?(".txt") && python_manifest_txt_filename?(f.name) },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def home_assistant_manifest_file
+        return @home_assistant_manifest_file if defined?(@home_assistant_manifest_file)
+
+        @home_assistant_manifest_file = T.let(
+          dependency_files.find { |f| f.name.match?(HOME_ASSISTANT_MANIFEST_PATTERN) },
           T.nilable(Dependabot::DependencyFile)
         )
       end

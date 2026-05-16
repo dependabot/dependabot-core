@@ -89,6 +89,45 @@ RSpec.describe Dependabot::Python::FileUpdater do
       specify { expect(updated_files.count).to eq(2) }
     end
 
+    context "with a Home Assistant manifest" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "custom_components/kia_uvo/manifest.json",
+            content: fixture("home_assistant", "manifest.json")
+          )
+        ]
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aiohue",
+          version: "1.9.1",
+          previous_version: "1.8.0",
+          requirements: [{
+            requirement: "==1.9.1",
+            file: "custom_components/kia_uvo/manifest.json",
+            source: nil,
+            groups: []
+          }],
+          previous_requirements: [{
+            requirement: "==1.8.0",
+            file: "custom_components/kia_uvo/manifest.json",
+            source: nil,
+            groups: []
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      it "delegates to HomeAssistantManifestUpdater" do
+        expect(described_class::HomeAssistantManifestUpdater)
+          .to receive(:new).and_call_original
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
     context "with a Pipfile and Pipfile.lock" do
       let(:dependency_files) { [pipfile, lockfile] }
       let(:pipfile) do

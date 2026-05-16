@@ -1822,6 +1822,45 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       its([:requirement]) { is_expected.to eq("==2.6.0") }
     end
 
+    context "when the requirement is in a Home Assistant manifest" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "custom_components/kia_uvo/manifest.json",
+            content: fixture("home_assistant", "manifest.json")
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "aiohue",
+          version: "1.8.0",
+          requirements: [{
+            file: "custom_components/kia_uvo/manifest.json",
+            requirement: "==1.8.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      before do
+        allow(checker).to receive(:preferred_resolvable_version).and_return(Gem::Version.new("1.9.1"))
+      end
+
+      it "updates the manifest requirement" do
+        expect(checker.updated_requirements).to eq(
+          [{
+            requirement: "==1.9.1",
+            file: "custom_components/kia_uvo/manifest.json",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
+
     context "when there is a pyproject.toml file with poetry dependencies" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "tilde_version.toml" }
