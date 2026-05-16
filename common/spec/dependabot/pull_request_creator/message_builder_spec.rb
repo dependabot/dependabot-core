@@ -3561,6 +3561,85 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         expect(pr_message.scan(markdown).count).to eq(1)
       end
     end
+
+    context "with pull_request_description options" do
+      let(:builder) do
+        described_class.new(
+          source: source,
+          dependencies: dependencies,
+          files: files,
+          credentials: credentials,
+          pr_message_header: pr_message_header,
+          pr_message_footer: pr_message_footer,
+          commit_message_options: commit_message_options,
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          github_redirection_service: github_redirection_service,
+          dependency_group: dependency_group,
+          ignore_conditions: ignore_conditions,
+          notices: notices,
+          pull_request_description: pull_request_description
+        )
+      end
+
+      context "when configured to 'short'" do
+        let(:pull_request_description) { "short" }
+
+        it "uses short description (links) in pr_message" do
+          expect(pr_message).to include("- [Changelog]")
+          expect(pr_message).not_to include("business's changelog")
+        end
+      end
+
+      context "when configured to 'full'" do
+        let(:pull_request_description) { "full" }
+
+        it "uses full description in pr_message" do
+          expect(pr_message).to include("business's changelog")
+        end
+      end
+
+      context "when configured to 'auto'" do
+        let(:pull_request_description) { "auto" }
+
+        context "when the repo strictly enforces squash merge" do
+          before do
+            stub_request(:get, watched_repo_url)
+              .to_return(
+                status: 200,
+                body: {
+                  allow_squash_merge: true,
+                  allow_merge_commit: false,
+                  allow_rebase_merge: false
+                }.to_json,
+                headers: json_header
+              )
+          end
+
+          it "automatically uses short description" do
+            expect(pr_message).to include("- [Changelog]")
+          end
+        end
+
+        context "when the repo allows other merge methods" do
+          before do
+            stub_request(:get, watched_repo_url)
+              .to_return(
+                status: 200,
+                body: {
+                  allow_squash_merge: true,
+                  allow_merge_commit: true,
+                  allow_rebase_merge: false
+                }.to_json,
+                headers: json_header
+              )
+          end
+
+          it "defaults to full description" do
+            expect(pr_message).to include("business's changelog")
+          end
+        end
+      end
+    end
   end
 
   describe "#commit_message", :vcr do

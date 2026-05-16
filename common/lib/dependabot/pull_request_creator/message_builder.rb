@@ -86,7 +86,8 @@ module Dependabot
           pr_message_max_length: T.nilable(Integer),
           pr_message_encoding: T.nilable(Encoding),
           ignore_conditions: T::Array[T::Hash[String, String]],
-          notices: T.nilable(T::Array[Dependabot::Notice])
+          notices: T.nilable(T::Array[Dependabot::Notice]),
+          pull_request_description: T.nilable(String)
         )
           .void
       end
@@ -104,7 +105,8 @@ module Dependabot
         pr_message_max_length: nil,
         pr_message_encoding: nil,
         ignore_conditions: [],
-        notices: nil
+        notices: nil,
+        pull_request_description: nil
       )
         @dependencies               = dependencies
         @files                      = files
@@ -120,6 +122,8 @@ module Dependabot
         @pr_message_encoding        = pr_message_encoding
         @ignore_conditions          = ignore_conditions
         @notices                    = notices
+        @pull_request_description   = T.let(pull_request_description || "auto", String)
+        @is_squash_merge            = T.let(nil, T.nilable(T::Boolean))
       end
 
       sig { params(pr_message_max_length: Integer).returns(Integer) }
@@ -142,7 +146,7 @@ module Dependabot
         msg = "#{pr_notices}" \
               "#{suffixed_pr_message_header}" \
               "#{commit_message_intro}" \
-              "#{metadata_cascades}" \
+              "#{short_description? ? metadata_links : metadata_cascades}" \
               "#{ignore_conditions_table}" \
               "#{prefixed_pr_message_footer}"
 
@@ -963,6 +967,33 @@ module Dependabot
           T.must(dependencies.first).package_manager,
           T.nilable(String)
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def short_description?
+        return false if @pull_request_description == "full"
+        return true if @pull_request_description == "short"
+
+        auto_detect_squash_merge?
+      end
+
+      sig { returns(T::Boolean) }
+      def auto_detect_squash_merge?
+        return false unless source.provider == "github"
+        return @is_squash_merge unless @is_squash_merge.nil?
+
+        @is_squash_merge = check_squash_merge_from_api
+      end
+
+      sig { returns(T::Boolean) }
+      def check_squash_merge_from_api
+        client = Dependabot::Clients::GithubWithRetries.for_source(source: source, credentials: credentials)
+        repo_method = :repository
+        repo_info = client.public_send(repo_method, source.repo)
+        !!(repo_info.allow_squash_merge && !repo_info.allow_merge_commit && !repo_info.allow_rebase_merge)
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to detect squash merge settings: #{e.message}")
+        false
       end
 
       sig { params(method: String, err: StandardError).void }

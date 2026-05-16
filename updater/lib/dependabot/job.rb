@@ -57,6 +57,7 @@ module Dependabot
         cooldown
         repo_private
         multi_ecosystem_update
+        pull_request_description
       ).freeze,
       T::Array[Symbol]
     )
@@ -220,6 +221,7 @@ module Dependabot
       @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
+      @pull_request_description       = T.let(attributes.fetch(:pull_request_description, nil), T.nilable(String))
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -686,7 +688,8 @@ module Dependabot
 
       update_config = Dependabot::Config::UpdateConfig.new(
         ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition]),
-        exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String]))
+        exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String])),
+        pull_request_description: @pull_request_description
       )
       T.let(update_config, Dependabot::Config::UpdateConfig)
     end

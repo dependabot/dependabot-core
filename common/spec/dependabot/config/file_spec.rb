@@ -61,5 +61,50 @@ RSpec.describe Dependabot::Config::File do
         expect(types_ignore.update_types).to eq(["version-update:semver-patch"])
       end
     end
+
+    describe "#update_config pull-request-description" do
+      it "parses pull-request-description" do
+        yaml = <<~YAML
+          version: 2
+          updates:
+            - package-ecosystem: "npm"
+              directory: "/"
+              schedule:
+                interval: "weekly"
+              pull-request-description: "short"
+        YAML
+        cfg = described_class.parse(yaml)
+        update_config = cfg.update_config("npm_and_yarn")
+        expect(update_config.pull_request_description).to eq("short")
+      end
+
+      it "defaults pull-request-description to auto" do
+        yaml = <<~YAML
+          version: 2
+          updates:
+            - package-ecosystem: "npm"
+              directory: "/"
+              schedule:
+                interval: "weekly"
+        YAML
+        cfg = described_class.parse(yaml)
+        update_config = cfg.update_config("npm_and_yarn")
+        expect(update_config.pull_request_description).to eq("auto")
+      end
+
+      it "raises an error for invalid pull-request-description" do
+        yaml = <<~YAML
+          version: 2
+          updates:
+            - package-ecosystem: "npm"
+              directory: "/"
+              schedule:
+                interval: "weekly"
+              pull-request-description: "garbage"
+        YAML
+        expect { described_class.parse(yaml) }
+          .to raise_error(Dependabot::Config::InvalidConfigError, /invalid pull-request-description/)
+      end
+    end
   end
 end
