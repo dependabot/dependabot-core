@@ -172,6 +172,114 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
       end
     end
 
+    context "when devEngines field exists" do
+      let(:lockfiles) { {} }
+
+      context "when devEngines.packageManager is an array" do
+        let(:package_json) do
+          {
+            "devEngines" => {
+              "runtime" => {
+                "name" => "node",
+                "version" => "^18 || ^20 || ^22",
+                "onFail" => "warn"
+              },
+              "packageManager" => [
+                {
+                  "name" => "npm",
+                  "version" => "^10 || ^11",
+                  "onFail" => "warn"
+                }
+              ]
+            }
+          }
+        end
+
+        it "returns npm from devEngines array" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+
+      context "when devEngines.packageManager is an object" do
+        let(:package_json) do
+          {
+            "devEngines" => {
+              "runtime" => {
+                "name" => "node",
+                "version" => "^18.0.0"
+              },
+              "packageManager" => {
+                "name" => "pnpm",
+                "version" => "^8.0.0"
+              }
+            }
+          }
+        end
+
+        it "returns pnpm from devEngines object" do
+          expect(detector.detect_package_manager).to eq("pnpm")
+        end
+      end
+
+      context "when devEngines.packageManager has multiple entries in array" do
+        let(:package_json) do
+          {
+            "devEngines" => {
+              "packageManager" => [
+                {
+                  "name" => "yarn",
+                  "version" => "^3.0.0"
+                },
+                {
+                  "name" => "npm",
+                  "version" => "^10.0.0"
+                }
+              ]
+            }
+          }
+        end
+
+        it "returns first valid package manager from array" do
+          expect(detector.detect_package_manager).to eq("yarn")
+        end
+      end
+
+      context "when devEngines.packageManager has unknown package manager" do
+        let(:package_json) do
+          {
+            "devEngines" => {
+              "packageManager" => {
+                "name" => "unknown-pm",
+                "version" => "1.0.0"
+              }
+            }
+          }
+        end
+
+        it "returns default npm" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+
+      context "when devEngines exists but engines also has package manager" do
+        let(:package_json) do
+          {
+            "engines" => { "yarn" => "1" },
+            "devEngines" => {
+              "packageManager" => {
+                "name" => "npm",
+                "version" => "^10.0.0"
+              }
+            }
+          }
+        end
+
+        it "prefers devEngines over engines" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
