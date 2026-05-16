@@ -79,6 +79,7 @@ module Dependabot
         def updated_setup_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
+          return widen_requirement(req) if update_strategy == RequirementsUpdateStrategy::WidenRanges
           return req if new_version_satisfies?(req)
 
           req_strings = req[:requirement].split(",").map(&:strip)
