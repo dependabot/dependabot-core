@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -64,7 +64,12 @@ module Dependabot
 
     sig { params(err: StandardError).void }
     def handle_unknown_error(err)
-      fingerprint = (T.unsafe(err).sentry_context[:fingerprint] if err.respond_to?(:sentry_context))
+      fingerprint = (if err.respond_to?(:sentry_context)
+                       T.cast(
+                         err,
+                         Dependabot::HasSentryContext
+                       ).sentry_context[:fingerprint]
+                     end)
 
       error_details = {
         ErrorAttributes::CLASS => err.class.to_s,

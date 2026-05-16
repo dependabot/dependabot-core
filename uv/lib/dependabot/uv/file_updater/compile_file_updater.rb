@@ -177,7 +177,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig do
           params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile])
         end
@@ -193,19 +192,24 @@ module Dependabot
           files = dependency_files
                   .reject { |file| updated_filenames.include?(file.name) }
 
-          args = T.must(dependency).to_h
-          args = args.keys.to_h { |k| [k.to_sym, args[k]] }
-          args[:requirements] = new_reqs
-          args[:previous_requirements] = old_reqs
+          dep = T.must(dependency)
 
           RequirementFileUpdater.new(
-            dependencies: [Dependency.new(**T.unsafe(args))],
+            dependencies: [Dependency.new(
+              name: dep.name,
+              version: dep.version,
+              requirements: new_reqs,
+              package_manager: dep.package_manager,
+              previous_version: dep.previous_version,
+              previous_requirements: old_reqs,
+              directory: dep.directory,
+              subdependency_metadata: dep.subdependency_metadata,
+              removed: dep.removed?
+            )],
             dependency_files: files,
             credentials: credentials
           ).updated_dependency_files
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig do
           params(
             cmd: String,

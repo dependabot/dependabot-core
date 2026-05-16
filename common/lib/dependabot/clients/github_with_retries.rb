@@ -88,7 +88,7 @@ module Dependabot
 
       sig { params(repo: String, branch: String).returns(String) }
       def fetch_commit(repo, branch)
-        response = T.unsafe(self).ref(repo, "heads/#{branch}")
+        response = T.unsafe(ref(repo, "heads/#{branch}"))
 
         raise Octokit::NotFound if response.is_a?(Array)
 
@@ -97,7 +97,7 @@ module Dependabot
 
       sig { params(repo: String).returns(String) }
       def fetch_default_branch(repo)
-        T.unsafe(self).repository(repo).default_branch
+        T.unsafe(repository(repo)).default_branch
       end
 
       ############

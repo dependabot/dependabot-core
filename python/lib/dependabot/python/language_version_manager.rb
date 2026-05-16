@@ -34,9 +34,12 @@ module Dependabot
         T.must(version)
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(String) }
       def python_major_minor
-        @python_major_minor ||= T.let(T.must(Python::Version.new(python_version).segments[0..1]).join("."), T.untyped)
+        @python_major_minor ||= T.let(
+          T.must(Python::Version.new(python_version).segments[0..1]).join("."),
+          T.nilable(String)
+        )
       end
 
       sig { returns(String) }

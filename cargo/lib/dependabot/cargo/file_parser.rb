@@ -401,7 +401,7 @@ module Dependabot
 
       sig { params(file: DependencyFile).returns(T.untyped) }
       def parsed_file(file)
-        @parsed_file ||= T.let({}, T.untyped)
+        @parsed_file ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
         @parsed_file[file.name] ||= TomlRB.parse(file.content)
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path

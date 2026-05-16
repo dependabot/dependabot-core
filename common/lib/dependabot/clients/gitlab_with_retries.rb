@@ -67,12 +67,12 @@ module Dependabot
 
       sig { params(repo: String, branch: String).returns(String) }
       def fetch_commit(repo, branch)
-        T.unsafe(self).branch(repo, branch).commit.id
+        T.unsafe(branch(repo, branch)).commit.id
       end
 
       sig { params(repo: String).returns(String) }
       def fetch_default_branch(repo)
-        T.unsafe(self).project(repo).default_branch
+        T.unsafe(project(repo)).default_branch
       end
 
       ############
