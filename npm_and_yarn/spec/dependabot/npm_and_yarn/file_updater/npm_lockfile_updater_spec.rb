@@ -291,9 +291,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   end
 
   describe "#restore_removed_optional_peer_deps (via post_process_npm_lockfile)" do
-    # Test the restore_optional_peer_deps logic that now runs for all updates,
-    # not just workspace updates. This covers the scenario where npm's tree
-    # resolution drops optional peer deps during a root-level update.
+    # Models a real-world scenario: @angular-devkit/core declares chokidar as
+    # an optional peer dep via peerDependencies + peerDependenciesMeta. npm
+    # records the resolved chokidar entry with "optional": true, "peer": true
+    # flags in the lockfile. During root-level updates, npm's tree resolution
+    # can drop these entries.
     let(:original_lockfile_content) do
       JSON.pretty_generate({
         "name" => "test-project",
@@ -301,29 +303,65 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         "packages" => {
           "" => {
             "dependencies" => { "fetch-factory" => "^0.0.1" },
-            "devDependencies" => { "etag" => "^1.0.0" }
+            "devDependencies" => {
+              "@angular-devkit/schematics" => "^19.0.0",
+              "@nestjs/schematics" => "^10.0.0",
+              "chokidar" => "^4.0.0"
+            }
           },
           "node_modules/fetch-factory" => {
             "version" => "0.0.1"
           },
-          "node_modules/etag" => {
-            "version" => "1.8.1",
-            "dev" => true
+          "node_modules/@angular-devkit/core" => {
+            "version" => "19.2.19",
+            "dev" => true,
+            "peerDependencies" => {
+              "chokidar" => "^4.0.0"
+            },
+            "peerDependenciesMeta" => {
+              "chokidar" => { "optional" => true }
+            }
           },
-          "node_modules/some-nested" => {
-            "version" => "1.0.0"
+          "node_modules/@angular-devkit/schematics" => {
+            "version" => "19.2.19",
+            "dev" => true,
+            "dependencies" => {
+              "@angular-devkit/core" => "19.2.19"
+            }
           },
-          "node_modules/some-nested/node_modules/chokidar" => {
+          "node_modules/@nestjs/schematics" => {
+            "version" => "10.2.3",
+            "dev" => true,
+            "dependencies" => {
+              "@angular-devkit/core" => "17.3.11"
+            }
+          },
+          "node_modules/@nestjs/schematics/node_modules/@angular-devkit/core" => {
+            "version" => "17.3.11",
+            "dev" => true,
+            "peerDependencies" => {
+              "chokidar" => "^3.5.1"
+            },
+            "peerDependenciesMeta" => {
+              "chokidar" => { "optional" => true }
+            }
+          },
+          "node_modules/@nestjs/schematics/node_modules/chokidar" => {
             "version" => "3.6.0",
+            "dev" => true,
             "optional" => true,
             "peer" => true
+          },
+          "node_modules/chokidar" => {
+            "version" => "4.0.3",
+            "dev" => true
           }
         }
       }) + "\n"
     end
 
-    # Simulate npm dropping the optional peer dep during update
-    # but keeping the parent package
+    # Simulate npm dropping the nested optional peer dep during a root-level
+    # update (e.g., bumping fetch-factory) while keeping the parent package
     let(:updated_lockfile_without_peer) do
       JSON.pretty_generate({
         "name" => "test-project",
@@ -331,17 +369,52 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         "packages" => {
           "" => {
             "dependencies" => { "fetch-factory" => "^0.0.2" },
-            "devDependencies" => { "etag" => "^1.0.0" }
+            "devDependencies" => {
+              "@angular-devkit/schematics" => "^19.0.0",
+              "@nestjs/schematics" => "^10.0.0",
+              "chokidar" => "^4.0.0"
+            }
           },
           "node_modules/fetch-factory" => {
             "version" => "0.0.2"
           },
-          "node_modules/etag" => {
-            "version" => "1.8.1",
-            "dev" => true
+          "node_modules/@angular-devkit/core" => {
+            "version" => "19.2.19",
+            "dev" => true,
+            "peerDependencies" => {
+              "chokidar" => "^4.0.0"
+            },
+            "peerDependenciesMeta" => {
+              "chokidar" => { "optional" => true }
+            }
           },
-          "node_modules/some-nested" => {
-            "version" => "1.0.0"
+          "node_modules/@angular-devkit/schematics" => {
+            "version" => "19.2.19",
+            "dev" => true,
+            "dependencies" => {
+              "@angular-devkit/core" => "19.2.19"
+            }
+          },
+          "node_modules/@nestjs/schematics" => {
+            "version" => "10.2.3",
+            "dev" => true,
+            "dependencies" => {
+              "@angular-devkit/core" => "17.3.11"
+            }
+          },
+          "node_modules/@nestjs/schematics/node_modules/@angular-devkit/core" => {
+            "version" => "17.3.11",
+            "dev" => true,
+            "peerDependencies" => {
+              "chokidar" => "^3.5.1"
+            },
+            "peerDependenciesMeta" => {
+              "chokidar" => { "optional" => true }
+            }
+          },
+          "node_modules/chokidar" => {
+            "version" => "4.0.3",
+            "dev" => true
           }
         }
       }) + "\n"
@@ -365,7 +438,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer,
                                      parsed_updated)
       parsed = JSON.parse(result)
-      restored = parsed.dig("packages", "node_modules/some-nested/node_modules/chokidar")
+      restored = parsed.dig("packages", "node_modules/@nestjs/schematics/node_modules/chokidar")
 
       expect(restored).not_to be_nil
       expect(restored["version"]).to eq("3.6.0")
@@ -374,20 +447,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     it "does not restore optional peer deps whose parent was removed" do
-      # Parent package "some-nested" is also removed from the updated lockfile
+      # @nestjs/schematics (the parent of the nested @angular-devkit/core that
+      # declares chokidar as an optional peer) is removed in the updated lockfile
       updated_without_parent = JSON.pretty_generate({
         "name" => "test-project",
         "lockfileVersion" => 3,
         "packages" => {
           "" => {
             "dependencies" => { "fetch-factory" => "^0.0.2" },
-            "devDependencies" => { "etag" => "^1.0.0" }
+            "devDependencies" => {
+              "@angular-devkit/schematics" => "^19.0.0",
+              "chokidar" => "^4.0.0"
+            }
           },
           "node_modules/fetch-factory" => {
             "version" => "0.0.2"
           },
-          "node_modules/etag" => {
-            "version" => "1.8.1",
+          "node_modules/@angular-devkit/core" => {
+            "version" => "19.2.19",
+            "dev" => true,
+            "peerDependencies" => {
+              "chokidar" => "^4.0.0"
+            },
+            "peerDependenciesMeta" => {
+              "chokidar" => { "optional" => true }
+            }
+          },
+          "node_modules/@angular-devkit/schematics" => {
+            "version" => "19.2.19",
+            "dev" => true
+          },
+          "node_modules/chokidar" => {
+            "version" => "4.0.3",
             "dev" => true
           }
         }
