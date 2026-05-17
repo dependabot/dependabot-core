@@ -375,7 +375,7 @@ module Dependabot
           # update the peer too.
           #
           # TODO: Move this logic to the UpdateChecker (and parse peer deps)
-          sections += %w(peerDependencies peerOptionalDependencies)
+          sections += ["peerDependencies"]
           sections_regex = /#{sections.join('|')}/
 
           declaration_blocks = T.let([], T::Array[String])

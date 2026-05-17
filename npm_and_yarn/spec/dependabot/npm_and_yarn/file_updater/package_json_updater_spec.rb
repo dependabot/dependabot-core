@@ -367,37 +367,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
     end
 
-    context "when the dependency is specified as both dev and peerOptional" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "etag",
-          version: "2.0.0",
-          package_manager: "npm_and_yarn",
-          requirements: [{
-            requirement: "^2.0.0",
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: nil
-          }],
-          previous_requirements: [{
-            requirement: "^1.0.0",
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: nil
-          }]
-        )
-      end
-      let(:project_name) { "npm8/dev_and_peer_optional_dependency" }
-
-      it "updates both declarations" do
-        parsed_file = JSON.parse(updated_package_json.content)
-        expect(parsed_file.dig("devDependencies", "etag"))
-          .to eq("^2.0.0")
-        expect(parsed_file.dig("peerOptionalDependencies", "etag"))
-          .to eq("^2.0.0")
-      end
-    end
-
     context "with a git dependency" do
       let(:project_name) { "npm8/github_dependency" }
       let(:dependency) do
