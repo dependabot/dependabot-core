@@ -290,6 +290,99 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  describe "#restore_removed_optional_peer_deps (via post_process_npm_lockfile)" do
+    # Test the restore_optional_peer_deps logic that now runs for all updates,
+    # not just workspace updates. This covers the scenario where npm's tree
+    # resolution drops optional peer deps during a root-level update.
+    let(:original_lockfile_content) do
+      JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.1" },
+            "devDependencies" => { "etag" => "^1.0.0" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.1"
+          },
+          "node_modules/etag" => {
+            "version" => "1.8.1",
+            "dev" => true
+          },
+          "node_modules/some-nested/node_modules/chokidar" => {
+            "version" => "3.6.0",
+            "optional" => true,
+            "peer" => true
+          }
+        }
+      }) + "\n"
+    end
+
+    # Simulate npm dropping the optional peer dep during update
+    let(:updated_lockfile_without_peer) do
+      JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.2" },
+            "devDependencies" => { "etag" => "^1.0.0" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.2"
+          },
+          "node_modules/etag" => {
+            "version" => "1.8.1",
+            "dev" => true
+          }
+        }
+      }) + "\n"
+    end
+
+    it "restores optional peer deps that were removed" do
+      updater_instance = described_class.new(
+        lockfile: Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: original_lockfile_content
+        ),
+        dependency_files: [
+          Dependabot::DependencyFile.new(name: "package.json", content: '{"dependencies":{"fetch-factory":"^0.0.2"}}'),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: original_lockfile_content)
+        ],
+        dependencies: [],
+        credentials: []
+      )
+
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer)
+      parsed = JSON.parse(result)
+      restored = parsed.dig("packages", "node_modules/some-nested/node_modules/chokidar")
+
+      expect(restored).not_to be_nil
+      expect(restored["version"]).to eq("3.6.0")
+      expect(restored["optional"]).to be(true)
+      expect(restored["peer"]).to be(true)
+    end
+
+    it "returns content unchanged when no optional peer deps were removed" do
+      updater_instance = described_class.new(
+        lockfile: Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: updated_lockfile_without_peer
+        ),
+        dependency_files: [
+          Dependabot::DependencyFile.new(name: "package.json", content: '{"dependencies":{"fetch-factory":"^0.0.2"}}'),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: updated_lockfile_without_peer)
+        ],
+        dependencies: [],
+        credentials: []
+      )
+
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer)
+      expect(result).to eq(updated_lockfile_without_peer)
+    end
+  end
+
   context "with a registry that times out" do
     let(:registry_source) { "https://registry.npm.com" }
     let(:files) { project_dependency_files("npm/simple_with_registry_that_times_out") }
