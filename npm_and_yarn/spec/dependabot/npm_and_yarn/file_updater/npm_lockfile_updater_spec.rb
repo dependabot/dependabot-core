@@ -310,6 +310,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             "version" => "1.8.1",
             "dev" => true
           },
+          "node_modules/some-nested" => {
+            "version" => "1.0.0"
+          },
           "node_modules/some-nested/node_modules/chokidar" => {
             "version" => "3.6.0",
             "optional" => true,
@@ -320,8 +323,59 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     # Simulate npm dropping the optional peer dep during update
+    # but keeping the parent package
     let(:updated_lockfile_without_peer) do
       JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.2" },
+            "devDependencies" => { "etag" => "^1.0.0" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.2"
+          },
+          "node_modules/etag" => {
+            "version" => "1.8.1",
+            "dev" => true
+          },
+          "node_modules/some-nested" => {
+            "version" => "1.0.0"
+          }
+        }
+      }) + "\n"
+    end
+
+    it "restores optional peer deps whose parent still exists" do
+      updater_instance = described_class.new(
+        lockfile: Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: original_lockfile_content
+        ),
+        dependency_files: [
+          Dependabot::DependencyFile.new(name: "package.json", content: '{"dependencies":{"fetch-factory":"^0.0.2"}}'),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: original_lockfile_content)
+        ],
+        dependencies: [],
+        credentials: []
+      )
+
+      parsed_updated = JSON.parse(updated_lockfile_without_peer)
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer,
+                                     parsed_updated)
+      parsed = JSON.parse(result)
+      restored = parsed.dig("packages", "node_modules/some-nested/node_modules/chokidar")
+
+      expect(restored).not_to be_nil
+      expect(restored["version"]).to eq("3.6.0")
+      expect(restored["optional"]).to be(true)
+      expect(restored["peer"]).to be(true)
+    end
+
+    it "does not restore optional peer deps whose parent was removed" do
+      # Parent package "some-nested" is also removed from the updated lockfile
+      updated_without_parent = JSON.pretty_generate({
         "name" => "test-project",
         "lockfileVersion" => 3,
         "packages" => {
@@ -338,9 +392,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           }
         }
       }) + "\n"
-    end
 
-    it "restores optional peer deps that were removed" do
       updater_instance = described_class.new(
         lockfile: Dependabot::DependencyFile.new(
           name: "package-lock.json",
@@ -354,14 +406,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         credentials: []
       )
 
-      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer)
-      parsed = JSON.parse(result)
-      restored = parsed.dig("packages", "node_modules/some-nested/node_modules/chokidar")
-
-      expect(restored).not_to be_nil
-      expect(restored["version"]).to eq("3.6.0")
-      expect(restored["optional"]).to be(true)
-      expect(restored["peer"]).to be(true)
+      parsed_updated = JSON.parse(updated_without_parent)
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_without_parent, parsed_updated)
+      expect(result).to eq(updated_without_parent)
     end
 
     it "returns content unchanged when no optional peer deps were removed" do
@@ -378,7 +425,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         credentials: []
       )
 
-      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer)
+      parsed_updated = JSON.parse(updated_lockfile_without_peer)
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer,
+                                     parsed_updated)
       expect(result).to eq(updated_lockfile_without_peer)
     end
   end

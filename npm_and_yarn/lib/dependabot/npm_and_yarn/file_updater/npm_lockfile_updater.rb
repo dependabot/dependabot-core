@@ -970,7 +970,9 @@ module Dependabot
           # Restore optional peer dependencies that npm may have removed during
           # tree resolution (extends the workspace-only fix from #14110 to all
           # updates — see GitHub issue #15039).
-          updated_lockfile_content = restore_removed_optional_peer_deps(updated_lockfile_content)
+          updated_lockfile_content = restore_removed_optional_peer_deps(
+            updated_lockfile_content, parsed_updated_lockfile_content
+          )
 
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
@@ -1282,6 +1284,12 @@ module Dependabot
             next if updated_packages.key?(path)
             next unless pkg_info.is_a?(Hash) && pkg_info["optional"] == true && pkg_info["peer"] == true
 
+            # Only restore if the parent package still exists in the updated
+            # lockfile. If the parent was removed or replaced, the optional
+            # peer dep is legitimately no longer needed.
+            parent_path = path.sub(%r{/node_modules/[^/]+\z}, "")
+            next unless parent_path == path || updated_packages.key?(parent_path)
+
             Dependabot.logger.info("Restoring optional peer dependency removed during update: #{path}")
             updated_packages[path] = pkg_info
             changed = true
@@ -1298,16 +1306,17 @@ module Dependabot
         # This is called from post_process_npm_lockfile so it applies to all
         # lockfile updates, unlike cleanup_workspace_lockfile which only runs
         # for workspace dependency updates.
-        sig { params(updated_lockfile_content: String).returns(String) }
-        def restore_removed_optional_peer_deps(updated_lockfile_content)
-          updated = JSON.parse(updated_lockfile_content)
-          return updated_lockfile_content unless restore_optional_peer_deps(updated, parsed_lockfile)
+        sig do
+          params(
+            updated_lockfile_content: String,
+            parsed_updated_lockfile: T::Hash[String, T.untyped]
+          ).returns(String)
+        end
+        def restore_removed_optional_peer_deps(updated_lockfile_content, parsed_updated_lockfile)
+          return updated_lockfile_content unless restore_optional_peer_deps(parsed_updated_lockfile, parsed_lockfile)
 
           indent = detect_indentation(updated_lockfile_content)
-          "#{JSON.pretty_generate(updated, indent: indent)}\n"
-        rescue JSON::ParserError => e
-          Dependabot.logger.warn("Failed to restore optional peer deps: #{e.message}")
-          updated_lockfile_content
+          "#{JSON.pretty_generate(parsed_updated_lockfile, indent: indent)}\n"
         end
 
         sig { returns(String) }
