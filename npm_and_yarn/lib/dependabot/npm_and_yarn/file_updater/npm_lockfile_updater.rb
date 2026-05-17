@@ -1287,7 +1287,7 @@ module Dependabot
             # Only restore if the parent package still exists in the updated
             # lockfile. If the parent was removed or replaced, the optional
             # peer dep is legitimately no longer needed.
-            parent_path = path.sub(%r{/node_modules/[^/]+\z}, "")
+            parent_path = path.sub(%r{/node_modules/(?:@[^/]+/)?[^/]+\z}, "")
             next unless parent_path == path || updated_packages.key?(parent_path)
 
             Dependabot.logger.info("Restoring optional peer dependency removed during update: #{path}")

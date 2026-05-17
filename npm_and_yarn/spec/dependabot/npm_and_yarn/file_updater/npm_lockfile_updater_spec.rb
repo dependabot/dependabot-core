@@ -502,24 +502,171 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       expect(result).to eq(updated_without_parent)
     end
 
-    it "returns content unchanged when no optional peer deps were removed" do
+    it "does not restore scoped optional peer deps whose parent was removed" do
+      # Test that the parent-path regex correctly handles scoped packages
+      # (e.g., @angular-devkit/core nested under @nestjs/schematics).
+      # Without the scoped-package regex fix, the parent path extraction
+      # would incorrectly strip only the unscoped portion.
+      original_with_scoped = JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.1" },
+            "devDependencies" => { "vitest" => "^3.0.0" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.1"
+          },
+          "node_modules/vitest" => {
+            "version" => "3.2.4",
+            "dev" => true,
+            "dependencies" => {
+              "vite" => "^7.0.0"
+            }
+          },
+          "node_modules/vitest/node_modules/vite" => {
+            "version" => "7.3.1",
+            "dev" => true,
+            "peerDependencies" => {
+              "@types/node" => "^20.19.0 || >=22.12.0"
+            },
+            "peerDependenciesMeta" => {
+              "@types/node" => { "optional" => true }
+            }
+          },
+          "node_modules/vitest/node_modules/@types/node" => {
+            "version" => "22.19.19",
+            "dev" => true,
+            "optional" => true,
+            "peer" => true
+          }
+        }
+      }) + "\n"
+
+      # vitest (and its nested vite and @types/node) was removed
+      updated_without_vitest = JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.2" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.2"
+          }
+        }
+      }) + "\n"
+
       updater_instance = described_class.new(
         lockfile: Dependabot::DependencyFile.new(
           name: "package-lock.json",
-          content: updated_lockfile_without_peer
+          content: original_with_scoped
         ),
         dependency_files: [
           Dependabot::DependencyFile.new(name: "package.json", content: '{"dependencies":{"fetch-factory":"^0.0.2"}}'),
-          Dependabot::DependencyFile.new(name: "package-lock.json", content: updated_lockfile_without_peer)
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: original_with_scoped)
         ],
         dependencies: [],
         credentials: []
       )
 
-      parsed_updated = JSON.parse(updated_lockfile_without_peer)
-      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_lockfile_without_peer,
-                                     parsed_updated)
-      expect(result).to eq(updated_lockfile_without_peer)
+      parsed_updated = JSON.parse(updated_without_vitest)
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_without_vitest, parsed_updated)
+      # @types/node should NOT be restored because its parent
+      # (node_modules/vitest/node_modules/vite, a scoped-looking path
+      # resolved via the (?:@[^/]+/)? regex) no longer exists
+      expect(result).to eq(updated_without_vitest)
+    end
+
+    it "restores scoped optional peer deps whose parent still exists" do
+      # Test that scoped packages like @types/node are correctly restored
+      # when their parent (vite) still exists in the updated lockfile
+      original_with_scoped = JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.1" },
+            "devDependencies" => { "vitest" => "^3.0.0" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.1"
+          },
+          "node_modules/vitest" => {
+            "version" => "3.2.4",
+            "dev" => true
+          },
+          "node_modules/vitest/node_modules/vite" => {
+            "version" => "7.3.1",
+            "dev" => true,
+            "peerDependencies" => {
+              "@types/node" => "^20.19.0 || >=22.12.0"
+            },
+            "peerDependenciesMeta" => {
+              "@types/node" => { "optional" => true }
+            }
+          },
+          "node_modules/vitest/node_modules/@types/node" => {
+            "version" => "22.19.19",
+            "dev" => true,
+            "optional" => true,
+            "peer" => true
+          }
+        }
+      }) + "\n"
+
+      # vite parent still exists, but @types/node was dropped during update
+      updated_without_types_node = JSON.pretty_generate({
+        "name" => "test-project",
+        "lockfileVersion" => 3,
+        "packages" => {
+          "" => {
+            "dependencies" => { "fetch-factory" => "^0.0.2" },
+            "devDependencies" => { "vitest" => "^3.0.0" }
+          },
+          "node_modules/fetch-factory" => {
+            "version" => "0.0.2"
+          },
+          "node_modules/vitest" => {
+            "version" => "3.2.4",
+            "dev" => true
+          },
+          "node_modules/vitest/node_modules/vite" => {
+            "version" => "7.3.1",
+            "dev" => true,
+            "peerDependencies" => {
+              "@types/node" => "^20.19.0 || >=22.12.0"
+            },
+            "peerDependenciesMeta" => {
+              "@types/node" => { "optional" => true }
+            }
+          }
+        }
+      }) + "\n"
+
+      updater_instance = described_class.new(
+        lockfile: Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: original_with_scoped
+        ),
+        dependency_files: [
+          Dependabot::DependencyFile.new(name: "package.json", content: '{"dependencies":{"fetch-factory":"^0.0.2"}}'),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: original_with_scoped)
+        ],
+        dependencies: [],
+        credentials: []
+      )
+
+      parsed_updated = JSON.parse(updated_without_types_node)
+      result = updater_instance.send(:restore_removed_optional_peer_deps, updated_without_types_node, parsed_updated)
+      parsed = JSON.parse(result)
+      restored = parsed.dig("packages", "node_modules/vitest/node_modules/@types/node")
+
+      expect(restored).not_to be_nil
+      expect(restored["version"]).to eq("22.19.19")
+      expect(restored["optional"]).to be(true)
+      expect(restored["peer"]).to be(true)
     end
   end
 
