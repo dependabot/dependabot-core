@@ -112,9 +112,6 @@ RSpec.describe Dependabot::DependencySnapshot do
       .with(:add_deprecation_warn_to_pr_message)
       .and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:allow_refresh_for_existing_pr_dependencies)
-      .and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:group_membership_enforcement)
       .and_return(false)
   end
@@ -472,11 +469,6 @@ RSpec.describe Dependabot::DependencySnapshot do
             ]
           }
         ]
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_for_existing_pr_dependencies).and_return(true)
       end
     end
 

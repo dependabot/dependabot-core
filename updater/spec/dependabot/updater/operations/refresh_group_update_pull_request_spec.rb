@@ -471,10 +471,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
-        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_for_existing_pr_dependencies)
-          .and_return(true)
       end
 
       after do
@@ -504,10 +500,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
-        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_for_existing_pr_dependencies)
-          .and_return(true)
       end
 
       after do

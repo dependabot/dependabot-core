@@ -131,15 +131,13 @@ module Dependabot
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
           # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
           dependency_snapshot.groups.each do |group|
-            if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
-              # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
-              # are not also in the PR of the group being checked, preventing erroneous PR closures
-              group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
-              group_pr_deps.each do |dep|
-                dep_dir = dep["directory"] || "/"
-                existing_pr_dependencies[dep_dir] ||= Set.new
-                existing_pr_dependencies[dep_dir].add(dep["dependency-name"])
-              end
+            # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
+            # are not also in the PR of the group being checked, preventing erroneous PR closures
+            group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
+            group_pr_deps.each do |dep|
+              dep_dir = dep["directory"] || "/"
+              existing_pr_dependencies[dep_dir] ||= Set.new
+              existing_pr_dependencies[dep_dir].add(dep["dependency-name"])
             end
 
             next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
