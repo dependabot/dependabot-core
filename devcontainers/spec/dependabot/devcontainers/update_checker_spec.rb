@@ -118,6 +118,50 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
     end
   end
 
+  describe "#updated_requirements" do
+    context "when feature has no version constraint (trailing colon only)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ghcr.io/devcontainers/features/docker-in-docker",
+          version: "2.12.3",
+          requirements: [{
+            requirement: nil,
+            file: ".devcontainer/devcontainer.json",
+            groups: ["feature"],
+            source: nil
+          }],
+          package_manager: "devcontainers"
+        )
+      end
+      let(:project_name) { "config_in_root" }
+      let(:directory) { "/" }
+
+      before do
+        allow(checker).to receive(:release_versions).and_return(
+          [
+            Dependabot::Devcontainers::Version.new("2.12.3"),
+            Dependabot::Devcontainers::Version.new("2.16.1")
+          ]
+        )
+      end
+
+      it "does not raise an ArgumentError" do
+        expect { checker.updated_requirements }.not_to raise_error
+      end
+
+      it "preserves nil requirement so the feature reference stays unchanged" do
+        expect(checker.updated_requirements).to eq(
+          [{
+            file: ".devcontainer/devcontainer.json",
+            requirement: nil,
+            groups: ["feature"],
+            source: nil
+          }]
+        )
+      end
+    end
+  end
+
   describe "#latest_version with cooldown filter" do
     subject(:latest_version) { checker.latest_version.to_s }
 
