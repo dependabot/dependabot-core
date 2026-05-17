@@ -1,5 +1,8 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
+// TODO: Upgrade to ubuntu-26.04 once available in mcr.microsoft.com/vscode/devcontainers/base
+// See: https://github.com/devcontainers/images/issues/1858
+// Check availability with: curl -s -o /dev/null -w "%{http_code}" https://mcr.microsoft.com/v2/vscode/devcontainers/base/manifests/0-ubuntu-26.04
 {
   "name": "Ubuntu",
   "build": {
