@@ -48,7 +48,7 @@ module Dependabot
       )
 
       # The highest Python version that is no longer fully supported.
-      # Currently deprecated (warning only); will become unsupported once removed from PRE_INSTALLED_PYTHON_VERSIONS_RAW.
+      # Deprecated now (warning); unsupported once removed from PRE_INSTALLED_PYTHON_VERSIONS_RAW.
       NON_SUPPORTED_HIGHEST_VERSION = "3.9"
 
       DEPRECATED_VERSIONS = T.let([Version.new(NON_SUPPORTED_HIGHEST_VERSION)].freeze, T::Array[Dependabot::Version])
