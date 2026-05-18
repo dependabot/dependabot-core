@@ -13,7 +13,7 @@ module Dependabot
       extend T::Sig
 
       # This list must match the versions specified at the top of `python/Dockerfile`
-      # ARG PY_3_13=3.13.2
+      # e.g. ARG PY_3_13=3.13.x
       # Note: uv ecosystem aliases this class, so updates here apply to both ecosystems.
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
         3.14.5
