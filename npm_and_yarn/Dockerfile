@@ -2,7 +2,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.34.6
+ARG COREPACK_VERSION=0.35.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/pnpm_package_manager.rb (Section : Update instructions)
@@ -21,7 +21,7 @@ ARG NODEJS_VERSION=24
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be aligned with NODEJS_VERSION version declared above. See https://nodejs.org/en/download/releases as well
 # With every major release update, also update npm_and_yarn/lib/dependabot/npm_and_yarn/npm_package_manager.rb (Section : Update instructions)
-ARG NPM_VERSION=11.8.0
+ARG NPM_VERSION=11.12.1
 
 # Install Node and npm
 RUN mkdir -p /etc/apt/keyrings \
