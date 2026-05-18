@@ -1748,6 +1748,85 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task FormattingIsPreserved_InMiddleOfItemGroup_HonorsIndentation()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Package.C/1.0.0"],
+            requiredDependencyStrings: ["Package.C/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.C" Version="1.1.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task FormattingIsPreserved_InMiddleOfItemGroup_HonorsIndentation_EvenWithWhitespaceOnlyLine()
+    {
+        // note that the blank line after Package.A isn't actually blank; it has two leading spaces
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                          
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Package.C/1.0.0"],
+            requiredDependencyStrings: ["Package.C/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                          
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.C" Version="1.1.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
     public async Task UpdateOfSdkManagedPackageCanOccurDespiteVersionReplacements()
     {
         // To avoid a unit test that's tightly coupled to the installed SDK, A list of SDK-managed packages is faked.

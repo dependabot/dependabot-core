@@ -91,7 +91,11 @@ module Dependabot
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
-            update_registry_declaration(new_req, old_req, content)
+            if new_req[:source][:local_variable]
+              update_local_variable_declaration(new_req, old_req, content)
+            else
+              update_registry_declaration(new_req, old_req, content)
+            end
           when "oci"
             update_oci_declaration(new_req, old_req, content)
           else
@@ -173,6 +177,31 @@ module Dependabot
           regex_match.sub(version_regex) do |req_line_match|
             req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
           end
+        end
+      end
+
+      sig do
+        params(
+          new_req: T::Hash[Symbol, T.untyped],
+          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          updated_content: String
+        )
+          .void
+      end
+      def update_local_variable_declaration(new_req, old_req, updated_content)
+        var_name = new_req[:source][:local_variable]
+        old_version = old_req&.fetch(:requirement)
+        new_version = new_req[:requirement]
+        return if old_version.nil? || new_version.nil? || old_version == new_version
+
+        local_var_regex = /
+          (?<prefix>\b#{Regexp.escape(var_name)}\s*=\s*["'])
+          #{Regexp.escape(old_version)}
+          (?<suffix>["'])
+        /x
+
+        updated_content.sub!(local_var_regex) do
+          "#{Regexp.last_match(:prefix)}#{new_version}#{Regexp.last_match(:suffix)}"
         end
       end
 
