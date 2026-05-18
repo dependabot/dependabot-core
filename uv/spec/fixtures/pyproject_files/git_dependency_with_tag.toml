@@ -1,0 +1,9 @@
+[tool.poetry]
+name = "test-project"
+version = "0.1.0"
+description = "Test project with git tag dependency"
+authors = ["Test Author <test@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = { git = "https://github.com/tiangolo/fastapi", extras = ["all"], tag = "0.110.0" }

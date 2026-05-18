@@ -1,0 +1,9 @@
+[tool.poetry]
+name = "test-project"
+version = "0.1.0"
+description = "Test project with git branch dependency"
+authors = ["Test Author <test@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+toml = { git = "https://github.com/uiri/toml", branch = "master" }

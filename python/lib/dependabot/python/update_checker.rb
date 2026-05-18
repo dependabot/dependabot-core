@@ -65,6 +65,9 @@ module Dependabot
       sig { override.returns(T.nilable(Gem::Version)) }
       def latest_resolvable_version_with_no_unlock
         return T.cast(dependency.version, T.nilable(Gem::Version)) if git_dependency? && git_commit_checker.pinned?
+        # For non-pinned (branch) git deps, the "no-unlock" version is the current
+        # commit SHA stored in dependency.version.
+        return T.cast(dependency.version, T.nilable(Gem::Version)) if git_dependency?
 
         @latest_resolvable_version_with_no_unlock ||= T.let(
           if resolver_type == :requirements
@@ -128,6 +131,12 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def latest_version_for_git_dependency
+        # For non-pinned (branch-based) deps, get the latest commit SHA on the branch.
+        # The SHA is returned as a pseudo-version for comparison purposes.
+        unless git_commit_checker.pinned?
+          return T.cast(git_commit_checker.head_commit_for_current_branch, T.nilable(Gem::Version))
+        end
+
         latest_git_version_details&.fetch(:version)
       end
 
