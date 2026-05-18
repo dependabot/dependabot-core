@@ -453,7 +453,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
     let(:blocked_versions) do
       [
-        { "dependency-name" => "rails", "version" => "7.0.0", "reason" => "vulnerability" }
+        { "dependency-name" => "rails", "version-requirement" => "= 7.0.0", "reason" => "vulnerability" }
       ]
     end
 

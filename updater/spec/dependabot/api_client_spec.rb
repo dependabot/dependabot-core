@@ -812,8 +812,8 @@ RSpec.describe Dependabot::ApiClient do
             status: 200,
             body: {
               data: [
-                { "dependency-name" => "event-stream", "version" => "3.3.6", "reason" => "malware" },
-                { "dependency-name" => "flatmap-stream", "version" => "0.1.1", "reason" => "malware" }
+                { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+                { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
               ]
             }.to_json,
             headers: headers
@@ -824,8 +824,8 @@ RSpec.describe Dependabot::ApiClient do
         result = client.fetch_blocked_versions("npm_and_yarn")
         expect(result).to eq(
           [
-            { "dependency-name" => "event-stream", "version" => "3.3.6", "reason" => "malware" },
-            { "dependency-name" => "flatmap-stream", "version" => "0.1.1", "reason" => "malware" }
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
           ]
         )
       end
