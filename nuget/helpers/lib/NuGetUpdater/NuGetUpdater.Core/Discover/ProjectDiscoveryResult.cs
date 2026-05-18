@@ -16,4 +16,5 @@ public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
     public required ImmutableArray<string> ImportedFiles { get; init; }
     public required ImmutableArray<string> AdditionalFiles { get; init; }
     public required ImmutableArray<Dependency> Dependencies { get; init; }
+    public bool HasNoWarnNU1701 { get; init; } = false;
 }
