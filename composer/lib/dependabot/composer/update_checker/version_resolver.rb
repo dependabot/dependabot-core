@@ -13,6 +13,7 @@ require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/file_parser"
 require "dependabot/composer/helpers"
+require "dependabot/composer/credential_helpers"
 
 module Dependabot
   module Composer
@@ -180,7 +181,13 @@ module Dependabot
 
         sig { void }
         def write_auth_file
-          File.write(PackageManager::AUTH_FILENAME, T.must(auth_json).content) if auth_json
+          content = merged_auth_json_content
+          File.write(PackageManager::AUTH_FILENAME, JSON.dump(content)) unless content.empty?
+        end
+
+        sig { returns(T::Hash[String, T.untyped]) }
+        def merged_auth_json_content
+          CredentialHelpers.merged_auth_json_content(auth_json, credentials)
         end
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
@@ -635,7 +642,13 @@ module Dependabot
         def registry_credentials
           credentials
             .select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY }
-            .select { |cred| cred["password"] }
+            .select { |cred| cred["password"] } +
+            auth_json_credentials
+        end
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        def auth_json_credentials
+          CredentialHelpers.auth_json_credentials(auth_json)
         end
       end
     end
