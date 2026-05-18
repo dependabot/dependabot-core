@@ -402,7 +402,16 @@ module Dependabot
           return []
         end
 
-        JSON.parse(response.body).fetch("data", [])
+        parsed = JSON.parse(response.body)
+        data = parsed.fetch("data", [])
+        unless data.is_a?(Array)
+          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
+          return []
+        end
+        data
+      rescue JSON::ParserError => e
+        Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
+        []
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
         Dependabot.logger.warn("Failed to fetch blocked versions: #{e.message}, continuing without them")
         []

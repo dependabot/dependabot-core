@@ -70,12 +70,12 @@ module Dependabot
     def job
       @job ||= T.let(
         begin
-          definition = Environment.job_definition
+          definition = JSON.parse(JSON.generate(Environment.job_definition))
           job_hash = definition["job"]
 
           # Fetch blocked versions from the API if the experiment is enabled.
           # Inject them into the job definition so they're available at construction time.
-          if Experiments.enabled?(:blocked_versions)
+          if Experiments.enabled?(:dependabot_blocked_versions)
             package_manager = job_hash["package-manager"] || job_hash["package_manager"] || ""
             blocked = service.fetch_blocked_versions(package_manager)
             job_hash["blocked-versions"] = blocked if blocked.any?

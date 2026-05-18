@@ -443,7 +443,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     subject(:perform_job) { job.perform_job }
 
     before do
-      Dependabot::Experiments.register(:blocked_versions, true)
+      Dependabot::Experiments.register(:dependabot_blocked_versions, true)
       allow(service).to receive(:fetch_blocked_versions).and_return(blocked_versions)
     end
 
@@ -467,6 +467,9 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       expect(service).to receive(:fetch_blocked_versions).with("bundler")
 
       perform_job
+
+      job_instance = job.send(:job)
+      expect(job_instance.blocked_versions).to eq(blocked_versions)
     end
 
     context "when the API returns no blocked versions" do
