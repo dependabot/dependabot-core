@@ -1,0 +1,9 @@
+[
+  {
+    "name": "build.sbt",
+    "path": "core/build.sbt",
+    "sha": "ccc333",
+    "size": 200,
+    "type": "file"
+  }
+]
