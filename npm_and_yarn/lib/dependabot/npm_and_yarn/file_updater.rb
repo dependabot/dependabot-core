@@ -440,7 +440,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_update: security_update?
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -453,7 +454,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_update: security_update?
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
@@ -469,8 +471,18 @@ module Dependabot
           lockfile: file,
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          security_update: security_update?
         )
+      end
+
+      # True when at least one updated dependency was produced for a security
+      # advisory. The npm_and_yarn UpdateChecker stamps this on dependency
+      # metadata; we propagate it to lockfile updaters so audit-fix fallbacks
+      # only run for security updates.
+      sig { returns(T::Boolean) }
+      def security_update?
+        dependencies.any? { |d| d.metadata[:security_update] }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }

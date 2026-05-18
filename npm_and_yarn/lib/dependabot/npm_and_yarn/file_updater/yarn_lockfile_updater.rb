@@ -29,15 +29,17 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            security_update: T::Boolean
           )
             .void
         end
-        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
+        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:, security_update: false)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @security_update = security_update
           @error_handler = T.let(
             YarnErrorHandler.new(
               dependencies: dependencies,
@@ -85,6 +87,11 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         def sub_dependencies
           dependencies.reject(&:top_level?)
+        end
+
+        sig { returns(T::Boolean) }
+        def security_update?
+          @security_update
         end
 
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
@@ -258,19 +265,27 @@ module Dependabot
           Helpers.run_yarn_commands(*commands)
 
           updated_content = File.read(yarn_lock.name)
-          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-            begin
-              NativeHelpers.run_yarn_audit_fix_command
-              dep.metadata[:audit_fix_used] = true
-            rescue SharedHelpers::HelperSubprocessFailed
-              Dependabot.logger.info(
-                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
-              )
-            end
+          if updated_content == original_content && run_yarn_audit_fix_fallback?
+            run_yarn_audit_fix_fallback(dep)
             updated_content = File.read(yarn_lock.name)
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        sig { returns(T::Boolean) }
+        def run_yarn_audit_fix_fallback?
+          Dependabot::Experiments.enabled?(:enable_audit_fix_fallback) && security_update?
+        end
+
+        sig { params(dep: Dependabot::Dependency).void }
+        def run_yarn_audit_fix_fallback(dep)
+          NativeHelpers.run_yarn_audit_fix_command
+          dep.metadata[:audit_fix_used] = true
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+          )
         end
 
         sig { returns(String) }

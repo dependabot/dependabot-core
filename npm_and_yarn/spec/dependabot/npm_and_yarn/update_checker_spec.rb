@@ -2395,4 +2395,88 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps[0].name).to eq("is-stream")
     end
   end
+
+  describe "security_update metadata stamping" do
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:dependency_name) { "etag" }
+    let(:dependency_version) { "1.0.0" }
+    let(:target_version) { "1.7.0" }
+
+    context "when security advisories are present" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.7.0"]
+          )
+        ]
+      end
+
+      it "stamps :security_update on dependencies returned with :all unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps).to all(have_attributes(metadata: include(security_update: true)))
+      end
+
+      it "stamps :security_update on dependencies returned with :own unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps).to all(have_attributes(metadata: include(security_update: true)))
+      end
+    end
+
+    context "when there are no security advisories" do
+      let(:security_advisories) { [] }
+
+      it "does not stamp :security_update on dependencies with :all unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
+        expect(updated_deps).not_to be_empty
+        updated_deps.each do |dep|
+          expect(dep.metadata[:security_update]).to be_nil
+        end
+      end
+
+      it "does not stamp :security_update on dependencies with :own unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+        expect(updated_deps).not_to be_empty
+        updated_deps.each do |dep|
+          expect(dep.metadata[:security_update]).to be_nil
+        end
+      end
+    end
+
+    context "with a sub-dependency security update (:none unlock)" do
+      let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+      let(:dependency_name) { "etag" }
+      let(:dependency_version) { "1.0.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.7.0"]
+          )
+        ]
+      end
+
+      before do
+        allow(checker)
+          .to receive(:latest_resolvable_version_with_no_unlock)
+          .and_return(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+      end
+
+      it "stamps :security_update on the dependency returned via updated_dependency_without_unlock" do
+        dep = checker.send(:updated_dependency_without_unlock)
+        expect(dep.metadata[:security_update]).to be(true)
+      end
+
+      it "does not stamp :security_update on the dependency when no advisories present" do
+        allow(checker).to receive(:security_advisories).and_return([])
+
+        dep = checker.send(:updated_dependency_without_unlock)
+        expect(dep.metadata[:security_update]).to be_nil
+      end
+    end
+  end
 end

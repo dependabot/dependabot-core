@@ -357,6 +357,7 @@ module Dependabot
         version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
         metadata = update_details.fetch(:metadata, {})
+        metadata = metadata.merge(security_update: true) if security_update?
 
         Dependency.new(
           name: original_dep.name,
@@ -372,6 +373,38 @@ module Dependabot
           package_manager: original_dep.package_manager,
           removed: removed,
           metadata: metadata
+        )
+      end
+
+      sig { override.returns(Dependabot::Dependency) }
+      def updated_dependency_without_unlock
+        with_security_update_metadata(super)
+      end
+
+      sig { override.returns(Dependabot::Dependency) }
+      def updated_dependency_with_own_req_unlock
+        with_security_update_metadata(super)
+      end
+
+      # The npm_and_yarn FileUpdater inspects `metadata[:security_update]` to
+      # decide whether to run `audit fix` fallbacks. Stamp the flag on every
+      # `Dependency` returned from `#updated_dependencies` (which routes
+      # through the three helpers below) so the signal survives across the
+      # UpdateChecker → FileUpdater boundary.
+      sig { params(dep: Dependabot::Dependency).returns(Dependabot::Dependency) }
+      def with_security_update_metadata(dep)
+        return dep unless security_update?
+
+        Dependency.new(
+          name: dep.name,
+          version: dep.version,
+          requirements: dep.requirements,
+          previous_version: dep.previous_version,
+          previous_requirements: dep.previous_requirements,
+          package_manager: dep.package_manager,
+          removed: dep.removed?,
+          metadata: dep.metadata.merge(security_update: true),
+          subdependency_metadata: dep.subdependency_metadata
         )
       end
 

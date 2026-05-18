@@ -396,15 +396,52 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       let(:requirements) { [] }
       let(:previous_requirements) { [] }
 
-      it "falls back to npm audit fix when npm update is a no-op" do
+      before do
         # Simulate npm update being a no-op (transitive dep not in package.json)
         allow(Dependabot::NpmAndYarn::NativeHelpers)
           .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
+      end
 
-        expect(Dependabot::NpmAndYarn::NativeHelpers)
-          .to receive(:run_npm_audit_fix_command).once
+      context "when running a security update" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            security_update: true
+          )
+        end
 
-        updated_npm_lock_content
+        it "falls back to npm audit fix when npm update is a no-op" do
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to receive(:run_npm_audit_fix_command).once
+
+          updated_npm_lock_content
+        end
+
+        context "when the enable_audit_fix_fallback experiment is disabled" do
+          before do
+            allow(Dependabot::Experiments).to receive(:enabled?)
+              .with(:enable_audit_fix_fallback).and_return(false)
+          end
+
+          it "does not call npm audit fix" do
+            expect(Dependabot::NpmAndYarn::NativeHelpers)
+              .not_to receive(:run_npm_audit_fix_command)
+
+            updated_npm_lock_content
+          end
+        end
+      end
+
+      context "when not running a security update" do
+        it "does not call npm audit fix" do
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .not_to receive(:run_npm_audit_fix_command)
+
+          updated_npm_lock_content
+        end
       end
     end
   end
