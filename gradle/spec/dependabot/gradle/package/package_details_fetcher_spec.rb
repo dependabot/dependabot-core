@@ -177,6 +177,21 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/"
       end
+      let(:gradle_plugin_html_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
+      let(:spring_boot_plugin_pom_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/2.0.5.RELEASE/" \
+          "org.springframework.boot.gradle.plugin-2.0.5.RELEASE.pom"
+      end
+      let(:fallback_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: version_class.new("2.0.5.RELEASE"),
+          url: "https://plugins.gradle.org/m2"
+        )
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
@@ -191,6 +206,85 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         expect(release_info).to be_a(Hash)
         expect(release_info).to have_key("2.1.4.RELEASE")
         expect(release_info["2.1.4.RELEASE"][:release_date]).to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+      end
+
+      it "uses pom last-modified fallback when listing omits release date" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: fallback_release)
+
+        expect(hydrated_release.released_at).to eq(Time.utc(2026, 5, 11, 10, 8, 43))
+      end
+
+      it "returns the original release when a release date is already present" do
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("2.0.5.RELEASE"),
+          released_at: Time.utc(2026, 5, 10, 9, 0, 0),
+          url: "https://plugins.gradle.org/m2"
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release).to equal(release)
+        expect(a_request(:head, spring_boot_plugin_pom_url)).not_to have_been_made
+      end
+
+      it "does not eagerly populate fallback release dates in version listings" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        release = versions.find { |v| v[:version].to_s == "2.0.5.RELEASE" }
+        expect(release).not_to be_nil
+        expect(release[:released_at]).to be_nil
+        expect(a_request(:head, spring_boot_plugin_pom_url)).not_to have_been_made
+      end
+
+      it "caches fallback lookups per version" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        2.times do
+          packagedetailsfetcher.fetch_release_metadata(release: fallback_release)
+        end
+
+        expect(a_request(:head, spring_boot_plugin_pom_url)).to have_been_made.once
       end
 
       describe "the first version" do
@@ -220,6 +314,20 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
           is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
         end
+      end
+    end
+
+    context "with a non-plugin dependency" do
+      it "does not attempt pom last-modified fallback when release date is missing" do
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("23.3-jre"),
+          url: "https://repo.maven.apache.org/maven2"
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to be_nil
+        expect(WebMock).not_to have_requested(:head, /.*/)
       end
     end
 
