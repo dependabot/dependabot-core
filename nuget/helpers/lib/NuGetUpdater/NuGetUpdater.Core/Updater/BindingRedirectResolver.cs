@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.RegularExpressions;
 
 using NuGetUpdater.Core.Updater;
@@ -56,7 +55,7 @@ internal static partial class BindingRedirectResolver
     private static readonly Regex IncludesRegex = IncludesPattern();
 
     /// <summary>
-    /// Wraps system<see cref="Assembly"/> type in the nuget interface <see cref="NuGet.Runtime.IAssembly"/> to interop with nuget apis
+    /// Wraps system <see cref="IAssembly"/> interface to interop with nuget apis
     /// </summary>
     private class AssemblyWrapper : IAssembly
     {
