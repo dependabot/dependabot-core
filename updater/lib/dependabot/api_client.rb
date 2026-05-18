@@ -403,6 +403,10 @@ module Dependabot
         end
 
         parsed = JSON.parse(response.body)
+        unless parsed.is_a?(Hash)
+          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
+          return []
+        end
         data = parsed.fetch("data", [])
         unless data.is_a?(Array)
           Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
