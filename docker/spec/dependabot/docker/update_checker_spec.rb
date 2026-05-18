@@ -1511,11 +1511,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/17.10")
           .and_return(status: 200, body: fixture("docker", "registry_manifest_digests", "ubuntu_17.10.json"))
 
-        blob_headers =
+        manifest_headers =
           fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
 
-        stub_request(:head, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
-          .and_return(status: 200, headers: JSON.parse(blob_headers))
+        stub_request(
+          :head, repo_url + "manifests/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1"
+        ).and_return(status: 200, headers: JSON.parse(manifest_headers))
       end
 
       it { is_expected.to eq("17.10") }
@@ -2846,12 +2847,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     let(:dependency_name) { "ubuntu" }
     let(:version) { "17.10" }
     let(:mock_client) { instance_double(DockerRegistry2::Registry) }
-    let(:blob_headers) { { last_modified: "Mon, 15 Jan 2024 10:00:00 GMT" } }
-    let(:mock_blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
+    let(:manifest_headers) { { last_modified: "Mon, 15 Jan 2024 10:00:00 GMT" } }
+    let(:mock_manifest_response) { instance_double(RestClient::Response, headers: manifest_headers) }
 
     before do
       allow(checker).to receive(:docker_registry_client).and_return(mock_client)
-      allow(mock_client).to receive(:dohead).and_return(mock_blob_response)
+      allow(mock_client).to receive(:dohead).and_return(mock_manifest_response)
     end
 
     context "when client.digest returns a String" do
@@ -2866,6 +2867,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(result).to be_a(Dependabot::Package::PackageRelease)
         expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
       end
+
+      it "fetches publication date via the manifests endpoint, not blobs" do
+        expect(mock_client).to receive(:dohead)
+          .with(a_string_matching(%r{v2/.*/manifests/#{Regexp.escape(digest_string)}}))
+        get_tag_publication_details
+      end
     end
 
     context "when client.digest returns an Array" do
@@ -2879,6 +2886,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         result = get_tag_publication_details
         expect(result).to be_a(Dependabot::Package::PackageRelease)
         expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+
+      it "fetches publication date via the manifests endpoint, not blobs" do
+        digest = digest_array.first["digest"]
+        expect(mock_client).to receive(:dohead)
+          .with(a_string_matching(%r{v2/.*/manifests/#{Regexp.escape(digest)}}))
+        get_tag_publication_details
       end
     end
 
