@@ -55,7 +55,7 @@ internal static partial class BindingRedirectResolver
     private static readonly Regex IncludesRegex = IncludesPattern();
 
     /// <summary>
-    /// Wraps system <see cref="IAssembly"/> interface to interop with nuget apis
+    /// Wraps the system <see cref="IAssembly"/> interface for interoperability with NuGet APIs.
     /// </summary>
     private class AssemblyWrapper : IAssembly
     {
