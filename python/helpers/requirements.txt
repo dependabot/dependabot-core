@@ -2,7 +2,7 @@ pip==26.1.1
 pip-tools==7.5.3
 flake8==7.3.0
 hashin==1.0.5
-pipenv==2026.6.1
+pipenv==2024.4.1
 plette==2.2.1
 poetry==2.4.1
 pytest==9.0.3
