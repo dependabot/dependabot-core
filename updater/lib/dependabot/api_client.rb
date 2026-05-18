@@ -408,7 +408,7 @@ module Dependabot
           return []
         end
         data = parsed.fetch("data", [])
-        unless data.is_a?(Array)
+        unless data.is_a?(Array) && data.all?(Hash)
           Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
           return []
         end

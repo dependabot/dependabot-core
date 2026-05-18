@@ -73,15 +73,14 @@ module Dependabot
           definition = JSON.parse(JSON.generate(Environment.job_definition))
           job_hash = definition["job"]
 
-          # Register experiments from the job definition early so experiment
-          # gates below can read flags that arrive via the job payload.
-          (job_hash["experiments"] || {}).each do |name, value|
-            Experiments.register(name.to_s.tr("-", "_"), value)
-          end
-
           # Fetch blocked versions from the API if the experiment is enabled.
+          # Check both the Experiments registry and the raw job definition since
+          # job-scoped experiments are not registered until Job construction.
           # Inject them into the job definition so they're available at construction time.
-          if Experiments.enabled?(:dependabot_blocked_versions)
+          experiments = job_hash["experiments"] || {}
+          if Experiments.enabled?(:dependabot_blocked_versions) ||
+             experiments["dependabot_blocked_versions"] ||
+             experiments["dependabot-blocked-versions"]
             package_manager = job_hash["package-manager"] || job_hash["package_manager"] || ""
             blocked = service.fetch_blocked_versions(package_manager)
             job_hash["blocked-versions"] = blocked
