@@ -603,14 +603,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:cooldown_options) { nil }
 
       before do
-        allow(finder.send(:package_details_fetcher))
-          .to receive(:fetch_release_metadata)
-          .with(release: release)
-          .and_return(release)
+        allow(finder.send(:package_details_fetcher)).to receive(:fetch_release_metadata).and_call_original
       end
 
       context "when release date is available" do
         it { is_expected.to be false }
+
+        it "does not hydrate release metadata" do
+          finder.send(:in_cooldown_period?, release)
+
+          expect(finder.send(:package_details_fetcher)).not_to have_received(:fetch_release_metadata)
+        end
       end
 
       context "when release date is not available" do
@@ -620,10 +623,10 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           expect(in_cooldown).to be false
         end
 
-        it "logs that release date is not available" do
-          expect(Dependabot.logger).to receive(:info)
-            .with("Release date not available for version 1.0.0")
-          in_cooldown
+        it "does not hydrate release metadata" do
+          finder.send(:in_cooldown_period?, release)
+
+          expect(finder.send(:package_details_fetcher)).not_to have_received(:fetch_release_metadata)
         end
       end
     end

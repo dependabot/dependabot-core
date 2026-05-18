@@ -14,11 +14,12 @@ require "sorbet-runtime"
 require "dependabot/logger"
 require "dependabot/gradle/metadata_finder"
 require "dependabot/gradle/package/release_date_extractor"
+require "dependabot/gradle/package/version_release_date_fallback_fetcher"
 
 module Dependabot
   module Gradle
     module Package
-      class PackageDetailsFetcher # rubocop:disable Metrics/ClassLength
+      class PackageDetailsFetcher
         extend T::Sig
 
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
@@ -42,9 +43,7 @@ module Dependabot
           @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @release_details = T.let(nil, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
-          @version_release_date_fallback_cache = T.let(nil, T.nilable(T::Hash[String, T.nilable(Time)]))
-          @fallback_repository_url = T.let(nil, T.nilable(String))
-          @fallback_logged = T.let(false, T::Boolean)
+          @version_release_date_fallback_fetcher = T.let(nil, T.nilable(VersionReleaseDateFallbackFetcher))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -120,34 +119,7 @@ module Dependabot
 
         sig { params(version: String).returns(T.nilable(Time)) }
         def version_release_date_fallback(version)
-          cache = version_release_date_fallback_cache
-          return cache[version] if cache.key?(version)
-
-          fallback_repository_details.each do |repo|
-            repository_url = repo.fetch("url")
-            pom_url = plugin_version_pom_url(repository_url, version)
-            begin
-              response = Dependabot::RegistryClient.head(url: pom_url, headers: repo["auth_headers"])
-              last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
-              next unless last_modified
-
-              released_at = Time.httpdate(last_modified)
-              @fallback_repository_url = repository_url
-              log_fallback_hit(version: version, repository_url: repository_url, released_at: released_at)
-              cache[version] = released_at
-              return released_at
-            rescue StandardError => e
-              Dependabot.logger.debug(
-                "Failed POM Last-Modified fallback for #{dependency.name} version #{version} from " \
-                "#{repository_url}: #{e.message}"
-              )
-            end
-          end
-
-          Dependabot.logger.debug(
-            "No POM Last-Modified fallback release date found for #{dependency.name} version #{version}"
-          )
-          cache[version] = nil
+          version_release_date_fallback_fetcher.fetch(version)
         end
 
         sig { params(repository_url: String, version: String).returns(String) }
@@ -297,33 +269,6 @@ module Dependabot
           plugin? ? plugin_repository_details : dependency_repository_details
         end
 
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
-        def fallback_repository_details
-          candidates = repositories.reject do |repo|
-            T.must(forbidden_urls).include?(repo.fetch("url"))
-          end
-
-          preferred_repository, remaining_repositories = candidates.partition do |repo|
-            fallback_repository_url && repo.fetch("url") == fallback_repository_url
-          end
-
-          preferred_repository + remaining_repositories
-        end
-
-        sig { params(version: String, repository_url: String, released_at: Time).void }
-        def log_fallback_hit(version:, repository_url:, released_at:)
-          Dependabot.logger.debug(
-            "Using POM Last-Modified fallback for #{dependency.name} version #{version} from " \
-            "#{repository_url}: #{released_at}"
-          )
-          return if @fallback_logged
-
-          Dependabot.logger.info(
-            "Using POM Last-Modified fallback release dates for #{dependency.name} from #{repository_url}"
-          )
-          @fallback_logged = true
-        end
-
         sig { params(response: T.untyped, repository_url: T.untyped).returns(T.nilable(T::Array[T.untyped])) }
         def check_response(response, repository_url)
           return unless response.status == 401 || response.status == 403
@@ -441,12 +386,14 @@ module Dependabot
           Distributions.distribution_requirements?(dependency.requirements)
         end
 
-        sig { returns(T.nilable(String)) }
-        attr_reader :fallback_repository_url
-
-        sig { returns(T::Hash[String, T.nilable(Time)]) }
-        def version_release_date_fallback_cache
-          @version_release_date_fallback_cache ||= T.let({}, T.nilable(T::Hash[String, T.nilable(Time)]))
+        sig { returns(VersionReleaseDateFallbackFetcher) }
+        def version_release_date_fallback_fetcher
+          @version_release_date_fallback_fetcher ||= VersionReleaseDateFallbackFetcher.new(
+            dependency_name: dependency.name,
+            repositories: repositories,
+            forbidden_urls: T.must(forbidden_urls),
+            pom_url_builder: ->(repository_url, version) { plugin_version_pom_url(repository_url, version) }
+          )
         end
 
         sig { returns(T::Array[String]) }

@@ -232,11 +232,13 @@ module Dependabot
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
+          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
+          days = cooldown_days_for(current_version, release.version)
+          return false if days <= 0
+
           release = package_details_fetcher.fetch_release_metadata(release: release)
           return missing_release_date_in_cooldown?(release) unless release.released_at
 
-          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version, release.version)
           cooldown_window?(release: release, days: days)
         end
 
