@@ -78,7 +78,7 @@ module Dependabot
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
           release_date_info = release_details
-          version_details.map do |info|
+          version_details.each do |info|
             package_releases << {
               version: Gradle::Version.new(info[:version].to_s),
               released_at: info[:released_at] || release_date_info[info[:version].to_s]&.fetch(:release_date),

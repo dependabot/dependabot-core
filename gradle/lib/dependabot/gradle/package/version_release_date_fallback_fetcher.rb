@@ -3,6 +3,7 @@
 
 require "dependabot/logger"
 require "sorbet-runtime"
+require "time"
 
 module Dependabot
   module Gradle
