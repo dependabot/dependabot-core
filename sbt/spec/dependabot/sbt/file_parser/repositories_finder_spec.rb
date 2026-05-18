@@ -47,10 +47,11 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
         SBT
       end
 
-      it "returns all declared resolver URLs" do
+      it "returns all declared resolver URLs plus Maven Central" do
         expect(finder.repository_urls).to contain_exactly(
           "https://oss.sonatype.org/content/repositories/releases",
-          "https://repo.artima.com/releases"
+          "https://repo.artima.com/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -65,10 +66,11 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
         SBT
       end
 
-      it "returns all resolver URLs from the Seq block" do
+      it "returns all resolver URLs from the Seq block plus Maven Central" do
         expect(finder.repository_urls).to contain_exactly(
           "https://oss.sonatype.org/content/repositories/releases",
-          "https://repo.artima.com/releases"
+          "https://repo.artima.com/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -80,9 +82,10 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
         SBT
       end
 
-      it "returns the resolver URL" do
-        expect(finder.repository_urls).to eq(
-          ["https://dl.bintray.com/my/repo"]
+      it "returns the resolver URL plus Maven Central" do
+        expect(finder.repository_urls).to contain_exactly(
+          "https://dl.bintray.com/my/repo",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -94,9 +97,10 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
         SBT
       end
 
-      it "returns the Maven repository URL" do
-        expect(finder.repository_urls).to eq(
-          ["https://maven.example.com/releases"]
+      it "returns the Maven repository URL plus Maven Central" do
+        expect(finder.repository_urls).to contain_exactly(
+          "https://maven.example.com/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -110,11 +114,12 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
         SBT
       end
 
-      it "returns all unique resolver URLs" do
+      it "returns all unique resolver URLs plus Maven Central" do
         expect(finder.repository_urls).to contain_exactly(
           "https://oss.sonatype.org/releases",
           "https://dl.bintray.com/repo",
-          "https://maven.example.com/releases"
+          "https://maven.example.com/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -128,8 +133,9 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
       end
 
       it "ignores commented-out resolvers" do
-        expect(finder.repository_urls).to eq(
-          ["https://active.example.com/releases"]
+        expect(finder.repository_urls).to contain_exactly(
+          "https://active.example.com/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -143,8 +149,9 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
       end
 
       it "deduplicates URLs" do
-        expect(finder.repository_urls).to eq(
-          ["https://oss.sonatype.org/releases"]
+        expect(finder.repository_urls).to contain_exactly(
+          "https://oss.sonatype.org/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -157,8 +164,9 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
       end
 
       it "strips trailing slashes" do
-        expect(finder.repository_urls).to eq(
-          ["https://oss.sonatype.org/releases"]
+        expect(finder.repository_urls).to contain_exactly(
+          "https://oss.sonatype.org/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
@@ -199,10 +207,11 @@ RSpec.describe Dependabot::Sbt::FileParser::RepositoriesFinder do
 
       let(:dependency_files) { [build_sbt, sub_build_sbt] }
 
-      it "collects resolvers from all build files" do
+      it "collects resolvers from all build files plus Maven Central" do
         expect(finder.repository_urls).to contain_exactly(
           "https://root.example.com/releases",
-          "https://sub.example.com/releases"
+          "https://sub.example.com/releases",
+          "https://repo.maven.apache.org/maven2"
         )
       end
     end
