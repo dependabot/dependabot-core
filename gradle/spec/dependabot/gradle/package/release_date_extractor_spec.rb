@@ -182,5 +182,108 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
         expect(extract_release_dates).to eq({})
       end
     end
+
+    # Regression test for https://github.com/dependabot/dependabot-core/issues/14271.
+    # When a Gradle plugin coordinate is updated against a private Maven mirror,
+    # `plugins.gradle.org` is always prepended to the repository list (even with
+    # `replaces-base: true`). The Plugin Portal HTML listing has no per-version
+    # release dates, so it used to write nil placeholders for every version and
+    # the `key?` guard prevented the real dates from the private mirror (which
+    # *does* expose them) from ever being recorded. Every version then looked
+    # like it was missing a date and the cooldown filter filtered them all out,
+    # leaving "Latest version is" empty in the logs.
+    context "with Gradle Plugin Portal HTML (no dates) followed by a private mirror (with dates)" do
+      let(:repositories) do
+        [
+          { "url" => "https://plugins.gradle.org/m2", "auth_headers" => {} },
+          { "url" => "https://artifactory.example.com/artifactory/maven", "auth_headers" => {} }
+        ]
+      end
+      let(:plugin_portal_html) do
+        <<~HTML
+          <html><body>
+            <pre><a href="2.3.10/">2.3.10/</a></pre>
+            <pre><a href="2.3.20/">2.3.20/</a></pre>
+            <pre><a href="2.3.21/">2.3.21/</a></pre>
+          </body></html>
+        HTML
+      end
+      let(:private_mirror_html) do
+        <<~HTML
+          <html><body>
+            <pre><a href="../">../</a>
+            <a href="2.3.10/">2.3.10/</a>   2026-01-10 12:00    -
+            <a href="2.3.20/">2.3.20/</a>   2026-03-15 09:30    -
+            <a href="2.3.21/">2.3.21/</a>   2026-04-02 16:45    -
+            </pre>
+          </body></html>
+        HTML
+      end
+      let(:plugin_portal_url) { "https://plugins.gradle.org/m2" }
+      let(:release_info_metadata_fetcher) do
+        lambda do |repo|
+          html = repo.fetch("url") == plugin_portal_url ? plugin_portal_html : private_mirror_html
+          Nokogiri::HTML(html)
+        end
+      end
+
+      it "lets real dates from the private mirror overwrite nil dates from the Plugin Portal" do
+        result = extract_release_dates
+
+        expect(result["2.3.10"]).to eq({ release_date: Time.parse("2026-01-10 12:00") })
+        expect(result["2.3.20"]).to eq({ release_date: Time.parse("2026-03-15 09:30") })
+        expect(result["2.3.21"]).to eq({ release_date: Time.parse("2026-04-02 16:45") })
+      end
+    end
+
+    # Regression test for the Gradle Plugin Portal maven-metadata.xml path of the
+    # same bug: when the Plugin Portal reports its `latest` version with a real
+    # `lastUpdated` timestamp, a private mirror processed afterwards must not
+    # be allowed to clobber it with nil; conversely, when the Plugin Portal
+    # XML is missing/empty and only the private mirror has the date, the mirror's
+    # date must win.
+    context "when the Plugin Portal XML latest has no date but a later mirror does" do
+      let(:repositories) do
+        [
+          { "url" => "https://plugins.gradle.org/m2", "auth_headers" => {} },
+          { "url" => "https://artifactory.example.com/artifactory/maven", "auth_headers" => {} }
+        ]
+      end
+      let(:plugin_portal_xml) do
+        <<~XML
+          <metadata>
+            <versioning>
+              <latest>2.3.21</latest>
+              <lastUpdated></lastUpdated>
+            </versioning>
+          </metadata>
+        XML
+      end
+      let(:private_mirror_html) do
+        <<~HTML
+          <html><body>
+            <pre><a href="2.3.21/">2.3.21/</a>   2026-04-02 16:45    -</pre>
+          </body></html>
+        HTML
+      end
+      let(:plugin_portal_url) { "https://plugins.gradle.org/m2" }
+      let(:dependency_metadata_fetcher) do
+        lambda do |repo|
+          xml = repo.fetch("url") == plugin_portal_url ? plugin_portal_xml : ""
+          Nokogiri::XML(xml)
+        end
+      end
+      let(:release_info_metadata_fetcher) do
+        lambda do |repo|
+          html = repo.fetch("url") == plugin_portal_url ? "" : private_mirror_html
+          Nokogiri::HTML(html)
+        end
+      end
+
+      it "uses the mirror's real date for the latest version" do
+        result = extract_release_dates
+        expect(result["2.3.21"]).to eq({ release_date: Time.parse("2026-04-02 16:45") })
+      end
+    end
   end
 end
