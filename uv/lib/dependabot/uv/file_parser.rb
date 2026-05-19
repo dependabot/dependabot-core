@@ -25,6 +25,7 @@ module Dependabot
 
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/python_requirement_parser"
+      require_relative "file_parser/lock_file_dependency_parser"
 
       DEPENDENCY_GROUP_KEYS = T.let(
         [
@@ -57,7 +58,7 @@ module Dependabot
         dependency_set += uv_lock_file_dependencies
         dependency_set += requirement_dependencies if requirement_files.any?
 
-        dependency_set.dependencies
+        lock_file_dependency_parser.prefer_lockfile_versions(dependency_set.dependencies)
       end
 
       sig { override.returns(Ecosystem) }
@@ -188,34 +189,17 @@ module Dependabot
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
       end
 
-      sig { returns(T::Array[DependencyFile]) }
-      def uv_lock_files
-        dependency_files.select { |f| f.name == "uv.lock" }
+      sig { returns(LockFileDependencyParser) }
+      def lock_file_dependency_parser
+        @lock_file_dependency_parser ||= T.let(
+          LockFileDependencyParser.new(dependency_files: dependency_files),
+          T.nilable(LockFileDependencyParser)
+        )
       end
 
       sig { returns(DependencySet) }
       def uv_lock_file_dependencies
-        dependency_set = DependencySet.new
-
-        uv_lock_files.each do |file|
-          lockfile_content = TomlRB.parse(file.content)
-          packages = lockfile_content.fetch("package", [])
-
-          packages.each do |package_data|
-            next unless package_data.is_a?(Hash) && package_data["name"] && package_data["version"]
-
-            dependency_set << Dependency.new(
-              name: normalised_name(package_data["name"]),
-              version: package_data["version"],
-              requirements: [], # Lock files don't contain requirements
-              package_manager: "uv"
-            )
-          end
-        rescue StandardError => e
-          Dependabot.logger.warn("Error parsing uv.lock: #{e.message}")
-        end
-
-        dependency_set
+        lock_file_dependency_parser.dependency_set
       end
 
       sig { returns(DependencySet) }
