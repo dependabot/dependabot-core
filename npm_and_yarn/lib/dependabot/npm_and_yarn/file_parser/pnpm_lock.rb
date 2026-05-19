@@ -15,9 +15,10 @@ module Dependabot
       class PnpmLock
         extend T::Sig
 
-        sig { params(dependency_file: Dependabot::DependencyFile).void }
-        def initialize(dependency_file)
+        sig { params(dependency_file: Dependabot::DependencyFile, include_aliases: T::Boolean).void }
+        def initialize(dependency_file, include_aliases: false)
           @dependency_file = dependency_file
+          @include_aliases = include_aliases
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
