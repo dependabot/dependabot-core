@@ -1456,8 +1456,24 @@ RSpec.describe Dependabot::Python::FileParser do
     context "with reject_external_code" do
       let(:reject_external_code) { true }
 
-      it "raises UnexpectedExternalCode" do
-        expect { dependencies }.to raise_error(Dependabot::UnexpectedExternalCode)
+      it "parses dependencies from requirements files without raising" do
+        expect { dependencies }.not_to raise_error
+        expect(dependencies.map(&:name)).to include("psycopg2")
+      end
+
+      context "when setup.py is present" do
+        let(:files) { [requirements, setup_file] }
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("setup_files", "setup.py")
+          )
+        end
+
+        it "skips setup.py dependencies but still parses requirements" do
+          expect(dependencies.map(&:name)).to include("psycopg2")
+          expect(dependencies.map(&:name)).not_to include("boto3")
+        end
       end
     end
 

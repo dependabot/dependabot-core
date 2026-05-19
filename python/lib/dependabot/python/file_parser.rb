@@ -51,15 +51,20 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
-        raise Dependabot::UnexpectedExternalCode if @reject_external_code
-
         dependency_set = DependencySet.new
 
         dependency_set += pipenv_dependencies if pipfile
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += requirement_dependencies if requirement_files.any?
-        dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
+
+        # setup.py parsing executes external code via exec(), so skip when not allowed
+        if @reject_external_code
+          if setup_file || setup_cfg_file
+            Dependabot.logger.info("Skipping setup.py/setup.cfg parsing — external code execution is not allowed")
+          end
+        else
+          dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
+        end
 
         dependency_set.dependencies
       end
