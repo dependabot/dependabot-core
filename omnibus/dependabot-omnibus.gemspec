@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-composer", Dependabot::VERSION
   spec.add_dependency "dependabot-conda", Dependabot::VERSION
+  spec.add_dependency "dependabot-deno", Dependabot::VERSION
   spec.add_dependency "dependabot-devcontainers", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-docker_compose", Dependabot::VERSION
@@ -54,6 +55,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-pub", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
   spec.add_dependency "dependabot-rust_toolchain", Dependabot::VERSION
+  spec.add_dependency "dependabot-sbt", Dependabot::VERSION
   spec.add_dependency "dependabot-swift", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
   spec.add_dependency "dependabot-uv", Dependabot::VERSION

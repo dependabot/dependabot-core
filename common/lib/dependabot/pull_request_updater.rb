@@ -37,6 +37,9 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :signature_key
 
+    sig { returns(T.nilable(String)) }
+    attr_reader :commit_message
+
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :provider_metadata
 
@@ -50,6 +53,7 @@ module Dependabot
         pull_request_number: Integer,
         author_details: T.nilable(T::Hash[Symbol, String]),
         signature_key: T.nilable(String),
+        commit_message: T.nilable(String),
         provider_metadata: T::Hash[Symbol, T.untyped]
       )
         .void
@@ -63,6 +67,7 @@ module Dependabot
       pull_request_number:,
       author_details: nil,
       signature_key: nil,
+      commit_message: nil,
       provider_metadata: {}
     )
       @source              = source
@@ -73,6 +78,7 @@ module Dependabot
       @pull_request_number = pull_request_number
       @author_details      = author_details
       @signature_key       = signature_key
+      @commit_message      = commit_message
       @provider_metadata   = provider_metadata
     end
 
@@ -100,7 +106,8 @@ module Dependabot
         credentials: credentials,
         pull_request_number: pull_request_number,
         author_details: author_details,
-        signature_key: signature_key
+        signature_key: signature_key,
+        commit_message: commit_message
       )
     end
 

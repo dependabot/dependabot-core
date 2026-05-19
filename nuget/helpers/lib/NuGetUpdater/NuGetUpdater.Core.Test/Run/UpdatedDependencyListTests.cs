@@ -41,7 +41,6 @@ public class UpdatedDependencyListTests
                         new("Microsoft.Extensions.DependencyModel", "6.0.0", DependencyType.PackageReference, TargetFrameworks: ["net6.0"]),
                     ],
                     IsSuccess = true,
-                    Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
@@ -53,7 +52,6 @@ public class UpdatedDependencyListTests
                     Dependencies = [
                     ],
                     IsSuccess = true,
-                    Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
@@ -63,11 +61,10 @@ public class UpdatedDependencyListTests
                 {
                     FilePath = "c/project.csproj",
                     Dependencies = [
-                        new("System.Text.Json", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net6.0"], IsTransitive: true),
+                        new("System.Text.Json", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net6.0"], IsTopLevel: false),
                         new("Newtonsoft.Json", "13.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net6.0"]),
                     ],
                     IsSuccess = true,
-                    Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
@@ -189,7 +186,7 @@ public class UpdatedDependencyListTests
         {
             var fullFilePath = Path.Join(tempDir.DirectoryPath, testFile);
             Directory.CreateDirectory(Path.GetDirectoryName(fullFilePath)!);
-            await File.WriteAllTextAsync(fullFilePath, "");
+            await File.WriteAllTextAsync(fullFilePath, "", TestContext.Current.CancellationToken);
         }
         var discovery = new WorkspaceDiscoveryResult()
         {

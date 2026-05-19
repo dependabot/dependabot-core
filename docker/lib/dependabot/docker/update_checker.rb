@@ -4,6 +4,35 @@
 require "docker_registry2"
 require "sorbet-runtime"
 
+begin
+  require "rest-client"
+rescue LoadError
+  # Keep backwards-compatible exception constants when rest-client isn't bundled.
+  module ::RestClient
+    module Exceptions
+      class Timeout < StandardError; end
+      class OpenTimeout < Timeout; end
+      class ReadTimeout < Timeout; end
+    end
+
+    class Forbidden < StandardError; end
+    class TooManyRequests < StandardError; end
+    class ServerBrokeConnection < StandardError; end
+    class ServiceUnavailable < StandardError; end
+    class InternalServerError < StandardError; end
+    class BadGateway < StandardError; end
+
+    class Response
+      extend T::Sig
+
+      sig { returns(T::Hash[T.untyped, T.untyped]) }
+      def headers
+        {}
+      end
+    end
+  end
+end
+
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/cooldown_calculation"
@@ -375,12 +404,17 @@ module Dependabot
         first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
-        blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+        # When digest_info is an Array the registry returned a manifest list
+        # (OCI image index) and the extracted digest points at a platform-
+        # specific *manifest*, not a blob.  Use the correct endpoint so the
+        # HEAD request succeeds on registries like ghcr.io.
+        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
+        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           client = docker_registry_client
-          client.dohead "v2/#{docker_repo_name}/blobs/#{first_digest}"
+          client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
         end
 
-        last_modified = blob_info.headers[:last_modified]
+        last_modified = head_response.headers[:last_modified]
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(

@@ -1514,7 +1514,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         blob_headers =
           fixture("docker", "image_blobs_headers", "ubuntu_17.10_38d6c1.json")
 
-        stub_request(:head, repo_url + "blobs/sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1")
+        manifest_digest = "sha256:9c4bf7dbb981591d4a1169138471afe4bf5ff5418841d00e30a7ba372e38d6c1"
+        stub_request(:head, repo_url + "manifests/#{manifest_digest}")
           .and_return(status: 200, headers: JSON.parse(blob_headers))
       end
 
@@ -2866,6 +2867,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         expect(result).to be_a(Dependabot::Package::PackageRelease)
         expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
       end
+
+      it "uses the blobs endpoint for a single-image digest" do
+        get_tag_publication_details
+        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/blobs/sha256:abc123")
+      end
     end
 
     context "when client.digest returns an Array" do
@@ -2879,6 +2885,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         result = get_tag_publication_details
         expect(result).to be_a(Dependabot::Package::PackageRelease)
         expect(result.released_at).to eq(Time.parse("Mon, 15 Jan 2024 10:00:00 GMT"))
+      end
+
+      it "uses the manifests endpoint for a manifest-list digest" do
+        get_tag_publication_details
+        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/manifests/sha256:def456")
       end
     end
 

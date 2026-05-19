@@ -27,8 +27,9 @@ class RakeHelpers
       cargo/dependabot-cargo.gemspec
       composer/dependabot-composer.gemspec
       conda/dependabot-conda.gemspec
+      deno/dependabot-deno.gemspec
       devcontainers/dependabot-devcontainers.gemspec
-      docker_compose/dependabot-docker_compose.gemspec
+      docker/dependabot-docker_compose.gemspec
       docker/dependabot-docker.gemspec
       dotnet_sdk/dependabot-dotnet_sdk.gemspec
       elm/dependabot-elm.gemspec
@@ -49,6 +50,7 @@ class RakeHelpers
       pub/dependabot-pub.gemspec
       python/dependabot-python.gemspec
       rust_toolchain/dependabot-rust_toolchain.gemspec
+      sbt/dependabot-sbt.gemspec
       silent/dependabot-silent.gemspec
       swift/dependabot-swift.gemspec
       terraform/dependabot-terraform.gemspec

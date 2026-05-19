@@ -126,6 +126,25 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       end
     end
 
+    context "when lockfile parsing raises an error" do
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: "not valid toml {{{",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
+
+      it "sets errored_fetching_subdependencies and subdependency_error" do
+        grapher.resolved_dependencies
+
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+        expect(grapher.subdependency_error).to be_a(StandardError)
+      end
+    end
+
     context "when serializing lockfile-backed dependencies" do
       let(:uv_lock_file) do
         Dependabot::DependencyFile.new(

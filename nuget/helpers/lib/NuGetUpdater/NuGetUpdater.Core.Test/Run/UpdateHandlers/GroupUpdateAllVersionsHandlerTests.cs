@@ -23,14 +23,14 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 new()
                 {
                     FilePath = "project1.csproj",
-                    Dependencies = [new("SOME.DEPENDENCY", "1.0.0", DependencyType.PackageReference, IsTransitive: true)],
+                    Dependencies = [new("SOME.DEPENDENCY", "1.0.0", DependencyType.PackageReference, IsTopLevel: false)],
                     ImportedFiles = [],
                     AdditionalFiles = [],
                 },
                 new()
                 {
                     FilePath = "project2.csproj",
-                    Dependencies = [new("some.dependency", "1.0.0", DependencyType.PackageReference, IsTransitive: false)],
+                    Dependencies = [new("some.dependency", "1.0.0", DependencyType.PackageReference, IsTopLevel: true)],
                     ImportedFiles = [],
                     AdditionalFiles = [],
                 }
@@ -115,7 +115,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -355,7 +355,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -714,7 +714,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -900,7 +900,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), $"updated contents for {dependencyName}/{newVersion}");
 
@@ -1083,7 +1083,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -1215,7 +1215,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -1319,7 +1319,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
@@ -1573,7 +1573,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                 var dependencyName = input.Item3;
                 var previousVersion = input.Item4;
                 var newVersion = input.Item5;
-                var isTransitive = input.Item6;
+                var isTopLevel = input.Item6;
 
                 await File.WriteAllTextAsync(Path.Join(repoRoot, workspacePath), "updated contents");
 
