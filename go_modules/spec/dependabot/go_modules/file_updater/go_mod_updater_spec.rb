@@ -258,22 +258,126 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with a go.sum" do
-          subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+          subject(:updated_go_sum_content) { updater.updated_go_sum_content }
 
           let(:project_name) { "go_sum" }
 
           it "adds new entries to the go.sum" do
-            expect(updated_go_mod_content)
+            expect(updated_go_sum_content)
               .to include(%(rsc.io/quote v1.5.2 h1:))
-            expect(updated_go_mod_content)
+            expect(updated_go_sum_content)
               .to include(%(rsc.io/quote v1.5.2/go.mod h1:))
           end
 
           it "removes old entries from the go.sum" do
-            expect(updated_go_mod_content)
+            expect(updated_go_sum_content)
               .not_to include(%(rsc.io/quote v1.4.0 h1:))
-            expect(updated_go_mod_content)
+            expect(updated_go_sum_content)
               .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
+          end
+
+          context "when go tooling removes an unrelated go.mod checksum line" do
+            let(:removed_line) do
+              "gonum.org/v1/gonum v0.16.0/go.mod h1:fef3am4MQ93R2HHpKnLk4/Tbh/s0+wqD5nfa6Pnwy4E="
+            end
+            let(:zip_line) do
+              "gonum.org/v1/gonum v0.16.0 h1:JKbmSgVMFkFMDpGCixMRJCMEMmNhrsJuJqVDPMGPnQY="
+            end
+
+            it "restores the unrelated checksum line" do
+              allow(File).to receive(:read).and_call_original
+
+              original_go_sum = fixture("projects", project_name, "go.sum") +
+                                "#{zip_line}\n#{removed_line}\n"
+              updated_go_sum = original_go_sum.lines.reject { |line| line.chomp == removed_line }.join
+
+              allow(File).to receive(:read).with("go.sum").and_return(original_go_sum, updated_go_sum)
+
+              expect(updated_go_sum_content).to include(removed_line)
+            end
+          end
+
+          context "when the removed checksum belongs to the updated dependency" do
+            let(:removed_line) { "rsc.io/quote v1.4.0/go.mod h1:somethingoldchecksum=" }
+
+            it "does not restore the removed checksum line" do
+              allow(File).to receive(:read).and_call_original
+
+              original_go_sum = <<~GOSUM
+                rsc.io/quote v1.4.0 h1:oldchecksum=
+                #{removed_line}
+                rsc.io/sampler v1.3.0/go.mod h1:anexistingchecksum=
+              GOSUM
+
+              updated_go_sum = <<~GOSUM
+                rsc.io/quote v1.5.2 h1:newchecksum=
+                rsc.io/quote v1.5.2/go.mod h1:newgomodchecksum=
+                rsc.io/sampler v1.3.0/go.mod h1:anexistingchecksum=
+              GOSUM
+
+              allow(File).to receive(:read).with("go.sum").and_return(original_go_sum, updated_go_sum)
+
+              expect(updated_go_sum_content).not_to include(removed_line)
+            end
+          end
+
+          context "when a transitive dependency version is legitimately upgraded" do
+            let(:removed_line) { "golang.org/x/sys v0.0.0-20200116001909/go.mod h1:oldtransitivechecksum=" }
+
+            it "does not restore the removed checksum line" do
+              allow(File).to receive(:read).and_call_original
+
+              original_go_sum = <<~GOSUM
+                golang.org/x/sys v0.0.0-20200116001909 h1:oldziphash=
+                #{removed_line}
+                rsc.io/quote v1.4.0 h1:oldchecksum=
+                rsc.io/quote v1.4.0/go.mod h1:oldgomod=
+              GOSUM
+
+              updated_go_sum = <<~GOSUM
+                golang.org/x/sys v0.0.0-20220731174439 h1:newziphash=
+                golang.org/x/sys v0.0.0-20220731174439/go.mod h1:newtransitivechecksum=
+                rsc.io/quote v1.5.2 h1:newchecksum=
+                rsc.io/quote v1.5.2/go.mod h1:newgomodchecksum=
+              GOSUM
+
+              allow(File).to receive(:read).with("go.sum").and_return(original_go_sum, updated_go_sum)
+
+              expect(updated_go_sum_content).not_to include(removed_line)
+            end
+          end
+
+          context "when a go.mod-only entry (no zip hash) is pruned" do
+            let(:removed_line) do
+              "golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ="
+            end
+
+            it "restores the go.mod-only checksum line" do
+              allow(File).to receive(:read).and_call_original
+
+              original_go_sum = <<~GOSUM
+                golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+                golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
+                golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
+                rsc.io/quote v1.4.0 h1:oldchecksum=
+                rsc.io/quote v1.4.0/go.mod h1:oldgomod=
+              GOSUM
+
+              updated_go_sum = <<~GOSUM
+                golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+                golang.org/x/text v0.3.7/go.mod h1:u+2+/6zg+i71rQMx5EYifcz6MCKuco9NR6JIITiCfzQ=
+                golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
+                rsc.io/quote v1.5.2 h1:newchecksum=
+                rsc.io/quote v1.5.2/go.mod h1:newgomodchecksum=
+              GOSUM
+
+              # Simulate go tooling pruning the go.mod-only line
+              pruned_go_sum = updated_go_sum.lines.reject { |line| line.chomp == removed_line }.join
+
+              allow(File).to receive(:read).with("go.sum").and_return(original_go_sum, pruned_go_sum)
+
+              expect(updated_go_sum_content).to include(removed_line)
+            end
           end
 
           describe "a non-existent dependency with a pseudo-version" do
@@ -322,16 +426,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
 
             it "adds new entries to the go.sum" do
-              expect(updated_go_mod_content)
+              expect(updated_go_sum_content)
                 .to include(%(rsc.io/quote v1.5.2 h1:))
-              expect(updated_go_mod_content)
+              expect(updated_go_sum_content)
                 .to include(%(rsc.io/quote v1.5.2/go.mod h1:))
             end
 
             it "removes old entries from the go.sum" do
-              expect(updated_go_mod_content)
+              expect(updated_go_sum_content)
                 .not_to include(%(rsc.io/quote v1.4.0 h1:))
-              expect(updated_go_mod_content)
+              expect(updated_go_sum_content)
                 .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
             end
 
