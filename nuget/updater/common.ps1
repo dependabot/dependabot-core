@@ -59,11 +59,13 @@ function Get-DirectoriesMatchingPattern([string] $repoRoot, [string] $pattern) {
     $pattern = $pattern.Replace("\", "/").Trim("/")
     $normalizedDirectory = "$repoRoot/$pattern"
     $directoryRegex = "^"
+    $includeAnchor = $true
     for ($i = 0; $i -lt $normalizedDirectory.Length; $i++) {
         # well-known patterns
         if ($normalizedDirectory.Substring($i) -eq "/**") {
-            # /** at the end means just match everything and we're done
-            $directoryRegex += ".*"
+            # /** at the end means just match everything and we're done _or_ the end of the path
+            $directoryRegex += "(/.*$|$)"
+            $includeAnchor = $false
             break
         }
         elseif ($normalizedDirectory.Substring($i).StartsWith("**")) {
@@ -93,7 +95,10 @@ function Get-DirectoriesMatchingPattern([string] $repoRoot, [string] $pattern) {
     # remove trailing slash
     $directoryRegex = $directoryRegex.TrimEnd("/")
 
-    $directoryRegex += "$"
+    if ($includeAnchor) {
+        $directoryRegex += "$"
+    }
+
     return $directoryRegex
 }
 
@@ -118,7 +123,7 @@ function Get-GlobalJsonForSdkInstall([string] $repoRoot, [string[]] $updateDirec
         # if only a single value was returned, then force it to an array
         $allSubdirectories = @($allSubdirectories)
     }
-    $allSubdirectories += $repoRoot # the previous line doesn't incoude the starting directory, so we manually include it here
+    $allSubdirectories += $repoRoot # the previous line doesn't include the starting directory, so we manually include it here
     $allSubdirectories = $allSubdirectories | ForEach-Object { $_.Replace("\", "/") }
     foreach ($updateDirectory in $updateDirectories) {
         $updateDirectoryRegex = Get-DirectoriesMatchingPattern -repoRoot $repoRoot -pattern $updateDirectory
