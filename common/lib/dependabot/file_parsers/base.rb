@@ -85,8 +85,8 @@ module Dependabot
       # real package name rather than being skipped. Must be called before #parse.
       # This is a no-op for ecosystems that don't support aliases.
       sig { void }
-      def include_aliases!
-        options[:include_aliases] = true
+      def dealias_packages!
+        options[:dealias_packages] = true
       end
 
       private

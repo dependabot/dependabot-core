@@ -12,10 +12,10 @@ module Dependabot
       class YarnLock
         extend T::Sig
 
-        sig { params(dependency_file: Dependabot::DependencyFile, include_aliases: T::Boolean).void }
-        def initialize(dependency_file, include_aliases: false)
+        sig { params(dependency_file: Dependabot::DependencyFile, dealias_packages: T::Boolean).void }
+        def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
-          @include_aliases = include_aliases
+          @dealias_packages = dealias_packages
         end
 
         sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }

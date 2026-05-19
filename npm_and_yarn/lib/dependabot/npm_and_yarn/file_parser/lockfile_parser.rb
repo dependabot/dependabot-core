@@ -20,10 +20,10 @@ module Dependabot
 
         LockFile = T.type_alias { T.any(JsonLock, YarnLock, PnpmLock) }
 
-        sig { params(dependency_files: T::Array[DependencyFile], include_aliases: T::Boolean).void }
-        def initialize(dependency_files:, include_aliases: false)
+        sig { params(dependency_files: T::Array[DependencyFile], dealias_packages: T::Boolean).void }
+        def initialize(dependency_files:, dealias_packages: false)
           @dependency_files = dependency_files
-          @include_aliases = include_aliases
+          @dealias_packages = dealias_packages
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -84,9 +84,9 @@ module Dependabot
                                     when *package_locks.map(&:name), *shrinkwraps.map(&:name)
                                       JsonLock.new(file)
                                     when *yarn_locks.map(&:name)
-                                      YarnLock.new(file, include_aliases: @include_aliases)
+                                      YarnLock.new(file, dealias_packages: @dealias_packages)
                                     when *pnpm_locks.map(&:name)
-                                      PnpmLock.new(file, include_aliases: @include_aliases)
+                                      PnpmLock.new(file, dealias_packages: @dealias_packages)
                                     else
                                       raise "Unexpected lockfile: #{file.name}"
                                     end
