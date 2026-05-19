@@ -89,6 +89,38 @@ RSpec.describe Dependabot::GoModules::FileParser do
       expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
     end
 
+    it "strips surrounding quotes from values in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=\"https://proxy.example.com\"\nGONOPROXY='*.company.com'\n",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
+      expect(`go env GONOPROXY`.strip).to eq("*.company.com")
+    end
+
+    it "strips quotes from go.env values that contain = signs" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=\"https://proxy.example.com?token=abc&env=prod\"\n",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com?token=abc&env=prod")
+    end
+
+    it "handles go.env files with a mix of quoted and unquoted values" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPROXY=\"https://proxy.example.com\"\nGONOPROXY=*.company.com\n",
+        directory: directory
+      )
+      described_class.new(dependency_files: [go_mod, go_env], source: source, repo_contents_path: repo_contents_path)
+      expect(`go env GOPROXY`.strip).to eq("https://proxy.example.com")
+      expect(`go env GONOPROXY`.strip).to eq("*.company.com")
+    end
+
     it "does not set the GOPRIVATE environment variable if a goproxy_server credential is passed" do
       credentials = [
         Dependabot::Credential.new(
@@ -524,6 +556,42 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "does not require a root go.mod" do
         expect { parser.parse }.not_to raise_error
       end
+    end
+  end
+
+  describe "#sanitize_go_env_content" do
+    subject(:parser) do
+      described_class.new(dependency_files: [go_mod], source: source, repo_contents_path: repo_contents_path)
+    end
+
+    it "strips double quotes from values" do
+      expect(parser.send(:sanitize_go_env_content, "GOPROXY=\"https://proxy.example.com\"\n"))
+        .to eq("GOPROXY=https://proxy.example.com\n")
+    end
+
+    it "strips single quotes from values" do
+      expect(parser.send(:sanitize_go_env_content, "GONOPROXY='*.company.com'\n"))
+        .to eq("GONOPROXY=*.company.com\n")
+    end
+
+    it "does not modify unquoted values" do
+      content = "GOPROXY=https://proxy.example.com\n"
+      expect(parser.send(:sanitize_go_env_content, content)).to eq(content)
+    end
+
+    it "does not strip mismatched quotes" do
+      content = "GOPROXY=\"https://proxy.example.com'\n"
+      expect(parser.send(:sanitize_go_env_content, content)).to eq(content)
+    end
+
+    it "preserves blank lines" do
+      content = "GOPROXY=https://proxy.example.com\n\nGONOPROXY=*.company.com\n"
+      expect(parser.send(:sanitize_go_env_content, content)).to eq(content)
+    end
+
+    it "preserves = signs inside quoted values" do
+      expect(parser.send(:sanitize_go_env_content, "GOPROXY=\"https://proxy.example.com?token=abc\"\n"))
+        .to eq("GOPROXY=https://proxy.example.com?token=abc\n")
     end
   end
 
