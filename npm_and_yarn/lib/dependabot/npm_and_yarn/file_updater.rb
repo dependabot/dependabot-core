@@ -14,6 +14,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
+      require_relative "file_updater/command_trace"
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
@@ -22,6 +23,9 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
+
+        sig { returns(T::Hash[Symbol, T.untyped]) }
+        attr_reader :error_context
 
         sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
         def initialize(message:, error_context:)
@@ -211,12 +215,44 @@ module Dependabot
 
       sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
       def error_context(updated_files:)
+        traces = aggregated_command_traces
+        fallback_attempted, fallback_succeeded = compute_fallback_state(traces)
+
         {
           dependencies: dependencies.map(&:to_h),
           updated_files: updated_files.map(&:name),
           dependency_files: dependency_files.map(&:name),
-          package_manager: detected_package_manager
+          package_manager: detected_package_manager,
+          reason: updated_files.none? ? "no_files_updated" : "files_unchanged",
+          commands_succeeded: traces.empty? ? nil : traces.all?(&:success),
+          fallback_attempted: fallback_attempted,
+          fallback_succeeded: fallback_succeeded,
+          command_traces: traces.map(&:to_h)
         }
+      end
+
+      sig do
+        params(traces: T::Array[CommandTrace])
+          .returns([T::Boolean, T.nilable(T::Boolean)])
+      end
+      def compute_fallback_state(traces)
+        fallback_traces = traces.select do |t|
+          t.command.include?("audit") || t.command.include?("--depth Infinity")
+        end
+        attempted = fallback_traces.any?
+        succeeded =
+          (fallback_traces.any? { |t| t.content_changed_after == true } if attempted)
+        [attempted, succeeded]
+      end
+
+      sig { returns(T::Array[CommandTrace]) }
+      def aggregated_command_traces
+        traces = T.let([], T::Array[CommandTrace])
+        npm_traces = @npm_lockfile_updaters&.values&.flat_map(&:command_traces) || []
+        traces.concat(npm_traces)
+        traces.concat(@yarn_lockfile_updater.command_traces) if @yarn_lockfile_updater
+        traces.concat(@pnpm_lockfile_updater.command_traces) if @pnpm_lockfile_updater
+        traces
       end
 
       sig { returns(String) }

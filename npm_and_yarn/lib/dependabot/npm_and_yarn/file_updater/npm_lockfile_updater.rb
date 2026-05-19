@@ -9,6 +9,7 @@ require "dependabot/logger"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/npm_and_yarn/file_updater/command_trace"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
@@ -38,7 +39,11 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @command_traces = T.let([], T::Array[CommandTrace])
         end
+
+        sig { returns(T::Array[CommandTrace]) }
+        attr_reader :command_traces
 
         sig { returns(Dependabot::DependencyFile) }
         def updated_lockfile
@@ -334,9 +339,17 @@ module Dependabot
           dependency_names = sub_dependencies.map(&:name)
           original_content = File.read(lockfile_basename)
 
-          NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "npm",
+            command: "update <dependency_names> --force --ignore-scripts --package-lock-only",
+            fingerprint: "update <dependency_names> --force --ignore-scripts --package-lock-only"
+          ) do
+            NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
+          end
 
           updated_content = File.read(lockfile_basename)
+          @command_traces.last&.content_changed_after = updated_content != original_content
           if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
             # `npm update` is a no-op for transitive dependencies not listed in
             # any package.json (common in workspace repos). Fall back to
@@ -344,12 +357,20 @@ module Dependabot
             # npm audit fix exits non-zero when vulnerabilities remain, so we
             # rescue and use whatever lockfile changes it managed to make.
             begin
-              NativeHelpers.run_npm_audit_fix_command
+              CommandTrace.record(
+                traces: @command_traces,
+                package_manager: "npm",
+                command: "audit fix --force --package-lock-only --ignore-scripts",
+                fingerprint: "audit fix --force --package-lock-only --ignore-scripts"
+              ) do
+                NativeHelpers.run_npm_audit_fix_command
+              end
               sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
             rescue SharedHelpers::HelperSubprocessFailed
               Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
             end
             updated_content = File.read(lockfile_basename)
+            @command_traces.last&.content_changed_after = updated_content != original_content
           end
 
           { lockfile_basename => updated_content }
@@ -409,7 +430,14 @@ module Dependabot
 
           fingerprint = fingerprint_args.join(" ")
 
-          Helpers.run_npm_command(command, fingerprint: fingerprint)
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "npm",
+            command: command,
+            fingerprint: fingerprint
+          ) do
+            Helpers.run_npm_command(command, fingerprint: fingerprint)
+          end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }

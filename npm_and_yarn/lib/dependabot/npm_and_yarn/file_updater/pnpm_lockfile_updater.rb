@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/npm_and_yarn/file_updater/command_trace"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"
@@ -29,6 +30,7 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @command_traces = T.let([], T::Array[CommandTrace])
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -59,6 +61,9 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_pnpm_lock_updater_error(e, pnpm_lock)
         end
+
+        sig { returns(T::Array[CommandTrace]) }
+        attr_reader :command_traces
 
         private
 
@@ -146,7 +151,7 @@ module Dependabot
           )
             .returns(String)
         end
-        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
+        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil) # rubocop:disable Metrics/AbcSize
           # Set dependency files and credentials for automatic env variable injection
           Helpers.dependency_files = dependency_files
           Helpers.credentials = credentials
@@ -167,14 +172,17 @@ module Dependabot
               run_pnpm_install
 
               updated_content = File.read(pnpm_lock.name)
+              @command_traces.last&.content_changed_after = updated_content != original_content
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 run_pnpm_deep_update_fallback
                 updated_content = File.read(pnpm_lock.name)
+                @command_traces.last&.content_changed_after = updated_content != original_content
               end
 
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
                 updated_content = File.read(pnpm_lock.name)
+                @command_traces.last&.content_changed_after = updated_content != original_content
               end
 
               updated_content
@@ -188,17 +196,28 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          Helpers.run_pnpm_command(
-            "update #{dependency_updates}  --lockfile-only --no-save -r",
-            fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
-          )
+          cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
+          fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "pnpm",
+            command: cmd,
+            fingerprint: fingerprint
+          ) do
+            Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+          end
         end
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          Helpers.run_pnpm_command(
-            "install --lockfile-only"
-          )
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "pnpm",
+            command: "install --lockfile-only",
+            fingerprint: "install --lockfile-only"
+          ) do
+            Helpers.run_pnpm_command("install --lockfile-only")
+          end
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
@@ -209,7 +228,15 @@ module Dependabot
         def run_pnpm_deep_update_fallback
           recursive = workspace_files.any?
           dependencies.each do |dep|
-            NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            flags = recursive ? "-r --include-workspace-root " : ""
+            CommandTrace.record(
+              traces: @command_traces,
+              package_manager: "pnpm",
+              command: "#{flags}update #{dep.name} --depth Infinity --lockfile-only",
+              fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+            ) do
+              NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            end
             dep.metadata[:deep_update_used] = true
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -229,7 +256,14 @@ module Dependabot
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
-            NativeHelpers.run_pnpm_audit_fix_command
+            CommandTrace.record(
+              traces: @command_traces,
+              package_manager: "pnpm",
+              command: "audit --fix",
+              fingerprint: "audit --fix"
+            ) do
+              NativeHelpers.run_pnpm_audit_fix_command
+            end
             run_pnpm_install
 
             manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }
