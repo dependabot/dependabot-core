@@ -144,7 +144,7 @@ module Dependabot
 
           start = T.let(Process.clock_gettime(Process::CLOCK_MONOTONIC), Numeric)
           begin
-            result = block.call
+            result = block.call # rubocop:disable Performance/RedundantBlockCall
             record_success(trace, start, result)
             result
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
