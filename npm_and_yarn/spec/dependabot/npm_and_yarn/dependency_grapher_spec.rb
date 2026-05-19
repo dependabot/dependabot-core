@@ -98,6 +98,74 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with an aliased dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_alias") }
+
+      it "includes the real aliased package in resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The aliased package (is-number aliased as my-is-number) should appear
+        # under its real name
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.package_url).to eq("pkg:npm/is-number@7.0.0")
+        expect(is_number.direct).to be(true)
+        expect(is_number.runtime).to be(true)
+      end
+
+      it "includes non-aliased dependencies normally" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        etag = resolved_dependencies["pkg:npm/etag@1.8.1"]
+        expect(etag).not_to be_nil
+        expect(etag.direct).to be(true)
+      end
+    end
+
+    context "with a yarn aliased dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_alias") }
+
+      it "includes the real aliased package in resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        fetch_factory = resolved_dependencies["pkg:npm/fetch-factory@0.0.1"]
+        expect(fetch_factory).not_to be_nil
+        expect(fetch_factory.package_url).to eq("pkg:npm/fetch-factory@0.0.1")
+        expect(fetch_factory.direct).to be(true)
+        expect(fetch_factory.runtime).to be(true)
+      end
+
+      it "includes non-aliased dependencies normally" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        etag = resolved_dependencies["pkg:npm/etag@1.8.1"]
+        expect(etag).not_to be_nil
+        expect(etag.direct).to be(true)
+      end
+    end
+
+    context "with a pnpm aliased dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_alias") }
+
+      it "includes the real aliased package in resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        fetch_factory = resolved_dependencies["pkg:npm/fetch-factory@0.0.2"]
+        expect(fetch_factory).not_to be_nil
+        expect(fetch_factory.package_url).to eq("pkg:npm/fetch-factory@0.0.2")
+        expect(fetch_factory.direct).to be(true)
+        expect(fetch_factory.runtime).to be(true)
+      end
+
+      it "includes non-aliased dependencies normally" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        etag = resolved_dependencies["pkg:npm/etag@1.8.1"]
+        expect(etag).not_to be_nil
+        expect(etag.direct).to be(true)
+      end
+    end
+
     context "with a lockfile containing subdependencies" do
       let(:dependency_files) { project_dependency_files("grapher/npm_with_subdeps") }
 

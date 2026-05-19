@@ -1,0 +1,8 @@
+{
+  "name": "grapher-yarn-with-alias",
+  "version": "1.0.0",
+  "dependencies": {
+    "my-fetch-factory": "npm:fetch-factory@0.0.1",
+    "etag": "^1.0.0"
+  }
+}
