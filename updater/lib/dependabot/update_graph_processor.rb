@@ -93,6 +93,36 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
+    rescue Dependabot::UnexpectedExternalCode
+      # If this has been raised, then the directory is trying to use a private registry with an ecosystem
+      # that requires the `insecure-external-code-execution: allow` flag.
+      #
+      # The default policy is denied, so this outcome represent misconfiguration for the directory - we
+      # should record this failure with allow other directories in the job to try as they may not be
+      # misconfigured.
+      Dependabot.logger.info(<<~LOG)
+        Skipping directory #{directory} — Dependabot refused to execute external code
+
+        This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
+
+        Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies'
+        supply chain or remove the private registry from this directory.
+      LOG
+      service.record_update_job_error(
+        error_type: "unexpected_external_code",
+        error_details: { message: "Cannot process directory #{directory} without external code execution" }
+      )
+
+      return unless Dependabot::Environment.github_actions?
+
+      service.create_dependency_submission(
+        dependency_submission: empty_submission(
+          branch,
+          T.must(directory_source),
+          GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+          "unexpected_external_code"
+        )
+      )
     rescue Dependabot::ApiError, Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
       # If the submission API is down, we should raise this as a specific error type for visibility.
       error_handler.handle_job_error(
