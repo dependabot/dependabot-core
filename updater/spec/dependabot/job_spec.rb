@@ -1273,4 +1273,306 @@ RSpec.describe Dependabot::Job do
       end
     end
   end
+
+  describe "#ignore_conditions_for with blocked_versions" do
+    subject(:ignored) { job.ignore_conditions_for(dependency) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when blocked_versions contains a matching dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version" => "= 3.3.6",
+              "reason" => "malware - flatmap-stream injection"
+            }
+          ]
+        )
+      end
+
+      it "includes the blocked version as an ignore condition" do
+        expect(ignored).to include("= 3.3.6")
+      end
+    end
+
+    context "when blocked_versions contains multiple versions for the same package" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "event-stream", "version" => "= 4.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "includes all blocked versions" do
+        expect(ignored).to include("= 3.3.6", "= 4.0.0")
+      end
+    end
+
+    context "when blocked_versions contains a version range with greater-than" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "> 2.10", "reason" => "compromised" }
+          ]
+        )
+      end
+
+      it "passes the range through as an ignore requirement" do
+        expect(ignored).to include("> 2.10")
+      end
+    end
+
+    context "when blocked_versions contains a bounded range" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => ">= 3.0, < 4.0", "reason" => "compromised series" }
+          ]
+        )
+      end
+
+      it "passes the bounded range through" do
+        expect(ignored).to include(">= 3.0, < 4.0")
+      end
+    end
+
+    context "when blocked_versions contains a less-than range" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "< 2.0", "reason" => "deprecated" }
+          ]
+        )
+      end
+
+      it "passes the less-than range through" do
+        expect(ignored).to include("< 2.0")
+      end
+    end
+
+    context "when blocked_versions contains a pessimistic constraint" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "~> 3.3.0", "reason" => "vulnerable patch line" }
+          ]
+        )
+      end
+
+      it "passes the pessimistic constraint through" do
+        expect(ignored).to include("~> 3.3.0")
+      end
+    end
+
+    context "when blocked_versions mixes exact and range entries" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "event-stream", "version" => ">= 5.0", "reason" => "hijacked major" }
+          ]
+        )
+      end
+
+      it "includes both the exact version and the range" do
+        expect(ignored).to include("= 3.3.6", ">= 5.0")
+      end
+    end
+
+    context "when blocked_versions does not match the dependency name" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "other-package", "version" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "does not include the blocked version" do
+        expect(ignored).not_to include("= 1.0.0")
+      end
+    end
+
+    context "when blocked_versions uses exact name matching (not wildcard)" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream*", "version" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "does not match wildcards in blocked version names" do
+        expect(ignored).not_to include("= 3.3.6")
+      end
+    end
+
+    context "when security_updates_only is true" do
+      let(:security_updates_only) { true }
+      let(:dependencies) { ["event-stream"] }
+
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "still includes the blocked version (blocks apply regardless of update type)" do
+        expect(ignored).to include("= 3.3.6")
+      end
+    end
+
+    context "when blocked_versions is empty" do
+      let(:attributes) do
+        super().merge(blocked_versions: [])
+      end
+
+      it "returns no additional conditions" do
+        expect(ignored).to be_empty
+      end
+    end
+
+    context "when blocked_versions contains malformed entries" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream" },
+            { "version" => "= 3.3.6" },
+            {},
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores entries missing dependency-name or version" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
+
+    context "when blocked_versions contains non-string types" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => 123, "version" => "= 1.0.0" },
+            { "dependency-name" => "event-stream", "version" => nil },
+            { "dependency-name" => "event-stream", "version" => ["= 1.0"] },
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores entries with non-string dependency-name or version" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
+
+    context "when blocked_versions contains empty string values" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "", "reason" => "empty" },
+            { "dependency-name" => "event-stream", "version" => "  ", "reason" => "whitespace" },
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores entries with empty or whitespace-only version" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
+  end
+
+  describe "#log_ignore_conditions_for with blocked_versions" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when blocked_versions contains a matching dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version" => "= 3.3.6",
+              "reason" => "malware - flatmap-stream injection"
+            }
+          ]
+        )
+      end
+
+      it "logs the blocked version with reason" do
+        expect(Dependabot.logger).to receive(:info).with("Blocked versions (by GitHub Security):")
+        expect(Dependabot.logger).to receive(:info)
+          .with("  = 3.3.6 - reason: malware - flatmap-stream injection")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+
+    context "when blocked_versions has no reason" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "= 3.3.6" }
+          ]
+        )
+      end
+
+      it "logs the blocked version without reason" do
+        expect(Dependabot.logger).to receive(:info).with("Blocked versions (by GitHub Security):")
+        expect(Dependabot.logger).to receive(:info).with("  = 3.3.6")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+
+    context "when blocked_versions contains a range" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version" => "> 2.10, < 4.0", "reason" => "compromised range" }
+          ]
+        )
+      end
+
+      it "logs the range requirement" do
+        expect(Dependabot.logger).to receive(:info).with("Blocked versions (by GitHub Security):")
+        expect(Dependabot.logger).to receive(:info)
+          .with("  > 2.10, < 4.0 - reason: compromised range")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+
+    context "when no blocked versions match" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "other-pkg", "version" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "does not log blocked versions" do
+        expect(Dependabot.logger).not_to receive(:info).with("Blocked versions (by GitHub Security):")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+  end
 end
