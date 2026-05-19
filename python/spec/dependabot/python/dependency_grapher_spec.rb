@@ -190,6 +190,98 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(requirements_txt_with_extras)
       end
     end
+
+    context "when pip package manager selects pip_requirements_file" do
+      let(:requirements_content) { "requests==2.32.5\n" }
+
+      context "when requirements.txt is present" do
+        let(:dependency_files) { [requirements_txt] }
+
+        it "selects requirements.txt" do
+          expect(grapher.relevant_dependency_file).to eql(requirements_txt)
+        end
+      end
+
+      context "when dependencies.txt is present (no requirements.txt)" do
+        let(:dependencies_txt) do
+          Dependabot::DependencyFile.new(
+            name: "dependencies.txt",
+            content: requirements_content,
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [dependencies_txt] }
+
+        it "selects dependencies.txt" do
+          expect(grapher.relevant_dependency_file).to eql(dependencies_txt)
+        end
+      end
+
+      context "when depends.txt is present (no requirements.txt)" do
+        let(:depends_txt) do
+          Dependabot::DependencyFile.new(
+            name: "depends.txt",
+            content: requirements_content,
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [depends_txt] }
+
+        it "selects depends.txt" do
+          expect(grapher.relevant_dependency_file).to eql(depends_txt)
+        end
+      end
+
+      context "when a nested dependencies path is present" do
+        let(:ansible_lint_txt) do
+          Dependabot::DependencyFile.new(
+            name: "dependencies/python/ansible-lint.txt",
+            content: requirements_content,
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [ansible_lint_txt] }
+
+        it "selects the nested dependencies file" do
+          expect(grapher.relevant_dependency_file).to eql(ansible_lint_txt)
+        end
+      end
+
+      context "when only notes.txt is present (no requirements.txt)" do
+        let(:notes_txt) do
+          Dependabot::DependencyFile.new(
+            name: "notes.txt",
+            content: "Some release notes\n",
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [notes_txt] }
+
+        it "does not select notes.txt as a pip manifest" do
+          expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError)
+        end
+      end
+
+      context "when only release-notes.txt is present (no requirements.txt)" do
+        let(:release_notes_txt) do
+          Dependabot::DependencyFile.new(
+            name: "release-notes.txt",
+            content: "Some release notes\n",
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [release_notes_txt] }
+
+        it "does not select release-notes.txt as a pip manifest" do
+          expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError)
+        end
+      end
+    end
   end
 
   describe "#resolved_dependencies" do
@@ -253,10 +345,18 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
 
     context "when poetry.lock is not present" do
+      let(:ephemeral_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
       let(:lockfile_generator) do
         instance_double(
           Dependabot::Python::DependencyGrapher::LockfileGenerator,
-          generate: nil
+          generate: ephemeral_lockfile
         )
       end
 
@@ -275,13 +375,31 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(lockfile_generator).to have_received(:generate)
       end
 
-      context "when lockfile generation fails" do
-        it "returns dependencies without relationship data" do
-          resolved_dependencies = grapher.resolved_dependencies
-
-          resolved_dependencies.each_value do |dep|
-            expect(dep.dependencies).to eq([])
+      context "when lockfile generation raises an error" do
+        let(:lockfile_generator) do
+          instance_double(
+            Dependabot::Python::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "poetry lock failed: authentication required",
+                error_context: {}
+              )
+            )
           end
+        end
+
+        it "sets the error flag for degraded status" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
+        it "preserves the original error as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect(grapher.subdependency_error.message).to include("poetry lock failed")
         end
 
         it "returns PURLs without resolved versions" do
@@ -292,6 +410,14 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
             "pkg:pypi/requests",
             "pkg:pypi/ruff"
           )
+        end
+
+        it "returns dependencies without relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          resolved_dependencies.each_value do |dep|
+            expect(dep.dependencies).to eq([])
+          end
         end
       end
 

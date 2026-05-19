@@ -946,5 +946,214 @@ RSpec.describe Dependabot::Uv::FileParser do
         end
       end
     end
+
+    context "with uv workspace member pyprojects" do
+      let(:files) { [pyproject, workspace_member_pyproject] }
+      let(:parsed_files) { [] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "workspace-root"
+            version = "0.1.0"
+            dependencies = [
+              "requests>=2.31.0",
+              "my-package",
+            ]
+
+            [tool.uv.workspace]
+            members = ["packages/my-package"]
+
+            [tool.uv.sources]
+            my-package = { workspace = true }
+          TOML
+        )
+      end
+      let(:workspace_member_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "packages/my-package/pyproject.toml",
+          support_file: true,
+          content: <<~TOML
+            [project]
+            name = "my-package"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.1.0",
+            ]
+          TOML
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, args:, **|
+          raise "Unexpected helper function: #{function}" unless function == "parse_pep621_pep735_dependencies"
+
+          pyproject_path = args.first
+          parsed_files << pyproject_path
+
+          case pyproject_path
+          when "pyproject.toml"
+            [
+              {
+                "name" => "requests",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => ">=2.31.0",
+                "extras" => [],
+                "requirement_type" => nil
+              },
+              {
+                "name" => "my-package",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => "",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          when "packages/my-package/pyproject.toml"
+            [
+              {
+                "name" => "click",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "packages/my-package/pyproject.toml",
+                "requirement" => ">=8.1.0",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          else
+            raise "Unexpected pyproject path: #{pyproject_path}"
+          end
+        end
+      end
+
+      it "parses fetched workspace member manifests with their own file paths" do
+        dependency = dependencies.find { |dep| dep.name == "click" }
+
+        expect(parsed_files).to contain_exactly("pyproject.toml", "packages/my-package/pyproject.toml")
+        expect(dependency&.requirements).to eq(
+          [{
+            requirement: ">=8.1.0",
+            file: "packages/my-package/pyproject.toml",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
+  end
+
+  describe "#run_in_parsed_context" do
+    let(:pyproject_content) { fixture("pyproject_files", "uv_dependency_grapher.toml") }
+    let(:pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: pyproject_content,
+        directory: "/"
+      )
+    end
+    let(:files) { [pyproject] }
+
+    it "passes commands with allow_unsafe_shell_command so shell operators are preserved" do
+      allow(parser).to receive(:setup_python_environment)
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("output")
+
+      parser.run_in_parsed_context("pyenv exec uv lock --color never --no-progress && cat uv.lock")
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pyenv exec uv lock --color never --no-progress && cat uv.lock",
+              allow_unsafe_shell_command: true)
+    end
+  end
+
+  describe "#write_temporary_dependency_files" do
+    subject(:write_temporary_dependency_files) { parser.send(:write_temporary_dependency_files) }
+
+    let(:pyproject) do
+      Dependabot::DependencyFile.new(
+        name: "pyproject.toml",
+        content: <<~TOML
+          [project]
+          name = "example"
+          version = "0.1.0"
+          license = { file = "LICENSE.txt" }
+          dependencies = ["requests==2.31.0"]
+        TOML
+      )
+    end
+    let(:license_file) do
+      Dependabot::DependencyFile.new(
+        name: "LICENSE.txt",
+        support_file: true,
+        content: <<~LICENSE
+          MIT License
+
+          Copyright (c) 2024 Example
+
+          Permission is hereby granted, free of charge, to any person obtaining a copy
+          of this software and associated documentation files (the "Software"), to deal
+          in the Software without restriction, including without limitation the rights
+          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+          copies of the Software, and to permit persons to whom the Software is furnished
+          to do so, subject to the following conditions:
+        LICENSE
+      )
+    end
+    let(:requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "requests==2.31.0\n"
+      )
+    end
+    let(:files) { [pyproject, license_file, requirements_txt] }
+
+    around do |example|
+      Dependabot::SharedHelpers.in_a_temporary_directory { example.run }
+    end
+
+    it "does not write non-requirements .txt support files like LICENSE.txt" do
+      write_temporary_dependency_files
+
+      expect(File.exist?("requirements.txt")).to be(true)
+      expect(File.exist?("pyproject.toml")).to be(true)
+      expect(File.exist?("LICENSE.txt")).to be(false)
+    end
+
+    context "when a support .txt file looks like a requirements file" do
+      let(:license_file) do
+        Dependabot::DependencyFile.new(
+          name: "constraints-extra.txt",
+          support_file: true,
+          content: "requests==2.31.0\n"
+        )
+      end
+
+      it "still writes the support file" do
+        write_temporary_dependency_files
+
+        expect(File.exist?("constraints-extra.txt")).to be(true)
+      end
+    end
+
+    context "when the support file's name contains 'requirements'" do
+      let(:license_file) do
+        Dependabot::DependencyFile.new(
+          name: "extra-requirements.txt",
+          support_file: true,
+          content: "some-garbage-but-named-requirements"
+        )
+      end
+
+      it "writes the file based on its name" do
+        write_temporary_dependency_files
+
+        expect(File.exist?("extra-requirements.txt")).to be(true)
+      end
+    end
   end
 end

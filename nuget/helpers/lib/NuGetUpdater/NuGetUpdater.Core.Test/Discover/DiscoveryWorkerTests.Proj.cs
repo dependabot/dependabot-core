@@ -66,7 +66,7 @@ public partial class DiscoveryWorkerTests
                             FilePath = "../src/project1/project1.csproj",
                             Dependencies =
                             [
-                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -78,7 +78,7 @@ public partial class DiscoveryWorkerTests
                             FilePath = "../src/project2/project2.csproj",
                             Dependencies =
                             [
-                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],

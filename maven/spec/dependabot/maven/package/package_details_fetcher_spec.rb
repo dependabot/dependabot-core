@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
   before do
     stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml")
       .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.xml"))
-    stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava")
+    stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
       .to_return(status: 200, body: fixture("maven_central_metadata", "with_release.html"))
     stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.6-jre/guava-23.6-jre.jar")
       .to_return(status: 200)
@@ -99,6 +99,8 @@ RSpec.describe Dependabot::Maven::Package::PackageDetailsFetcher do
     it "returns false for an unreleased version" do
       # Update the URL stub to simulate a 404 (not found) response for an unreleased version
       stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/guava-23.7-jre.jar")
+        .to_return(status: 404)
+      stub_request(:head, "https://repo.maven.apache.org/maven2/com/google/guava/guava/23.7-jre/guava-23.7-jre.pom")
         .to_return(status: 404)
 
       unreleased_version = Dependabot::Maven::Version.new("23.7-jre")

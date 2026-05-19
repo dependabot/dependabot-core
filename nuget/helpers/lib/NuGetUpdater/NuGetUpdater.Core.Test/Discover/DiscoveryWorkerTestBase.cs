@@ -28,7 +28,8 @@ public class DiscoveryWorkerTestBase : TestBase
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath, includeCommonPackages: includeCommonPackages);
 
             repoContentsPath ??= directoryPath;
-            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
+            var logger = new StringLogger();
+            var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, logger);
             var result = await worker.RunWithErrorHandlingAsync(repoContentsPath, workspacePath);
             return result;
         });
@@ -106,6 +107,16 @@ public class DiscoveryWorkerTestBase : TestBase
 
             ValidateDependencies(expectedProject.Dependencies, actualDependencies);
             Assert.Equal(expectedProject.ExpectedDependencyCount ?? expectedProject.Dependencies.Length, actualDependencies.Length);
+
+            if (expectedProject.ExpectedPackageManagementKind is not null)
+            {
+                Assert.Equal(expectedProject.ExpectedPackageManagementKind.GetValueOrDefault(), actualProject.PackageManagementKind);
+            }
+
+            if (expectedProject.ExpectedPackageManagementSpecialFileRelativePath is not null)
+            {
+                Assert.Equal(expectedProject.ExpectedPackageManagementSpecialFileRelativePath, actualProject.PackageManagementSpecialFileRelativePath);
+            }
         }
     }
 
@@ -123,8 +134,7 @@ public class DiscoveryWorkerTestBase : TestBase
                 return d.Name == expectedDependency.Name
                     && d.Type == expectedDependency.Type
                     && d.Version == expectedDependency.Version
-                    && d.IsDirect == expectedDependency.IsDirect
-                    && d.IsTransitive == expectedDependency.IsTransitive
+                    && d.IsTopLevel == expectedDependency.IsTopLevel
                     && d.TargetFrameworks.SequenceEqual(expectedDependency.TargetFrameworks);
             }).ToArray();
             Assert.True(matchingDependencies.Length == 1, $"""
@@ -132,8 +142,7 @@ public class DiscoveryWorkerTestBase : TestBase
                     Name: {expectedDependency.Name}
                     Type: {expectedDependency.Type}
                     Version: {expectedDependency.Version}
-                    IsDirect: {expectedDependency.IsDirect}
-                    IsTransitive: {expectedDependency.IsTransitive}
+                    IsTopLevel: {expectedDependency.IsTopLevel}
                     TargetFrameworks: {string.Join(", ", expectedDependency.TargetFrameworks ?? [])}
                 Found:{"\n\t"}{string.Join("\n\t", actualDependencies)}
                 """);

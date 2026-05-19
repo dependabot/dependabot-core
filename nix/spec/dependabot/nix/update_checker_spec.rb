@@ -213,6 +213,77 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         expect(checker.latest_version).to eq("ddd444")
       end
     end
+
+    context "with a branch-tracking input and cooldown filters every candidate" do
+      let(:current_sha) { "6201e203d09599479a3b3450ed24fa81537ebc4e" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: current_sha,
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/NixOS/nixpkgs",
+              branch: nil,
+              ref: "nixos-unstable"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [],
+          credentials: [],
+          update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+        )
+      end
+      let(:available_versions) do
+        [
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Nix::Version.new("0.0.0-0.2"),
+            tag: "a9503707cb403de2b9a974c27d89031c73b84455",
+            released_at: Time.now
+          ),
+          Dependabot::Package::PackageRelease.new(
+            version: Dependabot::Nix::Version.new("0.0.0-0.1"),
+            tag: "2a94098db537ad60347abdf0e4ba8f9434e37002",
+            released_at: Time.now
+          )
+        ]
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: false
+        )
+
+        branch_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::VersionedBranchFinder,
+          versioned_branch?: false
+        )
+        allow(Dependabot::Nix::UpdateChecker::VersionedBranchFinder)
+          .to receive(:new).and_return(branch_finder)
+
+        package_details_fetcher = instance_double(
+          Dependabot::Nix::Package::PackageDetailsFetcher,
+          available_versions: available_versions
+        )
+        allow(Dependabot::Nix::Package::PackageDetailsFetcher)
+          .to receive(:new).and_return(package_details_fetcher)
+      end
+
+      it "falls back to the current commit SHA" do
+        expect(checker.latest_version).to eq(current_sha)
+      end
+    end
   end
 
   describe "#updated_requirements" do

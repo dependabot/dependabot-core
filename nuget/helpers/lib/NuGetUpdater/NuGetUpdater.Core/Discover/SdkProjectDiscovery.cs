@@ -144,7 +144,7 @@ internal static class SdkProjectDiscovery
             try
             {
                 // when using single restore, we can directly invoke the relevant targets...
-                var args = new List<string>() { "msbuild", startingProjectPath };
+                var args = new List<string>() { startingProjectPath };
 
                 // ...but determining what the relevant targets are can be complicated
 
@@ -195,7 +195,7 @@ internal static class SdkProjectDiscovery
                 args.Add("/p:MSBuildTreatWarningsAsErrors=false");
                 args.Add($"/bl:{binLogPath}");
 
-                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
+                var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
                 if (exitCode != 0 && stdOut.Contains("error : Object reference not set to an instance of an object."))
                 {
                     // https://github.com/NuGet/Home/issues/11761#issuecomment-1105218996
@@ -203,7 +203,7 @@ internal static class SdkProjectDiscovery
                     // but this argument can't always be added; it can cause problems in other instances, so we're taking the approach of not using it
                     // unless we have to.
                     args.Add("/RestoreProperty:__Unused__=__Unused__");
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory);
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, startingProjectDirectory);
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
@@ -621,7 +621,7 @@ internal static class SdkProjectDiscovery
                     }
 
                     var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
-                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsDirect: isTopLevel, IsTransitive: !isTopLevel);
+                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsTopLevel: isTopLevel);
                 }
             }
 
@@ -630,7 +630,7 @@ internal static class SdkProjectDiscovery
                 .ThenBy(d => d.Version)
                 .ToImmutableArray();
 
-            // others
+            // other values
             var projectProperties = resolvedProperties[projectPath];
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
@@ -643,13 +643,36 @@ internal static class SdkProjectDiscovery
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var useCpmTransitivePinning =
-                projectProperties.TryGetValue("ManagePackageVersionsCentrally", out var useCpmString) &&
-                bool.TryParse(useCpmString, out var useCpm) &&
-                useCpm &&
-                projectProperties.TryGetValue("CentralPackageTransitivePinningEnabled", out var useTransitivePinningString) &&
-                bool.TryParse(useTransitivePinningString, out var useTransitivePinning) &&
-                useTransitivePinning;
+
+            // package management special values
+            var projectLevelCpm = GetBooleanPropertyFromProjectProperties(projectProperties, "ManagePackageVersionsCentrally");
+            var projectLevelCpmWithPinning =
+                projectLevelCpm &&
+                GetBooleanPropertyFromProjectProperties(projectProperties, "CentralPackageTransitivePinningEnabled");
+            var centralPackageVersions = GetBooleanPropertyFromProjectProperties(projectProperties, "UsingMicrosoftCentralPackageVersionsSdk");
+            var packageManagementKind =
+                projectLevelCpmWithPinning ? PackageManagementKind.CentralPackageManagementWithTransitivePinning :
+                projectLevelCpm ? PackageManagementKind.CentralPackageManagement :
+                centralPackageVersions ? PackageManagementKind.CentralPackageVersions :
+                PackageManagementKind.Default;
+            var packageManagementFile = packageManagementKind switch
+            {
+                PackageManagementKind.CentralPackageVersions => GetStringPropertyFromProjectProperties(projectProperties, "CentralPackagesFile"),
+                PackageManagementKind.CentralPackageManagement or
+                PackageManagementKind.CentralPackageManagementWithTransitivePinning => GetStringPropertyFromProjectProperties(projectProperties, "DirectoryPackagesPropsPath"),
+                _ => null,
+            };
+
+            if (packageManagementFile is not null)
+            {
+                packageManagementFile = Path.GetRelativePath(projectFullDirectory, packageManagementFile).NormalizePathToUnix();
+            }
+
+            if (packageManagementKind != PackageManagementKind.Default && packageManagementFile is null)
+            {
+                logger.Warn($"Project [{projectRelativePath}] detected package management kind of {packageManagementKind} but no package management file found; forcing management kind to {PackageManagementKind.Default}.");
+                packageManagementKind = PackageManagementKind.Default;
+            }
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
@@ -659,7 +682,8 @@ internal static class SdkProjectDiscovery
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
                 AdditionalFiles = additional,
-                CentralPackageTransitivePinningEnabled = useCpmTransitivePinning,
+                PackageManagementKind = packageManagementKind,
+                PackageManagementSpecialFileRelativePath = packageManagementFile,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
@@ -958,5 +982,17 @@ internal static class SdkProjectDiscovery
         }
 
         return tfm;
+    }
+
+    private static bool GetBooleanPropertyFromProjectProperties(Dictionary<string, string> projectProperties, string propertyName)
+    {
+        return projectProperties.TryGetValue(propertyName, out var propertyStringValue) &&
+            bool.TryParse(propertyStringValue, out var propertyValue) &&
+            propertyValue;
+    }
+
+    private static string? GetStringPropertyFromProjectProperties(Dictionary<string, string> projectProperties, string propertyName)
+    {
+        return projectProperties.TryGetValue(propertyName, out var propertyValue) ? propertyValue : null;
     }
 }

@@ -171,6 +171,11 @@ docker run --rm -ti \
   -v "$(pwd)/conda/lib:$CODE_DIR/conda/lib" \
   -v "$(pwd)/conda/script:$CODE_DIR/conda/script" \
   -v "$(pwd)/conda/spec:$CODE_DIR/conda/spec" \
+  -v "$(pwd)/deno/.rubocop.yml:$CODE_DIR/deno/.rubocop.yml" \
+  -v "$(pwd)/deno/dependabot-deno.gemspec:$CODE_DIR/deno/dependabot-deno.gemspec" \
+  -v "$(pwd)/deno/lib:$CODE_DIR/deno/lib" \
+  -v "$(pwd)/deno/script:$CODE_DIR/deno/script" \
+  -v "$(pwd)/deno/spec:$CODE_DIR/deno/spec" \
   -v "$(pwd)/devcontainers/.rubocop.yml:$CODE_DIR/devcontainers/.rubocop.yml" \
   -v "$(pwd)/devcontainers/dependabot-devcontainers.gemspec:$CODE_DIR/devcontainers/dependabot-devcontainers.gemspec" \
   -v "$(pwd)/devcontainers/lib:$CODE_DIR/devcontainers/lib" \
@@ -181,11 +186,10 @@ docker run --rm -ti \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
-  -v "$(pwd)/docker_compose/.rubocop.yml:$CODE_DIR/docker_compose/.rubocop.yml" \
-  -v "$(pwd)/docker_compose/dependabot-docker_compose.gemspec:$CODE_DIR/docker_compose/dependabot-docker_compose.gemspec" \
-  -v "$(pwd)/docker_compose/lib:$CODE_DIR/docker_compose/lib" \
-  -v "$(pwd)/docker_compose/script:$CODE_DIR/docker_compose/script" \
-  -v "$(pwd)/docker_compose/spec:$CODE_DIR/docker_compose/spec" \
+  -v "$(pwd)/docker/.rubocop.yml:$CODE_DIR/docker_compose/.rubocop.yml" \
+  -v "$(pwd)/docker/dependabot-docker_compose.gemspec:$CODE_DIR/docker_compose/dependabot-docker_compose.gemspec" \
+  -v "$(pwd)/docker/script:$CODE_DIR/docker_compose/script" \
+  -v "$(pwd)/docker/spec:$CODE_DIR/docker_compose/spec" \
   -v "$(pwd)/dotnet_sdk/.rubocop.yml:$CODE_DIR/dotnet_sdk/.rubocop.yml" \
   -v "$(pwd)/dotnet_sdk/dependabot-dotnet_sdk.gemspec:$CODE_DIR/dotnet_sdk/dependabot-dotnet_sdk.gemspec" \
   -v "$(pwd)/dotnet_sdk/lib:$CODE_DIR/dotnet_sdk/lib" \
@@ -240,6 +244,11 @@ docker run --rm -ti \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
   -v "$(pwd)/maven/script:$CODE_DIR/maven/script" \
   -v "$(pwd)/maven/spec:$CODE_DIR/maven/spec" \
+  -v "$(pwd)/nix/.rubocop.yml:$CODE_DIR/nix/.rubocop.yml" \
+  -v "$(pwd)/nix/dependabot-nix.gemspec:$CODE_DIR/nix/dependabot-nix.gemspec" \
+  -v "$(pwd)/nix/lib:$CODE_DIR/nix/lib" \
+  -v "$(pwd)/nix/script:$CODE_DIR/nix/script" \
+  -v "$(pwd)/nix/spec:$CODE_DIR/nix/spec" \
   -v "$(pwd)/npm_and_yarn/.rubocop.yml:$CODE_DIR/npm_and_yarn/.rubocop.yml" \
   -v "$(pwd)/npm_and_yarn/dependabot-npm_and_yarn.gemspec:$CODE_DIR/npm_and_yarn/dependabot-npm_and_yarn.gemspec" \
   -v "$(pwd)/npm_and_yarn/helpers:$CODE_DIR/npm_and_yarn/helpers" \
@@ -283,6 +292,12 @@ docker run --rm -ti \
   -v "$(pwd)/rust_toolchain/lib:$CODE_DIR/rust_toolchain/lib" \
   -v "$(pwd)/rust_toolchain/script:$CODE_DIR/rust_toolchain/script" \
   -v "$(pwd)/rust_toolchain/spec:$CODE_DIR/rust_toolchain/spec" \
+  -v "$(pwd)/sbt/.rubocop.yml:$CODE_DIR/sbt/.rubocop.yml" \
+  -v "$(pwd)/sbt/dependabot-sbt.gemspec:$CODE_DIR/sbt/dependabot-sbt.gemspec" \
+  -v "$(pwd)/sbt/helpers:$CODE_DIR/sbt/helpers" \
+  -v "$(pwd)/sbt/lib:$CODE_DIR/sbt/lib" \
+  -v "$(pwd)/sbt/script:$CODE_DIR/sbt/script" \
+  -v "$(pwd)/sbt/spec:$CODE_DIR/sbt/spec" \
   -v "$(pwd)/swift/.rubocop.yml:$CODE_DIR/swift/.rubocop.yml" \
   -v "$(pwd)/swift/dependabot-swift.gemspec:$CODE_DIR/swift/dependabot-swift.gemspec" \
   -v "$(pwd)/swift/lib:$CODE_DIR/swift/lib" \

@@ -137,7 +137,7 @@ module Dependabot
             version: version,
             released_at: release_date,
             latest: false, # Will be determined later
-            yanked: false, # Julia registries don't support yanked packages
+            yanked: false, # Yanked versions are filtered out by the Julia registry helper
             language: Dependabot::Package::PackageLanguage.new(name: PACKAGE_LANGUAGE)
           )
         end

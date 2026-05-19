@@ -61,7 +61,7 @@ public class UpdatedDependencyListTests
                 {
                     FilePath = "c/project.csproj",
                     Dependencies = [
-                        new("System.Text.Json", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net6.0"], IsTransitive: true),
+                        new("System.Text.Json", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net6.0"], IsTopLevel: false),
                         new("Newtonsoft.Json", "13.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net6.0"]),
                     ],
                     IsSuccess = true,
@@ -86,7 +86,7 @@ public class UpdatedDependencyListTests
                 ]
             }
         };
-        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, repoRoot: temp.DirectoryPath, new TestLogger());
+        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, repoRoot: temp.DirectoryPath, new TestLogger(), ModifiedFilesTracker.GetExistingLockFiles(new DirectoryInfo(temp.DirectoryPath)));
         var expectedDependencyList = new UpdatedDependencyList()
         {
             Dependencies =
@@ -210,7 +210,7 @@ public class UpdatedDependencyListTests
         };
 
         // act
-        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, repoRoot: tempDir.DirectoryPath, new TestLogger());
+        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, repoRoot: tempDir.DirectoryPath, new TestLogger(), ModifiedFilesTracker.GetExistingLockFiles(new DirectoryInfo(tempDir.DirectoryPath)));
         var expectedDependencyList = new UpdatedDependencyList()
         {
             Dependencies = [],
