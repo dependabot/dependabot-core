@@ -119,12 +119,6 @@ module Dependabot
             next unless version
 
             next unless version_class.correct?(version)
-            # Skip if we already have a real release date for this version. We intentionally
-            # do NOT use `key?` here: an earlier repository (e.g. the Gradle Plugin Portal HTML
-            # listing, which has no dates) may have recorded a nil placeholder. Allowing a
-            # later repository (e.g. a private Artifactory/Nexus mirror) with real dates to
-            # overwrite that placeholder fixes the cooldown filter falsely filtering every
-            # version (see issue #14271).
             next if release_date_info.dig(version, :release_date)
 
             release_date = extract_release_date_from_link(link, version)
@@ -153,8 +147,6 @@ module Dependabot
           latest_version = metadata_xml.at_xpath("//metadata/versioning/latest")&.text&.strip
 
           return unless latest_version && version_class.correct?(latest_version)
-          # See note in `parse_maven_central_releases`: use `dig` so a real date from another
-          # repository overwrites any nil placeholder previously recorded for `latest_version`.
           return if release_date_info.dig(latest_version, :release_date)
 
           release_date = parse_gradle_timestamp(last_updated)

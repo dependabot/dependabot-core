@@ -184,14 +184,6 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
     end
 
     # Regression test for https://github.com/dependabot/dependabot-core/issues/14271.
-    # When a Gradle plugin coordinate is updated against a private Maven mirror,
-    # `plugins.gradle.org` is always prepended to the repository list (even with
-    # `replaces-base: true`). The Plugin Portal HTML listing has no per-version
-    # release dates, so it used to write nil placeholders for every version and
-    # the `key?` guard prevented the real dates from the private mirror (which
-    # *does* expose them) from ever being recorded. Every version then looked
-    # like it was missing a date and the cooldown filter filtered them all out,
-    # leaving "Latest version is" empty in the logs.
     context "with Gradle Plugin Portal HTML (no dates) followed by a private mirror (with dates)" do
       let(:repositories) do
         [
@@ -236,12 +228,7 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
       end
     end
 
-    # Regression test for the Gradle Plugin Portal maven-metadata.xml path of the
-    # same bug: when the Plugin Portal reports its `latest` version with a real
-    # `lastUpdated` timestamp, a private mirror processed afterwards must not
-    # be allowed to clobber it with nil; conversely, when the Plugin Portal
-    # XML is missing/empty and only the private mirror has the date, the mirror's
-    # date must win.
+    # Regression test for https://github.com/dependabot/dependabot-core/issues/14271.
     context "when the Plugin Portal XML latest has no date but a later mirror does" do
       let(:repositories) do
         [
