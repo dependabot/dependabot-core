@@ -1541,7 +1541,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_version: "1.0.0",
                 requirements: [],
                 previous_requirements: [],
-                metadata: { information_only: true }
+                metadata: { information_only: true, security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@dependabot-fixtures/npm-parent-dependency",
@@ -1565,7 +1565,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                     type: "registry",
                     url: "https://registry.npmjs.org"
                   }
-                }]
+                }],
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1585,7 +1586,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_version: "1.0.0",
                 requirements: [],
                 version: "1.0.1",
-                metadata: { information_only: true }
+                metadata: { information_only: true, security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@dependabot-fixtures/npm-intermediate-dependency",
@@ -1593,7 +1594,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_requirements: [],
                 previous_version: "0.0.1",
                 requirements: [],
-                version: "0.0.2"
+                version: "0.0.2",
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1628,7 +1630,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "2.0.2"
+              version: "2.0.2",
+              metadata: { security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-2",
@@ -1652,7 +1655,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "2.1.1"
+              version: "2.1.1",
+              metadata: { security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-3",
@@ -1676,7 +1680,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "3.0.0"
+              version: "3.0.0",
+              metadata: { security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
@@ -1685,7 +1690,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_version: "1.0.0",
               requirements: [],
               version: "1.0.1",
-              metadata: { information_only: true }
+              metadata: { information_only: true, security_update: true }
             )
           )
         end
@@ -1704,7 +1709,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_version: "1.0.0",
               requirements: [],
               removed: true,
-              metadata: { information_only: true }
+              metadata: { information_only: true, security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-remove-dependency",
@@ -1728,7 +1733,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "10.0.1"
+              version: "10.0.1",
+              metadata: { security_update: true }
             )
           )
         end
@@ -1767,7 +1773,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_version: "1.0.0",
                 requirements: [],
                 version: "2.0.0",
-                metadata: { information_only: true }
+                metadata: { information_only: true, security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
@@ -1791,7 +1797,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                     url: "https://registry.npmjs.org"
                   }
                 }],
-                version: "1.0.1"
+                version: "1.0.1",
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1847,7 +1854,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                     type: "registry",
                     url: "https://registry.npmjs.org"
                   }
-                }]
+                }],
+                metadata: { security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@msgpack/msgpack",
@@ -1855,7 +1863,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 package_manager: "npm_and_yarn",
                 previous_version: "3.0.0",
                 requirements: [],
-                previous_requirements: []
+                previous_requirements: [],
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1909,7 +1918,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           result = checker.send(:updated_dependencies_after_full_unlock)
           expect(result.map(&:name)).to eq(["@dependabot-fixtures/npm-transitive-dependency"])
           expect(result.first.version).to eq("1.0.1")
-          expect(result.first.metadata).to eq({})
+          expect(result.first.metadata).to eq({ security_update: true })
         end
       end
 
@@ -1945,7 +1954,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           target_dep = result.find { |d| d.name == "@dependabot-fixtures/npm-transitive-dependency" }
           parent_dep = result.find { |d| d.name == "@dependabot-fixtures/npm-parent-dependency" }
 
-          expect(target_dep.metadata).to eq({ information_only: true })
+          expect(target_dep.metadata).to eq({ information_only: true, security_update: true })
           expect(parent_dep.version).to eq("2.0.2")
           expect(parent_dep.previous_version).to eq("2.0.0")
         end
