@@ -76,7 +76,7 @@ module Dependabot
     attr_reader :error_handler
 
     sig { params(branch: String, directory: String).void }
-    def process_directory(branch:, directory:)
+    def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength
       directory_source = create_source_for(directory)
       directory_dependency_files = dependency_files_for(directory)
 
