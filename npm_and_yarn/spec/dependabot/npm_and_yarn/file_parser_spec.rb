@@ -1264,7 +1264,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           it "includes the real aliased package with the requirement as version" do
             dep = top_level_dependencies.find { |d| d.name == "is-number" }
-            expect(dep).to_not be_nil
+            expect(dep).not_to be_nil
             expect(dep.version).to be_nil
             expect(dep.requirements.first[:requirement]).to eq("^7.0.0")
           end
