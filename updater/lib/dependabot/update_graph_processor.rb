@@ -100,6 +100,27 @@ module Dependabot
           "Unable to submit data to the Dependency Snapshot API"
         )
       )
+    rescue Dependabot::UnexpectedExternalCode
+      # This error is classified as run-halting, so handle it directly to preserve per-directory isolation.
+      # Record the error for visibility but allow other directories to continue processing.
+      Dependabot.logger.info(
+        "Skipping directory #{directory} — external code execution is not allowed"
+      )
+      service.record_update_job_error(
+        error_type: "unexpected_external_code",
+        error_details: { message: "Cannot process directory #{directory} without external code execution" }
+      )
+
+      return unless Dependabot::Environment.github_actions?
+
+      service.create_dependency_submission(
+        dependency_submission: empty_submission(
+          branch,
+          T.must(directory_source),
+          GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+          "unexpected_external_code"
+        )
+      )
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
 
