@@ -223,20 +223,6 @@ module Dependabot
   # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
-    # Ecosystem-defined errors that we want to surface as structured types
-    # to the API without `common/` taking a hard dependency on the
-    # ecosystem gems are matched by class name here. T.unsafe is required
-    # because the error_context method lives on the ecosystem-specific
-    # subclass, not on StandardError.
-    # rubocop:disable Style/ClassEqualityComparison
-    if error.class.name == "Dependabot::NpmAndYarn::FileUpdater::NoChangeError"
-      return {
-        "error-type": "no_change_error",
-        "error-detail": T.unsafe(error).error_context # rubocop:disable Sorbet/ForbidTUnsafe
-      }
-    end
-    # rubocop:enable Style/ClassEqualityComparison
-
     case error
     when Dependabot::ToolFeatureNotSupported
       {

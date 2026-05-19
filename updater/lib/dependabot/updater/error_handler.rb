@@ -165,6 +165,22 @@ module Dependabot
       sig { returns(Job) }
       attr_reader :job
 
+      # Surface ecosystem-defined NoChangeError classes as a structured
+      # `no_change_error` payload. These classes live in ecosystem gems
+      # (npm_and_yarn, bun) and expose an `error_context` Hash that we
+      # want to forward to the backend. Matching is done by class name to
+      # keep the updater from taking a hard dependency on each ecosystem.
+      sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def no_change_error_details(error)
+        return nil unless error.class.name&.end_with?("::FileUpdater::NoChangeError")
+        return nil unless error.respond_to?(:error_context)
+
+        {
+          "error-type": "no_change_error",
+          "error-detail": T.unsafe(error).error_context
+        }
+      end
+
       # Emit a structured metric when a NoChangeError surfaces, so we can
       # observe how often npm/yarn/pnpm lockfile updates produce no changes
       # and whether fallbacks helped.
@@ -243,6 +259,9 @@ module Dependabot
       def error_details_for(error, dependency: nil, dependency_group: nil)
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
+
+        no_change_details = no_change_error_details(error)
+        return no_change_details if no_change_details
 
         case error
         when Dependabot::SharedHelpers::HelperSubprocessFailed
