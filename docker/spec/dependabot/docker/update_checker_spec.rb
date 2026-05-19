@@ -1522,7 +1522,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.10") }
     end
 
-    describe "with cooldown options when blob request returns 404" do
+    describe "with cooldown options when HEAD request returns 404" do
       subject(:latest_version) { checker.latest_version }
 
       let(:update_cooldown) do
