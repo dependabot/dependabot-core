@@ -67,10 +67,22 @@ try {
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
+        -testDirectory "global-json-discovery-deep" `
+        -directories @("/src/client") `
+        -installedSdks @("8.0.404", "9.0.101") `
+        -expectedSdksToInstall @("1.2.3")
+
+    Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-recursive-wildcard" `
         -directories @("/**") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
+
+    Test-GlobalJsonVersions `
+        -testDirectory "global-json-discovery-recursive-wildcard-skip-root" `
+        -directories @("/src/**") `
+        -installedSdks @("8.0.404", "9.0.101") `
+        -expectedSdksToInstall @("1.2.3", "4.5.6")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-recursive-wildcard" `
