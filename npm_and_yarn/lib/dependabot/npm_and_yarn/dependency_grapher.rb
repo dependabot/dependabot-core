@@ -31,7 +31,7 @@ module Dependabot
       def prepare!
         # Enable alias extraction for graph jobs so aliased packages appear
         # in the dependency graph for security scanning.
-        file_parser.include_aliases!
+        file_parser.dealias_packages!
 
         if lockfile.nil?
           Dependabot.logger.info("No lockfile found, generating ephemeral lockfile for dependency graphing")
