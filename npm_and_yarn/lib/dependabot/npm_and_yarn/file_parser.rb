@@ -278,7 +278,8 @@ module Dependabot
       def lockfile_parser
         @lockfile_parser ||= T.let(
           LockfileParser.new(
-            dependency_files: dependency_files
+            dependency_files: dependency_files,
+            dealias_packages: dealias_packages?
           ),
           T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser)
         )
