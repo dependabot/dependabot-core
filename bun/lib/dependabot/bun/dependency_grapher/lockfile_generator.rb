@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
 require "dependabot/bun/helpers"
 require "dependabot/bun/bun_package_manager"
+require "dependabot/bun/file_updater/npmrc_builder"
 
 module Dependabot
   module Bun
@@ -54,6 +55,20 @@ module Dependabot
             FileUtils.mkdir_p(File.dirname(path))
             File.write(path, file.content)
           end
+
+          write_npmrc_from_credentials unless dependency_files.any? { |f| f.name.end_with?(".npmrc") }
+        end
+
+        sig { void }
+        def write_npmrc_from_credentials
+          npmrc_content = FileUpdater::NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).npmrc_content
+
+          return if npmrc_content.strip.empty?
+
+          File.write(".npmrc", npmrc_content)
         end
 
         sig { void }
