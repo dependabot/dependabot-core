@@ -81,6 +81,14 @@ module Dependabot
         raise Dependabot::NotImplemented, "No run_parsed_context utility method is provided for this ecosystem."
       end
 
+      # Enables alias extraction so that aliased packages are parsed using the
+      # real package name rather than being skipped. Must be called before #parse.
+      # This is a no-op for ecosystems that don't support aliases.
+      sig { void }
+      def include_aliases!
+        options[:include_aliases] = true
+      end
+
       private
 
       sig { abstract.void }
