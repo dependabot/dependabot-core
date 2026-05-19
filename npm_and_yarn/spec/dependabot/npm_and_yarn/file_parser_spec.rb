@@ -1152,6 +1152,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
+        context "with an npm aliased dependency" do
+          let(:files) { project_dependency_files("grapher/npm_with_alias") }
+
+          it "doesn't include the aliased dependency" do
+            expect(top_level_dependencies.map(&:name)).to include("etag")
+            expect(top_level_dependencies.map(&:name)).not_to include("is-number")
+            expect(top_level_dependencies.map(&:name)).not_to include("my-is-number")
+          end
+        end
+
+        context "with a pnpm aliased dependency" do
+          let(:files) { project_dependency_files("pnpm/aliased_dependency") }
+
+          it "doesn't include the aliased dependency" do
+            expect(top_level_dependencies.map(&:name)).to include("etag")
+            expect(top_level_dependencies.map(&:name)).not_to include("fetch-factory")
+            expect(top_level_dependencies.map(&:name)).not_to include("my-fetch-factory")
+          end
+        end
+
         context "with an aliased dependency name (only supported by yarn)" do
           let(:files) { project_dependency_files("yarn/aliased_dependency_name") }
 
@@ -1192,6 +1212,64 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           it "includes the real aliased package (fetch-factory)" do
             expect(top_level_dependencies.map(&:name)).to include("fetch-factory")
+            expect(top_level_dependencies.map(&:name)).to include("etag")
+          end
+        end
+
+        context "with an npm aliased dependency and dealias_packages enabled" do
+          let(:files) { project_dependency_files("grapher/npm_with_alias") }
+          let(:parser) do
+            described_class.new(
+              dependency_files: files,
+              source: source,
+              credentials: credentials,
+              options: { dealias_packages: true }
+            )
+          end
+
+          it "includes the real aliased package (is-number)" do
+            expect(top_level_dependencies.map(&:name)).to include("is-number")
+            expect(top_level_dependencies.map(&:name)).to include("etag")
+            expect(top_level_dependencies.map(&:name)).not_to include("my-is-number")
+          end
+        end
+
+        context "with a pnpm aliased dependency and dealias_packages enabled" do
+          let(:files) { project_dependency_files("pnpm/aliased_dependency") }
+          let(:parser) do
+            described_class.new(
+              dependency_files: files,
+              source: source,
+              credentials: credentials,
+              options: { dealias_packages: true }
+            )
+          end
+
+          it "includes the real aliased package (fetch-factory)" do
+            expect(top_level_dependencies.map(&:name)).to include("fetch-factory")
+            expect(top_level_dependencies.map(&:name)).not_to include("my-fetch-factory")
+          end
+        end
+
+        context "with an aliased dependency, dealias_packages enabled, and no lockfile" do
+          let(:files) { project_dependency_files("npm8/aliased_dependency_no_lockfile") }
+          let(:parser) do
+            described_class.new(
+              dependency_files: files,
+              source: source,
+              credentials: credentials,
+              options: { dealias_packages: true }
+            )
+          end
+
+          it "includes the real aliased package with the requirement as version" do
+            dep = top_level_dependencies.find { |d| d.name == "is-number" }
+            expect(dep).to_not be_nil
+            expect(dep.version).to be_nil
+            expect(dep.requirements.first[:requirement]).to eq("^7.0.0")
+          end
+
+          it "still includes non-aliased packages" do
             expect(top_level_dependencies.map(&:name)).to include("etag")
           end
         end
