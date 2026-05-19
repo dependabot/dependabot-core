@@ -82,7 +82,7 @@ module Dependabot
           @lockfiles ||= T.let({}, T.nilable(T::Hash[String, LockFile]))
           @lockfiles[file.name] ||= case file.name
                                     when *package_locks.map(&:name), *shrinkwraps.map(&:name)
-                                      JsonLock.new(file)
+                                      JsonLock.new(file, dealias_packages: @dealias_packages)
                                     when *yarn_locks.map(&:name)
                                       YarnLock.new(file, dealias_packages: @dealias_packages)
                                     when *pnpm_locks.map(&:name)

@@ -1162,6 +1162,40 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
+        context "with an aliased dependency and dealias_packages enabled" do
+          let(:files) { project_dependency_files("yarn/aliased_dependency") }
+          let(:parser) do
+            described_class.new(
+              dependency_files: files,
+              source: source,
+              credentials: credentials,
+              options: { dealias_packages: true }
+            )
+          end
+
+          it "includes the real aliased package (fetch-factory)" do
+            expect(top_level_dependencies.map(&:name)).to include("fetch-factory")
+            expect(top_level_dependencies.map(&:name)).to include("etag")
+          end
+        end
+
+        context "with an aliased dependency name (yarn-style) and dealias_packages enabled" do
+          let(:files) { project_dependency_files("yarn/aliased_dependency_name") }
+          let(:parser) do
+            described_class.new(
+              dependency_files: files,
+              source: source,
+              credentials: credentials,
+              options: { dealias_packages: true }
+            )
+          end
+
+          it "includes the real aliased package (fetch-factory)" do
+            expect(top_level_dependencies.map(&:name)).to include("fetch-factory")
+            expect(top_level_dependencies.map(&:name)).to include("etag")
+          end
+        end
+
         context "with a git dependency" do
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
