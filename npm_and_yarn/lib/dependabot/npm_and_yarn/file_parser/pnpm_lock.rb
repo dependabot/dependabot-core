@@ -53,7 +53,7 @@ module Dependabot
           dependencies_without_specifiers = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
           parsed.each do |details|
-            next if details["aliased"]
+            next if details["aliased"] && !dealias_packages?
 
             name = T.cast(details["name"], String)
             version = T.cast(details["version"], T.nilable(String))
@@ -120,6 +120,13 @@ module Dependabot
           else
             details_candidates.find { |info| info["specifiers"]&.include?(requirement) }
           end
+        end
+
+        private
+
+        sig { returns(T::Boolean) }
+        def dealias_packages?
+          @dealias_packages
         end
       end
     end
