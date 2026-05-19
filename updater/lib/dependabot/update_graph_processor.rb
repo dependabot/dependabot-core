@@ -97,9 +97,9 @@ module Dependabot
       # If this has been raised, then the directory is trying to use a private registry with an ecosystem
       # that requires the `insecure-external-code-execution: allow` flag.
       #
-      # The default policy is denied, so this outcome represent misconfiguration for the directory - we
-      # should record this failure with allow other directories in the job to try as they may not be
-      # misconfigured.
+      # The default policy is denied, so this outcome represents a misconfiguration for the directory.
+      # We should record this failure and allow other directories in the job to continue, as they may
+      # not be misconfigured.
       Dependabot.logger.info(<<~LOG)
         Skipping directory #{directory} — Dependabot refused to execute external code
 
