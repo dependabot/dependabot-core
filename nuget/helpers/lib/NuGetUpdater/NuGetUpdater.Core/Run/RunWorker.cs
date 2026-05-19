@@ -241,7 +241,7 @@ public class RunWorker
         return relativeResolvedName;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger, HashSet<string> initiallyExistingLockFiles)
     {
         string GetFullRepoPath(string path)
         {
@@ -265,6 +265,11 @@ public class RunWorker
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFileFullPath = Path.Join(projectDirectory, extraFile);
+                if (ModifiedFilesTracker.IsLockFileNotInitiallyPresent(Path.Join(discoveryResult.Path, extraFileFullPath).NormalizePathToUnix(), initiallyExistingLockFiles))
+                {
+                    continue;
+                }
+
                 var extraFileRepoPath = GetFullRepoPath(extraFileFullPath);
                 auxiliaryFiles.Add(extraFileRepoPath);
             }
