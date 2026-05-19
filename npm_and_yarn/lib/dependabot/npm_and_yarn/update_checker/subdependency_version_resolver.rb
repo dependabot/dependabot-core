@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/security_advisory"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
@@ -35,6 +36,9 @@ module Dependabot
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
         attr_reader :latest_allowable_version
 
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        attr_reader :security_advisories
+
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
@@ -45,7 +49,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            security_advisories: T::Array[Dependabot::SecurityAdvisory]
           ).void
         end
         def initialize(
@@ -54,7 +59,8 @@ module Dependabot
           dependency_files:,
           ignored_versions:,
           latest_allowable_version:,
-          repo_contents_path:
+          repo_contents_path:,
+          security_advisories: []
         )
           @dependency = dependency
           @credentials = credentials
@@ -62,6 +68,7 @@ module Dependabot
           @ignored_versions = ignored_versions
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
+          @security_advisories = security_advisories
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -124,7 +131,61 @@ module Dependabot
           ).parse.find { |d| d.name == dependency.name }
           return unless parsed_dep&.version
 
-          version_class.new(parsed_dep.version)
+          updated_version = version_class.new(parsed_dep.version)
+          current_version = dependency.version ? version_class.new(dependency.version) : nil
+
+          # When the normal lockfile update is a no-op for a transitive
+          # security advisory, the FileUpdater's `npm audit fix` fallback may
+          # still be able to bump the dependency. Surface the highest version
+          # already present in the lockfile graph so that `can_update?` returns
+          # true and the FileUpdater gets a chance to attempt the fallback. We
+          # do NOT invoke audit-fix here; we just inspect lockfile metadata.
+          speculative = speculative_security_update_version(parsed_dep, current_version, updated_version)
+          speculative || updated_version
+        end
+
+        # Picks the best candidate version from `parsed_dep.metadata[:all_versions]`
+        # (versions already present elsewhere in the lockfile graph) when this
+        # is a security update and the normal updater couldn't move the version
+        # forward. Returns nil when no security advisory is being targeted, the
+        # update already produced a higher version, or no better candidate
+        # exists.
+        sig do
+          params(
+            parsed_dep: Dependabot::Dependency,
+            current_version: T.nilable(Gem::Version),
+            updated_version: Gem::Version
+          ).returns(T.nilable(Gem::Version))
+        end
+        def speculative_security_update_version(parsed_dep, current_version, updated_version)
+          return unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+          return if security_advisories.empty?
+          return unless current_version
+          return if updated_version > current_version
+
+          all_versions = parsed_dep.metadata[:all_versions]
+          return unless all_versions&.any?
+
+          best_candidate_version(all_versions, current_version)
+        end
+
+        sig do
+          params(
+            all_versions: T::Array[Dependabot::Dependency],
+            current_version: Gem::Version
+          ).returns(T.nilable(Gem::Version))
+        end
+        def best_candidate_version(all_versions, current_version)
+          allowable = if latest_allowable_version.is_a?(String)
+                        version_class.new(latest_allowable_version)
+                      else
+                        latest_allowable_version
+                      end
+
+          all_versions
+            .filter_map { |d| version_class.new(d.version) if d.version }
+            .select { |v| v > current_version && (allowable.nil? || v <= allowable) }
+            .max
         end
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }

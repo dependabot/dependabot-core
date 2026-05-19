@@ -515,7 +515,8 @@ module Dependabot
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            security_advisories: security_advisories
           )
       end
 

@@ -633,7 +633,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: nil,
+            security_advisories: security_advisories
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -698,7 +699,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-              repo_contents_path: nil
+              repo_contents_path: nil,
+              security_advisories: security_advisories
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -866,7 +868,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: nil,
+            security_advisories: security_advisories
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -2466,16 +2469,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .and_return(Dependabot::NpmAndYarn::Version.new("1.7.0"))
       end
 
-      it "stamps :security_update on the dependency returned via updated_dependency_without_unlock" do
-        dep = checker.send(:updated_dependency_without_unlock)
-        expect(dep.metadata[:security_update]).to be(true)
+      it "stamps :security_update on the dependency returned via :none unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :none)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps.first.metadata[:security_update]).to be(true)
       end
 
       it "does not stamp :security_update on the dependency when no advisories present" do
         allow(checker).to receive(:security_advisories).and_return([])
 
-        dep = checker.send(:updated_dependency_without_unlock)
-        expect(dep.metadata[:security_update]).to be_nil
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :none)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps.first.metadata[:security_update]).to be_nil
       end
     end
   end

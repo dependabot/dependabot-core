@@ -236,7 +236,7 @@ module Dependabot
         raise NotImplementedError, "#{self.class} must implement #latest_version_resolvable_with_full_unlock?"
       end
 
-      sig { returns(Dependabot::Dependency) }
+      sig { overridable.returns(Dependabot::Dependency) }
       def updated_dependency_without_unlock
         version = latest_resolvable_version_with_no_unlock.to_s
         previous_version = latest_resolvable_previous_version(version)
@@ -253,7 +253,7 @@ module Dependabot
         )
       end
 
-      sig { returns(Dependabot::Dependency) }
+      sig { overridable.returns(Dependabot::Dependency) }
       def updated_dependency_with_own_req_unlock
         version = preferred_resolvable_version.to_s
         previous_version = latest_resolvable_previous_version(version)
