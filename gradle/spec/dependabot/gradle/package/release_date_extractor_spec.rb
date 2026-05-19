@@ -229,47 +229,50 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
     end
 
     # Regression test for https://github.com/dependabot/dependabot-core/issues/14271.
-    context "when the Plugin Portal XML latest has no date but a later mirror does" do
+    # Specifically covers the XML guard: an earlier repository's HTML listing
+    # records a nil placeholder, and a later repository's maven-metadata.xml
+    # supplies the real `lastUpdated` for the same version.
+    context "when an earlier HTML listing records nil and a later XML metadata has a real date" do
       let(:repositories) do
         [
           { "url" => "https://plugins.gradle.org/m2", "auth_headers" => {} },
           { "url" => "https://artifactory.example.com/artifactory/maven", "auth_headers" => {} }
         ]
       end
-      let(:plugin_portal_xml) do
+      let(:plugin_portal_url) { "https://plugins.gradle.org/m2" }
+      let(:plugin_portal_html) do
+        <<~HTML
+          <html><body>
+            <pre><a href="2.3.21/">2.3.21/</a></pre>
+          </body></html>
+        HTML
+      end
+      let(:mirror_xml) do
         <<~XML
           <metadata>
             <versioning>
               <latest>2.3.21</latest>
-              <lastUpdated></lastUpdated>
+              <lastUpdated>20260402164500</lastUpdated>
             </versioning>
           </metadata>
         XML
       end
-      let(:private_mirror_html) do
-        <<~HTML
-          <html><body>
-            <pre><a href="2.3.21/">2.3.21/</a>   2026-04-02 16:45    -</pre>
-          </body></html>
-        HTML
-      end
-      let(:plugin_portal_url) { "https://plugins.gradle.org/m2" }
       let(:dependency_metadata_fetcher) do
         lambda do |repo|
-          xml = repo.fetch("url") == plugin_portal_url ? plugin_portal_xml : ""
+          xml = repo.fetch("url") == plugin_portal_url ? "" : mirror_xml
           Nokogiri::XML(xml)
         end
       end
       let(:release_info_metadata_fetcher) do
         lambda do |repo|
-          html = repo.fetch("url") == plugin_portal_url ? "" : private_mirror_html
+          html = repo.fetch("url") == plugin_portal_url ? plugin_portal_html : ""
           Nokogiri::HTML(html)
         end
       end
 
-      it "uses the mirror's real date for the latest version" do
+      it "lets the later XML lastUpdated overwrite the earlier nil placeholder" do
         result = extract_release_dates
-        expect(result["2.3.21"]).to eq({ release_date: Time.parse("2026-04-02 16:45") })
+        expect(result["2.3.21"]).to eq({ release_date: Time.utc(2026, 4, 2, 16, 45, 0) })
       end
     end
   end
