@@ -2,7 +2,7 @@
 # This list must match the versions specified in
 # uv/lib/dependabot/uv/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # Python versions are pinned to the release of each minor/patch version.
-ARG PY_3_14=3.14.4
+ARG PY_3_14=3.14.5
 ARG PY_3_13=3.13.13
 ARG PY_3_12=3.12.13
 ARG PY_3_11=3.11.15

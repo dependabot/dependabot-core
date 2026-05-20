@@ -3,7 +3,7 @@
 # python/lib/dependabot/python/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
 # python/spec/dependabot/python/file_fetcher_spec.rb: exposes the expected ecosystem_versions metric spec
 # Python versions are pinned to the release of each minor/patch version.
-ARG PY_3_14=3.14.4
+ARG PY_3_14=3.14.5
 ARG PY_3_13=3.13.13
 ARG PY_3_12=3.12.13
 ARG PY_3_11=3.11.15
