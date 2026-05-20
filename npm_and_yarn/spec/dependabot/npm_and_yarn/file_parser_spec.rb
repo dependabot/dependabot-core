@@ -1155,9 +1155,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         context "with an npm aliased dependency" do
           let(:files) { project_dependency_files("grapher/npm_with_alias") }
 
-          it "doesn't include the aliased dependency" do
+          it "includes the unaliased dependency but not the alias" do
             expect(top_level_dependencies.map(&:name)).to include("etag")
-            expect(top_level_dependencies.map(&:name)).not_to include("is-number")
+            expect(top_level_dependencies.map(&:name)).to include("is-number")
             expect(top_level_dependencies.map(&:name)).not_to include("my-is-number")
           end
         end
@@ -1227,7 +1227,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             )
           end
 
-          it "includes the real aliased package (is-number)" do
+          it "includes both the unaliased and dealiased versions of is-number" do
             expect(top_level_dependencies.map(&:name)).to include("is-number")
             expect(top_level_dependencies.map(&:name)).to include("etag")
             expect(top_level_dependencies.map(&:name)).not_to include("my-is-number")

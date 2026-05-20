@@ -1,0 +1,9 @@
+{
+  "name": "grapher-npm-with-multiversion-subdeps",
+  "version": "1.0.0",
+  "description": "Test project with transitive dependency version conflicts",
+  "dependencies": {
+    "to-regex-range": "^5.0.1",
+    "is-number": "^6.0.0"
+  }
+}

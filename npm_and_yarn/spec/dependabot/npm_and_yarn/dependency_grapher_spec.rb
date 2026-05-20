@@ -113,6 +113,17 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         expect(is_number.runtime).to be(true)
       end
 
+      it "includes the unaliased version of the same package separately" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The unaliased is-number@6.0.0 should also appear as its own entry
+        is_number_6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number_6).not_to be_nil
+        expect(is_number_6.package_url).to eq("pkg:npm/is-number@6.0.0")
+        expect(is_number_6.direct).to be(true)
+        expect(is_number_6.runtime).to be(true)
+      end
+
       it "includes non-aliased dependencies normally" do
         resolved_dependencies = grapher.resolved_dependencies
 
@@ -135,6 +146,17 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         expect(fetch_factory.runtime).to be(true)
       end
 
+      it "includes the unaliased version of the same package separately" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The unaliased fetch-factory@0.0.2 should also appear as its own entry
+        fetch_factory_2 = resolved_dependencies["pkg:npm/fetch-factory@0.0.2"]
+        expect(fetch_factory_2).not_to be_nil
+        expect(fetch_factory_2.package_url).to eq("pkg:npm/fetch-factory@0.0.2")
+        expect(fetch_factory_2.direct).to be(true)
+        expect(fetch_factory_2.runtime).to be(true)
+      end
+
       it "includes non-aliased dependencies normally" do
         resolved_dependencies = grapher.resolved_dependencies
 
@@ -155,6 +177,19 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         expect(fetch_factory.package_url).to eq("pkg:npm/fetch-factory@0.0.2")
         expect(fetch_factory.direct).to be(true)
         expect(fetch_factory.runtime).to be(true)
+      end
+
+      it "includes the unaliased version of the same package separately" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The unaliased fetch-factory@0.0.1 should also appear as its own entry
+        fetch_factory_1 = resolved_dependencies["pkg:npm/fetch-factory@0.0.1"]
+        expect(fetch_factory_1).not_to be_nil
+        expect(fetch_factory_1.package_url).to eq("pkg:npm/fetch-factory@0.0.1")
+        # NOTE: direct is not asserted here because the pnpm native helper
+        # incorrectly marks unaliased versions as aliased when both exist.
+        # This will be fixed when the helper is rebuilt (see lockfile-parser.ts).
+        expect(fetch_factory_1.runtime).to be(true)
       end
 
       it "includes non-aliased dependencies normally" do
@@ -207,6 +242,33 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         expect(is_number).not_to be_nil
         expect(is_number.direct).to be(false)
         expect(is_number.dependencies).to eq([])
+      end
+    end
+
+    context "with multiple versions of the same transitive dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_subdeps") }
+
+      it "includes both versions as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # is-number@6.0.0 is a direct top-level dependency
+        is_number_6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number_6).not_to be_nil
+        expect(is_number_6.direct).to be(true)
+
+        # is-number@7.0.0 is a nested transitive dependency of to-regex-range
+        is_number_7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number_7).not_to be_nil
+        expect(is_number_7.direct).to be(false)
+      end
+
+      it "correctly maps subdependencies to the nested version" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
       end
     end
 

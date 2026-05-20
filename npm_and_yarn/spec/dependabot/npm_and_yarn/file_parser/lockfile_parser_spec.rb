@@ -306,8 +306,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       context "when there is an aliased dependency" do
         let(:dependency_files) { project_dependency_files("grapher/npm_with_alias") }
 
-        it "excludes the real package name by default" do
-          expect(dependencies.map(&:name)).not_to include("is-number")
+        it "includes the unaliased version and the alias under its alias key" do
+          expect(dependencies.map(&:name)).to include("is-number")
           expect(dependencies.map(&:name)).to include("my-is-number")
         end
 
@@ -316,8 +316,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             described_class.new(dependency_files: dependency_files, dealias_packages: true)
           end
 
-          it "includes the real aliased package" do
-            expect(dependencies.map(&:name)).to include("is-number")
+          it "includes both versions of the real package via all_versions metadata" do
+            is_number = dependencies.find { |d| d.name == "is-number" }
+            expect(is_number).not_to be_nil
+            all_versions = is_number.metadata[:all_versions]
+            expect(all_versions.map(&:version)).to contain_exactly("6.0.0", "7.0.0")
             expect(dependencies.map(&:name)).not_to include("my-is-number")
           end
         end

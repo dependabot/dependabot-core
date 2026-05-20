@@ -69,34 +69,42 @@ function nameVerDevFromPkgSnapshot(
   projectSnapshots.every((projectSnapshot) => {
     const projectSpecifiers = projectSnapshot.specifiers;
 
+    // Check if this specific package version was brought in via an alias.
+    // We only mark it as aliased if there is NO direct specifier for this name
+    // that resolves to this version — meaning it must have been brought in
+    // through an npm: alias specifier on a different key.
+    const currentSpecifier = projectSpecifiers[name];
+
+    if (currentSpecifier) {
+      // There's a direct specifier for this package name — check if it
+      // resolves to this version
+      const specifierVersion =
+        projectSnapshot.dependencies?.[name] ||
+        projectSnapshot.devDependencies?.[name] ||
+        projectSnapshot.optionalDependencies?.[name];
+
+      if (
+        specifierVersion &&
+        (specifierVersion == version ||
+          specifierVersion.startsWith(`${version}_`) || // lockfileVersion 5.4
+          specifierVersion.startsWith(`${version}(`)) // lockfileVersion 6.0
+      ) {
+        specifiers.push(currentSpecifier);
+        return true;
+      }
+    }
+
+    // No direct specifier matched this version — check if it's aliased
     if (
       Object.values(projectSpecifiers).some(
         (specifier) =>
           specifier.startsWith(`npm:${name}@`) || specifier == `npm:${name}`
       )
     ) {
+      // Only mark as aliased if there's no direct specifier for this name,
+      // or the direct specifier resolves to a different version
       aliased = true;
       return false;
-    }
-
-    const currentSpecifier = projectSpecifiers[name];
-
-    if (!currentSpecifier) {
-      return true;
-    }
-
-    const specifierVersion =
-      projectSnapshot.dependencies?.[name] ||
-      projectSnapshot.devDependencies?.[name] ||
-      projectSnapshot.optionalDependencies?.[name];
-
-    if (
-      specifierVersion &&
-      (specifierVersion == version ||
-        specifierVersion.startsWith(`${version}_`) || // lockfileVersion 5.4
-        specifierVersion.startsWith(`${version}(`)) // lockfileVersion 6.0
-    ) {
-      specifiers.push(currentSpecifier);
     }
 
     return true;

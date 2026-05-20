@@ -241,10 +241,13 @@ module Dependabot
 
             requirement = "*" if requirement == ""
 
+            # Track the original manifest name for lockfile lookups before dealiasing
+            lockfile_name = name
             name, requirement = dealias_package(name, requirement) if dealias_packages?
 
             dep = build_dependency(
-              file: file, type: type, name: name, requirement: requirement
+              file: file, type: type, name: name, requirement: requirement,
+              lockfile_name: lockfile_name
             )
             dependency_set << dep if dep
           end
@@ -294,15 +297,23 @@ module Dependabot
       end
 
       sig do
-        params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
+        params(file: DependencyFile, type: T.untyped, name: String, requirement: String,
+               lockfile_name: String)
           .returns(T.nilable(Dependency))
       end
-      def build_dependency(file:, type:, name:, requirement:)
+      def build_dependency(file:, type:, name:, requirement:, lockfile_name: name)
+        # Try the lockfile_name first (alias name for npm/yarn), fall back to
+        # the dealiased name (needed for pnpm which stores real names)
         lockfile_details = lockfile_parser.lockfile_details(
-          dependency_name: name,
+          dependency_name: lockfile_name,
           requirement: requirement,
           manifest_name: file.name
         )
+        lockfile_details ||= lockfile_parser.lockfile_details(
+          dependency_name: name,
+          requirement: requirement,
+          manifest_name: file.name
+        ) if lockfile_name != name
         version = version_for(requirement, lockfile_details)
         converted_version = T.let(
           if version.nil?
