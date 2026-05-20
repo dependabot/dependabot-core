@@ -190,17 +190,30 @@ module Dependabot
       ).returns(T::Boolean)
     end
     def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
-      return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       applies_to = group.applies_to if group.respond_to?(:applies_to)
+
+      # Groups with update-types rules are complementary, not competing.
+      # Filter out groups with non-overlapping update-types so they don't
+      # prevent each other from receiving dependencies during assignment.
+      current_update_types = T.cast(group.rules["update-types"], T.nilable(T::Array[String]))
+      eligible_groups = if current_update_types
+                          @dependency_groups.reject do |other|
+                            other_update_types = T.cast(other.rules["update-types"], T.nilable(T::Array[String]))
+                            next false unless other_update_types
+
+                            !current_update_types.intersect?(other_update_types)
+                          end
+                        else
+                          @dependency_groups
+                        end
 
       Dependabot.logger.info(
         "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
 
       more_specific_group_name = specificity_calculator.find_most_specific_group_name(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
+        group, dependency, eligible_groups, contains_checker, dependency.directory, applies_to:
       )
 
       if more_specific_group_name
