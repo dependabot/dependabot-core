@@ -1,13 +1,14 @@
 # syntax=docker.io/docker/dockerfile:1.20
 # This list must match the versions specified in
-# uv/lib/dependabot/uv/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
+# python/lib/dependabot/python/language.rb: PRE_INSTALLED_PYTHON_VERSIONS_RAW
+# (`uv/lib/dependabot/uv/language.rb` aliases `Dependabot::Python::Language`).
 # Python versions are pinned to the release of each minor/patch version.
-ARG PY_3_14=3.14.2
-ARG PY_3_13=3.13.11
-ARG PY_3_12=3.12.12
-ARG PY_3_11=3.11.14
-ARG PY_3_10=3.10.19
-ARG PY_3_9=3.9.24
+ARG PY_3_14=3.14.5
+ARG PY_3_13=3.13.13
+ARG PY_3_12=3.12.13
+ARG PY_3_11=3.11.15
+ARG PY_3_10=3.10.20
+ARG PY_3_9=3.9.25
 # https://github.com/pyenv/pyenv/releases
 ARG PYENV_VERSION=v2.6.16
 
