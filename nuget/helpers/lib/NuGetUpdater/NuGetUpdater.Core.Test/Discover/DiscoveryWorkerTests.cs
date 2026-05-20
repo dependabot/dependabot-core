@@ -2063,4 +2063,48 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public async Task GlobalJsonInSubmoduleIsFilteredOut()
+    {
+        await TestDiscoveryAsync(
+            packages: [],
+            workspacePath: "vendor/external",
+            files:
+            [
+                (".gitmodules", """
+                    [submodule "vendor/external"]
+                        path = vendor/external
+                        url = https://github.com/example/external.git
+                    """),
+                ("vendor/external/global.json", """
+                    {
+                      "sdk": {
+                        "version": "8.0.100"
+                      }
+                    }
+                    """),
+                ("vendor/external/.config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "dotnetsay": {
+                          "version": "2.1.3",
+                          "commands": ["dotnetsay"]
+                        }
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "vendor/external",
+                GlobalJson = null,
+                DotNetToolsJson = null,
+                Projects = [],
+                ExpectedProjectCount = 0,
+            }
+        );
+    }
 }

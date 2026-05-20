@@ -34,7 +34,7 @@ internal static class GitSubmoduleParser
                 var pathValue = trimmed[(equalsIndex + 1)..].Trim();
                 if (!string.IsNullOrEmpty(pathValue))
                 {
-                    paths.Add(pathValue.NormalizePathToUnix());
+                    paths.Add(pathValue.NormalizePathToUnix().NormalizeUnixPathParts().TrimEnd('/'));
                 }
             }
         }
@@ -47,7 +47,7 @@ internal static class GitSubmoduleParser
     /// </summary>
     public static bool IsPathInSubmodule(string relativePath, ImmutableArray<string> submodulePaths)
     {
-        var normalizedPath = relativePath.NormalizePathToUnix();
+        var normalizedPath = relativePath.NormalizePathToUnix().NormalizeUnixPathParts().TrimEnd('/');
         foreach (var submodulePath in submodulePaths)
         {
             if (normalizedPath.Equals(submodulePath, StringComparison.OrdinalIgnoreCase) ||

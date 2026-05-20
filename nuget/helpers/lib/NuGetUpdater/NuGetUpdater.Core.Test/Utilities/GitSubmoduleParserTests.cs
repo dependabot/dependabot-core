@@ -108,6 +108,9 @@ public class GitSubmoduleParserTests
     [InlineData("vendor/other/project.csproj", false)]
     [InlineData("src/project.csproj", false)]
     [InlineData("vendorlib/project.csproj", false)]
+    [InlineData("src/../vendor/lib/project.csproj", true)]
+    [InlineData("vendor/lib/../lib/project.csproj", true)]
+    [InlineData("vendor/lib/../other/project.csproj", false)]
     public void IsPathInSubmodule_CorrectlyIdentifiesSubmodulePaths(string path, bool expected)
     {
         var submodulePaths = ImmutableArray.Create("vendor/lib", "third_party/tools");
