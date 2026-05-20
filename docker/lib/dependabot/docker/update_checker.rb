@@ -374,7 +374,9 @@ module Dependabot
         candidate_tags.reverse_each do |tag|
           details = publication_detail(tag)
 
-          next if !details || !details.released_at
+          # If we can't determine publication details, skip cooldown for this tag and use it
+          # rather than blocking the update when the registry doesn't support the required API calls
+          return [tag] if !details || !details.released_at
 
           return [tag] unless cooldown_period?(T.must(details.released_at), tag)
 
@@ -389,7 +391,7 @@ module Dependabot
         return publication_details[candidate_tag.name] if publication_details.key?(candidate_tag.name)
 
         details = get_tag_publication_details(candidate_tag)
-        publication_details[candidate_tag.name] = T.cast(details, Dependabot::Package::PackageRelease)
+        publication_details[candidate_tag.name] = details
 
         details
       end
@@ -404,12 +406,17 @@ module Dependabot
         first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
-        blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+        # When digest_info is an Array the registry returned a manifest list
+        # (OCI image index) and the extracted digest points at a platform-
+        # specific *manifest*, not a blob.  Use the correct endpoint so the
+        # HEAD request succeeds on registries like ghcr.io.
+        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
+        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           client = docker_registry_client
-          client.dohead "v2/#{docker_repo_name}/blobs/#{first_digest}"
+          client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
         end
 
-        last_modified = blob_info.headers[:last_modified]
+        last_modified = head_response.headers[:last_modified]
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(
@@ -420,6 +427,15 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
+      rescue *transient_docker_errors,
+             DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden,
+             RestClient::TooManyRequests => e
+        Dependabot.logger.warn(
+          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
+          "skipping cooldown: #{e.class} - #{e.message}"
+        )
+        nil
       end
 
       sig do
