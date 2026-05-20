@@ -296,9 +296,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
             Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
           ).tap do |gen|
             allow(gen).to receive(:generate).and_raise(
-              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: "npm install failed: authentication required",
-                error_context: {}
+              Dependabot::DependencyFileNotResolvable.new(
+                "Could not resolve dependencies. This may be due to conflicting peer dependencies."
               )
             )
           end
@@ -322,11 +321,11 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
           expect(grapher.errored_fetching_subdependencies).to be(true)
         end
 
-        it "preserves the original error as the subdependency error" do
+        it "stores the classified error as the subdependency error" do
           grapher.resolved_dependencies
 
-          expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-          expect(grapher.subdependency_error.message).to include("npm install failed")
+          expect(grapher.subdependency_error).to be_a(Dependabot::DependencyFileNotResolvable)
+          expect(grapher.subdependency_error.message).to include("conflicting peer dependencies")
         end
 
         it "returns dependencies without relationship data" do
@@ -335,6 +334,117 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
           resolved_dependencies.each_value do |dep|
             expect(dep.dependencies).to eq([])
           end
+        end
+      end
+
+      context "when lockfile generation fails with a 401 authentication error" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::PrivateSourceAuthenticationFailure.new(
+                "https://npm.pkg.github.com/@dsp-testing%2fbake-off-utils"
+              )
+            )
+          end
+          allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "stores the PrivateSourceAuthenticationFailure as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+        end
+
+        it "includes the registry URL in the error message" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error.message).to include(
+            "npm.pkg.github.com/@dsp-testing%2fbake-off-utils"
+          )
+          expect(grapher.subdependency_error.message).not_to include("npm warn")
+          expect(grapher.subdependency_error.message).not_to include("complete log of this run")
+        end
+
+        it "sets the error flag for degraded status" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+      end
+
+      context "when lockfile generation fails with a 403 forbidden error" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::PrivateSourceAuthenticationFailure.new(
+                "https://registry.npmjs.org/@private%2fpkg"
+              )
+            )
+          end
+          allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "stores the PrivateSourceAuthenticationFailure as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+          expect(grapher.subdependency_error.message).to include(
+            "registry.npmjs.org/@private%2fpkg"
+          )
+        end
+      end
+
+      context "when lockfile generation fails with a yarn authentication error" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::PrivateSourceAuthenticationFailure.new(
+                "https://npm.pkg.github.com/@scope%2fpkg"
+              )
+            )
+          end
+          allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "stores the PrivateSourceAuthenticationFailure as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+          expect(grapher.subdependency_error.message).to include(
+            "npm.pkg.github.com/@scope%2fpkg"
+          )
+        end
+      end
+
+      context "when lockfile generation fails with a non-auth error" do
+        before do
+          lockfile_generator = instance_double(
+            Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::DependencyFileNotResolvable.new(
+                "Could not resolve dependencies. This may be due to conflicting peer dependencies."
+              )
+            )
+          end
+          allow(Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator)
+            .to receive(:new).and_return(lockfile_generator)
+        end
+
+        it "preserves the error as a DependabotError" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::DependencyFileNotResolvable)
+          expect(grapher.subdependency_error.message).to include("conflicting peer dependencies")
         end
       end
 
