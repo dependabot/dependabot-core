@@ -17,7 +17,7 @@ function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirector
     foreach ($globalJsonPath in $globalJsonPaths) {
         $resolvedGlobalJsonPath = Convert-Path "$repoRoot/$globalJsonPath"
         Write-LogMessage "  Processing $globalJsonPath (resolved to $resolvedGlobalJsonPath) for SDK version information"
-        $globalJson = Get-Content $resolvedGlobalJsonPath | ConvertFrom-Json
+        $globalJson = Get-Content $resolvedGlobalJsonPath -Raw | ConvertFrom-Json
         if (@($globalJson.PSobject.Properties).Count -eq 0) {
             Write-LogMessage "    No properties found in $globalJsonPath, skipping"
             continue
