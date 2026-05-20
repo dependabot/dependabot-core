@@ -1,7 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/file_updater/command_trace"
+require "dependabot/shared_helpers/command_trace"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"

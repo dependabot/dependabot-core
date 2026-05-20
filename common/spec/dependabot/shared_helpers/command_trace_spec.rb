@@ -3,9 +3,9 @@
 
 require "spec_helper"
 require "dependabot/shared_helpers"
-require "dependabot/npm_and_yarn/file_updater/command_trace"
+require "dependabot/shared_helpers/command_trace"
 
-RSpec.describe Dependabot::NpmAndYarn::FileUpdater::CommandTrace do
+RSpec.describe Dependabot::SharedHelpers::CommandTrace do
   let(:traces) { [] }
 
   describe ".record" do

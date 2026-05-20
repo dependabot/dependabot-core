@@ -7,6 +7,7 @@ require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
+require "dependabot/shared_helpers/command_trace"
 require "sorbet-runtime"
 
 module Dependabot
@@ -14,7 +15,11 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
-      require_relative "file_updater/command_trace"
+      # Convenience alias so existing references to `CommandTrace` inside
+      # `Dependabot::NpmAndYarn::FileUpdater` and its nested lockfile
+      # updaters keep resolving after the class moved to `common/`.
+      CommandTrace = Dependabot::SharedHelpers::CommandTrace
+
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
