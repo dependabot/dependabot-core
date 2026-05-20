@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/dependency_graphers"
+require "dependabot/job_summary"
 require "dependabot/logger"
 
 # Updater components
@@ -42,6 +43,8 @@ module Dependabot
         Dependabot::Updater::ErrorHandler.new(service: service, job: job),
         Dependabot::Updater::ErrorHandler
       )
+
+      @summary_results = T.let([], T::Array[Dependabot::JobSummary::DirectoryResult])
     end
 
     sig { void }
@@ -56,6 +59,15 @@ module Dependabot
         # block the overall job.
         process_directory(branch:, directory:)
       end
+    rescue StandardError => e
+      @summary_results << Dependabot::JobSummary::DirectoryResult.new(
+        directory: "(unknown)",
+        status: "Failed",
+        details: "unexpected error: #{e.class}"
+      )
+      raise
+    ensure
+      Dependabot::JobSummary.write(@summary_results)
     end
 
     private
@@ -93,6 +105,8 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
+
+      record_summary_result(directory, submission.status, submission.reason || submission.resolved_dependencies.size)
     rescue Dependabot::ApiError, Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
       # If the submission API is down, we should raise this as a specific error type for visibility.
       error_handler.handle_job_error(
@@ -100,14 +114,19 @@ module Dependabot
           "Unable to submit data to the Dependency Snapshot API"
         )
       )
+      record_summary_result(directory, GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+                            "Unable to submit data to the Dependency Snapshot API")
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
+
+      error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
+      record_summary_result(directory, GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+                            error_details.fetch(:"error-type"))
 
       # If we are not running in Actions, there's nothing more to do.
       return unless Dependabot::Environment.github_actions?
 
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
-      error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
       empty_submission = empty_submission(
         branch,
         T.must(directory_source),
@@ -232,6 +251,38 @@ module Dependabot
           )
           branch.strip.sub("origin/", "refs/heads/")
         end
+      end
+    end
+
+    sig do
+      params(
+        directory: String,
+        status: GithubApi::DependencySubmission::SnapshotStatus,
+        details: T.any(String, Integer)
+      ).void
+    end
+    def record_summary_result(directory, status, details)
+      detail_str = if details.is_a?(Integer)
+                     "#{details} dependencies"
+                   else
+                     details
+                   end
+
+      @summary_results << Dependabot::JobSummary::DirectoryResult.new(
+        directory: directory,
+        status: status_label(status),
+        details: detail_str
+      )
+    end
+
+    sig { params(status: GithubApi::DependencySubmission::SnapshotStatus).returns(String) }
+    def status_label(status)
+      case status.serialize
+      when "ok" then "Success"
+      when "degraded" then "Degraded"
+      when "failed" then "Failed"
+      when "skipped" then "Skipped"
+      else status.serialize
       end
     end
   end
