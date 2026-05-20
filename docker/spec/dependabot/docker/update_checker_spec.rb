@@ -1532,11 +1532,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         mock_client = instance_double(DockerRegistry2::Registry)
         allow(checker).to receive(:docker_registry_client).and_return(mock_client)
-        allow(mock_client).to receive(:tags).and_return("tags" => %w(17.04 17.10))
-        allow(mock_client).to receive(:digest).and_return("sha256:abc123")
+        allow(mock_client).to receive_messages(
+          tags: { "tags" => %w(17.04 17.10) },
+          digest: "sha256:abc123",
+          manifest_digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608"
+        )
         allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::NotFound)
-        allow(mock_client).to receive(:manifest_digest)
-          .and_return("sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608")
         allow(Dependabot.logger).to receive(:warn)
         allow(Dependabot.logger).to receive(:info)
       end
@@ -1556,11 +1557,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         mock_client = instance_double(DockerRegistry2::Registry)
         allow(checker).to receive(:docker_registry_client).and_return(mock_client)
-        allow(mock_client).to receive(:tags).and_return("tags" => %w(17.04 17.10))
+        allow(mock_client).to receive_messages(
+          tags: { "tags" => %w(17.04 17.10) },
+          manifest_digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608"
+        )
         allow(mock_client).to receive(:digest)
           .and_raise(DockerRegistry2::RegistryAuthenticationException)
-        allow(mock_client).to receive(:manifest_digest)
-          .and_return("sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608")
         allow(Dependabot.logger).to receive(:warn)
         allow(Dependabot.logger).to receive(:info)
       end
