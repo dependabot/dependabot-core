@@ -196,11 +196,24 @@ module Dependabot
           tags: {
             package_manager: job.package_manager,
             reason: detail[:reason]&.to_s || "unknown",
-            commands_succeeded: detail[:commands_succeeded].to_s,
-            fallback_attempted: detail[:fallback_attempted].to_s,
-            fallback_succeeded: detail[:fallback_succeeded].to_s
+            commands_succeeded: bool_tag(detail[:commands_succeeded]),
+            fallback_attempted: bool_tag(detail[:fallback_attempted]),
+            fallback_succeeded: bool_tag(detail[:fallback_succeeded])
           }
         )
+      end
+
+      # Convert a tri-state boolean (true / false / nil) into a low-
+      # cardinality string suitable for a metric tag value. Empty strings
+      # are treated as invalid tag values by many backends, so we surface
+      # `"unknown"` instead of the default `nil.to_s == ""`.
+      sig { params(value: T.untyped).returns(String) }
+      def bool_tag(value)
+        case value
+        when true then "true"
+        when false then "false"
+        else "unknown"
+        end
       end
 
       # Emit one info line per command trace + truncated stdout/stderr at

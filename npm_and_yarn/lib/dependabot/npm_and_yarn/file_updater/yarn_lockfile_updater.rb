@@ -263,19 +263,31 @@ module Dependabot
         end
 
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = T.must(sub_dependencies.first)
-          update = "#{dep.name}@#{dep.version}"
+          original_content = File.read(yarn_lock.name)
 
+          run_yarn_berry_subdep_commands(dep)
+
+          updated_content = File.read(yarn_lock.name)
+          @command_traces.last&.content_changed_after = updated_content != original_content
+
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            updated_content = run_yarn_berry_audit_fix_fallback(yarn_lock, dep, original_content)
+          end
+
+          { yarn_lock.name => updated_content }
+        end
+
+        sig { params(dep: Dependabot::Dependency).void }
+        def run_yarn_berry_subdep_commands(dep)
+          update = "#{dep.name}@#{dep.version}"
           commands = [
             ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
             ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
-          original_content = File.read(yarn_lock.name)
           fingerprint_batch = commands.map { |_cmd, fp| fp }.join(" && ")
           CommandTrace.record(
             traces: @command_traces,
@@ -285,33 +297,35 @@ module Dependabot
           ) do
             Helpers.run_yarn_commands(*commands)
           end
+        end
 
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            dep: Dependabot::Dependency,
+            original_content: String
+          ).returns(String)
+        end
+        def run_yarn_berry_audit_fix_fallback(yarn_lock, dep, original_content)
+          begin
+            CommandTrace.record(
+              traces: @command_traces,
+              package_manager: "yarn",
+              command: "npm audit --fix --mode update-lockfile",
+              fingerprint: "npm audit --fix --mode update-lockfile"
+            ) do
+              NativeHelpers.run_yarn_audit_fix_command
+            end
+            dep.metadata[:audit_fix_used] = true
+          rescue SharedHelpers::HelperSubprocessFailed
+            Dependabot.logger.info(
+              "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+            )
+          end
           updated_content = File.read(yarn_lock.name)
           @command_traces.last&.content_changed_after = updated_content != original_content
-          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-            begin
-              CommandTrace.record(
-                traces: @command_traces,
-                package_manager: "yarn",
-                command: "npm audit --fix --mode update-lockfile",
-                fingerprint: "npm audit --fix --mode update-lockfile"
-              ) do
-                NativeHelpers.run_yarn_audit_fix_command
-              end
-              dep.metadata[:audit_fix_used] = true
-            rescue SharedHelpers::HelperSubprocessFailed
-              Dependabot.logger.info(
-                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
-              )
-            end
-            updated_content = File.read(yarn_lock.name)
-            @command_traces.last&.content_changed_after = updated_content != original_content
-          end
-
-          { yarn_lock.name => updated_content }
+          updated_content
         end
-        # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/AbcSize
 
         sig { returns(String) }
         def yarn_berry_args

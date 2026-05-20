@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/shared_helpers/command_trace"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
@@ -151,7 +152,7 @@ module Dependabot
           )
             .returns(String)
         end
-        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil) # rubocop:disable Metrics/AbcSize
+        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
           # Set dependency files and credentials for automatic env variable injection
           Helpers.dependency_files = dependency_files
           Helpers.credentials = credentials
@@ -160,34 +161,64 @@ module Dependabot
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              original_content = File.read(pnpm_lock.name)
-
-              if updated_pnpm_workspace_content
-                File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
-              else
-                run_pnpm_update_packages
-                write_final_package_json_files
-              end
-
-              run_pnpm_install
-
-              updated_content = File.read(pnpm_lock.name)
-              @command_traces.last&.content_changed_after = updated_content != original_content
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                run_pnpm_deep_update_fallback
-                updated_content = File.read(pnpm_lock.name)
-                @command_traces.last&.content_changed_after = updated_content != original_content
-              end
-
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-                run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
-                updated_content = File.read(pnpm_lock.name)
-                @command_traces.last&.content_changed_after = updated_content != original_content
-              end
-
-              updated_content
+              run_pnpm_update_with_fallbacks(pnpm_lock, updated_pnpm_workspace_content)
             end
           end
+        end
+
+        sig do
+          params(
+            pnpm_lock: Dependabot::DependencyFile,
+            updated_pnpm_workspace_content: T.nilable(T::Hash[String, T.nilable(String)])
+          ).returns(String)
+        end
+        def run_pnpm_update_with_fallbacks(pnpm_lock, updated_pnpm_workspace_content)
+          original_content = File.read(pnpm_lock.name)
+
+          if updated_pnpm_workspace_content
+            File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
+          else
+            run_pnpm_update_packages
+            write_final_package_json_files
+          end
+
+          run_pnpm_install
+          updated_content = note_content_change(pnpm_lock, original_content)
+
+          updated_content = maybe_run_pnpm_fallback(pnpm_lock, original_content, updated_content) do
+            run_pnpm_deep_update_fallback
+          end
+
+          maybe_run_pnpm_fallback(pnpm_lock, original_content, updated_content) do
+            run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+          end
+        end
+
+        # Re-reads the lockfile, sets `content_changed_after` on the most
+        # recent CommandTrace, and returns the current lockfile content.
+        sig { params(pnpm_lock: Dependabot::DependencyFile, original_content: String).returns(String) }
+        def note_content_change(pnpm_lock, original_content)
+          updated_content = File.read(pnpm_lock.name)
+          @command_traces.last&.content_changed_after = updated_content != original_content
+          updated_content
+        end
+
+        # Runs the supplied fallback only if the lockfile is still
+        # unchanged and the audit-fix experiment is enabled.
+        sig do
+          params(
+            pnpm_lock: Dependabot::DependencyFile,
+            original_content: String,
+            updated_content: String,
+            block: T.proc.void
+          ).returns(String)
+        end
+        def maybe_run_pnpm_fallback(pnpm_lock, original_content, updated_content, &block)
+          return updated_content unless updated_content == original_content
+          return updated_content unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+
+          block.call # rubocop:disable Performance/RedundantBlockCall
+          note_content_change(pnpm_lock, original_content)
         end
 
         sig { returns(T.nilable(String)) }

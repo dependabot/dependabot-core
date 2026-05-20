@@ -241,13 +241,22 @@ module Dependabot
           .returns([T::Boolean, T.nilable(T::Boolean)])
       end
       def compute_fallback_state(traces)
-        fallback_traces = traces.select do |t|
-          t.command.include?("audit") || t.command.include?("--depth Infinity")
-        end
+        fallback_traces = traces.select { |t| fallback_trace?(t) }
         attempted = fallback_traces.any?
         succeeded =
           (fallback_traces.any? { |t| t.content_changed_after == true } if attempted)
         [attempted, succeeded]
+      end
+
+      # Detect whether a trace represents a fallback invocation (audit-fix
+      # or pnpm deep update). Match against the stable `fingerprint` (or
+      # `command` when no fingerprint is set) rather than the raw command
+      # so that user-controlled dependency names cannot false-positive
+      # this check.
+      sig { params(trace: CommandTrace).returns(T::Boolean) }
+      def fallback_trace?(trace)
+        key = trace.fingerprint || trace.command
+        key.include?("audit") || key.include?("--depth Infinity")
       end
 
       sig { returns(T::Array[CommandTrace]) }
