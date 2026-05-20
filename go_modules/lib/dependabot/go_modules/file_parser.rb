@@ -114,8 +114,28 @@ module Dependabot
         return unless go_env
 
         env_file = T.must(go_env)
-        File.write(env_file.name, env_file.content)
+        File.write(env_file.name, sanitize_go_env_content(T.must(env_file.content)))
         ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      # Go's GOENV file format does not support shell-style quoting, but users
+      # commonly write values like GOPROXY="https://..." which Go reads literally
+      # (including the quotes), causing URL parse failures. Strip surrounding
+      # matching " or ' from each value.
+      sig { params(content: String).returns(String) }
+      def sanitize_go_env_content(content)
+        content.gsub(
+          /
+            ^          # start of line
+            ([^=\n]+)  # key: one or more chars that are not = or newline
+            =          # separator
+            (["'])     # opening quote, captured for backreference
+            (.*)       # value
+            \2         # closing quote must match opening
+            $          # end of line
+          /x,
+          '\1=\3'
+        )
       end
 
       sig { void }

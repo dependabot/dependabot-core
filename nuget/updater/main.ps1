@@ -79,6 +79,7 @@ function Update-Files {
 }
 
 function Update-Dependencies {
+    $env:DEPENDABOT_LOG_MESSAGES = "true"
     Get-Files
     if ($script:operationExitCode -ne 0) {
         return

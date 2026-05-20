@@ -98,6 +98,10 @@ python:
 rust_toolchain:
   - *shared
   - 'rust_toolchain/**'
+sbt:
+  - *shared
+  - 'maven/**'
+  - 'sbt/**'
 swift:
   - *shared
   - 'swift/**'
