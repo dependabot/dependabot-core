@@ -30,36 +30,44 @@ module Dependabot
           )
         end
 
-        # uv.lock is the resolved source of truth for installed versions. When a
-        # package also appears in a (possibly stale) requirements.txt/.in file,
-        # prefer the lockfile version while preserving requirements so the file
-        # updater can still operate on those files.
+        # `DependencySet#combined_version` can pick a stale `requirements.txt`
+        # version over `uv.lock` when both list the same package — `uv.lock`
+        # entries have empty requirements (so `top_level?` is false) and lose
+        # the merge. Override the merged version with the lockfile version for
+        # any package present in `uv.lock`, keeping the merged requirements so
+        # the file updater can still operate on the requirements files.
         sig do
           params(dependencies: T::Array[Dependabot::Dependency])
             .returns(T::Array[Dependabot::Dependency])
         end
-        def prefer_lockfile_versions(dependencies)
-          return dependencies if versions_by_name.empty?
+        def override_with_lockfile_versions(dependencies)
+          return dependencies if lockfile_versions.empty?
 
-          dependencies.map do |dep|
-            lock_version = versions_by_name[dep.name]
-            next dep if lock_version.nil? || dep.version == lock_version
-
-            Dependabot::Dependency.new(
-              name: dep.name,
-              version: lock_version,
-              requirements: dep.requirements,
-              package_manager: dep.package_manager,
-              subdependency_metadata: dep.subdependency_metadata,
-              metadata: dep.metadata
-            )
-          end
+          dependencies.map { |dep| override_version(dep, lockfile_versions[dep.name]) }
         end
 
         private
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig do
+          params(dep: Dependabot::Dependency, lock_version: T.nilable(String))
+            .returns(Dependabot::Dependency)
+        end
+        def override_version(dep, lock_version)
+          return dep if lock_version.nil? # not in uv.lock
+          return dep if dep.version == lock_version # merged version already correct
+
+          Dependabot::Dependency.new(
+            name: dep.name,
+            version: lock_version,
+            requirements: dep.requirements,
+            package_manager: dep.package_manager,
+            subdependency_metadata: dep.subdependency_metadata,
+            metadata: dep.metadata
+          )
+        end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def uv_lock_files
@@ -92,8 +100,8 @@ module Dependabot
         end
 
         sig { returns(T::Hash[String, String]) }
-        def versions_by_name
-          @versions_by_name ||= T.let(
+        def lockfile_versions
+          @lockfile_versions ||= T.let(
             dependency_set.dependencies.each_with_object({}) do |dep, hash|
               version = dep.version
               hash[dep.name] = version if version

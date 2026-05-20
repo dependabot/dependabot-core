@@ -58,7 +58,7 @@ module Dependabot
         dependency_set += uv_lock_file_dependencies
         dependency_set += requirement_dependencies if requirement_files.any?
 
-        lock_file_dependency_parser.prefer_lockfile_versions(dependency_set.dependencies)
+        lock_file_dependency_parser.override_with_lockfile_versions(dependency_set.dependencies)
       end
 
       sig { override.returns(Ecosystem) }
