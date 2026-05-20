@@ -1995,4 +1995,72 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         };
         Assert.Throws<InvalidOperationException>(() => DiscoveryWorker.MergeProjectDiscovery(result1, result2));
     }
+
+    [Fact]
+    public async Task ProjectsInSubmodulesAreFilteredOut()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            ],
+            workspacePath: "",
+            files:
+            [
+                (".gitmodules", """
+                    [submodule "vendor/external"]
+                        path = vendor/external
+                        url = https://github.com/example/external.git
+                    """),
+                ("myapp.slnx", """
+                    <Solution>
+                      <Folder Name="/src/">
+                        <Project Path="src\project.csproj" />
+                      </Folder>
+                      <Folder Name="/vendor/external/">
+                        <Project Path="vendor\external\project.csproj" />
+                      </Folder>
+                    </Solution>
+                    """),
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("vendor/external/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "src/project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ],
+                ExpectedProjectCount = 1,
+            }
+        );
+    }
 }
