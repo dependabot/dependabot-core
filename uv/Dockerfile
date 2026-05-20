@@ -9,7 +9,7 @@ ARG PY_3_11=3.11.15
 ARG PY_3_10=3.10.20
 ARG PY_3_9=3.9.25
 # https://github.com/pyenv/pyenv/releases
-ARG PYENV_VERSION=v2.6.29
+ARG PYENV_VERSION=v2.6.31
 
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
 FROM ghcr.io/astral-sh/uv:0.11.8 AS uv

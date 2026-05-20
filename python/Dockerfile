@@ -10,7 +10,7 @@ ARG PY_3_11=3.11.15
 ARG PY_3_10=3.10.20
 ARG PY_3_9=3.9.25
 # https://github.com/pyenv/pyenv/releases
-ARG PYENV_VERSION=v2.6.29
+ARG PYENV_VERSION=v2.6.31
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_14
