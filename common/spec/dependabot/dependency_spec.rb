@@ -392,4 +392,112 @@ RSpec.describe Dependabot::Dependency do
       expect(dependency.all_versions).to eq(["1.0.0", "2.0.0"])
     end
   end
+
+  describe "#humanized_previous_version" do
+    context "with a registered humanized_previous_version_builder" do
+      before do
+        described_class.register_humanized_previous_version_builder(
+          "test_pm",
+          ->(dep) { dep.previous_requirements&.dig(0, :metadata, :comment_version) }
+        )
+      end
+
+      it "uses the registered builder when it returns a value" do
+        dependency = described_class.new(
+          name: "dep",
+          version: "abc123def456789012345678901234567890abcd",
+          previous_version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+          requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", ref: "abc123def456789012345678901234567890abcd" }
+          }],
+          previous_requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", ref: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" },
+            metadata: { comment_version: "v2.2.1" }
+          }],
+          package_manager: "test_pm"
+        )
+
+        expect(dependency.humanized_previous_version).to eq("v2.2.1")
+      end
+
+      it "falls back to default behavior when builder returns nil" do
+        dependency = described_class.new(
+          name: "dep",
+          version: "abc123def456789012345678901234567890abcd",
+          previous_version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+          requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", ref: "abc123def456789012345678901234567890abcd" }
+          }],
+          previous_requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", ref: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+          }],
+          package_manager: "test_pm"
+        )
+
+        # Falls back to previous_ref when ref changed and previous_ref exists
+        expect(dependency.humanized_previous_version).to eq("6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e")
+      end
+    end
+
+    context "without a registered builder" do
+      it "returns the previous_version when it's not a SHA" do
+        dependency = described_class.new(
+          name: "dep",
+          version: "v2.0.0",
+          previous_version: "v1.0.0",
+          requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: nil
+          }],
+          package_manager: "no_builder_pm"
+        )
+
+        expect(dependency.humanized_previous_version).to eq("v1.0.0")
+      end
+
+      it "returns previous_ref when previous_version is a SHA and ref changed" do
+        dependency = described_class.new(
+          name: "dep",
+          version: "abc123def456789012345678901234567890abcd",
+          previous_version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+          requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", ref: "abc123def456789012345678901234567890abcd" }
+          }],
+          previous_requirements: [{
+            file: "config.yaml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", ref: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+          }],
+          package_manager: "no_builder_pm"
+        )
+
+        # Returns previous_ref when ref changed and previous_ref exists
+        expect(dependency.humanized_previous_version).to eq("6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e")
+      end
+    end
+  end
 end

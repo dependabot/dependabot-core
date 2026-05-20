@@ -451,6 +451,43 @@ RSpec.describe Dependabot::Hex::FileParser do
       end
     end
 
+    context "with a hex package name alias" do
+      let(:mixfile_fixture_name) { "hex_alias" }
+      let(:lockfile_fixture_name) { "hex_alias" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the aliased dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "pulsar" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("pulsar")
+          expect(dependency.version).to eq("2.8.7")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "~> 2.8.7",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        it "stores the hex package name in metadata" do
+          expect(dependency.metadata[:hex_package]).to eq("pulsar_elixir")
+        end
+      end
+
+      describe "the non-aliased dependency" do
+        subject(:dependency) { dependencies.find { |d| d.name == "plug" } }
+
+        it "defaults hex_package to the dependency name" do
+          expect(dependency.metadata[:hex_package]).to eq("plug")
+        end
+      end
+    end
+
     context "with reject_external_code" do
       let(:reject_external_code) { true }
 
@@ -473,7 +510,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "hex"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "2.2.2"
+        expect(package_manager.version.to_s).to eq "2.3.1"
       end
     end
 
@@ -483,7 +520,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "elixir"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.18.4"
+        expect(language.version.to_s).to eq "1.19.5"
       end
     end
   end

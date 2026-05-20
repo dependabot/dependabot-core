@@ -793,6 +793,14 @@ public class SerializationTests : TestBase
 
         yield return
         [
+            new OutOfDisk(),
+            """
+            {"data":{"error-type":"out_of_disk","error-details":{}}}
+            """
+        ];
+
+        yield return
+        [
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             """
             {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}

@@ -216,7 +216,7 @@ public class BindingRedirectsTests : TestBase
         await File.WriteAllTextAsync(configFilePath, configContents);
 
         var projectBuildFile = ProjectBuildFile.Open(tempDir.DirectoryPath, projectFilePath);
-        await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, updatedPackageName, updatedPackageVersion);
+        await BindingRedirectManager.UpdateBindingRedirectsAsync(tempDir.DirectoryPath, projectBuildFile, updatedPackageName, updatedPackageVersion);
 
         var actualConfigContents = (await File.ReadAllTextAsync(configFilePath)).Replace("\r", "");
         expectedConfigContents = expectedConfigContents.Replace("\r", "");

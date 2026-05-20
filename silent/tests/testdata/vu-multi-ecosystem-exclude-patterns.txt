@@ -1,0 +1,68 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout create_pull_request
+pr-created expected-grouped.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.0.0" },
+  "exclude-me": { "version": "3.5.0" },
+  "test-exclude": { "version": "4.1.0" }
+}
+
+-- expected-grouped.json --
+{
+  "dependency-a": { "version": "1.3.0" },
+  "dependency-b": { "version": "2.1.0" },
+  "exclude-me": { "version": "3.5.0" },
+  "test-exclude": { "version": "4.1.0" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.3.0"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "2.0.0",
+    "2.1.0"
+  ]
+}
+
+-- exclude-me --
+{
+  "versions": [
+    "3.5.0",
+    "3.6.0"
+  ]
+}
+
+-- test-exclude --
+{
+  "versions": [
+    "4.1.0",
+    "4.2.0"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: 127.0.0.1
+    api-endpoint: http://127.0.0.1/api/v3
+    repo: dependabot/smoke-tests
+  multi-ecosystem-update: true
+  dependency-groups:
+    - name: main
+      rules:
+        exclude-patterns:
+          - "exclude-me"
+          - "test-*"

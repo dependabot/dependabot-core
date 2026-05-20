@@ -186,10 +186,10 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.setup_credentials_in_environment(credentials)
-          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
-          # environment variables, and also any CARGO_REGISTRY_... configuration.
-          env = ENV.select { |key, _value| key.match(/^(CARGO_REGISTRY|CARGO_REGISTRIES)_/) }
+          Helpers.bypass_cargo_credential_providers
+          # Pass through any cargo registry configuration via environment variables
+          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
+          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
 
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
@@ -215,10 +215,11 @@ module Dependabot
 
           File.write(T.must(lockfile).name, T.must(lockfile).content) if lockfile
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          return unless config
+          config_file = config
+          return unless config_file
 
-          FileUtils.mkdir_p(File.dirname(T.must(config).name))
-          File.write(T.must(config).name, T.must(config).content)
+          FileUtils.mkdir_p(File.dirname(config_file.name))
+          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
         end
 
         sig { void }
@@ -336,6 +337,10 @@ module Dependabot
         sig { params(message: T.nilable(String)).returns(T.any(Dependabot::Version, T::Boolean)) }
         def using_old_toolchain?(message)
           return true if T.must(message).include?("usage of sparse registries requires `-Z sparse-registry`")
+
+          # Detect rustup installation failures for old toolchains (e.g. "syncing channel updates for 1.67-x86_64-...")
+          rustup_channel = /syncing channel updates for (?<version>\d+\.\d+)-/.match(T.must(message))
+          return version_class.new(rustup_channel[:version]) < version_class.new("1.68") if rustup_channel
 
           version_log = /rust version (?<version>\d.\d+)/.match(message)
           return false unless version_log

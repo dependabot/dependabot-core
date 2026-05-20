@@ -31,7 +31,8 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var directory in job.GetAllDirectories())
+        var initialLockFiles = ModifiedFilesTracker.GetExistingLockFiles(repoContentsPath);
+        foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
             logger.ReportDiscovery(discoveryResult);
@@ -41,7 +42,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialLockFiles);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -61,13 +62,13 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
 
             logger.Info($"Updating dependencies: {string.Join(", ", groupedUpdateOperationsToPerform.Select(g => g.Key).Distinct().OrderBy(d => d, StringComparer.OrdinalIgnoreCase))}");
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialLockFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {
                 var dependencyName = dependencyGroupToUpdate.Key;
                 var vulnerableCandidateDependenciesToUpdate = dependencyGroupToUpdate.Value
-                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, allowCooldown: false)))
+                    .Select(o => (o.ProjectPath, o.Dependency, RunWorker.GetDependencyInfo(job, o.Dependency, groupMatchers: [], allowCooldown: false)))
                     .Where(set => set.Item3.IsVulnerable)
                     .ToArray();
                 var vulnerableDependenciesToUpdate = vulnerableCandidateDependenciesToUpdate
@@ -111,7 +112,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
 
                     logger.Info($"Attempting update of {dependency.Name} from {dependency.Version} to {analysisResult.UpdatedVersion} for {projectPath}.");
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
-                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
+                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
@@ -157,7 +158,7 @@ internal class CreateSecurityUpdatePullRequestHandler : IUpdateHandler
                 }
             }
 
-            if (updatedDependencyFiles.Length > 0)
+            if (updateOperationsPerformed.Count > 0 && updatedDependencyFiles.Length > 0)
             {
                 var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
                 var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);

@@ -217,7 +217,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Maven::FileParser do
               [{
                 requirement: "1.5.8.RELEASE",
                 file: "pom.xml",
-                groups: [],
+                groups: ["plugin"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }]
@@ -281,7 +281,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "0.9.4",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -301,7 +301,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "9.1",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]
@@ -740,7 +740,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             [{
               requirement: "3.0.0-M1",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: {
                 property_name: "maven-javadoc-plugin.version",
@@ -750,7 +750,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             }, {
               requirement: "2.10.4",
               file: "pom.xml",
-              groups: [],
+              groups: ["plugin"],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]

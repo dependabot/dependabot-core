@@ -112,7 +112,7 @@ public class FileWriterWorker
         NuGetVersion newDependencyVersion
     )
     {
-        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath.FullName, ProjectHelper.PathFormat.Full);
+        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(repoContentsPath.FullName, projectPath.FullName, ProjectHelper.PathFormat.Full);
         var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         if (packagesConfigFullPath is null)
         {
@@ -167,7 +167,7 @@ public class FileWriterWorker
         }
 
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
-            .Where(d => !d.IsTransitive)
+            .Where(d => d.IsTopLevel)
             .ToImmutableArray();
         var newDependency = new Dependency(dependencyName, newDependencyVersion.ToString(), DependencyType.Unknown);
         var desiredDependencies = initialTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
@@ -243,7 +243,7 @@ public class FileWriterWorker
                 }
 
                 var rerunTopLevelDependencies = rerunProjectDiscovery.Dependencies
-                    .Where(d => !d.IsTransitive)
+                    .Where(d => d.IsTopLevel)
                     .ToImmutableArray();
                 var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                     ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
@@ -408,8 +408,7 @@ public class FileWriterWorker
             .ToImmutableArray();
 
         // try update
-        var addPackageReferenceElementForPinnedPackages = !projectDiscovery.CentralPackageTransitivePinningEnabled;
-        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
+        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, projectDiscovery.PackageManagementKind);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {

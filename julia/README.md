@@ -162,3 +162,29 @@ julia/helpers/DependabotHelper.jl/
 ```
 
 The `run_dependabot_helper.jl` script acts as the JSON-RPC server, receiving function calls from Ruby and dispatching them to the appropriate Julia functions.
+
+## Testing with Real Repositories
+
+For integration testing against real Julia package structures, use the [Julia-DependabotTest](https://github.com/IanButterworth/Julia-DependabotTest) repository, which contains various package configurations to validate Dependabot's behavior.
+
+### GitHub Actions Testing
+
+The Julia-DependabotTest repository includes a workflow to test custom dependabot-core branches or PRs:
+
+1. Go to [Actions → Test Dependabot Julia](https://github.com/IanButterworth/Julia-DependabotTest/actions/workflows/test-dependabot.yml)
+2. Click "Run workflow"
+3. Enter a branch name (e.g., `ib/julia_workspaces_fixes`) or PR number (e.g., `13889`)
+4. Select a test configuration
+5. Results are uploaded as artifacts (`results.yaml`, `dependabot.log`)
+
+### Local Testing
+
+```bash
+# From the dependabot-core repository root
+docker build --no-cache -f Dockerfile.updater-core -t ghcr.io/dependabot/dependabot-updater-core .
+docker build --no-cache -f julia/Dockerfile -t ghcr.io/dependabot/dependabot-updater-julia .
+
+# Run against a test configuration
+script/dependabot update -f /path/to/Julia-DependabotTest/dependabot-test-workspace.yaml -o results.yaml
+```
+

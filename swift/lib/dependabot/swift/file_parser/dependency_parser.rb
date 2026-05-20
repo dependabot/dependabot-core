@@ -5,8 +5,8 @@ require "sorbet-runtime"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/dependency"
+require "dependabot/swift/url_helpers"
 require "json"
-require "uri"
 
 module Dependabot
   module Swift
@@ -79,7 +79,7 @@ module Dependabot
         def all_dependencies(data, level: 0)
           identity = data["identity"]
           url = SharedHelpers.scp_to_standard(data["url"])
-          name = normalize(url)
+          name = UrlHelpers.normalize_name(url)
           version = data["version"]
 
           source = { type: "git", url: url, ref: version, branch: nil }
@@ -95,13 +95,6 @@ module Dependabot
           dep = Dependency.new(**args) if data["version"] != "unspecified"
 
           [dep, *subdependencies(data, level: level + 1)].compact
-        end
-
-        sig { params(source: String).returns(String) }
-        def normalize(source)
-          uri = URI.parse(source.downcase)
-
-          "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix(".git")
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }

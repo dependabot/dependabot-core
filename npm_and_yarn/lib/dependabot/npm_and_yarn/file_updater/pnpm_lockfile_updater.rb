@@ -135,6 +135,10 @@ module Dependabot
         # Peer dependencies configuration error
         ERR_PNPM_PEER_DEP_ISSUES = /ERR_PNPM_PEER_DEP_ISSUES/
 
+        # Trust downgrade error (supply chain security)
+        ERR_PNPM_TRUST_DOWNGRADE = /ERR_PNPM_TRUST_DOWNGRADE/
+        TRUST_DOWNGRADE_PACKAGE = /High-risk trust downgrade for "(?<dep>[^"]+)"/
+
         sig do
           params(
             pnpm_lock: Dependabot::DependencyFile,
@@ -143,10 +147,16 @@ module Dependabot
             .returns(String)
         end
         def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
+              original_content = File.read(pnpm_lock.name)
+
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
               else
@@ -156,7 +166,18 @@ module Dependabot
 
               run_pnpm_install
 
-              File.read(pnpm_lock.name)
+              updated_content = File.read(pnpm_lock.name)
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                run_pnpm_deep_update_fallback
+                updated_content = File.read(pnpm_lock.name)
+              end
+
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+                updated_content = File.read(pnpm_lock.name)
+              end
+
+              updated_content
             end
           end
         end
@@ -178,6 +199,54 @@ module Dependabot
           Helpers.run_pnpm_command(
             "install --lockfile-only"
           )
+        end
+
+        # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
+        # first-tier fallback when the regular update is a no-op (typically
+        # transitive deps not listed in any package.json). Unlike `audit --fix`
+        # this does not write `overrides` to package.json.
+        sig { void }
+        def run_pnpm_deep_update_fallback
+          recursive = workspace_files.any?
+          dependencies.each do |dep|
+            NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            dep.metadata[:deep_update_used] = true
+          end
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
+          )
+        end
+
+        # Runs `pnpm audit --fix` as a fallback when the primary update is a no-op.
+        # `pnpm audit --fix` adds `overrides` to `package.json` — since we can
+        # only return lockfile content from `run_pnpm_update`, any manifest
+        # changes would produce inconsistent output. If audit-fix modifies a
+        # package.json we revert both the manifest(s) and lockfile so the
+        # overall operation behaves as a no-op.
+        sig { params(pnpm_lock: Dependabot::DependencyFile, original_content: String).void }
+        def run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+          package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
+
+          begin
+            NativeHelpers.run_pnpm_audit_fix_command
+            run_pnpm_install
+
+            manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }
+            if manifest_changed
+              Dependabot.logger.info(
+                "pnpm audit --fix modified package.json (overrides) — reverting fallback"
+              )
+              package_json_snapshots.each { |f, c| File.write(f, c) }
+              File.write(pnpm_lock.name, original_content)
+            else
+              dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
+            end
+          rescue SharedHelpers::HelperSubprocessFailed
+            Dependabot.logger.info(
+              "pnpm audit --fix failed or partially fixed — continuing with any changes made"
+            )
+          end
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -310,6 +379,15 @@ module Dependabot
 
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
             raise_unsupported_platform_error(error_message, pnpm_lock)
+          end
+
+          if error_message.match?(ERR_PNPM_TRUST_DOWNGRADE)
+            dep = error_message.match(TRUST_DOWNGRADE_PACKAGE)&.named_captures&.fetch("dep", nil)
+            dep_info = dep ? " for \"#{dep}\"" : ""
+            msg = "pnpm trust downgrade detected#{dep_info}. " \
+                  "A previously published version had provenance attestation, but the target version does not."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::InconsistentRegistryResponse, msg
           end
 
           error_handler.handle_pnpm_error(error)

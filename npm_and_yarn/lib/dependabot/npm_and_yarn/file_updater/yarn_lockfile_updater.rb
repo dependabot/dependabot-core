@@ -89,6 +89,10 @@ module Dependabot
 
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
         def updated_yarn_lock(yarn_lock)
+          # Set dependency files and credentials for automatic env variable injection
+          Helpers.dependency_files = dependency_files
+          Helpers.credentials = credentials
+
           base_dir = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             write_temporary_dependency_files(yarn_lock)
@@ -250,8 +254,23 @@ module Dependabot
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
+          original_content = File.read(yarn_lock.name)
           Helpers.run_yarn_commands(*commands)
-          { yarn_lock.name => File.read(yarn_lock.name) }
+
+          updated_content = File.read(yarn_lock.name)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            begin
+              NativeHelpers.run_yarn_audit_fix_command
+              dep.metadata[:audit_fix_used] = true
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info(
+                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+              )
+            end
+            updated_content = File.read(yarn_lock.name)
+          end
+
+          { yarn_lock.name => updated_content }
         end
 
         sig { returns(String) }
@@ -646,7 +665,7 @@ module Dependabot
           yarnrc_global_registry =
             T.must(T.must(yarnrc_file).content)
              .lines.find { |line| line.match?(regex) }
-             &.match(regex)
+                   &.match(regex)
              &.named_captures
              &.fetch("registry")
 
@@ -871,7 +890,7 @@ module Dependabot
 
       sig do
         params(error_message: String, yarn_lock: Dependabot::DependencyFile)
-          .returns(T::Hash[T.any(Symbol, String), T.any(String, NilClass)])
+          .returns(T::Hash[T.any(Symbol, String), T.nilable(String)])
       end
       def handle_package_not_found(error_message, yarn_lock) # rubocop:disable Metrics/PerceivedComplexity
         # There are 2 different package not found error messages

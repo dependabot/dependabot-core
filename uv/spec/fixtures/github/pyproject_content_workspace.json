@@ -1,0 +1,18 @@
+{
+  "name": "pyproject.toml",
+  "path": "pyproject.toml",
+  "sha": "abc123",
+  "size": 100,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/pyproject.toml?ref=sha",
+  "html_url": "https://github.com/gocardless/bump/blob/sha/pyproject.toml",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/pyproject.toml",
+  "type": "file",
+  "encoding": "base64",
+  "content": "W3Byb2plY3RdCm5hbWUgPSAid29ya3NwYWNlLXJvb3QiCnZlcnNpb24gPSAi\nMC4xLjAiCmRlc2NyaXB0aW9uID0gIlRlc3QgVVYgd29ya3NwYWNlIGNvbmZp\nZ3VyYXRpb24iCnJlcXVpcmVzLXB5dGhvbiA9ICI+PTMuOSIKZGVwZW5kZW5j\naWVzID0gWwogICAgInJlcXVlc3RzPj0yLjMxLjAiLAogICAgIm15LXBhY2th\nZ2UiLApdCgpbdG9vbC51di5zb3VyY2VzXQpteS1wYWNrYWdlID0geyB3b3Jr\nc3BhY2UgPSB0cnVlIH0KClt0b29sLnV2LndvcmtzcGFjZV0KbWVtYmVycyA9\nIFsKICAgICJwYWNrYWdlcy9teS1wYWNrYWdlIiwKXQoKW2J1aWxkLXN5c3Rl\nbV0KcmVxdWlyZXMgPSBbInNldHVwdG9vbHM+PTQyIiwgIndoZWVsIl0KYnVp\nbGQtYmFja2VuZCA9ICJzZXR1cHRvb2xzLmJ1aWxkX21ldGEiCg==\n",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/pyproject.toml?ref=sha",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/abc123",
+    "html": "https://github.com/gocardless/bump/blob/sha/pyproject.toml"
+  }
+}

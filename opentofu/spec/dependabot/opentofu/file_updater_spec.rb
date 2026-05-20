@@ -122,6 +122,57 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
+    context "with an oci module" do
+      let(:project_name) { "modules_oci" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "example.com/repository-name",
+            version: "v2.0.0",
+            previous_version: "v1.0.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "oci",
+                artifact_identifier: "example.com/repository-name",
+                subdirectory: nil,
+                tag: "v2.0.0",
+                digest: nil,
+                version: "v2.0.0"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "oci",
+                artifact_identifier: "example.com/repository-name",
+                subdirectory: nil,
+                tag: "v1.0.0",
+                digest: nil,
+                version: "v1.0.0"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "rewrites the tag in the oci:// source" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(<<~HCL)
+          module "s3-webapp" {
+            source  = "oci://example.com/repository-name?tag=v2.0.0"
+          }
+        HCL
+      end
+    end
+
     context "with private modules with different versions" do
       let(:project_name) { "private_modules_with_different_versions" }
 
@@ -703,6 +754,143 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
+    context "with a module version using interpolated local syntax" do
+      let(:project_name) { "module_with_interpolated_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable value and preserves the interpolation syntax" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+        expect(updated_file.content).to include('version = "${local.module_version}"')
+      end
+    end
+
+    context "with a module version from a local in the same file" do
+      let(:project_name) { "module_with_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable value" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+        expect(updated_file.content).to include("version = local.module_version")
+      end
+    end
+
+    context "with a module version from a local in a different file" do
+      let(:project_name) { "module_with_cross_file_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "locals.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "locals.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable in the locals file" do
+        updated_file = updated_dependency_files.find { |file| file.name == "locals.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+      end
+
+      it "does not modify the main.tf file" do
+        main_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(main_file).to be_nil
+      end
+    end
+
     context "with a required provider block with multiple versions" do
       let(:project_name) { "registry_provider_compound_local_name" }
       let(:dependencies) do
@@ -1175,6 +1363,56 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
+    describe "for a module with lifecycle.enabled block" do
+      let(:project_name) { "module_with_lifecycle_enabled" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "terraform-aws-modules/iam/aws",
+            version: "4.1.0",
+            previous_version: "4.0.0",
+            requirements: [{
+              requirement: "4.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "iam/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "4.0.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "iam/aws"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            module "github_terraform" {
+              source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+              version = "4.1.0"
+              lifecycle {
+                enabled = true
+              }
+            }
+          DEP
+        )
+      end
+    end
+
     describe "for a nested module with a v-prefix" do
       let(:project_name) { "nested_modules_with_v_prefix" }
       let(:dependencies) do
@@ -1457,7 +1695,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "Mongey/confluentcloud",
+            name: "mongey/confluentcloud",
             version: "0.0.11",
             previous_version: "0.0.6",
             requirements: [{
@@ -1467,7 +1705,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             previous_requirements: [{
@@ -1477,7 +1715,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             package_manager: "opentofu"
@@ -1495,6 +1733,13 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
           DEP
         )
       end
+
+      it "updates the manifest version constraint" do
+        manifest = updated_dependency_files.find { |file| file.name == "providers.tf" }
+
+        expect(manifest.content).to include(">= 0.0.11, < 0.0.12")
+        expect(manifest.content).not_to include(">= 0.0.6, < 0.0.12")
+      end
     end
 
     describe "when updating a provider with multiple local path modules" do
@@ -1502,7 +1747,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "Mongey/confluentcloud",
+            name: "mongey/confluentcloud",
             version: "0.0.10",
             previous_version: "0.0.6",
             requirements: [{
@@ -1512,7 +1757,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.10",
@@ -1521,7 +1766,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.10",
@@ -1530,7 +1775,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             previous_requirements: [{
@@ -1540,7 +1785,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.6",
@@ -1549,7 +1794,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }, {
               requirement: "0.0.6",
@@ -1558,7 +1803,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               source: {
                 type: "provider",
                 registry_hostname: "registry.opentofu.org",
-                module_identifier: "Mongey/confluentcloud"
+                module_identifier: "mongey/confluentcloud"
               }
             }],
             package_manager: "opentofu"

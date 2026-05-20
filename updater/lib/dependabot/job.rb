@@ -13,6 +13,7 @@ require "dependabot/requirements_update_strategy"
 require "dependabot/source"
 require "dependabot/pull_request"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/updater/update_type_helper"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -56,6 +57,7 @@ module Dependabot
         cooldown
         repo_private
         multi_ecosystem_update
+        blocked_versions
       ).freeze,
       T::Array[Symbol]
     )
@@ -116,6 +118,9 @@ module Dependabot
 
     sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
+
+    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    attr_reader :blocked_versions
 
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
@@ -219,6 +224,10 @@ module Dependabot
       @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
+      @blocked_versions               = T.let(
+        attributes.fetch(:blocked_versions, []) || [],
+        T::Array[T::Hash[String, T.untyped]]
+      )
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -298,6 +307,10 @@ module Dependabot
     # @param check_previous_version [Boolean] When true, checks if the previous version
     #   was vulnerable instead of the current version. This prevents security updates
     #   from being filtered out after the dependency has already been updated in group scenarios.
+    #
+    # NOTE: update-types (semver-based filtering) is handled in ignore_conditions_for,
+    # not here — allowed_update? runs pre-resolution when only the current version is
+    # known, and semver-level filtering needs version ranges computed from that version.
     #
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
@@ -430,10 +443,16 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def ignore_conditions_for(dependency)
-      update_config.ignored_versions_for(
+      conditions = update_config.ignored_versions_for(
         dependency,
         security_updates_only: security_updates_only?
       )
+
+      # Supplement with implicit ignore ranges derived from allow update-types.
+      # allow update-types cannot be checked in allowed_update? because it runs
+      # pre-resolution when only the current version is known. Version ranges
+      # only need the current version — the same mechanism as ignore update-types.
+      conditions + ignored_versions_from_allowed_update_types(dependency) + blocked_versions_for(dependency)
     end
 
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
@@ -449,27 +468,164 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).void }
     def log_ignore_conditions_for(dependency)
       conditions = ignore_conditions.select { |ic| name_match?(ic["dependency-name"], dependency.name) }
-      return if conditions.empty?
+      if conditions.any?
+        Dependabot.logger.info("Ignored versions:")
+        conditions.each do |ic|
+          unless ic["version-requirement"].nil?
+            Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
+          end
 
-      Dependabot.logger.info("Ignored versions:")
-      conditions.each do |ic|
-        unless ic["version-requirement"].nil?
-          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
-        end
-
-        ic["update-types"]&.each do |update_type|
-          msg = "  #{update_type} - from #{ic['source']}"
-          msg += " (doesn't apply to security update)" if security_updates_only?
-          Dependabot.logger.info(msg)
+          ic["update-types"]&.each do |update_type|
+            msg = "  #{update_type} - from #{ic['source']}"
+            msg += " (doesn't apply to security update)" if security_updates_only?
+            Dependabot.logger.info(msg)
+          end
         end
       end
+
+      log_blocked_versions_for(dependency)
     end
 
     private
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def blocked_versions_for(dependency)
+      matching_blocked_entries(dependency).filter_map do |bv|
+        version = bv["version"].strip
+        version.empty? ? nil : version
+      end
+    end
+
+    sig { params(dependency: Dependabot::Dependency).void }
+    def log_blocked_versions_for(dependency)
+      entries = matching_blocked_entries(dependency).filter_map do |bv|
+        version = bv["version"].strip
+        next if version.empty?
+
+        reason = bv["reason"].is_a?(String) ? bv["reason"].strip : nil
+        { version: version, reason: reason&.empty? ? nil : reason }
+      end
+      return if entries.empty?
+
+      Dependabot.logger.info("Blocked versions (by GitHub Security):")
+      entries.each do |entry|
+        msg = "  #{entry[:version]}"
+        msg += " - reason: #{entry[:reason]}" if entry[:reason]
+        Dependabot.logger.info(msg)
+      end
+    end
+
+    sig do
+      params(dependency: Dependabot::Dependency)
+        .returns(T::Array[T::Hash[String, T.untyped]])
+    end
+    def matching_blocked_entries(dependency)
+      normaliser = name_normaliser
+      normalized_dep_name = T.must(normaliser).call(dependency.name)
+
+      blocked_versions
+        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
+        .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
+    end
+
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
       ignore_conditions_for(dependency).any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
+    end
+
+    # Derives implicit ignore version ranges from allow rules that specify update-types.
+    # For example, if allow says only "semver-patch", this computes ignore ranges for
+    # major and minor — using the same mechanism as IgnoreCondition#versions_by_type.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def ignored_versions_from_allowed_update_types(dependency)
+      return [] if security_updates_only?
+
+      permitted_types = collect_permitted_update_types(dependency)
+      return [] if permitted_types.empty?
+
+      disallowed_types = Dependabot::Updater::UpdateTypeHelper::ALL_SEMVER_UPDATE_TYPES - permitted_types
+
+      version = version_for_dependency(dependency)
+      return [] unless version
+
+      disallowed_types.flat_map do |t|
+        case t
+        when Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+          version.ignored_patch_versions
+        when Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE
+          version.ignored_minor_versions
+        when Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE
+          version.ignored_major_versions
+        else
+          []
+        end
+      end.compact
+    end
+
+    # Collects the union of update-types from all matching allow rules for a dependency.
+    # Returns empty if no matching rules specify update-types (meaning no filtering needed).
+    # If any matching rule lacks update-types, it permits all types — returns empty.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def collect_permitted_update_types(dependency)
+      matching_rules = matching_allow_rules(dependency)
+      return [] if matching_rules.empty?
+
+      # If any matching rule lacks update-types, it permits all types
+      return [] if matching_rules.any? { |r| allow_rule_permits_all_types?(r) }
+
+      matching_rules
+        .flat_map { |r| r.fetch("update-types", []) }
+        .filter_map { |t| t.is_a?(String) ? t.downcase.strip : nil }
+        .select { |t| Dependabot::Updater::UpdateTypeHelper::ALL_SEMVER_UPDATE_TYPES.include?(t) }
+        .uniq
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[String, T.untyped]]) }
+    def matching_allow_rules(dependency)
+      allowed_updates.select do |update|
+        allow_rule_matches_dependency?(update, dependency)
+      end
+    end
+
+    sig { params(update: T::Hash[String, T.untyped], dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def allow_rule_matches_dependency?(update, dependency)
+      condition_name = update.fetch("dependency-name", nil)
+      return false if condition_name && !name_match?(condition_name, dependency.name)
+
+      dep_type = update.fetch("dependency-type", nil)
+      return true if dep_type.nil? || dep_type == "all"
+
+      # Indirect deps don't match top-level type rules (matching allowed_update? behavior)
+      return false if dependency.requirements.none? && TOP_LEVEL_DEPENDENCY_TYPES.include?(dep_type)
+
+      case dep_type
+      when "production" then dependency.production?
+      when "development" then !dependency.production?
+      when "direct" then dependency.requirements.any?
+      when "indirect" then dependency.requirements.none?
+      else true
+      end
+    end
+
+    sig { params(rule: T::Hash[String, T.untyped]).returns(T::Boolean) }
+    def allow_rule_permits_all_types?(rule)
+      !rule.key?("update-types") || !rule["update-types"].is_a?(Array) || rule["update-types"].empty?
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Version)) }
+    def version_for_dependency(dependency)
+      version_str = dependency.version
+      return nil if version_str.nil? || version_str.empty?
+
+      version_class = begin
+        Dependabot::Utils.version_class_for_package_manager(dependency.package_manager)
+      rescue StandardError
+        Dependabot::Version
+      end
+
+      return nil unless version_class.correct?(version_str)
+
+      version_class.new(version_str)
     end
 
     sig { void }

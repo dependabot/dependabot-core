@@ -197,6 +197,124 @@ RSpec.describe Dependabot::GoModules::DependencyGrapher do
           expect(all_children).not_to include("pkg:golang/go@1.24.0")
         end
       end
+
+      describe "when go mod graph fails" do
+        context "with an unexpected error" do
+          # This scenario creates a condition where the go mod graph fails in a way that isn't trapped
+          # by a descendent of Dependabot::DependabotError.
+          #
+          # This is not likely to happen under most conditions, but this helps us capture the behaviour
+          # in the event of a programming error.
+          let(:go_mod_graph_error) { StandardError.new("something unexpected happened") }
+
+          before do
+            allow(parser).to receive(:run_in_parsed_context).and_call_original
+            allow(parser).to receive(:run_in_parsed_context).with("go mod graph").and_raise(go_mod_graph_error)
+          end
+
+          it "sets the error flag without raising" do
+            grapher.resolved_dependencies
+
+            expect(grapher.errored_fetching_subdependencies).to be(true)
+          end
+
+          it "assigns the original error to the grapher" do
+            grapher.resolved_dependencies
+
+            expect(grapher.subdependency_error).to eql(go_mod_graph_error)
+          end
+
+          it "returns empty dependencies collections for all resolved packages" do
+            depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
+
+            expect(depends_on_values).to all(be_empty)
+          end
+        end
+
+        context "with a non-existent dependency" do
+          let(:go_mod) do
+            Dependabot::DependencyFile.new(
+              name: "go.mod",
+              content: fixture("projects", "non_existent_dependency", "go.mod"),
+              directory: "/"
+            )
+          end
+
+          it "sets the error flag without raising" do
+            grapher.resolved_dependencies
+
+            expect(grapher.errored_fetching_subdependencies).to be(true)
+          end
+
+          it "re-raises the original error as GitDependenciesNotReachable" do
+            grapher.resolved_dependencies
+
+            expect(grapher.subdependency_error).to be_a(Dependabot::GitDependenciesNotReachable)
+          end
+
+          it "returns empty dependencies collections for all resolved packages" do
+            depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
+
+            expect(depends_on_values).to all(be_empty)
+          end
+        end
+
+        context "with an unreachable dependency" do
+          let(:go_mod) do
+            Dependabot::DependencyFile.new(
+              name: "go.mod",
+              content: fixture("projects", "unreachable_dependency", "go.mod"),
+              directory: "/"
+            )
+          end
+
+          it "sets the error flag without raising" do
+            grapher.resolved_dependencies
+
+            expect(grapher.errored_fetching_subdependencies).to be(true)
+          end
+
+          it "re-raises it as GitDependenciesNotReachable" do
+            grapher.resolved_dependencies
+
+            expect(grapher.subdependency_error).to be_a(Dependabot::GitDependenciesNotReachable)
+          end
+
+          it "returns empty dependencies collections for all resolved packages" do
+            depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
+
+            expect(depends_on_values).to all(be_empty)
+          end
+        end
+
+        context "with a revision that doesn't exist" do
+          let(:go_mod) do
+            Dependabot::DependencyFile.new(
+              name: "go.mod",
+              content: fixture("projects", "unknown_revision", "go.mod"),
+              directory: "/"
+            )
+          end
+
+          it "sets the error flag without raising" do
+            grapher.resolved_dependencies
+
+            expect(grapher.errored_fetching_subdependencies).to be(true)
+          end
+
+          it "re-raises it as DependencyFileNotResolvable" do
+            grapher.resolved_dependencies
+
+            expect(grapher.subdependency_error).to be_a(Dependabot::DependencyFileNotResolvable)
+          end
+
+          it "returns empty dependencies collections for all resolved packages" do
+            depends_on_values = grapher.resolved_dependencies.map { |_, dep| dep.dependencies }
+
+            expect(depends_on_values).to all(be_empty)
+          end
+        end
+      end
     end
   end
 end

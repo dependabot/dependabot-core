@@ -10,6 +10,7 @@ on:  # yamllint disable-line rule:truthy
   pull_request:
     paths:
       - .github/workflows/copilot-setup-steps.yml
+permissions: {}
 
 jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
@@ -29,13 +30,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
           persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
+        uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
         with:
           bundler-cache: true
 

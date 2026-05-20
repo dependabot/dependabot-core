@@ -640,7 +640,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
           allow(Dependabot.logger).to receive(:info)
 
           # Mock cooldown period check - return true for recent time, false for old time
-          allow(checker).to receive(:cooldown_period?) do |release_time|
+          allow(checker).to receive(:cooldown_period?) do |release_time, _version|
             (Time.now.to_i - release_time.to_i) < (24 * 60 * 60) # 24 hours
           end
 
@@ -781,7 +781,14 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
     end
 
     describe "#cooldown_period?" do
-      let(:cooldown_options) { instance_double(Dependabot::Package::ReleaseCooldownOptions) }
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 1,
+          semver_major_days: 7,
+          semver_minor_days: 3,
+          semver_patch_days: 1
+        )
+      end
       let(:checker) do
         described_class.new(
           dependency: dependency,
@@ -791,23 +798,19 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         )
       end
 
-      before do
-        allow(cooldown_options).to receive(:default_days).and_return(1) # 1 day cooldown
-      end
-
       context "when release is within cooldown period" do
         let(:recent_release) { Time.now - (12 * 60 * 60) } # 12 hours ago
 
-        it "returns true" do
-          expect(checker.send(:cooldown_period?, recent_release)).to be true
+        it "returns true for a patch bump" do
+          expect(checker.send(:cooldown_period?, recent_release, "0.33.1")).to be true
         end
       end
 
       context "when release is outside cooldown period" do
         let(:old_release) { Time.now - (48 * 60 * 60) } # 48 hours ago
 
-        it "returns false" do
-          expect(checker.send(:cooldown_period?, old_release)).to be false
+        it "returns false for a patch bump" do
+          expect(checker.send(:cooldown_period?, old_release, "0.33.1")).to be false
         end
       end
 
@@ -823,7 +826,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
         it "returns false" do
           release_time = Time.now - (12 * 60 * 60)
-          expect(checker.send(:cooldown_period?, release_time)).to be false
+          expect(checker.send(:cooldown_period?, release_time, "0.34.0")).to be false
         end
       end
     end
@@ -897,23 +900,32 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
         sort_key_one_two_zero = checker.send(:version_sort_key, "1.2.0")
         sort_key_one_ten_zero = checker.send(:version_sort_key, "1.10.0")
 
-        expect(sort_key_one_zero_zero).to eq([1, 0, 0])
-        expect(sort_key_one_two_zero).to eq([1, 2, 0])
-        expect(sort_key_one_ten_zero).to eq([1, 10, 0])
+        # Verify the sort keys return Version objects with correct values
+        expect(sort_key_one_zero_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_zero_zero.to_s).to eq("1.0.0")
 
-        # Verify correct ordering
+        expect(sort_key_one_two_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_two_zero.to_s).to eq("1.2.0")
+
+        expect(sort_key_one_ten_zero).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key_one_ten_zero.to_s).to eq("1.10.0")
+
+        # Verify correct semantic version ordering (1.0.0 < 1.2.0 < 1.10.0)
         expect(sort_key_one_zero_zero <=> sort_key_one_two_zero).to eq(-1)
         expect(sort_key_one_two_zero <=> sort_key_one_ten_zero).to eq(-1)
+        expect(sort_key_one_zero_zero <=> sort_key_one_ten_zero).to eq(-1)
       end
 
       it "handles version prefixes" do
         sort_key = checker.send(:version_sort_key, "v1.2.3")
-        expect(sort_key).to eq([1, 2, 3])
+        expect(sort_key).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key.to_s).to eq("v1.2.3")
       end
 
       it "handles non-numeric version parts" do
         sort_key = checker.send(:version_sort_key, "1.2.beta")
-        expect(sort_key).to eq([1, 2, 0])
+        expect(sort_key).to be_a(Dependabot::Bazel::Version)
+        expect(sort_key.to_s).to eq("1.2.beta")
       end
     end
   end
@@ -991,7 +1003,14 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
   end
 
   describe "cooldown integration" do
-    let(:cooldown_options) { instance_double(Dependabot::Package::ReleaseCooldownOptions) }
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 1,
+        semver_major_days: 1,
+        semver_minor_days: 1,
+        semver_patch_days: 1
+      )
+    end
     let(:checker_with_cooldown) do
       described_class.new(
         dependency: dependency,
@@ -1002,8 +1021,6 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
     end
 
     before do
-      allow(cooldown_options).to receive(:included?).with("rules_go").and_return(true)
-      allow(cooldown_options).to receive(:default_days).and_return(1) # 1 day cooldown
       allow(Dependabot.logger).to receive(:info)
     end
 

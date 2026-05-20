@@ -8,7 +8,7 @@ module Dependabot
   module Bazel
     class FileFetcher < Dependabot::FileFetchers::Base
       # Fetches .bzl files and their dependencies recursively.
-      # Handles load() and Label() statements to build a complete dependency graph.
+      # Handles load() statements to build a complete dependency graph.
       class BzlFileFetcher
         extend T::Sig
 
@@ -42,7 +42,7 @@ module Dependabot
         sig { returns(T::Set[String]) }
         attr_reader :visited_bzl_files
 
-        # Fetches .bzl files recursively, following their load() and Label() dependencies.
+        # Fetches .bzl files recursively, following their load() dependencies.
         sig { params(paths: T::Array[String]).returns(T::Array[DependencyFile]) }
         def fetch_bzl_files_recursively(paths)
           files = T.let([], T::Array[DependencyFile])
@@ -89,7 +89,7 @@ module Dependabot
           end
         end
 
-        # Extracts file dependencies from load() and Label() statements.
+        # Extracts .bzl file dependencies from load() statements.
         # Only extracts workspace-relative (//...) and file-relative (:...) paths.
         # External Bazel repositories (@repo//...) are excluded since those files
         # exist in different repositories, not the current one being analyzed.
@@ -99,11 +99,6 @@ module Dependabot
           file_dir = File.dirname(file_path)
 
           content.scan(%r{load\s*\(\s*"(//[^"]+|:[^"]+)"}) do |match|
-            path = PathConverter.label_to_path(match[0], context_dir: file_dir)
-            paths << path unless path.empty?
-          end
-
-          content.scan(%r{Label\s*\(\s*"(//[^"]+|:[^"]+)"\)}) do |match|
             path = PathConverter.label_to_path(match[0], context_dir: file_dir)
             paths << path unless path.empty?
           end

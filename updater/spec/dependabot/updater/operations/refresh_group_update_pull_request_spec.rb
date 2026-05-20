@@ -213,20 +213,193 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
+        allow(mock_service).to receive(:close_pull_request)
       end
 
-      it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-        # As per this implementation, if a dependency is part of overlapping groups
-        # Both the groups condition will be validated and the dependency will be updated in both the groups PRs.
-        # It is up to customer to decide which group should take precedence and update the dependency accordingly
-        expect(mock_service).not_to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+      it "closes the PR since the generic group is empty after specificity filtering" do
+        # With specificity enforcement, the '*' group has no dependencies because
+        # all deps match the more specific 'dummy-pkg-*' and 'dummy-pkg-d' groups.
+        expect(mock_service).to receive(:close_pull_request).with(anything, anything)
 
         refresh_group.perform
+      end
+    end
 
-        # It added all of the other existing grouped PRs to the handled list
-        expect(dependency_snapshot.handled_dependencies).to match_array(
-          %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
-             dummy-pkg-d)
+    context "when there is a PR for an overlapping group but from a different directory" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(mock_service).to receive(:update_pull_request)
+        allow(mock_service).to receive(:close_pull_request)
+        allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "dependency-version" => "1.2.0",
+                  "directory" => "/packages/other"
+                },
+                {
+                  "dependency-name" => "dummy-pkg-c",
+                  "dependency-version" => "1.0.0",
+                  "directory" => "/packages/other"
+                }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-d",
+                  "dependency-version" => "0.1.0",
+                  "directory" => "/packages/other"
+                }
+              ]
+            }
+          ]
+        )
+      end
+
+      it "does not mark the overlapping groups as handled" do
+        refresh_group.perform
+
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "overlapping-group"), anything
+        )
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "something-else"), anything
+        )
+      end
+    end
+
+    context "when there is a PR for an overlapping group from the same directory" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(mock_service).to receive(:close_pull_request)
+        allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "dependency-version" => "1.2.0",
+                  "directory" => "/"
+                },
+                {
+                  "dependency-name" => "dummy-pkg-c",
+                  "dependency-version" => "1.0.0",
+                  "directory" => "/"
+                }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                {
+                  "dependency-name" => "dummy-pkg-d",
+                  "dependency-version" => "0.1.0",
+                  "directory" => "/"
+                }
+              ]
+            }
+          ]
+        )
+      end
+
+      it "closes the PR since the generic group is empty after specificity filtering" do
+        # With specificity enforcement, the '*' group has no dependencies because
+        # all deps match the more specific 'dummy-pkg-*' and 'dummy-pkg-d' groups.
+        refresh_group.perform
+
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "overlapping-group"), anything
+        )
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "something-else"), anything
+        )
+      end
+    end
+
+    context "when there is a PR for an overlapping group with no directory info" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(mock_service).to receive(:close_pull_request)
+        allow(dependency_snapshot).to receive(:mark_group_handled).and_call_original
+        allow(job).to receive(:existing_group_pull_requests).and_return(
+          [
+            {
+              "dependency-group-name" => "everything-everywhere-all-at-once",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.1.5" }
+              ]
+            },
+            {
+              "dependency-group-name" => "overlapping-group",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" },
+                { "dependency-name" => "dummy-pkg-c", "dependency-version" => "1.0.0" }
+              ]
+            },
+            {
+              "dependency-group-name" => "something-else",
+              "dependencies" => [
+                { "dependency-name" => "dummy-pkg-d", "dependency-version" => "0.1.0" }
+              ]
+            }
+          ]
+        )
+      end
+
+      it "closes the PR since the generic group is empty after specificity filtering" do
+        # With specificity enforcement, the '*' group has no dependencies,
+        # so the refresh closes the PR rather than processing group dependencies.
+        refresh_group.perform
+
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "overlapping-group"), anything
+        )
+        expect(dependency_snapshot).not_to have_received(:mark_group_handled).with(
+          having_attributes(name: "something-else"), anything
         )
       end
     end
@@ -363,37 +536,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       stub_rubygems_calls
     end
 
-    context "when group membership enforcement is disabled" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement)
-          .and_return(false)
-      end
-
-      it "creates GroupDependencySelector but does not filter" do
-        # When feature flag is disabled, GroupDependencySelector is created but filtering is skipped internally
-        mock_selector = instance_double(Dependabot::Updater::GroupDependencySelector)
-        allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)
-          .and_return(mock_selector)
-        allow(mock_selector).to receive(:filter_to_group!) # No-op when feature flag disabled
-
-        refresh_group.send(:dependency_change)
-
-        expect(Dependabot::Updater::GroupDependencySelector).to have_received(:new)
-        expect(mock_selector).to have_received(:filter_to_group!)
-      end
-    end
-
-    context "when group membership enforcement is enabled" do
+    context "when filtering group dependencies" do
       let(:mock_selector) { instance_double(Dependabot::Updater::GroupDependencySelector) }
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:group_membership_enforcement)
-          .and_return(true)
-      end
 
       it "creates and uses GroupDependencySelector to filter dependencies" do
         allow(Dependabot::Updater::GroupDependencySelector).to receive(:new)

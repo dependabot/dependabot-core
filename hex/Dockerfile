@@ -1,10 +1,11 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
   gnupg2 sudo curl apt-transport-https
 
-ARG ERLANG_MAJOR_VERSION=26
+ARG ERLANG_MAJOR_VERSION=27
 
 # This is using https://www.rabbitmq.com/docs/install-debian#apt-launchpad-erlang to install erlang. Previously, esl-erlang was used, but it does not
 # contain arm architecture packages. The base `apt` erlang version should not be used--it is too old.
@@ -28,8 +29,8 @@ RUN apt-get update \
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.18.4
-ARG ELIXIR_CHECKSUM=11c97de2d8420f62b4c6728eb3e3c50298293b82725ae528cb5eb1f1ac5bd868
+ARG ELIXIR_VERSION=v1.19.5
+ARG ELIXIR_CHECKSUM=1ab3154ec19adcd4b764cf96badecbe44df5ec6f358dc0fbe29c3749ff6c08de
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
@@ -41,10 +42,9 @@ USER dependabot
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases
-ENV HEX_VERSION="2.2.2"
+ENV HEX_VERSION="2.3.1"
 ENV HEX_CACERTS_PATH=/etc/ssl/certs/ca-certificates.crt
 RUN bash /opt/hex/helpers/build
 
-COPY --chown=dependabot:dependabot hex $DEPENDABOT_HOME/hex
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents hex common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

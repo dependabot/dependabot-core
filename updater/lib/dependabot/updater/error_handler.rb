@@ -35,7 +35,7 @@ module Dependabot
           Errno::ENOSPC => "out_of_disk",
           Octokit::Unauthorized => "octokit_unauthorized"
         }.freeze,
-        T::Hash[Module, String]
+        T::Hash[T::Module[T.anything], String]
       )
 
       sig { params(service: Service, job: Job).void }

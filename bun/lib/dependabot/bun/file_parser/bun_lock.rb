@@ -32,6 +32,16 @@ module Dependabot
             raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
             raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
 
+            # configVersion was introduced in Bun v1.3.2 to control install behavior.
+            # When present, it must be preserved or Bun will use different install defaults.
+            # See https://bun.sh/blog/bun-v1.3.2#lockfile-configversion-stabilizes-install-defaults
+            if content.key?("configVersion")
+              config_version = content["configVersion"]
+              unless config_version.is_a?(Integer) && config_version >= 0
+                raise_invalid!("expected 'configVersion' to be a non-negative integer")
+              end
+            end
+
             T.let(content, T.untyped)
           end
         end

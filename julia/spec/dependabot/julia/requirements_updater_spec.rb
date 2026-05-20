@@ -50,6 +50,19 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         ["0.6, 0.7, 0.8", "0.9.0", "0.6, 0.7, 0.8, 0.9"],
         ["1.2,1.3", "2.0.0", "1.2,1.3,2.0"],
         ["1.2, 1.3", "2.0.0", "1.2, 1.3, 2.0"]
+      ],
+      "does not append when target is already included in existing range (issue #13938)" => [
+        # Major-only version covers all minor/patch within that major
+        ["2", "2.6.0", "2"],
+        ["2", "2.99.99", "2"],
+        # Mixed caret and plain versions - target is covered by plain major version
+        ["^1.10, 2", "2.6.0", "^1.10, 2"],
+        # Multiple caret specs with major version - target covered by '1'
+        ["^0.20, ^0.21, 1", "1.3.0", "^0.20, ^0.21, 1"],
+        # Target version exactly at the range boundary (still included)
+        ["1", "1.0.0", "1"],
+        # Caret spec covering the target
+        ["^2.0", "2.6.0", "^2.0"]
       ]
     }.each do |description, test_cases|
       context "when #{description}" do

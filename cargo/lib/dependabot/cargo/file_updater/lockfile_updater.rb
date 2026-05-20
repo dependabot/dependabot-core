@@ -217,8 +217,10 @@ module Dependabot
         def run_cargo_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.setup_credentials_in_environment(credentials)
-          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTRIES_/) }
+          Helpers.bypass_cargo_credential_providers
+          # Pass through any cargo registry configuration via environment variables
+          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
+          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
@@ -289,6 +291,10 @@ module Dependabot
         def using_old_toolchain?(message)
           return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
 
+          # Detect rustup installation failures for old toolchains (e.g. "syncing channel updates for 1.67-x86_64-...")
+          rustup_channel = /syncing channel updates for (?<version>\d+\.\d+)-/.match(message)
+          return version_class.new(rustup_channel[:version]) < version_class.new("1.68") if rustup_channel
+
           version_log = /rust version (?<version>\d.\d+)/.match(message)
           return false unless version_log
 
@@ -300,12 +306,13 @@ module Dependabot
           write_temporary_manifest_files
           write_temporary_path_dependency_files
 
-          File.write(lockfile.name, lockfile.content)
+          File.write(lockfile.name, replace_ssh_urls(T.must(lockfile.content)))
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          return unless config
+          config_file = config
+          return unless config_file
 
-          FileUtils.mkdir_p(File.dirname(T.must(config).name))
-          File.write(T.must(config).name, T.must(config).content)
+          FileUtils.mkdir_p(File.dirname(config_file.name))
+          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
         end
 
         sig { void }

@@ -67,10 +67,22 @@ try {
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
+        -testDirectory "global-json-discovery-deep" `
+        -directories @("/src/client") `
+        -installedSdks @("8.0.404", "9.0.101") `
+        -expectedSdksToInstall @("1.2.3")
+
+    Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-recursive-wildcard" `
         -directories @("/**") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
+
+    Test-GlobalJsonVersions `
+        -testDirectory "global-json-discovery-recursive-wildcard-skip-root" `
+        -directories @("/src/**") `
+        -installedSdks @("8.0.404", "9.0.101") `
+        -expectedSdksToInstall @("1.2.3", "4.5.6")
 
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-recursive-wildcard" `
@@ -150,6 +162,25 @@ try {
             '  <packageSources>',
             '    <add key="nuget_source_1" value="https://nuget.example.com/1/index.json" />',
             '    <add key="nuget_source_2" value="https://nuget.example.com/2/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "insecure-connections" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"http://nuget.example.com/insecure/index.json"}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="http://nuget.example.com/insecure/index.json" allowInsecureConnections="true" />',
             '  </packageSources>',
             '</configuration>'
         )

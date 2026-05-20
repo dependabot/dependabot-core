@@ -514,8 +514,6 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           headers: {}
         )
         allow(Time).to receive(:now).and_return(Time.parse("2024-06-13T17:30:00.000Z"))
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout).and_return(false)
       end
 
       it "filters out latest version from latest version list" do
@@ -807,6 +805,54 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
+
+    context "when workspace root is missing" do
+      let(:stderr) do
+        "Found a pubspec.yaml at dependabot_tmp_dir/packages/geo_ip_client. " \
+          "But it has resolution `workspace`.\n" \
+          "But found no workspace root including it in parent directories."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when dependency_services is not run from workspace root" do
+      let(:stderr) { "Only apply dependency_services to the root of the workspace." }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when pubspec.yaml has duplicate mapping keys" do
+      let(:stderr) { "Error on line 39, column 3 of pubspec.yaml: Duplicate mapping key." }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when pubspec.yaml name doesn't match expected name" do
+      let(:stderr) do
+        "Error on line 1, column 7: \"name\" field doesn't match expected name \"flutter_shortcuts\"."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when pubspec.yaml name field is not a string" do
+      let(:stderr) do
+        "Error on line 1, column 7 of pubspec.yaml: \"name\" field must be a String."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
   end
 
   context "with a git dependency" do
@@ -955,24 +1001,22 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "when loading a YAML file with alias" do
-    fixture = "spec/fixtures/projects/yaml_alias/"
-    alias_info_file = "pubspec_alias_true.yaml"
-    non_alias_info_file = "pubspec.yaml"
+    let(:fixture) { "spec/fixtures/projects/yaml_alias/" }
+    let(:alias_info_file) { "pubspec_alias_true.yaml" }
+    let(:non_alias_info_file) { "pubspec.yaml" }
+
     it "parses a alias contained YAML file with aliases: true" do
-      yaml_object = File.open(fixture + alias_info_file, "r")
-      data = yaml_object.read
+      data = File.read(fixture + alias_info_file)
       expect { YAML.safe_load(data, aliases: true) }.not_to raise_error
     end
 
     it "parses a alias contained YAML file with aliases: false" do
-      yaml_object = File.open(fixture + alias_info_file, "r")
-      data = yaml_object.read
+      data = File.read(fixture + alias_info_file)
       expect { YAML.safe_load(data, aliases: false) }.to raise_error(Psych::AliasesNotEnabled)
     end
 
     it "parses a no alias YAML file with aliases: true" do
-      yaml_object = File.open(fixture + non_alias_info_file, "r")
-      data = yaml_object.read
+      data = File.read(fixture + non_alias_info_file)
       expect { YAML.safe_load(data, aliases: true) }.not_to raise_error
     end
   end

@@ -309,6 +309,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to eq(head_sha) }
 
+      it "only checks cloned_commit once" do
+        expect(file_fetcher_instance).to receive(:cloned_commit).once.and_call_original
+
+        commit
+      end
+
       context "with warnings from git rev-parse" do
         before do
           # Git no longer allows you to create a branch or symbolic ref named HEAD
@@ -1468,6 +1474,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
             it { is_expected.to be_a(Dependabot::DependencyFile) }
           end
+        end
+      end
+
+      context "with a file containing UTF-8 BOM" do
+        let(:bom) { "\xEF\xBB\xBF" }
+        let(:fill_repo) do
+          # Write file with UTF-8 BOM prefix
+          File.binwrite("requirements.txt", "#{bom}#{contents}")
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to eq(contents) }
         end
       end
 

@@ -114,10 +114,22 @@ internal static class CompatibilityChecker
             }
         }
 
-        var refItems = await readers.ContentReader.GetReferenceItemsAsync(cancellationToken);
+        var refItems = (await readers.ContentReader.GetReferenceItemsAsync(cancellationToken)).ToArray();
         foreach (var refItem in refItems)
         {
             tfms.Add(refItem.TargetFramework);
+        }
+
+        var libItems = (await readers.ContentReader.GetLibItemsAsync(cancellationToken)).ToArray();
+        foreach (var libItem in libItems)
+        {
+            tfms.Add(libItem.TargetFramework);
+        }
+
+        // if a package contains no assemblies that need to be referenced, we can consider it compatible with all frameworks
+        if (refItems.Length == 0 && libItems.Length == 0)
+        {
+            tfms.Clear();
         }
 
         if (!tfms.Any())

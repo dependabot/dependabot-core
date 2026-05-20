@@ -7,6 +7,9 @@ common: &common
 bazel:
   - *common
   - 'bazel/**'
+deno:
+  - *common
+  - 'deno/**'
 github_actions:
   - *common
   - 'github_actions/**'
@@ -47,12 +50,18 @@ hex:
 maven:
   - *common
   - 'maven/**'
+nix:
+  - *common
+  - 'nix/**'
 npm_and_yarn:
   - *common
   - 'npm_and_yarn/**'
 nuget:
   - *common
   - 'nuget/**'
+pre_commit:
+  - *common
+  - 'pre_commit/**'
 python:
   - *common
   - 'python/**'
@@ -65,6 +74,10 @@ git_submodules:
 rust_toolchain:
   - *common
   - 'rust_toolchain/**'
+sbt:
+  - *common
+  - 'sbt/**'
+  - 'maven/**'
 swift:
   - *common
   - 'swift/**'

@@ -137,7 +137,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_graph_error",
+          error_type: "unknown_update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records the a update job unknown error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_unknown_error).with(
-          error_type: "update_graph_error",
+          error_type: "unknown_update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
-          error_type: "update_graph_error",
+          error_type: "unknown_update_graph_error",
           error_details: {
             Dependabot::ErrorAttributes::BACKTRACE => an_instance_of(String),
             Dependabot::ErrorAttributes::MESSAGE => "hell",

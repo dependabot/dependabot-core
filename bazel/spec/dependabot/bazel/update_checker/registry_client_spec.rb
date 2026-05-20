@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "ostruct"
 require "base64"
 require "octokit"
 require "dependabot/bazel/update_checker"
@@ -165,7 +164,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         # Simulate GitHub API returning base64 encoded content
         encoded_content = Base64.encode64(source_content)
-        github_response = OpenStruct.new(content: encoded_content)
+        github_response = Data.define(:content).new(encoded_content)
 
         allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go/0.57.0/source.json"))
@@ -195,7 +194,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
       it "returns nil and logs warning" do
         # Simulate GitHub API returning base64 encoded invalid content
         encoded_content = Base64.encode64("invalid json content")
-        github_response = OpenStruct.new(content: encoded_content)
+        github_response = Data.define(:content).new(encoded_content)
 
         allow(octokit_client).to receive(:contents)
           .and_return(github_response)
@@ -223,7 +222,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RegistryClient do
 
         # Simulate GitHub API returning base64 encoded content
         encoded_content = Base64.encode64(module_content)
-        github_response = OpenStruct.new(content: encoded_content)
+        github_response = Data.define(:content).new(encoded_content)
 
         allow(octokit_client).to receive(:contents)
           .with("bazelbuild/bazel-central-registry", hash_including(path: "modules/rules_go/0.57.0/MODULE.bazel"))

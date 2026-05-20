@@ -14,7 +14,7 @@ module Dependabot
   class UpdateGraphCommand < BaseCommand
     extend T::Sig
 
-    ERROR_TYPE_LABEL = "update_graph_error"
+    ERROR_TYPE_LABEL = "unknown_update_graph_error"
 
     sig { params(fetched_files: Dependabot::FetchedFiles).void }
     def initialize(fetched_files)

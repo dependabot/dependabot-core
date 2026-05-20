@@ -971,6 +971,69 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
     end
+
+    context "when path dependency is in the ignore list" do
+      let(:update_config) do
+        Dependabot::Config::UpdateConfig.new(
+          ignore_conditions: [
+            Dependabot::Config::IgnoreCondition.new(
+              dependency_name: "etag",
+              versions: [">= 0"]
+            )
+          ]
+        )
+      end
+      let(:file_fetcher_instance) do
+        described_class.new(
+          source: source,
+          credentials: credentials,
+          update_config: update_config
+        )
+      end
+
+      before do
+        # Stub the path dependency endpoint to return 404
+        stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url, "deps/etag?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url, "deps?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "skips the ignored path dependency without raising an error" do
+        # Should succeed without trying to fetch the ignored path dependency
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to contain_exactly("package.json", "package-lock.json")
+        expect(file_fetcher_instance.files.map(&:name))
+          .not_to include("deps/etag/package.json")
+      end
+
+      context "when there is also a lockfile with the path dep" do
+        before do
+          stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "package_lock_with_path_content.json"),
+              headers: json_header
+            )
+        end
+
+        it "skips building imitation path dependency for ignored dep" do
+          # Should succeed and not include the ignored path dependency
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name))
+            .to contain_exactly("package.json", "package-lock.json")
+          expect(file_fetcher_instance.files.map(&:name))
+            .not_to include("deps/etag/package.json")
+        end
+      end
+    end
   end
 
   context "with a path dependency in a yarn resolution" do

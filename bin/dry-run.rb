@@ -10,7 +10,7 @@
 # should always be up-to-date.
 #
 # Usage:
-#   ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER GITHUB_REPO
+#   bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER GITHUB_REPO
 #
 # ! You'll need to have a GitHub access token (a personal access token is
 # ! fine) available as the environment variable LOCAL_GITHUB_ACCESS_TOKEN.
@@ -38,6 +38,7 @@
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
+# - pre_commit
 # - pub
 # - rust_toolchain
 # - submodules
@@ -65,8 +66,8 @@ $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
+$LOAD_PATH << "./deno/lib"
 $LOAD_PATH << "./devcontainers/lib"
-$LOAD_PATH << "./docker_compose/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
@@ -78,11 +79,14 @@ $LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
+$LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
+$LOAD_PATH << "./sbt/lib"
 $LOAD_PATH << "./swift/lib"
 $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./opentofu/lib"
@@ -121,9 +125,9 @@ require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
+require "dependabot/deno"
 require "dependabot/devcontainers"
 require "dependabot/docker"
-require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -136,8 +140,10 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
+require "dependabot/sbt"
 require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/opentofu"
@@ -164,7 +170,9 @@ $options = {
   security_updates_only: false,
   vendor_dependencies: false,
   ignore_conditions: [],
+  blocked_versions: [],
   pull_request: false,
+  hostname: nil,
   cooldown: nil
 }
 
@@ -216,6 +224,12 @@ unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   # For example:
   # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
   $options[:ignore_conditions] = JSON.parse(ENV.fetch("IGNORE_CONDITIONS", nil))
+end
+
+unless ENV["BLOCKED_VERSIONS"].to_s.strip.empty?
+  # For example:
+  # [{"dependency-name":"event-stream","version":"= 3.3.6","reason":"malware"}]
+  $options[:blocked_versions] = JSON.parse(ENV.fetch("BLOCKED_VERSIONS", nil))
 end
 
 if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
@@ -338,6 +352,11 @@ option_parse = OptionParser.new do |opts|
     puts "Invalid JSON format for cooldown parameter. Please provide a valid JSON string."
     exit 1
   end
+
+  opts.on("--ghes-hostname HOSTNAME", "Custom hostname for the provider") do |value|
+    $options[:ghes_hostname] = value
+    $options[:api_endpoint] = File.join(value, "api", "v3")
+  end
 end
 # rubocop:enable Metrics/BlockLength
 
@@ -358,6 +377,7 @@ valid_package_managers = %w(
   cargo
   composer
   conda
+  deno
   devcontainers
   docker
   docker_compose
@@ -373,9 +393,11 @@ valid_package_managers = %w(
   npm_and_yarn
   nuget
   pip
+  pre_commit
   pub
   python
   rust_toolchain
+  sbt
   swift
   terraform
   opentofu
@@ -593,13 +615,20 @@ begin
     end
   end
 
-  $source = Dependabot::Source.new(
+  source_options = {
     provider: $options[:provider],
     repo: $repo_name,
     directory: $options[:directory],
     branch: $options[:branch],
     commit: $options[:commit]
-  )
+  }
+
+  if $options[:ghes_hostname]
+    source_options[:hostname] = $options[:ghes_hostname]
+    source_options[:api_endpoint] = $options[:api_endpoint]
+  end
+
+  $source = Dependabot::Source.new(**source_options)
 
   $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 
@@ -679,20 +708,31 @@ begin
   end
 
   def ignored_versions_for(dep)
-    if $options[:ignore_conditions].any?
-      ignore_conditions = $options[:ignore_conditions].map do |ic|
-        Dependabot::Config::IgnoreCondition.new(
-          dependency_name: ic["dependency-name"],
-          versions: [ic["version-requirement"]].compact,
-          update_types: ic["update-types"]
-        )
-      end
-      Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
-                                      .ignored_versions_for(dep,
-                                                            security_updates_only: $options[:security_updates_only])
-    else
-      $update_config.ignored_versions_for(dep)
-    end
+    versions = if $options[:ignore_conditions].any?
+                 ignore_conditions = $options[:ignore_conditions].map do |ic|
+                   Dependabot::Config::IgnoreCondition.new(
+                     dependency_name: ic["dependency-name"],
+                     versions: [ic["version-requirement"]].compact,
+                     update_types: ic["update-types"]
+                   )
+                 end
+                 Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions)
+                                                 .ignored_versions_for(
+                                                   dep,
+                                                   security_updates_only: $options[:security_updates_only]
+                                                 )
+               else
+                 $update_config.ignored_versions_for(dep)
+               end
+
+    versions + blocked_versions_for(dep)
+  end
+
+  def blocked_versions_for(dep)
+    $options[:blocked_versions]
+      .select { |bv| bv["dependency-name"] && bv["version"] }
+      .select { |bv| bv["dependency-name"].casecmp(dep.name).zero? }
+      .map { |bv| bv["version"] }
   end
 
   def security_advisories
@@ -750,6 +790,15 @@ begin
   end
 
   puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
+
+  if $options[:blocked_versions].any?
+    puts "=> blocked versions active:"
+    $options[:blocked_versions].each do |bv|
+      msg = "   #{bv['dependency-name']} #{bv['version']}"
+      msg += " (#{bv['reason']})" if bv["reason"]
+      puts msg
+    end
+  end
 
   # rubocop:disable Metrics/BlockLength
   checker_count = 0

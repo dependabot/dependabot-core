@@ -31,10 +31,6 @@ module Dependabot
 
       private
 
-      # TODO: Build subdependency in this class and assign here -or- assign metadata in the parser
-      #
-      # We can do whichever makes most sense on a case-by-case basis, for Go the trade off on
-      # doing this in the parser shouldn't add a huge overhead.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
         # go mod graph returns all dependencies it finds, even if it has been pruned. So filter those out.
@@ -89,6 +85,13 @@ module Dependabot
           rels[match[:parent]] ||= []
           rels[match[:parent]] << match[:child]
         end
+      rescue Dependabot::DependencyFileNotParseable => e
+        # Attempt to recategorise the error as related to repo resolvability
+        repo_error_regex = FileUpdater::GoModUpdater::REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| e.message =~ r }
+        ResolvabilityErrors.handle(e.message) if repo_error_regex
+
+        # Re-raise the original error if it isn't a resolvability problem.
+        raise e
       end
     end
   end

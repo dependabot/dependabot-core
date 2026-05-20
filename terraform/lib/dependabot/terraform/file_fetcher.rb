@@ -94,8 +94,9 @@ module Dependabot
           end
         end
 
-        # NOTE: The `support_file` attribute is not used but we set this to
-        # match what we do in other ecosystems
+        # NOTE: Mark local module files as support files. The FileParser will
+        # still parse provider requirements from these files, but will skip
+        # module declarations (since we can't update local path modules)
         terraform_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
 

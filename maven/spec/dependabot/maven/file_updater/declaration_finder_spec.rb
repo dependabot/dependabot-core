@@ -433,7 +433,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         {
           requirement: dependency_version,
           file: "pom.xml",
-          groups: [],
+          groups: ["plugin"],
           source: nil,
           metadata: { packaging_type: "jar", property_name: "kotlin.version" }
         }

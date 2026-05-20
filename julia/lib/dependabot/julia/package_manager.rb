@@ -11,7 +11,8 @@ module Dependabot
     class PackageManager < Ecosystem::VersionManager
       extend T::Sig
 
-      PACKAGE_MANAGER_COMMAND = T.let("julia", String)
+      ECOSYSTEM = T.let("julia", String)
+      PACKAGE_MANAGER = T.let("julia", String)
       # Julia versions as of June 2025:
       # - 1.10 is the LTS (Long Term Support) version
       # - 1.12 is the current stable version

@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/conda/conda_registry_client"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 
 RSpec.describe Dependabot::Conda::CondaRegistryClient do
   subject(:client) { described_class.new }

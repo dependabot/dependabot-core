@@ -102,13 +102,19 @@ func prChecker(prType string) func(s *script.State, args ...string) (script.Wait
 		scanner := bufio.NewScanner(strings.NewReader(s.Stdout()))
 		var totalPRsCreated int
 		for scanner.Scan() {
+			var msg struct {
+				Type string `json:"type"`
+			}
+			if err := json.Unmarshal([]byte(scanner.Text()), &msg); err != nil {
+				return nil, fmt.Errorf("failed to decode line %s: %w", scanner.Text(), err)
+			}
+			if msg.Type != prType {
+				continue
+			}
 			var pr CreatePR
 			err := json.Unmarshal([]byte(scanner.Text()), &pr)
 			if err != nil {
 				return nil, fmt.Errorf("failed to decode line %s: %w", scanner.Text(), err)
-			}
-			if pr.Type != prType {
-				continue
 			}
 
 			totalPRsCreated++

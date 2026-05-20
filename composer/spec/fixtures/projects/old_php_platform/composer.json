@@ -8,6 +8,9 @@
       "platform": {
           "php": "5.6.4",
           "ext-mbstring": "1.0.0"
-      }
+      },
+    "audit": {
+      "block-insecure": false
+    }
   }
 }

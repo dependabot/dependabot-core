@@ -9,7 +9,7 @@ module Dependabot
   module Bazel
     class FileFetcher < Dependabot::FileFetchers::Base
       # Extracts file and directory paths referenced in MODULE.bazel files.
-      # Handles attributes like lock_file, requirements_lock, patches, and local_path_override.
+      # Handles attributes like lock_file, requirements_lock, patches, from_file, and local_path_override.
       class ModulePathExtractor
         extend T::Sig
 
@@ -31,13 +31,14 @@ module Dependabot
         sig { returns(DependencyFile) }
         attr_reader :module_file
 
-        # Extracts file paths from lock_file, requirements_lock, and patches attributes.
+        # Extracts file paths from lock_file, requirements_lock, patches, and from_file attributes.
         sig { params(content: String).returns(T::Array[String]) }
         def extract_file_attribute_paths(content)
           (
             extract_lock_file_paths(content) +
             extract_requirements_lock_paths(content) +
-            extract_patches_paths(content)
+            extract_patches_paths(content) +
+            extract_from_file_paths(content)
           ).compact
         end
 
@@ -63,6 +64,11 @@ module Dependabot
             patches << PathConverter.label_to_path(match[0])
           end
           patches
+        end
+
+        sig { params(content: String).returns(T::Array[String]) }
+        def extract_from_file_paths(content)
+          content.scan(/from_file\s*=\s*"([^"]+)"/).map { |match| PathConverter.label_to_path(T.must(match[0])) }
         end
 
         # Extracts directory paths from local_path_override attributes.

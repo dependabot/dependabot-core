@@ -77,6 +77,31 @@ module Dependabot
         super
       end
 
+      sig { override.returns(T::Array[String]) }
+      def ignored_major_versions
+        parts = to_s.split(".")
+        major = parts[0].to_i
+        minor = parts[1].to_i
+
+        # For 0.0.z versions, patch changes are breaking
+        # So ignoring "major" means ignoring all >= 0.0.(z+1)
+        if major.zero? && minor.zero?
+          patch = parts[2].to_i
+          lower_parts = [0, 0, patch + 1] + [lowest_prerelease_suffix]
+          return [">= #{lower_parts.join('.')}"]
+        end
+
+        # For 0.y.z versions (y > 0), minor changes are breaking
+        # So ignoring "major" means ignoring all >= 0.(y+1).0
+        if major.zero?
+          lower_parts = [0, minor + 1] + [lowest_prerelease_suffix]
+          return [">= #{lower_parts.join('.')}"]
+        end
+
+        # For 1.y.z+ versions, use standard semantic versioning
+        super
+      end
+
       # Determines the correct update type for a version change according to Cargo's semantic versioning rules
       # For pre-1.0 versions, Cargo treats changes in the leftmost non-zero component as breaking
       sig { params(from_version: T.any(String, Dependabot::Cargo::Version), to_version: T.any(String, Dependabot::Cargo::Version)).returns(String) }

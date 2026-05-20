@@ -51,6 +51,43 @@ module Dependabot
         [new(T.must(requirement_string))]
       end
 
+      # Parses a pre-commit Dart additional_dependency string.
+      # Formats: "package_name:version" or "package_name:^version"
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def self.parse_dep_string(dep_string)
+        stripped = dep_string.strip
+        return nil if stripped.empty?
+
+        parts = stripped.split(":", 2)
+        name = T.must(parts[0])
+        constraint = parts[1]
+
+        return nil if name.empty?
+        return nil if constraint.nil? || constraint.strip.empty?
+
+        constraint = constraint.strip
+        version = extract_version(constraint)
+
+        {
+          name: name,
+          normalised_name: name.downcase.gsub(/[^a-z0-9]/, "_"),
+          version: version,
+          requirement: constraint,
+          extras: nil
+        }
+      end
+
+      sig { params(constraint: String).returns(T.nilable(String)) }
+      def self.extract_version(constraint)
+        version_part = constraint.sub(/\A(?:[~^]|[><=]+)\s*/, "")
+
+        return nil unless Pub::Version.correct?(version_part)
+
+        version_part
+      end
+
+      private_class_method :extract_version
+
       sig { params(requirements: T.any(String, T::Array[String]), raw_constraint: T.nilable(String)).void }
       def initialize(*requirements, raw_constraint: nil)
         requirements = requirements.flatten.flat_map do |req_string|

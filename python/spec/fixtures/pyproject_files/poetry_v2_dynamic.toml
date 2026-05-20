@@ -1,0 +1,20 @@
+[project]
+name = "dynamic-deps-project"
+version = "0.1.0"
+description = "A project with dynamic dependencies managed by Poetry v2"
+authors = [
+    {name = "Dependabot Support", email = "support@dependabot.com"}
+]
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+requests = "^2.28"
+django = "^5.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

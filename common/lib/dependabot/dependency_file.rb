@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "digest"
 require "pathname"
 require "sorbet-runtime"
 
@@ -207,6 +208,24 @@ module Dependabot
       return Base64.decode64(T.must(content)) if binary?
 
       T.must(content)
+    end
+
+    # Returns the Git blob OID for this file's content,
+    # matching the value GitHub/Spokes uses for the same blob.
+    # Accepts :sha1 (default) or :sha256 to match the repository's object format.
+    sig { params(algorithm: Symbol).returns(T.nilable(String)) }
+    def blob_oid(algorithm: :sha1)
+      return nil unless content
+
+      raw = decoded_content.dup.force_encoding(Encoding::BINARY)
+      header = "blob #{raw.bytesize}\0".b
+      digest = case algorithm
+               when :sha256 then Digest::SHA256.new
+               else Digest::SHA1.new
+               end
+      digest.update(header)
+      digest.update(raw)
+      digest.hexdigest
     end
 
     private

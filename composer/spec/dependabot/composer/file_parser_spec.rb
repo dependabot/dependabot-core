@@ -63,14 +63,6 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with the local package as dependency" do
-      before do
-        Dependabot::Experiments.register(:exclude_local_composer_packages, true)
-      end
-
-      after do
-        Dependabot::Experiments.register(:exclude_local_composer_packages, false)
-      end
-
       let(:project_name) { "local_package_as_dep" }
 
       its(:length) { is_expected.to eq(4) }
@@ -411,7 +403,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
     it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
-      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.8.10"))
+      expect(parser.ecosystem.package_manager.version).to eq(Gem::Version.new("2.9.5"))
     end
 
     it "returns language with version" do

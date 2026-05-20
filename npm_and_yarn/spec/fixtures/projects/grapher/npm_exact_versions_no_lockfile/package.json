@@ -1,0 +1,9 @@
+{
+  "name": "grapher-npm-exact-versions",
+  "version": "1.0.0",
+  "description": "Test project with exact version requirements",
+  "dependencies": {
+    "lodash": "4.17.21",
+    "is-number": "7.0.0"
+  }
+}

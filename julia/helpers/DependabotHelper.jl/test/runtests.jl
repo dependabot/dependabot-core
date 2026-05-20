@@ -267,6 +267,67 @@ using DependabotHelper
             @test endswith(result["result"]["project_file"], "SubPackage/Project.toml")
             @test endswith(result["result"]["manifest_file"], "WorkspaceOne/Manifest.toml")
         end
+
+        # Test find_workspace_project_files function
+        @testset "find_workspace_project_files with WorkspaceOne" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
+
+            # Call from the workspace root
+            result = DependabotHelper.find_workspace_project_files(workspace_root)
+
+            @test !haskey(result, "error")
+            @test haskey(result, "project_files")
+            @test haskey(result, "manifest_file")
+            @test haskey(result, "workspace_root")
+
+            project_files = result["project_files"]
+            @test length(project_files) >= 2  # Root Project.toml + SubPackage/Project.toml
+
+            # Verify that both the root and subpackage project files are found
+            root_project_found = any(pf -> endswith(pf, "WorkspaceOne/Project.toml"), project_files)
+            subpackage_project_found = any(pf -> endswith(pf, "SubPackage/Project.toml"), project_files)
+            @test root_project_found
+            @test subpackage_project_found
+
+            # Verify manifest is found
+            @test endswith(result["manifest_file"], "WorkspaceOne/Manifest.toml")
+        end
+
+        @testset "find_workspace_project_files with WorkspaceTwo" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceTwo")
+
+            result = DependabotHelper.find_workspace_project_files(workspace_root)
+
+            @test !haskey(result, "error")
+            @test haskey(result, "project_files")
+
+            project_files = result["project_files"]
+            @test length(project_files) >= 3  # Root + SubPackageA + SubPackageB
+
+            # Verify all project files are found
+            root_found = any(pf -> endswith(pf, "WorkspaceTwo/Project.toml"), project_files)
+            pkg_a_found = any(pf -> endswith(pf, "SubPackageA/Project.toml"), project_files)
+            pkg_b_found = any(pf -> endswith(pf, "SubPackageB/Project.toml"), project_files)
+            @test root_found
+            @test pkg_a_found
+            @test pkg_b_found
+        end
+
+        @testset "find_workspace_project_files via JSON interface" begin
+            workspace_root = joinpath(@__DIR__, "WorkspaceOne")
+
+            input = Dict("function" => "find_workspace_project_files", "args" => Dict("directory" => workspace_root))
+            result_json = DependabotHelper.run(JSON.json(input))
+            result = JSON.parse(result_json)
+
+            @test haskey(result, "result")
+            @test haskey(result["result"], "project_files")
+            @test haskey(result["result"], "manifest_file")
+            @test haskey(result["result"], "workspace_root")
+
+            project_files = result["result"]["project_files"]
+            @test length(project_files) >= 2
+        end
     end
 
     @testset "Workspace Conflict Detection Tests" begin
@@ -472,22 +533,20 @@ using DependabotHelper
         # Test package version fetching
         json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.fetch_package_versions("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test result["package_name"] == "JSON"
-            @test haskey(result, "versions")
-            @test haskey(result, "latest_version")
-            @test haskey(result, "total_versions")
-            @test length(result["versions"]) > 0
-        end
+        @test !haskey(result, "error")
+        @test result["package_name"] == "JSON"
+        @test haskey(result, "versions")
+        @test haskey(result, "latest_version")
+        @test haskey(result, "total_versions")
+        @test length(result["versions"]) > 0
 
         # Test package info fetching
         result = @test_nowarn DependabotHelper.fetch_package_info("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test result["name"] == "JSON"
-            @test haskey(result, "uuid")
-            @test haskey(result, "all_versions")
-            @test haskey(result, "latest_version")
-        end
+        @test !haskey(result, "error")
+        @test result["name"] == "JSON"
+        @test haskey(result, "uuid")
+        @test haskey(result, "all_versions")
+        @test haskey(result, "latest_version")
 
         # Test with non-existent package
         result = @test_nowarn DependabotHelper.fetch_package_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
@@ -511,28 +570,35 @@ using DependabotHelper
 
         # Test get_latest_version with UUID
         version_result = @test_nowarn DependabotHelper.get_latest_version("JSON", json_uuid)
-        @test haskey(version_result, "version") || haskey(version_result, "error")
-        if haskey(version_result, "version")
-            @test haskey(version_result, "package_uuid")
-            @test version_result["package_uuid"] == json_uuid
-        end
+        @test haskey(version_result, "version")
+        @test haskey(version_result, "package_uuid")
+        @test version_result["package_uuid"] == json_uuid
     end
 
     @testset "New Package Functions Tests" begin
 
         # Test get_available_versions function
         result = @test_nowarn DependabotHelper.get_available_versions("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test haskey(result, "versions")
-            @test isa(result["versions"], Array)
-            @test length(result["versions"]) > 0
-            # Check that versions are strings
-            @test all(v -> isa(v, String), result["versions"])
-        end
+        @test !haskey(result, "error")
+        @test haskey(result, "versions")
+        @test isa(result["versions"], Array)
+        @test length(result["versions"]) > 0
+        # Check that versions are strings
+        @test all(v -> isa(v, String), result["versions"])
 
         # Test get_available_versions with non-existent package
         result = @test_nowarn DependabotHelper.get_available_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
         @test haskey(result, "error")
+
+        # Regression test for https://github.com/dependabot/dependabot-core/issues/14912
+        # OrdinaryDiffEqCore 5.0.0 was yanked in JuliaRegistries/General#153927 and must
+        # not be returned by get_available_versions, otherwise the latest version finder
+        # will propose updates to a retracted release.
+        ordinarydiffeqcore_uuid = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
+        result = @test_nowarn DependabotHelper.get_available_versions("OrdinaryDiffEqCore", ordinarydiffeqcore_uuid)
+        @test !haskey(result, "error")
+        @test haskey(result, "versions")
+        @test "5.0.0" ∉ result["versions"]
 
         # Test get_version_release_date function with General registry package
         # JSON.jl is in the General registry, so it should return a real date

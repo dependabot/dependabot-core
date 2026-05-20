@@ -40,6 +40,13 @@ public class JobErrorBaseTests : TestBase
 
     public static IEnumerable<object[]> GenerateErrorFromExceptionTestData()
     {
+        // disk full
+        yield return
+        [
+            new IOException("No space left on device : '/path/to/directory'"),
+            new OutOfDisk(),
+        ];
+
         // something elevated to a bad response
         yield return
         [

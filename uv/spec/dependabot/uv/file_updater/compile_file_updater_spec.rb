@@ -116,6 +116,20 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
       end
     end
 
+    context "with --universal and --python-version flags" do
+      let(:manifest_fixture_name) { "universal.in" }
+      let(:generated_fixture_name) { "uv_pip_compile_universal.txt" }
+      let(:dependency_name) { "urllib3" }
+      let(:dependency_version) { "2.2.3" }
+      let(:dependency_previous_version) { "2.2.2" }
+
+      it "preserves the --universal and --python-version flags when regenerating" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("--universal")
+        expect(updated_files.first.content).to include("--python-version 3.8")
+      end
+    end
+
     context "with a no-binary flag" do
       let(:manifest_fixture_name) { "no_binary_uv.in" }
       let(:generated_fixture_name) { "uv_pip_compile_no_binary.txt" }
@@ -483,6 +497,21 @@ RSpec.describe Dependabot::Uv::FileUpdater::CompileFileUpdater do
       it "adds an extras annotation on cachecontrol" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("cachecontrol[filecache]==0.12.10")
+      end
+    end
+  end
+
+  describe "#compile_options_fingerprint" do
+    subject(:compile_options_fingerprint) { updater.send(:compile_options_fingerprint, options) }
+
+    context "when options contain python-version" do
+      let(:options) do
+        "--universal --python-version=3.8 --output-file=test.txt"
+      end
+
+      it "redacts the python-version value" do
+        expect(compile_options_fingerprint)
+          .to eq("--universal --python-version=<python_version> --output-file=<output_file>")
       end
     end
   end

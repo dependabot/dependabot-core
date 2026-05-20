@@ -45,8 +45,9 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }
 
+  let(:metadata_base_url) { "https://repo.maven.apache.org/maven2" }
   let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
+    "#{metadata_base_url}/" \
       "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
@@ -83,6 +84,72 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
       end
     end
 
+    context "with a replaces-base credential" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
+    context "with multiple private registry credentials" do
+      let(:metadata_base_url) { "https://registry.example.com/maven" }
+      let(:mirror_metadata_url) do
+        "https://mirror.example.com/maven/" \
+          "com/google/guava/guava/maven-metadata.xml"
+      end
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://mirror.example.com/maven/",
+              "username" => "hello",
+              "password" => "world"
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "maven_repository",
+              "url" => "https://registry.example.com/maven/",
+              "username" => "hello",
+              "password" => "world",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, mirror_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:source_url]) do
+          is_expected.to eq("https://registry.example.com/maven")
+        end
+      end
+    end
+
     context "with a plugin" do
       let(:dependency_requirements) do
         [{
@@ -106,11 +173,118 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
           "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
+      let(:gradle_plugin_html_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/"
+      end
+      let(:spring_boot_plugin_pom_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+          "org.springframework.boot.gradle.plugin/2.0.5.RELEASE/" \
+          "org.springframework.boot.gradle.plugin-2.0.5.RELEASE.pom"
+      end
+      let(:fallback_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: version_class.new("2.0.5.RELEASE"),
+          url: "https://plugins.gradle.org/m2"
+        )
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
+      end
+
+      it "populates release_details for the latest version" do
+        release_info = packagedetailsfetcher.send(:release_details)
+        expect(release_info).to be_a(Hash)
+        expect(release_info).to have_key("2.1.4.RELEASE")
+        expect(release_info["2.1.4.RELEASE"][:release_date]).to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+      end
+
+      it "uses pom last-modified fallback when listing omits release date" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: fallback_release)
+
+        expect(hydrated_release.released_at).to eq(Time.utc(2026, 5, 11, 10, 8, 43))
+      end
+
+      it "returns the original release when a release date is already present" do
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("2.0.5.RELEASE"),
+          released_at: Time.utc(2026, 5, 10, 9, 0, 0),
+          url: "https://plugins.gradle.org/m2"
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release).to equal(release)
+        expect(a_request(:head, spring_boot_plugin_pom_url)).not_to have_been_made
+      end
+
+      it "does not eagerly populate fallback release dates in version listings" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        release = versions.find { |v| v[:version].to_s == "2.0.5.RELEASE" }
+        expect(release).not_to be_nil
+        expect(release[:released_at]).to be_nil
+        expect(a_request(:head, spring_boot_plugin_pom_url)).not_to have_been_made
+      end
+
+      it "caches fallback lookups per version" do
+        stub_request(:get, gradle_plugin_html_url).to_return(
+          status: 200,
+          body: <<~HTML
+            <html>
+              <body>
+                <a href="2.0.5.RELEASE/" title="2.0.5.RELEASE/"></a>
+              </body>
+            </html>
+          HTML
+        )
+        stub_request(:head, spring_boot_plugin_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+
+        2.times do
+          packagedetailsfetcher.fetch_release_metadata(release: fallback_release)
+        end
+
+        expect(a_request(:head, spring_boot_plugin_pom_url)).to have_been_made.once
       end
 
       describe "the first version" do
@@ -135,6 +309,25 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
+          is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+        end
+      end
+    end
+
+    context "with a non-plugin dependency" do
+      it "does not attempt pom last-modified fallback when release date is missing" do
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("23.3-jre"),
+          url: "https://repo.maven.apache.org/maven2"
+        )
+
+        hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
+
+        expect(hydrated_release.released_at).to be_nil
+        expect(WebMock).not_to have_requested(:head, /.*/)
       end
     end
 
@@ -161,11 +354,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
           "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
       end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
+          "org.jetbrains.kotlin.jvm.gradle.plugin/"
+      end
 
       before do
         stub_request(:get, gradle_plugin_metadata_url)
           .to_return(status: 200, body: gradle_plugin_releases)
         stub_request(:get, maven_metadata_url).to_return(status: 404)
+        # Stub the HTML directory listing request for Maven Central
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
       end
 
       describe "the first version" do
@@ -189,6 +388,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+
+        its([:released_at]) do
+          # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
+          is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
         end
       end
     end
@@ -292,17 +496,11 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
       context "when the details come from gradle distributions" do
         before do
-          Dependabot::Experiments.register(:gradle_wrapper_updater, true)
-
           stub_request(:get, "https://services.gradle.org/versions/all")
             .to_return(
               status: 200,
               body: fixture("gradle_distributions_metadata", "versions_all.json")
             )
-        end
-
-        after do
-          Dependabot::Experiments.reset!
         end
 
         describe "the last version" do

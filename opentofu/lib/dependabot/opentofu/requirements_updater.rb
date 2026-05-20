@@ -84,6 +84,7 @@ module Dependabot
           case req.dig(:source, :type)
           when "git" then update_git_requirement(req)
           when "registry", "provider" then update_registry_requirement(req)
+          when "oci" then update_oci_requirement(req)
           else req
           end
         end
@@ -109,6 +110,20 @@ module Dependabot
       end
 
       sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      def update_oci_requirement(req)
+        return req unless defined?(@latest_version) && @latest_version
+        return req if req.dig(:source, :digest)
+        return req unless req.dig(:source, :tag)
+
+        new_tag = latest_version.to_s
+        return req if req.dig(:source, :tag) == new_tag
+
+        req.merge(
+          source: req[:source].merge(tag: new_tag, version: new_tag)
+        )
+      end
+
+      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
       def update_registry_requirement(req)
         return req if req.fetch(:requirement).nil?
 
@@ -121,7 +136,7 @@ module Dependabot
           elsif string_req.start_with?("~>")
             update_twiddle_version(string_req).to_s
           else
-            update_range(string_req).map(&:to_s).join(", ")
+            update_range(string_req).join(", ")
           end
 
         req.merge(requirement: new_req)

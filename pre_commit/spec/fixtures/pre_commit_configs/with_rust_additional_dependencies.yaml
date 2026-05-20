@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/nickel-org/rust-nickel
+    rev: v0.11.0
+    hooks:
+      - id: nickel-lint
+        language: rust
+        additional_dependencies:
+          - serde:1.0.193
+          - serde_json:1.0.108
+          - tokio:1.35.0
+  - repo: https://github.com/example/rust-cli-hooks
+    rev: v2.0.0
+    hooks:
+      - id: cargo-fmt
+        language: rust
+        additional_dependencies:
+          - "cli:rustfmt-nightly:1.6.0"
+          - "cli:cargo-clippy:0.1.75"
+  - repo: https://github.com/example/rust-tilde-hooks
+    rev: v1.0.0
+    hooks:
+      - id: rust-lint
+        language: rust
+        additional_dependencies:
+          - "anyhow:~1.0.0"
+          - "clap:^4.4.0"
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace

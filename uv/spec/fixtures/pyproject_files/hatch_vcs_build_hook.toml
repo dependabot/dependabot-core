@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "p1"
+description = "Package 1 with hatch-vcs build hook"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.11"
+dynamic = ["version"]
+dependencies = ["zarr >= 3.1.0, < 4.0"]
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { root = "../", fallback_version = "10.0.0" }
+
+[tool.hatch.build.hooks.vcs]
+version-file = "p1/_version.py"

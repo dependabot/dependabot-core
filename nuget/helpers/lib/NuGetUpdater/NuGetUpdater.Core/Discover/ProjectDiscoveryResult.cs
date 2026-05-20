@@ -7,13 +7,13 @@ namespace NuGetUpdater.Core.Discover;
 public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
 {
     public required string FilePath { get; init; }
-    public required ImmutableArray<Dependency> Dependencies { get; init; }
     public bool IsSuccess { get; init; } = true;
     public JobErrorBase? Error { get; init; } = null;
-    public ImmutableArray<Property> Properties { get; init; } = [];
     public ImmutableArray<string> TargetFrameworks { get; init; } = [];
+    public PackageManagementKind PackageManagementKind { get; init; } = PackageManagementKind.Default;
+    public string? PackageManagementSpecialFileRelativePath { get; init; } = null;
     public ImmutableArray<string> ReferencedProjectPaths { get; init; } = [];
     public required ImmutableArray<string> ImportedFiles { get; init; }
     public required ImmutableArray<string> AdditionalFiles { get; init; }
-    public bool CentralPackageTransitivePinningEnabled { get; init; } = false;
+    public required ImmutableArray<Dependency> Dependencies { get; init; }
 }

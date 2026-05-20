@@ -87,5 +87,125 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
         expect(first_result.package_type).to eq(latest_release.package_type)
       end
     end
+
+    context "with an Azure DevOps module path without _git" do
+      let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Versions":["v1.0.0"]}')
+      end
+
+      it "adds the _git segment before resolving available versions" do
+        fetch
+
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+      end
+    end
+
+    context "with an Azure DevOps module path that already includes _git" do
+      let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Versions":["v1.0.0"]}')
+      end
+
+      it "retains the .git suffix when _git is already present" do
+        fetch
+
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+      end
+    end
+
+    context "with an Azure DevOps module path that includes a subdirectory" do
+      let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/be-protobuf.git/submodule" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/submodule",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Versions":["v1.0.0"]}')
+      end
+
+      it "preserves the subdirectory while adding _git" do
+        fetch
+
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf/submodule",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+      end
+    end
+
+    context "with an Azure DevOps _git module path that includes a subdirectory" do
+      let(:dependency_name) { "dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Versions":["v1.0.0"]}')
+      end
+
+      it "retains .git and subdirectory when _git is already present" do
+        fetch
+
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(
+            "go list -m -versions -json dev.azure.com/VaronisIO/da-cloud/_git/be-protobuf.git/submodule",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+      end
+    end
   end
 end

@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
@@ -23,7 +24,5 @@ RUN pip install pyyaml
 USER dependabot
 
 # Copy ecosystem-specific files
-COPY --chown=dependabot:dependabot python $DEPENDABOT_HOME/python
-COPY --chown=dependabot:dependabot conda $DEPENDABOT_HOME/conda
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot --parents python conda common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

@@ -30,8 +30,14 @@ module Dependabot
 
       sig { params(constraints: T::Array[String]).returns(T::Boolean) }
       def self.compound_constraint?(constraints)
-        # Compound constraints (e.g., ">= 1.0, < 2.0") have operators and multiple parts
-        constraints.length > 1 && constraints.any? { |c| c.match?(/^[<>=~^]/) }
+        # Compound constraints (e.g., ">= 1.0, < 2.0") are when explicit comparison operators
+        # (>=, <=, <, >, =) work together to define a single range.
+        # Separate constraints (e.g., "^1.10, 2" or "0.34, 0.35") use version specs
+        # (with or without ^/~) as OR conditions - any matching spec is acceptable.
+        # Only treat as compound if ALL constraints use explicit comparison operators.
+        return false if constraints.length <= 1
+
+        constraints.all? { |c| c.match?(/^[<>=]/) }
       end
 
       sig { params(constraints: T::Array[String]).returns(T::Array[Dependabot::Julia::Requirement]) }
@@ -74,51 +80,56 @@ module Dependabot
         [constraint]
       end
 
+      sig { params(version_string: String).returns([String, Integer, Integer, Integer, Integer]) }
+      private_class_method def self.parse_version_parts(version_string)
+        parts = version_string.split(".")
+        [
+          version_string,
+          parts.length,
+          T.must(parts[0]).to_i,
+          parts[1].to_i,
+          parts[2].to_i
+        ]
+      end
+
+      sig { params(major: Integer, minor: Integer, patch: Integer, num_parts: Integer).returns(String) }
+      private_class_method def self.caret_upper_bound(major, minor, patch, num_parts)
+        # Julia caret semantics: upper bound determined by left-most non-zero digit
+        return "#{major + 1}.0.0" if major.positive?
+        return "0.#{minor + 1}.0" if minor.positive?
+        return "0.0.#{patch + 1}" if num_parts == 3
+        return "0.1.0" if num_parts == 2
+
+        "1.0.0"
+      end
+
       sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_caret_constraint(constraint)
-        version = T.must(constraint[1..-1])
-        parts = version.split(".")
-        major = T.must(parts[0]).to_i
-        minor = parts[1].to_i
-        patch = parts[2].to_i
+        version, num_parts, major, minor, patch = parse_version_parts(T.must(constraint[1..-1]))
 
-        # Julia caret semantics:
-        # - For 0.0.x: compatible within patch (e.g., 0.0.5 -> 0.0.x, < 0.0.6 or < 0.1.0?)
-        # - For 0.x.y: compatible within minor (e.g., 0.34.6 -> 0.34.x, < 0.35.0)
-        # - For x.y.z (x > 0): compatible within major (e.g., 1.2.3 -> 1.x.x, < 2.0.0)
-        if major.zero? && minor.zero?
-          # 0.0.x versions: bump patch
-          [">= #{version}", "< 0.0.#{patch + 1}"]
-        elsif major.zero?
-          # 0.x.y versions: bump minor (0.34.6 -> < 0.35.0)
-          [">= #{version}", "< 0.#{minor + 1}.0"]
-        else
-          # x.y.z versions where x > 0: bump major
-          [">= #{version}", "< #{major + 1}.0.0"]
-        end
+        # Julia caret semantics (from https://pkgdocs.julialang.org/v1/compatibility/):
+        # ^1.2.3 -> [1.2.3, 2.0.0), ^0.2.3 -> [0.2.3, 0.3.0), ^0.0.3 -> [0.0.3, 0.0.4)
+        # ^0.0 -> [0.0.0, 0.1.0), ^0 -> [0.0.0, 1.0.0)
+        [">= #{version}", "< #{caret_upper_bound(major, minor, patch, num_parts)}"]
+      end
+
+      sig { params(major: Integer, minor: Integer, patch: Integer, num_parts: Integer).returns(String) }
+      private_class_method def self.tilde_upper_bound(major, minor, patch, num_parts)
+        # Julia tilde semantics: ~1 equivalent to ^1, otherwise bump minor (except 0.0.x bumps patch)
+        return "#{major + 1}.0.0" if num_parts == 1
+        return "0.0.#{patch + 1}" if major.zero? && minor.zero? && num_parts == 3
+        return "0.1.0" if major.zero? && minor.zero?
+
+        "#{major}.#{minor + 1}.0"
       end
 
       sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_tilde_constraint(constraint)
-        version = T.must(constraint[1..-1])
-        parts = version.split(".")
-        major = T.must(parts[0]).to_i
-        minor = parts[1].to_i
+        version, num_parts, major, minor, patch = parse_version_parts(T.must(constraint[1..-1]))
 
-        # Julia tilde semantics (similar to npm):
-        # - For 0.0.x: compatible within patch (same as caret)
-        # - For 0.x.y or x.y.z: compatible within minor (bump minor)
-        if major.zero? && minor.zero?
-          # 0.0.x versions: bump patch
-          patch = parts[2].to_i
-          [">= #{version}", "< 0.0.#{patch + 1}"]
-        elsif major.zero?
-          # 0.x.y versions: bump minor (same as caret for 0.x)
-          [">= #{version}", "< 0.#{minor + 1}.0"]
-        else
-          # x.y.z versions where x > 0: bump minor only
-          [">= #{version}", "< #{major}.#{minor + 1}.0"]
-        end
+        # Julia tilde semantics (from https://pkgdocs.julialang.org/v1/compatibility/):
+        # ~1.2.3 -> [1.2.3, 1.3.0), ~1 -> [1.0.0, 2.0.0), ~0.0.3 -> [0.0.3, 0.0.4)
+        [">= #{version}", "< #{tilde_upper_bound(major, minor, patch, num_parts)}"]
       end
 
       sig { params(constraint: String).returns(T::Array[String]) }

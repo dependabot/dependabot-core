@@ -14,10 +14,10 @@ module Dependabot
 
       # This list must match the versions specified at the top of `python/Dockerfile`
       # ARG PY_3_13=3.13.2
-      # When updating this list, also update uv/lib/dependabot/uv/language.rb
+      # Note: uv ecosystem aliases this class, so updates here apply to both ecosystems.
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
-        3.14.0
-        3.13.9
+        3.14.2
+        3.13.11
         3.12.12
         3.11.14
         3.10.19

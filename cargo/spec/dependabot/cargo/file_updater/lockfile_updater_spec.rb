@@ -112,16 +112,18 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
     end
 
     context "when the dependency doesn't exist" do
-      random_unlikely_package_name = (0...255).map { ("a".."z").to_a[rand(26)] }.join
-      content = <<~CONTENT
-        [package]
-        name = "foo"
-        version = "0.1.0"
-        authors = ["me"]
+      let(:random_unlikely_package_name) { (0...255).map { ("a".."z").to_a[rand(26)] }.join }
+      let(:content) do
+        <<~CONTENT
+          [package]
+          name = "foo"
+          version = "0.1.0"
+          authors = ["me"]
 
-        [dependencies]
-        #{random_unlikely_package_name} = "99.99.99"
-      CONTENT
+          [dependencies]
+          #{random_unlikely_package_name} = "99.99.99"
+        CONTENT
+      end
 
       let(:manifest) do
         Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
@@ -137,14 +139,16 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
     end
 
     context "when the package doesn't exist at the git source" do
-      content = <<~CONTENT
-        [package]
-        name = "foo"
-        version = "0.1.0"
-        authors = ["me"]
-        [dependencies]
-        yewtil = { git = "https://github.com/yewstack/yew" }
-      CONTENT
+      let(:content) do
+        <<~CONTENT
+          [package]
+          name = "foo"
+          version = "0.1.0"
+          authors = ["me"]
+          [dependencies]
+          yewtil = { git = "https://github.com/yewstack/yew" }
+        CONTENT
+      end
 
       let(:manifest) do
         Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
@@ -330,6 +334,83 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
             content = updated_lockfile_content
             expect(content.scan('name = "utf8-ranges"').count).to eq(1)
+          end
+        end
+
+        context "with an ssh URL and feature-gated git dependency" do
+          let(:manifest_fixture_name) { "feature_gated_git_dep_ssh" }
+          let(:lockfile_fixture_name) { "feature_gated_git_dep_ssh" }
+          let(:dependency_name) { "time" }
+          let(:dependency_version) { "0.1.40" }
+          let(:dependency_previous_version) { "0.1.38" }
+          let(:requirements) { previous_requirements }
+          let(:previous_requirements) do
+            [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
+          end
+
+          let(:lockfile_on_disk) { [] }
+
+          before do
+            captured = lockfile_on_disk
+            allow(updater).to receive(:run_cargo_command) do |_command, **_kwargs|
+              lockfile_content = File.read("Cargo.lock")
+              captured << lockfile_content.dup
+
+              old_time = "version = \"0.1.38\"\n" \
+                         "source = \"registry+https://github.com/rust-lang/crates.io-index\"\n" \
+                         "dependencies = [\n" \
+                         " \"kernel32-sys"
+              new_time = "version = \"0.1.40\"\n" \
+                         "source = \"registry+https://github.com/rust-lang/crates.io-index\"\n" \
+                         "dependencies = [\n" \
+                         " \"kernel32-sys"
+              lockfile_content = lockfile_content.gsub(old_time, new_time)
+              lockfile_content = lockfile_content.gsub(
+                "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520",
+                "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+              )
+
+              # Simulate what cargo does when the lockfile has SSH but the
+              # manifest has HTTPS: it adds a second entry for the git dep
+              # resolved via HTTPS with only default-feature deps. This is
+              # the exact failure mode from the bug report. The fix prevents
+              # this by making the lockfile use HTTPS too, so cargo sees
+              # consistent sources and doesn't create a duplicate.
+              if lockfile_content.include?("git+ssh://")
+                # Bug case: lockfile still has SSH URLs while manifest has
+                # HTTPS, so cargo creates a second entry
+                lockfile_content += <<~ENTRY
+
+                  [[package]]
+                  name = "utf8-ranges"
+                  version = "1.0.0"
+                  source = "git+https://github.com/BurntSushi/utf8-ranges#83141b376b93484341c68fbca3ca110ae5cd2708"
+                  dependencies = [
+                   "serde 1.0.0",
+                  ]
+                ENTRY
+              end
+
+              File.write("Cargo.lock", lockfile_content)
+            end
+          end
+
+          it "swaps SSH to HTTPS in the lockfile so cargo sees consistent sources" do
+            updated_lockfile_content
+
+            expect(lockfile_on_disk.last).not_to include("git+ssh://")
+            expect(lockfile_on_disk.last).to include("git+https://")
+          end
+
+          it "produces a lockfile with no duplicate entries" do
+            content = updated_lockfile_content
+
+            expect(content).to include(%(name = "time"\nversion = "0.1.40"))
+            expect(content).not_to include("git+https://")
+            expect(content).to include("git+ssh://")
+            expect(content.scan('name = "utf8-ranges"').count).to eq(1)
+            expect(content).to include("chrono")
+            expect(content).to include("url")
           end
         end
 

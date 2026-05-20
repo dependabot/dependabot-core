@@ -4,6 +4,7 @@
 require "rspec/its"
 require "rspec/sorbet"
 require "webmock/rspec"
+require "webmock/http_lib_adapters/excon_adapter"
 require "vcr"
 require "debug"
 require "simplecov"
@@ -87,7 +88,7 @@ VCR.configure do |config|
   config.configure_rspec_metadata!
 
   unless ENV["DEPENDABOT_TEST_DEBUG_LOGGER"].nil?
-    config.debug_logger = File.open(ENV["DEPENDABOT_TEST_DEBUG_LOGGER"], "w")
+    config.debug_logger = File.new(ENV.fetch("DEPENDABOT_TEST_DEBUG_LOGGER"), "w")
   end
 
   # Prevent auth headers and username:password params being written to VCR cassets
