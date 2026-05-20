@@ -472,6 +472,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             AdditionalFiles = mergedAdditionalFiles,
             PackageManagementKind = (PackageManagementKind)Math.Max((int)result1.PackageManagementKind, (int)result2.PackageManagementKind),
             PackageManagementSpecialFileRelativePath = result1.PackageManagementSpecialFileRelativePath ?? result2.PackageManagementSpecialFileRelativePath,
+            HasNoWarnNU1701 = result1.HasNoWarnNU1701 || result2.HasNoWarnNU1701,
         };
         return mergedResult;
     }

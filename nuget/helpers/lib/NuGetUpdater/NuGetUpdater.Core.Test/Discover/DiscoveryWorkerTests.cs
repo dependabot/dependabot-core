@@ -1927,6 +1927,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             AdditionalFiles = ["a/packages.config"],
             PackageManagementKind = PackageManagementKind.Default,
             PackageManagementSpecialFileRelativePath = null,
+            HasNoWarnNU1701 = false,
         };
         var result2 = new ProjectDiscoveryResult()
         {
@@ -1943,6 +1944,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             AdditionalFiles = ["b/app.config"],
             PackageManagementKind = PackageManagementKind.CentralPackageManagement,
             PackageManagementSpecialFileRelativePath = "Directory.Packages.props",
+            HasNoWarnNU1701 = true,
         };
 
         // to make sure we're checking everything exactly, we'll explicitly check each item
@@ -1971,6 +1973,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);
         Assert.Equal(PackageManagementKind.CentralPackageManagement, merged.PackageManagementKind);
         Assert.Equal("Directory.Packages.props", merged.PackageManagementSpecialFileRelativePath);
+        Assert.True(merged.HasNoWarnNU1701);
     }
 
     [Fact]
