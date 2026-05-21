@@ -40,7 +40,8 @@ module Dependabot
                    :record_ecosystem_versions,
                    :increment_metric,
                    :record_ecosystem_meta,
-                   :record_cooldown_meta
+                   :record_cooldown_meta,
+                   :fetch_blocked_versions
 
     sig { void }
     def wait_for_calls_to_finish
