@@ -674,6 +674,18 @@ internal static class SdkProjectDiscovery
                 packageManagementKind = PackageManagementKind.Default;
             }
 
+            // check for NoWarn containing NU1701
+            var noWarnValue = GetStringPropertyFromProjectProperties(projectProperties, "NoWarn");
+            var hasNoWarnNU1701 = false;
+            if (noWarnValue is not null)
+            {
+                var noWarnCodes = noWarnValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (noWarnCodes.Contains("NU1701", StringComparer.OrdinalIgnoreCase))
+                {
+                    hasNoWarnNU1701 = true;
+                }
+            }
+
             var projectDiscoveryResult = new ProjectDiscoveryResult()
             {
                 FilePath = projectRelativePath,
@@ -684,6 +696,7 @@ internal static class SdkProjectDiscovery
                 AdditionalFiles = additional,
                 PackageManagementKind = packageManagementKind,
                 PackageManagementSpecialFileRelativePath = packageManagementFile,
+                HasNoWarnNU1701 = hasNoWarnNU1701,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }

@@ -228,7 +228,7 @@ end
 
 unless ENV["BLOCKED_VERSIONS"].to_s.strip.empty?
   # For example:
-  # [{"dependency-name":"event-stream","version":"= 3.3.6","reason":"malware"}]
+  # [{"dependency-name":"event-stream","version-requirement":"= 3.3.6","reason":"malware"}]
   $options[:blocked_versions] = JSON.parse(ENV.fetch("BLOCKED_VERSIONS", nil))
 end
 
@@ -730,9 +730,9 @@ begin
 
   def blocked_versions_for(dep)
     $options[:blocked_versions]
-      .select { |bv| bv["dependency-name"] && bv["version"] }
+      .select { |bv| bv["dependency-name"] && bv["version-requirement"] }
       .select { |bv| bv["dependency-name"].casecmp(dep.name).zero? }
-      .map { |bv| bv["version"] }
+      .map { |bv| bv["version-requirement"] }
   end
 
   def security_advisories
@@ -794,7 +794,7 @@ begin
   if $options[:blocked_versions].any?
     puts "=> blocked versions active:"
     $options[:blocked_versions].each do |bv|
-      msg = "   #{bv['dependency-name']} #{bv['version']}"
+      msg = "   #{bv['dependency-name']} #{bv['version-requirement']}"
       msg += " (#{bv['reason']})" if bv["reason"]
       puts msg
     end
