@@ -79,11 +79,11 @@ module Dependabot
 
               # Turn off the module proxy for private dependencies
               dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
-              versions_json = SharedHelpers.run_shell_command(
-                "go list -m -versions -json #{dependency_name}",
-                fingerprint: "go list -m -versions -json <dependency_name>"
-              )
-              version_strings = JSON.parse(versions_json)["Versions"]
+              version_strings = fetch_module_versions(dependency_name)
+
+              # If no versions found, the path may be a sub-package rather than a module root.
+              # Try progressively shorter paths to find the actual module.
+              version_strings = resolve_module_versions_from_subpath(dependency_name) if version_strings.nil?
 
               return [package_release(version: T.must(dependency.version))] if version_strings.nil?
 
@@ -159,6 +159,36 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
+        end
+
+        sig { params(module_path: String).returns(T.nilable(T::Array[String])) }
+        def fetch_module_versions(module_path)
+          versions_json = SharedHelpers.run_shell_command(
+            "go list -m -versions -json #{module_path}",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          JSON.parse(versions_json)["Versions"]
+        rescue SharedHelpers::HelperSubprocessFailed
+          nil
+        end
+
+        # When a full import path (e.g. github.com/owner/repo/cmd/tool) is not a module,
+        # try progressively shorter paths to find the actual module root.
+        sig { params(full_path: String).returns(T.nilable(T::Array[String])) }
+        def resolve_module_versions_from_subpath(full_path)
+          parts = full_path.split("/")
+          # Minimum module path is 3 segments for well-known hosts (github.com/owner/repo)
+          min_parts = 3
+          return nil if parts.length <= min_parts
+
+          (parts.length - 1).downto(min_parts).each do |i|
+            candidate = T.must(parts[0...i]).join("/")
+            Dependabot.logger.info("Trying shorter module path: #{candidate}")
+            versions = fetch_module_versions(candidate)
+            return versions if versions&.any?
+          end
+
+          nil
         end
 
         sig do
