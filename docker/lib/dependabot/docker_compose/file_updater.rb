@@ -40,7 +40,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: file,
-            content: T.must(updated_compose_content(file))
+            content: updated_compose_content(file)
           )
         end
 
@@ -57,7 +57,7 @@ module Dependabot
       # scalars. Try the dockerfile-style replacement first, then fall back to YAML image
       # replacement when nothing matched, so both forms are supported without coupling to a
       # specific exception message.
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_compose_content(file)
         dockerfile_content = build_updated_dockerfile_content(file)
         return dockerfile_content if dockerfile_content != file.content

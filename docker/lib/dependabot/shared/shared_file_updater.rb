@@ -155,34 +155,34 @@ module Dependabot
       # Returns the YAML-style updated content, or the original content unchanged when no
       # image/tag matched. Unlike #updated_yaml_content this does not raise, so callers can
       # fall back to another strategy when needed.
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
       def build_updated_yaml_content(file)
-        updated_content = file.content
+        updated_content = T.must(file.content)
         updated_content = update_helm(file, updated_content) if Shared::Utils.likely_helm_chart?(file)
         updated_content = update_image(file, updated_content)
         updated_content
       end
 
-      sig { params(file: Dependabot::DependencyFile, content: T.nilable(String)).returns(T.nilable(String)) }
+      sig { params(file: Dependabot::DependencyFile, content: String).returns(String) }
       def update_helm(file, content)
         old_tags = old_helm_tags(file)
-        return if old_tags.empty?
+        return content if old_tags.empty?
 
         modified_content = content
 
         old_tags.each do |old_tag|
           old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
-          modified_content = modified_content&.gsub(old_tag_regex) do |old_img_tag|
+          modified_content = modified_content.gsub(old_tag_regex) do |old_img_tag|
             old_img_tag.gsub(old_tag.to_s, new_helm_tag(file).to_s)
           end
         end
         modified_content
       end
 
-      sig { params(file: Dependabot::DependencyFile, content: T.nilable(String)).returns(T.nilable(String)) }
+      sig { params(file: Dependabot::DependencyFile, content: String).returns(String) }
       def update_image(file, content)
         old_images = old_yaml_images(file)
-        return if old_images.empty?
+        return content if old_images.empty?
 
         modified_content = content
 
@@ -192,14 +192,14 @@ module Dependabot
           old_block_image_regex =
             %r{^(\s*(?:-\s)?image:\s*[>|][-+]?\s*\n\s*)(docker\.io/)?#{escaped_old_image}(?=\s|$)}
 
-          modified_content = modified_content&.gsub(old_image_regex) do
+          modified_content = modified_content.gsub(old_image_regex) do
             prefix = T.must(Regexp.last_match(1))
             registry_prefix = Regexp.last_match(2).to_s
             quote = Regexp.last_match(3).to_s
             "#{prefix}#{registry_prefix}#{new_yaml_image(file)}#{quote}"
           end
 
-          modified_content = modified_content&.gsub(old_block_image_regex) do
+          modified_content = modified_content.gsub(old_block_image_regex) do
             "#{T.must(Regexp.last_match(1))}#{Regexp.last_match(2)}#{new_yaml_image(file)}"
           end
         end
