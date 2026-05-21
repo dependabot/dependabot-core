@@ -61,11 +61,14 @@ module Dependabot
                 real_name = extract_real_name_from_yarn_alias(req)
                 next unless real_name
 
+                alias_name = T.must(req.split(/(?<=\w)\@npm:/).first)
+
                 dependency_set << Dependency.new(
                   name: real_name,
                   version: version.to_s,
                   package_manager: "npm_and_yarn",
-                  requirements: []
+                  requirements: [],
+                  metadata: { alias: alias_name }
                 )
               else
                 dependency_set << Dependency.new(

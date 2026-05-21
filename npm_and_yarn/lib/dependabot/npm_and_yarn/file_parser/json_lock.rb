@@ -75,6 +75,11 @@ module Dependabot
               requirements: []
             }
 
+            if aliased_package?(name, details)
+              alias_name = name.split("node_modules/").last
+              dependency_args[:metadata] = { alias: alias_name }
+            end
+
             if details["bundled"]
               dependency_args[:subdependency_metadata] =
                 [{ npm_bundled: details["bundled"] }]
@@ -102,6 +107,17 @@ module Dependabot
           return package_name if real_package_name == package_name
 
           real_package_name
+        end
+
+        sig { params(package_path: String, details: T::Hash[String, T.untyped]).returns(T::Boolean) }
+        def aliased_package?(package_path, details)
+          return false unless dealias_packages?
+
+          real_package_name = details["name"]
+          return false unless real_package_name.is_a?(String)
+
+          package_name = T.must(package_path.split("node_modules/").last)
+          real_package_name != package_name
         end
 
         sig { params(manifest_name: String, dependency_name: String).returns(String) }

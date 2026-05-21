@@ -65,6 +65,9 @@ module Dependabot
               requirements: []
             }
 
+            # Tag aliased packages with metadata so the grapher can identify them as direct
+            dependency_args[:metadata] = { alias: name } if details["aliased"]
+
             # Add metadata for subdependencies if marked as a dev dependency.
             dependency_args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
 
@@ -83,7 +86,8 @@ module Dependabot
               version: dependency_args[:version],
               package_manager: dependency_args[:package_manager],
               requirements: dependency_args[:requirements],
-              subdependency_metadata: dependency_args[:subdependency_metadata]
+              subdependency_metadata: dependency_args[:subdependency_metadata],
+              metadata: dependency_args[:metadata]
             )
           end
 
@@ -93,7 +97,8 @@ module Dependabot
               version: dependency_args[:version],
               package_manager: dependency_args[:package_manager],
               requirements: dependency_args[:requirements],
-              subdependency_metadata: dependency_args[:subdependency_metadata]
+              subdependency_metadata: dependency_args[:subdependency_metadata],
+              metadata: dependency_args[:metadata]
             )
           end
 

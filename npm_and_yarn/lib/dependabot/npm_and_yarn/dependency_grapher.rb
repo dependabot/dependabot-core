@@ -44,7 +44,7 @@ module Dependabot
 
             resolved[purl] = Dependabot::DependencyGraphers::ResolvedDependency.new(
               package_url: purl,
-              direct: version_dep.top_level?,
+              direct: version_dep.top_level? || version_dep.metadata[:alias] != nil,
               runtime: version_dep.production?,
               dependencies: subdependency_purls_for(version_dep)
             )
@@ -295,7 +295,7 @@ module Dependabot
             children = details.fetch("dependencies", {}).keys
             next if children.empty?
 
-            package_name = path.split("node_modules/").last
+            package_name = details["name"] || path.split("node_modules/").last
             version = details["version"]
             next if version.nil? || version.to_s.empty?
 
@@ -323,7 +323,9 @@ module Dependabot
           child_version = child_details["version"]
           next if child_version.nil? || child_version.to_s.empty?
 
-          "#{child_name}@#{child_version}"
+          # Use the "name" field for aliased packages (real name vs path alias)
+          real_name = child_details["name"] || child_name
+          "#{real_name}@#{child_version}"
         end
       end
 
